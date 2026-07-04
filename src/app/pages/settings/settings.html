@@ -1,0 +1,124 @@
+<section class="page-head">
+  <h2 class="page-head__title">Configuración</h2>
+  <p class="page-head__sub">Ajustes de perfil y preferencias del sistema · AUTH-05</p>
+</section>
+
+<!-- Pestañas -->
+<div class="tabs" role="tablist">
+  <button
+    type="button"
+    class="tab"
+    [class.tab--active]="activeTab() === 'profile'"
+    (click)="setTab('profile')"
+    role="tab"
+  >
+    Mi Perfil Corporativo
+  </button>
+  <button
+    type="button"
+    class="tab"
+    [class.tab--active]="activeTab() === 'system'"
+    (click)="setTab('system')"
+    role="tab"
+  >
+    Preferencias del Sistema
+  </button>
+</div>
+
+<!-- ===== Pestaña 1: Perfil ===== -->
+@if (activeTab() === 'profile') {
+  <div class="card profile-card">
+    <div class="card__body profile-grid">
+      <!-- Avatar -->
+      <div class="avatar-col">
+        <div class="avatar-lg">{{ initials }}</div>
+        <button type="button" class="btn btn--ghost avatar-col__btn">Cambiar foto</button>
+        <p class="avatar-col__hint">JPG o PNG · Máx. 2 MB</p>
+      </div>
+
+      <!-- Formulario -->
+      <form class="profile-form" (submit)="$event.preventDefault()">
+        <label class="form-field">
+          <span class="form-field__label">Nombre completo</span>
+          <input class="form-control" type="text" [(ngModel)]="fullName" name="fullName" />
+        </label>
+
+        <label class="form-field">
+          <span class="form-field__label">Correo electrónico</span>
+          <input class="form-control" type="email" [(ngModel)]="email" name="email" disabled />
+          <span class="form-field__hint">Deshabilitado por seguridad. Contacte al administrador para cambiarlo.</span>
+        </label>
+
+        <div class="profile-form__row">
+          <label class="form-field">
+            <span class="form-field__label">Teléfono de contacto</span>
+            <input class="form-control" type="tel" [(ngModel)]="phone" name="phone" />
+          </label>
+          <label class="form-field">
+            <span class="form-field__label">Especialidad técnica</span>
+            <input class="form-control" type="text" [(ngModel)]="specialty" name="specialty" />
+          </label>
+        </div>
+
+        <label class="form-field">
+          <span class="form-field__label">Nueva contraseña</span>
+          <input class="form-control" type="password" [(ngModel)]="password" name="password" placeholder="••••••••" />
+          <span class="form-field__hint">Déjelo en blanco para mantener la contraseña actual.</span>
+        </label>
+
+        <div class="profile-form__actions">
+          <button type="submit" class="btn btn--primary">Guardar cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ===== Pestaña 2: Sistema ===== -->
+@if (activeTab() === 'system') {
+  <div class="card">
+    <div class="card__head">
+      <h3 class="card__title">Valores por hora según actividad</h3>
+      <span class="card__hint">Solo administradores</span>
+    </div>
+    <div class="card__body">
+      <div class="rates">
+        @for (row of rates; track row.activity) {
+          <label class="rate-row">
+            <span class="rate-row__label">{{ row.activity }}</span>
+            <span class="rate-row__input">
+              <span class="rate-row__currency">$</span>
+              <input class="form-control" type="number" [(ngModel)]="row.rate" name="rate{{ $index }}" />
+            </span>
+          </label>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="card system-extra">
+    <div class="card__body">
+      <div class="toggle-row">
+        <div class="toggle-row__text">
+          <span class="toggle-row__label">Notificaciones automáticas por WhatsApp</span>
+          <span class="toggle-row__hint">Disponible en la Fase 3 del proyecto.</span>
+        </div>
+
+        <button
+          type="button"
+          class="switch"
+          [class.switch--on]="whatsappEnabled"
+          role="switch"
+          [attr.aria-checked]="whatsappEnabled"
+          (click)="whatsappEnabled = !whatsappEnabled"
+        >
+          <span class="switch__knob"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="system-actions">
+    <button type="button" class="btn btn--primary">Guardar preferencias</button>
+  </div>
+}

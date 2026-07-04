@@ -1,0 +1,103 @@
+<section class="page-head">
+  <h2 class="page-head__title">Importar archivos</h2>
+  <p class="page-head__sub">Carga de Excel (ARL Bolívar) y PDFs (AXA / Colmena) · Módulo IMP</p>
+</section>
+
+<!-- ===== Zona de Drag & Drop ===== -->
+<div class="card">
+  <div class="card__body">
+    <div class="dropzone">
+      <div class="dropzone__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <path d="M7 10l5-5 5 5" />
+          <path d="M12 5v12" />
+        </svg>
+      </div>
+      <p class="dropzone__title">Arrastra y suelta tu archivo aquí</p>
+      <p class="dropzone__hint">Formatos soportados: Excel (.xlsx) o PDF · Máx. 10 MB</p>
+
+      <label class="btn btn--primary dropzone__btn">
+        Seleccionar archivo PDF o Excel
+        <input type="file" class="dropzone__input" accept=".xlsx,.xls,.pdf" (change)="onFileSelected($event)" />
+      </label>
+
+      @if (fileName()) {
+        <div class="dropzone__file">
+          <span class="pill pill--info">{{ fileName() }}</span>
+        </div>
+      }
+    </div>
+
+    <div class="import-actions">
+      <button type="button" class="btn btn--ghost" (click)="simulateFile()">Usar archivo de ejemplo</button>
+      <button
+        type="button"
+        class="btn btn--secondary"
+        [disabled]="!fileName() || processing()"
+        (click)="processWithAi()"
+      >
+        @if (processing()) {
+          <span class="spinner" aria-hidden="true"></span>
+          Procesando con IA…
+        } @else {
+          Procesar con IA
+        }
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Vista previa editable ===== -->
+@if (showPreview()) {
+  <section class="panel preview">
+    <div class="panel__head">
+      <h3 class="panel__title">Vista previa de extracción</h3>
+      <span class="panel__hint">Puede corregir cualquier campo antes de guardar · IMP-03 / IMP-04</span>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table preview__table">
+        <thead>
+          <tr>
+            <th>NIT</th>
+            <th>Razón Social</th>
+            <th>ARL asignada</th>
+            <th>Horas</th>
+            <th>Contacto SST</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of previewRows; track $index) {
+            <tr>
+              <td>
+                <input class="cell-input" type="text" [(ngModel)]="row.nit" name="nit{{ $index }}" />
+              </td>
+              <td>
+                <input class="cell-input" type="text" [(ngModel)]="row.company" name="company{{ $index }}" />
+              </td>
+              <td>
+                <select class="cell-input" [(ngModel)]="row.arl" name="arl{{ $index }}">
+                  @for (arl of arlOptions; track arl) {
+                    <option [value]="arl">{{ arl }}</option>
+                  }
+                </select>
+              </td>
+              <td class="cell-narrow">
+                <input class="cell-input" type="number" [(ngModel)]="row.hours" name="hours{{ $index }}" />
+              </td>
+              <td>
+                <input class="cell-input" type="text" [(ngModel)]="row.sstContact" name="contact{{ $index }}" />
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="preview__footer">
+      <button type="button" class="btn btn--ghost" (click)="reset()">Descartar</button>
+      <button type="button" class="btn btn--primary">Confirmar e Inyectar a la BD</button>
+    </div>
+  </section>
+}

@@ -1,0 +1,463 @@
+:host {
+  display: block;
+}
+
+/* ===== Layout split-view ===== */
+.validation {
+  display: grid;
+  grid-template-columns: minmax(300px, 35%) 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+/* ============ COLUMNA IZQUIERDA ============ */
+.orders {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: sticky;
+  top: 0;
+}
+
+.orders__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.orders__search-icon {
+  position: absolute;
+  left: 0.85rem;
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.orders__search-input {
+  width: 100%;
+  padding: 0.7rem 0.9rem 0.7rem 2.5rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--text-main);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.orders__search-input:focus {
+  outline: none;
+  border-color: var(--secondary-color);
+  box-shadow: 0 0 0 3px rgba(45, 123, 200, 0.15);
+}
+
+.orders__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.orders__empty {
+  padding: 1.5rem 0.5rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.order-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.95rem 1.05rem;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.05s ease;
+}
+
+.order-card:hover {
+  border-color: #cbd9ea;
+  box-shadow: var(--shadow-elevated);
+}
+
+.order-card--active {
+  border-left-color: var(--primary-color);
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(45, 123, 200, 0.12);
+}
+
+.order-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.order-card__company {
+  font-weight: 700;
+  font-size: 0.94rem;
+  color: var(--text-main);
+  line-height: 1.3;
+}
+
+.order-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.order-card__arl {
+  font-weight: 600;
+  color: var(--secondary-color);
+}
+
+.order-card__foot {
+  margin-top: 0.15rem;
+}
+
+/* Etiqueta de estado (importada / validada) */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tag svg {
+  width: 12px;
+  height: 12px;
+}
+
+.tag--pending {
+  background: #eef2f7;
+  color: var(--text-muted);
+}
+
+.tag--ok {
+  background: rgba(16, 185, 129, 0.14);
+  color: var(--success);
+}
+
+/* ============ COLUMNA DERECHA ============ */
+.detail {
+  min-height: 420px;
+}
+
+.detail__grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 34%) 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+/* ---- Placeholder vacío ---- */
+.detail__empty {
+  max-width: 380px;
+  margin: 3.5rem auto;
+  text-align: center;
+}
+
+.detail__empty-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  background: rgba(45, 123, 200, 0.1);
+  color: var(--secondary-color);
+}
+
+.detail__empty-icon svg {
+  width: 34px;
+  height: 34px;
+}
+
+.detail__empty-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.detail__empty-text {
+  margin: 0.5rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* ---- Documento original ---- */
+.doc {
+  position: sticky;
+  top: 0;
+}
+
+.doc__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.35rem;
+}
+
+.doc__thumb {
+  width: 92px;
+  height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--danger);
+  margin-bottom: 0.5rem;
+}
+
+.doc__thumb--excel {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+}
+
+.doc__thumb svg {
+  width: 46px;
+  height: 46px;
+}
+
+.doc__sim {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.doc__name {
+  margin: 0.15rem 0 0;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text-main);
+  word-break: break-all;
+}
+
+.doc__size {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.doc__download {
+  margin-top: 1rem;
+}
+
+.doc__download svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* ---- Formulario IA ---- */
+.alert-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.8rem 1rem;
+  margin-bottom: 1.25rem;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-sm);
+  font-size: 0.83rem;
+  color: #92600a;
+}
+
+.alert-banner svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: var(--warning);
+  margin-top: 1px;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.05rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.field--full {
+  grid-column: 1 / -1;
+}
+
+.field__labelrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.conf-badge {
+  font-size: 0.68rem;
+  padding: 0.12rem 0.5rem;
+}
+
+.form-control--alert {
+  border-color: rgba(239, 68, 68, 0.55);
+  background: rgba(239, 68, 68, 0.04);
+}
+
+.form-control--alert:focus {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+.field__alert {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+.ai-form__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.4rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.ai-form__status {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.ai-form__status strong {
+  color: var(--secondary-color);
+  letter-spacing: 0.03em;
+}
+
+/* Spinner (mismo patrón que Importar) */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 360px;
+  padding: 0.9rem 1.1rem;
+  background: var(--primary-color);
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 34px rgba(0, 11, 80, 0.32);
+  animation: toast-in 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast__icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: #7ee0b8;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1024px) {
+  .validation {
+    grid-template-columns: 1fr;
+  }
+
+  .orders {
+    position: static;
+  }
+
+  .orders__list {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .order-card {
+    flex: 1 1 240px;
+  }
+
+  .doc {
+    position: static;
+  }
+}
+
+@media (max-width: 680px) {
+  .detail__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fields {
+    grid-template-columns: 1fr;
+  }
+
+  .field--full {
+    grid-column: auto;
+  }
+
+  .ai-form__footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toast {
+    left: 1rem;
+    right: 1rem;
+    max-width: none;
+  }
+}

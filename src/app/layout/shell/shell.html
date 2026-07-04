@@ -1,0 +1,118 @@
+<div class="layout">
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="sidebar__brand">
+      <img class="sidebar__logo" src="logoJDD-Consultores.png" alt="JD&D Consultores" />
+    </div>
+
+    <nav class="sidebar__nav">
+      @for (item of navItems(); track item.label) {
+        <a
+          class="nav-link"
+          [routerLink]="item.route"
+          routerLinkActive="nav-link--active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <span class="nav-link__icon" aria-hidden="true">
+            @switch (item.icon) {
+              @case ('home') {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 10.5 12 3l9 7.5" />
+                  <path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" />
+                  <path d="M9.5 21v-6h5v6" />
+                </svg>
+              }
+              @case ('import') {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+                  <path d="M12 11v6" />
+                  <path d="m9 14 3 3 3-3" />
+                </svg>
+              }
+              @case ('ai') {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="6" y="6" width="12" height="12" rx="2" />
+                  <path d="M9.5 10.5h5v3h-5z" />
+                  <path d="M9 3v2M15 3v2M9 19v2M15 19v2M3 9h2M3 15h2M19 9h2M19 15h2" />
+                </svg>
+              }
+              @case ('reports') {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+                  <path d="M14 3v5h5" />
+                  <path d="M9 13h6M9 17h6" />
+                </svg>
+              }
+              @case ('people') {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1" />
+                  <circle cx="9.5" cy="8" r="3" />
+                  <path d="M21 19v-1a4 4 0 0 0-3-3.85" />
+                  <path d="M16 5.15A3 3 0 0 1 16 11" />
+                </svg>
+              }
+              @case ('settings') {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+                </svg>
+              }
+            }
+          </span>
+          <span class="nav-link__text">
+            {{ item.label }}
+            @if (item.module) {
+              <small class="nav-link__module">{{ item.module }}</small>
+            }
+          </span>
+        </a>
+      }
+    </nav>
+
+    <div class="sidebar__footer">
+      <span class="sidebar__phase">Fase 1 · IA Core</span>
+    </div>
+  </aside>
+
+  <!-- ============ ÁREA PRINCIPAL ============ -->
+  <div class="main">
+    <!-- ---- NAVBAR ---- -->
+    <header class="navbar">
+      <div class="search">
+        <svg class="search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.5-3.5" />
+        </svg>
+        <input class="search__input" type="text" placeholder="Buscar en el sistema..." />
+      </div>
+
+      <div class="navbar__actions">
+        <button type="button" class="profile-btn" routerLink="/configuracion" aria-label="Perfil de usuario">
+          <span class="profile-btn__avatar">AD</span>
+          <span class="profile-btn__status" aria-hidden="true"></span>
+        </button>
+
+        <button type="button" class="icon-btn" aria-label="Notificaciones">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+          </svg>
+          <span class="icon-btn__badge">1</span>
+        </button>
+
+        <button type="button" class="icon-btn" routerLink="/login" aria-label="Cerrar sesión">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <path d="m16 17 5-5-5-5" />
+            <path d="M21 12H9" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- ---- CONTENIDO (cada vista hija se renderiza aquí) ---- -->
+    <main class="content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

@@ -1,0 +1,208 @@
+<section class="page-head">
+  <h2 class="page-head__title">Validación IA</h2>
+  <p class="page-head__sub">
+    Bandeja de entrada · revisa y valida las órdenes extraídas por el modelo · Módulos 3 y 4
+  </p>
+</section>
+
+<div class="validation">
+  <!-- ============ COLUMNA IZQUIERDA · LISTADO ============ -->
+  <aside class="orders">
+    <div class="orders__search">
+      <svg class="orders__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-3.5-3.5" />
+      </svg>
+      <input
+        class="orders__search-input"
+        type="text"
+        placeholder="Buscar por empresa, ARL o NIT…"
+        [ngModel]="query()"
+        (ngModelChange)="query.set($event)"
+      />
+    </div>
+
+    <div class="orders__list">
+      @for (order of filtered(); track order.id) {
+        <button
+          type="button"
+          class="order-card"
+          [class.order-card--active]="order.id === selectedId()"
+          (click)="select(order.id)"
+        >
+          <div class="order-card__top">
+            <span class="order-card__company">{{ order.company }}</span>
+            <span class="pill" [class]="pillClass(order.confidence)">{{ order.confidence }}%</span>
+          </div>
+          <div class="order-card__meta">
+            <span class="order-card__arl">{{ order.arl }}</span>
+            <span class="order-card__dot" aria-hidden="true">·</span>
+            <span>{{ order.importedAt }}</span>
+          </div>
+          <div class="order-card__foot">
+            @if (order.validated) {
+              <span class="tag tag--ok">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m5 12 4 4L19 7" />
+                </svg>
+                Validada
+              </span>
+            } @else {
+              <span class="tag tag--pending">Importada</span>
+            }
+          </div>
+        </button>
+      } @empty {
+        <p class="orders__empty">No hay órdenes que coincidan con “{{ query() }}”.</p>
+      }
+    </div>
+  </aside>
+
+  <!-- ============ COLUMNA DERECHA · DETALLE ============ -->
+  <section class="detail">
+    @if (selectedOrder(); as order) {
+      <div class="detail__grid">
+        <!-- ---- Sub-columna: documento original ---- -->
+        <div class="card doc">
+          <div class="card__head">
+            <span class="card__title">Documento original</span>
+            <span class="pill pill--info">{{ order.fileType === 'excel' ? 'Excel' : 'PDF' }}</span>
+          </div>
+          <div class="card__body doc__body">
+            <div class="doc__thumb" [class.doc__thumb--excel]="order.fileType === 'excel'" aria-hidden="true">
+              @if (order.fileType === 'excel') {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+                  <path d="M14 3v5h5" />
+                  <path d="m9.5 12.5 5 5M14.5 12.5l-5 5" />
+                </svg>
+              } @else {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+                  <path d="M14 3v5h5" />
+                  <path d="M9 13h6M9 17h4" />
+                </svg>
+              }
+            </div>
+            <p class="doc__sim">[ Simulación de documento original ]</p>
+            <p class="doc__name">{{ order.fileName }}</p>
+            <p class="doc__size">{{ order.fileSize }} · importado {{ order.importedAt }}</p>
+            <button type="button" class="btn btn--ghost doc__download" (click)="downloadOriginal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3v12" />
+                <path d="m7 10 5 5 5-5" />
+                <path d="M5 21h14" />
+              </svg>
+              Descargar original
+            </button>
+          </div>
+        </div>
+
+        <!-- ---- Sub-columna: formulario IA ---- -->
+        <div class="card ai-form">
+          <div class="card__head">
+            <span class="card__title">Datos extraídos por IA</span>
+            <span class="pill" [class]="pillClass(order.confidence)">
+              {{ order.confidence }}% Confianza general
+            </span>
+          </div>
+
+          <div class="card__body">
+            @if (order.confidence < 70) {
+              <div class="alert-banner">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 9v4M12 17h.01" />
+                  <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+                </svg>
+                Baja confianza general. Revisa con especial cuidado los campos resaltados antes de validar.
+              </div>
+            }
+
+            <form class="fields">
+              @for (item of formFields(); track item.label) {
+                <div class="field" [class.field--full]="item.span === 'full'">
+                  <div class="field__labelrow">
+                    <label class="form-field__label">{{ item.label }}</label>
+                    <span class="conf-badge pill" [class]="pillClass(item.field.confidence)">
+                      {{ item.field.confidence }}%
+                    </span>
+                  </div>
+
+                  @if (item.type === 'textarea') {
+                    <textarea
+                      class="form-control"
+                      rows="3"
+                      [class.form-control--alert]="isLow(item.field.confidence)"
+                      [(ngModel)]="item.field.value"
+                      [name]="item.label"
+                    ></textarea>
+                  } @else {
+                    <input
+                      class="form-control"
+                      type="text"
+                      [class.form-control--alert]="isLow(item.field.confidence)"
+                      [(ngModel)]="item.field.value"
+                      [name]="item.label"
+                    />
+                  }
+
+                  @if (isLow(item.field.confidence)) {
+                    <p class="field__alert">⚠ Baja confianza — verifica contra el documento original.</p>
+                  }
+                </div>
+              }
+            </form>
+          </div>
+
+          <div class="ai-form__footer">
+            <span class="ai-form__status">
+              @if (order.validated) {
+                <span class="tag tag--ok">✓ Orden validada</span>
+              } @else {
+                Estado actual: <strong>IMPORTADA</strong>
+              }
+            </span>
+            <button
+              type="button"
+              class="btn btn--primary"
+              [disabled]="saving()"
+              (click)="validateOrder()"
+            >
+              @if (saving()) {
+                <span class="spinner" aria-hidden="true"></span>
+                Guardando cambios en Base de Datos…
+              } @else {
+                Validar y Guardar
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <!-- ---- Placeholder cuando no hay selección ---- -->
+      <div class="detail__empty">
+        <div class="detail__empty-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11H3v10h6ZM21 3h-6v18h6ZM15 7H9v14h6Z" />
+          </svg>
+        </div>
+        <h3 class="detail__empty-title">Selecciona una orden</h3>
+        <p class="detail__empty-text">
+          Elige una orden de la lista para revisar el documento original y validar los datos
+          extraídos por la IA.
+        </p>
+      </div>
+    }
+  </section>
+</div>
+
+<!-- ============ TOAST ============ -->
+@if (toast(); as message) {
+  <div class="toast" role="status">
+    <svg class="toast__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8.5 12 2.5 2.5 4.5-5" />
+    </svg>
+    {{ message }}
+  </div>
+}

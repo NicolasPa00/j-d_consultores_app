@@ -1,0 +1,224 @@
+:host {
+  display: block;
+}
+
+.login {
+  min-height: 100vh;
+  display: flex;
+}
+
+/* ===================== Panel de marca (izquierda) ===================== */
+.login__brand {
+  flex: 1 1 50%;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  /* Degradado de marca navy → azul rey */
+  background: linear-gradient(160deg, #000b50 0%, #163a8c 55%, #2d7bc8 100%);
+}
+
+/* Círculos/ondas decorativas que evocan las infografías de la marca */
+.login__brand::before,
+.login__brand::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(136, 178, 232, 0.18);
+  pointer-events: none;
+}
+
+.login__brand::before {
+  width: 420px;
+  height: 420px;
+  top: -140px;
+  right: -120px;
+}
+
+.login__brand::after {
+  width: 320px;
+  height: 320px;
+  bottom: -120px;
+  left: -100px;
+  background: rgba(45, 123, 200, 0.25);
+}
+
+.login__brand-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 420px;
+  text-align: center;
+  color: #ffffff;
+}
+
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 2rem;
+  margin-bottom: 2.25rem;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 18px 40px -12px rgba(0, 11, 80, 0.5);
+}
+
+.brand-logo img {
+  max-width: 220px;
+  height: auto;
+  display: block;
+}
+
+.brand-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.brand-text {
+  margin: 1rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+/* ===================== Lado del formulario (derecha) ===================== */
+.login__form-side {
+  flex: 1 1 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: #f8fafc;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.08);
+  padding: 2.5rem;
+}
+
+.login-card__head {
+  margin-bottom: 1.75rem;
+}
+
+.login-card__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  letter-spacing: -0.01em;
+}
+
+.login-card__subtitle {
+  margin: 0.4rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* --- Formulario --- */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.field__label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.field__input {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--text-main);
+  background: #f8fafc;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.field__input::placeholder {
+  color: var(--text-muted);
+}
+
+.field__input:focus {
+  outline: none;
+  background: var(--surface);
+  border-color: var(--secondary-color);
+  box-shadow: 0 0 0 3px rgba(45, 123, 200, 0.15);
+}
+
+.login-card__forgot {
+  align-self: flex-end;
+  margin-top: -0.4rem;
+  font-size: 0.82rem;
+  color: var(--secondary-color);
+}
+
+/* --- Botón principal --- */
+.btn-primary {
+  width: 100%;
+  margin-top: 0.2rem;
+  padding: 0.85rem 1rem;
+  font-family: inherit;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--primary-color);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.05s ease;
+}
+
+.btn-primary:hover {
+  background: var(--secondary-color);
+}
+
+.btn-primary:active {
+  transform: translateY(1px);
+}
+
+.login-card__footer {
+  margin: 1.75rem 0 0;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* ===================== Responsive ===================== */
+@media (max-width: 880px) {
+  .login {
+    flex-direction: column;
+  }
+
+  .login__brand {
+    flex: none;
+    min-height: 280px;
+    padding: 2.5rem 1.5rem;
+  }
+
+  .brand-logo {
+    margin-bottom: 1.5rem;
+    padding: 1.1rem 1.5rem;
+  }
+
+  .brand-logo img {
+    max-width: 170px;
+  }
+
+  .login__form-side {
+    flex: 1;
+  }
+}

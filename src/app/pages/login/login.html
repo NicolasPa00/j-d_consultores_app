@@ -1,0 +1,63 @@
+<div class="login">
+  <!-- ===== Izquierda: panel de marca ===== -->
+  <aside class="login__brand">
+    <div class="login__brand-inner">
+      <div class="brand-logo">
+        <img
+          src="logoJDD-Consultores.png"
+          alt="JD&D Consultores - Sistemas de Gestión"
+        />
+      </div>
+      <h1 class="brand-title">Sistema de Gestión de OS con IA</h1>
+      <p class="brand-text">
+        Importación, validación con inteligencia artificial y gestión de
+        Órdenes de Servicio en una sola plataforma.
+      </p>
+    </div>
+  </aside>
+
+  <!-- ===== Derecha: formulario ===== -->
+  <main class="login__form-side">
+    <div class="login-card">
+      <header class="login-card__head">
+        <h2 class="login-card__title">Bienvenido de nuevo</h2>
+        <p class="login-card__subtitle">Ingrese sus credenciales para continuar</p>
+      </header>
+
+      <!-- Formulario estático (sin lógica) -->
+      <form class="login-form" (submit)="$event.preventDefault()">
+        <label class="field">
+          <span class="field__label">Correo electrónico</span>
+          <input
+            class="field__input"
+            type="email"
+            name="email"
+            placeholder="usuario@jddconsultores.com"
+            autocomplete="email"
+          />
+        </label>
+
+        <label class="field">
+          <span class="field__label">Contraseña</span>
+          <input
+            class="field__input"
+            type="password"
+            name="password"
+            placeholder="••••••••"
+            autocomplete="current-password"
+          />
+        </label>
+
+        <a class="login-card__forgot" routerLink="/login">¿Olvidó su contraseña?</a>
+
+        <button class="btn-primary" type="submit" routerLink="/dashboard">
+          Ingresar
+        </button>
+      </form>
+
+      <p class="login-card__footer">
+        © 2026 JD&amp;D Consultores · FRS — Gestión de OS con IA
+      </p>
+    </div>
+  </main>
+</div>

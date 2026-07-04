@@ -1,0 +1,223 @@
+:host {
+  display: block;
+}
+
+.portal {
+  min-height: 100vh;
+  background: #f4f7fa;
+  padding: 1.5rem 1rem 2.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.portal__container {
+  width: 100%;
+  max-width: 480px;
+}
+
+/* Marca */
+.portal__brand {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0 1.5rem;
+}
+
+.portal__logo {
+  max-width: 160px;
+  height: auto;
+}
+
+/* Encabezado de orden */
+.portal__head {
+  background: linear-gradient(150deg, #000b50 0%, #2d7bc8 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  color: #ffffff;
+  text-align: center;
+  box-shadow: 0 14px 34px -14px rgba(0, 11, 80, 0.45);
+}
+
+.portal__head .pill {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.portal__title {
+  margin: 0.75rem 0 0.2rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.portal__company {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Tarjeta de carga */
+.upload-card {
+  margin-top: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+  padding: 1.5rem;
+}
+
+.upload-card__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.upload-card__desc {
+  margin: 0.35rem 0 1.25rem;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+/* Slot de carga */
+.slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.slot:hover {
+  border-color: var(--secondary-color);
+  background: rgba(45, 123, 200, 0.04);
+}
+
+.slot__info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.slot__icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(45, 123, 200, 0.1);
+  color: var(--secondary-color);
+}
+
+.slot__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.slot__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.slot__label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.slot__file {
+  font-size: 0.78rem;
+  color: var(--success);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.slot__placeholder {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.slot__action {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--secondary-color);
+}
+
+.slot__action--done {
+  color: var(--success);
+}
+
+.slot__input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.portal__send {
+  margin-top: 0.75rem;
+}
+
+.btn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Banner de éxito */
+.success {
+  margin-top: 1.25rem;
+  background: var(--surface);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px -2px rgba(16, 185, 129, 0.12);
+  padding: 2.25rem 1.5rem;
+  text-align: center;
+}
+
+.success__icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--success);
+}
+
+.success__icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.success__title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.success__text {
+  margin: 0.4rem 0 1rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* Footer */
+.portal__footer {
+  margin: 1.75rem 0 0;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}

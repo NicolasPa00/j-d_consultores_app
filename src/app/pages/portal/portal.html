@@ -1,0 +1,75 @@
+<div class="portal">
+  <div class="portal__container">
+    <!-- Encabezado de marca -->
+    <header class="portal__brand">
+      <img src="logoJDD-Consultores.png" alt="JD&D Consultores" class="portal__logo" />
+    </header>
+
+    <!-- Encabezado de la orden -->
+    <div class="portal__head">
+      <span class="pill pill--info">Órden de Servicio #2194</span>
+      <h1 class="portal__title">Gestión SST</h1>
+      <p class="portal__company">Empresa: Inversiones Pasto S.A.S</p>
+    </div>
+
+    @if (!sent()) {
+      <!-- Tarjeta de carga -->
+      <div class="upload-card">
+        <h2 class="upload-card__title">Carga de soportes</h2>
+        <p class="upload-card__desc">
+          Adjunte los formatos firmados en PDF o fotos de la visita realizada.
+        </p>
+
+        @for (slot of slots(); track slot.key) {
+          <label class="slot">
+            <span class="slot__info">
+              <span class="slot__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+                  <path d="M14 3v5h5" />
+                </svg>
+              </span>
+              <span class="slot__text">
+                <span class="slot__label">{{ slot.label }}</span>
+                @if (slot.fileName) {
+                  <span class="slot__file">{{ slot.fileName }}</span>
+                } @else {
+                  <span class="slot__placeholder">PDF, JPG o PNG</span>
+                }
+              </span>
+            </span>
+            <span class="slot__action" [class.slot__action--done]="slot.fileName">
+              {{ slot.fileName ? 'Cambiar' : 'Subir' }}
+            </span>
+            <input
+              type="file"
+              class="slot__input"
+              accept=".pdf,image/*"
+              (change)="onFileSelected(slot.key, $event)"
+            />
+          </label>
+        }
+
+        <button type="button" class="btn btn--primary btn--block portal__send" [disabled]="!hasAnyFile()" (click)="send()">
+          Enviar Soportes
+        </button>
+      </div>
+    } @else {
+      <!-- Banner de éxito -->
+      <div class="success">
+        <div class="success__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        </div>
+        <h2 class="success__title">Soportes enviados con éxito</h2>
+        <p class="success__text">
+          La orden pasará a revisión de auditoría.
+        </p>
+        <span class="pill pill--warning">Estado: EN VERIFICACIÓN</span>
+      </div>
+    }
+
+    <p class="portal__footer">© 2026 JD&amp;D Consultores · Enlace seguro de carga</p>
+  </div>
+</div>

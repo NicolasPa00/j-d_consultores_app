@@ -1,1 +1,267 @@
-/* You can add global styles to this file, and also import other style files */
+/* ============================================================
+   FRS - Sistema de Gestión de OS con IA | JD&D Consultores
+   Estilos globales y guía de marca
+   ============================================================ */
+
+:root {
+  /* Paleta corporativa */
+  --primary-color: #000b50;   /* Azul Marino Profundo (Logo) */
+  --secondary-color: #2d7bc8; /* Azul Enfoque / Rey */
+  --accent-color: #88b2e8;    /* Celeste de apoyo / ondas */
+
+  /* Superficies y fondos */
+  --bg-app: #f4f7fa;          /* Gris claro para fondo general */
+  --surface: #ffffff;         /* Blanco puro para tarjetas y tablas */
+
+  /* Texto */
+  --text-main: #1e293b;       /* Gris pizarra muy oscuro para lectura */
+  --text-muted: #64748b;      /* Gris medio para placeholders/bordes */
+
+  /* Estados */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+
+  /* Tokens de apoyo derivados */
+  --border-soft: #e2e8f0;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-elevated: 0 10px 30px rgba(0, 11, 80, 0.12);
+  --font-base: 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-base);
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--secondary-color);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--text-main);
+  margin: 0;
+}
+
+/* ============================================================
+   Primitivas de UI reutilizables (design system)
+   Compartidas por las vistas del sistema. Ver README.
+   ============================================================ */
+
+/* ---- Cabecera de página ---- */
+.page-head {
+  margin-bottom: 1.5rem;
+}
+
+.page-head__title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-main);
+}
+
+.page-head__sub {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* ---- Tarjeta / panel ---- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+}
+
+.card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.4rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.card__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.card__hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.card__body {
+  padding: 1.4rem;
+}
+
+/* ---- Botones ---- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.1rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.05s ease;
+}
+
+.btn:hover {
+  text-decoration: none;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.btn--primary {
+  background: var(--primary-color);
+  color: #ffffff;
+}
+
+.btn--primary:hover {
+  background: #0a1a73;
+}
+
+.btn--secondary {
+  background: var(--secondary-color);
+  color: #ffffff;
+}
+
+.btn--secondary:hover {
+  background: #2569ac;
+}
+
+.btn--ghost {
+  background: var(--surface);
+  color: var(--text-main);
+  border-color: var(--border-soft);
+}
+
+.btn--ghost:hover {
+  background: #f1f5f9;
+}
+
+.btn--block {
+  width: 100%;
+}
+
+/* ---- Controles de formulario ---- */
+.form-field {
+  display: block;
+}
+
+.form-field__label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  font-family: inherit;
+  font-size: 0.92rem;
+  color: var(--text-main);
+  background: #f8fafc;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.form-control::placeholder {
+  color: var(--text-muted);
+}
+
+.form-control:focus {
+  outline: none;
+  background: var(--surface);
+  border-color: var(--secondary-color);
+  box-shadow: 0 0 0 3px rgba(45, 123, 200, 0.15);
+}
+
+.form-control:disabled {
+  background: #f1f5f9;
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.form-field__hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* ---- Píldoras / badges ---- */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pill--info {
+  background: rgba(45, 123, 200, 0.12);
+  color: var(--secondary-color);
+}
+
+.pill--success {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--success);
+}
+
+.pill--warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--warning);
+}
+
+.pill--danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger);
+}
