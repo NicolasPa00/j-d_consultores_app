@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { RouterLink, RouterLinkActive, RouterOutlet, Router } from '@angular/router';
+import { AuthService } from '../../core/auth.service';
 
 interface NavItem {
   icon: string;
@@ -16,6 +17,20 @@ interface NavItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ShellComponent {
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+
+  protected readonly usuario = this.auth.usuario;
+
+  protected initials(): string {
+    return this.auth.initials();
+  }
+
+  protected logout(): void {
+    this.auth.logout();
+    this.router.navigateByUrl('/login');
+  }
+
   protected readonly navItems = signal<NavItem[]>([
     { icon: 'home', label: 'Inicio / Dashboard', module: '', route: '/dashboard' },
     { icon: 'import', label: 'Importar Archivos', module: 'Módulo 2', route: '/importar' },

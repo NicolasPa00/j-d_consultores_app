@@ -265,3 +265,48 @@ h4 {
   background: rgba(239, 68, 68, 0.12);
   color: var(--danger);
 }
+
+/* ===== Helpers globales añadidos para vistas conectadas al backend ===== */
+.pill--muted {
+  background: rgba(100, 116, 139, 0.14);
+  color: var(--text-muted);
+}
+
+/* Spinner reutilizable (botones en estado de carga) */
+.spinner {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  margin-right: 6px;
+  vertical-align: -2px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: sst-spin 0.7s linear infinite;
+}
+@keyframes sst-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Toast global (notificaciones breves) */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 380px;
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  background: var(--primary-color);
+  color: #fff;
+  box-shadow: var(--shadow-elevated);
+  font-size: 0.9rem;
+  animation: sst-toast-in 0.25s ease;
+}
+@keyframes sst-toast-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}

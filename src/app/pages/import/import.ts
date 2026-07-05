@@ -1,5 +1,8 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { ApiService } from '../../core/api.service';
+import { Borrador } from '../../core/models';
 
 interface PreviewRow {
   nit: string;
@@ -17,51 +20,102 @@ interface PreviewRow {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ImportComponent {
+  private readonly api = inject(ApiService);
+  private readonly router = inject(Router);
+
   protected readonly fileName = signal<string | null>(null);
   protected readonly processing = signal(false);
   protected readonly showPreview = signal(false);
+  protected readonly error = signal<string | null>(null);
 
-  /** Catálogo simulado de ARL para los <select> de corrección manual. */
-  protected readonly arlOptions = ['ARL Bolívar', 'AXA Colpatria', 'Colmena', 'Sura', 'Positiva'];
-
-  /** Filas extraídas "por la IA" — editables con ngModel (IMP-03 / IMP-04). */
+  protected readonly arlOptions = ['Bolívar', 'AXA Colpatria', 'Colmena'];
   protected previewRows: PreviewRow[] = [];
 
-  private readonly mockExtraction: PreviewRow[] = [
-    { nit: '900.184.552-1', company: 'Inversiones Andinas S.A.S', arl: 'ARL Bolívar', hours: 8, sstContact: 'Laura Gómez' },
-    { nit: '901.225.770-3', company: 'Construcciones del Valle Ltda.', arl: 'AXA Colpatria', hours: 6, sstContact: 'Andrés Caicedo' },
-    { nit: '830.090.112-8', company: 'Logística Express Colombia', arl: 'Colmena', hours: 4, sstContact: 'María F. Ruiz' },
-  ];
+  private selectedFile: File | null = null;
 
   protected onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    this.fileName.set(file ? file.name : 'archivo_arl_bolivar.xlsx');
+    const file = input.files?.[0] ?? null;
+    this.selectedFile = file;
+    this.fileName.set(file ? file.name : null);
+    this.error.set(null);
   }
 
-  /** Simula un nombre de archivo si el usuario no abre el selector real. */
-  protected simulateFile(): void {
-    if (!this.fileName()) {
-      this.fileName.set('archivo_arl_bolivar.xlsx');
-    }
-  }
-
+  /** Sube el archivo, procesa con IA (async) y muestra la extracción. */
   protected processWithAi(): void {
-    if (this.processing()) return;
+    if (this.processing() || !this.selectedFile) return;
     this.processing.set(true);
     this.showPreview.set(false);
+    this.error.set(null);
 
-    // Simulación de procesamiento IA (2s) → renderiza la vista previa.
-    setTimeout(() => {
-      this.previewRows = this.mockExtraction.map((r) => ({ ...r }));
+    this.api.uploadImport(this.selectedFile).subscribe({
+      next: (res) => this.pollBatch(res.batch.id, 0),
+      error: (err) => {
+        this.processing.set(false);
+        this.error.set(err?.error?.error || 'No se pudo subir el archivo.');
+      },
+    });
+  }
+
+  private pollBatch(batchId: string, attempt: number): void {
+    if (attempt > 30) {
       this.processing.set(false);
-      this.showPreview.set(true);
-    }, 2000);
+      this.error.set('El procesamiento está tardando más de lo esperado. Revisa en Validación IA.');
+      return;
+    }
+    this.api.importStatus(batchId).subscribe({
+      next: (r) => {
+        const estado = r.data.estado;
+        if (estado === 'PROCESANDO') {
+          setTimeout(() => this.pollBatch(batchId, attempt + 1), 700);
+        } else if (estado === 'ERROR') {
+          this.processing.set(false);
+          this.error.set(r.data.mensaje_error || 'Error al procesar el archivo.');
+        } else {
+          this.loadPreview(batchId);
+        }
+      },
+      error: () => {
+        this.processing.set(false);
+        this.error.set('No se pudo consultar el estado del procesamiento.');
+      },
+    });
+  }
+
+  private loadPreview(batchId: string): void {
+    this.api.importDetail(batchId).subscribe({
+      next: (r) => {
+        this.previewRows = r.data.borradores.map(toPreview);
+        this.processing.set(false);
+        this.showPreview.set(true);
+      },
+      error: () => {
+        this.processing.set(false);
+        this.error.set('No se pudo cargar la extracción.');
+      },
+    });
+  }
+
+  protected goToValidation(): void {
+    this.router.navigateByUrl('/validacion');
   }
 
   protected reset(): void {
     this.fileName.set(null);
+    this.selectedFile = null;
     this.showPreview.set(false);
     this.previewRows = [];
+    this.error.set(null);
   }
+}
+
+function toPreview(b: Borrador): PreviewRow {
+  const m = b.metadatos_extraccion || {};
+  return {
+    nit: m.nit_nic?.value || '—',
+    company: m.empresa_nombre?.value || '—',
+    arl: b.arl_nombre || '—',
+    hours: Number(m.horas_asignadas?.value || 0),
+    sstContact: m.contacto_sst_nombre?.value || '—',
+  };
 }

@@ -130,8 +130,8 @@
           <span class="form-field__label">Profesional</span>
           <select class="form-control" [(ngModel)]="assignProfessional" name="professional">
             <option value="" disabled>Seleccione un profesional…</option>
-            @for (pro of professionals(); track pro) {
-              <option [value]="pro">{{ pro }}</option>
+            @for (pro of professionals(); track pro.id) {
+              <option [value]="pro.id">{{ pro.nombre }} · {{ pro.especialidad }}</option>
             }
           </select>
         </label>
@@ -150,8 +150,20 @@
     </div>
 
     <footer class="drawer__footer">
-      <button type="button" class="btn btn--ghost" (click)="closeDrawer()">Cancelar</button>
-      <button type="button" class="btn btn--secondary">Generar Formatos y Guardar Asignación</button>
+      <button type="button" class="btn btn--ghost" (click)="closeDrawer()" [disabled]="saving()">Cancelar</button>
+      <button type="button" class="btn btn--secondary" (click)="assign()" [disabled]="saving() || order.status !== 'SIN PROGRAMAR'">
+        @if (saving()) {
+          <span class="spinner" aria-hidden="true"></span>
+          Asignando…
+        } @else {
+          Generar Formatos y Guardar Asignación
+        }
+      </button>
     </footer>
   </aside>
+}
+
+<!-- ============ TOAST ============ -->
+@if (toast(); as message) {
+  <div class="toast" role="status">{{ message }}</div>
 }

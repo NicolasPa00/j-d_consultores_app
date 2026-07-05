@@ -27,10 +27,15 @@
           <span class="pill pill--info">{{ fileName() }}</span>
         </div>
       }
+
+      @if (error(); as msg) {
+        <div class="dropzone__file">
+          <span class="pill pill--danger">{{ msg }}</span>
+        </div>
+      }
     </div>
 
     <div class="import-actions">
-      <button type="button" class="btn btn--ghost" (click)="simulateFile()">Usar archivo de ejemplo</button>
       <button
         type="button"
         class="btn btn--secondary"
@@ -97,7 +102,7 @@
 
     <div class="preview__footer">
       <button type="button" class="btn btn--ghost" (click)="reset()">Descartar</button>
-      <button type="button" class="btn btn--primary">Confirmar e Inyectar a la BD</button>
+      <button type="button" class="btn btn--primary" (click)="goToValidation()">Ir a validar y guardar</button>
     </div>
   </section>
 }

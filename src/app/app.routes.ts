@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './core/auth.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -14,6 +15,7 @@ export const routes: Routes = [
   {
     // Shell con sidebar + navbar; las vistas internas se renderizan dentro
     path: '',
+    canActivate: [authGuard],
     loadComponent: () => import('./layout/shell/shell').then((m) => m.ShellComponent),
     children: [
       {

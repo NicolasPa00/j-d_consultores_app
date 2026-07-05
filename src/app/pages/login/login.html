@@ -24,16 +24,18 @@
         <p class="login-card__subtitle">Ingrese sus credenciales para continuar</p>
       </header>
 
-      <!-- Formulario estático (sin lógica) -->
-      <form class="login-form" (submit)="$event.preventDefault()">
+      <!-- Formulario con autenticación real (JWT) -->
+      <form class="login-form" (ngSubmit)="submit()">
         <label class="field">
-          <span class="field__label">Correo electrónico</span>
+          <span class="field__label">Documento de identidad</span>
           <input
             class="field__input"
-            type="email"
-            name="email"
-            placeholder="usuario@jddconsultores.com"
-            autocomplete="email"
+            type="text"
+            name="documento"
+            inputmode="numeric"
+            placeholder="Ej. 1234567890"
+            autocomplete="username"
+            [(ngModel)]="documento"
           />
         </label>
 
@@ -45,13 +47,20 @@
             name="password"
             placeholder="••••••••"
             autocomplete="current-password"
+            [(ngModel)]="password"
           />
         </label>
 
+        @if (error(); as msg) {
+          <p class="login-card__error" role="alert" style="color: var(--danger); font-size: 0.9rem; margin: 0.25rem 0;">
+            {{ msg }}
+          </p>
+        }
+
         <a class="login-card__forgot" routerLink="/login">¿Olvidó su contraseña?</a>
 
-        <button class="btn-primary" type="submit" routerLink="/dashboard">
-          Ingresar
+        <button class="btn-primary" type="submit" [disabled]="loading()">
+          {{ loading() ? 'Ingresando…' : 'Ingresar' }}
         </button>
       </form>
 

@@ -7,12 +7,18 @@
 
     <!-- Encabezado de la orden -->
     <div class="portal__head">
-      <span class="pill pill--info">Órden de Servicio #2194</span>
-      <h1 class="portal__title">Gestión SST</h1>
-      <p class="portal__company">Empresa: Inversiones Pasto S.A.S</p>
+      <span class="pill pill--info">{{ info()?.codigo || 'Orden de Servicio' }}</span>
+      <h1 class="portal__title">Gestión SST · {{ info()?.arl_nombre || '' }}</h1>
+      <p class="portal__company">Empresa: {{ info()?.empresa_nombre || '—' }}</p>
     </div>
 
-    @if (!sent()) {
+    @if (error(); as msg) {
+      <div class="upload-card" style="text-align:center;">
+        <span class="pill pill--danger">{{ msg }}</span>
+      </div>
+    }
+
+    @if (!sent() && !error()) {
       <!-- Tarjeta de carga -->
       <div class="upload-card">
         <h2 class="upload-card__title">Carga de soportes</h2>
@@ -50,8 +56,8 @@
           </label>
         }
 
-        <button type="button" class="btn btn--primary btn--block portal__send" [disabled]="!hasAnyFile()" (click)="send()">
-          Enviar Soportes
+        <button type="button" class="btn btn--primary btn--block portal__send" [disabled]="!hasAnyFile() || sending()" (click)="send()">
+          {{ sending() ? 'Enviando…' : 'Enviar Soportes' }}
         </button>
       </div>
     } @else {

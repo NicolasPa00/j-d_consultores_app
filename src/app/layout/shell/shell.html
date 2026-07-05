@@ -87,8 +87,8 @@
       </div>
 
       <div class="navbar__actions">
-        <button type="button" class="profile-btn" routerLink="/configuracion" aria-label="Perfil de usuario">
-          <span class="profile-btn__avatar">AD</span>
+        <button type="button" class="profile-btn" routerLink="/configuracion" [attr.aria-label]="usuario()?.nombre || 'Perfil de usuario'" [title]="usuario()?.nombre || ''">
+          <span class="profile-btn__avatar">{{ initials() }}</span>
           <span class="profile-btn__status" aria-hidden="true"></span>
         </button>
 
@@ -100,7 +100,7 @@
           <span class="icon-btn__badge">1</span>
         </button>
 
-        <button type="button" class="icon-btn" routerLink="/login" aria-label="Cerrar sesión">
+        <button type="button" class="icon-btn" (click)="logout()" aria-label="Cerrar sesión" title="Cerrar sesión">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
             <path d="m16 17 5-5-5-5" />

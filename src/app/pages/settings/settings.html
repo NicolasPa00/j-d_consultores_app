@@ -76,10 +76,29 @@
 
 <!-- ===== Pestaña 2: Sistema ===== -->
 @if (activeTab() === 'system') {
+  <!-- Umbral de confianza de la IA (persistido en BD) -->
+  <div class="card">
+    <div class="card__head">
+      <h3 class="card__title">Umbral mínimo de confianza de la IA</h3>
+      <span class="card__hint">Campos por debajo se marcan para revisión</span>
+    </div>
+    <div class="card__body">
+      <div class="profile-form__row" style="align-items: end;">
+        <label class="form-field">
+          <span class="form-field__label">Umbral (%)</span>
+          <input class="form-control" type="number" min="0" max="100" [(ngModel)]="threshold" name="threshold" />
+        </label>
+        <button type="button" class="btn btn--primary" [disabled]="savingThreshold()" (click)="saveThreshold()">
+          {{ savingThreshold() ? 'Guardando…' : 'Guardar umbral' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card__head">
       <h3 class="card__title">Valores por hora según actividad</h3>
-      <span class="card__hint">Solo administradores</span>
+      <span class="card__hint">Solo administradores · Fase 2</span>
     </div>
     <div class="card__body">
       <div class="rates">
@@ -118,7 +137,9 @@
     </div>
   </div>
 
-  <div class="system-actions">
-    <button type="button" class="btn btn--primary">Guardar preferencias</button>
-  </div>
+}
+
+<!-- ============ TOAST ============ -->
+@if (toast(); as message) {
+  <div class="toast" role="status">{{ message }}</div>
 }
