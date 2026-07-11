@@ -16,6 +16,62 @@
   }
 </section>
 
+<!-- ============ ESTADÍSTICAS: ESTADO + AVANCE POR ARL ============ -->
+<div class="stat-panels">
+  <!-- Distribución por estado (consolidada) -->
+  <section class="card stat-panel">
+    <div class="card__head">
+      <span class="card__title">Distribución por estado</span>
+      <span class="card__hint">{{ totalOrdenes() }} órdenes en total</span>
+    </div>
+    <div class="card__body">
+      @if (estadoDist().length && totalOrdenes() > 0) {
+        <ul class="bars">
+          @for (e of estadoDist(); track e.label) {
+            <li class="bar-row">
+              <span class="bar-row__label">{{ e.label }}</span>
+              <span class="bar-row__track">
+                <span class="bar-row__fill" [class]="'tone-' + e.tone" [style.width.%]="e.width"></span>
+              </span>
+              <span class="bar-row__value">{{ e.value }} <span class="bar-row__share">· {{ e.share }}%</span></span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="stat-panel__empty">Aún no hay órdenes registradas.</p>
+      }
+    </div>
+  </section>
+
+  <!-- Avance por ARL -->
+  <section class="card stat-panel">
+    <div class="card__head">
+      <span class="card__title">Avance por ARL</span>
+      <span class="card__hint">Ejecutadas sobre el total</span>
+    </div>
+    <div class="card__body">
+      @if (perArl().length) {
+        <ul class="arls">
+          @for (a of perArl(); track a.nombre) {
+            <li class="arl-row">
+              <div class="arl-row__top">
+                <span class="arl-row__name">{{ a.nombre }}</span>
+                <span class="arl-row__count">{{ a.ejecutadas }} / {{ a.total }}</span>
+              </div>
+              <span class="arl-row__track">
+                <span class="arl-row__fill" [style.width.%]="a.pct"></span>
+              </span>
+              <span class="arl-row__pct">{{ a.pct }}% ejecutadas</span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="stat-panel__empty">Sin datos por ARL.</p>
+      }
+    </div>
+  </section>
+</div>
+
 <!-- Tabla de órdenes recientes -->
 <section class="panel">
   <div class="panel__head">
