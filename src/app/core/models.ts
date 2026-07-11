@@ -49,6 +49,22 @@ export interface Borrador {
   metadatos_extraccion: MetadatosExtraccion;
   estado: string;
   creado_en: string;
+  profesional_asignado_id?: string | null;
+  profesional_nombre?: string | null;
+  fecha_programada?: string | null;
+  deshabilitado?: boolean;
+  deshabilitado_en?: string | null;
+}
+
+/** Franja de ocupación (agenda) de un profesional. */
+export interface Ocupacion {
+  id: string;
+  profesional_id: string;
+  fecha: string;
+  hora_inicio: string;
+  hora_fin: string;
+  motivo?: string | null;
+  creado_en?: string;
 }
 
 export interface Orden {

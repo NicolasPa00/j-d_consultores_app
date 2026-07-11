@@ -31,9 +31,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/settings/settings').then((m) => m.SettingsComponent),
       },
       {
-        path: 'validacion',
+        path: 'ordenes',
         loadComponent: () => import('./pages/validation/validation').then((m) => m.ValidationComponent),
       },
+      // Ruta legada: /validacion sigue apuntando a Órdenes por compatibilidad.
+      { path: 'validacion', redirectTo: 'ordenes', pathMatch: 'full' },
       {
         path: 'informes',
         loadComponent: () => import('./pages/reports/reports').then((m) => m.ReportsComponent),

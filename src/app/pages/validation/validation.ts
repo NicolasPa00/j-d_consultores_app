@@ -3,7 +3,8 @@ import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ExtractedField, ServiceOrder } from '../../data/service-orders';
 import { ApiService } from '../../core/api.service';
-import { Borrador } from '../../core/models';
+import { AlertService } from '../../core/alert.service';
+import { Borrador, Ocupacion, Profesional } from '../../core/models';
 
 interface FormFieldDescriptor {
   label: string;
@@ -11,6 +12,9 @@ interface FormFieldDescriptor {
   type: 'text' | 'textarea';
   span: 'half' | 'full';
 }
+
+/** Vista actual del listado: órdenes activas o deshabilitadas. */
+type OrdersView = 'activas' | 'deshabilitadas';
 
 @Component({
   selector: 'app-validation',
@@ -21,34 +25,51 @@ interface FormFieldDescriptor {
 })
 export class ValidationComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly alerts = inject(AlertService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   protected readonly orders = signal<ServiceOrder[]>([]);
-  protected readonly selectedId = signal<string | null>(null);
   protected readonly query = signal('');
-  protected readonly saving = signal(false);
+  protected readonly view = signal<OrdersView>('activas');
   protected readonly loading = signal(false);
-  protected readonly toast = signal<string | null>(null);
-  private toastTimer: ReturnType<typeof setTimeout> | null = null;
+  protected readonly saving = signal(false);
+
+  // ---- Modal de detalle / edición ----
+  protected readonly detailId = signal<string | null>(null);
+  protected readonly editMode = signal(false);
+
+  // ---- Modal de asignación de profesional ----
+  protected readonly assignId = signal<string | null>(null);
+  protected readonly professionals = signal<Profesional[]>([]);
+  protected readonly selectedProfId = signal<string | null>(null);
+  protected readonly selectedProfSlots = signal<Ocupacion[]>([]);
+  protected readonly assigning = signal(false);
+  protected busyDraft = this.emptySlot();
 
   protected readonly filtered = computed(() => {
     const q = this.query().trim().toLowerCase();
-    const list = this.orders();
-    if (!q) return list;
-    return list.filter(
-      (o) =>
+    const wantDisabled = this.view() === 'deshabilitadas';
+    return this.orders().filter((o) => {
+      if (!!o.disabled !== wantDisabled) return false;
+      if (!q) return true;
+      return (
         o.company.toLowerCase().includes(q) ||
         o.arl.toLowerCase().includes(q) ||
-        o.fields.nit.value.toLowerCase().includes(q),
-    );
+        o.fields.nit.value.toLowerCase().includes(q)
+      );
+    });
   });
 
-  protected readonly selectedOrder = computed(
-    () => this.orders().find((o) => o.id === this.selectedId()) ?? null,
+  protected readonly activeCount = computed(() => this.orders().filter((o) => !o.disabled).length);
+  protected readonly disabledCount = computed(() => this.orders().filter((o) => o.disabled).length);
+
+  // ---- Detalle ----
+  protected readonly detailOrder = computed(
+    () => this.orders().find((o) => o.id === this.detailId()) ?? null,
   );
 
   protected readonly formFields = computed<FormFieldDescriptor[]>(() => {
-    const o = this.selectedOrder();
+    const o = this.detailOrder();
     if (!o) return [];
     const f = o.fields;
     return [
@@ -65,22 +86,37 @@ export class ValidationComponent implements OnInit {
     ];
   });
 
+  // ---- Asignación ----
+  protected readonly assignOrder = computed(
+    () => this.orders().find((o) => o.id === this.assignId()) ?? null,
+  );
+
   ngOnInit(): void {
     if (this.isBrowser) this.load();
   }
 
   private load(): void {
     this.loading.set(true);
-    this.api.listDrafts('PENDIENTE_VALIDACION').subscribe({
+    // 'all' trae activas y deshabilitadas; se separan por pestaña en el cliente.
+    this.api.listDrafts('PENDIENTE_VALIDACION', 'all').subscribe({
       next: (r) => {
         this.orders.set(r.data.map(toServiceOrder));
-        if (!this.selectedId() && r.data.length) this.selectedId.set(r.data[0].id);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: () => {
+        this.loading.set(false);
+        this.alerts.error('No se pudieron cargar las órdenes.');
+      },
     });
   }
 
+  /** Reemplaza (o elimina) una orden en el listado tras una respuesta del backend. */
+  private replaceOrder(b: Borrador): void {
+    const mapped = toServiceOrder(b);
+    this.orders.update((list) => list.map((o) => (o.id === mapped.id ? mapped : o)));
+  }
+
+  // ---- Helpers de presentación ----
   protected pillClass(confidence: number): string {
     if (confidence >= 80) return 'pill--success';
     if (confidence >= 70) return 'pill--warning';
@@ -91,13 +127,34 @@ export class ValidationComponent implements OnInit {
     return confidence < 70;
   }
 
-  protected select(id: string): void {
-    this.selectedId.set(id);
+  protected setView(v: OrdersView): void {
+    this.view.set(v);
+  }
+
+  // ================= Detalle / Edición =================
+  protected openDetail(id: string): void {
+    this.detailId.set(id);
+    this.editMode.set(false);
+  }
+
+  protected openEdit(id: string): void {
+    this.detailId.set(id);
+    this.editMode.set(true);
+  }
+
+  protected enableEdit(): void {
+    this.editMode.set(true);
+  }
+
+  protected closeDetail(): void {
+    if (this.saving()) return;
+    this.detailId.set(null);
+    this.editMode.set(false);
   }
 
   /** Descarga un resumen del documento (representación textual). */
   protected downloadOriginal(): void {
-    const o = this.selectedOrder();
+    const o = this.detailOrder();
     if (!o || !this.isBrowser) return;
     const content =
       `DOCUMENTO ORIGINAL (metadatos)\n` +
@@ -118,7 +175,7 @@ export class ValidationComponent implements OnInit {
 
   /** Guarda las correcciones y persiste la OS (SIN PROGRAMAR) en la BD. */
   protected validateOrder(): void {
-    const current = this.selectedOrder();
+    const current = this.detailOrder();
     if (!current || this.saving()) return;
     this.saving.set(true);
 
@@ -139,30 +196,160 @@ export class ValidationComponent implements OnInit {
       next: () => {
         this.api.validateDraft(current.id).subscribe({
           next: () => {
-            // Quitar de la bandeja (ya no está pendiente) y limpiar selección.
+            // Materializada como OS: sale de la bandeja y se cierra el modal.
             this.orders.update((list) => list.filter((o) => o.id !== current.id));
-            const rest = this.orders();
-            this.selectedId.set(rest.length ? rest[0].id : null);
             this.saving.set(false);
-            this.showToast('Orden validada y guardada en la base de datos (SIN PROGRAMAR).');
+            this.detailId.set(null);
+            this.editMode.set(false);
+            this.alerts.success('Orden validada y guardada en la base de datos (SIN PROGRAMAR).');
           },
           error: (err) => {
             this.saving.set(false);
-            this.showToast(err?.error?.error || 'No se pudo validar la orden.');
+            this.alerts.error(err?.error?.error || 'No se pudo validar la orden.');
           },
         });
       },
       error: (err) => {
         this.saving.set(false);
-        this.showToast(err?.error?.error || 'No se pudieron guardar las correcciones.');
+        this.alerts.error(err?.error?.error || 'No se pudieron guardar las correcciones.');
       },
     });
   }
 
-  private showToast(message: string): void {
-    this.toast.set(message);
-    if (this.toastTimer) clearTimeout(this.toastTimer);
-    this.toastTimer = setTimeout(() => this.toast.set(null), 3400);
+  // ================= Asignar profesional =================
+  protected openAssign(id: string): void {
+    this.assignId.set(id);
+    this.selectedProfId.set(null);
+    this.selectedProfSlots.set([]);
+    this.busyDraft = this.emptySlot();
+    // Cargar profesionales activos (una sola vez).
+    if (!this.professionals().length) {
+      this.api.listProfessionals().subscribe({
+        next: (r) => this.professionals.set(r.data.filter((p) => p.estado === 'Activo')),
+        error: () => this.alerts.error('No se pudieron cargar los profesionales.'),
+      });
+    }
+  }
+
+  protected closeAssign(): void {
+    if (this.assigning()) return;
+    this.assignId.set(null);
+    this.selectedProfId.set(null);
+    this.selectedProfSlots.set([]);
+  }
+
+  protected selectProf(id: string): void {
+    this.selectedProfId.set(id);
+    this.busyDraft = this.emptySlot();
+    this.loadSlots(id);
+  }
+
+  private loadSlots(profId: string): void {
+    this.api.listOcupaciones(profId).subscribe({
+      next: (r) => this.selectedProfSlots.set(r.data),
+      error: () => this.alerts.error('No se pudo cargar la disponibilidad del profesional.'),
+    });
+  }
+
+  protected slotIsValid(): boolean {
+    const s = this.busyDraft;
+    return !!s.fecha && !!s.hora_inicio && !!s.hora_fin && s.hora_inicio < s.hora_fin;
+  }
+
+  /** Registra una franja de ocupación del profesional en la BD. */
+  protected addBusySlot(): void {
+    const profId = this.selectedProfId();
+    if (!profId || !this.slotIsValid()) return;
+    this.api
+      .addOcupacion(profId, {
+        fecha: this.busyDraft.fecha,
+        hora_inicio: this.busyDraft.hora_inicio,
+        hora_fin: this.busyDraft.hora_fin,
+      })
+      .subscribe({
+        next: (r) => {
+          this.selectedProfSlots.update((list) =>
+            [...list, r.data].sort((a, b) =>
+              (a.fecha + a.hora_inicio).localeCompare(b.fecha + b.hora_inicio),
+            ),
+          );
+          this.busyDraft = this.emptySlot();
+        },
+        error: (err) => this.alerts.error(err?.error?.error || 'No se pudo registrar la franja.'),
+      });
+  }
+
+  protected removeBusySlot(slotId: string): void {
+    const profId = this.selectedProfId();
+    if (!profId) return;
+    this.api.removeOcupacion(profId, slotId).subscribe({
+      next: () => this.selectedProfSlots.update((list) => list.filter((s) => s.id !== slotId)),
+      error: (err) => this.alerts.error(err?.error?.error || 'No se pudo quitar la franja.'),
+    });
+  }
+
+  /** Confirma la asignación del profesional a la orden (persistida en BD). */
+  protected confirmAssign(): void {
+    const orderId = this.assignId();
+    const profId = this.selectedProfId();
+    if (!orderId || !profId || this.assigning()) return;
+    this.assigning.set(true);
+    this.api.assignDraft(orderId, { profesional_id: profId }).subscribe({
+      next: (r) => {
+        this.replaceOrder(r.data);
+        this.assigning.set(false);
+        const name = r.data.profesional_nombre || 'Profesional';
+        this.assignId.set(null);
+        this.selectedProfId.set(null);
+        this.selectedProfSlots.set([]);
+        this.alerts.success(`${name} asignado a la orden.`);
+      },
+      error: (err) => {
+        this.assigning.set(false);
+        this.alerts.error(err?.error?.error || 'No se pudo asignar el profesional.');
+      },
+    });
+  }
+
+  // ================= Deshabilitar / restaurar =================
+  protected async disableOrder(order: ServiceOrder): Promise<void> {
+    const ok = await this.alerts.confirm({
+      title: 'Deshabilitar orden',
+      message: `¿Deseas deshabilitar la orden de "${order.company}"? Podrás verla y restaurarla desde "Deshabilitadas".`,
+      confirmText: 'Sí, deshabilitar',
+      cancelText: 'Cancelar',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    this.api.disableDraft(order.id).subscribe({
+      next: (r) => {
+        this.replaceOrder(r.data);
+        this.alerts.success('Orden deshabilitada.');
+      },
+      error: (err) => this.alerts.error(err?.error?.error || 'No se pudo deshabilitar la orden.'),
+    });
+  }
+
+  protected async restoreOrder(order: ServiceOrder): Promise<void> {
+    const ok = await this.alerts.confirm({
+      title: 'Restaurar orden',
+      message: `¿Deseas restaurar la orden de "${order.company}"? Volverá al listado de órdenes activas.`,
+      confirmText: 'Sí, restaurar',
+      cancelText: 'Cancelar',
+    });
+    if (!ok) return;
+    this.api.enableDraft(order.id).subscribe({
+      next: (r) => {
+        this.replaceOrder(r.data);
+        this.alerts.success('Orden restaurada.');
+      },
+      error: (err) => this.alerts.error(err?.error?.error || 'No se pudo restaurar la orden.'),
+    });
+  }
+
+  // ---- Helpers ----
+  private emptySlot(): { fecha: string; hora_inicio: string; hora_fin: string } {
+    return { fecha: '', hora_inicio: '', hora_fin: '' };
   }
 }
 
@@ -184,6 +371,8 @@ function toServiceOrder(b: Borrador): ServiceOrder {
     importedAt: b.creado_en ? new Date(b.creado_en).toLocaleString('es-CO') : '',
     confidence: Math.round(Number(b.confianza_general ?? m.overall_confidence ?? 0)),
     validated: false,
+    disabled: !!b.deshabilitado,
+    assignedProf: b.profesional_nombre ?? null,
     fields: {
       codigoCronograma: field(m.codigo_cronograma),
       secuencia: field(m.secuencia),

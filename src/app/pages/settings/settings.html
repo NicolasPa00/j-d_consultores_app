@@ -29,11 +29,9 @@
 @if (activeTab() === 'profile') {
   <div class="card profile-card">
     <div class="card__body profile-grid">
-      <!-- Avatar -->
+      <!-- Avatar (solo iniciales) -->
       <div class="avatar-col">
         <div class="avatar-lg">{{ initials }}</div>
-        <button type="button" class="btn btn--ghost avatar-col__btn">Cambiar foto</button>
-        <p class="avatar-col__hint">JPG o PNG · Máx. 2 MB</p>
       </div>
 
       <!-- Formulario -->
@@ -76,10 +74,10 @@
 
 <!-- ===== Pestaña 2: Sistema ===== -->
 @if (activeTab() === 'system') {
-  <!-- Umbral de confianza de la IA (persistido en BD) -->
+  <!-- Umbral de confianza (persistido en BD) -->
   <div class="card">
     <div class="card__head">
-      <h3 class="card__title">Umbral mínimo de confianza de la IA</h3>
+      <h3 class="card__title">Umbral mínimo de confianza</h3>
       <span class="card__hint">Campos por debajo se marcan para revisión</span>
     </div>
     <div class="card__body">

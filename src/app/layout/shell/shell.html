@@ -70,7 +70,16 @@
     </nav>
 
     <div class="sidebar__footer">
-      <span class="sidebar__phase">Fase 1 · IA Core</span>
+      <button type="button" class="logout-btn" (click)="logout()" title="Cerrar sesión">
+        <span class="logout-btn__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <path d="m16 17 5-5-5-5" />
+            <path d="M21 12H9" />
+          </svg>
+        </span>
+        <span class="logout-btn__text">Cerrar sesión</span>
+      </button>
     </div>
   </aside>
 
@@ -78,20 +87,12 @@
   <div class="main">
     <!-- ---- NAVBAR ---- -->
     <header class="navbar">
-      <div class="search">
-        <svg class="search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="11" cy="11" r="7" />
-          <path d="m20 20-3.5-3.5" />
-        </svg>
-        <input class="search__input" type="text" placeholder="Buscar en el sistema..." />
+      <div class="navbar__title">
+        <h1 class="navbar__title-main">Sistema de Gestión de Seguridad y Salud en el Trabajo</h1>
+        <span class="navbar__title-sub">JD&amp;D Consultores · Gestión de Órdenes de Servicio</span>
       </div>
 
       <div class="navbar__actions">
-        <button type="button" class="profile-btn" routerLink="/configuracion" [attr.aria-label]="usuario()?.nombre || 'Perfil de usuario'" [title]="usuario()?.nombre || ''">
-          <span class="profile-btn__avatar">{{ initials() }}</span>
-          <span class="profile-btn__status" aria-hidden="true"></span>
-        </button>
-
         <button type="button" class="icon-btn" aria-label="Notificaciones">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -100,12 +101,9 @@
           <span class="icon-btn__badge">1</span>
         </button>
 
-        <button type="button" class="icon-btn" (click)="logout()" aria-label="Cerrar sesión" title="Cerrar sesión">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <path d="m16 17 5-5-5-5" />
-            <path d="M21 12H9" />
-          </svg>
+        <button type="button" class="profile-btn" routerLink="/configuracion" [attr.aria-label]="usuario()?.nombre || 'Perfil de usuario'" [title]="usuario()?.nombre || ''">
+          <span class="profile-btn__avatar">{{ initials() }}</span>
+          <span class="profile-btn__status" aria-hidden="true"></span>
         </button>
       </div>
     </header>
@@ -116,3 +114,6 @@
     </main>
   </div>
 </div>
+
+<!-- Toasts + confirmaciones globales -->
+<app-alert-host />

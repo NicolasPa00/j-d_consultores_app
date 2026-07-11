@@ -60,7 +60,7 @@ export class ImportComponent {
   private pollBatch(batchId: string, attempt: number): void {
     if (attempt > 30) {
       this.processing.set(false);
-      this.error.set('El procesamiento está tardando más de lo esperado. Revisa en Validación IA.');
+      this.error.set('El procesamiento está tardando más de lo esperado. Revisa en Órdenes.');
       return;
     }
     this.api.importStatus(batchId).subscribe({
@@ -97,7 +97,7 @@ export class ImportComponent {
   }
 
   protected goToValidation(): void {
-    this.router.navigateByUrl('/validacion');
+    this.router.navigateByUrl('/ordenes');
   }
 
   protected reset(): void {

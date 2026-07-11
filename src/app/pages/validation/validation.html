@@ -1,208 +1,427 @@
-<section class="page-head">
-  <h2 class="page-head__title">Validación IA</h2>
-  <p class="page-head__sub">
-    Bandeja de entrada · revisa y valida las órdenes extraídas por el modelo · Módulos 3 y 4
-  </p>
-</section>
+<section class="page-head ord-head">
+  <div>
+    <h2 class="page-head__title">Órdenes</h2>
+    <p class="page-head__sub">
+      Revisa, edita, asigna profesional y administra el estado de las órdenes
+    </p>
+  </div>
 
-<div class="validation">
-  <!-- ============ COLUMNA IZQUIERDA · LISTADO ============ -->
-  <aside class="orders">
-    <div class="orders__search">
-      <svg class="orders__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <div class="ord-head__actions">
+    <div class="ord-search">
+      <svg class="ord-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="11" cy="11" r="7" />
         <path d="m20 20-3.5-3.5" />
       </svg>
       <input
-        class="orders__search-input"
+        class="ord-search__input"
         type="text"
         placeholder="Buscar por empresa, ARL o NIT…"
         [ngModel]="query()"
         (ngModelChange)="query.set($event)"
       />
     </div>
+  </div>
+</section>
 
-    <div class="orders__list">
-      @for (order of filtered(); track order.id) {
-        <button
-          type="button"
-          class="order-card"
-          [class.order-card--active]="order.id === selectedId()"
-          (click)="select(order.id)"
-        >
-          <div class="order-card__top">
-            <span class="order-card__company">{{ order.company }}</span>
-            <span class="pill" [class]="pillClass(order.confidence)">{{ order.confidence }}%</span>
-          </div>
-          <div class="order-card__meta">
-            <span class="order-card__arl">{{ order.arl }}</span>
-            <span class="order-card__dot" aria-hidden="true">·</span>
-            <span>{{ order.importedAt }}</span>
-          </div>
-          <div class="order-card__foot">
-            @if (order.validated) {
-              <span class="tag tag--ok">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="m5 12 4 4L19 7" />
-                </svg>
-                Validada
-              </span>
-            } @else {
-              <span class="tag tag--pending">Importada</span>
-            }
-          </div>
-        </button>
-      } @empty {
-        <p class="orders__empty">No hay órdenes que coincidan con “{{ query() }}”.</p>
-      }
-    </div>
-  </aside>
-
-  <!-- ============ COLUMNA DERECHA · DETALLE ============ -->
-  <section class="detail">
-    @if (selectedOrder(); as order) {
-      <div class="detail__grid">
-        <!-- ---- Sub-columna: documento original ---- -->
-        <div class="card doc">
-          <div class="card__head">
-            <span class="card__title">Documento original</span>
-            <span class="pill pill--info">{{ order.fileType === 'excel' ? 'Excel' : 'PDF' }}</span>
-          </div>
-          <div class="card__body doc__body">
-            <div class="doc__thumb" [class.doc__thumb--excel]="order.fileType === 'excel'" aria-hidden="true">
-              @if (order.fileType === 'excel') {
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
-                  <path d="M14 3v5h5" />
-                  <path d="m9.5 12.5 5 5M14.5 12.5l-5 5" />
-                </svg>
-              } @else {
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
-                  <path d="M14 3v5h5" />
-                  <path d="M9 13h6M9 17h4" />
-                </svg>
-              }
-            </div>
-            <p class="doc__sim">[ Simulación de documento original ]</p>
-            <p class="doc__name">{{ order.fileName }}</p>
-            <p class="doc__size">{{ order.fileSize }} · importado {{ order.importedAt }}</p>
-            <button type="button" class="btn btn--ghost doc__download" (click)="downloadOriginal()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 3v12" />
-                <path d="m7 10 5 5 5-5" />
-                <path d="M5 21h14" />
-              </svg>
-              Descargar original
-            </button>
-          </div>
-        </div>
-
-        <!-- ---- Sub-columna: formulario IA ---- -->
-        <div class="card ai-form">
-          <div class="card__head">
-            <span class="card__title">Datos extraídos por IA</span>
-            <span class="pill" [class]="pillClass(order.confidence)">
-              {{ order.confidence }}% Confianza general
-            </span>
-          </div>
-
-          <div class="card__body">
-            @if (order.confidence < 70) {
-              <div class="alert-banner">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M12 9v4M12 17h.01" />
-                  <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
-                </svg>
-                Baja confianza general. Revisa con especial cuidado los campos resaltados antes de validar.
-              </div>
-            }
-
-            <form class="fields">
-              @for (item of formFields(); track item.label) {
-                <div class="field" [class.field--full]="item.span === 'full'">
-                  <div class="field__labelrow">
-                    <label class="form-field__label">{{ item.label }}</label>
-                    <span class="conf-badge pill" [class]="pillClass(item.field.confidence)">
-                      {{ item.field.confidence }}%
-                    </span>
-                  </div>
-
-                  @if (item.type === 'textarea') {
-                    <textarea
-                      class="form-control"
-                      rows="3"
-                      [class.form-control--alert]="isLow(item.field.confidence)"
-                      [(ngModel)]="item.field.value"
-                      [name]="item.label"
-                    ></textarea>
-                  } @else {
-                    <input
-                      class="form-control"
-                      type="text"
-                      [class.form-control--alert]="isLow(item.field.confidence)"
-                      [(ngModel)]="item.field.value"
-                      [name]="item.label"
-                    />
-                  }
-
-                  @if (isLow(item.field.confidence)) {
-                    <p class="field__alert">⚠ Baja confianza — verifica contra el documento original.</p>
-                  }
-                </div>
-              }
-            </form>
-          </div>
-
-          <div class="ai-form__footer">
-            <span class="ai-form__status">
-              @if (order.validated) {
-                <span class="tag tag--ok">✓ Orden validada</span>
-              } @else {
-                Estado actual: <strong>IMPORTADA</strong>
-              }
-            </span>
-            <button
-              type="button"
-              class="btn btn--primary"
-              [disabled]="saving()"
-              (click)="validateOrder()"
-            >
-              @if (saving()) {
-                <span class="spinner" aria-hidden="true"></span>
-                Guardando cambios en Base de Datos…
-              } @else {
-                Validar y Guardar
-              }
-            </button>
-          </div>
-        </div>
-      </div>
-    } @else {
-      <!-- ---- Placeholder cuando no hay selección ---- -->
-      <div class="detail__empty">
-        <div class="detail__empty-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 11H3v10h6ZM21 3h-6v18h6ZM15 7H9v14h6Z" />
-          </svg>
-        </div>
-        <h3 class="detail__empty-title">Selecciona una orden</h3>
-        <p class="detail__empty-text">
-          Elige una orden de la lista para revisar el documento original y validar los datos
-          extraídos por la IA.
-        </p>
-      </div>
-    }
-  </section>
+<!-- ============ PESTAÑAS: ACTIVAS / DESHABILITADAS ============ -->
+<div class="tabs" role="tablist">
+  <button
+    type="button"
+    class="tab"
+    role="tab"
+    [class.tab--active]="view() === 'activas'"
+    [attr.aria-selected]="view() === 'activas'"
+    (click)="setView('activas')"
+  >
+    Órdenes <span class="tab__count">{{ activeCount() }}</span>
+  </button>
+  <button
+    type="button"
+    class="tab"
+    role="tab"
+    [class.tab--active]="view() === 'deshabilitadas'"
+    [attr.aria-selected]="view() === 'deshabilitadas'"
+    (click)="setView('deshabilitadas')"
+  >
+    Deshabilitadas <span class="tab__count">{{ disabledCount() }}</span>
+  </button>
 </div>
 
-<!-- ============ TOAST ============ -->
-@if (toast(); as message) {
-  <div class="toast" role="status">
-    <svg class="toast__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="9" />
-      <path d="m8.5 12 2.5 2.5 4.5-5" />
-    </svg>
-    {{ message }}
+<!-- ============ TABLA ============ -->
+<div class="card">
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th>NIT</th>
+          <th>Razón social</th>
+          <th>ARL</th>
+          <th>Horas</th>
+          <th>Confianza</th>
+          <th>Estado</th>
+          <th class="col-actions">Opciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (order of filtered(); track order.id; let i = $index) {
+          <tr>
+            <td class="col-num mono">{{ i + 1 }}</td>
+            <td class="mono">{{ order.fields.nit.value || '—' }}</td>
+            <td>
+              <div class="who__text">
+                <span class="who__name">{{ order.company }}</span>
+                @if (order.assignedProf) {
+                  <span class="who__assigned">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="8" r="4" />
+                      <path d="M4 21a8 8 0 0 1 16 0" />
+                    </svg>
+                    {{ order.assignedProf }}
+                  </span>
+                }
+              </div>
+            </td>
+            <td>{{ order.arl }}</td>
+            <td class="mono">{{ order.fields.horas.value || '—' }}</td>
+            <td>
+              <span class="pill" [class]="pillClass(order.confidence)">{{ order.confidence }}%</span>
+            </td>
+            <td>
+              @if (view() === 'deshabilitadas') {
+                <span class="pill pill--muted">Deshabilitada</span>
+              } @else {
+                <span class="pill pill--warning">Pendiente</span>
+              }
+            </td>
+            <td class="col-actions">
+              <div class="row-actions">
+                @if (view() === 'deshabilitadas') {
+                  <button type="button" class="icon-action icon-action--on" (click)="restoreOrder(order)" aria-label="Restaurar" title="Restaurar orden">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                      <path d="M3 3v5h5" />
+                    </svg>
+                  </button>
+                } @else {
+                  <button type="button" class="icon-action" (click)="openDetail(order.id)" aria-label="Ver detalle" title="Ver detalle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  </button>
+                  <button type="button" class="icon-action" (click)="openEdit(order.id)" aria-label="Editar" title="Editar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                    </svg>
+                  </button>
+                  <button type="button" class="icon-action" (click)="openAssign(order.id)" aria-label="Asignar profesional" title="Asignar profesional">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <circle cx="9" cy="8" r="4" />
+                      <path d="M2 21a7 7 0 0 1 14 0" />
+                      <path d="M19 8v6M16 11h6" />
+                    </svg>
+                  </button>
+                  <button type="button" class="icon-action icon-action--danger" (click)="disableOrder(order)" aria-label="Deshabilitar" title="Deshabilitar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M3 6h18" />
+                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                      <path d="M10 11v6M14 11v6" />
+                    </svg>
+                  </button>
+                }
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="8" class="table__empty">
+              @if (loading()) {
+                Cargando órdenes…
+              } @else if (view() === 'deshabilitadas') {
+                No hay órdenes deshabilitadas.
+              } @else if (query()) {
+                No hay órdenes que coincidan con “{{ query() }}”.
+              } @else {
+                No hay órdenes pendientes.
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============ MODAL: DETALLE / EDICIÓN ============ -->
+@if (detailOrder(); as order) {
+  <div class="modal-backdrop" (click)="closeDetail()"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="detailTitle">
+          {{ editMode() ? 'Editar orden' : 'Detalle de la orden' }}
+        </h3>
+        <p class="modal__sub">{{ order.company }} · {{ order.arl }}</p>
+      </div>
+      <div class="modal__head-actions">
+        @if (!editMode()) {
+          <button type="button" class="btn btn--ghost btn--sm" (click)="enableEdit()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </svg>
+            Editar
+          </button>
+        }
+        <button type="button" class="icon-action" (click)="closeDetail()" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="modal__body">
+      <!-- ---- Documento (fila compacta) ---- -->
+      <div class="doc-row">
+        <span class="doc-row__icon" [class.doc-row__icon--excel]="order.fileType === 'excel'" aria-hidden="true">
+          @if (order.fileType === 'excel') {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+              <path d="M14 3v5h5" />
+              <path d="m9.5 12.5 5 5M14.5 12.5l-5 5" />
+            </svg>
+          } @else {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+              <path d="M14 3v5h5" />
+              <path d="M9 13h6M9 17h4" />
+            </svg>
+          }
+        </span>
+        <div class="doc-row__meta">
+          <span class="doc-row__name">{{ order.fileName }}</span>
+          <span class="doc-row__sub">
+            {{ order.fileType === 'excel' ? 'Excel' : 'PDF' }} · importado {{ order.importedAt }}
+          </span>
+        </div>
+        <button type="button" class="btn btn--ghost btn--sm doc-row__btn" (click)="downloadOriginal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3v12" />
+            <path d="m7 10 5 5 5-5" />
+            <path d="M5 21h14" />
+          </svg>
+          Descargar
+        </button>
+      </div>
+
+      <!-- ---- Datos de la orden ---- -->
+      <div class="card ai-form">
+        <div class="card__head">
+          <span class="card__title">Datos de la orden</span>
+          <span class="pill" [class]="pillClass(order.confidence)">
+            {{ order.confidence }}% Confianza
+          </span>
+        </div>
+
+        <div class="card__body">
+          @if (editMode() && order.confidence < 70) {
+            <div class="alert-banner">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 9v4M12 17h.01" />
+                <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+              </svg>
+              Baja confianza general. Revisa con especial cuidado los campos resaltados antes de validar.
+            </div>
+          }
+
+          <form class="fields">
+            @for (item of formFields(); track item.label) {
+              <div class="field" [class.field--full]="item.span === 'full'">
+                <div class="field__labelrow">
+                  <label class="form-field__label">{{ item.label }}</label>
+                  <span class="conf-badge pill" [class]="pillClass(item.field.confidence)">
+                    {{ item.field.confidence }}%
+                  </span>
+                </div>
+
+                @if (item.type === 'textarea') {
+                  <textarea
+                    class="form-control"
+                    rows="3"
+                    [readonly]="!editMode()"
+                    [class.form-control--alert]="editMode() && isLow(item.field.confidence)"
+                    [(ngModel)]="item.field.value"
+                    [name]="item.label"
+                  ></textarea>
+                } @else {
+                  <input
+                    class="form-control"
+                    type="text"
+                    [readonly]="!editMode()"
+                    [class.form-control--alert]="editMode() && isLow(item.field.confidence)"
+                    [(ngModel)]="item.field.value"
+                    [name]="item.label"
+                  />
+                }
+
+                @if (editMode() && isLow(item.field.confidence)) {
+                  <p class="field__alert">⚠ Baja confianza — verifica contra el documento original.</p>
+                }
+              </div>
+            }
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <footer class="modal__footer">
+      <span class="modal__status">
+        Estado actual: <strong>IMPORTADA</strong>
+      </span>
+      <div class="modal__footer-actions">
+        <button type="button" class="btn btn--ghost" (click)="closeDetail()" [disabled]="saving()">
+          Cerrar
+        </button>
+        @if (editMode()) {
+          <button type="button" class="btn btn--primary" [disabled]="saving()" (click)="validateOrder()">
+            @if (saving()) {
+              <span class="spinner" aria-hidden="true"></span>
+              Guardando en Base de Datos…
+            } @else {
+              Validar y Guardar
+            }
+          </button>
+        }
+      </div>
+    </footer>
+  </div>
+}
+
+<!-- ============ MODAL: ASIGNAR PROFESIONAL ============ -->
+@if (assignOrder(); as order) {
+  <div class="modal-backdrop" (click)="closeAssign()"></div>
+  <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="assignTitle">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="assignTitle">Asignar profesional</h3>
+        <p class="modal__sub">{{ order.company }} · {{ order.arl }}</p>
+      </div>
+      <button type="button" class="icon-action" (click)="closeAssign()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="modal__body assign">
+      <!-- ---- Lista de profesionales ---- -->
+      <div class="assign__list">
+        <p class="assign__section-title">Profesionales</p>
+        @for (prof of professionals(); track prof.id) {
+          <button
+            type="button"
+            class="prof-pick"
+            [class.prof-pick--active]="prof.id === selectedProfId()"
+            (click)="selectProf(prof.id)"
+          >
+            <span class="prof-pick__avatar" aria-hidden="true">{{ prof.nombre.charAt(0) }}</span>
+            <span class="prof-pick__text">
+              <span class="prof-pick__name">{{ prof.nombre }}</span>
+              <span class="prof-pick__spec">{{ prof.especialidad || 'Sin especialidad' }}</span>
+            </span>
+          </button>
+        } @empty {
+          <p class="assign__empty">No hay profesionales activos disponibles.</p>
+        }
+      </div>
+
+      <!-- ---- Calendario / disponibilidad ---- -->
+      <div class="assign__calendar">
+        <p class="assign__section-title">Calendario · disponibilidad</p>
+
+        @if (selectedProfId()) {
+          <div class="cal">
+            <p class="cal__hint">
+              Registra los rangos de fecha y hora en los que el profesional estará
+              <strong>ocupado</strong>.
+            </p>
+
+            <div class="cal__form">
+              <div class="form-field">
+                <label class="form-field__label" for="calDate">Fecha</label>
+                <input id="calDate" class="form-control" type="date" [(ngModel)]="busyDraft.fecha" name="calDate" />
+              </div>
+              <div class="form-field">
+                <label class="form-field__label" for="calStart">Desde</label>
+                <input id="calStart" class="form-control" type="time" [(ngModel)]="busyDraft.hora_inicio" name="calStart" />
+              </div>
+              <div class="form-field">
+                <label class="form-field__label" for="calEnd">Hasta</label>
+                <input id="calEnd" class="form-control" type="time" [(ngModel)]="busyDraft.hora_fin" name="calEnd" />
+              </div>
+              <button type="button" class="btn btn--secondary btn--sm cal__add" [disabled]="!slotIsValid()" (click)="addBusySlot()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Ocupar
+              </button>
+            </div>
+
+            <div class="cal__slots">
+              <p class="cal__slots-title">Franjas ocupadas</p>
+              @for (slot of selectedProfSlots(); track slot.id) {
+                <div class="cal-slot">
+                  <svg class="cal-slot__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <path d="M16 2v4M8 2v4M3 10h18" />
+                  </svg>
+                  <span class="cal-slot__text">{{ slot.fecha }} · {{ slot.hora_inicio }}–{{ slot.hora_fin }}</span>
+                  <button type="button" class="cal-slot__remove" (click)="removeBusySlot(slot.id)" aria-label="Quitar franja">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              } @empty {
+                <p class="cal__slots-empty">Sin ocupaciones registradas. El profesional está disponible.</p>
+              }
+            </div>
+          </div>
+        } @else {
+          <div class="assign__placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <path d="M16 2v4M8 2v4M3 10h18" />
+            </svg>
+            <p>Selecciona un profesional para ver y editar su disponibilidad.</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <footer class="modal__footer">
+      <span class="modal__status">
+        @if (selectedProfId()) {
+          Se asignará el profesional seleccionado a esta orden.
+        } @else {
+          Selecciona un profesional para continuar.
+        }
+      </span>
+      <div class="modal__footer-actions">
+        <button type="button" class="btn btn--ghost" (click)="closeAssign()" [disabled]="assigning()">Cancelar</button>
+        <button type="button" class="btn btn--primary" [disabled]="!selectedProfId() || assigning()" (click)="confirmAssign()">
+          @if (assigning()) {
+            <span class="spinner" aria-hidden="true"></span>
+            Asignando…
+          } @else {
+            Asignar profesional
+          }
+        </button>
+      </div>
+    </footer>
   </div>
 }

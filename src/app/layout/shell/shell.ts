@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet, Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
+import { AlertHostComponent } from '../../shared/alert-host/alert-host';
 
 interface NavItem {
   icon: string;
@@ -11,7 +12,7 @@ interface NavItem {
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, AlertHostComponent],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -34,7 +35,7 @@ export class ShellComponent {
   protected readonly navItems = signal<NavItem[]>([
     { icon: 'home', label: 'Inicio / Dashboard', module: '', route: '/dashboard' },
     { icon: 'import', label: 'Importar Archivos', module: 'Módulo 2', route: '/importar' },
-    { icon: 'ai', label: 'Validación IA', module: 'Módulos 3 y 4', route: '/validacion' },
+    { icon: 'ai', label: 'Órdenes', module: 'Módulos 3 y 4', route: '/ordenes' },
     { icon: 'reports', label: 'Informes y Resúmenes', module: 'Módulo 5', route: '/informes' },
     { icon: 'people', label: 'Profesionales', module: 'Módulo 9', route: '/profesionales' },
     { icon: 'settings', label: 'Configuración', module: 'Perfil', route: '/configuracion' },

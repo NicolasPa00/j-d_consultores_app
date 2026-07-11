@@ -21,6 +21,10 @@ export interface ServiceOrder {
   /** Confianza general de la orden (0-100). */
   confidence: number;
   validated: boolean;
+  /** Soft-delete: el registro está deshabilitado (inactivado). */
+  disabled?: boolean;
+  /** Nombre del profesional asignado (si lo hay). */
+  assignedProf?: string | null;
   fields: {
     codigoCronograma: ExtractedField;
     secuencia: ExtractedField;
