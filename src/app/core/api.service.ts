@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from './config';
-import { Borrador, DashboardData, Ocupacion, Orden, Profesional, Rol, Usuario } from './models';
+import { Borrador, DashboardData, MatrizPermisos, Ocupacion, Orden, Profesional, Rol, Usuario, Vista } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -127,6 +127,14 @@ export class ApiService {
   }
   setThreshold(value: number): Observable<unknown> {
     return this.http.put(`${this.base}/settings/confidence-threshold`, { value });
+  }
+
+  // ---- Roles y permisos (Configuración) — exclusivo admin ----
+  listPermisos(): Observable<MatrizPermisos> {
+    return this.http.get<MatrizPermisos>(`${this.base}/permisos`);
+  }
+  setPermiso(rol: Rol, vista: Vista, permitido: boolean): Observable<Wrap<{ rol: Rol; vista: Vista; permitido: boolean }>> {
+    return this.http.put<Wrap<{ rol: Rol; vista: Vista; permitido: boolean }>>(`${this.base}/permisos/${rol}/${vista}`, { permitido });
   }
 
   // ---- Portal público (M6) — sin autenticación ----

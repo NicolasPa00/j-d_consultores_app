@@ -18,8 +18,33 @@ export interface Usuario {
 export interface LoginResponse {
   token: string;
   usuario: Usuario;
+  /** Vistas del sidebar habilitadas para el rol de la sesión (Roles y permisos). */
+  permisos: string[];
   /** true si la contraseña sigue siendo la cédula (se recomienda cambiarla). */
   requiere_cambio_contrasena?: boolean;
+}
+
+export interface MeResponse {
+  usuario: Usuario;
+  permisos: string[];
+}
+
+/** Vistas gestionables desde Configuración → Roles y permisos (= ítems del sidebar). */
+export type Vista = 'dashboard' | 'importar' | 'ordenes' | 'informes' | 'profesionales' | 'configuracion';
+
+/** Catálogo completo de vistas. Es también el fallback cuando no hay permisos conocidos. */
+export const VISTAS: Vista[] = ['dashboard', 'importar', 'ordenes', 'informes', 'profesionales', 'configuracion'];
+
+export interface PermisoRol {
+  rol: Rol;
+  vista: Vista;
+  permitido: boolean;
+}
+
+export interface MatrizPermisos {
+  data: PermisoRol[];
+  roles: Rol[];
+  vistas: Vista[];
 }
 
 export interface CampoExtraido {

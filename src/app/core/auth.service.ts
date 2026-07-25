@@ -1,13 +1,14 @@
 import { Injectable, computed, inject, signal, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable, catchError, map, of, tap } from 'rxjs';
 import { API_BASE } from './config';
-import { LoginResponse, Usuario } from './models';
+import { LoginResponse, MeResponse, Usuario, Vista, VISTAS } from './models';
 import { AlertService } from './alert.service';
 
 const TOKEN_KEY = 'sst_token';
 const USER_KEY = 'sst_usuario';
+const PERMISOS_KEY = 'sst_permisos';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -18,8 +19,12 @@ export class AuthService {
 
   private readonly _token = signal<string | null>(this.readStorage(TOKEN_KEY));
   private readonly _usuario = signal<Usuario | null>(this.readJson(USER_KEY));
+  private readonly _permisos = signal<Vista[]>(this.readJson<Vista[]>(PERMISOS_KEY) ?? []);
+  /** Evita refrescar /me más de una vez por sesión de navegador (guard de rutas). */
+  private permisosCargados = false;
 
   readonly usuario = this._usuario.asReadonly();
+  readonly permisos = this._permisos.asReadonly();
   readonly isAuthenticated = computed(() => !!this._token());
 
   get token(): string | null {
@@ -30,11 +35,57 @@ export class AuthService {
     return this.http.post<LoginResponse>(`${API_BASE}/auth/login`, { documento, password }).pipe(
       tap((res) => {
         this._token.set(res.token);
-        this._usuario.set(res.usuario);
-        this.writeStorage(TOKEN_KEY, res.token);
-        this.writeStorage(USER_KEY, JSON.stringify(res.usuario));
+        this.aplicarSesion(res.usuario, res.permisos as Vista[] | undefined);
+        this.permisosCargados = true;
       }),
     );
+  }
+
+  /** ¿La sesión actual puede ver esta vista del sidebar? */
+  puedeVer(vista: Vista): boolean {
+    return this._permisos().includes(vista);
+  }
+
+  /**
+   * Trae el perfil + permisos vigentes desde el backend. Se usa como fuente de
+   * verdad al entrar a una ruta protegida por permiso, así una sesión abierta
+   * antes de un cambio de rol/permisos (o cacheada de una versión anterior sin
+   * `permisos` en el storage) siempre valida contra el estado real del rol.
+   */
+  refreshMe(): Observable<MeResponse> {
+    return this.http.get<MeResponse>(`${API_BASE}/auth/me`).pipe(
+      tap((res) => {
+        this.aplicarSesion(res.usuario, res.permisos as Vista[] | undefined);
+        this.permisosCargados = true;
+      }),
+    );
+  }
+
+  /**
+   * Devuelve los permisos vigentes; solo llama a /me una vez por sesión de navegador.
+   * A prueba de fallos: si /me falla (token vencido, backend caído o desplegado sin
+   * el campo `permisos`), NO deja al usuario sin navegación — cae al catálogo
+   * completo. La restricción real de cada endpoint la sigue aplicando el backend.
+   */
+  ensurePermisos(): Observable<Vista[]> {
+    if (this.permisosCargados) return of(this._permisos());
+    return this.refreshMe().pipe(
+      map(() => this._permisos()),
+      catchError(() => {
+        if (!this._permisos().length) this._permisos.set([...VISTAS]);
+        return of(this._permisos());
+      }),
+    );
+  }
+
+  private aplicarSesion(usuario: Usuario, permisos: Vista[] | undefined): void {
+    // `permisos` ausente = backend anterior a Roles y permisos: se conserva el
+    // acceso completo en lugar de esconder todo el sidebar.
+    const efectivos = Array.isArray(permisos) ? permisos : [...VISTAS];
+    this._usuario.set(usuario);
+    this._permisos.set(efectivos);
+    this.writeStorage(USER_KEY, JSON.stringify(usuario));
+    this.writeStorage(PERMISOS_KEY, JSON.stringify(efectivos));
   }
 
   /** Muestra la recomendación de cambiar contraseña si aún es la cédula. */
@@ -57,9 +108,12 @@ export class AuthService {
   logout(): void {
     this._token.set(null);
     this._usuario.set(null);
+    this._permisos.set([]);
+    this.permisosCargados = false;
     if (this.isBrowser) {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
+      localStorage.removeItem(PERMISOS_KEY);
     }
   }
 

@@ -1,7 +1,9 @@
 import { inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformServer } from '@angular/common';
 import { CanActivateFn, Router } from '@angular/router';
+import { map } from 'rxjs';
 import { AuthService } from './auth.service';
+import { Vista } from './models';
 
 /**
  * Protege las rutas internas. En el servidor (SSR) permite renderizar; en el
@@ -15,4 +17,25 @@ export const authGuard: CanActivateFn = () => {
   const router = inject(Router);
   if (auth.isAuthenticated()) return true;
   return router.createUrlTree(['/login']);
+};
+
+/**
+ * Roles y permisos: bloquea el acceso a una vista si el rol de la sesión no la
+ * tiene habilitada (matriz gestionada desde Configuración → Roles y permisos).
+ * Se apoya en `route.data['vista']`; las rutas sin ese dato quedan abiertas.
+ * Dashboard queda siempre accesible como base segura, para no dejar a nadie
+ * sin ninguna pantalla a la que aterrizar si su rol pierde ese permiso.
+ */
+export const permissionGuard: CanActivateFn = (route) => {
+  const platformId = inject(PLATFORM_ID);
+  if (isPlatformServer(platformId)) return true;
+
+  const vista = route.data?.['vista'] as Vista | undefined;
+  if (!vista || vista === 'dashboard') return true;
+
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  return auth.ensurePermisos().pipe(
+    map(() => (auth.puedeVer(vista) ? true : router.createUrlTree(['/dashboard']))),
+  );
 };
