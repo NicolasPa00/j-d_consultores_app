@@ -2,7 +2,10 @@
   display: contents;
 }
 
-/* ===== Toasts ===== */
+/* ===== Toasts =====
+   El aspecto (franja lateral, tonos, título/detalle) viene del primitivo
+   global .alert en styles.scss. Aquí solo va lo propio del toast:
+   posicionamiento flotante, cierre y barra de progreso. */
 .toast-stack {
   position: fixed;
   right: 1.5rem;
@@ -10,38 +13,32 @@
   z-index: 80;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  max-width: 380px;
+  gap: 0.65rem;
+  width: 400px;
+  max-width: calc(100vw - 3rem);
 }
 
 .al-toast {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  padding: 0.85rem 0.9rem 0.85rem 1rem;
-  color: #ffffff;
-  background: var(--primary-color);
-  border-radius: var(--radius-md);
-  box-shadow: 0 12px 34px rgba(0, 11, 80, 0.3);
-  border-left: 4px solid rgba(255, 255, 255, 0.55);
+  position: relative;
+  overflow: hidden;
+  padding: 0.9rem 1rem 1rem;
+  background: var(--surface);
+  box-shadow: var(--shadow-elevated);
   animation: al-in 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.al-toast__icon {
-  flex-shrink: 0;
-  display: inline-flex;
+/* Velo del color del estado sobre el blanco: mantiene el tono sin gritar. */
+.al-toast::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--al-bg);
+  pointer-events: none;
 }
 
-.al-toast__icon svg {
-  width: 20px;
-  height: 20px;
-}
-
-.al-toast__msg {
-  flex: 1 1 auto;
-  font-size: 0.88rem;
-  font-weight: 600;
-  line-height: 1.35;
+.al-toast > * {
+  position: relative;
+  z-index: 1;
 }
 
 .al-toast__close {
@@ -51,16 +48,17 @@
   justify-content: center;
   width: 26px;
   height: 26px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-muted);
   background: transparent;
   border: none;
   border-radius: 7px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .al-toast__close:hover {
-  background: rgba(255, 255, 255, 0.16);
+  color: var(--text-main);
+  background: rgba(15, 23, 42, 0.08);
 }
 
 .al-toast__close svg {
@@ -68,25 +66,36 @@
   height: 15px;
 }
 
-/* Variantes por tipo (ambientadas con la paleta del aplicativo) */
-.al-toast--success {
-  background: linear-gradient(100deg, var(--primary-color), #0d6b47);
-  border-left-color: #7ee0b8;
+/* --- Barra de progreso del tiempo en pantalla --- */
+.al-toast__progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: rgba(15, 23, 42, 0.08);
+  z-index: 2;
 }
 
-.al-toast--error {
-  background: linear-gradient(100deg, #7a1020, var(--danger));
-  border-left-color: #ffb4b4;
+.al-toast__progress-bar {
+  display: block;
+  height: 100%;
+  width: 100%;
+  transform-origin: left center;
+  background: var(--al-accent);
+  animation-name: al-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
 }
 
-.al-toast--warning {
-  background: linear-gradient(100deg, #6b4a05, var(--warning));
-  border-left-color: #ffe08a;
+/* Al pasar el puntero, el servicio congela el temporizador: la barra también. */
+.al-toast:hover .al-toast__progress-bar {
+  animation-play-state: paused;
 }
 
-.al-toast--info {
-  background: linear-gradient(100deg, var(--primary-color), var(--secondary-color));
-  border-left-color: var(--accent-color);
+@keyframes al-progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
 }
 
 /* ===== Diálogo de confirmación ===== */
@@ -113,6 +122,22 @@
   border-radius: var(--radius-lg);
   box-shadow: 0 26px 64px rgba(0, 11, 80, 0.32);
   animation: al-pop 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+/* Filete superior de marca, igual que en el resto de modales */
+.al-dialog::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+}
+
+.al-dialog--danger::before {
+  background: linear-gradient(90deg, #8f2431, #c0485a);
 }
 
 .al-dialog__icon {

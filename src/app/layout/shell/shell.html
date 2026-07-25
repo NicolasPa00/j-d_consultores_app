@@ -61,9 +61,7 @@
           </span>
           <span class="nav-link__text">
             {{ item.label }}
-            @if (item.module) {
-              <small class="nav-link__module">{{ item.module }}</small>
-            }
+            <small class="nav-link__hint">{{ item.hint }}</small>
           </span>
         </a>
       }
@@ -114,6 +112,3 @@
     </main>
   </div>
 </div>
-
-<!-- Toasts + confirmaciones globales -->
-<app-alert-host />

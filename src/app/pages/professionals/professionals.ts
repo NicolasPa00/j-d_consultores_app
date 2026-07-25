@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
+import { AlertService } from '../../core/alert.service';
 import { Profesional } from '../../core/models';
 
 type ProfessionalStatus = 'Activo' | 'Inactivo';
@@ -32,13 +33,12 @@ interface ProfessionalDraft {
 })
 export class ProfessionalsComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly alerts = inject(AlertService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   protected readonly professionals = signal<Professional[]>([]);
   protected readonly query = signal('');
   protected readonly saving = signal(false);
-  protected readonly toast = signal<string | null>(null);
-  private toastTimer: ReturnType<typeof setTimeout> | null = null;
 
   protected readonly specialties = [
     'Higiene Industrial',
@@ -119,12 +119,15 @@ export class ProfessionalsComponent implements OnInit {
       next: () => {
         this.saving.set(false);
         this.drawerOpen.set(false);
-        this.showToast(id ? 'Profesional actualizado correctamente' : 'Profesional creado correctamente');
+        this.alerts.success(
+          id ? 'Profesional actualizado' : 'Profesional creado',
+          `${body.nombre} quedó registrado con especialidad ${body.especialidad} y estado ${body.estado}.`,
+        );
         this.load();
       },
       error: (err) => {
         this.saving.set(false);
-        this.showToast(err?.error?.error || 'No se pudo guardar el profesional.');
+        this.alerts.error('No se pudo guardar el profesional', err?.error?.error || 'Revise que el correo no esté ya registrado y que los campos obligatorios estén completos.');
       },
     });
   }
@@ -135,19 +138,13 @@ export class ProfessionalsComponent implements OnInit {
       next: (r) => {
         this.professionals.update((list) => list.map((p) => (p.id === r.data.id ? toView(r.data) : p)));
       },
-      error: (err) => this.showToast(err?.error?.error || 'No se pudo cambiar el estado.'),
+      error: (err) => this.alerts.error('No se pudo cambiar el estado', err?.error?.error || `El servidor rechazó el cambio de estado de ${professional.name}.`),
     });
   }
 
   // ---- Helpers ----
   private emptyDraft(): ProfessionalDraft {
     return { name: '', email: '', phone: '', specialty: this.specialties[0], status: 'Activo' };
-  }
-
-  private showToast(message: string): void {
-    this.toast.set(message);
-    if (this.toastTimer) clearTimeout(this.toastTimer);
-    this.toastTimer = setTimeout(() => this.toast.set(null), 3200);
   }
 }
 

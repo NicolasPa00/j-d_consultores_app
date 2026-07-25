@@ -21,6 +21,12 @@ export class ResetPasswordComponent {
   protected readonly loading = signal(false);
   protected readonly listo = signal(false);
   protected readonly error = signal<string | null>(null);
+  /** Alterna type="password"/"text" en ambos campos (icono de ojo). */
+  protected readonly showPassword = signal(false);
+
+  protected togglePassword(): void {
+    this.showPassword.update((v) => !v);
+  }
 
   protected submit(): void {
     if (this.loading()) return;

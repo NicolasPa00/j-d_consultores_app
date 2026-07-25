@@ -58,7 +58,7 @@
   align-items: center;
   justify-content: center;
   padding: 1.5rem 2rem;
-  margin-bottom: 2.25rem;
+  margin-bottom: 1.75rem;
   background: #ffffff;
   border-radius: 16px;
   box-shadow: 0 18px 40px -12px rgba(0, 11, 80, 0.5);
@@ -70,6 +70,8 @@
   display: block;
 }
 
+/* Título del panel de marca (lo usan Recuperar y Restablecer contraseña;
+   el Login no lleva título, solo el logo y el descriptor de abajo). */
 .brand-title {
   font-size: 1.6rem;
   font-weight: 700;
@@ -77,11 +79,22 @@
   line-height: 1.25;
 }
 
-.brand-text {
-  margin: 1rem 0 0;
+.brand-title + .brand-text {
+  margin-top: 1rem;
+  letter-spacing: normal;
+  text-transform: none;
   font-size: 0.95rem;
   line-height: 1.6;
   color: rgba(255, 255, 255, 0.82);
+}
+
+.brand-text {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
 }
 
 /* ===================== Lado del formulario (derecha) ===================== */
@@ -150,6 +163,50 @@
 
 .field__input::placeholder {
   color: var(--text-muted);
+}
+
+/* Campo con acción interna (ojo de contraseña) */
+.field__wrap {
+  position: relative;
+  display: block;
+}
+
+.field__input--with-action {
+  padding-right: 2.8rem;
+}
+
+.field__toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.5rem;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.18s ease, background 0.18s ease;
+}
+
+.field__toggle:hover {
+  color: var(--secondary-color);
+  background: rgba(45, 123, 200, 0.1);
+}
+
+.field__toggle:focus-visible {
+  outline: 2px solid var(--secondary-color);
+  outline-offset: 1px;
+}
+
+.field__toggle svg {
+  width: 18px;
+  height: 18px;
 }
 
 .field__input:focus {

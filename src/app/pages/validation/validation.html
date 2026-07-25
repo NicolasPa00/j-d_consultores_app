@@ -169,7 +169,7 @@
         <h3 class="modal__title" id="detailTitle">
           {{ editMode() ? 'Editar orden' : 'Detalle de la orden' }}
         </h3>
-        <p class="modal__sub">{{ order.company }} · {{ order.arl }}@if (order.arlConfidence) { <span class="modal__sub-conf">({{ order.arlConfidence }}% confianza ARL)</span>}</p>
+        <p class="modal__sub">{{ order.company }} · {{ order.arl }}@if (order.arlConfidence) {<span class="modal__sub-conf"> ({{ order.arlConfidence }}% confianza ARL)</span>}</p>
       </div>
       <div class="modal__head-actions">
         @if (!editMode()) {
@@ -234,12 +234,16 @@
 
         <div class="card__body">
           @if (editMode() && order.confidence < 70) {
-            <div class="alert-banner">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <div class="alert alert--warning ai-banner" role="alert">
+              <span class="alert__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M12 9v4M12 17h.01" />
                 <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
-              </svg>
-              Baja confianza general. Revisa con especial cuidado los campos resaltados antes de validar.
+                </svg>
+              </span>
+              <div class="alert__body">
+                <p class="alert__title">Baja confianza general. Revisa con especial cuidado los campos resaltados antes de validar.</p>
+              </div>
             </div>
           }
 

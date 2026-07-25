@@ -3,6 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/auth.service';
 import { ApiService } from '../../core/api.service';
+import { AlertService } from '../../core/alert.service';
 import { Rol, Usuario } from '../../core/models';
 
 interface RateRow {
@@ -36,6 +37,7 @@ const DRAFT_VACIO: UsuarioDraft = {
 export class SettingsComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly api = inject(ApiService);
+  private readonly alerts = inject(AlertService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   protected readonly activeTab = signal<Tab>('profile');
@@ -50,8 +52,12 @@ export class SettingsComponent implements OnInit {
   // ----- Pestaña: Preferencias del sistema -----
   protected readonly threshold = signal(70);
   protected readonly savingThreshold = signal(false);
-  protected readonly toast = signal<string | null>(null);
-  private toastTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Ojo del campo de contraseña (mismo comportamiento que en el login). */
+  protected readonly showPassword = signal(false);
+
+  protected togglePassword(): void {
+    this.showPassword.update((v) => !v);
+  }
 
   // Informativos (Fase 2/3) — no persistidos
   protected rates: RateRow[] = [
@@ -102,7 +108,7 @@ export class SettingsComponent implements OnInit {
       },
       error: (err) => {
         this.loadingUsers.set(false);
-        this.showToast(err?.error?.error || 'No se pudo cargar la lista de usuarios.');
+        this.alerts.error('No se pudo cargar la lista de usuarios', err?.error?.error || 'Solo el Administrador Maestro puede consultar los usuarios internos.');
       },
     });
   }
@@ -134,41 +140,50 @@ export class SettingsComponent implements OnInit {
     if (!editing) return;
     const d = this.draft;
     if (!d.nombre.trim() || !d.correo.trim() || (editing === 'nuevo' && !d.documento.trim())) {
-      this.showToast('Complete los campos obligatorios.');
+      this.alerts.warning('Faltan campos obligatorios', 'Nombre, correo y documento de identidad son necesarios para crear el usuario.');
       return;
     }
     this.savingUser.set(true);
-    const done = (msg: string) => {
+    const done = (titulo: string, detalle: string) => {
       this.savingUser.set(false);
       this.userForm.set(null);
-      this.showToast(msg);
+      this.alerts.success(titulo, detalle);
       this.loadUsuarios();
     };
     const fail = (err: { error?: { error?: string; detail?: string } }) => {
       this.savingUser.set(false);
-      this.showToast(err?.error?.error || err?.error?.detail || 'No se pudo guardar el usuario.');
+      this.alerts.error('No se pudo guardar el usuario', err?.error?.error || err?.error?.detail || 'Verifique que el correo y el documento no estén registrados por otro usuario.');
     };
     if (editing === 'nuevo') {
       this.api.createUsuario({
         nombre: d.nombre.trim(), documento: d.documento.trim(), correo: d.correo.trim(),
         rol: d.rol,
         telefono: d.telefono.trim() || undefined, especialidad: d.especialidad.trim() || undefined,
-      }).subscribe({ next: () => done('Usuario creado. Contraseña inicial: su número de cédula.'), error: fail });
+      }).subscribe({
+        next: () => done('Usuario creado', `${d.nombre.trim()} ya puede ingresar. Su contraseña inicial es su número de cédula.`),
+        error: fail,
+      });
     } else {
       this.api.updateUsuario(editing.id, {
         nombre: d.nombre.trim(), correo: d.correo.trim(), rol: d.rol,
         telefono: d.telefono.trim() || undefined, especialidad: d.especialidad.trim() || undefined,
-      }).subscribe({ next: () => done('Usuario actualizado.'), error: fail });
+      }).subscribe({
+        next: () => done('Usuario actualizado', `Se guardaron los datos de ${d.nombre.trim()}.`),
+        error: fail,
+      });
     }
   }
 
   protected toggleActivo(u: Usuario): void {
     this.api.setUsuarioActivo(u.id, !(u.activo ?? true)).subscribe({
       next: () => {
-        this.showToast(u.activo ? 'Usuario desactivado.' : 'Usuario activado.');
+        this.alerts.success(
+          u.activo ? 'Usuario desactivado' : 'Usuario activado',
+          u.activo ? `${u.nombre} ya no podrá iniciar sesión.` : `${u.nombre} vuelve a tener acceso al sistema.`,
+        );
         this.loadUsuarios();
       },
-      error: (err) => this.showToast(err?.error?.error || 'No se pudo cambiar el estado.'),
+      error: (err) => this.alerts.error('No se pudo cambiar el estado', err?.error?.error || `El servidor rechazó el cambio de estado de ${u.nombre}.`),
     });
   }
 
@@ -182,11 +197,11 @@ export class SettingsComponent implements OnInit {
     this.api.setThreshold(this.threshold()).subscribe({
       next: () => {
         this.savingThreshold.set(false);
-        this.showToast('Umbral de confianza actualizado.');
+        this.alerts.success('Umbral actualizado', `Los campos por debajo de ${this.threshold()}% se marcarán para revisión manual.`);
       },
       error: (err) => {
         this.savingThreshold.set(false);
-        this.showToast(err?.error?.error || 'No se pudo actualizar el umbral.');
+        this.alerts.error('No se pudo actualizar el umbral', err?.error?.error || 'El valor debe estar entre 0 y 100.');
       },
     });
   }
@@ -198,11 +213,5 @@ export class SettingsComponent implements OnInit {
       .slice(0, 2)
       .map((w) => w[0]?.toUpperCase() ?? '')
       .join('');
-  }
-
-  private showToast(message: string): void {
-    this.toast.set(message);
-    if (this.toastTimer) clearTimeout(this.toastTimer);
-    this.toastTimer = setTimeout(() => this.toast.set(null), 3200);
   }
 }

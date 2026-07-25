@@ -18,6 +18,12 @@ export class LoginComponent {
   protected password = '';
   protected readonly loading = signal(false);
   protected readonly error = signal<string | null>(null);
+  /** Alterna entre type="password" y type="text" (icono de ojo). */
+  protected readonly showPassword = signal(false);
+
+  protected togglePassword(): void {
+    this.showPassword.update((v) => !v);
+  }
 
   protected submit(): void {
     if (this.loading()) return;

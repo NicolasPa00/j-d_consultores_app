@@ -122,19 +122,6 @@
   font-size: 0.9rem;
 }
 
-.table thead th {
-  background: #f8fafc;
-  color: #475569;
-  border-bottom: 1px solid #e2e8f0;
-  text-align: left;
-  font-weight: 600;
-  font-size: 12px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  padding: 0.85rem 1.1rem;
-  white-space: nowrap;
-}
-
 .table tbody td {
   padding: 0.8rem 1.1rem;
   border-bottom: 1px solid var(--border-soft);
@@ -417,25 +404,9 @@
   height: 16px;
 }
 
-.alert-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.6rem;
-  padding: 0.8rem 1rem;
+/* Banner de alerta dentro del modal (usa el primitivo global .alert) */
+.ai-banner {
   margin-bottom: 1.25rem;
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  border-radius: var(--radius-sm);
-  font-size: 0.83rem;
-  color: #92600a;
-}
-
-.alert-banner svg {
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-  color: var(--warning);
-  margin-top: 1px;
 }
 
 .fields {

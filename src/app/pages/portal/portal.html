@@ -13,8 +13,17 @@
     </div>
 
     @if (error(); as msg) {
-      <div class="upload-card" style="text-align:center;">
-        <span class="pill pill--danger">{{ msg }}</span>
+      <div class="alert alert--error" role="alert">
+        <span class="alert__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 8v5M12 16h.01" />
+          </svg>
+        </span>
+        <div class="alert__body">
+          <p class="alert__title">{{ msg }}</p>
+          <p class="alert__detail">Si el enlace ya venció o los soportes fueron cargados, solicite uno nuevo al administrador.</p>
+        </div>
       </div>
     }
 

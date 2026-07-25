@@ -1,5 +1,5 @@
 /* ============================================================
-   FRS - Sistema de Gestión de OS con IA | JD&D Consultores
+   JD&D Consultores · Gestión de Órdenes de Servicio (SST)
    Estilos globales y guía de marca
    ============================================================ */
 
@@ -288,58 +288,214 @@ h4 {
   to { transform: rotate(360deg); }
 }
 
-/* Toast global (notificaciones breves) — card flotante con línea de actividad */
-.toast {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  z-index: 1000;
+/* ============================================================
+   SISTEMA GLOBAL DE ALERTAS
+   Un solo lenguaje visual para toda la app: franja lateral del
+   color del estado (tonos apagados, acordes a la identidad),
+   título y detalle opcional.
+   - Inline (banners dentro de una vista):  .alert.alert--<tono>
+   - Flotantes (toasts):                    las pinta <app-alert-host>
+     reutilizando estas mismas clases + barra de progreso.
+   ============================================================ */
+.alert {
+  --al-accent: var(--secondary-color);
+  --al-bg: rgba(45, 123, 200, 0.07);
+  --al-border: rgba(45, 123, 200, 0.22);
+
   display: flex;
-  align-items: center;
-  gap: 10px;
-  max-width: 400px;
-  padding: 14px 18px 17px;
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-  color: var(--text-main);
-  border: 1px solid var(--border-soft);
-  box-shadow: var(--shadow-elevated);
-  font-size: 0.9rem;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.8rem 1rem;
+  background: var(--al-bg);
+  border: 1px solid var(--al-border);
+  border-left: 5px solid var(--al-accent);
+  border-radius: var(--radius-sm);
+  font-size: 0.86rem;
   line-height: 1.45;
-  overflow: hidden;
-  animation: sst-toast-in 0.25s ease;
+  color: var(--text-main);
 }
 
-/* Riel inferior de la línea de actividad */
-.toast::before {
+.alert__icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  margin-top: 1px;
+  color: var(--al-accent);
+}
+
+.alert__icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.alert__body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.alert__title {
+  margin: 0;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+/* Descripción detallada del suceso (segunda línea, tono suave). */
+.alert__detail {
+  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* --- Tonos (desaturados a propósito para no competir con la marca) --- */
+.alert--success {
+  --al-accent: #2f8f6b;
+  --al-bg: rgba(47, 143, 107, 0.08);
+  --al-border: rgba(47, 143, 107, 0.22);
+}
+
+.alert--error {
+  --al-accent: #c0485a;
+  --al-bg: rgba(192, 72, 90, 0.08);
+  --al-border: rgba(192, 72, 90, 0.22);
+}
+
+.alert--warning {
+  --al-accent: #bd8626;
+  --al-bg: rgba(189, 134, 38, 0.09);
+  --al-border: rgba(189, 134, 38, 0.24);
+}
+
+.alert--info {
+  --al-accent: var(--secondary-color);
+  --al-bg: rgba(45, 123, 200, 0.07);
+  --al-border: rgba(45, 123, 200, 0.22);
+}
+
+/* Variante compacta para huecos estrechos (una sola línea). */
+.alert--sm {
+  padding: 0.6rem 0.8rem;
+  font-size: 0.82rem;
+}
+
+/* ============================================================
+   IDENTIDAD DE TABLAS Y MODALES
+   Los encabezados llevan el azul de marca en tono suave para que
+   la app se lea como un sistema propio sin perder sobriedad.
+   Se define UNA vez aquí; las vistas ya no repiten estos estilos.
+   ============================================================ */
+
+/* --- Tablas --- */
+.table thead th {
+  background: #eef3fb;
+  color: var(--primary-color);
+  border-bottom: 2px solid rgba(45, 123, 200, 0.28);
+  text-align: left;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.85rem 1.1rem;
+  white-space: nowrap;
+}
+
+/* Primera y última celda de encabezado: redondeo suave con la card */
+.table thead th:first-child {
+  border-top-left-radius: var(--radius-sm);
+}
+
+.table thead th:last-child {
+  border-top-right-radius: var(--radius-sm);
+}
+
+.table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.table tbody tr:hover {
+  background: rgba(45, 123, 200, 0.045);
+}
+
+/* --- Cabeceras de modales, drawers y cards --- */
+.modal__head,
+.drawer__head {
+  background: #f4f8fd;
+  border-bottom: 1px solid rgba(45, 123, 200, 0.22);
+}
+
+.modal__title,
+.drawer__title,
+.card__title,
+.panel__title {
+  color: var(--primary-color);
+}
+
+/* Filete de marca: horizontal arriba en modales, vertical al costado en los
+   drawers laterales (que ocupan todo el alto de la pantalla). */
+.modal::before {
   content: '';
   position: absolute;
+  top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
   height: 3px;
-  background: rgba(45, 123, 200, 0.14);
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+  z-index: 2;
 }
 
-/* Línea que recorre la card de lado a lado (indicador de actividad) */
-.toast::after {
+.drawer::before {
   content: '';
   position: absolute;
+  top: 0;
   bottom: 0;
   left: 0;
-  width: 40%;
-  height: 3px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--secondary-color), var(--accent-color));
-  animation: sst-toast-line 1.2s ease-in-out infinite alternate;
+  width: 3px;
+  background: linear-gradient(180deg, var(--primary-color), var(--secondary-color));
+  z-index: 2;
 }
 
-@keyframes sst-toast-in {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Cabecera de las cards: acompaña con un tinte apenas perceptible */
+.card__head {
+  background: rgba(45, 123, 200, 0.04);
+  border-bottom-color: rgba(45, 123, 200, 0.18);
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
 }
 
-@keyframes sst-toast-line {
-  from { transform: translateX(0); }
-  to { transform: translateX(150%); }
+/* --- Campo con acción interna (p. ej. el ojo de contraseña) --- */
+.field-wrap {
+  position: relative;
+  display: block;
+}
+
+.form-control--with-action {
+  padding-right: 2.8rem;
+}
+
+.field-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.5rem;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.18s ease, background 0.18s ease;
+}
+
+.field-toggle:hover {
+  color: var(--secondary-color);
+  background: rgba(45, 123, 200, 0.1);
+}
+
+.field-toggle svg {
+  width: 18px;
+  height: 18px;
 }

@@ -156,7 +156,7 @@ export class ReportsComponent implements OnInit {
       },
       error: () => {
         this.nlLoading.set(false);
-        this.alerts.error('No se pudo interpretar la búsqueda.');
+        this.alerts.error('No se pudo interpretar la búsqueda', 'Intente con una frase más concreta, por ejemplo: “órdenes de Bolívar con más de 4 horas”.');
       },
     });
   }
@@ -270,7 +270,7 @@ export class ReportsComponent implements OnInit {
       ]);
       this.downloadCsv('profesionales', ['Nombre', 'Correo', 'Teléfono', 'Especialidad', 'Estado'], rows);
     }
-    this.alerts.success('Archivo Excel (CSV) generado.');
+    this.alerts.success('Informe generado', 'Se descargó el archivo CSV con las órdenes del informe seleccionado.');
   }
 
   protected exportPdf(): void {

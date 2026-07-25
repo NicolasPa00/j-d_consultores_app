@@ -72,6 +72,14 @@ export class ApiService {
   importDetail(id: string): Observable<Wrap<{ borradores: Borrador[] }>> {
     return this.http.get<Wrap<{ borradores: Borrador[] }>>(`${this.base}/imports/${id}`);
   }
+  /** IMP-04 · Envía a Órdenes los borradores del lote ya revisados. */
+  confirmImport(id: string): Observable<{ message: string; data: { confirmadas: number } }> {
+    return this.http.post<{ message: string; data: { confirmadas: number } }>(`${this.base}/imports/${id}/confirm`, {});
+  }
+  /** Descarta el lote completo: nada llega a Órdenes. */
+  discardImport(id: string): Observable<{ message: string; data: { descartadas: number } }> {
+    return this.http.post<{ message: string; data: { descartadas: number } }>(`${this.base}/imports/${id}/discard`, {});
+  }
 
   // ---- Borradores / Órdenes (M2/M3) ----
   listDrafts(estado = 'PENDIENTE_VALIDACION', deshabilitado: 'false' | 'true' | 'all' = 'false'): Observable<Wrap<Borrador[]>> {

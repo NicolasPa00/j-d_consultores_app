@@ -1,8 +1,16 @@
-<!-- ============ STACK DE TOASTS ============ -->
+<!-- ============ STACK DE TOASTS ============
+     Reutiliza el primitivo global .alert (styles.scss) y le agrega la
+     barra de progreso del tiempo restante en pantalla. -->
 <div class="toast-stack" aria-live="polite">
   @for (t of alert.toasts(); track t.id) {
-    <div class="al-toast" [class]="'al-toast--' + t.kind" role="status">
-      <span class="al-toast__icon" aria-hidden="true">
+    <div
+      class="alert al-toast"
+      [class]="'alert--' + t.kind"
+      role="status"
+      (mouseenter)="alert.pause(t.id)"
+      (mouseleave)="alert.resume(t.id)"
+    >
+      <span class="alert__icon" aria-hidden="true">
         @switch (t.kind) {
           @case ('success') {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -30,12 +38,24 @@
           }
         }
       </span>
-      <span class="al-toast__msg">{{ t.message }}</span>
+
+      <div class="alert__body">
+        <p class="alert__title">{{ t.message }}</p>
+        @if (t.detail) {
+          <p class="alert__detail">{{ t.detail }}</p>
+        }
+      </div>
+
       <button type="button" class="al-toast__close" (click)="alert.dismiss(t.id)" aria-label="Cerrar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M18 6 6 18M6 6l12 12" />
         </svg>
       </button>
+
+      <!-- Barra de progreso: representa el tiempo que queda en pantalla -->
+      <span class="al-toast__progress" aria-hidden="true">
+        <span class="al-toast__progress-bar" [style.animation-duration.ms]="t.duration"></span>
+      </span>
     </div>
   }
 </div>

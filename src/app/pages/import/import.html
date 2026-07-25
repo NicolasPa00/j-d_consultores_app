@@ -3,96 +3,133 @@
   <p class="page-head__sub">Carga de Excel (ARL Bolívar) y PDFs (AXA / Colmena) · Módulo IMP</p>
 </section>
 
-<!-- ===== Zona de Drag & Drop ===== -->
-<div class="card">
-  <div class="card__body">
-    <div class="dropzone">
-      <div class="dropzone__icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <path d="M7 10l5-5 5 5" />
-          <path d="M12 5v12" />
-        </svg>
-      </div>
-      <p class="dropzone__title">Arrastra y suelta tu archivo aquí</p>
-      <p class="dropzone__hint">Formatos soportados: Excel (.xlsx) o PDF · Máx. 10 MB</p>
+<!-- ===== Zona de carga (compacta) ===== -->
+<div class="uploader" [class.uploader--busy]="processing()">
+  <span class="uploader__icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="M7 10l5-5 5 5" />
+      <path d="M12 5v12" />
+    </svg>
+  </span>
 
-      <label class="btn btn--primary dropzone__btn">
-        Seleccionar archivo PDF o Excel
-        <input type="file" class="dropzone__input" accept=".xlsx,.xls,.pdf" (change)="onFileSelected($event)" />
-      </label>
+  <div class="uploader__meta">
+    @if (fileName(); as name) {
+      <span class="uploader__file">{{ name }}</span>
+    } @else {
+      <span class="uploader__file uploader__file--empty">Ningún archivo seleccionado</span>
+    }
+    <span class="uploader__hint">Excel (.xlsx) o PDF · máx. 10 MB</span>
+  </div>
 
-      @if (fileName()) {
-        <div class="dropzone__file">
-          <span class="pill pill--info">{{ fileName() }}</span>
-        </div>
+  <div class="uploader__actions">
+    <label class="btn btn--ghost btn--sm uploader__pick">
+      {{ fileName() ? 'Cambiar' : 'Seleccionar archivo' }}
+      <input type="file" class="uploader__input" accept=".xlsx,.xls,.pdf" (change)="onFileSelected($event)" />
+    </label>
+    <button
+      type="button"
+      class="btn btn--primary btn--sm"
+      [disabled]="!fileName() || processing()"
+      (click)="processWithAi()"
+    >
+      @if (processing()) {
+        <span class="spinner" aria-hidden="true"></span>
+        Procesando…
+      } @else {
+        Procesar con IA
       }
-
-      @if (error(); as msg) {
-        <div class="dropzone__file">
-          <span class="pill pill--danger">{{ msg }}</span>
-        </div>
-      }
-    </div>
-
-    <div class="import-actions">
-      <button
-        type="button"
-        class="btn btn--secondary"
-        [disabled]="!fileName() || processing()"
-        (click)="processWithAi()"
-      >
-        @if (processing()) {
-          <span class="spinner" aria-hidden="true"></span>
-          Procesando con IA…
-        } @else {
-          Procesar con IA
-        }
-      </button>
-    </div>
+    </button>
   </div>
 </div>
 
-<!-- ===== Vista previa editable ===== -->
+@if (error(); as msg) {
+  <div class="alert alert--error upload-error" role="alert">
+    <span class="alert__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 8v5M12 16h.01" />
+      </svg>
+    </span>
+    <div class="alert__body">
+      <p class="alert__title">No se pudo procesar el archivo</p>
+      <p class="alert__detail">{{ msg }}</p>
+    </div>
+  </div>
+}
+
+<!-- ===== Vista previa de la extracción (foco de la pantalla) ===== -->
 @if (showPreview()) {
   <section class="panel preview">
     <div class="panel__head">
-      <h3 class="panel__title">Vista previa de extracción</h3>
-      <span class="panel__hint">Puede corregir cualquier campo antes de guardar · IMP-03 / IMP-04</span>
+      <h3 class="panel__title">
+        Vista previa de extracción
+        <span class="panel__count">{{ previewRows().length }}</span>
+      </h3>
+      <span class="panel__hint">
+        Revisa y corrige antes de guardar. Nada llega a Órdenes hasta que confirmes · IMP-03 / IMP-04
+      </span>
     </div>
 
     <div class="table-wrap">
       <table class="table preview__table">
         <thead>
           <tr>
+            <th class="col-num">#</th>
+            <th>Identidad</th>
             <th>NIT</th>
             <th>Razón Social</th>
-            <th>ARL asignada</th>
+            <th>ARL detectada</th>
             <th>Horas</th>
-            <th>Contacto SST</th>
+            <th>Confianza</th>
+            <th class="col-actions">Revisar</th>
           </tr>
         </thead>
         <tbody>
-          @for (row of previewRows; track $index) {
-            <tr>
+          @for (row of previewRows(); track row.id; let i = $index) {
+            <tr [class.preview__row--dup]="row.duplicada">
+              <td class="col-num mono">{{ i + 1 }}</td>
+              <td class="mono">{{ row.identidad }}</td>
+              <td class="mono">{{ row.nit }}</td>
               <td>
-                <input class="cell-input" type="text" [(ngModel)]="row.nit" name="nit{{ $index }}" />
-              </td>
-              <td>
-                <input class="cell-input" type="text" [(ngModel)]="row.company" name="company{{ $index }}" />
-              </td>
-              <td>
-                <select class="cell-input" [(ngModel)]="row.arl" name="arl{{ $index }}">
-                  @for (arl of arlOptions; track arl) {
-                    <option [value]="arl">{{ arl }}</option>
+                <div class="who__text">
+                  <span class="who__name">{{ row.company }}</span>
+                  @if (row.duplicada) {
+                    <span class="pill pill--muted" title="Ya existe una OS con esta identidad">Duplicada</span>
                   }
-                </select>
-              </td>
-              <td class="cell-narrow">
-                <input class="cell-input" type="number" [(ngModel)]="row.hours" name="hours{{ $index }}" />
+                </div>
               </td>
               <td>
-                <input class="cell-input" type="text" [(ngModel)]="row.sstContact" name="contact{{ $index }}" />
+                {{ row.arl }}
+                @if (row.arlConfidence) {
+                  <span class="pill" [class]="pillClass(row.arlConfidence)" title="Confianza de la clasificación de ARL">
+                    {{ row.arlConfidence }}%
+                  </span>
+                }
+              </td>
+              <td class="mono">{{ row.hours }}</td>
+              <td>
+                <span class="pill" [class]="pillClass(row.confidence)">{{ row.confidence }}%</span>
+              </td>
+              <td class="col-actions">
+                <button
+                  type="button"
+                  class="icon-action"
+                  (click)="openDetail(row.id)"
+                  aria-label="Revisar campos extraídos"
+                  title="Revisar campos extraídos"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="8" class="table__empty">
+                El archivo se procesó pero no se extrajo ninguna orden.
               </td>
             </tr>
           }
@@ -101,8 +138,141 @@
     </div>
 
     <div class="preview__footer">
-      <button type="button" class="btn btn--ghost" (click)="reset()">Descartar</button>
-      <button type="button" class="btn btn--primary" (click)="goToValidation()">Ir a validar y guardar</button>
+      <span class="preview__status">
+        @if (duplicateCount()) {
+          {{ confirmableCount() }} orden(es) se guardarán ·
+          <strong>{{ duplicateCount() }} duplicada(s)</strong> se omitirán.
+        } @else {
+          {{ confirmableCount() }} orden(es) se enviarán a Órdenes.
+        }
+      </span>
+      <div class="preview__footer-actions">
+        <button type="button" class="btn btn--ghost" [disabled]="confirming()" (click)="discardBatch()">
+          Descartar
+        </button>
+        <button
+          type="button"
+          class="btn btn--primary"
+          [disabled]="confirming() || !confirmableCount()"
+          (click)="confirmBatch()"
+        >
+          @if (confirming()) {
+            <span class="spinner" aria-hidden="true"></span>
+            Guardando…
+          } @else {
+            Guardar en Órdenes
+          }
+        </button>
+      </div>
     </div>
   </section>
+}
+
+<!-- ===== MODAL: revisión / corrección de una orden ===== -->
+@if (detailOrder(); as order) {
+  <div class="modal-backdrop" (click)="closeDetail()"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="reviewTitle">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="reviewTitle">Revisar extracción</h3>
+        <p class="modal__sub">
+          {{ order.company }} · {{ order.arl }}@if (order.arlConfidence) {<span class="modal__sub-conf"> ({{ order.arlConfidence }}% confianza ARL)</span>}
+        </p>
+      </div>
+      <button type="button" class="icon-action" (click)="closeDetail()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="modal__body">
+      <div class="card ai-form">
+        <div class="card__head">
+          <span class="card__title">Datos extraídos</span>
+          <span class="pill" [class]="pillClass(order.confidence)">{{ order.confidence }}% Confianza</span>
+        </div>
+
+        <div class="card__body">
+          @if (order.duplicada) {
+            <div class="alert alert--error ai-banner" role="alert">
+              <span class="alert__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 9v4M12 17h.01" />
+                <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+                </svg>
+              </span>
+              <div class="alert__body">
+                <p class="alert__title">Ya existe una OS con esta identidad. Esta orden no se guardará al confirmar el lote.</p>
+              </div>
+            </div>
+          } @else if (order.confidence < 70) {
+            <div class="alert alert--warning ai-banner" role="alert">
+              <span class="alert__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 9v4M12 17h.01" />
+                <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+                </svg>
+              </span>
+              <div class="alert__body">
+                <p class="alert__title">Baja confianza general. Revisa con cuidado los campos resaltados contra el documento original.</p>
+              </div>
+            </div>
+          }
+
+          <form class="fields">
+            @for (item of order.fields; track item.key) {
+              <div class="field" [class.field--full]="item.span === 'full'">
+                <div class="field__labelrow">
+                  <label class="form-field__label">{{ item.label }}</label>
+                  <span class="conf-badge pill" [class]="pillClass(item.confidence)">{{ item.confidence }}%</span>
+                </div>
+
+                @if (item.type === 'textarea') {
+                  <textarea
+                    class="form-control"
+                    rows="3"
+                    [class.form-control--alert]="isLow(item.confidence)"
+                    [(ngModel)]="item.value"
+                    [name]="item.key"
+                  ></textarea>
+                } @else {
+                  <input
+                    class="form-control"
+                    type="text"
+                    [class.form-control--alert]="isLow(item.confidence)"
+                    [(ngModel)]="item.value"
+                    [name]="item.key"
+                  />
+                }
+
+                @if (isLow(item.confidence)) {
+                  <p class="field__alert">⚠ Baja confianza — verifica contra el documento original.</p>
+                }
+              </div>
+            }
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <footer class="modal__footer">
+      <span class="modal__status">
+        Los campos corregidos a mano quedan con <strong>100%</strong> de confianza.
+      </span>
+      <div class="modal__footer-actions">
+        <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="closeDetail()">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn--primary" [disabled]="saving()" (click)="saveDetail()">
+          @if (saving()) {
+            <span class="spinner" aria-hidden="true"></span>
+            Guardando…
+          } @else {
+            Guardar correcciones
+          }
+        </button>
+      </div>
+    </footer>
+  </div>
 }

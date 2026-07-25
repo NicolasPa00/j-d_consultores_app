@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
+import { AlertService } from '../../core/alert.service';
 import { DashboardData, Orden, Profesional } from '../../core/models';
 
 interface Kpi {
@@ -57,6 +58,7 @@ interface WorkOrder {
 })
 export class DashboardComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly alerts = inject(AlertService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   protected readonly kpis = signal<Kpi[]>([]);
@@ -96,7 +98,6 @@ export class DashboardComponent implements OnInit {
   // ----- Estado del panel lateral (drawer) de asignación -----
   protected readonly selectedOrder = signal<WorkOrder | null>(null);
   protected readonly saving = signal(false);
-  protected readonly toast = signal<string | null>(null);
 
   // Campos del formulario de asignación (ngModel)
   protected assignProfessional = '';
@@ -144,7 +145,7 @@ export class DashboardComponent implements OnInit {
     const order = this.selectedOrder();
     if (!order || this.saving()) return;
     if (!this.assignProfessional) {
-      this.showToast('Seleccione un profesional.');
+      this.alerts.warning('Seleccione un profesional', 'Debe elegir a quién se le asigna la orden antes de continuar.');
       return;
     }
     const fecha = this.assignDate
@@ -155,13 +156,13 @@ export class DashboardComponent implements OnInit {
       next: () => {
         this.saving.set(false);
         this.selectedOrder.set(null);
-        this.showToast('OS asignada, formatos generados y correo enviado.');
+        this.alerts.success('Orden asignada', 'Se generaron los formatos y se envió el correo al profesional con los adjuntos.');
         this.loadOrders();
         this.loadDashboard();
       },
       error: (err) => {
         this.saving.set(false);
-        this.showToast(err?.error?.error || 'No se pudo asignar la orden.');
+        this.alerts.error('No se pudo asignar la orden', err?.error?.error || 'El servidor rechazó la asignación. Verifique el profesional y la fecha programada.');
       },
     });
   }
@@ -170,13 +171,6 @@ export class DashboardComponent implements OnInit {
     if (value >= 85) return 'success';
     if (value >= 70) return 'warning';
     return 'danger';
-  }
-
-  private toastTimer: ReturnType<typeof setTimeout> | null = null;
-  private showToast(message: string): void {
-    this.toast.set(message);
-    if (this.toastTimer) clearTimeout(this.toastTimer);
-    this.toastTimer = setTimeout(() => this.toast.set(null), 3200);
   }
 }
 

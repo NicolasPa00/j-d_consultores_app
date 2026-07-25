@@ -127,7 +127,7 @@ export class ValidationComponent implements OnInit {
       },
       error: () => {
         this.loading.set(false);
-        this.alerts.error('No se pudieron cargar las órdenes.');
+        this.alerts.error('No se pudieron cargar las órdenes', 'No hubo respuesta del servidor. Verifique su conexión e intente de nuevo.');
       },
     });
   }
@@ -236,17 +236,17 @@ export class ValidationComponent implements OnInit {
             this.saving.set(false);
             this.detailId.set(null);
             this.editMode.set(false);
-            this.alerts.success('Orden validada y guardada en la base de datos (SIN PROGRAMAR).');
+            this.alerts.success('Orden validada', `${current.company} quedó registrada como Orden de Servicio en estado SIN PROGRAMAR.`);
           },
           error: (err) => {
             this.saving.set(false);
-            this.alerts.error(err?.error?.error || 'No se pudo validar la orden.');
+            this.alerts.error('No se pudo validar la orden', err?.error?.error || 'Revise que la orden tenga número de orden, o bien cronograma y secuencia, y que no esté duplicada.');
           },
         });
       },
       error: (err) => {
         this.saving.set(false);
-        this.alerts.error(err?.error?.error || 'No se pudieron guardar las correcciones.');
+        this.alerts.error('No se pudieron guardar las correcciones', err?.error?.error || 'Los cambios no llegaron al servidor; vuelva a intentarlo.');
       },
     });
   }
@@ -261,7 +261,7 @@ export class ValidationComponent implements OnInit {
     if (!this.professionals().length) {
       this.api.listProfessionals().subscribe({
         next: (r) => this.professionals.set(r.data.filter((p) => p.estado === 'Activo')),
-        error: () => this.alerts.error('No se pudieron cargar los profesionales.'),
+        error: () => this.alerts.error('No se pudieron cargar los profesionales', 'Sin la lista de asesores activos no es posible asignar la orden.'),
       });
     }
   }
@@ -282,7 +282,7 @@ export class ValidationComponent implements OnInit {
   private loadSlots(profId: string): void {
     this.api.listOcupaciones(profId).subscribe({
       next: (r) => this.selectedProfSlots.set(r.data),
-      error: () => this.alerts.error('No se pudo cargar la disponibilidad del profesional.'),
+      error: () => this.alerts.error('No se pudo cargar la disponibilidad', 'No fue posible consultar las franjas ocupadas del profesional seleccionado.'),
     });
   }
 
@@ -310,7 +310,7 @@ export class ValidationComponent implements OnInit {
           );
           this.busyDraft = this.emptySlot();
         },
-        error: (err) => this.alerts.error(err?.error?.error || 'No se pudo registrar la franja.'),
+        error: (err) => this.alerts.error('No se pudo registrar la franja', err?.error?.error || 'Revise que la hora de inicio sea anterior a la de fin y que no se cruce con otra franja.'),
       });
   }
 
@@ -319,7 +319,7 @@ export class ValidationComponent implements OnInit {
     if (!profId) return;
     this.api.removeOcupacion(profId, slotId).subscribe({
       next: () => this.selectedProfSlots.update((list) => list.filter((s) => s.id !== slotId)),
-      error: (err) => this.alerts.error(err?.error?.error || 'No se pudo quitar la franja.'),
+      error: (err) => this.alerts.error('No se pudo quitar la franja', err?.error?.error || 'El servidor rechazó la eliminación de la ocupación.'),
     });
   }
 
@@ -337,11 +337,11 @@ export class ValidationComponent implements OnInit {
         this.assignId.set(null);
         this.selectedProfId.set(null);
         this.selectedProfSlots.set([]);
-        this.alerts.success(`${name} asignado a la orden.`);
+        this.alerts.success('Profesional asignado', `${name} quedó asignado a la orden de ${r.data.metadatos_extraccion?.empresa_nombre?.value || 'la empresa'}.`);
       },
       error: (err) => {
         this.assigning.set(false);
-        this.alerts.error(err?.error?.error || 'No se pudo asignar el profesional.');
+        this.alerts.error('No se pudo asignar el profesional', err?.error?.error || 'Verifique que el profesional esté activo y sin cruce de horario.');
       },
     });
   }
@@ -359,9 +359,9 @@ export class ValidationComponent implements OnInit {
     this.api.disableDraft(order.id).subscribe({
       next: (r) => {
         this.replaceOrder(r.data);
-        this.alerts.success('Orden deshabilitada.');
+        this.alerts.success('Orden deshabilitada', `${order.company} salió del listado activo. Puede restaurarla desde la pestaña Deshabilitadas.`);
       },
-      error: (err) => this.alerts.error(err?.error?.error || 'No se pudo deshabilitar la orden.'),
+      error: (err) => this.alerts.error('No se pudo deshabilitar la orden', err?.error?.error || 'El servidor rechazó la operación.'),
     });
   }
 
@@ -376,9 +376,9 @@ export class ValidationComponent implements OnInit {
     this.api.enableDraft(order.id).subscribe({
       next: (r) => {
         this.replaceOrder(r.data);
-        this.alerts.success('Orden restaurada.');
+        this.alerts.success('Orden restaurada', `${order.company} volvió al listado de órdenes activas.`);
       },
-      error: (err) => this.alerts.error(err?.error?.error || 'No se pudo restaurar la orden.'),
+      error: (err) => this.alerts.error('No se pudo restaurar la orden', err?.error?.error || 'El servidor rechazó la operación.'),
     });
   }
 
