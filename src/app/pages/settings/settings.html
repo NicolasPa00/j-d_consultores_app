@@ -34,6 +34,17 @@
       Usuarios del Sistema
     </button>
   }
+  @if (esAdmin()) {
+    <button
+      type="button"
+      class="tab"
+      [class.tab--active]="activeTab() === 'roles'"
+      (click)="setTab('roles')"
+      role="tab"
+    >
+      Roles y permisos
+    </button>
+  }
 </div>
 
 <!-- ===== Pestaña 1: Perfil ===== -->
@@ -301,6 +312,88 @@
       </div>
     </div>
   }
+}
+
+<!-- ===== Pestaña 4: Roles y permisos (solo Administradores) ===== -->
+@if (activeTab() === 'roles' && esAdmin()) {
+  <div class="card">
+    <div class="card__head">
+      <h3 class="card__title">Roles y permisos</h3>
+      <span class="card__hint">Vistas del sistema habilitadas por rol</span>
+    </div>
+    <div class="card__body">
+      <!-- Selector de rol -->
+      <div class="role-picker">
+        @for (r of roles; track r) {
+          <button
+            type="button"
+            class="btn"
+            [class.btn--primary]="rolSeleccionado() === r"
+            [class.btn--ghost]="rolSeleccionado() !== r"
+            (click)="selectRol(r)"
+          >
+            {{ rolLabel(r) }}
+          </button>
+        }
+      </div>
+
+      @if (loadingPermisos()) {
+        <p class="users-empty">Cargando permisos…</p>
+      } @else {
+        <!-- Vistas del rol seleccionado, cada una con su checkbox de acceso -->
+        <!-- La clave de track incluye el rol: al cambiar de rol se recrean los
+             inputs, de modo que ninguno arrastre el estado marcado del anterior. -->
+        <div class="permisos-list">
+          @for (v of vistasCatalogo; track rolSeleccionado() + ':' + v.clave) {
+            <label class="toggle-row permiso-row">
+              <div class="toggle-row__text">
+                <span class="toggle-row__label">{{ v.label }}</span>
+                <span class="toggle-row__hint">
+                  {{ esFijo(v.clave) ? 'Obligatorio para el rol Administrador' : v.hint }}
+                </span>
+              </div>
+
+              <input
+                type="checkbox"
+                class="permiso-row__checkbox"
+                [checked]="estaPermitido(v.clave)"
+                [disabled]="savingPermisos() || esFijo(v.clave)"
+                (change)="togglePermiso(v.clave)"
+              />
+            </label>
+          }
+        </div>
+
+        <!-- Los cambios viven en memoria hasta que se pulsa Guardar -->
+        <div class="permisos-actions">
+          @if (hayCambios()) {
+            <span class="permisos-actions__dirty">Cambios sin guardar</span>
+          }
+          <button
+            type="button"
+            class="btn btn--ghost"
+            [disabled]="!hayCambios() || savingPermisos()"
+            (click)="descartarCambios()"
+          >
+            Descartar
+          </button>
+          <button
+            type="button"
+            class="btn btn--primary"
+            [disabled]="!hayCambios() || savingPermisos()"
+            (click)="guardarPermisos()"
+          >
+            {{ savingPermisos() ? 'Guardando…' : 'Guardar cambios' }}
+          </button>
+        </div>
+
+        <p class="form-note" style="margin-top: 1rem;">
+          El <strong>Administrador Maestro</strong> siempre conserva acceso total a todas las vistas,
+          independientemente de esta matriz.
+        </p>
+      }
+    </div>
+  </div>
 }
 
 <!-- ============ TOAST ============ -->

@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/auth.guard';
+import { authGuard, permissionGuard } from './core/auth.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -32,28 +32,40 @@ export const routes: Routes = [
     children: [
       {
         path: 'dashboard',
+        canActivate: [permissionGuard],
+        data: { vista: 'dashboard' },
         loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.DashboardComponent),
       },
       {
         path: 'importar',
+        canActivate: [permissionGuard],
+        data: { vista: 'importar' },
         loadComponent: () => import('./pages/import/import').then((m) => m.ImportComponent),
       },
       {
         path: 'configuracion',
+        canActivate: [permissionGuard],
+        data: { vista: 'configuracion' },
         loadComponent: () => import('./pages/settings/settings').then((m) => m.SettingsComponent),
       },
       {
         path: 'ordenes',
+        canActivate: [permissionGuard],
+        data: { vista: 'ordenes' },
         loadComponent: () => import('./pages/validation/validation').then((m) => m.ValidationComponent),
       },
       // Ruta legada: /validacion sigue apuntando a Órdenes por compatibilidad.
       { path: 'validacion', redirectTo: 'ordenes', pathMatch: 'full' },
       {
         path: 'informes',
+        canActivate: [permissionGuard],
+        data: { vista: 'informes' },
         loadComponent: () => import('./pages/reports/reports').then((m) => m.ReportsComponent),
       },
       {
         path: 'profesionales',
+        canActivate: [permissionGuard],
+        data: { vista: 'profesionales' },
         loadComponent: () => import('./pages/professionals/professionals').then((m) => m.ProfessionalsComponent),
       },
     ],
