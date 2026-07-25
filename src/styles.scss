@@ -398,13 +398,43 @@ h4 {
   white-space: nowrap;
 }
 
-/* Primera y última celda de encabezado: redondeo suave con la card */
-.table thead th:first-child {
+/* --- Tabla debajo de un bloque de título (card__head / panel__head) ---
+   Sin separación, la banda azul del thead se pega al encabezado y ambos se
+   leen como un solo bloque. Aquí la tabla se mete hacia dentro del contenedor
+   y su cabecera se redondea, de modo que se aprecie como un elemento propio. */
+.card__head + .table-wrap,
+.panel__head + .table-wrap {
+  padding: 1rem;
+}
+
+/* El redondeo del thead necesita `separate` (con `collapse` no se aplica).
+   El selector es más específico que el `.table` de cada vista, que usa collapse. */
+.card__head + .table-wrap .table,
+.panel__head + .table-wrap .table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.card__head + .table-wrap .table thead th:first-child {
   border-top-left-radius: var(--radius-sm);
 }
 
-.table thead th:last-child {
+.card__head + .table-wrap .table thead th:last-child {
   border-top-right-radius: var(--radius-sm);
+}
+
+.panel__head + .table-wrap .table thead th:first-child {
+  border-top-left-radius: var(--radius-sm);
+}
+
+.panel__head + .table-wrap .table thead th:last-child {
+  border-top-right-radius: var(--radius-sm);
+}
+
+/* Con `separate` la última fila conserva su línea; se quita para cerrar limpio. */
+.card__head + .table-wrap .table tbody tr:last-child td,
+.panel__head + .table-wrap .table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .table tbody tr {
