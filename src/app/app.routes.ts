@@ -8,6 +8,18 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/login/login').then((m) => m.LoginComponent),
   },
   {
+    // AUTH-03 · Solicitud de recuperación de contraseña (pública)
+    path: 'recuperar',
+    loadComponent: () =>
+      import('./pages/forgot-password/forgot-password').then((m) => m.ForgotPasswordComponent),
+  },
+  {
+    // AUTH-03 · Restablecimiento con token recibido por correo (pública)
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./pages/reset-password/reset-password').then((m) => m.ResetPasswordComponent),
+  },
+  {
     // Portal público del profesional (sin layout, sin autenticación)
     path: 'soporte',
     loadComponent: () => import('./pages/portal/portal').then((m) => m.PortalComponent),

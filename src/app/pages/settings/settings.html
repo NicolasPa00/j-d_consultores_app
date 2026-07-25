@@ -23,6 +23,17 @@
   >
     Preferencias del Sistema
   </button>
+  @if (esMaestro()) {
+    <button
+      type="button"
+      class="tab"
+      [class.tab--active]="activeTab() === 'users'"
+      (click)="setTab('users')"
+      role="tab"
+    >
+      Usuarios del Sistema
+    </button>
+  }
 </div>
 
 <!-- ===== Pestaña 1: Perfil ===== -->
@@ -135,6 +146,132 @@
     </div>
   </div>
 
+}
+
+<!-- ===== Pestaña 3: Usuarios del Sistema (solo Administrador Maestro) ===== -->
+@if (activeTab() === 'users' && esMaestro()) {
+  <!-- Formulario de alta / edición -->
+  @if (userForm(); as editing) {
+    <div class="card">
+      <div class="card__head">
+        <h3 class="card__title">{{ editing === 'nuevo' ? 'Nuevo usuario' : 'Editar usuario' }}</h3>
+        <span class="card__hint">Gestión exclusiva del Administrador Maestro</span>
+      </div>
+      <div class="card__body">
+        <form class="profile-form" (ngSubmit)="saveUser()">
+          <div class="profile-form__row">
+            <label class="form-field">
+              <span class="form-field__label">Nombre completo *</span>
+              <input class="form-control" type="text" [(ngModel)]="draft.nombre" name="uNombre" placeholder="Ej. Laura Gómez Restrepo" />
+            </label>
+            <label class="form-field">
+              <span class="form-field__label">Documento de identidad {{ editing === 'nuevo' ? '*' : '' }}</span>
+              <input class="form-control" type="text" inputmode="numeric" [(ngModel)]="draft.documento" name="uDocumento"
+                     [disabled]="editing !== 'nuevo'" placeholder="Ej. 1020304050" />
+            </label>
+          </div>
+
+          <div class="profile-form__row">
+            <label class="form-field">
+              <span class="form-field__label">Correo electrónico *</span>
+              <input class="form-control" type="email" [(ngModel)]="draft.correo" name="uCorreo" placeholder="nombre@correo.com" />
+            </label>
+            <label class="form-field">
+              <span class="form-field__label">Teléfono</span>
+              <input class="form-control" type="tel" [(ngModel)]="draft.telefono" name="uTelefono" placeholder="3xx xxx xxxx" />
+            </label>
+          </div>
+
+          <div class="profile-form__row">
+            <label class="form-field">
+              <span class="form-field__label">Rol *</span>
+              <select class="form-control" [(ngModel)]="draft.rol" name="uRol">
+                @for (r of roles; track r) {
+                  <option [value]="r">{{ rolLabel(r) }}</option>
+                }
+              </select>
+            </label>
+            <label class="form-field">
+              <span class="form-field__label">Especialidad</span>
+              <input class="form-control" type="text" [(ngModel)]="draft.especialidad" name="uEspecialidad" placeholder="Ej. Higiene Industrial" />
+            </label>
+          </div>
+
+          @if (editing === 'nuevo') {
+            <p class="form-note">
+              La <strong>contraseña inicial</strong> será el <strong>número de cédula</strong> del usuario.
+              Al ingresar por primera vez, el sistema le recomendará cambiarla desde
+              "¿Olvidó su contraseña?".
+            </p>
+          }
+
+          <div class="profile-form__actions">
+            <button type="button" class="btn btn--ghost" (click)="closeUserForm()">Cancelar</button>
+            <button type="submit" class="btn btn--primary" [disabled]="savingUser()">
+              {{ savingUser() ? 'Guardando…' : (editing === 'nuevo' ? 'Crear usuario' : 'Guardar cambios') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  } @else {
+    <div class="card">
+      <div class="card__head">
+        <h3 class="card__title">Usuarios internos</h3>
+        <button type="button" class="btn btn--primary" (click)="openCreate()">+ Nuevo usuario</button>
+      </div>
+      <div class="card__body">
+        @if (loadingUsers()) {
+          <p class="users-empty">Cargando usuarios…</p>
+        } @else if (!usuarios().length) {
+          <p class="users-empty">No hay usuarios registrados.</p>
+        } @else {
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Documento</th>
+                  <th>Correo</th>
+                  <th>Rol</th>
+                  <th>Estado</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (u of usuarios(); track u.id) {
+                  <tr>
+                    <td>
+                      {{ u.nombre }}
+                      @if (u.es_maestro) {
+                        <span class="pill pill--info">Maestro</span>
+                      }
+                    </td>
+                    <td>{{ u.documento_identidad || '—' }}</td>
+                    <td>{{ u.correo }}</td>
+                    <td>{{ rolLabel(u.rol) }}</td>
+                    <td>
+                      <span class="pill" [class.pill--success]="u.activo" [class.pill--warning]="!u.activo">
+                        {{ u.activo ? 'Activo' : 'Inactivo' }}
+                      </span>
+                    </td>
+                    <td class="table-actions">
+                      <button type="button" class="btn btn--ghost" (click)="openEdit(u)">Editar</button>
+                      @if (!u.es_maestro) {
+                        <button type="button" class="btn btn--ghost" (click)="toggleActivo(u)">
+                          {{ u.activo ? 'Desactivar' : 'Activar' }}
+                        </button>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+  }
 }
 
 <!-- ============ TOAST ============ -->

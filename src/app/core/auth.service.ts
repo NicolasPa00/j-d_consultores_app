@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { API_BASE } from './config';
 import { LoginResponse, Usuario } from './models';
+import { AlertService } from './alert.service';
 
 const TOKEN_KEY = 'sst_token';
 const USER_KEY = 'sst_usuario';
@@ -12,6 +13,7 @@ const USER_KEY = 'sst_usuario';
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly alert = inject(AlertService);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
 
   private readonly _token = signal<string | null>(this.readStorage(TOKEN_KEY));
@@ -33,6 +35,23 @@ export class AuthService {
         this.writeStorage(USER_KEY, JSON.stringify(res.usuario));
       }),
     );
+  }
+
+  /** Muestra la recomendación de cambiar contraseña si aún es la cédula. */
+  recomendarCambioContrasena(): void {
+    this.alert.warning(
+      'Por seguridad, su contraseña actual es su número de cédula. Le recomendamos cambiarla desde "¿Olvidó su contraseña?".',
+    );
+  }
+
+  /** AUTH-03 · Solicita el correo de recuperación (respuesta siempre uniforme). */
+  forgotPassword(correo: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${API_BASE}/auth/forgot-password`, { correo });
+  }
+
+  /** AUTH-03 · Establece la nueva contraseña con el token del correo. */
+  resetPassword(token: string, password: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${API_BASE}/auth/reset-password`, { token, password });
   }
 
   logout(): void {

@@ -38,6 +38,22 @@ export interface ServiceOrder {
     contactoTelefono: ExtractedField;
     contactoCorreo: ExtractedField;
     descripcion: ExtractedField;
+    // Campos ampliados (presentes según la ARL: AXA/Colmena traen numero_orden,
+    // valores, fechas, etc.; Bolívar trae cronograma+secuencia). Opcionales para
+    // no romper el mock de Informes.
+    numeroOrden?: ExtractedField;
+    nroAfiliacion?: ExtractedField;
+    tipoActividad?: ExtractedField;
+    modalidad?: ExtractedField;
+    valorUnitario?: ExtractedField;
+    valorTotal?: ExtractedField;
+    fechaOrden?: ExtractedField;
+    fechaVencimiento?: ExtractedField;
+    ciudadEjecucion?: ExtractedField;
+    direccion?: ExtractedField;
+    contactoEmpresaNombre?: ExtractedField;
+    contactoEmpresaCargo?: ExtractedField;
+    contactoEmpresaTelefono?: ExtractedField;
   };
 }
 

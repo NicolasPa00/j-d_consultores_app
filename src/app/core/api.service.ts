@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from './config';
-import { Borrador, DashboardData, Ocupacion, Orden, Profesional } from './models';
+import { Borrador, DashboardData, Ocupacion, Orden, Profesional, Rol, Usuario } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -91,6 +91,26 @@ export class ApiService {
   }
   enableDraft(id: string): Observable<Wrap<Borrador>> {
     return this.http.patch<Wrap<Borrador>>(`${this.base}/drafts/${id}/enable`, {});
+  }
+
+  // ---- Usuarios internos (M1) — exclusivo del Administrador Maestro ----
+  listUsuarios(): Observable<{ usuarios: Usuario[] }> {
+    return this.http.get<{ usuarios: Usuario[] }>(`${this.base}/auth/usuarios`);
+  }
+  createUsuario(body: {
+    nombre: string; documento: string; correo: string;
+    rol: Rol; telefono?: string; especialidad?: string;
+  }): Observable<{ usuario: Usuario }> {
+    // La contraseña inicial la asigna el backend (= cédula); no se envía aquí.
+    return this.http.post<{ usuario: Usuario }>(`${this.base}/auth/usuarios`, body);
+  }
+  updateUsuario(id: string, body: {
+    nombre?: string; correo?: string; telefono?: string; especialidad?: string; rol?: Rol;
+  }): Observable<{ usuario: Usuario }> {
+    return this.http.put<{ usuario: Usuario }>(`${this.base}/auth/usuarios/${id}`, body);
+  }
+  setUsuarioActivo(id: string, activo: boolean): Observable<{ usuario: Usuario }> {
+    return this.http.patch<{ usuario: Usuario }>(`${this.base}/auth/usuarios/${id}/estado`, { activo });
   }
 
   // ---- Configuración ----

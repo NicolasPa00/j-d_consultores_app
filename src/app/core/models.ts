@@ -11,11 +11,15 @@ export interface Usuario {
   telefono?: string | null;
   especialidad?: string | null;
   activo?: boolean;
+  /** Administrador Maestro (cuenta exclusiva del equipo de desarrollo). */
+  es_maestro?: boolean;
 }
 
 export interface LoginResponse {
   token: string;
   usuario: Usuario;
+  /** true si la contraseña sigue siendo la cédula (se recomienda cambiarla). */
+  requiere_cambio_contrasena?: boolean;
 }
 
 export interface CampoExtraido {
@@ -23,14 +27,27 @@ export interface CampoExtraido {
   confidence: number;
 }
 
-/** metadatos_extraccion de un borrador / OS. */
+/** metadatos_extraccion de un borrador / OS (forma PLANA, alineada al backend). */
 export interface MetadatosExtraccion {
+  numero_orden?: CampoExtraido;
   codigo_cronograma?: CampoExtraido;
   secuencia?: CampoExtraido;
+  nro_afiliacion?: CampoExtraido;
   nit_nic?: CampoExtraido;
   empresa_nombre?: CampoExtraido;
   actividad_economica?: CampoExtraido;
+  tipo_actividad?: CampoExtraido;
+  modalidad?: CampoExtraido;
   horas_asignadas?: CampoExtraido;
+  valor_unitario?: CampoExtraido;
+  valor_total?: CampoExtraido;
+  fecha_orden?: CampoExtraido;
+  fecha_vencimiento?: CampoExtraido;
+  ciudad_ejecucion?: CampoExtraido;
+  direccion?: CampoExtraido;
+  contacto_empresa_nombre?: CampoExtraido;
+  contacto_empresa_cargo?: CampoExtraido;
+  contacto_empresa_telefono?: CampoExtraido;
   contacto_sst_nombre?: CampoExtraido;
   contacto_sst_telefono?: CampoExtraido;
   contacto_sst_correo?: CampoExtraido;
@@ -74,14 +91,27 @@ export interface Orden {
   codigo: string;
   arl_id: string;
   arl_nombre?: string;
-  codigo_cronograma: string;
-  secuencia: string;
+  numero_orden?: string | null;
+  codigo_cronograma?: string | null;
+  secuencia?: string | null;
+  nro_afiliacion?: string | null;
   nit_nic?: string;
   empresa_nombre?: string;
   actividad_economica?: string;
+  tipo_actividad?: string | null;
+  modalidad?: string | null;
   horas_asignadas?: number;
+  valor_unitario?: number | null;
+  valor_total?: number | null;
+  fecha_orden?: string | null;
+  fecha_vencimiento?: string | null;
+  ciudad_ejecucion?: string | null;
+  direccion?: string | null;
   fecha_carga?: string;
   descripcion?: string;
+  contacto_empresa_nombre?: string | null;
+  contacto_empresa_cargo?: string | null;
+  contacto_empresa_telefono?: string | null;
   contacto_sst_nombre?: string;
   contacto_sst_telefono?: string;
   contacto_sst_correo?: string;

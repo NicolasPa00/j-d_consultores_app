@@ -288,7 +288,7 @@ h4 {
   to { transform: rotate(360deg); }
 }
 
-/* Toast global (notificaciones breves) */
+/* Toast global (notificaciones breves) — card flotante con línea de actividad */
 .toast {
   position: fixed;
   bottom: 24px;
@@ -296,17 +296,50 @@ h4 {
   z-index: 1000;
   display: flex;
   align-items: center;
-  gap: 8px;
-  max-width: 380px;
-  padding: 12px 18px;
-  border-radius: var(--radius-md);
-  background: var(--primary-color);
-  color: #fff;
+  gap: 10px;
+  max-width: 400px;
+  padding: 14px 18px 17px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text-main);
+  border: 1px solid var(--border-soft);
   box-shadow: var(--shadow-elevated);
   font-size: 0.9rem;
+  line-height: 1.45;
+  overflow: hidden;
   animation: sst-toast-in 0.25s ease;
 }
+
+/* Riel inferior de la línea de actividad */
+.toast::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: rgba(45, 123, 200, 0.14);
+}
+
+/* Línea que recorre la card de lado a lado (indicador de actividad) */
+.toast::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--secondary-color), var(--accent-color));
+  animation: sst-toast-line 1.2s ease-in-out infinite alternate;
+}
+
 @keyframes sst-toast-in {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sst-toast-line {
+  from { transform: translateX(0); }
+  to { transform: translateX(150%); }
 }

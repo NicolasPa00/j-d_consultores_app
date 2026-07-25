@@ -28,9 +28,11 @@ export class LoginComponent {
     }
     this.loading.set(true);
     this.auth.login(this.documento.trim(), this.password).subscribe({
-      next: () => {
+      next: (res) => {
         this.loading.set(false);
         this.router.navigateByUrl('/dashboard');
+        // Recomendación de seguridad: contraseña = cédula (usuario recién creado).
+        if (res.requiere_cambio_contrasena) this.auth.recomendarCambioContrasena();
       },
       error: (err) => {
         this.loading.set(false);

@@ -72,18 +72,40 @@ export class ValidationComponent implements OnInit {
     const o = this.detailOrder();
     if (!o) return [];
     const f = o.fields;
-    return [
-      { label: 'Código Cronograma', field: f.codigoCronograma, type: 'text', span: 'half' },
-      { label: 'Secuencia', field: f.secuencia, type: 'text', span: 'half' },
-      { label: 'NIT', field: f.nit, type: 'text', span: 'half' },
-      { label: 'Horas Asignadas', field: f.horas, type: 'text', span: 'half' },
-      { label: 'Nombre Empresa', field: f.company, type: 'text', span: 'full' },
-      { label: 'Actividad Económica', field: f.actividadEconomica, type: 'text', span: 'full' },
-      { label: 'Contacto SST · Nombre', field: f.contactoNombre, type: 'text', span: 'half' },
-      { label: 'Contacto SST · Teléfono', field: f.contactoTelefono, type: 'text', span: 'half' },
-      { label: 'Contacto SST · Correo', field: f.contactoCorreo, type: 'text', span: 'full' },
-      { label: 'Descripción', field: f.descripcion, type: 'textarea', span: 'full' },
-    ];
+    const rows: FormFieldDescriptor[] = [];
+    // Identidad: numero_orden (AXA/Colmena) o cronograma+secuencia (Bolívar).
+    // Se muestra un campo ampliado solo cuando trae valor (varía según la ARL).
+    const opt = (label: string, fld: { value: string; confidence: number } | undefined,
+                 type: FormFieldDescriptor['type'] = 'text', span: FormFieldDescriptor['span'] = 'half') => {
+      if (fld && String(fld.value).trim() !== '') rows.push({ label, field: fld, type, span });
+    };
+
+    opt('Número de Orden', f.numeroOrden);
+    opt('N.º Afiliación', f.nroAfiliacion);
+    if (String(f.codigoCronograma.value).trim() || String(f.secuencia.value).trim()) {
+      rows.push({ label: 'Código Cronograma', field: f.codigoCronograma, type: 'text', span: 'half' });
+      rows.push({ label: 'Secuencia', field: f.secuencia, type: 'text', span: 'half' });
+    }
+    rows.push({ label: 'NIT', field: f.nit, type: 'text', span: 'half' });
+    rows.push({ label: 'Horas Asignadas', field: f.horas, type: 'text', span: 'half' });
+    rows.push({ label: 'Nombre Empresa', field: f.company, type: 'text', span: 'full' });
+    rows.push({ label: 'Actividad Económica', field: f.actividadEconomica, type: 'text', span: 'full' });
+    opt('Tipo de Actividad', f.tipoActividad);
+    opt('Modalidad', f.modalidad);
+    opt('Valor Unitario', f.valorUnitario);
+    opt('Valor Total', f.valorTotal);
+    opt('Fecha de la Orden', f.fechaOrden);
+    opt('Fecha de Vencimiento', f.fechaVencimiento);
+    opt('Ciudad de Ejecución', f.ciudadEjecucion);
+    opt('Dirección', f.direccion, 'text', 'full');
+    opt('Contacto Empresa · Nombre', f.contactoEmpresaNombre);
+    opt('Contacto Empresa · Cargo', f.contactoEmpresaCargo);
+    opt('Contacto Empresa · Teléfono', f.contactoEmpresaTelefono);
+    rows.push({ label: 'Contacto SST · Nombre', field: f.contactoNombre, type: 'text', span: 'half' });
+    rows.push({ label: 'Contacto SST · Teléfono', field: f.contactoTelefono, type: 'text', span: 'half' });
+    rows.push({ label: 'Contacto SST · Correo', field: f.contactoCorreo, type: 'text', span: 'full' });
+    rows.push({ label: 'Descripción', field: f.descripcion, type: 'textarea', span: 'full' });
+    return rows;
   });
 
   // ---- Asignación ----
@@ -179,18 +201,31 @@ export class ValidationComponent implements OnInit {
     if (!current || this.saving()) return;
     this.saving.set(true);
 
-    const fields = {
-      codigo_cronograma: current.fields.codigoCronograma,
-      secuencia: current.fields.secuencia,
-      nit_nic: current.fields.nit,
-      empresa_nombre: current.fields.company,
-      actividad_economica: current.fields.actividadEconomica,
-      horas_asignadas: current.fields.horas,
-      contacto_sst_nombre: current.fields.contactoNombre,
-      contacto_sst_telefono: current.fields.contactoTelefono,
-      contacto_sst_correo: current.fields.contactoCorreo,
-      descripcion: current.fields.descripcion,
+    const f = current.fields;
+    const fields: Record<string, { value: string; confidence: number }> = {
+      codigo_cronograma: f.codigoCronograma,
+      secuencia: f.secuencia,
+      nit_nic: f.nit,
+      empresa_nombre: f.company,
+      actividad_economica: f.actividadEconomica,
+      horas_asignadas: f.horas,
+      contacto_sst_nombre: f.contactoNombre,
+      contacto_sst_telefono: f.contactoTelefono,
+      contacto_sst_correo: f.contactoCorreo,
+      descripcion: f.descripcion,
     };
+    // Campos ampliados: solo se envían los presentes para esta ARL.
+    const ampliados: [string, { value: string; confidence: number } | undefined][] = [
+      ['numero_orden', f.numeroOrden], ['nro_afiliacion', f.nroAfiliacion],
+      ['tipo_actividad', f.tipoActividad], ['modalidad', f.modalidad],
+      ['valor_unitario', f.valorUnitario], ['valor_total', f.valorTotal],
+      ['fecha_orden', f.fechaOrden], ['fecha_vencimiento', f.fechaVencimiento],
+      ['ciudad_ejecucion', f.ciudadEjecucion], ['direccion', f.direccion],
+      ['contacto_empresa_nombre', f.contactoEmpresaNombre],
+      ['contacto_empresa_cargo', f.contactoEmpresaCargo],
+      ['contacto_empresa_telefono', f.contactoEmpresaTelefono],
+    ];
+    for (const [k, v] of ampliados) if (v) fields[k] = v;
 
     this.api.updateDraft(current.id, fields).subscribe({
       next: () => {
@@ -385,6 +420,19 @@ function toServiceOrder(b: Borrador): ServiceOrder {
       contactoTelefono: field(m.contacto_sst_telefono),
       contactoCorreo: field(m.contacto_sst_correo),
       descripcion: field(m.descripcion),
+      numeroOrden: field(m.numero_orden),
+      nroAfiliacion: field(m.nro_afiliacion),
+      tipoActividad: field(m.tipo_actividad),
+      modalidad: field(m.modalidad),
+      valorUnitario: field(m.valor_unitario),
+      valorTotal: field(m.valor_total),
+      fechaOrden: field(m.fecha_orden),
+      fechaVencimiento: field(m.fecha_vencimiento),
+      ciudadEjecucion: field(m.ciudad_ejecucion),
+      direccion: field(m.direccion),
+      contactoEmpresaNombre: field(m.contacto_empresa_nombre),
+      contactoEmpresaCargo: field(m.contacto_empresa_cargo),
+      contactoEmpresaTelefono: field(m.contacto_empresa_telefono),
     },
   };
 }

@@ -210,3 +210,73 @@
     width: 150px;
   }
 }
+
+/* ===== Usuarios del Sistema (solo Administrador Maestro) ===== */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table thead th {
+  background: #f8fafc;
+  color: #475569;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.85rem 1.1rem;
+  white-space: nowrap;
+}
+
+.table tbody td {
+  padding: 0.8rem 1.1rem;
+  border-bottom: 1px solid var(--border-soft);
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.table td .pill {
+  margin-left: 0.4rem;
+}
+
+.table-actions {
+  white-space: nowrap;
+  text-align: right;
+
+  .btn + .btn {
+    margin-left: 0.4rem;
+  }
+}
+
+.users-empty {
+  margin: 0;
+  padding: 1.5rem 0;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.form-note {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  background: rgba(45, 123, 200, 0.08);
+  border: 1px solid rgba(45, 123, 200, 0.2);
+  border-radius: var(--radius-md);
+  color: var(--text-main);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
