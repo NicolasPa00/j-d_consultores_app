@@ -37,6 +37,8 @@ export interface MetadatosExtraccion {
   descripcion?: CampoExtraido;
   overall_confidence?: number;
   engine?: string;
+  /** IA-03: confianza (0-100) de la clasificación de ARL por contenido. */
+  arl_confidence?: number;
 }
 
 export interface Borrador {

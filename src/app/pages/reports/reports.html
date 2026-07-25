@@ -83,6 +83,55 @@
   </div>
 </div>
 
+<!-- ============ BUSCADOR EN LENGUAJE NATURAL (IA-23/24) ============ -->
+@if (activeTab() === 'ordenes') {
+  <div class="toolbar">
+    <div class="toolbar__filters">
+      <div class="toolbar__search">
+        <input
+          class="form-control"
+          type="text"
+          placeholder="Pregunta en lenguaje natural: p. ej. «órdenes de Bolívar con más de 4 horas»"
+          [ngModel]="nlQuery()"
+          (ngModelChange)="nlQuery.set($event)"
+          (keyup.enter)="runNaturalSearch()"
+          aria-label="Búsqueda en lenguaje natural"
+        />
+      </div>
+      <button type="button" class="btn btn--primary btn--sm" [disabled]="nlLoading() || !nlQuery().trim()" (click)="runNaturalSearch()">
+        @if (nlLoading()) { Interpretando… } @else { Buscar }
+      </button>
+      @if (nlActive()) {
+        <button type="button" class="btn btn--ghost btn--sm" (click)="clearNaturalSearch()">Limpiar búsqueda</button>
+      }
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar__filters">
+      <span class="page-head__sub">Sugerencias:</span>
+      @for (s of nlSuggestions; track s) {
+        <button type="button" class="btn btn--ghost btn--sm" (click)="useSuggestion(s)">{{ s }}</button>
+      }
+    </div>
+  </div>
+
+  @if (nlActive()) {
+    <div class="toolbar">
+      <div class="toolbar__filters">
+        @if (filterPills().length) {
+          <span class="page-head__sub">Filtros detectados:</span>
+          @for (p of filterPills(); track p) {
+            <span class="pill pill--info">{{ p }}</span>
+          }
+        } @else {
+          <span class="page-head__sub">No se detectaron filtros específicos; se muestran coincidencias por texto.</span>
+        }
+      </div>
+    </div>
+  }
+}
+
 <!-- ============ TABLA ÓRDENES ============ -->
 @if (activeTab() === 'ordenes') {
   <div class="card">

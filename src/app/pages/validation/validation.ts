@@ -365,6 +365,7 @@ function toServiceOrder(b: Borrador): ServiceOrder {
     id: b.id,
     company: m.empresa_nombre?.value || 'Sin nombre',
     arl: b.arl_nombre || '—',
+    arlConfidence: m.arl_confidence != null ? Math.round(Number(m.arl_confidence)) : undefined,
     fileName: b.nombre_archivo || 'documento',
     fileType: (b.tipo_mime || '').includes('pdf') ? 'pdf' : 'excel',
     fileSize: '—',

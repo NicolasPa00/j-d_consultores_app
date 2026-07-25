@@ -82,7 +82,12 @@
                 }
               </div>
             </td>
-            <td>{{ order.arl }}</td>
+            <td>
+              {{ order.arl }}
+              @if (order.arlConfidence) {
+                <span class="pill" [class]="pillClass(order.arlConfidence)" title="Confianza de la clasificación de ARL">{{ order.arlConfidence }}%</span>
+              }
+            </td>
             <td class="mono">{{ order.fields.horas.value || '—' }}</td>
             <td>
               <span class="pill" [class]="pillClass(order.confidence)">{{ order.confidence }}%</span>
@@ -164,7 +169,7 @@
         <h3 class="modal__title" id="detailTitle">
           {{ editMode() ? 'Editar orden' : 'Detalle de la orden' }}
         </h3>
-        <p class="modal__sub">{{ order.company }} · {{ order.arl }}</p>
+        <p class="modal__sub">{{ order.company }} · {{ order.arl }}@if (order.arlConfidence) { <span class="modal__sub-conf">({{ order.arlConfidence }}% confianza ARL)</span>}</p>
       </div>
       <div class="modal__head-actions">
         @if (!editMode()) {

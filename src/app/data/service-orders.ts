@@ -14,6 +14,8 @@ export interface ServiceOrder {
   id: string;
   company: string;
   arl: string;
+  /** IA-03: confianza (0-100) de la clasificación de ARL sugerida. */
+  arlConfidence?: number;
   fileName: string;
   fileType: 'excel' | 'pdf';
   fileSize: string;

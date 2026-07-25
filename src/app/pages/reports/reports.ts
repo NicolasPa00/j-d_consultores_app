@@ -7,6 +7,15 @@ import { Orden, Profesional } from '../../core/models';
 
 type ReportTab = 'ordenes' | 'profesionales';
 
+/** Filtros estructurados detectados por el buscador en lenguaje natural (IA-24). */
+interface SearchFilters {
+  arl?: string;
+  status?: string;
+  minHoras?: number;
+  bajaConfianza?: boolean;
+  texto?: string;
+}
+
 /** Estados de OS del backend (para categorizar el listado de órdenes). */
 const ESTADOS = ['SIN PROGRAMAR', 'PROGRAMADA', 'EN VERIFICACIÓN', 'EJECUTADA', 'CANCELADA'];
 
@@ -36,6 +45,17 @@ export class ReportsComponent implements OnInit {
   protected readonly profEstadoFilter = signal('');
   protected readonly query = signal('');
 
+  // ---- Buscador en lenguaje natural (IA-23/24) ----
+  protected readonly nlQuery = signal('');
+  protected readonly nlLoading = signal(false);
+  protected readonly nlActive = signal(false);
+  protected readonly nlFilters = signal<SearchFilters | null>(null);
+  protected readonly nlSuggestions = [
+    'órdenes de Bolívar con más de 4 horas',
+    'AXA con baja confianza',
+    'Colmena',
+  ];
+
   // ---- Modal de resumen ----
   protected readonly summaryOrder = signal<Orden | null>(null);
   protected readonly summaryLoading = signal(false);
@@ -52,6 +72,19 @@ export class ReportsComponent implements OnInit {
     return !!this.profEstadoFilter() || !!this.query().trim();
   });
 
+  /** Traduce los filtros detectados por la IA a etiquetas legibles (pills). */
+  protected readonly filterPills = computed<string[]>(() => {
+    const f = this.nlFilters();
+    if (!f) return [];
+    const pills: string[] = [];
+    if (f.arl) pills.push('ARL: ' + f.arl);
+    if (f.status) pills.push('Estado: ' + f.status);
+    if (f.minHoras != null) pills.push('≥ ' + f.minHoras + ' horas');
+    if (f.bajaConfianza) pills.push('Baja confianza');
+    if (f.texto) pills.push('Texto: ' + f.texto);
+    return pills;
+  });
+
   ngOnInit(): void {
     if (!this.isBrowser) return;
     this.loadOrders();
@@ -60,6 +93,7 @@ export class ReportsComponent implements OnInit {
 
   // ================= Carga =================
   private loadOrders(): void {
+    this.nlActive.set(false); // el listado normal reemplaza cualquier búsqueda NL previa
     this.loadingOrders.set(true);
     const params: Record<string, string> = {};
     if (this.estadoFilter()) params['estado'] = this.estadoFilter();
@@ -105,6 +139,38 @@ export class ReportsComponent implements OnInit {
     this.query.set('');
     if (this.activeTab() === 'ordenes') { this.estadoFilter.set(''); this.loadOrders(); }
     else { this.profEstadoFilter.set(''); this.loadProfessionals(); }
+  }
+
+  // ================= Buscador en lenguaje natural (IA-23/24) =================
+  /** Interpreta la consulta NL en el backend → filtros + resultados. */
+  protected runNaturalSearch(): void {
+    const q = this.nlQuery().trim();
+    if (!q || this.nlLoading()) return;
+    this.nlLoading.set(true);
+    this.api.search(q).subscribe({
+      next: (r) => {
+        this.orders.set(r.data.results);
+        this.nlFilters.set((r.data.filters as SearchFilters) ?? {});
+        this.nlActive.set(true);
+        this.nlLoading.set(false);
+      },
+      error: () => {
+        this.nlLoading.set(false);
+        this.alerts.error('No se pudo interpretar la búsqueda.');
+      },
+    });
+  }
+
+  protected useSuggestion(s: string): void {
+    this.nlQuery.set(s);
+    this.runNaturalSearch();
+  }
+
+  /** Limpia la búsqueda NL y vuelve al listado normal. */
+  protected clearNaturalSearch(): void {
+    this.nlQuery.set('');
+    this.nlFilters.set(null);
+    this.loadOrders(); // resetea nlActive y recarga con los filtros normales
   }
 
   protected confidenceOf(o: Orden): number {
@@ -162,11 +228,42 @@ export class ReportsComponent implements OnInit {
   // ================= Exportaciones =================
   protected exportExcel(): void {
     if (this.activeTab() === 'ordenes') {
-      const rows = this.orders().map((o) => [
-        o.codigo || '', o.empresa_nombre || '', o.nit_nic || '', o.arl_nombre || '',
-        o.horas_asignadas ?? '', o.estado, `${this.confidenceOf(o)}%`,
-      ]);
-      this.downloadCsv('ordenes', ['Código', 'Empresa', 'NIT', 'ARL', 'Horas', 'Estado', 'Confianza'], rows);
+      // RPT-03 / CA-07: exportar TODOS los datos extraídos por IA, con la confianza por campo.
+      const headers = [
+        'Código', 'Estado', 'ARL', 'Conf. ARL %', 'Conf. general %', 'Fecha carga',
+        'Código cronograma', 'Conf. cronograma %',
+        'Secuencia', 'Conf. secuencia %',
+        'NIT/NIC', 'Conf. NIT %',
+        'Empresa', 'Conf. empresa %',
+        'Actividad económica', 'Conf. actividad %',
+        'Horas', 'Conf. horas %',
+        'Contacto SST', 'Conf. contacto %',
+        'Teléfono contacto', 'Conf. teléfono %',
+        'Correo contacto', 'Conf. correo %',
+        'Descripción', 'Conf. descripción %',
+        'Motor IA',
+      ];
+      const pct = (c?: number) => (c != null ? Math.round(Number(c)) + '%' : '');
+      const conf = (campo?: { confidence?: number }) => pct(campo?.confidence);
+      const rows = this.orders().map((o) => {
+        const m = o.metadatos_extraccion;
+        return [
+          o.codigo || '', o.estado, o.arl_nombre || '', pct(m?.arl_confidence),
+          `${this.confidenceOf(o)}%`, o.fecha_carga || '',
+          o.codigo_cronograma || '', conf(m?.codigo_cronograma),
+          o.secuencia || '', conf(m?.secuencia),
+          o.nit_nic || '', conf(m?.nit_nic),
+          o.empresa_nombre || '', conf(m?.empresa_nombre),
+          o.actividad_economica || '', conf(m?.actividad_economica),
+          o.horas_asignadas ?? '', conf(m?.horas_asignadas),
+          o.contacto_sst_nombre || '', conf(m?.contacto_sst_nombre),
+          o.contacto_sst_telefono || '', conf(m?.contacto_sst_telefono),
+          o.contacto_sst_correo || '', conf(m?.contacto_sst_correo),
+          o.descripcion || '', conf(m?.descripcion),
+          m?.engine || '',
+        ];
+      });
+      this.downloadCsv('ordenes', headers, rows);
     } else {
       const rows = this.filteredProfs().map((p) => [
         p.nombre, p.correo, p.telefono || '', p.especialidad || '', p.estado,
