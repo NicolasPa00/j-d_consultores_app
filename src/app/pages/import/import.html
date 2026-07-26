@@ -96,6 +96,10 @@
                   <span class="who__name">{{ row.company }}</span>
                   @if (row.duplicada) {
                     <span class="pill pill--muted" title="Ya existe una OS con esta identidad">Duplicada</span>
+                  } @else if (sinVencimiento(row)) {
+                    <span class="pill pill--danger" title="Diligencie la fecha de vencimiento para poder guardar">
+                      Sin vencimiento
+                    </span>
                   }
                 </div>
               </td>
@@ -139,7 +143,10 @@
 
     <div class="preview__footer">
       <span class="preview__status">
-        @if (duplicateCount()) {
+        @if (pendientesVencimiento().length; as faltan) {
+          <strong>{{ faltan }} orden(es) sin fecha de vencimiento.</strong>
+          Diligénciela en cada una para poder guardar.
+        } @else if (duplicateCount()) {
           {{ confirmableCount() }} orden(es) se guardarán ·
           <strong>{{ duplicateCount() }} duplicada(s)</strong> se omitirán.
         } @else {
@@ -281,6 +288,15 @@
                     [(ngModel)]="item.value"
                     [name]="item.key"
                   ></textarea>
+                } @else if (item.type === 'date') {
+                  <input
+                    class="form-control"
+                    type="date"
+                    [class.form-control--error]="!item.value"
+                    [class.form-control--alert]="!!item.value && isLow(item.confidence)"
+                    [(ngModel)]="item.value"
+                    [name]="item.key"
+                  />
                 } @else {
                   <input
                     class="form-control"
@@ -291,7 +307,11 @@
                   />
                 }
 
-                @if (isLow(item.confidence)) {
+                @if (item.required && !item.value) {
+                  <p class="field__alert">
+                    Campo obligatorio — el documento no la trae y sin ella la orden no se puede guardar.
+                  </p>
+                } @else if (isLow(item.confidence)) {
                   <p class="field__alert">⚠ Baja confianza — verifica contra el documento original.</p>
                 }
               </div>
@@ -315,7 +335,7 @@
             <span class="spinner" aria-hidden="true"></span>
             Guardando…
           } @else {
-            Guardar correcciones
+            Guardar
           }
         </button>
       </div>

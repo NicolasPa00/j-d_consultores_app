@@ -76,7 +76,7 @@
 <section class="panel">
   <div class="panel__head">
     <h3 class="panel__title">Órdenes recientes</h3>
-    <span class="panel__hint">Clic en una fila para ver el detalle · ORD-01</span>
+    <span class="panel__hint">Consulta de solo lectura · ORD-01</span>
   </div>
 
   <div class="table-wrap">
@@ -92,8 +92,11 @@
         </tr>
       </thead>
       <tbody>
+        <!-- Solo lectura: el detalle/asignación (drawer) queda oculto en esta
+             entrega. Para reactivarlo basta con devolver a la fila la clase
+             `row-clickable` y el (click)="openOrder(order)". -->
         @for (order of orders(); track order.code) {
-          <tr class="row-clickable" (click)="openOrder(order)">
+          <tr>
             <td class="cell-code">{{ order.code }}</td>
             <td>{{ order.client }}</td>
             <td>
@@ -126,6 +129,9 @@
 </section>
 
 <!-- ============ DRAWER DE DETALLE Y ASIGNACIÓN (Módulo ASG) ============ -->
+<!-- OCULTO EN ESTA ENTREGA: nada abre el drawer (ver tabla de arriba), así que
+     `selectedOrder()` siempre es null y este bloque no se pinta. Se conserva
+     completo para reactivarlo en la fase siguiente. -->
 @if (selectedOrder(); as order) {
   <div class="drawer-backdrop" (click)="closeDrawer()"></div>
 

@@ -6,6 +6,7 @@ import { ExtractedField, ServiceOrder } from '../../data/service-orders';
 import { ApiService } from '../../core/api.service';
 import { AlertService } from '../../core/alert.service';
 import { Borrador, Ocupacion, Profesional } from '../../core/models';
+import { aIsoFecha, fechaLocal } from '../../core/fechas';
 
 interface FormFieldDescriptor {
   label: string;
@@ -14,8 +15,20 @@ interface FormFieldDescriptor {
   span: 'half' | 'full';
 }
 
-/** Vista actual del listado: órdenes activas o deshabilitadas. */
-type OrdersView = 'activas' | 'deshabilitadas';
+/**
+ * Filtro activo del listado. Cada pestaña corresponde a un estado real de la
+ * orden dentro de la bandeja; "todas" agrupa las que siguen activas.
+ */
+type OrdersView = 'todas' | 'pendientes' | 'validadas' | 'deshabilitadas';
+
+/** Cómo se pinta la fecha de vencimiento de una orden en la tabla. */
+interface Vencimiento {
+  /** Fecha en formato colombiano (dd/mm/aaaa). */
+  fecha: string;
+  /** "Faltan 5 días" · "Vence hoy" · "Vencida". */
+  detalle: string;
+  tone: 'normal' | 'warn' | 'danger';
+}
 
 /**
  * Franja mostrada en el calendario del modal de asignación.
@@ -40,7 +53,14 @@ export class ValidationComponent implements OnInit {
 
   protected readonly orders = signal<ServiceOrder[]>([]);
   protected readonly query = signal('');
-  protected readonly view = signal<OrdersView>('activas');
+  protected readonly view = signal<OrdersView>('todas');
+  /** Pestañas de filtro por estado (el orden es el del ciclo de vida). */
+  protected readonly tabs: { key: OrdersView; label: string }[] = [
+    { key: 'todas', label: 'Todas' },
+    { key: 'pendientes', label: 'Pendientes' },
+    { key: 'validadas', label: 'Validadas' },
+    { key: 'deshabilitadas', label: 'Deshabilitadas' },
+  ];
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
 
@@ -60,9 +80,9 @@ export class ValidationComponent implements OnInit {
 
   protected readonly filtered = computed(() => {
     const q = this.query().trim().toLowerCase();
-    const wantDisabled = this.view() === 'deshabilitadas';
+    const view = this.view();
     return this.orders().filter((o) => {
-      if (!!o.disabled !== wantDisabled) return false;
+      if (!this.enVista(o, view)) return false;
       if (!q) return true;
       return (
         o.company.toLowerCase().includes(q) ||
@@ -72,8 +92,22 @@ export class ValidationComponent implements OnInit {
     });
   });
 
-  protected readonly activeCount = computed(() => this.orders().filter((o) => !o.disabled).length);
-  protected readonly disabledCount = computed(() => this.orders().filter((o) => o.disabled).length);
+  /**
+   * ¿La orden pertenece a la pestaña indicada? Las deshabilitadas se apartan de
+   * todas las demás: siguen teniendo su estado (pendiente o validada), pero
+   * mientras estén inactivas no deben aparecer mezcladas con las vigentes.
+   */
+  private enVista(o: ServiceOrder, view: OrdersView): boolean {
+    if (view === 'deshabilitadas') return !!o.disabled;
+    if (o.disabled) return false;
+    if (view === 'pendientes') return !o.validated;
+    if (view === 'validadas') return o.validated;
+    return true;
+  }
+
+  protected count(view: OrdersView): number {
+    return this.orders().filter((o) => this.enVista(o, view)).length;
+  }
 
   // ---- Detalle ----
   protected readonly detailOrder = computed(
@@ -131,8 +165,10 @@ export class ValidationComponent implements OnInit {
 
   private load(): void {
     this.loading.set(true);
-    // 'all' trae activas y deshabilitadas; se separan por pestaña en el cliente.
-    this.api.listDrafts('PENDIENTE_VALIDACION', 'all').subscribe({
+    // Pendientes Y validadas: validar una orden ya no la saca de esta vista, solo
+    // le cambia el estado. 'all' trae además las deshabilitadas; los cuatro
+    // grupos se separan por pestaña en el cliente.
+    this.api.listDrafts('PENDIENTE_VALIDACION,VALIDADA', 'all').subscribe({
       next: (r) => {
         this.orders.set(r.data.map(toServiceOrder));
         this.loading.set(false);
@@ -165,6 +201,45 @@ export class ValidationComponent implements OnInit {
     this.view.set(v);
   }
 
+  /** Etiqueta de estado de la fila (una orden deshabilitada lo está por encima de todo). */
+  protected estadoLabel(o: ServiceOrder): string {
+    if (o.disabled) return 'Deshabilitada';
+    return o.validated ? 'Validada' : 'Pendiente';
+  }
+
+  protected estadoClass(o: ServiceOrder): string {
+    if (o.disabled) return 'pill--muted';
+    return o.validated ? 'pill--success' : 'pill--warning';
+  }
+
+  /**
+   * Vencimiento de la orden con los días que faltan. Devuelve null si la orden
+   * no trae fecha (órdenes cargadas antes de que el campo fuera obligatorio).
+   *
+   * El conteo es en días de calendario, no en horas: lo que importa es cuántas
+   * jornadas quedan, no el momento exacto del día en que se consulta.
+   */
+  protected vencimiento(o: ServiceOrder): Vencimiento | null {
+    const iso = aIsoFecha(o.fields.fechaVencimiento?.value);
+    const venc = iso ? fechaLocal(iso) : null;
+    if (!venc) return null;
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const dias = Math.round((venc.getTime() - hoy.getTime()) / 86_400_000);
+    const fecha = `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+
+    if (dias < 0) return { fecha, detalle: 'Vencida', tone: 'danger' };
+    if (dias === 0) return { fecha, detalle: 'Vence hoy', tone: 'warn' };
+    return {
+      fecha,
+      detalle: `Faltan ${dias} día${dias === 1 ? '' : 's'}`,
+      // Umbral de alerta temprana: con 3 días o menos ya no hay margen para
+      // reprogramar al profesional, así que la fila se marca en naranja.
+      tone: dias <= 3 ? 'warn' : 'normal',
+    };
+  }
+
   // ================= Detalle / Edición =================
   protected openDetail(id: string): void {
     this.detailId.set(id);
@@ -173,10 +248,13 @@ export class ValidationComponent implements OnInit {
 
   protected openEdit(id: string): void {
     this.detailId.set(id);
-    this.editMode.set(true);
+    // Una orden ya validada se abre en solo lectura: sus datos viven en la OS
+    // materializada, y editar el borrador a estas alturas no la modificaría.
+    this.editMode.set(!this.orders().find((o) => o.id === id)?.validated);
   }
 
   protected enableEdit(): void {
+    if (this.detailOrder()?.validated) return;
     this.editMode.set(true);
   }
 
@@ -243,12 +321,16 @@ export class ValidationComponent implements OnInit {
       next: () => {
         this.api.validateDraft(current.id).subscribe({
           next: () => {
-            // Materializada como OS: sale de la bandeja y se cierra el modal.
-            this.orders.update((list) => list.filter((o) => o.id !== current.id));
+            // La orden NO sale del listado: queda en la misma bandeja con estado
+            // "Validada". El backend devuelve la OS recién creada (otra entidad),
+            // así que el estado del borrador se refleja aquí sin releer la lista.
+            this.orders.update((list) =>
+              list.map((o) => (o.id === current.id ? { ...o, validated: true } : o)),
+            );
             this.saving.set(false);
             this.detailId.set(null);
             this.editMode.set(false);
-            this.alerts.success('Orden validada', `${current.company} quedó registrada como Orden de Servicio en estado SIN PROGRAMAR.`);
+            this.alerts.success('Orden validada', `${current.company} quedó registrada como Orden de Servicio y aparece como Validada en el listado.`);
           },
           error: (err) => {
             this.saving.set(false);
@@ -525,7 +607,7 @@ function toServiceOrder(b: Borrador): ServiceOrder {
     fileSize: '—',
     importedAt: b.creado_en ? new Date(b.creado_en).toLocaleString('es-CO') : '',
     confidence: Math.round(Number(b.confianza_general ?? m.overall_confidence ?? 0)),
-    validated: false,
+    validated: b.estado === 'VALIDADA',
     disabled: !!b.deshabilitado,
     assignedProf: b.profesional_nombre ?? null,
     fields: {

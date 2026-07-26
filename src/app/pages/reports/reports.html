@@ -32,14 +32,7 @@
 <!-- ============ TOOLBAR (filtros + export) ============ -->
 <div class="toolbar">
   <div class="toolbar__filters">
-    @if (activeTab() === 'ordenes') {
-      <select class="form-control toolbar__control" [ngModel]="estadoFilter()" (ngModelChange)="onEstadoChange($event)" aria-label="Filtrar por estado">
-        <option value="">Todos los estados</option>
-        @for (e of estados; track e) {
-          <option [value]="e">{{ e }}</option>
-        }
-      </select>
-    } @else {
+    @if (activeTab() !== 'ordenes') {
       <select class="form-control toolbar__control" [ngModel]="profEstadoFilter()" (ngModelChange)="onProfEstadoChange($event)" aria-label="Filtrar por estado">
         <option value="">Todos</option>
         <option value="Activo">Activos</option>
@@ -83,53 +76,43 @@
   </div>
 </div>
 
-<!-- ============ BUSCADOR EN LENGUAJE NATURAL (IA-23/24) ============ -->
+<!-- ============ FILTROS POR ARL Y ESTADO (multiselección) ============ -->
 @if (activeTab() === 'ordenes') {
-  <div class="toolbar">
-    <div class="toolbar__filters">
-      <div class="toolbar__search">
-        <input
-          class="form-control"
-          type="text"
-          placeholder="Pregunta en lenguaje natural: p. ej. «órdenes de Bolívar con más de 4 horas»"
-          [ngModel]="nlQuery()"
-          (ngModelChange)="nlQuery.set($event)"
-          (keyup.enter)="runNaturalSearch()"
-          aria-label="Búsqueda en lenguaje natural"
-        />
-      </div>
-      <button type="button" class="btn btn--primary btn--sm" [disabled]="nlLoading() || !nlQuery().trim()" (click)="runNaturalSearch()">
-        @if (nlLoading()) { Interpretando… } @else { Buscar }
-      </button>
-      @if (nlActive()) {
-        <button type="button" class="btn btn--ghost btn--sm" (click)="clearNaturalSearch()">Limpiar búsqueda</button>
+  <div class="filters">
+    <div class="filters__group">
+      <span class="filters__label">ARL</span>
+      @for (a of arlOptions(); track a) {
+        <button
+          type="button"
+          class="chip"
+          [class.chip--on]="arlsSel().includes(a)"
+          [attr.aria-pressed]="arlsSel().includes(a)"
+          (click)="toggleArl(a)"
+        >
+          {{ a }}
+        </button>
+      } @empty {
+        <span class="filters__empty">Sin ARL en los resultados.</span>
+      }
+    </div>
+
+    <div class="filters__group">
+      <span class="filters__label">Estado</span>
+      @for (e of estadoOptions(); track e) {
+        <button
+          type="button"
+          class="chip"
+          [class.chip--on]="estadosSel().includes(e)"
+          [attr.aria-pressed]="estadosSel().includes(e)"
+          (click)="toggleEstado(e)"
+        >
+          {{ e }}
+        </button>
+      } @empty {
+        <span class="filters__empty">Sin estados en los resultados.</span>
       }
     </div>
   </div>
-
-  <div class="toolbar">
-    <div class="toolbar__filters">
-      <span class="page-head__sub">Sugerencias:</span>
-      @for (s of nlSuggestions; track s) {
-        <button type="button" class="btn btn--ghost btn--sm" (click)="useSuggestion(s)">{{ s }}</button>
-      }
-    </div>
-  </div>
-
-  @if (nlActive()) {
-    <div class="toolbar">
-      <div class="toolbar__filters">
-        @if (filterPills().length) {
-          <span class="page-head__sub">Filtros detectados:</span>
-          @for (p of filterPills(); track p) {
-            <span class="pill pill--info">{{ p }}</span>
-          }
-        } @else {
-          <span class="page-head__sub">No se detectaron filtros específicos; se muestran coincidencias por texto.</span>
-        }
-      </div>
-    </div>
-  }
 }
 
 <!-- ============ TABLA ÓRDENES ============ -->
@@ -150,7 +133,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (o of orders(); track o.id) {
+          @for (o of filteredOrders(); track o.id) {
             <tr>
               <td class="mono">{{ o.codigo || '—' }}</td>
               <td>{{ o.empresa_nombre || '—' }}</td>

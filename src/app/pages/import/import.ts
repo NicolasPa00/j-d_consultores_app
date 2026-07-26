@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { AlertService } from '../../core/alert.service';
 import { Borrador, CampoExtraido, HojaImportada, MetadatosExtraccion } from '../../core/models';
+import { aIsoFecha } from '../../core/fechas';
 
 /** Un campo extraído editable (etiqueta + valor + confianza). */
 interface PreviewField {
@@ -12,8 +13,10 @@ interface PreviewField {
   label: string;
   value: string;
   confidence: number;
-  type: 'text' | 'textarea';
+  type: 'text' | 'textarea' | 'date';
   span: 'half' | 'full';
+  /** Sin él la orden no puede guardarse (hoy solo la fecha de vencimiento). */
+  required?: boolean;
 }
 
 /** Una orden extraída del lote, con su resumen de fila y su detalle completo. */
@@ -280,10 +283,28 @@ export class ImportComponent implements OnDestroy {
     this.detailId.set(null);
   }
 
+  // ---- Fecha de vencimiento obligatoria ----
+  /** ¿A esta orden le falta la fecha de vencimiento? */
+  protected sinVencimiento(row: PreviewOrder): boolean {
+    return !row.fields.find((f) => f.key === 'fecha_vencimiento')?.value.trim();
+  }
+
+  /** Órdenes que se guardarían (no duplicadas) a las que les falta la fecha. */
+  protected pendientesVencimiento(): PreviewOrder[] {
+    return this.previewRows().filter((r) => !r.duplicada && this.sinVencimiento(r));
+  }
+
   /** IMP-03 · Persiste las correcciones manuales del borrador (confianza → 100%). */
   protected saveDetail(): void {
     const order = this.detailOrder();
     if (!order || this.saving()) return;
+    if (this.sinVencimiento(order)) {
+      this.alerts.warning(
+        'Fecha de vencimiento obligatoria',
+        'El documento no trae una fecha de vencimiento legible. Diligénciela antes de guardar la orden.',
+      );
+      return;
+    }
     this.saving.set(true);
 
     const fields: Record<string, { value: string; confidence?: number }> = {};
@@ -309,6 +330,19 @@ export class ImportComponent implements OnDestroy {
   protected confirmBatch(): void {
     const batch = this.batchId();
     if (!batch || this.confirming() || !this.confirmableCount()) return;
+
+    // Ninguna orden entra a la bandeja sin vencimiento: una vez guardada, el
+    // campo ya no se pide en Órdenes y la orden quedaría sin fecha de control.
+    const faltantes = this.pendientesVencimiento();
+    if (faltantes.length) {
+      const nombres = faltantes.slice(0, 3).map((r) => r.company).join(', ');
+      const resto = faltantes.length > 3 ? ` y ${faltantes.length - 3} más` : '';
+      this.alerts.warning(
+        'Fecha de vencimiento obligatoria',
+        `${faltantes.length} orden(es) no tienen fecha de vencimiento: ${nombres}${resto}. Ábralas con el lápiz y diligéncienla antes de guardar.`,
+      );
+      return;
+    }
     this.confirming.set(true);
 
     this.api.confirmImport(batch).subscribe({
@@ -389,6 +423,12 @@ function buildFields(m: MetadatosExtraccion): PreviewField[] {
   ) => {
     rows.push({ key, label, value: text(c), confidence: conf(c), span, type });
   };
+  const pushFecha = (key: string, label: string, c: CampoExtraido | undefined) => {
+    rows.push({
+      key, label, value: aIsoFecha(text(c)), confidence: conf(c),
+      span: 'half', type: 'date', required: true,
+    });
+  };
   const opt = (key: string, label: string, c: CampoExtraido | undefined, span: PreviewField['span'] = 'half') => {
     if (text(c)) push(key, label, c, span);
   };
@@ -410,7 +450,11 @@ function buildFields(m: MetadatosExtraccion): PreviewField[] {
   opt('valor_unitario', 'Valor Unitario', m.valor_unitario);
   opt('valor_total', 'Valor Total', m.valor_total);
   opt('fecha_orden', 'Fecha de la Orden', m.fecha_orden);
-  opt('fecha_vencimiento', 'Fecha de Vencimiento', m.fecha_vencimiento);
+  // Siempre presente y obligatoria, la traiga o no el documento: la vigencia de
+  // la orden es lo que permite priorizarla en la bandeja de Órdenes. Si la IA no
+  // la encontró (o la escribió en un formato que no es fecha) el campo queda
+  // vacío y quien carga el archivo debe diligenciarlo.
+  pushFecha('fecha_vencimiento', 'Fecha de Vencimiento', m.fecha_vencimiento);
   opt('ciudad_ejecucion', 'Ciudad de Ejecución', m.ciudad_ejecucion);
   opt('direccion', 'Dirección', m.direccion, 'full');
   opt('contacto_empresa_nombre', 'Contacto Empresa · Nombre', m.contacto_empresa_nombre);

@@ -188,6 +188,40 @@
   height: 13px;
 }
 
+/* Columna "Fecha de vencimiento": fecha arriba, días restantes debajo.
+   El color vive en el bloque completo (no solo en el texto de abajo) para que
+   una orden por vencer se detecte barriendo la columna con la vista. */
+.venc {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.venc__date {
+  font-size: 0.86rem;
+  color: var(--text-main);
+}
+
+.venc__left {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.venc--warn .venc__date,
+.venc--warn .venc__left {
+  color: var(--warning);
+}
+
+.venc--danger .venc__date,
+.venc--danger .venc__left {
+  color: var(--danger);
+}
+
+.venc__none {
+  color: var(--text-muted);
+}
+
 /* Acciones por fila */
 .row-actions {
   display: flex;

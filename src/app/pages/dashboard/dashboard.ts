@@ -108,7 +108,9 @@ export class DashboardComponent implements OnInit {
     if (!this.isBrowser) return;
     this.loadDashboard();
     this.loadOrders();
-    this.api.listProfessionals().subscribe((r) => this.professionals.set(r.data.filter((p) => p.estado === 'Activo')));
+    // La lista de profesionales solo alimentaba el drawer de asignación, hoy
+    // oculto (la tabla de órdenes recientes es de solo lectura): sin drawer, la
+    // petición no tendría destino en pantalla.
   }
 
   private loadDashboard(): void {
@@ -118,7 +120,7 @@ export class DashboardComponent implements OnInit {
       this.kpis.set([
         { label: 'Total Órdenes', value: String(k.total_ordenes ?? 0), icon: '📦', accent: 'blue' },
         { label: 'Programadas', value: String(k.programadas ?? 0), icon: '🗓️', accent: 'cyan' },
-        { label: 'Alertas Baja Confianza (<70%)', value: String(k.alertas_baja_confianza ?? 0), icon: '⚠️', accent: 'warning' },
+        { label: 'Órdenes sin programar', value: String(k.sin_programar ?? 0), icon: '⏳', accent: 'warning' },
         { label: 'Ejecutadas', value: String(k.ejecutadas ?? 0), icon: '✅', accent: 'slate' },
       ]);
     });

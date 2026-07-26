@@ -14,7 +14,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { icon: 'home', label: 'Inicio / Dashboard', hint: '', route: '/dashboard', vista: 'dashboard' },
+  { icon: 'home', label: 'Inicio', hint: '', route: '/dashboard', vista: 'dashboard' },
   { icon: 'import', label: 'Importar Archivos', hint: 'Módulo 2', route: '/importar', vista: 'importar' },
   { icon: 'ai', label: 'Órdenes', hint: 'Módulos 3 y 4', route: '/ordenes', vista: 'ordenes' },
   { icon: 'reports', label: 'Informes y Resúmenes', hint: 'Módulo 5', route: '/informes', vista: 'informes' },

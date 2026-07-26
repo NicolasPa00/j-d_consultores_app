@@ -57,17 +57,10 @@ export class SettingsComponent implements OnInit {
   protected email = '';
   protected phone = '';
   protected specialty = '';
-  protected password = '';
 
   // ----- Pestaña: Preferencias del sistema -----
   protected readonly threshold = signal(70);
   protected readonly savingThreshold = signal(false);
-  /** Ojo del campo de contraseña (mismo comportamiento que en el login). */
-  protected readonly showPassword = signal(false);
-
-  protected togglePassword(): void {
-    this.showPassword.update((v) => !v);
-  }
 
   // Informativos (Fase 2/3) — no persistidos
   protected rates: RateRow[] = [
@@ -100,7 +93,7 @@ export class SettingsComponent implements OnInit {
   protected readonly loadingPermisos = signal(false);
   protected readonly savingPermisos = signal(false);
   protected readonly vistasCatalogo: { clave: Vista; label: string; hint: string }[] = [
-    { clave: 'dashboard', label: 'Inicio / Dashboard', hint: 'KPIs y distribución por ARL' },
+    { clave: 'dashboard', label: 'Inicio', hint: 'KPIs y distribución por ARL' },
     { clave: 'importar', label: 'Importar Archivos', hint: 'Módulo 2 · carga de Excel/PDF' },
     { clave: 'ordenes', label: 'Órdenes', hint: 'Módulos 3 y 4 · validación IA y asignación' },
     { clave: 'informes', label: 'Informes y Resúmenes', hint: 'Módulo 5 · resúmenes y buscador' },

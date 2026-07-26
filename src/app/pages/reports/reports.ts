@@ -7,16 +7,7 @@ import { Orden, Profesional } from '../../core/models';
 
 type ReportTab = 'ordenes' | 'profesionales';
 
-/** Filtros estructurados detectados por el buscador en lenguaje natural (IA-24). */
-interface SearchFilters {
-  arl?: string;
-  status?: string;
-  minHoras?: number;
-  bajaConfianza?: boolean;
-  texto?: string;
-}
-
-/** Estados de OS del backend (para categorizar el listado de órdenes). */
+/** Estados de OS del backend, en orden de ciclo de vida. */
 const ESTADOS = ['SIN PROGRAMAR', 'PROGRAMADA', 'EN VERIFICACIÓN', 'EJECUTADA', 'CANCELADA'];
 
 @Component({
@@ -32,7 +23,6 @@ export class ReportsComponent implements OnInit {
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   protected readonly activeTab = signal<ReportTab>('ordenes');
-  protected readonly estados = ESTADOS;
 
   // ---- Datos ----
   protected readonly orders = signal<Orden[]>([]);
@@ -43,20 +33,13 @@ export class ReportsComponent implements OnInit {
   protected readonly exporting = signal(false);
 
   // ---- Filtros ----
-  protected readonly estadoFilter = signal('');
+  // ARL y estado son multiselección: los botones marcados dentro de un mismo
+  // grupo suman (OR) y los dos grupos se cruzan (AND). Se resuelven en el
+  // cliente porque el API solo admite un valor por criterio.
+  protected readonly arlsSel = signal<string[]>([]);
+  protected readonly estadosSel = signal<string[]>([]);
   protected readonly profEstadoFilter = signal('');
   protected readonly query = signal('');
-
-  // ---- Buscador en lenguaje natural (IA-23/24) ----
-  protected readonly nlQuery = signal('');
-  protected readonly nlLoading = signal(false);
-  protected readonly nlActive = signal(false);
-  protected readonly nlFilters = signal<SearchFilters | null>(null);
-  protected readonly nlSuggestions = [
-    'órdenes de Bolívar con más de 4 horas',
-    'AXA con baja confianza',
-    'Colmena',
-  ];
 
   // ---- Modal de resumen ----
   protected readonly summaryOrder = signal<Orden | null>(null);
@@ -70,21 +53,34 @@ export class ReportsComponent implements OnInit {
   });
 
   protected readonly hasFilters = computed(() => {
-    if (this.activeTab() === 'ordenes') return !!this.estadoFilter() || !!this.query().trim();
+    if (this.activeTab() === 'ordenes') {
+      return !!this.arlsSel().length || !!this.estadosSel().length || !!this.query().trim();
+    }
     return !!this.profEstadoFilter() || !!this.query().trim();
   });
 
-  /** Traduce los filtros detectados por la IA a etiquetas legibles (pills). */
-  protected readonly filterPills = computed<string[]>(() => {
-    const f = this.nlFilters();
-    if (!f) return [];
-    const pills: string[] = [];
-    if (f.arl) pills.push('ARL: ' + f.arl);
-    if (f.status) pills.push('Estado: ' + f.status);
-    if (f.minHoras != null) pills.push('≥ ' + f.minHoras + ' horas');
-    if (f.bajaConfianza) pills.push('Baja confianza');
-    if (f.texto) pills.push('Texto: ' + f.texto);
-    return pills;
+  /**
+   * Botones de ARL: solo las que aparecen en las órdenes cargadas. Un botón por
+   * una ARL sin órdenes no filtraría nada, así que no se ofrece.
+   */
+  protected readonly arlOptions = computed(() =>
+    [...new Set(this.orders().map((o) => o.arl_nombre || '').filter(Boolean))].sort(),
+  );
+
+  /** Botones de estado presentes en los datos, en orden de ciclo de vida. */
+  protected readonly estadoOptions = computed(() =>
+    ESTADOS.filter((e) => this.orders().some((o) => o.estado === e)),
+  );
+
+  /** Órdenes que se ven en la tabla (y las que se exportan). */
+  protected readonly filteredOrders = computed(() => {
+    const arls = this.arlsSel();
+    const estados = this.estadosSel();
+    return this.orders().filter(
+      (o) =>
+        (!arls.length || arls.includes(o.arl_nombre || '')) &&
+        (!estados.length || estados.includes(o.estado)),
+    );
   });
 
   ngOnInit(): void {
@@ -95,10 +91,8 @@ export class ReportsComponent implements OnInit {
 
   // ================= Carga =================
   private loadOrders(): void {
-    this.nlActive.set(false); // el listado normal reemplaza cualquier búsqueda NL previa
     this.loadingOrders.set(true);
     const params: Record<string, string> = {};
-    if (this.estadoFilter()) params['estado'] = this.estadoFilter();
     if (this.query().trim()) params['q'] = this.query().trim();
     this.api.listOrders(params).subscribe({
       next: (r) => { this.orders.set(r.data); this.loadingOrders.set(false); },
@@ -123,9 +117,13 @@ export class ReportsComponent implements OnInit {
     else this.loadProfessionals();
   }
 
-  protected onEstadoChange(estado: string): void {
-    this.estadoFilter.set(estado);
-    this.loadOrders();
+  /** Marca/desmarca una ARL. Volver a pulsarla quita ese filtro. */
+  protected toggleArl(arl: string): void {
+    this.arlsSel.update((l) => (l.includes(arl) ? l.filter((x) => x !== arl) : [...l, arl]));
+  }
+
+  protected toggleEstado(estado: string): void {
+    this.estadosSel.update((l) => (l.includes(estado) ? l.filter((x) => x !== estado) : [...l, estado]));
   }
 
   protected onProfEstadoChange(estado: string): void {
@@ -139,40 +137,14 @@ export class ReportsComponent implements OnInit {
 
   protected clearFilters(): void {
     this.query.set('');
-    if (this.activeTab() === 'ordenes') { this.estadoFilter.set(''); this.loadOrders(); }
-    else { this.profEstadoFilter.set(''); this.loadProfessionals(); }
-  }
-
-  // ================= Buscador en lenguaje natural (IA-23/24) =================
-  /** Interpreta la consulta NL en el backend → filtros + resultados. */
-  protected runNaturalSearch(): void {
-    const q = this.nlQuery().trim();
-    if (!q || this.nlLoading()) return;
-    this.nlLoading.set(true);
-    this.api.search(q).subscribe({
-      next: (r) => {
-        this.orders.set(r.data.results);
-        this.nlFilters.set((r.data.filters as SearchFilters) ?? {});
-        this.nlActive.set(true);
-        this.nlLoading.set(false);
-      },
-      error: () => {
-        this.nlLoading.set(false);
-        this.alerts.error('No se pudo interpretar la búsqueda', 'Intente con una frase más concreta, por ejemplo: “órdenes de Bolívar con más de 4 horas”.');
-      },
-    });
-  }
-
-  protected useSuggestion(s: string): void {
-    this.nlQuery.set(s);
-    this.runNaturalSearch();
-  }
-
-  /** Limpia la búsqueda NL y vuelve al listado normal. */
-  protected clearNaturalSearch(): void {
-    this.nlQuery.set('');
-    this.nlFilters.set(null);
-    this.loadOrders(); // resetea nlActive y recarga con los filtros normales
+    if (this.activeTab() === 'ordenes') {
+      this.arlsSel.set([]);
+      this.estadosSel.set([]);
+      this.loadOrders();
+    } else {
+      this.profEstadoFilter.set('');
+      this.loadProfessionals();
+    }
   }
 
   protected confidenceOf(o: Orden): number {
@@ -247,7 +219,7 @@ export class ReportsComponent implements OnInit {
       ];
       const pct = (c?: number) => (c != null ? Math.round(Number(c)) + '%' : '');
       const conf = (campo?: { confidence?: number }) => pct(campo?.confidence);
-      const rows = this.orders().map((o) => {
+      const rows = this.filteredOrders().map((o) => {
         const m = o.metadatos_extraccion;
         return [
           o.codigo || '', o.estado, o.arl_nombre || '', pct(m?.arl_confidence),
@@ -283,11 +255,16 @@ export class ReportsComponent implements OnInit {
     if (this.activeTab() === 'ordenes') {
       title = 'Listado de órdenes de servicio';
       headers = ['Código', 'Empresa', 'NIT', 'ARL', 'Horas', 'Estado', 'Confianza'];
-      rows = this.orders().map((o) => [
+      rows = this.filteredOrders().map((o) => [
         o.codigo || '', o.empresa_nombre || '', o.nit_nic || '', o.arl_nombre || '',
         o.horas_asignadas ?? '', o.estado, `${this.confidenceOf(o)}%`,
       ]);
-      filtro = `Estado: ${this.estadoFilter() || 'Todos'}${this.query().trim() ? ` · Búsqueda: ${this.query().trim()}` : ''}`;
+      // El pie del PDF deja constancia de con qué filtros se generó: sin esto,
+      // dos informes del mismo día con distintos botones marcados son idénticos.
+      filtro =
+        `ARL: ${this.arlsSel().join(', ') || 'Todas'}` +
+        ` · Estado: ${this.estadosSel().join(', ') || 'Todos'}` +
+        (this.query().trim() ? ` · Búsqueda: ${this.query().trim()}` : '');
     } else {
       title = 'Listado de profesionales';
       headers = ['Nombre', 'Correo', 'Teléfono', 'Especialidad', 'Estado'];

@@ -2,7 +2,7 @@
   <div>
     <h2 class="page-head__title">Órdenes</h2>
     <p class="page-head__sub">
-      Revisa, edita, asigna profesional y administra el estado de las órdenes
+      Revisa, edita, valida y administra el estado de las órdenes
     </p>
   </div>
 
@@ -23,28 +23,20 @@
   </div>
 </section>
 
-<!-- ============ PESTAÑAS: ACTIVAS / DESHABILITADAS ============ -->
+<!-- ============ PESTAÑAS: FILTRO POR ESTADO ============ -->
 <div class="tabs" role="tablist">
-  <button
-    type="button"
-    class="tab"
-    role="tab"
-    [class.tab--active]="view() === 'activas'"
-    [attr.aria-selected]="view() === 'activas'"
-    (click)="setView('activas')"
-  >
-    Órdenes <span class="tab__count">{{ activeCount() }}</span>
-  </button>
-  <button
-    type="button"
-    class="tab"
-    role="tab"
-    [class.tab--active]="view() === 'deshabilitadas'"
-    [attr.aria-selected]="view() === 'deshabilitadas'"
-    (click)="setView('deshabilitadas')"
-  >
-    Deshabilitadas <span class="tab__count">{{ disabledCount() }}</span>
-  </button>
+  @for (t of tabs; track t.key) {
+    <button
+      type="button"
+      class="tab"
+      role="tab"
+      [class.tab--active]="view() === t.key"
+      [attr.aria-selected]="view() === t.key"
+      (click)="setView(t.key)"
+    >
+      {{ t.label }} <span class="tab__count">{{ count(t.key) }}</span>
+    </button>
+  }
 </div>
 
 <!-- ============ TABLA ============ -->
@@ -58,6 +50,7 @@
           <th>Razón social</th>
           <th>ARL</th>
           <th>Horas</th>
+          <th>Fecha de vencimiento</th>
           <th>Confianza</th>
           <th>Estado</th>
           <th class="col-actions">Opciones</th>
@@ -90,18 +83,24 @@
             </td>
             <td class="mono">{{ order.fields.horas.value || '—' }}</td>
             <td>
+              @if (vencimiento(order); as v) {
+                <div class="venc" [class]="'venc--' + v.tone">
+                  <span class="venc__date mono">{{ v.fecha }}</span>
+                  <span class="venc__left">{{ v.detalle }}</span>
+                </div>
+              } @else {
+                <span class="venc__none">—</span>
+              }
+            </td>
+            <td>
               <span class="pill" [class]="pillClass(order.confidence)">{{ order.confidence }}%</span>
             </td>
             <td>
-              @if (view() === 'deshabilitadas') {
-                <span class="pill pill--muted">Deshabilitada</span>
-              } @else {
-                <span class="pill pill--warning">Pendiente</span>
-              }
+              <span class="pill" [class]="estadoClass(order)">{{ estadoLabel(order) }}</span>
             </td>
             <td class="col-actions">
               <div class="row-actions">
-                @if (view() === 'deshabilitadas') {
+                @if (order.disabled) {
                   <button type="button" class="icon-action icon-action--on" (click)="restoreOrder(order)" aria-label="Restaurar" title="Restaurar orden">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                       <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
@@ -115,19 +114,18 @@
                       <circle cx="12" cy="12" r="3" />
                     </svg>
                   </button>
-                  <button type="button" class="icon-action" (click)="openEdit(order.id)" aria-label="Editar" title="Editar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M12 20h9" />
-                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                    </svg>
-                  </button>
-                  <button type="button" class="icon-action" (click)="openAssign(order.id)" aria-label="Asignar profesional" title="Asignar profesional">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <circle cx="9" cy="8" r="4" />
-                      <path d="M2 21a7 7 0 0 1 14 0" />
-                      <path d="M19 8v6M16 11h6" />
-                    </svg>
-                  </button>
+                  @if (!order.validated) {
+                    <button type="button" class="icon-action" (click)="openEdit(order.id)" aria-label="Editar" title="Editar">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                      </svg>
+                    </button>
+                  }
+                  <!-- "Asignar profesional" oculto en esta entrega (queda para una
+                       fase posterior). Para reactivarlo basta con reponer aquí el
+                       botón que llama a openAssign(order.id): el modal completo
+                       sigue más abajo en este mismo archivo. -->
                   <button type="button" class="icon-action icon-action--danger" (click)="disableOrder(order)" aria-label="Deshabilitar" title="Deshabilitar">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                       <path d="M3 6h18" />
@@ -142,15 +140,19 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="8" class="table__empty">
+            <td colspan="9" class="table__empty">
               @if (loading()) {
                 Cargando órdenes…
-              } @else if (view() === 'deshabilitadas') {
-                No hay órdenes deshabilitadas.
               } @else if (query()) {
                 No hay órdenes que coincidan con “{{ query() }}”.
+              } @else if (view() === 'deshabilitadas') {
+                No hay órdenes deshabilitadas.
+              } @else if (view() === 'validadas') {
+                Todavía no hay órdenes validadas.
+              } @else if (view() === 'pendientes') {
+                No hay órdenes pendientes por validar.
               } @else {
-                No hay órdenes pendientes.
+                No hay órdenes registradas.
               }
             </td>
           </tr>
@@ -172,7 +174,7 @@
         <p class="modal__sub">{{ order.company }} · {{ order.arl }}@if (order.arlConfidence) {<span class="modal__sub-conf"> ({{ order.arlConfidence }}% confianza ARL)</span>}</p>
       </div>
       <div class="modal__head-actions">
-        @if (!editMode()) {
+        @if (!editMode() && !order.validated) {
           <button type="button" class="btn btn--ghost btn--sm" (click)="enableEdit()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M12 20h9" />
@@ -289,7 +291,10 @@
 
     <footer class="modal__footer">
       <span class="modal__status">
-        Estado actual: <strong>IMPORTADA</strong>
+        Estado actual: <strong>{{ estadoLabel(order) }}</strong>
+        @if (order.validated) {
+          · ya registrada como Orden de Servicio.
+        }
       </span>
       <div class="modal__footer-actions">
         <button type="button" class="btn btn--ghost" (click)="closeDetail()" [disabled]="saving()">
@@ -311,6 +316,9 @@
 }
 
 <!-- ============ MODAL: ASIGNAR PROFESIONAL ============ -->
+<!-- OCULTO EN ESTA ENTREGA: ninguna acción llama a openAssign(), así que
+     `assignOrder()` siempre es null y este bloque no se pinta. Se conserva
+     íntegro (con su validación de cruce de franjas) para la fase siguiente. -->
 @if (assignOrder(); as order) {
   <div class="modal-backdrop" (click)="closeAssign()"></div>
   <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="assignTitle">
