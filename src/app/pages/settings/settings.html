@@ -258,58 +258,98 @@
     <div class="card">
       <div class="card__head">
         <h3 class="card__title">Usuarios internos</h3>
-        <button type="button" class="btn btn--primary" (click)="openCreate()">+ Nuevo usuario</button>
+        <button type="button" class="btn btn--primary" (click)="openCreate()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Nuevo usuario
+        </button>
       </div>
-      <div class="card__body">
-        @if (loadingUsers()) {
-          <p class="users-empty">Cargando usuarios…</p>
-        } @else if (!usuarios().length) {
-          <p class="users-empty">No hay usuarios registrados.</p>
-        } @else {
-          <div class="table-wrap">
-            <table class="table">
-              <thead>
+      <!-- La tabla cuelga directamente del .card__head (no del .card__body) para
+           que reciba el tratamiento global de "tabla bajo bloque de título". -->
+      @if (loadingUsers()) {
+        <div class="card__body"><p class="users-empty">Cargando usuarios…</p></div>
+      } @else if (!usuarios().length) {
+        <div class="card__body"><p class="users-empty">No hay usuarios registrados.</p></div>
+      } @else {
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Documento</th>
+                <th>Correo</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th class="col-actions">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (u of usuarios(); track u.id) {
                 <tr>
-                  <th>Nombre</th>
-                  <th>Documento</th>
-                  <th>Correo</th>
-                  <th>Rol</th>
-                  <th>Estado</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (u of usuarios(); track u.id) {
-                  <tr>
-                    <td>
-                      {{ u.nombre }}
-                      @if (u.es_maestro) {
-                        <span class="pill pill--info">Maestro</span>
-                      }
-                    </td>
-                    <td>{{ u.documento_identidad || '—' }}</td>
-                    <td>{{ u.correo }}</td>
-                    <td>{{ rolLabel(u.rol) }}</td>
-                    <td>
-                      <span class="pill" [class.pill--success]="u.activo" [class.pill--warning]="!u.activo">
-                        {{ u.activo ? 'Activo' : 'Inactivo' }}
-                      </span>
-                    </td>
-                    <td class="table-actions">
-                      <button type="button" class="btn btn--ghost" (click)="openEdit(u)">Editar</button>
+                  <td>
+                    {{ u.nombre }}
+                    @if (u.es_maestro) {
+                      <span class="pill pill--info">Maestro</span>
+                    }
+                  </td>
+                  <td>{{ u.documento_identidad || '—' }}</td>
+                  <td>{{ u.correo }}</td>
+                  <td>{{ rolLabel(u.rol) }}</td>
+                  <td>
+                    <span class="pill" [class.pill--success]="u.activo" [class.pill--warning]="!u.activo">
+                      {{ u.activo ? 'Activo' : 'Inactivo' }}
+                    </span>
+                  </td>
+                  <td class="col-actions">
+                    <div class="row-actions">
+                      <button type="button" class="icon-action" (click)="openEdit(u)" aria-label="Editar" title="Editar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <path d="M12 20h9" />
+                          <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                        </svg>
+                      </button>
+
+                      <!-- El Administrador Maestro no se puede desactivar ni eliminar. -->
                       @if (!u.es_maestro) {
-                        <button type="button" class="btn btn--ghost" (click)="toggleActivo(u)">
-                          {{ u.activo ? 'Desactivar' : 'Activar' }}
+                        <button
+                          type="button"
+                          class="icon-action"
+                          [class.icon-action--on]="u.activo"
+                          (click)="toggleActivo(u)"
+                          [attr.aria-label]="u.activo ? 'Desactivar' : 'Activar'"
+                          [title]="u.activo ? 'Desactivar' : 'Activar'"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 3v9" />
+                            <path d="M7.5 6.5a7 7 0 1 0 9 0" />
+                          </svg>
+                        </button>
+
+                        <button
+                          type="button"
+                          class="icon-action icon-action--danger"
+                          [disabled]="deletingUser() === u.id"
+                          (click)="deleteUser(u)"
+                          aria-label="Eliminar"
+                          title="Eliminar usuario"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 6h18" />
+                            <path d="M8 6V4h8v2" />
+                            <path d="M19 6l-1 14H6L5 6" />
+                            <path d="M10 11v6M14 11v6" />
+                          </svg>
                         </button>
                       }
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        }
-      </div>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
     </div>
   }
 }

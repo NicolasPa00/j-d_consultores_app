@@ -384,7 +384,40 @@ h4 {
    Se define UNA vez aquí; las vistas ya no repiten estos estilos.
    ============================================================ */
 
-/* --- Tablas --- */
+/* --- Base de tablas ---
+   Estructura común a TODAS las tablas de la app (contenedor con scroll
+   horizontal, tipografía, celdas y estado vacío). Las vistas ya no deben
+   redeclararla: basta con `.table-wrap > .table`. */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table tbody td {
+  padding: 0.8rem 1.1rem;
+  border-bottom: 1px solid var(--border-soft);
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Fila única de "no hay resultados" (va con colspan). El selector incluye `td`
+   para ganarle al padding de `.table tbody td` sin recurrir a !important. */
+.table td.table__empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
 .table thead th {
   background: #eef3fb;
   color: var(--primary-color);
@@ -443,6 +476,72 @@ h4 {
 
 .table tbody tr:hover {
   background: rgba(45, 123, 200, 0.045);
+}
+
+/* --- Columna de acciones por fila ---
+   Lenguaje único en toda la app: NUNCA botones de texto dentro de la tabla,
+   siempre iconos cuadrados con `title` + `aria-label` describiendo la acción. */
+.col-actions {
+  width: 110px;
+  text-align: right;
+}
+
+.row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border-soft);
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.icon-action svg {
+  width: 17px;
+  height: 17px;
+}
+
+.icon-action:hover {
+  background: #f1f5f9;
+  color: var(--secondary-color);
+  border-color: var(--accent-color);
+}
+
+.icon-action[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Estado "encendido" (registro activo): en verde, y al pasar el puntero avisa
+   en naranja de que el clic lo va a desactivar. */
+.icon-action--on {
+  color: var(--success);
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.icon-action--on:hover {
+  color: var(--warning);
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+/* Acción destructiva (eliminar): neutra en reposo, roja al pasar el puntero. */
+.icon-action--danger:hover {
+  color: var(--danger);
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
 }
 
 /* --- Cabeceras de modales, drawers y cards --- */

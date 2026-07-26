@@ -211,43 +211,18 @@
   }
 }
 
-/* ===== Usuarios del Sistema (solo Administrador Maestro) ===== */
-.table-wrap {
-  width: 100%;
-  overflow-x: auto;
-}
+/* ===== Usuarios del Sistema (solo Administrador Maestro) =====
+   La tabla, la columna de acciones y los botones de icono vienen del design
+   system global (`styles.scss`): aquí solo van los detalles propios de la vista. */
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-.table tbody td {
-  padding: 0.8rem 1.1rem;
-  border-bottom: 1px solid var(--border-soft);
-  vertical-align: middle;
-}
-
-.table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.table tbody tr:hover {
-  background: #f8fafc;
-}
-
+/* Distintivo "Maestro" junto al nombre. */
 .table td .pill {
   margin-left: 0.4rem;
 }
 
-.table-actions {
-  white-space: nowrap;
-  text-align: right;
-
-  .btn + .btn {
-    margin-left: 0.4rem;
-  }
+/* Tres acciones por fila (editar · activar · eliminar). */
+.col-actions {
+  width: 140px;
 }
 
 .users-empty {

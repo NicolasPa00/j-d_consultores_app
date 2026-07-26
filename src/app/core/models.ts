@@ -81,6 +81,28 @@ export interface MetadatosExtraccion {
   engine?: string;
   /** IA-03: confianza (0-100) de la clasificación de ARL por contenido. */
   arl_confidence?: number;
+  /** Solo Excel: fila de la hoja de la que salió la orden (para resaltarla). */
+  source_row?: number | null;
+}
+
+/** Lote de importación + los borradores que se extrajeron de su archivo. */
+export interface LoteImportacion {
+  id: string;
+  nombre_archivo: string;
+  tipo_mime?: string | null;
+  estado: string;
+  total_ordenes?: number;
+  borradores: Borrador[];
+}
+
+/** Hoja del Excel original, en texto plano, para la vista previa del documento. */
+export interface HojaImportada {
+  nombre_archivo?: string;
+  hoja: string | null;
+  columnas: number;
+  filas: { n: number; celdas: string[] }[];
+  /** true si la hoja excede el tope de filas/columnas que se envía al cliente. */
+  truncado: boolean;
 }
 
 export interface Borrador {

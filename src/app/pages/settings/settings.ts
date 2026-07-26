@@ -73,6 +73,8 @@ export class SettingsComponent implements OnInit {
   protected readonly usuarios = signal<Usuario[]>([]);
   protected readonly loadingUsers = signal(false);
   protected readonly savingUser = signal(false);
+  /** Id del usuario cuya eliminación está en curso (bloquea su botón). */
+  protected readonly deletingUser = signal<string | null>(null);
   /** null = formulario cerrado · 'nuevo' = alta · Usuario = edición */
   protected readonly userForm = signal<'nuevo' | Usuario | null>(null);
   protected draft: UsuarioDraft = { ...DRAFT_VACIO };
@@ -318,6 +320,40 @@ export class SettingsComponent implements OnInit {
         this.loadUsuarios();
       },
       error: (err) => this.alerts.error('No se pudo cambiar el estado', err?.error?.error || `El servidor rechazó el cambio de estado de ${u.nombre}.`),
+    });
+  }
+
+  /**
+   * Baja definitiva de un usuario interno. Es irreversible (el histórico de
+   * órdenes conserva el registro, pero la cuenta desaparece), así que siempre
+   * pasa por confirmación explícita. El backend rechaza además al Maestro y la
+   * autoeliminación; aquí solo se anticipa el aviso.
+   */
+  protected async deleteUser(u: Usuario): Promise<void> {
+    if (this.deletingUser()) return;
+    if (u.id === this.auth.usuario()?.id) {
+      this.alerts.warning('No puede eliminarse a sí mismo', 'Pida a otro Administrador Maestro que realice la baja de su cuenta.');
+      return;
+    }
+    const ok = await this.alerts.confirm({
+      title: 'Eliminar usuario',
+      message: `Se eliminará definitivamente la cuenta de ${u.nombre} (${u.correo}). Esta acción no se puede deshacer; si solo quiere retirarle el acceso, use "Desactivar".`,
+      confirmText: 'Eliminar',
+      tone: 'danger',
+    });
+    if (!ok) return;
+
+    this.deletingUser.set(u.id);
+    this.api.deleteUsuario(u.id).subscribe({
+      next: () => {
+        this.deletingUser.set(null);
+        this.alerts.success('Usuario eliminado', `La cuenta de ${u.nombre} fue dada de baja del sistema.`);
+        this.loadUsuarios();
+      },
+      error: (err) => {
+        this.deletingUser.set(null);
+        this.alerts.error('No se pudo eliminar el usuario', err?.error?.error || `El servidor rechazó la baja de ${u.nombre}.`);
+      },
     });
   }
 

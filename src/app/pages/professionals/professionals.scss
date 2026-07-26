@@ -66,50 +66,12 @@
   box-shadow: 0 0 0 3px rgba(45, 123, 200, 0.15);
 }
 
-/* ===== Tabla ===== */
-.table-wrap {
-  width: 100%;
-  overflow-x: auto;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-.table tbody td {
-  padding: 0.8rem 1.1rem;
-  border-bottom: 1px solid var(--border-soft);
-  vertical-align: middle;
-}
-
-.table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.table tbody tr {
-  transition: background 0.15s ease;
-}
-
-.table tbody tr:hover {
-  background: #f8fafc;
-}
-
-.table__empty {
-  padding: 2rem 1rem !important;
-  text-align: center;
-  color: var(--text-muted);
-}
-
+/* ===== Tabla =====
+   La estructura (`.table-wrap`, `.table`, celdas, estado vacío) y la columna de
+   acciones vienen del design system global (`styles.scss`). */
 .mono {
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
-}
-
-.col-actions {
-  width: 110px;
-  text-align: right;
 }
 
 /* Celda Profesional (nombre + correo) */
@@ -147,50 +109,6 @@
 .who__email {
   font-size: 0.8rem;
   color: var(--text-muted);
-}
-
-/* Acciones por fila */
-.row-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.4rem;
-}
-
-.icon-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  color: var(--text-muted);
-  background: transparent;
-  border: 1px solid var(--border-soft);
-  border-radius: 9px;
-  cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
-}
-
-.icon-action svg {
-  width: 17px;
-  height: 17px;
-}
-
-.icon-action:hover {
-  background: #f1f5f9;
-  color: var(--secondary-color);
-  border-color: var(--accent-color);
-}
-
-.icon-action--on {
-  color: var(--success);
-  border-color: rgba(16, 185, 129, 0.35);
-  background: rgba(16, 185, 129, 0.08);
-}
-
-.icon-action--on:hover {
-  color: var(--warning);
-  border-color: rgba(245, 158, 11, 0.4);
-  background: rgba(245, 158, 11, 0.1);
 }
 
 /* ===== Drawer ===== */

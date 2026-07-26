@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from './config';
-import { Borrador, DashboardData, MatrizPermisos, Ocupacion, Orden, Profesional, Rol, Usuario, Vista } from './models';
+import { Borrador, DashboardData, HojaImportada, LoteImportacion, MatrizPermisos, Ocupacion, Orden, Profesional, Rol, Usuario, Vista } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -69,8 +69,16 @@ export class ApiService {
   importStatus(id: string): Observable<Wrap<{ id: string; estado: string; total_ordenes: number; mensaje_error?: string }>> {
     return this.http.get<Wrap<{ id: string; estado: string; total_ordenes: number; mensaje_error?: string }>>(`${this.base}/imports/${id}/status`);
   }
-  importDetail(id: string): Observable<Wrap<{ borradores: Borrador[] }>> {
-    return this.http.get<Wrap<{ borradores: Borrador[] }>>(`${this.base}/imports/${id}`);
+  importDetail(id: string): Observable<Wrap<LoteImportacion>> {
+    return this.http.get<Wrap<LoteImportacion>>(`${this.base}/imports/${id}`);
+  }
+  /** IMP-03 · Archivo original del lote (inline) para la vista previa del modal. */
+  importFile(id: string): Observable<Blob> {
+    return this.http.get(`${this.base}/imports/${id}/file`, { responseType: 'blob' });
+  }
+  /** IMP-03 · Hoja del Excel original en texto plano (los PDF usan importFile). */
+  importSheet(id: string): Observable<Wrap<HojaImportada>> {
+    return this.http.get<Wrap<HojaImportada>>(`${this.base}/imports/${id}/sheet`);
   }
   /** IMP-04 · Envía a Órdenes los borradores del lote ya revisados. */
   confirmImport(id: string): Observable<{ message: string; data: { confirmadas: number } }> {
@@ -119,6 +127,10 @@ export class ApiService {
   }
   setUsuarioActivo(id: string, activo: boolean): Observable<{ usuario: Usuario }> {
     return this.http.patch<{ usuario: Usuario }>(`${this.base}/auth/usuarios/${id}/estado`, { activo });
+  }
+  /** Baja definitiva. El backend protege al Maestro y la autoeliminación. */
+  deleteUsuario(id: string): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.base}/auth/usuarios/${id}`);
   }
 
   // ---- Configuración ----

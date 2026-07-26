@@ -171,7 +171,7 @@
 <!-- ===== MODAL: revisión / corrección de una orden ===== -->
 @if (detailOrder(); as order) {
   <div class="modal-backdrop" (click)="closeDetail()"></div>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="reviewTitle">
+  <div class="modal modal--split" role="dialog" aria-modal="true" aria-labelledby="reviewTitle">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="reviewTitle">Revisar extracción</h3>
@@ -186,7 +186,52 @@
       </button>
     </header>
 
-    <div class="modal__body">
+    <div class="modal__split">
+      <!-- ===== Izquierda: documento original ===== -->
+      <section class="doc-pane" aria-label="Documento original">
+        <div class="doc-pane__head">
+          <span class="doc-pane__title">Documento original</span>
+          <span class="doc-pane__file" [title]="docName()">{{ docName() }}</span>
+        </div>
+
+        <div #docBody class="doc-pane__body" [class.doc-pane__body--flush]="docKind() === 'pdf'">
+          @if (docLoading()) {
+            <p class="doc-pane__state">Cargando documento…</p>
+          } @else if (docError(); as msg) {
+            <div class="alert alert--warning alert--sm" role="alert">
+              <div class="alert__body">
+                <p class="alert__title">{{ msg }}</p>
+                <p class="alert__detail">Puedes seguir revisando los campos extraídos a la derecha.</p>
+              </div>
+            </div>
+          } @else if (docKind() === 'pdf' && docUrl(); as src) {
+            <iframe class="doc-pane__frame" [src]="src" title="Vista previa del documento original"></iframe>
+          } @else if (docKind() === 'sheet' && sheet(); as hoja) {
+            <div class="sheet">
+              <table class="sheet__table">
+                <tbody>
+                  @for (fila of hoja.filas; track fila.n) {
+                    <tr [class.sheet__row--source]="isSourceRow(fila.n)">
+                      <th class="sheet__num" scope="row">{{ fila.n }}</th>
+                      @for (celda of fila.celdas; track $index) {
+                        <td class="sheet__cell" [title]="celda">{{ celda }}</td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            @if (hoja.truncado) {
+              <p class="doc-pane__note">Se muestran las primeras filas y columnas de la hoja “{{ hoja.hoja }}”.</p>
+            }
+          } @else {
+            <p class="doc-pane__state">Sin vista previa disponible para este archivo.</p>
+          }
+        </div>
+      </section>
+
+      <!-- ===== Derecha: campos extraídos por la IA ===== -->
+      <div class="modal__body">
       <div class="card ai-form">
         <div class="card__head">
           <span class="card__title">Datos extraídos</span>
@@ -253,6 +298,7 @@
             }
           </form>
         </div>
+      </div>
       </div>
     </div>
 

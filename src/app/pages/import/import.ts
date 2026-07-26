@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { AlertService } from '../../core/alert.service';
-import { Borrador, CampoExtraido, MetadatosExtraccion } from '../../core/models';
+import { Borrador, CampoExtraido, HojaImportada, MetadatosExtraccion } from '../../core/models';
 
 /** Un campo extraído editable (etiqueta + valor + confianza). */
 interface PreviewField {
@@ -27,8 +28,13 @@ interface PreviewOrder {
   arlConfidence?: number;
   hours: string;
   confidence: number;
+  /** Solo Excel: fila de la hoja de origen, para resaltarla en la vista previa. */
+  sourceRow: number | null;
   fields: PreviewField[];
 }
+
+/** Cómo se puede mostrar el documento original en el panel izquierdo del modal. */
+type DocKind = 'pdf' | 'sheet' | 'none';
 
 @Component({
   selector: 'app-import',
@@ -37,10 +43,11 @@ interface PreviewOrder {
   styleUrl: './import.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ImportComponent {
+export class ImportComponent implements OnDestroy {
   private readonly api = inject(ApiService);
   private readonly alerts = inject(AlertService);
   private readonly router = inject(Router);
+  private readonly sanitizer = inject(DomSanitizer);
 
   protected readonly fileName = signal<string | null>(null);
   protected readonly processing = signal(false);
@@ -54,6 +61,22 @@ export class ImportComponent {
   protected readonly detailId = signal<string | null>(null);
   protected readonly saving = signal(false);
   protected readonly confirming = signal(false);
+
+  // ----- Vista previa del documento original (panel izquierdo del modal) -----
+  // El documento es el MISMO para todas las órdenes del lote, así que se carga
+  // una sola vez por lote y se reutiliza al abrir cada fila.
+  protected readonly docKind = signal<DocKind>('none');
+  protected readonly docName = signal<string | null>(null);
+  protected readonly docMime = signal<string | null>(null);
+  protected readonly docLoading = signal(false);
+  protected readonly docError = signal<string | null>(null);
+  protected readonly docUrl = signal<SafeResourceUrl | null>(null);
+  protected readonly sheet = signal<HojaImportada | null>(null);
+  /** Object URL crudo: hay que revocarlo a mano para no filtrar memoria. */
+  private objectUrl: string | null = null;
+  private docBatchId: string | null = null;
+  /** Panel del documento; se consulta para centrar la fila de origen. */
+  private readonly docBody = viewChild<ElementRef<HTMLElement>>('docBody');
 
   private selectedFile: File | null = null;
 
@@ -84,6 +107,8 @@ export class ImportComponent {
     this.processing.set(true);
     this.showPreview.set(false);
     this.error.set(null);
+    // Nuevo lote ⇒ el documento previo ya no aplica.
+    this.resetDocument();
 
     this.api.uploadImport(this.selectedFile).subscribe({
       next: (res) => {
@@ -125,6 +150,10 @@ export class ImportComponent {
   private loadPreview(batchId: string): void {
     this.api.importDetail(batchId).subscribe({
       next: (r) => {
+        // El archivo del lote (no el input) manda para la vista previa: sigue
+        // siendo el correcto aunque el usuario cambie la selección sin procesar.
+        this.docName.set(r.data.nombre_archivo || null);
+        this.docMime.set(r.data.tipo_mime || null);
         this.previewRows.set(r.data.borradores.map(toPreview));
         this.detailId.set(null);
         this.processing.set(false);
@@ -140,6 +169,105 @@ export class ImportComponent {
   // ================= Modal de revisión =================
   protected openDetail(id: string): void {
     this.detailId.set(id);
+    this.loadDocument();
+    this.scrollToSourceRow();
+  }
+
+  /**
+   * Lleva a la vista la fila de la hoja que originó la orden abierta. Sin esto,
+   * en un SIPAB de cientos de filas el usuario tendría que buscarla a mano y la
+   * comparación lado a lado pierde el sentido.
+   *
+   * Se difiere para que corra después de que Angular pinte la fila resaltada.
+   */
+  private scrollToSourceRow(): void {
+    setTimeout(() => {
+      const fila = this.docBody()?.nativeElement.querySelector('.sheet__row--source');
+      fila?.scrollIntoView({ block: 'center', inline: 'nearest' });
+    }, 60);
+  }
+
+  /**
+   * IMP-03 · Carga el documento original del lote para compararlo contra los
+   * campos extraídos. PDF → se incrusta el archivo tal cual (visor nativo del
+   * navegador); Excel → se pide la hoja en texto plano, porque el navegador no
+   * sabe renderizar .xlsx. Se hace una sola vez por lote.
+   */
+  private loadDocument(): void {
+    const batch = this.batchId();
+    if (!batch || this.docBatchId === batch || this.docLoading()) return;
+
+    // Mismo criterio que el backend: algunos clientes suben .xlsx como
+    // application/octet-stream, así que la extensión también cuenta.
+    const esExcel = /sheet|excel/.test(this.docMime() || '') || /\.(xlsx|xls)$/i.test(this.docName() || '');
+    this.docLoading.set(true);
+    this.docError.set(null);
+
+    if (esExcel) {
+      this.api.importSheet(batch).subscribe({
+        next: (r) => {
+          this.sheet.set(r.data);
+          this.docKind.set('sheet');
+          this.docBatchId = batch;
+          this.docLoading.set(false);
+          // La hoja acaba de aparecer: recién ahora existe la fila a resaltar.
+          this.scrollToSourceRow();
+        },
+        error: () => this.failDocument('No se pudo leer la hoja del archivo original.'),
+      });
+      return;
+    }
+
+    this.api.importFile(batch).subscribe({
+      next: (blob) => {
+        this.releaseObjectUrl();
+        this.objectUrl = URL.createObjectURL(blob);
+        // `#view=FitH` (PDF Open Parameters) abre el visor ajustado al ANCHO del
+        // panel. Sin esto el navegador usa "ajustar a página" y el documento se
+        // ve al ~50%: ilegible justo cuando hay que compararlo campo por campo.
+        // El URL lo generamos nosotros a partir de la respuesta del API, así que
+        // es seguro incrustarlo en el iframe.
+        this.docUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(`${this.objectUrl}#view=FitH`));
+        this.docKind.set('pdf');
+        this.docBatchId = batch;
+        this.docLoading.set(false);
+      },
+      error: () => this.failDocument('No se pudo cargar el documento original.'),
+    });
+  }
+
+  private failDocument(mensaje: string): void {
+    this.docLoading.set(false);
+    this.docKind.set('none');
+    this.docError.set(mensaje);
+  }
+
+  /** ¿Esta fila de la hoja es la que originó la orden abierta? */
+  protected isSourceRow(n: number): boolean {
+    return this.detailOrder()?.sourceRow === n;
+  }
+
+  private releaseObjectUrl(): void {
+    if (this.objectUrl) {
+      URL.revokeObjectURL(this.objectUrl);
+      this.objectUrl = null;
+    }
+  }
+
+  private resetDocument(): void {
+    this.releaseObjectUrl();
+    this.docUrl.set(null);
+    this.sheet.set(null);
+    this.docKind.set('none');
+    this.docName.set(null);
+    this.docMime.set(null);
+    this.docError.set(null);
+    this.docLoading.set(false);
+    this.docBatchId = null;
+  }
+
+  ngOnDestroy(): void {
+    this.releaseObjectUrl();
   }
 
   protected closeDetail(): void {
@@ -237,6 +365,7 @@ export class ImportComponent {
     this.detailId.set(null);
     this.batchId.set(null);
     this.error.set(null);
+    this.resetDocument();
   }
 }
 
@@ -309,6 +438,7 @@ function toPreview(b: Borrador): PreviewOrder {
     arlConfidence: m.arl_confidence != null ? Math.round(Number(m.arl_confidence)) : undefined,
     hours: text(m.horas_asignadas) || '—',
     confidence: Math.round(Number(b.confianza_general ?? m.overall_confidence ?? 0)),
+    sourceRow: m.source_row != null ? Number(m.source_row) : null,
     fields: buildFields(m),
   };
 }
