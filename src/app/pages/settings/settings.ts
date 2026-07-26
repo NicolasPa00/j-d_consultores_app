@@ -5,12 +5,7 @@ import { forkJoin } from 'rxjs';
 import { AuthService } from '../../core/auth.service';
 import { AlertService } from '../../core/alert.service';
 import { ApiService } from '../../core/api.service';
-<<<<<<< Updated upstream
-import { AlertService } from '../../core/alert.service';
-import { Rol, Usuario } from '../../core/models';
-=======
 import { PermisoRol, Rol, Usuario, Vista } from '../../core/models';
->>>>>>> Stashed changes
 
 interface RateRow {
   activity: string;
@@ -43,11 +38,7 @@ const DRAFT_VACIO: UsuarioDraft = {
 export class SettingsComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly api = inject(ApiService);
-<<<<<<< Updated upstream
   private readonly alerts = inject(AlertService);
-=======
-  private readonly alert = inject(AlertService);
->>>>>>> Stashed changes
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   protected readonly activeTab = signal<Tab>('profile');
@@ -138,7 +129,7 @@ export class SettingsComponent implements OnInit {
       },
       error: (err) => {
         this.loadingPermisos.set(false);
-        this.showToast(err?.error?.error || 'No se pudo cargar la matriz de permisos.');
+        this.alerts.error('No se pudo cargar la matriz de permisos', err?.error?.error || 'Solo los Administradores pueden consultar los permisos por rol.');
       },
     });
   }
@@ -147,7 +138,7 @@ export class SettingsComponent implements OnInit {
   protected async selectRol(rol: Rol): Promise<void> {
     if (rol === this.rolSeleccionado()) return;
     if (this.hayCambios()) {
-      const ok = await this.alert.confirm({
+      const ok = await this.alerts.confirm({
         title: 'Cambios sin guardar',
         message: `Tiene cambios sin guardar en el rol ${this.rolLabel(this.rolSeleccionado())}. Si cambia de rol se descartarán.`,
         confirmText: 'Descartar y cambiar',
@@ -203,14 +194,17 @@ export class SettingsComponent implements OnInit {
       next: () => {
         for (const c of cambios) this.setPermisoLocal(rol, c.vista, c.permitido);
         this.savingPermisos.set(false);
-        this.showToast(`Permisos del rol ${this.rolLabel(rol)} actualizados.`);
+        this.alerts.success(
+          'Permisos actualizados',
+          `Se guardaron ${cambios.length} cambio(s) en el rol ${this.rolLabel(rol)}.`,
+        );
         // Si edita permisos de su propio rol, refresca la sesión para que el
         // sidebar y el guard de rutas reflejen el cambio sin re-loguearse.
         if (rol === this.auth.usuario()?.rol) this.auth.refreshMe().subscribe();
       },
       error: (err) => {
         this.savingPermisos.set(false);
-        this.showToast(err?.error?.error || 'No se pudieron guardar los permisos.');
+        this.alerts.error('No se pudieron guardar los permisos', err?.error?.error || 'El servidor rechazó el cambio. Se recargó el estado vigente.');
         // Parte de los cambios pudo aplicarse: se recarga la verdad del servidor.
         this.loadPermisos();
       },
