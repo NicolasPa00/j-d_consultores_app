@@ -21,6 +21,10 @@ export class ApiService {
   search(query: string): Observable<Wrap<{ filters: unknown; results: Orden[] }>> {
     return this.http.post<Wrap<{ filters: unknown; results: Orden[] }>>(`${this.base}/reports/search`, { query });
   }
+  /** Convierte headers + filas en un .xlsx real (el backend lo arma con ExcelJS). */
+  exportXlsx(hoja: string, headers: string[], rows: (string | number)[][]): Observable<Blob> {
+    return this.http.post(`${this.base}/reports/xlsx`, { hoja, headers, rows }, { responseType: 'blob' });
+  }
 
   // ---- Órdenes (M3) ----
   listOrders(params?: Record<string, string>): Observable<Wrap<Orden[]>> {

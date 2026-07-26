@@ -356,7 +356,8 @@
           <div class="cal">
             <p class="cal__hint">
               Registra los rangos de fecha y hora en los que el profesional estará
-              <strong>ocupado</strong>.
+              <strong>ocupado</strong>. Las franjas se guardan al pulsar
+              <strong>Asignar profesional</strong>.
             </p>
 
             <div class="cal__form">
@@ -380,16 +381,26 @@
               </button>
             </div>
 
+            @if (cruceDelBorrador(); as cruce) {
+              <p class="cal__conflict">
+                El profesional ya está ocupado el {{ cruce.fecha }} de
+                {{ cruce.hora_inicio }} a {{ cruce.hora_fin }}. Las franjas no pueden cruzarse.
+              </p>
+            }
+
             <div class="cal__slots">
               <p class="cal__slots-title">Franjas ocupadas</p>
               @for (slot of selectedProfSlots(); track slot.id) {
-                <div class="cal-slot">
+                <div class="cal-slot" [class.cal-slot--pending]="slot.nueva">
                   <svg class="cal-slot__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <rect x="3" y="4" width="18" height="18" rx="2" />
                     <path d="M16 2v4M8 2v4M3 10h18" />
                   </svg>
                   <span class="cal-slot__text">{{ slot.fecha }} · {{ slot.hora_inicio }}–{{ slot.hora_fin }}</span>
-                  <button type="button" class="cal-slot__remove" (click)="removeBusySlot(slot.id)" aria-label="Quitar franja">
+                  @if (slot.nueva) {
+                    <span class="pill pill--warning cal-slot__badge">Sin guardar</span>
+                  }
+                  <button type="button" class="cal-slot__remove" (click)="removeBusySlot(slot)" aria-label="Quitar franja">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                       <path d="M18 6 6 18M6 6l12 12" />
                     </svg>
@@ -414,10 +425,13 @@
 
     <footer class="modal__footer">
       <span class="modal__status">
-        @if (selectedProfId()) {
-          Se asignará el profesional seleccionado a esta orden.
-        } @else {
+        @if (!selectedProfId()) {
           Selecciona un profesional para continuar.
+        } @else if (franjasPendientes().length) {
+          Se asignará el profesional y se registrarán
+          {{ franjasPendientes().length }} franja(s) nueva(s) en su agenda.
+        } @else {
+          Se asignará el profesional seleccionado a esta orden.
         }
       </span>
       <div class="modal__footer-actions">

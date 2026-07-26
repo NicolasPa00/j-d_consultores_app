@@ -39,6 +39,8 @@ export class ReportsComponent implements OnInit {
   protected readonly professionals = signal<Profesional[]>([]);
   protected readonly loadingOrders = signal(false);
   protected readonly loadingProfs = signal(false);
+  /** Exportar ahora viaja al servidor: evita disparar dos descargas seguidas. */
+  protected readonly exporting = signal(false);
 
   // ---- Filtros ----
   protected readonly estadoFilter = signal('');
@@ -263,14 +265,16 @@ export class ReportsComponent implements OnInit {
           m?.engine || '',
         ];
       });
-      this.downloadCsv('ordenes', headers, rows);
+      this.downloadXlsx('ordenes', 'Órdenes', headers, rows);
     } else {
       const rows = this.filteredProfs().map((p) => [
         p.nombre, p.correo, p.telefono || '', p.especialidad || '', p.estado,
       ]);
-      this.downloadCsv('profesionales', ['Nombre', 'Correo', 'Teléfono', 'Especialidad', 'Estado'], rows);
+      this.downloadXlsx(
+        'profesionales', 'Profesionales',
+        ['Nombre', 'Correo', 'Teléfono', 'Especialidad', 'Estado'], rows,
+      );
     }
-    this.alerts.success('Informe generado', 'Se descargó el archivo CSV con las órdenes del informe seleccionado.');
   }
 
   protected exportPdf(): void {
@@ -300,20 +304,44 @@ export class ReportsComponent implements OnInit {
   }
 
   // ---- Helpers de exportación ----
-  private downloadCsv(name: string, headers: string[], rows: (string | number)[][]): void {
-    if (!this.isBrowser) return;
-    const esc = (v: string | number) => {
-      const s = String(v ?? '');
-      return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    };
-    const csv = [headers, ...rows].map((r) => r.map(esc).join(';')).join('\r\n');
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${name}_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  /**
+   * Descarga un .xlsx real generado en el backend.
+   *
+   * Antes se armaba un CSV separado por ';': Excel solo lo divide en columnas si
+   * el separador de listas de Windows coincide con ese carácter, y cuando es ','
+   * la fila completa cae en la columna A. Un libro .xlsx no depende de la
+   * configuración regional del equipo que lo abre.
+   */
+  private downloadXlsx(name: string, hoja: string, headers: string[], rows: (string | number)[][]): void {
+    if (!this.isBrowser || this.exporting()) return;
+    if (!rows.length) {
+      this.alerts.warning('No hay datos para exportar', 'Ajuste los filtros del informe e intente de nuevo.');
+      return;
+    }
+    this.exporting.set(true);
+    this.api.exportXlsx(hoja, headers, rows).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${name}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.exporting.set(false);
+        this.alerts.success('Informe generado', `Se descargó el archivo Excel con ${rows.length} registro(s).`);
+      },
+      error: (err: { status?: number }) => {
+        this.exporting.set(false);
+        // Con responseType 'blob' el cuerpo del error no es legible como JSON,
+        // así que el mensaje se deduce del código de estado.
+        this.alerts.error(
+          'No se pudo generar el Excel',
+          err?.status === 413 || err?.status === 400
+            ? 'El informe tiene demasiados registros para exportarlo de una vez. Aplique filtros y reintente.'
+            : 'El servidor no pudo construir el archivo. Intente nuevamente.',
+        );
+      },
+    });
   }
 
   private printHtml(title: string, bodyHtml: string): void {

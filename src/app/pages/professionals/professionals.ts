@@ -98,8 +98,37 @@ export class ProfessionalsComponent implements OnInit {
     this.drawerOpen.set(false);
   }
 
+  /**
+   * Profesional distinto al que se edita que ya usa ese correo. El backend
+   * aplica la misma regla (es la fuente de verdad); esto solo adelanta el aviso
+   * para no hacer viajar al servidor un formulario que ya se sabe inválido.
+   */
+  protected duplicadoCorreo(): Professional | undefined {
+    const correo = this.draft.email.trim().toLowerCase();
+    if (!correo) return undefined;
+    return this.otros().find((p) => p.email.trim().toLowerCase() === correo);
+  }
+
+  /** Ídem para el teléfono, comparado por dígitos e ignorando el indicativo. */
+  protected duplicadoTelefono(): Professional | undefined {
+    const tel = claveTelefono(this.draft.phone);
+    if (!tel) return undefined;
+    return this.otros().find((p) => claveTelefono(p.phone) === tel);
+  }
+
+  /** Lista contra la que se busca el duplicado, excluyendo el registro en edición. */
+  private otros(): Professional[] {
+    const id = this.editingId();
+    return this.professionals().filter((p) => p.id !== id);
+  }
+
   protected isValid(): boolean {
-    return this.draft.name.trim().length > 0 && this.draft.email.trim().length > 0;
+    return (
+      this.draft.name.trim().length > 0 &&
+      this.draft.email.trim().length > 0 &&
+      !this.duplicadoCorreo() &&
+      !this.duplicadoTelefono()
+    );
   }
 
   /** Crea o actualiza el profesional contra la base de datos. */
@@ -146,6 +175,15 @@ export class ProfessionalsComponent implements OnInit {
   private emptyDraft(): ProfessionalDraft {
     return { name: '', email: '', phone: '', specialty: this.specialties[0], status: 'Activo' };
   }
+}
+
+/**
+ * Clave de comparación de teléfonos (misma regla que el backend): solo dígitos
+ * y últimos 10, para que el indicativo +57 no haga pasar por nuevo un número
+ * que ya existe.
+ */
+function claveTelefono(v: string): string {
+  return (v || '').replace(/\D/g, '').slice(-10);
 }
 
 function toView(p: Profesional): Professional {

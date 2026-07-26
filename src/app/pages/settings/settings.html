@@ -14,16 +14,18 @@
   >
     Mi Perfil Corporativo
   </button>
-  <button
-    type="button"
-    class="tab"
-    [class.tab--active]="activeTab() === 'system'"
-    (click)="setTab('system')"
-    role="tab"
-  >
-    Preferencias del Sistema
-  </button>
+  <!-- Pestañas de administración global: exclusivas del Administrador Maestro.
+       El resto de cuentas solo dispone de "Mi Perfil Corporativo". -->
   @if (esMaestro()) {
+    <button
+      type="button"
+      class="tab"
+      [class.tab--active]="activeTab() === 'system'"
+      (click)="setTab('system')"
+      role="tab"
+    >
+      Preferencias del Sistema
+    </button>
     <button
       type="button"
       class="tab"
@@ -33,8 +35,6 @@
     >
       Usuarios del Sistema
     </button>
-  }
-  @if (esAdmin()) {
     <button
       type="button"
       class="tab"
@@ -124,7 +124,7 @@
 }
 
 <!-- ===== Pestaña 2: Sistema ===== -->
-@if (activeTab() === 'system') {
+@if (activeTab() === 'system' && esMaestro()) {
   <!-- Umbral de confianza (persistido en BD) -->
   <div class="card">
     <div class="card__head">
@@ -204,10 +204,18 @@
               <span class="form-field__label">Nombre completo *</span>
               <input class="form-control" type="text" [(ngModel)]="draft.nombre" name="uNombre" placeholder="Ej. Laura Gómez Restrepo" />
             </label>
+            <!-- El documento identifica al usuario (es su credencial de acceso):
+                 no puede repetirse. En BD la columna es UNIQUE. -->
             <label class="form-field">
               <span class="form-field__label">Documento de identidad {{ editing === 'nuevo' ? '*' : '' }}</span>
               <input class="form-control" type="text" inputmode="numeric" [(ngModel)]="draft.documento" name="uDocumento"
+                     [class.form-control--error]="documentoDuplicado()"
                      [disabled]="editing !== 'nuevo'" placeholder="Ej. 1020304050" />
+              @if (documentoDuplicado(); as dup) {
+                <span class="form-field__hint form-field__hint--error">
+                  Este documento ya pertenece a {{ dup.nombre }} ({{ rolLabel(dup.rol) }}).
+                </span>
+              }
             </label>
           </div>
 
@@ -247,7 +255,7 @@
 
           <div class="profile-form__actions">
             <button type="button" class="btn btn--ghost" (click)="closeUserForm()">Cancelar</button>
-            <button type="submit" class="btn btn--primary" [disabled]="savingUser()">
+            <button type="submit" class="btn btn--primary" [disabled]="savingUser() || !!documentoDuplicado()">
               {{ savingUser() ? 'Guardando…' : (editing === 'nuevo' ? 'Crear usuario' : 'Guardar cambios') }}
             </button>
           </div>
@@ -355,7 +363,7 @@
 }
 
 <!-- ===== Pestaña 4: Roles y permisos (solo Administradores) ===== -->
-@if (activeTab() === 'roles' && esAdmin()) {
+@if (activeTab() === 'roles' && esMaestro()) {
   <div class="card">
     <div class="card__head">
       <h3 class="card__title">Roles y permisos</h3>

@@ -682,6 +682,34 @@
   height: 14px;
 }
 
+/* Franja agregada en el modal y todavía no persistida. Borde punteado y acento
+   azul para distinguirla a simple vista de las ya registradas (ámbar). */
+.cal-slot--pending {
+  background: rgba(45, 123, 200, 0.08);
+  border-style: dashed;
+  border-color: rgba(45, 123, 200, 0.45);
+}
+
+.cal-slot--pending .cal-slot__icon {
+  color: var(--secondary-color);
+}
+
+.cal-slot__badge {
+  flex-shrink: 0;
+}
+
+/* Aviso de cruce con una franja existente (bloquea el botón "Ocupar"). */
+.cal__conflict {
+  margin: 0.6rem 0 0;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--radius-sm);
+}
+
 /* ===== Spinner (patrón compartido) ===== */
 .spinner {
   width: 16px;

@@ -230,9 +230,24 @@ h4 {
 }
 
 .form-field__hint {
+  /* `block` explícito: dentro de un <label> el hint debe ir en <span>, y sin
+     esto el margen superior no se aplicaría. */
+  display: block;
   margin: 0.35rem 0 0;
   font-size: 0.75rem;
   color: var(--text-muted);
+}
+
+/* Campo rechazado por validación (dato duplicado, formato inválido…). */
+.form-control--error,
+.form-control--error:focus {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+}
+
+.form-field__hint--error {
+  color: var(--danger);
+  font-weight: 600;
 }
 
 /* ---- Píldoras / badges ---- */

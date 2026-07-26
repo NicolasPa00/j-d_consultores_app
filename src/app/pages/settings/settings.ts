@@ -28,6 +28,15 @@ const DRAFT_VACIO: UsuarioDraft = {
   rol: 'profesional',
 };
 
+/**
+ * Documento normalizado para comparar: sin puntos, espacios ni guiones y en
+ * mayúsculas, de modo que "1.020.304.050" y "1020304050" sean el mismo.
+ * El backend aplica exactamente la misma normalización.
+ */
+function claveDocumento(v: string): string {
+  return (v || '').replace(/[^0-9a-zA-Z]/g, '').toUpperCase();
+}
+
 @Component({
   selector: 'app-settings',
   imports: [FormsModule],
@@ -80,8 +89,9 @@ export class SettingsComponent implements OnInit {
   protected draft: UsuarioDraft = { ...DRAFT_VACIO };
   protected readonly roles: Rol[] = ['admin', 'profesional', 'contador', 'auditor'];
 
-  // ----- Pestaña: Roles y permisos (exclusiva de Administradores) -----
-  protected readonly esAdmin = computed(() => this.auth.usuario()?.rol === 'admin');
+  // ----- Pestaña: Roles y permisos (exclusiva del Administrador Maestro) -----
+  // Se reutiliza `esMaestro` (arriba): quien gestiona los usuarios internos es
+  // también quien define a qué vistas llega cada rol.
   protected readonly rolSeleccionado = signal<Rol>('admin');
   /** Estado PERSISTIDO en BD (línea base contra la que se comparan los cambios). */
   protected readonly permisosMatrix = signal<PermisoRol[]>([]);
@@ -106,7 +116,9 @@ export class SettingsComponent implements OnInit {
       this.phone = u.telefono || '';
       this.specialty = u.especialidad || '';
     }
-    if (this.isBrowser) {
+    // El umbral solo se muestra en "Preferencias del Sistema" (Maestro): sin
+    // esa pestaña la petición no tendría destino en pantalla.
+    if (this.isBrowser && this.esMaestro()) {
       this.api.getSettings().subscribe((r) => {
         const t = Number(r.data['confidence_threshold']);
         if (Number.isFinite(t)) this.threshold.set(t);
@@ -117,7 +129,7 @@ export class SettingsComponent implements OnInit {
   protected setTab(tab: Tab): void {
     this.activeTab.set(tab);
     if (tab === 'users' && this.esMaestro() && !this.usuarios().length) this.loadUsuarios();
-    if (tab === 'roles' && this.esAdmin() && !this.permisosMatrix().length) this.loadPermisos();
+    if (tab === 'roles' && this.esMaestro() && !this.permisosMatrix().length) this.loadPermisos();
   }
 
   // ---- Roles y permisos ----
@@ -131,7 +143,7 @@ export class SettingsComponent implements OnInit {
       },
       error: (err) => {
         this.loadingPermisos.set(false);
-        this.alerts.error('No se pudo cargar la matriz de permisos', err?.error?.error || 'Solo los Administradores pueden consultar los permisos por rol.');
+        this.alerts.error('No se pudo cargar la matriz de permisos', err?.error?.error || 'Solo el Administrador Maestro puede consultar los permisos por rol.');
       },
     });
   }
@@ -270,6 +282,21 @@ export class SettingsComponent implements OnInit {
     this.userForm.set(null);
   }
 
+  /**
+   * Usuario distinto al que se edita que ya usa ese documento. La columna
+   * `documento_identidad` es UNIQUE en BD (fuente de verdad); esto solo adelanta
+   * el aviso al formulario en vez de esperar el 409 del servidor.
+   */
+  protected documentoDuplicado(): Usuario | undefined {
+    const doc = claveDocumento(this.draft.documento);
+    if (!doc) return undefined;
+    const editando = this.userForm();
+    const idActual = editando && editando !== 'nuevo' ? editando.id : null;
+    return this.usuarios().find(
+      (u) => u.id !== idActual && claveDocumento(u.documento_identidad ?? '') === doc,
+    );
+  }
+
   protected saveUser(): void {
     if (this.savingUser()) return;
     const editing = this.userForm();
@@ -277,6 +304,12 @@ export class SettingsComponent implements OnInit {
     const d = this.draft;
     if (!d.nombre.trim() || !d.correo.trim() || (editing === 'nuevo' && !d.documento.trim())) {
       this.alerts.warning('Faltan campos obligatorios', 'Nombre, correo y documento de identidad son necesarios para crear el usuario.');
+      return;
+    }
+    // Red de seguridad por si se envía con Enter estando el botón deshabilitado.
+    const dup = this.documentoDuplicado();
+    if (dup) {
+      this.alerts.warning('Documento ya registrado', `El documento ${d.documento.trim()} pertenece a ${dup.nombre}.`);
       return;
     }
     this.savingUser.set(true);

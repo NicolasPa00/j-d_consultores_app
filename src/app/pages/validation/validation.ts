@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin, of, switchMap } from 'rxjs';
 import { ExtractedField, ServiceOrder } from '../../data/service-orders';
 import { ApiService } from '../../core/api.service';
 import { AlertService } from '../../core/alert.service';
@@ -15,6 +16,15 @@ interface FormFieldDescriptor {
 
 /** Vista actual del listado: órdenes activas o deshabilitadas. */
 type OrdersView = 'activas' | 'deshabilitadas';
+
+/**
+ * Franja mostrada en el calendario del modal de asignación.
+ *
+ * `nueva` marca las agregadas con "Ocupar" que todavía NO existen en la BD: se
+ * persisten al confirmar con "Asignar profesional". Mientras tanto viven solo
+ * en pantalla, así que cerrar el modal no deja basura en la agenda.
+ */
+type FranjaVista = Ocupacion & { nueva?: boolean };
 
 @Component({
   selector: 'app-validation',
@@ -42,9 +52,11 @@ export class ValidationComponent implements OnInit {
   protected readonly assignId = signal<string | null>(null);
   protected readonly professionals = signal<Profesional[]>([]);
   protected readonly selectedProfId = signal<string | null>(null);
-  protected readonly selectedProfSlots = signal<Ocupacion[]>([]);
+  protected readonly selectedProfSlots = signal<FranjaVista[]>([]);
   protected readonly assigning = signal(false);
   protected busyDraft = this.emptySlot();
+  /** Contador para los id temporales de las franjas aún no persistidas. */
+  private tmpSeq = 0;
 
   protected readonly filtered = computed(() => {
     const q = this.query().trim().toLowerCase();
@@ -266,14 +278,39 @@ export class ValidationComponent implements OnInit {
     }
   }
 
-  protected closeAssign(): void {
+  protected async closeAssign(): Promise<void> {
     if (this.assigning()) return;
+    // Las franjas agregadas viven solo en pantalla: cerrar sin asignar las
+    // pierde, así que conviene avisarlo antes de descartarlas.
+    const pendientes = this.franjasPendientes().length;
+    if (pendientes) {
+      const ok = await this.alerts.confirm({
+        title: 'Franjas sin guardar',
+        message: `Agregó ${pendientes} franja(s) que aún no se han registrado. Se guardan al pulsar "Asignar profesional"; si cierra ahora se descartarán.`,
+        confirmText: 'Cerrar y descartar',
+        tone: 'danger',
+      });
+      if (!ok) return;
+    }
     this.assignId.set(null);
     this.selectedProfId.set(null);
     this.selectedProfSlots.set([]);
   }
 
-  protected selectProf(id: string): void {
+  protected async selectProf(id: string): Promise<void> {
+    if (id === this.selectedProfId()) return;
+    // Las franjas pendientes pertenecen al profesional que se estaba editando;
+    // cambiar de asesor las dejaría sin dueño.
+    const pendientes = this.franjasPendientes().length;
+    if (pendientes) {
+      const ok = await this.alerts.confirm({
+        title: 'Franjas sin guardar',
+        message: `Agregó ${pendientes} franja(s) al profesional actual que aún no se han registrado. Si cambia de profesional se descartarán.`,
+        confirmText: 'Descartar y cambiar',
+        tone: 'danger',
+      });
+      if (!ok) return;
+    }
     this.selectedProfId.set(id);
     this.busyDraft = this.emptySlot();
     this.loadSlots(id);
@@ -286,64 +323,146 @@ export class ValidationComponent implements OnInit {
     });
   }
 
-  protected slotIsValid(): boolean {
+  /** Horas bien formadas y en orden. El cruce se evalúa aparte. */
+  private slotBienFormado(): boolean {
     const s = this.busyDraft;
     return !!s.fecha && !!s.hora_inicio && !!s.hora_fin && s.hora_inicio < s.hora_fin;
   }
 
-  /** Registra una franja de ocupación del profesional en la BD. */
+  /**
+   * Franja ya listada que se cruzaría con el borrador. Dos franjas se solapan
+   * si comparten fecha y sus intervalos se intersecan; tocarse en el borde
+   * (10:00–12:00 y 12:00–14:00) no es cruce. Las horas son 'HH:MM', así que la
+   * comparación de texto equivale a la comparación cronológica.
+   *
+   * Cubre tanto las franjas de la BD (de otras órdenes) como las pendientes de
+   * guardar en este mismo modal. El backend valida lo mismo.
+   */
+  protected cruceDelBorrador(): FranjaVista | undefined {
+    const s = this.busyDraft;
+    if (!this.slotBienFormado()) return undefined;
+    return this.selectedProfSlots().find(
+      (f) => f.fecha === s.fecha && f.hora_inicio < s.hora_fin && s.hora_inicio < f.hora_fin,
+    );
+  }
+
+  protected slotIsValid(): boolean {
+    return this.slotBienFormado() && !this.cruceDelBorrador();
+  }
+
+  /**
+   * Agrega la franja al calendario en pantalla. NO toca la BD: se persiste al
+   * pulsar "Asignar profesional".
+   */
   protected addBusySlot(): void {
     const profId = this.selectedProfId();
     if (!profId || !this.slotIsValid()) return;
-    this.api
-      .addOcupacion(profId, {
-        fecha: this.busyDraft.fecha,
-        hora_inicio: this.busyDraft.hora_inicio,
-        hora_fin: this.busyDraft.hora_fin,
-      })
-      .subscribe({
-        next: (r) => {
-          this.selectedProfSlots.update((list) =>
-            [...list, r.data].sort((a, b) =>
-              (a.fecha + a.hora_inicio).localeCompare(b.fecha + b.hora_inicio),
-            ),
-          );
-          this.busyDraft = this.emptySlot();
-        },
-        error: (err) => this.alerts.error('No se pudo registrar la franja', err?.error?.error || 'Revise que la hora de inicio sea anterior a la de fin y que no se cruce con otra franja.'),
-      });
+    const nueva: FranjaVista = {
+      id: `tmp-${++this.tmpSeq}`,
+      profesional_id: profId,
+      fecha: this.busyDraft.fecha,
+      hora_inicio: this.busyDraft.hora_inicio,
+      hora_fin: this.busyDraft.hora_fin,
+      nueva: true,
+    };
+    this.selectedProfSlots.update((list) => this.ordenarFranjas([...list, nueva]));
+    this.busyDraft = this.emptySlot();
   }
 
-  protected removeBusySlot(slotId: string): void {
+  /**
+   * Quita una franja, siempre previa confirmación. Si es temporal desaparece
+   * solo de la vista (en BD no existe); si ya está guardada, se elimina de la
+   * agenda del profesional.
+   */
+  protected async removeBusySlot(slot: FranjaVista): Promise<void> {
     const profId = this.selectedProfId();
     if (!profId) return;
-    this.api.removeOcupacion(profId, slotId).subscribe({
-      next: () => this.selectedProfSlots.update((list) => list.filter((s) => s.id !== slotId)),
+    const rango = `${slot.fecha} · ${slot.hora_inicio}–${slot.hora_fin}`;
+    const ok = await this.alerts.confirm({
+      title: 'Quitar franja ocupada',
+      message: slot.nueva
+        ? `La franja ${rango} todavía no se ha guardado. ¿Quitarla del calendario?`
+        : `Se eliminará la franja ${rango} de la agenda del profesional. Esta acción no se puede deshacer.`,
+      confirmText: 'Quitar franja',
+      tone: 'danger',
+    });
+    if (!ok) return;
+
+    if (slot.nueva) {
+      this.selectedProfSlots.update((list) => list.filter((f) => f.id !== slot.id));
+      return;
+    }
+    this.api.removeOcupacion(profId, slot.id).subscribe({
+      next: () => {
+        this.selectedProfSlots.update((list) => list.filter((f) => f.id !== slot.id));
+        this.alerts.success('Franja liberada', `${rango} quedó disponible en la agenda del profesional.`);
+      },
       error: (err) => this.alerts.error('No se pudo quitar la franja', err?.error?.error || 'El servidor rechazó la eliminación de la ocupación.'),
     });
   }
 
-  /** Confirma la asignación del profesional a la orden (persistida en BD). */
+  /** Franjas pendientes de persistir (las agregadas con "Ocupar"). */
+  protected franjasPendientes(): FranjaVista[] {
+    return this.selectedProfSlots().filter((f) => f.nueva);
+  }
+
+  private ordenarFranjas(list: FranjaVista[]): FranjaVista[] {
+    return [...list].sort((a, b) =>
+      (a.fecha + a.hora_inicio).localeCompare(b.fecha + b.hora_inicio),
+    );
+  }
+
+  /**
+   * Único punto donde se escribe en BD: primero se registran las franjas
+   * pendientes y solo si TODAS entran se asigna el profesional. Si alguna se
+   * cruza (por ejemplo, otro administrador ocupó ese horario mientras el modal
+   * estaba abierto) la asignación no llega a ejecutarse.
+   */
   protected confirmAssign(): void {
     const orderId = this.assignId();
     const profId = this.selectedProfId();
     if (!orderId || !profId || this.assigning()) return;
     this.assigning.set(true);
-    this.api.assignDraft(orderId, { profesional_id: profId }).subscribe({
-      next: (r) => {
-        this.replaceOrder(r.data);
-        this.assigning.set(false);
-        const name = r.data.profesional_nombre || 'Profesional';
-        this.assignId.set(null);
-        this.selectedProfId.set(null);
-        this.selectedProfSlots.set([]);
-        this.alerts.success('Profesional asignado', `${name} quedó asignado a la orden de ${r.data.metadatos_extraccion?.empresa_nombre?.value || 'la empresa'}.`);
-      },
-      error: (err) => {
-        this.assigning.set(false);
-        this.alerts.error('No se pudo asignar el profesional', err?.error?.error || 'Verifique que el profesional esté activo y sin cruce de horario.');
-      },
-    });
+
+    const pendientes = this.franjasPendientes();
+    const guardarFranjas = pendientes.length
+      ? forkJoin(
+          pendientes.map((f) =>
+            this.api.addOcupacion(profId, {
+              fecha: f.fecha,
+              hora_inicio: f.hora_inicio,
+              hora_fin: f.hora_fin,
+            }),
+          ),
+        )
+      : of([]);
+
+    guardarFranjas
+      .pipe(switchMap(() => this.api.assignDraft(orderId, { profesional_id: profId })))
+      .subscribe({
+        next: (r) => {
+          this.replaceOrder(r.data);
+          this.assigning.set(false);
+          const name = r.data.profesional_nombre || 'Profesional';
+          this.assignId.set(null);
+          this.selectedProfId.set(null);
+          this.selectedProfSlots.set([]);
+          const detalleFranjas = pendientes.length
+            ? ` Se registraron ${pendientes.length} franja(s) en su agenda.`
+            : '';
+          this.alerts.success(
+            'Profesional asignado',
+            `${name} quedó asignado a la orden de ${r.data.metadatos_extraccion?.empresa_nombre?.value || 'la empresa'}.${detalleFranjas}`,
+          );
+        },
+        error: (err) => {
+          this.assigning.set(false);
+          this.alerts.error('No se pudo asignar el profesional', err?.error?.error || 'Verifique que el profesional esté activo y sin cruce de horario.');
+          // Alguna franja pudo haberse creado antes del fallo: se recarga la
+          // agenda real para que el calendario no muestre un estado inventado.
+          this.loadSlots(profId);
+        },
+      });
   }
 
   // ================= Deshabilitar / restaurar =================

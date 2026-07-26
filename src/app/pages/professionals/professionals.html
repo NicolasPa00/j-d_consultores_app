@@ -118,14 +118,42 @@
         <input id="pName" class="form-control" type="text" [(ngModel)]="draft.name" name="name" placeholder="Ej. Laura Gómez Restrepo" />
       </div>
 
+      <!-- Correo y teléfono son identificadores de contacto: no se pueden
+           repetir entre profesionales. El backend valida lo mismo. -->
       <div class="form-field">
         <label class="form-field__label" for="pEmail">Correo *</label>
-        <input id="pEmail" class="form-control" type="email" [(ngModel)]="draft.email" name="email" placeholder="nombre@jddconsultores.co" />
+        <input
+          id="pEmail"
+          class="form-control"
+          [class.form-control--error]="duplicadoCorreo()"
+          type="email"
+          [(ngModel)]="draft.email"
+          name="email"
+          placeholder="nombre@jddconsultores.co"
+        />
+        @if (duplicadoCorreo(); as dup) {
+          <p class="form-field__hint form-field__hint--error">
+            Este correo ya está registrado a nombre de {{ dup.name }}.
+          </p>
+        }
       </div>
 
       <div class="form-field">
         <label class="form-field__label" for="pPhone">Teléfono</label>
-        <input id="pPhone" class="form-control" type="tel" [(ngModel)]="draft.phone" name="phone" placeholder="+57 3xx xxx xxxx" />
+        <input
+          id="pPhone"
+          class="form-control"
+          [class.form-control--error]="duplicadoTelefono()"
+          type="tel"
+          [(ngModel)]="draft.phone"
+          name="phone"
+          placeholder="+57 3xx xxx xxxx"
+        />
+        @if (duplicadoTelefono(); as dup) {
+          <p class="form-field__hint form-field__hint--error">
+            Este teléfono ya está registrado a nombre de {{ dup.name }}.
+          </p>
+        }
       </div>
 
       <div class="form-field">
