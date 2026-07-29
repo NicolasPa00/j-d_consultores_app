@@ -92,11 +92,9 @@
         </tr>
       </thead>
       <tbody>
-        <!-- Solo lectura: el detalle/asignación (drawer) queda oculto en esta
-             entrega. Para reactivarlo basta con devolver a la fila la clase
-             `row-clickable` y el (click)="openOrder(order)". -->
+        <!-- Al pulsar una fila se abre el drawer de detalle y asignación (M5). -->
         @for (order of orders(); track order.code) {
-          <tr>
+          <tr class="row-clickable" (click)="openOrder(order)">
             <td class="cell-code">{{ order.code }}</td>
             <td>{{ order.client }}</td>
             <td>
@@ -129,9 +127,6 @@
 </section>
 
 <!-- ============ DRAWER DE DETALLE Y ASIGNACIÓN (Módulo ASG) ============ -->
-<!-- OCULTO EN ESTA ENTREGA: nada abre el drawer (ver tabla de arriba), así que
-     `selectedOrder()` siempre es null y este bloque no se pinta. Se conserva
-     completo para reactivarlo en la fase siguiente. -->
 @if (selectedOrder(); as order) {
   <div class="drawer-backdrop" (click)="closeDrawer()"></div>
 

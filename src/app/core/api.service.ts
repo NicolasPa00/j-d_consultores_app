@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from './config';
-import { Borrador, DashboardData, HojaImportada, LoteImportacion, MatrizPermisos, Ocupacion, Orden, Profesional, Rol, Usuario, Vista } from './models';
+import { ArchivoSoporte, Borrador, DashboardData, Encuesta, EncuestaPublica, EncuestaStats, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, Notificacion, Ocupacion, Orden, PeriodoEjecutado, Precuenta, PrecuentaPublica, Profesional, ReporteCartera, ReporteHoras, ReporteVencidas, Rol, Tarifa, Usuario, Vista } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -21,6 +21,25 @@ export class ApiService {
   search(query: string): Observable<Wrap<{ filters: unknown; results: Orden[] }>> {
     return this.http.post<Wrap<{ filters: unknown; results: Orden[] }>>(`${this.base}/reports/search`, { query });
   }
+  /** RPT-03 · Órdenes con más de `dias` sin ejecutarse (60 por defecto). */
+  reporteVencidas(dias = 60, arlId?: string): Observable<Wrap<ReporteVencidas>> {
+    const qs = new URLSearchParams({ dias: String(dias), ...(arlId ? { arl_id: arlId } : {}) }).toString();
+    return this.http.get<Wrap<ReporteVencidas>>(`${this.base}/reports/vencidas?${qs}`);
+  }
+  /** RPT-05 · Horas ejecutadas por profesional y ARL en un rango. */
+  reporteHoras(desde: string, hasta: string): Observable<Wrap<ReporteHoras>> {
+    return this.http.get<Wrap<ReporteHoras>>(`${this.base}/reports/horas?desde=${desde}&hasta=${hasta}`);
+  }
+  /** RPT-06 · Cartera: ejecutadas sin facturar o sin validar por la ARL. */
+  reporteCartera(filtros: { arl_id?: string; pendiente?: string } = {}): Observable<Wrap<ReporteCartera>> {
+    const qs = new URLSearchParams(filtros as Record<string, string>).toString();
+    return this.http.get<Wrap<ReporteCartera>>(`${this.base}/reports/cartera${qs ? '?' + qs : ''}`);
+  }
+  /** RPT-06 · Marca facturación / validación de la ARL sobre una OS. */
+  marcarCartera(orderId: string, body: { facturado?: boolean; validado_arl?: boolean }): Observable<Wrap<{ id: string }>> {
+    return this.http.patch<Wrap<{ id: string }>>(`${this.base}/orders/${orderId}/cartera`, body);
+  }
+
   /** Convierte headers + filas en un .xlsx real (el backend lo arma con ExcelJS). */
   exportXlsx(hoja: string, headers: string[], rows: (string | number)[][]): Observable<Blob> {
     return this.http.post(`${this.base}/reports/xlsx`, { hoja, headers, rows }, { responseType: 'blob' });
@@ -34,8 +53,159 @@ export class ApiService {
   getOrder(id: string): Observable<Wrap<Orden & Record<string, unknown>>> {
     return this.http.get<Wrap<Orden & Record<string, unknown>>>(`${this.base}/orders/${id}`);
   }
-  assignOrder(id: string, body: { profesional_id: string; fecha_programada?: string }): Observable<Wrap<Orden>> {
-    return this.http.post<Wrap<Orden>>(`${this.base}/orders/${id}/assign`, body);
+  /**
+   * ASG-01..04 · Asigna (o reprograma, ASG-07) la OS: pasa a PROGRAMADA, genera
+   * los formatos y envía el correo con los adjuntos.
+   *
+   * `correo_enviado: false` significa que la asignación SÍ quedó guardada pero
+   * el envío falló: hay que avisarlo sin presentarlo como un error de la
+   * operación completa.
+   */
+  assignOrder(
+    id: string,
+    body: { profesional_id: string; fecha_programada?: string },
+  ): Observable<Wrap<Orden> & { correo_enviado?: boolean; correo_error?: string | null }> {
+    return this.http.post<Wrap<Orden> & { correo_enviado?: boolean; correo_error?: string | null }>(
+      `${this.base}/orders/${id}/assign`, body,
+    );
+  }
+
+  // ---- Verificación y cierre (M7) ----
+  /** VER-01 · Soportes firmados que subió el profesional para una OS. */
+  listSupports(orderId: string): Observable<Wrap<ArchivoSoporte[]>> {
+    return this.http.get<Wrap<ArchivoSoporte[]>>(`${this.base}/orders/${orderId}/supports`);
+  }
+  /**
+   * VER-01 · Contenido de un soporte para verlo EN LÍNEA. El endpoint exige
+   * token, así que no sirve apuntar un <iframe> a la URL: se descarga como blob
+   * (el interceptor pone la cabecera) y la vista arma un `blob:` local.
+   */
+  viewSupport(supportId: string): Observable<Blob> {
+    return this.http.get(`${this.base}/files/supports/${supportId}/view`, { responseType: 'blob' });
+  }
+  /** VER-02/03 · Aceptar los soportes: la OS pasa a EJECUTADA. */
+  verifyOrder(orderId: string): Observable<Wrap<Orden>> {
+    return this.http.post<Wrap<Orden>>(`${this.base}/orders/${orderId}/verify`, {});
+  }
+  /** VER-04 · Rechazar con motivo obligatorio: la OS vuelve a PROGRAMADA. */
+  rejectOrder(orderId: string, motivo: string): Observable<Wrap<Orden>> {
+    return this.http.post<Wrap<Orden>>(`${this.base}/orders/${orderId}/reject`, { motivo });
+  }
+  // ---- Estados y auditoría (M3) ----
+  /**
+   * EST-02/04 · Cambio manual de estado. El motivo es obligatorio para CANCELADA
+   * y para devolver una OS de EN VERIFICACIÓN a PROGRAMADA; la función de dominio
+   * en BD valida tanto la transición como el motivo.
+   */
+  changeOrderStatus(orderId: string, estado: EstadoOrden, motivo?: string): Observable<Wrap<Orden>> {
+    return this.http.post<Wrap<Orden>>(`${this.base}/orders/${orderId}/status`, { estado, motivo });
+  }
+  /** EST-03 · Log de auditoría de cambios de estado de la OS. */
+  orderHistory(orderId: string): Observable<Wrap<HistorialEstado[]>> {
+    return this.http.get<Wrap<HistorialEstado[]>>(`${this.base}/orders/${orderId}/history`);
+  }
+
+  // ---- Pre-cuentas de cobro (M9) ----
+  /** PRE-08 · Histórico filtrable por periodo, profesional y estado. */
+  listPrecuentas(filtros: { periodo?: string; profesional_id?: string; estado?: string } = {}): Observable<Wrap<Precuenta[]>> {
+    const qs = new URLSearchParams(filtros as Record<string, string>).toString();
+    return this.http.get<Wrap<Precuenta[]>>(`${this.base}/precuentas${qs ? '?' + qs : ''}`);
+  }
+  /** Meses con horas ejecutadas: qué periodos tiene sentido generar. */
+  listPeriodosEjecutados(): Observable<Wrap<PeriodoEjecutado[]>> {
+    return this.http.get<Wrap<PeriodoEjecutado[]>>(`${this.base}/precuentas/periodos`);
+  }
+  getPrecuenta(id: string): Observable<Wrap<Precuenta>> {
+    return this.http.get<Wrap<Precuenta>>(`${this.base}/precuentas/${id}`);
+  }
+  /** PRE-01 · Cierre de mes. Idempotente: recalcula las que siguen abiertas. */
+  generarPrecuentas(periodo: string, profesionalId?: string): Observable<{
+    message: string;
+    data: { periodo: string; generadas: Precuenta[]; omitidas: { profesional_nombre: string; motivo: string }[] };
+  }> {
+    return this.http.post<{
+      message: string;
+      data: { periodo: string; generadas: Precuenta[]; omitidas: { profesional_nombre: string; motivo: string }[] };
+    }>(`${this.base}/precuentas/generate`, { periodo, profesional_id: profesionalId });
+  }
+  /** PRE-04 · Envía el PDF y el enlace de aceptación al profesional. */
+  enviarPrecuenta(id: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.base}/precuentas/${id}/send`, {});
+  }
+  /** PRE-03 · Documento PDF (se abre en pestaña nueva desde un blob). */
+  precuentaPdf(id: string): Observable<Blob> {
+    return this.http.get(`${this.base}/precuentas/${id}/pdf`, { responseType: 'blob' });
+  }
+  /** PRE-07 · Corrección manual tras revisar un rechazo. */
+  setEstadoPrecuenta(id: string, estado: EstadoPrecuenta, observaciones?: string): Observable<Wrap<Precuenta>> {
+    return this.http.patch<Wrap<Precuenta>>(`${this.base}/precuentas/${id}/estado`, { estado, observaciones });
+  }
+
+  // ---- Tarifas por actividad (M9 · PRE-02) ----
+  listTarifas(profId: string): Observable<Wrap<Tarifa[]>> {
+    return this.http.get<Wrap<Tarifa[]>>(`${this.base}/professionals/${profId}/tarifas`);
+  }
+  addTarifa(profId: string, body: { actividad: string; valor_hora: number; vigente_desde?: string }): Observable<Wrap<Tarifa>> {
+    return this.http.post<Wrap<Tarifa>>(`${this.base}/professionals/${profId}/tarifas`, body);
+  }
+  removeTarifa(profId: string, tarifaId: string): Observable<Wrap<{ id: string }>> {
+    return this.http.delete<Wrap<{ id: string }>>(`${this.base}/professionals/${profId}/tarifas/${tarifaId}`);
+  }
+
+  // ---- Pre-cuenta pública (M9 · PRE-05) — sin autenticación ----
+  publicPrecuenta(token: string): Observable<Wrap<PrecuentaPublica>> {
+    return this.http.get<Wrap<PrecuentaPublica>>(`${this.base}/public/precuenta/${token}`);
+  }
+  responderPrecuenta(
+    token: string,
+    body: { decision: 'aceptada' | 'rechazada'; observaciones?: string },
+  ): Observable<{ message: string; data: { estado: EstadoPrecuenta } }> {
+    return this.http.post<{ message: string; data: { estado: EstadoPrecuenta } }>(
+      `${this.base}/public/precuenta/${token}/responder`, body,
+    );
+  }
+
+  // ---- Encuestas de satisfacción (M8) ----
+  /** ENC-05/07 · Listado filtrable (alimenta la tabla y la exportación). */
+  listSurveys(filtros: FiltroEncuestas = {}): Observable<Wrap<Encuesta[]>> {
+    const qs = new URLSearchParams(filtros as Record<string, string>).toString();
+    return this.http.get<Wrap<Encuesta[]>>(`${this.base}/surveys${qs ? '?' + qs : ''}`);
+  }
+  /** ENC-05 · Agregados por profesional, ARL y mes. */
+  surveyStats(filtros: FiltroEncuestas = {}): Observable<Wrap<EncuestaStats>> {
+    const qs = new URLSearchParams(filtros as Record<string, string>).toString();
+    return this.http.get<Wrap<EncuestaStats>>(`${this.base}/surveys/stats${qs ? '?' + qs : ''}`);
+  }
+  /** ENC-01 · Reenvía el correo de una OS cuyo envío automático falló. */
+  resendSurvey(orderId: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.base}/surveys/${orderId}/send`, {});
+  }
+
+  // ---- Encuesta pública (M8) — sin autenticación ----
+  publicSurvey(token: string): Observable<Wrap<EncuestaPublica>> {
+    return this.http.get<Wrap<EncuestaPublica>>(`${this.base}/public/survey/${token}`);
+  }
+  submitSurvey(
+    token: string,
+    body: { satisfaccion: number; recomendacion: number; comentarios?: string },
+  ): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.base}/public/survey/${token}`, body);
+  }
+
+  // ---- Notificaciones (M11 · NOT-04) ----
+  /** Bandeja del usuario autenticado (últimas 50, más recientes primero). */
+  listNotifications(): Observable<Wrap<Notificacion[]>> {
+    return this.http.get<Wrap<Notificacion[]>>(`${this.base}/notifications`);
+  }
+  /** Solo el contador del badge: mucho más barato que traer la bandeja entera. */
+  unreadNotifications(): Observable<Wrap<{ count: number }>> {
+    return this.http.get<Wrap<{ count: number }>>(`${this.base}/notifications/unread-count`);
+  }
+  markNotificationRead(id: string): Observable<Wrap<Notificacion>> {
+    return this.http.patch<Wrap<Notificacion>>(`${this.base}/notifications/${id}/read`, {});
+  }
+  markAllNotificationsRead(): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.base}/notifications/read-all`, {});
   }
 
   // ---- Profesionales (CFG-01) ----

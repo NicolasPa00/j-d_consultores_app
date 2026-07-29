@@ -1,0 +1,149 @@
+<div class="survey">
+  <div class="survey__container">
+    <header class="survey__brand">
+      <img src="logoJDD-Consultores.png" alt="JD&D Consultores" class="survey__logo" />
+    </header>
+
+    <div class="survey__head">
+      <span class="pill pill--info">{{ info()?.orden_codigo || 'Orden de Servicio' }}</span>
+      <h1 class="survey__title">{{ info()?.preguntas?.titulo || 'Encuesta de satisfacción' }}</h1>
+      <p class="survey__company">{{ info()?.empresa_nombre || '' }}</p>
+    </div>
+
+    @if (loading()) {
+      <div class="survey__card survey__state">
+        <span class="spinner" aria-hidden="true"></span>
+        <p>Cargando la encuesta…</p>
+      </div>
+    } @else if (error(); as msg) {
+      <div class="alert alert--error" role="alert">
+        <span class="alert__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 8v5M12 16h.01" />
+          </svg>
+        </span>
+        <div class="alert__body">
+          <p class="alert__title">{{ msg }}</p>
+          <p class="alert__detail">Si el enlace no funciona, solicite uno nuevo a JD&amp;D Consultores.</p>
+        </div>
+      </div>
+    } @else if (sent()) {
+      <div class="success">
+        <div class="success__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        </div>
+        <h2 class="success__title">¡Gracias por su respuesta!</h2>
+        <p class="success__text">
+          Su opinión sobre la orden {{ info()?.orden_codigo }} quedó registrada y nos ayuda a
+          mejorar el servicio.
+        </p>
+      </div>
+    } @else {
+      <!-- Resumen de la actividad calificada -->
+      <div class="survey__card recap">
+        @if (info()?.actividad_economica) {
+          <div class="recap__row">
+            <span class="recap__label">Actividad</span>
+            <span class="recap__value">{{ info()?.actividad_economica }}</span>
+          </div>
+        }
+        @if (info()?.profesional_nombre) {
+          <div class="recap__row">
+            <span class="recap__label">Profesional</span>
+            <span class="recap__value">{{ info()?.profesional_nombre }}</span>
+          </div>
+        }
+        @if (info()?.arl_nombre) {
+          <div class="recap__row">
+            <span class="recap__label">ARL</span>
+            <span class="recap__value">{{ info()?.arl_nombre }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="survey__card">
+        <!-- Pregunta 1 · satisfacción (escala 1-5) -->
+        <fieldset class="q">
+          <legend class="q__title">
+            <span class="q__num">1</span>
+            {{ info()?.preguntas?.satisfaccion }}
+          </legend>
+          <div class="scale" role="radiogroup" [attr.aria-label]="info()?.preguntas?.satisfaccion">
+            @for (op of escala; track op.valor) {
+              <button
+                type="button"
+                class="scale__opt"
+                [class.scale__opt--on]="satisfaccion() === op.valor"
+                role="radio"
+                [attr.aria-checked]="satisfaccion() === op.valor"
+                (click)="elegir('satisfaccion', op.valor)"
+              >
+                <span class="scale__num">{{ op.valor }}</span>
+                <span class="scale__label">{{ op.label }}</span>
+              </button>
+            }
+          </div>
+        </fieldset>
+
+        <!-- Pregunta 2 · recomendación (escala 1-5) -->
+        <fieldset class="q">
+          <legend class="q__title">
+            <span class="q__num">2</span>
+            {{ info()?.preguntas?.recomendacion }}
+          </legend>
+          <div class="scale" role="radiogroup" [attr.aria-label]="info()?.preguntas?.recomendacion">
+            @for (op of escalaRecomendacion; track op.valor) {
+              <button
+                type="button"
+                class="scale__opt"
+                [class.scale__opt--on]="recomendacion() === op.valor"
+                role="radio"
+                [attr.aria-checked]="recomendacion() === op.valor"
+                (click)="elegir('recomendacion', op.valor)"
+              >
+                <span class="scale__num">{{ op.valor }}</span>
+                <span class="scale__label">{{ op.label }}</span>
+              </button>
+            }
+          </div>
+        </fieldset>
+
+        <!-- Pregunta 3 · comentarios (opcional) -->
+        <div class="q">
+          <label class="q__title" for="comentarios">
+            <span class="q__num">3</span>
+            {{ info()?.preguntas?.comentarios }}
+            <small class="q__opt">(opcional)</small>
+          </label>
+          <textarea
+            id="comentarios"
+            class="form-control"
+            rows="4"
+            maxlength="1000"
+            placeholder="Cuéntenos qué podemos mejorar…"
+            [(ngModel)]="comentarios"
+          ></textarea>
+        </div>
+
+        <button
+          type="button"
+          class="btn btn--primary btn--block"
+          [disabled]="!completo() || sending()"
+          (click)="enviar()"
+        >
+          @if (sending()) { <span class="spinner" aria-hidden="true"></span> }
+          {{ sending() ? 'Enviando…' : 'Enviar respuesta' }}
+        </button>
+
+        @if (!completo()) {
+          <p class="survey__hint">Responda las dos preguntas de calificación para enviar.</p>
+        }
+      </div>
+    }
+
+    <p class="survey__footer">© 2026 JD&amp;D Consultores · Sus respuestas son confidenciales</p>
+  </div>
+</div>

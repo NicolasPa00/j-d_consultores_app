@@ -1,11 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { AlertService } from '../../core/alert.service';
-import { Orden, Profesional } from '../../core/models';
+import {
+  Encuesta, EncuestaStats, FiltroEncuestas, Orden, Profesional,
+  ReporteCartera, ReporteHoras, ReporteVencidas,
+} from '../../core/models';
+import { AuthService } from '../../core/auth.service';
 
-type ReportTab = 'ordenes' | 'profesionales';
+type ReportTab = 'ordenes' | 'profesionales' | 'satisfaccion' | 'vencidas' | 'horas' | 'cartera';
 
 /** Estados de OS del backend, en orden de ciclo de vida. */
 const ESTADOS = ['SIN PROGRAMAR', 'PROGRAMADA', 'EN VERIFICACIÓN', 'EJECUTADA', 'CANCELADA'];
@@ -20,7 +25,14 @@ const ESTADOS = ['SIN PROGRAMAR', 'PROGRAMADA', 'EN VERIFICACIÓN', 'EJECUTADA',
 export class ReportsComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly alerts = inject(AlertService);
+  private readonly auth = inject(AuthService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+
+  /** Solo admin y contador marcan facturación / validación de la ARL (RPT-06). */
+  protected readonly puedeMarcarCartera = computed(() => {
+    const rol = this.auth.usuario()?.rol;
+    return rol === 'admin' || rol === 'contador';
+  });
 
   protected readonly activeTab = signal<ReportTab>('ordenes');
 
@@ -41,6 +53,28 @@ export class ReportsComponent implements OnInit {
   protected readonly profEstadoFilter = signal('');
   protected readonly query = signal('');
 
+  // ---- Satisfacción (M8 · ENC-05/07) ----
+  protected readonly surveys = signal<Encuesta[]>([]);
+  protected readonly surveyStats = signal<EncuestaStats | null>(null);
+  protected readonly loadingSurveys = signal(false);
+  /** Recorte por ARL/profesional/estado de respuesta; lo resuelve el backend. */
+  protected readonly encArl = signal('');
+  protected readonly encProf = signal('');
+  protected readonly encRespondida = signal<'' | 'true' | 'false'>('');
+
+  // ---- RPT-03/05/06 · Reportes avanzados ----
+  protected readonly vencidas = signal<ReporteVencidas | null>(null);
+  protected readonly horasRep = signal<ReporteHoras | null>(null);
+  protected readonly cartera = signal<ReporteCartera | null>(null);
+  protected readonly loadingReporte = signal(false);
+  /** Umbral de RPT-03; el FRS pide 60 días, pero se puede mirar con otro corte. */
+  protected umbralDias = 60;
+  protected desde = primerDiaDelAnio();
+  protected hasta = hoyIso();
+  protected readonly carteraPendiente = signal('');
+  /** Marcar facturación bloquea solo la fila en curso. */
+  protected readonly marcandoId = signal<string | null>(null);
+
   // ---- Modal de resumen ----
   protected readonly summaryOrder = signal<Orden | null>(null);
   protected readonly summaryLoading = signal(false);
@@ -55,6 +89,9 @@ export class ReportsComponent implements OnInit {
   protected readonly hasFilters = computed(() => {
     if (this.activeTab() === 'ordenes') {
       return !!this.arlsSel().length || !!this.estadosSel().length || !!this.query().trim();
+    }
+    if (this.activeTab() === 'satisfaccion') {
+      return !!this.encArl() || !!this.encProf() || !!this.encRespondida();
     }
     return !!this.profEstadoFilter() || !!this.query().trim();
   });
@@ -109,13 +146,243 @@ export class ReportsComponent implements OnInit {
     });
   }
 
+  /**
+   * ENC-05/07 · Encuestas + agregados. Se piden juntos porque el dashboard y la
+   * tabla tienen que mostrar exactamente el mismo recorte: si las estadísticas
+   * llegaran de un filtro y la tabla de otro, los promedios no cuadrarían con
+   * las filas visibles.
+   */
+  private loadSurveys(): void {
+    this.loadingSurveys.set(true);
+    const filtros: FiltroEncuestas = {};
+    if (this.encArl()) filtros.arl_id = this.encArl();
+    if (this.encProf()) filtros.profesional_id = this.encProf();
+    if (this.encRespondida()) filtros.respondida = this.encRespondida() as 'true' | 'false';
+
+    forkJoin({
+      lista: this.api.listSurveys(filtros),
+      stats: this.api.surveyStats(filtros),
+    }).subscribe({
+      next: ({ lista, stats }) => {
+        this.surveys.set(lista.data);
+        this.surveyStats.set(stats.data);
+        this.loadingSurveys.set(false);
+      },
+      error: () => {
+        this.surveys.set([]);
+        this.surveyStats.set(null);
+        this.loadingSurveys.set(false);
+        this.alerts.error(
+          'No se pudieron cargar las encuestas',
+          'No hubo respuesta del servidor. Verifique su conexión e intente de nuevo.',
+        );
+      },
+    });
+  }
+
+  // ================= RPT-03/05/06 =================
+  /** RPT-03 · Vencidas. Recarga también al mover el umbral de días. */
+  protected cargarVencidas(): void {
+    const dias = Number(this.umbralDias);
+    if (!Number.isFinite(dias) || dias < 0) {
+      this.alerts.warning('Umbral inválido', 'Indique un número de días mayor o igual a cero.');
+      return;
+    }
+    this.loadingReporte.set(true);
+    this.api.reporteVencidas(dias).subscribe({
+      next: (r) => { this.vencidas.set(r.data); this.loadingReporte.set(false); },
+      error: () => {
+        this.vencidas.set(null);
+        this.loadingReporte.set(false);
+        this.alerts.error('No se pudo cargar el reporte de vencidas');
+      },
+    });
+  }
+
+  /** RPT-05 · Horas ejecutadas en el rango elegido. */
+  protected cargarHoras(): void {
+    if (!this.desde || !this.hasta) {
+      this.alerts.warning('Rango incompleto', 'Elija la fecha inicial y la final.');
+      return;
+    }
+    if (this.desde > this.hasta) {
+      this.alerts.warning('Rango invertido', 'La fecha inicial no puede ser posterior a la final.');
+      return;
+    }
+    this.loadingReporte.set(true);
+    this.api.reporteHoras(this.desde, this.hasta).subscribe({
+      next: (r) => { this.horasRep.set(r.data); this.loadingReporte.set(false); },
+      error: (err) => {
+        this.horasRep.set(null);
+        this.loadingReporte.set(false);
+        this.alerts.error('No se pudo cargar el reporte de horas', err?.error?.error || undefined);
+      },
+    });
+  }
+
+  /** RPT-06 · Cartera pendiente de facturar o de validar por la ARL. */
+  protected cargarCartera(): void {
+    this.loadingReporte.set(true);
+    this.api.reporteCartera(this.carteraPendiente() ? { pendiente: this.carteraPendiente() } : {}).subscribe({
+      next: (r) => { this.cartera.set(r.data); this.loadingReporte.set(false); },
+      error: () => {
+        this.cartera.set(null);
+        this.loadingReporte.set(false);
+        this.alerts.error('No se pudo cargar el reporte de cartera');
+      },
+    });
+  }
+
+  protected onCarteraFiltro(valor: string): void {
+    this.carteraPendiente.set(valor);
+    this.cargarCartera();
+  }
+
+  /**
+   * RPT-06 · Confirma que una OS ya se facturó o que la ARL la validó. Al
+   * quedar sin pendientes desaparece del reporte, que es la señal de que el
+   * ciclo se cerró.
+   */
+  protected marcarCartera(o: { id: string; codigo: string }, campo: 'facturado' | 'validado_arl'): void {
+    if (this.marcandoId()) return;
+    this.marcandoId.set(o.id);
+    this.api.marcarCartera(o.id, { [campo]: true }).subscribe({
+      next: () => {
+        this.marcandoId.set(null);
+        this.alerts.success(
+          campo === 'facturado' ? 'Marcada como facturada' : 'Validación de la ARL registrada',
+          `${o.codigo} actualizada.`,
+        );
+        this.cargarCartera();
+      },
+      error: (err) => {
+        this.marcandoId.set(null);
+        this.alerts.error('No se pudo actualizar', err?.error?.error || 'El servidor rechazó el cambio.');
+      },
+    });
+  }
+
+  /** Etiqueta legible del pendiente de cartera. */
+  protected pendienteLabel(p: string): string {
+    switch (p) {
+      case 'sin_facturar': return 'Sin facturar';
+      case 'sin_validar_arl': return 'Sin validar ARL';
+      default: return 'Sin facturar ni validar';
+    }
+  }
+
+  /** Tono de la fila según la antigüedad (misma escala en vencidas y cartera). */
+  protected tonoDias(dias: number, umbral: number): string {
+    if (dias > umbral * 2) return 'tone-red';
+    if (dias > umbral) return 'tone-amber';
+    return 'tone-slate';
+  }
+
+  /** Ancho de barra relativo al máximo de la serie (gráficos de barras). */
+  protected anchoBarra(valor: number, maximo: number): string {
+    if (!maximo) return '0%';
+    return `${Math.max(2, Math.round((valor / maximo) * 100))}%`;
+  }
+
+  /** RPT-04 · Máximo de la serie de satisfacción por profesional (escala 1-5). */
+  protected readonly maxSatisfaccion = 5;
+
+  /** Profesionales con al menos una respuesta: los que puede graficar RPT-04. */
+  protected readonly satisfaccionGrafico = computed(() =>
+    (this.surveyStats()?.por_profesional ?? []).filter((p) => Number(p.respondidas) > 0),
+  );
+
+  protected readonly maxHorasProf = computed(() =>
+    Math.max(...(this.horasRep()?.por_profesional ?? []).map((p) => Number(p.horas) || 0), 0),
+  );
+
+  protected readonly maxHorasArl = computed(() =>
+    Math.max(...(this.horasRep()?.por_arl ?? []).map((a) => Number(a.horas) || 0), 0),
+  );
+
+  protected num(v: string | number | null | undefined): number {
+    return Number(v) || 0;
+  }
+
+  protected pesos(v: string | number | null | undefined): string {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency', currency: 'COP', maximumFractionDigits: 0,
+    }).format(Number(v) || 0);
+  }
+
+  protected fechaCorta(iso?: string | null): string {
+    return fechaCorta(iso);
+  }
+
   // ================= UI =================
   protected setTab(tab: ReportTab): void {
     this.activeTab.set(tab);
     this.query.set('');
     if (tab === 'ordenes') this.loadOrders();
+    else if (tab === 'satisfaccion') this.loadSurveys();
+    else if (tab === 'vencidas') this.cargarVencidas();
+    else if (tab === 'horas') this.cargarHoras();
+    else if (tab === 'cartera') this.cargarCartera();
     else this.loadProfessionals();
   }
+
+  /** Cambiar cualquier filtro de satisfacción recarga tabla y estadísticas. */
+  protected onEncFiltroChange(campo: 'arl' | 'prof' | 'respondida', valor: string): void {
+    if (campo === 'arl') this.encArl.set(valor);
+    else if (campo === 'prof') this.encProf.set(valor);
+    else this.encRespondida.set(valor as '' | 'true' | 'false');
+    this.loadSurveys();
+  }
+
+  /** Promedio con un decimal; '—' cuando todavía nadie ha respondido. */
+  protected promedio(v?: string | number | null): string {
+    const n = Number(v);
+    return Number.isFinite(n) && v !== null && v !== undefined && v !== '' ? n.toFixed(1) : '—';
+  }
+
+  /** Tasa de respuesta en % (ENC-05); 0 enviadas no es 0 %, es "sin datos". */
+  protected tasaRespuesta(respondidas: number, enviadas: number): string {
+    if (!enviadas) return '—';
+    return `${Math.round((respondidas / enviadas) * 100)}%`;
+  }
+
+  /** Color de la nota: verde ≥4, ámbar 3, rojo <3 (escala 1-5). */
+  protected notaClass(v?: string | number | null): string {
+    const n = Number(v);
+    if (!Number.isFinite(n) || v === null || v === undefined || v === '') return 'pill--muted';
+    if (n >= 4) return 'pill--success';
+    if (n >= 3) return 'pill--warning';
+    return 'pill--danger';
+  }
+
+  /** Alto de la barra en la distribución de notas, relativo a la más alta. */
+  protected barraAltura(total: number): string {
+    const max = Math.max(...(this.surveyStats()?.distribucion.map((d) => d.total) ?? [0]), 1);
+    return `${Math.max(6, Math.round((total / max) * 100))}%`;
+  }
+
+  /** Notas 1..5 siempre presentes: un 5 sin votos también informa. */
+  protected readonly distribucionCompleta = computed(() => {
+    const datos = this.surveyStats()?.distribucion ?? [];
+    return [1, 2, 3, 4, 5].map((nota) => ({
+      nota,
+      total: datos.find((d) => Number(d.nota) === nota)?.total ?? 0,
+    }));
+  });
+
+  /**
+   * Opciones de los desplegables de filtro. Salen de las órdenes y los
+   * profesionales ya cargados, NO de las estadísticas: estas vienen recortadas
+   * por el filtro vigente, así que al elegir una ARL desaparecerían las demás
+   * del desplegable y no habría forma de volver.
+   */
+  protected readonly encArlOptions = computed(() => {
+    const vistas = new Map<string, string>();
+    for (const o of this.orders()) {
+      if (o.arl_id && !vistas.has(o.arl_id)) vistas.set(o.arl_id, o.arl_nombre || 'ARL');
+    }
+    return [...vistas].map(([id, nombre]) => ({ id, nombre })).sort((a, b) => a.nombre.localeCompare(b.nombre));
+  });
 
   /** Marca/desmarca una ARL. Volver a pulsarla quita ese filtro. */
   protected toggleArl(arl: string): void {
@@ -132,7 +399,7 @@ export class ReportsComponent implements OnInit {
 
   protected applyQuery(): void {
     if (this.activeTab() === 'ordenes') this.loadOrders();
-    else this.loadProfessionals();
+    else if (this.activeTab() === 'profesionales') this.loadProfessionals();
   }
 
   protected clearFilters(): void {
@@ -141,6 +408,11 @@ export class ReportsComponent implements OnInit {
       this.arlsSel.set([]);
       this.estadosSel.set([]);
       this.loadOrders();
+    } else if (this.activeTab() === 'satisfaccion') {
+      this.encArl.set('');
+      this.encProf.set('');
+      this.encRespondida.set('');
+      this.loadSurveys();
     } else {
       this.profEstadoFilter.set('');
       this.loadProfessionals();
@@ -238,6 +510,60 @@ export class ReportsComponent implements OnInit {
         ];
       });
       this.downloadXlsx('ordenes', 'Órdenes', headers, rows);
+    } else if (this.activeTab() === 'vencidas') {
+      // RPT-03 + RPT-07
+      const rows = (this.vencidas()?.ordenes ?? []).map((o) => [
+        o.codigo, o.estado, o.empresa_nombre || '', o.nit_nic || '', o.arl_nombre || '',
+        o.profesional_nombre || 'Sin asignar', this.num(o.horas_asignadas),
+        fechaCorta(o.fecha_referencia), o.dias_transcurridos,
+        fechaCorta(o.fecha_vencimiento), o.dias_para_vencer ?? '',
+      ]);
+      this.downloadXlsx('ordenes_vencidas', 'Vencidas', [
+        'Código', 'Estado', 'Empresa', 'NIT', 'ARL', 'Profesional', 'Horas',
+        'Fecha de referencia', 'Días sin ejecutar', 'Vence el', 'Días para vencer',
+      ], rows);
+    } else if (this.activeTab() === 'horas') {
+      // RPT-05 + RPT-07 · Una sola hoja con las dos agrupaciones, marcadas en
+      // la primera columna: en Excel se filtra por ella y se ve cada corte.
+      const rep = this.horasRep();
+      const rows: (string | number)[][] = [
+        ...(rep?.por_profesional ?? []).map((p) => ['Profesional', p.profesional_nombre, p.ordenes, this.num(p.horas)]),
+        ...(rep?.por_arl ?? []).map((a) => ['ARL', a.arl_nombre, a.ordenes, this.num(a.horas)]),
+        ...(rep?.por_mes ?? []).map((m) => ['Mes', m.mes, m.ordenes, this.num(m.horas)]),
+      ];
+      this.downloadXlsx('horas_ejecutadas', 'Horas', ['Agrupación', 'Detalle', 'Órdenes', 'Horas'], rows);
+    } else if (this.activeTab() === 'cartera') {
+      // RPT-06 + RPT-07
+      const rows = (this.cartera()?.ordenes ?? []).map((o) => [
+        o.codigo, o.empresa_nombre || '', o.nit_nic || '', o.arl_nombre || '',
+        o.profesional_nombre || '', this.num(o.horas_asignadas), this.num(o.valor_total),
+        fechaCorta(o.fecha_ejecucion), o.dias_desde_ejecucion,
+        o.facturado_en ? 'Sí' : 'No', o.validado_arl_en ? 'Sí' : 'No',
+        this.pendienteLabel(o.pendiente),
+      ]);
+      this.downloadXlsx('cartera', 'Cartera', [
+        'Código', 'Empresa', 'NIT', 'ARL', 'Profesional', 'Horas', 'Valor total',
+        'Ejecutada el', 'Días desde ejecución', 'Facturada', 'Validada ARL', 'Pendiente',
+      ], rows);
+    } else if (this.activeTab() === 'satisfaccion') {
+      // ENC-07 · Respuestas exportables. Se incluyen también las enviadas sin
+      // responder: saber a quién falta encuestar es parte del seguimiento.
+      const rows = this.surveys().map((e) => [
+        e.orden_codigo || '', e.empresa_nombre || '', e.arl_nombre || '', e.profesional_nombre || '',
+        e.contacto_nombre || '', e.contacto_correo || '',
+        e.satisfaccion ?? '', e.recomendacion ?? '', e.comentarios || '',
+        fechaCorta(e.enviado_en), fechaCorta(e.respondido_en),
+        e.respondida ? 'Respondida' : 'Pendiente',
+      ]);
+      this.downloadXlsx(
+        'satisfaccion', 'Satisfacción',
+        [
+          'Código OS', 'Empresa', 'ARL', 'Profesional', 'Contacto', 'Correo',
+          'Satisfacción (1-5)', 'Recomendación (1-5)', 'Observaciones',
+          'Enviada', 'Respondida', 'Estado',
+        ],
+        rows,
+      );
     } else {
       const rows = this.filteredProfs().map((p) => [
         p.nombre, p.correo, p.telefono || '', p.especialidad || '', p.estado,
@@ -265,6 +591,48 @@ export class ReportsComponent implements OnInit {
         `ARL: ${this.arlsSel().join(', ') || 'Todas'}` +
         ` · Estado: ${this.estadosSel().join(', ') || 'Todos'}` +
         (this.query().trim() ? ` · Búsqueda: ${this.query().trim()}` : '');
+    } else if (this.activeTab() === 'vencidas') {
+      const rep = this.vencidas();
+      title = `Órdenes vencidas (más de ${rep?.umbral_dias ?? 60} días sin ejecutar)`;
+      headers = ['Código', 'Empresa', 'ARL', 'Estado', 'Profesional', 'Días sin ejecutar'];
+      rows = (rep?.ordenes ?? []).map((o) => [
+        o.codigo, o.empresa_nombre || '', o.arl_nombre || '', o.estado,
+        o.profesional_nombre || 'Sin asignar', o.dias_transcurridos,
+      ]);
+      filtro =
+        `Umbral: ${rep?.umbral_dias ?? 60} días · Críticas (más del doble): ${rep?.resumen?.criticas ?? 0}` +
+        ` · Antigüedad máxima: ${rep?.resumen?.max_dias ?? 0} días`;
+    } else if (this.activeTab() === 'horas') {
+      const rep = this.horasRep();
+      title = 'Horas ejecutadas por profesional';
+      headers = ['Profesional', 'Órdenes', 'Horas'];
+      rows = (rep?.por_profesional ?? []).map((p) => [p.profesional_nombre, p.ordenes, this.num(p.horas)]);
+      filtro =
+        `Rango: ${fechaCorta(rep?.desde)} a ${fechaCorta(rep?.hasta)}` +
+        ` · Total: ${this.num(rep?.totales?.horas)} horas en ${rep?.totales?.ordenes ?? 0} órdenes`;
+    } else if (this.activeTab() === 'cartera') {
+      const rep = this.cartera();
+      title = 'Cartera · órdenes ejecutadas pendientes';
+      headers = ['Código', 'Empresa', 'ARL', 'Ejecutada el', 'Días', 'Pendiente'];
+      rows = (rep?.ordenes ?? []).map((o) => [
+        o.codigo, o.empresa_nombre || '', o.arl_nombre || '',
+        fechaCorta(o.fecha_ejecucion), o.dias_desde_ejecucion, this.pendienteLabel(o.pendiente),
+      ]);
+      filtro =
+        `Sin facturar: ${rep?.resumen?.sin_facturar ?? 0} · Sin validar ARL: ${rep?.resumen?.sin_validar ?? 0}` +
+        ` · Monto involucrado: ${this.pesos(rep?.resumen?.monto)}`;
+    } else if (this.activeTab() === 'satisfaccion') {
+      const t = this.surveyStats()?.totales;
+      title = 'Informe de satisfacción del cliente';
+      headers = ['Código OS', 'Empresa', 'ARL', 'Profesional', 'Satisfacción', 'Recomendación', 'Observaciones', 'Respondida'];
+      rows = this.surveys().map((e) => [
+        e.orden_codigo || '', e.empresa_nombre || '', e.arl_nombre || '', e.profesional_nombre || '',
+        e.satisfaccion ?? '—', e.recomendacion ?? '—', e.comentarios || '', fechaCorta(e.respondido_en) || 'Pendiente',
+      ]);
+      filtro =
+        `Promedio satisfacción: ${this.promedio(t?.promedio_satisfaccion)}/5` +
+        ` · Promedio recomendación: ${this.promedio(t?.promedio_recomendacion)}/5` +
+        ` · Respuesta: ${this.tasaRespuesta(t?.respondidas ?? 0, t?.enviadas ?? 0)}`;
     } else {
       title = 'Listado de profesionales';
       headers = ['Nombre', 'Correo', 'Teléfono', 'Especialidad', 'Estado'];
@@ -351,6 +719,23 @@ export class ReportsComponent implements OnInit {
       setTimeout(() => iframe.remove(), 1500);
     }, 350);
   }
+}
+
+/** Fecha corta para exportaciones (dd/mm/aaaa); vacío si no hay dato. */
+function fechaCorta(iso?: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('es-CO');
+}
+
+/** `YYYY-MM-DD` de hoy, para el <input type="date"> del rango de RPT-05. */
+function hoyIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** 1 de enero del año en curso: rango por defecto del reporte de horas. */
+function primerDiaDelAnio(): string {
+  return `${new Date().getFullYear()}-01-01`;
 }
 
 function escapeHtml(v: string): string {

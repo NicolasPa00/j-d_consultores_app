@@ -51,9 +51,11 @@
                   "maximumError": "1MB"
                 },
                 {
+                  // Órdenes concentra tabla + 3 modales (detalle, asignación y
+                  // verificación); 8kB se quedaron cortos para esa pantalla.
                   "type": "anyComponentStyle",
-                  "maximumWarning": "8kB",
-                  "maximumError": "16kB"
+                  "maximumWarning": "14kB",
+                  "maximumError": "20kB"
                 }
               ],
               "outputHashing": "all"

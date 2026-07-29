@@ -27,6 +27,13 @@ export interface ServiceOrder {
   disabled?: boolean;
   /** Nombre del profesional asignado (si lo hay). */
   assignedProf?: string | null;
+  /** OS materializada al validar: id, código legible y estado del ciclo de vida. */
+  osId?: string | null;
+  osCode?: string | null;
+  osEstado?: string | null;
+  /** Asignación vigente (M5): profesional y fecha/hora de ejecución en ISO. */
+  assignedProfId?: string | null;
+  scheduledAt?: string | null;
   fields: {
     codigoCronograma: ExtractedField;
     secuencia: ExtractedField;

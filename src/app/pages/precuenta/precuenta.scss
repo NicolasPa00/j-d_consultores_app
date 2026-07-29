@@ -1,0 +1,270 @@
+/* PRE-05 · Página pública de aceptación de la pre-cuenta. Misma piel que el
+   portal de soportes y la encuesta: los tres enlaces salen de correos de JD&D. */
+
+:host {
+  display: block;
+}
+
+.pc {
+  min-height: 100vh;
+  background: #f4f7fa;
+  padding: 1.5rem 1rem 2.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.pc__container {
+  width: 100%;
+  max-width: 620px;
+}
+
+.pc__brand {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0 1.5rem;
+}
+
+.pc__logo {
+  max-width: 160px;
+  height: auto;
+}
+
+.pc__head {
+  background: linear-gradient(150deg, #000b50 0%, #2d7bc8 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  color: #ffffff;
+  text-align: center;
+  box-shadow: 0 14px 34px -14px rgba(0, 11, 80, 0.45);
+}
+
+.pc__head .pill {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.pc__title {
+  margin: 0.75rem 0 0.2rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-transform: capitalize;
+  color: #ffffff;
+}
+
+.pc__prof {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.pc__card {
+  margin-top: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+  padding: 1.5rem;
+}
+
+.pc__state {
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.pc__state p {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+}
+
+.pc__section {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+/* ===== Totales ===== */
+.totales {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.totales__item {
+  flex: 1 1 140px;
+  text-align: center;
+}
+
+.totales__label {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.totales__value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.totales__item--money .totales__value {
+  color: var(--primary-color);
+}
+
+/* ===== Detalle ===== */
+.items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 0;
+}
+
+.item + .item {
+  border-top: 1px solid var(--border-soft);
+}
+
+.item--vacio {
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.item__main {
+  min-width: 0;
+}
+
+.item__empresa {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.item__meta {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.item__cifras {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.item__horas {
+  display: block;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.item__monto {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== Decisión ===== */
+.decision__intro {
+  margin: 0 0 1.1rem;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.decision__acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.decision__hint {
+  margin: 0.7rem 0 0;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.btn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ===== Resultado ===== */
+.final {
+  margin-top: 1.25rem;
+  background: var(--surface);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px -2px rgba(16, 185, 129, 0.12);
+  padding: 2.25rem 1.5rem;
+  text-align: center;
+}
+
+.final--rechazo {
+  border-color: rgba(245, 158, 11, 0.35);
+  box-shadow: 0 4px 20px -2px rgba(245, 158, 11, 0.12);
+}
+
+.final__icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--success);
+}
+
+.final--rechazo .final__icon {
+  background: rgba(245, 158, 11, 0.14);
+  color: var(--warning);
+}
+
+.final__icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.final__title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.final__text {
+  margin: 0.4rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.final__obs {
+  margin: 1rem 0 0;
+  padding: 0.8rem 1rem;
+  background: #f8fafc;
+  border-left: 3px solid var(--border-soft);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 0.85rem;
+  font-style: italic;
+  text-align: left;
+  color: var(--text-muted);
+}
+
+.pc__footer {
+  margin: 1.75rem 0 0;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}

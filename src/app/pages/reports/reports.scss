@@ -347,6 +347,221 @@
   to { background-position: 0 0; }
 }
 
+/* ===== Satisfacción (M8 · ENC-05) ===== */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1.1rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.kpi__label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.kpi__value {
+  font-size: 1.7rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--primary-color);
+}
+
+.kpi__value small {
+  margin-left: 2px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.kpi__hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* Mini-histograma de notas 1-5 */
+.spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 46px;
+  margin-top: 2px;
+}
+
+.spark__col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  gap: 3px;
+}
+
+.spark__bar {
+  width: 100%;
+  min-height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(180deg, var(--secondary-color), var(--primary-color));
+}
+
+.spark__num {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+}
+
+.sat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.sat-grid .table + .table {
+  border-top: 1px solid var(--border-soft);
+}
+
+/* Las observaciones pueden ser largas: se acotan para no romper la tabla. */
+.sat-obs {
+  max-width: 280px;
+  color: var(--text-muted);
+}
+
+/* ===== Reportes RPT-03/04/05/06 ===== */
+
+/* Controles de rango en la toolbar (días, fechas). */
+.rango {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.rango__label {
+  white-space: nowrap;
+}
+
+.rango__dias {
+  width: 80px;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.rango__fecha {
+  width: auto;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+/* KPI que encabeza un reporte de alerta (vencidas, cartera). */
+.kpi--alerta .kpi__value {
+  color: var(--danger);
+}
+
+.kpi__value--money {
+  font-size: 1.35rem;
+}
+
+/* Gráfico de barras horizontales (RPT-04 y RPT-05). Se hace con divs y no con
+   una librería: son series cortas y así el informe imprime igual que en pantalla. */
+.barras .card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.barra {
+  display: grid;
+  grid-template-columns: minmax(90px, 1.2fr) 3fr auto auto;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.82rem;
+}
+
+.barra__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.barra__track {
+  height: 12px;
+  border-radius: 999px;
+  background: #eef2f7;
+  overflow: hidden;
+}
+
+.barra__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--secondary-color);
+  transition: width 0.35s ease;
+}
+
+/* Reutiliza el semáforo de las pills de nota para colorear la barra. */
+.barra__fill.pill--success { background: var(--success); }
+.barra__fill.pill--warning { background: var(--warning); }
+.barra__fill.pill--danger { background: var(--danger); }
+.barra__fill.pill--muted { background: #cbd5e1; }
+.barra__fill--azul { background: linear-gradient(90deg, var(--secondary-color), var(--primary-color)); }
+
+.barra__valor {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.barra__extra {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.vacio {
+  padding: 1.5rem 0;
+  text-align: center;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+
+/* Marca "vencida" junto a la fecha límite. */
+.venc {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--danger);
+}
+
+.col-cartera {
+  width: 210px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.col-cartera .btn + .btn {
+  margin-left: 0.3rem;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 720px) {
   .toolbar {

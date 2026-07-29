@@ -1,39 +1,157 @@
-# [claude.md] CONTEXTO MAESTRO DEL PROYECTO: JD&D IA-CORE (FASE 1)
+# CLAUDE.md — JD&D IA-Core
 
-## 1. INTRODUCCIÓN Y NEGOCIO
-- **Cliente:** JD&D Consultores en Sistemas de Gestión (Colombia).
-- **Problema:** Procesamiento manual ineficiente de Órdenes de Servicio (OS) que llegan desde diferentes ARLs en formatos inconsistentes (Excel de Bolívar en formato SIPAB, PDFs de AXA Colpatria y Colmena).
-- **Solución (Fase 1 - IA Core):** Una plataforma web responsive que centralice la importación de estos archivos y simule/muestre un pipeline de Inteligencia Artificial encargado de clasificar los documentos, extraer sus metadatos con porcentajes de confianza, generar resúmenes ejecutivos y habilitar búsquedas en lenguaje natural.
+Plataforma web interna de **JD&D Consultores** (SST, Colombia) para el ciclo de vida
+completo de las **Órdenes de Servicio (OS)** que llegan de las ARL: Bolívar (Excel
+SIPAB), AXA Colpatria y Colmena (PDF). Importación → extracción con IA → validación
+humana → asignación → soportes → verificación → cierre → satisfacción y cobro.
 
-## 2. REGLAS DE DISEÑO Y UI/UX (ESTRICTAS)
-- **Identidad Corporativa:** El color principal y dominante es el **Azul Marino Profundo del logo (`#000b50`)**, ya definido como `--primary-color` en `src/styles.scss`. Se acompaña de `--secondary-color: #2d7bc8` (azul rey/enfoque) y `--accent-color: #88b2e8` (celeste de apoyo). Los componentes deben transmitir seriedad corporativa, limpieza y alta usabilidad. > Nota: la especificación original mencionaba `#0A2B4E`, pero se decidió preservar el `#000b50` real del logo para no desalinear la marca ni el design system existente.
-- **Enfoque Visual Actual:** Preservar intactos los estilos CSS, layouts, fuentes y clases visuales que ya están definidos en el proyecto. No romper el diseño existente, solo inyectar la nueva arquitectura de información de manera armónica.
-- **Design System reutilizable (`src/styles.scss`):** Existen primitivas globales que DEBEN reutilizarse en toda vista nueva en lugar de crear estilos ad-hoc: `.card` / `.card__head` / `.card__title` / `.card__body`, `.btn` (`--primary`, `--secondary`, `--ghost`, `--block`), `.form-field` / `.form-control`, `.pill` (`--info`, `--success`, `--warning`), y `.page-head` (`__title`, `__sub`). Tokens: `--radius-sm/md/lg`, `--shadow-card/elevated`, `--border-soft`, `--text-main/muted`, `--success/warning/danger`.
-- **Simulación Frontend (Mocking):** Como nos enfocamos solo en Frontend, todas las interacciones de IA (barra de carga de archivos, extracción de campos, generación de textos y conversión de lenguaje natural a filtros) se deben simular localmente con retrasos de tiempo artificiales (setTimeout), animaciones de carga (spinners/skeletons) y datos estáticos (mock data) realistas del contexto colombiano de SST (Salud y Seguridad en el Trabajo).
+> ⚠️ **Este archivo describía la maqueta mockeada de la Fase 1 y quedó obsoleto.**
+> Reescrito el **28-jul-2026**: la demo se presentó y se aprobó el 27-jul-2026, y el
+> proyecto está en **Fase 2**. Ya no hay mocks: la app habla con un backend real.
 
-## 3. MAPA DE NAVEGACIÓN Y ARQUITECTURA DE PANTALLAS (FASE 1)
-El sistema refleja una barra de navegación (Sidebar/Navbar) con los siguientes accesos activos. **Estado global: las 6 vistas están 100% IMPLEMENTADAS EN FRONTEND (MOCKED).**
+---
 
-- ✅ **[100% IMPLEMENTADA EN FRONTEND (MOCKED)] Dashboard (Panel Principal)** · ruta `/dashboard`: Muestra tarjetas con KPIs (Total Importados, Procesados por IA, Alertas de Baja Confianza) y gráficos limpios de distribución por ARL.
-- ✅ **[100% IMPLEMENTADA EN FRONTEND (MOCKED)] Importar Archivos (Zona de Carga)** · ruta `/importar`: Área interactiva Drag & Drop para arrastrar archivos Excel/PDF, simulando visualmente la subida por lotes con barras de progreso individuales.
-- ✅ **[100% IMPLEMENTADA EN FRONTEND (MOCKED)] Validación IA (Bandeja de Entrada Core)** · ruta `/validacion` (`pages/validation`): Split-view responsive. A la izquierda, listado de tarjetas de órdenes con badge de confianza general y estado (IMPORTADA / VALIDADA); a la derecha, documento simulado (con descarga vía Blob) + formulario editable con datos extraídos (NIT, Empresa, Horas, Actividad, Contacto), cada campo con su badge de confianza (verde ≥80%, naranja 70-79%, rojo <70%). Acción "Validar y Guardar" con spinner (1.5s) y toast de éxito.
-- ✅ **[100% IMPLEMENTADA EN FRONTEND (MOCKED)] Informes e Insights** · ruta `/informes` (`pages/reports`):
-  - *Pestaña 1 (Resúmenes):* Resumen ejecutivo de 3 párrafos autogenerado por orden (con requisitos especiales detectados por keywords), botón "Regenerar con IA" con skeleton loader (1s), y grid de informes semanales consolidados por ARL con descarga vía Blob.
-  - *Pestaña 2 (Buscador Inteligente):* Barra de búsqueda en lenguaje natural (ej. "órdenes de Bolívar con más de 4 horas") con chips de sugerencia. Al buscar: spinner (1.2s) "Interpretando consulta…", muestra los filtros detectados como pills y actualiza la tabla de resultados; empty state elegante si no hay coincidencias.
-- ✅ **[100% IMPLEMENTADA EN FRONTEND (MOCKED)] Profesionales (CRUD Mínimo)** · ruta `/profesionales` (`pages/professionals`): Tabla de gestión de asesores de campo (Nombre, Correo, Teléfono, Especialidad, Estado) con buscador rápido. Drawer lateral para crear/editar (spinner 800ms + toast) y acción de alternar estado Activo/Inactivo directa en la tabla.
-- ✅ **[100% IMPLEMENTADA EN FRONTEND (MOCKED)] Configuración** · ruta `/configuracion`: Opción para ajustar el "Umbral Mínimo de Confianza de la IA" mediante un slider o input numérico (por defecto 70%).
+## 1. Alcance vigente (LEER ANTES DE CODIFICAR)
 
-## 4. ROLES EN FRONTEND
-- **Administrador:** Acceso total a todas las pantallas listadas en el mapa de navegación.
-- **Profesional:** Acceso restringido (Modo Consulta). Solo visualiza el Dashboard (con sus métricas personales) e Informes e Insights (solo lectura de las órdenes asociadas a él).
+El documento que manda es **`../docs/requerimientos-completos.txt`** (FRS v1.0, los
+12 módulos). `../docs/req_fase_1.txt` era solo el recorte de la primera entrega y
+**ya no aplica**. `../docs/02-frs-detallado.md` describe el mismo sistema en
+markdown pero con OTRA numeración de módulos; ante duda mandan los `.txt`.
 
-## 5. REQUERIMIENTOS EXCLUIDOS (FASE 2 - NO IMPLEMENTAR)
-- Está prohibido renderizar menús o flujos de: Cambios de estados de órdenes de campo (Programada, Ejecutada, etc.), Links públicos de soportes, firmas digitales, encuestas de satisfacción, pre-cuentas de cobro mensuales o alertas de cartera. Las órdenes en esta fase permanecen visualmente en estado "IMPORTADA".
+Ya **no** existe la antigua "regla de oro" de Fase 1: los módulos de encuestas,
+pre-cuentas y los reportes/configuraciones avanzadas ya se pueden construir.
 
-## 6. ARQUITECTURA DE DATOS LOCALES
-Como la Fase 1 es 100% Frontend, no hay backend ni HTTP: toda la data se simula localmente y se maneja con **Angular Signals** (`ChangeDetectionStrategy.OnPush` en todos los componentes). Puntos clave:
+### Estado por módulo
 
-- **Fuente única de Órdenes de Servicio — `src/app/data/service-orders.ts`:** Módulo centralizado que exporta las interfaces (`ServiceOrder`, `ExtractedField`) y una factory `createServiceOrders()` que devuelve una **copia profunda** (`structuredClone`) del catálogo mock (3 órdenes: ARL Bolívar/Excel 92%, AXA Colpatria/PDF 68%, Colmena/PDF 85%). Es consumido tanto por **Validación IA** como por **Informes e Insights**, evitando duplicación. En Fase 2 este archivo se reemplaza por un servicio HTTP real sin tocar los componentes.
-- **Estado reactivo local con Signals para Profesionales:** El listado de asesores de campo vive como un `signal<Professional[]>` dentro de `pages/professionals`. Las operaciones CRUD (crear, editar, alternar estado) usan `signal.update()` de forma inmutable, de modo que la tabla se refresca instantáneamente en pantalla sin librerías de estado externas.
-- **Simulaciones de IA:** Todos los "procesamientos" (validar, regenerar resumen, buscar en lenguaje natural, guardar profesional) se modelan con `setTimeout` + spinners/skeletons + toasts, y la lógica de "lenguaje natural" del buscador es un intérprete de keywords (ARL, "baja confianza", "más de N horas") que arma filtros sobre el mock.
-- **Design System global — `src/styles.scss`:** Primitivas y las tres pills de confianza (`.pill--success` ≥80%, `.pill--warning` 70-79%, `.pill--danger` <70%) están centralizadas para consistencia entre vistas.
+| Módulo | Estado |
+|---|---|
+| M1 Autenticación y roles (AUTH-01..04) | ✅ backend + frontend |
+| M2 Importación y extracción IA (IMP-01..07) | ✅ backend + frontend |
+| M3 Estados y auditoría (EST-01..06) | ✅ backend + frontend |
+| M4 Formatos (FOR-01..04) | ✅ backend + frontend |
+| M5 Asignación y reprogramación (ASG-01..07) | ✅ backend + frontend |
+| M6 Soportes por enlace público (SUP-01..05) | ✅ backend + frontend |
+| M7 Verificación y cierre (VER-01..05) | ✅ backend + frontend |
+| M8 Encuesta de satisfacción (ENC-01..07) | ✅ backend + frontend · falta la UI para editar los enunciados (viven en `sst.configuracion → encuesta_preguntas`) |
+| M9 Pre-cuenta de cobro (PRE-01..09) | ✅ backend + frontend · el cierre de mes se dispara a mano (no hay cron en el despliegue) |
+| M10 Reportes (RPT-01..07) | ✅ backend + frontend · dashboard, buscador NL, vencidas, satisfacción, horas, cartera y exportación a Excel |
+| M11 Notificaciones (NOT-01..04) | ✅ correos + campanita interna |
+| M12 Configuración (CFG-01) | ✅ · **CFG-02/03/05 pendientes** |
+
+Antes de dar un módulo por cerrado, verificar requisito por requisito contra
+`requerimientos-completos.txt`.
+
+---
+
+## 2. Arquitectura real
+
+Monorepo con dos proyectos hermanos:
+
+```
+jdd_consultores_app/          ← raíz del repo
+├── jdd_consultores_app/      ← FRONTEND Angular 21  (este CLAUDE.md)
+├── sst_ws/                   ← BACKEND Node 20 + Express 5
+└── docs/                     ← FRS, negocio, datos, pipeline IA
+```
+
+- **Frontend:** Angular 21 standalone + **Signals** + `ChangeDetectionStrategy.OnPush`
+  en TODOS los componentes. SSR habilitado (`app.config.server.ts`), así que todo
+  acceso a `localStorage`, `document` o `setInterval` va detrás de
+  `isPlatformBrowser(inject(PLATFORM_ID))`. Dev: `npm start` → **:4001**.
+- **Backend:** Express 5 (ESM, `type: module`) + PostgreSQL (Neon) + JWT + nodemailer
+  + almacenamiento local/S3. Dev: `npm run dev` → **:4000** (`--watch`).
+  El frontend apunta a él por `src/app/core/config.ts` (`API_BASE`).
+- **IA del producto:** la extracción la hace **OpenAI** (`gpt-4o-mini`, Structured
+  Outputs). Gemini queda solo en componentes auxiliares pendientes de migrar
+  (clasificación de ARL, resumen, búsqueda NL). **Claude no corre dentro del
+  producto**: es la herramienta con la que desarrollamos.
+
+### Regla de oro nueva: el backend suele ir por delante
+
+Antes de escribir un endpoint, **revisar si ya existe** en
+`sst_ws/src/modules/*/*.routes.js`. Varias pantallas que parecen "a medias" no
+necesitan lógica nueva, solo cable. Endpoints ya montados en `sst_ws/src/routes/index.js`:
+`/auth`, `/professionals`, `/imports`, `/drafts`, `/orders`, `/files`,
+`/notifications`, `/reports`, `/permisos`, `/public` (sin auth) y los catálogos.
+
+---
+
+## 3. Mapa de pantallas (todas contra el backend real)
+
+| Ruta | Carpeta | Qué hace |
+|---|---|---|
+| `/login`, `/recuperar`, `/reset-password` | `pages/login`, `pages/forgot-password`, `pages/reset-password` | AUTH-01..03. Públicas. |
+| `/dashboard` | `pages/dashboard` | KPIs y distribución por ARL (RPT-01/02). |
+| `/importar` | `pages/import` | Carga de Excel/PDF, extracción IA, revisión del lote y confirmación (M2). |
+| `/ordenes` (legado: `/validacion`) | `pages/validation` | **Vista central.** Bandeja, split-view de validación, detalle, cambio de estado + historial (M3), asignación y reprogramación (M5), visor de soportes y aceptar/rechazar (M7). Acepta `?os=<id>` para abrir una OS concreta (llegada desde la campanita). |
+| `/informes` | `pages/reports` | Centro de reportes (M10), seis pestañas: Órdenes, Profesionales, Satisfacción (ENC-05 + RPT-04), Vencidas (RPT-03), Horas (RPT-05) y Cartera (RPT-06). Todas exportan a Excel y PDF (RPT-07). |
+| `/profesionales` | `pages/professionals` | CRUD de asesores y su agenda de ocupaciones (CFG-01). |
+| `/configuracion` | `pages/settings` | Perfil, umbral de confianza, usuarios internos y matriz de Roles y permisos. |
+| `/soporte` | `pages/portal` | **Pública, sin login.** El profesional sube los soportes firmados con el token del correo (M6). |
+| `/encuesta` | `pages/survey` | **Pública, sin login.** Encuesta de satisfacción del cliente; el token llega en el correo que se dispara al pasar la OS a EJECUTADA (M8). |
+| `/precuentas` | `pages/billing` | Cierre mensual de cobro: generar, revisar el detalle valorado, enviar al profesional, seguir su respuesta y exportar las aceptadas. Segunda pestaña: tarifas por actividad (PRE-02). Visible para admin, contador y auditor. |
+| `/precuenta` | `pages/precuenta` | **Pública, sin login.** El profesional acepta o rechaza su pre-cuenta con el token del correo (PRE-05). |
+
+Layout: `layout/shell` (sidebar + navbar) envuelve las vistas privadas.
+`layout/notifications` es la campanita (NOT-04). `shared/alert-host` monta los
+toasts y el diálogo de confirmación una sola vez en la raíz.
+
+**Ojo con la anatomía de `/ordenes`:** lista **borradores**
+(`sst.borradores_extraccion`), no `ordenes_servicio`. Una OS solo aparece ahí si
+nació de un borrador validado (`orden_servicio_id`). Las OS sembradas
+directamente por `seed:demo` NO se ven en esa pantalla.
+
+---
+
+## 4. Cómo se escribe código aquí
+
+### Servicios y estado
+- **`core/api.service.ts` es el único punto de contacto HTTP.** Ninguna vista
+  arma URLs a mano. Métodos agrupados por módulo y comentados con su ID de
+  requisito (ASG-01, VER-04, …).
+- `core/auth.service.ts` (sesión, permisos por vista), `core/alert.service.ts`
+  (toasts + `confirm()`), `core/notifications.service.ts` (bandeja de la
+  campanita), `core/models.ts` (tipos en español, espejo del backend),
+  `core/fechas.ts` (normalización de fechas entre ARL).
+- Estado local con **signals** (`signal`, `computed`, `update()` inmutable). Sin
+  librerías de estado externas. Nada de `setTimeout` simulando trabajo: el
+  spinner refleja una petición real.
+- **Ninguna vista implementa su propio toast**: todo pasa por `AlertService`.
+
+### UI
+- Identidad: azul del logo **`#000b50`** (`--primary-color`), apoyo
+  `--secondary-color: #2d7bc8` y `--accent-color: #88b2e8`.
+- **Reutilizar el design system de `src/styles.scss`** en lugar de estilos ad-hoc:
+  `.card` (`__head`/`__title`/`__body`), `.btn` (`--primary`/`--secondary`/`--ghost`/`--block`),
+  `.form-field`/`.form-control`, `.pill` (`--info`/`--success`/`--warning`/`--danger`/`--muted`),
+  `.page-head`, `.alert`, `.spinner`. Tokens: `--radius-sm/md/lg`,
+  `--shadow-card/elevated`, `--border-soft`, `--text-main/muted`,
+  `--success/warning/danger`.
+- Pills de confianza: verde ≥80 %, naranja 70-79 %, rojo <70 %.
+- Responsive obligatorio (NFR) y respuesta < 2 s.
+
+### Comentarios
+En español, explicando **por qué** (la regla de negocio, el requisito o la
+trampa que se evita), no qué hace la línea. Es el estilo de todo el repo.
+
+---
+
+## 5. Reglas de trabajo (entorno compartido, datos reales)
+
+- **`.env` de `sst_ws` apunta a una BD Neon real y a un Gmail real.** Para probar
+  flujos que mandan correo, levantar una instancia temporal:
+  `PORT=4010 EMAIL_DRIVER=console SMTP_HOST="" npm run dev`.
+- **Nunca correr `npm run seed:demo`**: hace TRUNCATE de órdenes, borradores y lotes.
+- Probar sobre OS desechables propias y borrarlas al terminar. No mutar datos
+  reales; si una prueba los toca, dejarlos como estaban.
+- Migraciones: `npm run migrate` (idempotente, `db/schema.sql`). El esquema es
+  `sst`.
+
+---
+
+## 6. Roles
+
+**Administrador** (total, incluye el *Administrador Maestro* que gestiona usuarios
+internos), **Profesional** (consulta + soportes de sus OS), **Contador** y
+**Auditor**. La visibilidad de cada vista del sidebar se resuelve contra la matriz
+de Roles y permisos (`auth.puedeVer(vista)`), no contra el rol a pelo.

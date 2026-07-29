@@ -1,0 +1,274 @@
+/* Formulario público de satisfacción (M8). Misma piel que el portal de soportes:
+   el cliente reconoce que ambos enlaces son de JD&D. */
+
+:host {
+  display: block;
+}
+
+.survey {
+  min-height: 100vh;
+  background: #f4f7fa;
+  padding: 1.5rem 1rem 2.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.survey__container {
+  width: 100%;
+  max-width: 560px;
+}
+
+.survey__brand {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0 1.5rem;
+}
+
+.survey__logo {
+  max-width: 160px;
+  height: auto;
+}
+
+.survey__head {
+  background: linear-gradient(150deg, #000b50 0%, #2d7bc8 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  color: #ffffff;
+  text-align: center;
+  box-shadow: 0 14px 34px -14px rgba(0, 11, 80, 0.45);
+}
+
+.survey__head .pill {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.survey__title {
+  margin: 0.75rem 0 0.2rem;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.survey__company {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.survey__card {
+  margin-top: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+  padding: 1.5rem;
+}
+
+.survey__state {
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.survey__state p {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+}
+
+/* Resumen de la actividad calificada */
+.recap__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.45rem 0;
+  font-size: 0.85rem;
+}
+
+.recap__row + .recap__row {
+  border-top: 1px dashed var(--border-soft);
+}
+
+.recap__label {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.recap__value {
+  text-align: right;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+/* Preguntas */
+.q {
+  margin: 0 0 1.5rem;
+  padding: 0;
+  border: none;
+}
+
+.q__title {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--text-main);
+}
+
+.q__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-right: 8px;
+  vertical-align: -4px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.q__opt {
+  margin-left: 6px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* Escala 1-5 */
+.scale {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.scale__opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 4px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.12s ease;
+}
+
+.scale__opt:hover {
+  border-color: var(--accent-color);
+  background: #f8fafc;
+}
+
+.scale__opt--on {
+  border-color: var(--secondary-color);
+  background: rgba(45, 123, 200, 0.08);
+  transform: translateY(-1px);
+}
+
+.scale__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.scale__opt--on .scale__num {
+  background: var(--secondary-color);
+  color: #ffffff;
+}
+
+.scale__label {
+  font-size: 0.66rem;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.scale__opt--on .scale__label {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.btn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.survey__hint {
+  margin: 0.6rem 0 0;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Agradecimiento */
+.success {
+  margin-top: 1.25rem;
+  background: var(--surface);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px -2px rgba(16, 185, 129, 0.12);
+  padding: 2.25rem 1.5rem;
+  text-align: center;
+}
+
+.success__icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--success);
+}
+
+.success__icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.success__title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.success__text {
+  margin: 0.4rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.survey__footer {
+  margin: 1.75rem 0 0;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* En pantallas estrechas la escala de 5 en fila deja etiquetas ilegibles. */
+@media (max-width: 420px) {
+  .scale {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+  }
+
+  .scale__opt {
+    padding: 10px 2px 8px;
+  }
+
+  .scale__label {
+    display: none;
+  }
+}

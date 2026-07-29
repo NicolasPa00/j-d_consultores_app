@@ -1,0 +1,453 @@
+/* M9 · Pre-cuentas de cobro. Reutiliza el lenguaje visual de Informes
+   (segmentado, toolbar, tabla y modal); los estilos se repiten aquí porque la
+   encapsulación de Angular no cruza de un componente a otro. */
+
+:host {
+  display: block;
+}
+
+/* ===== Segmentado ===== */
+.tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.55rem 1.1rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.tab:hover {
+  color: var(--text-main);
+  background: #f1f5f9;
+}
+
+.tab--active {
+  color: var(--primary-color);
+  background: rgba(45, 123, 200, 0.1);
+  border-color: var(--accent-color);
+}
+
+/* ===== Generación del cierre (PRE-01) ===== */
+.generar {
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.generar__main {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.generar__field {
+  margin: 0;
+  min-width: 190px;
+}
+
+.generar__hint {
+  margin: 0.85rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.periodos {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px dashed var(--border-soft);
+}
+
+.periodos__label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.chip {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--text-main);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.chip:hover {
+  border-color: var(--secondary-color);
+  color: var(--secondary-color);
+}
+
+.chip--on,
+.chip--on:hover {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #fff;
+}
+
+/* ===== Toolbar ===== */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.toolbar__filters,
+.toolbar__export {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.toolbar__control {
+  width: auto;
+  min-width: 175px;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.btn--sm {
+  padding: 0.45rem 0.8rem;
+  font-size: 0.82rem;
+}
+
+.btn--sm svg {
+  width: 15px;
+  height: 15px;
+}
+
+.btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ===== Totales del recorte visible ===== */
+.resumen {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.resumen__item {
+  flex: 1 1 150px;
+  padding: 0.85rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+}
+
+.resumen__label {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.resumen__value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.resumen__item--money .resumen__value {
+  color: var(--primary-color);
+}
+
+/* ===== Tabla ===== */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table thead th {
+  padding: 0.7rem 1.1rem;
+  text-align: left;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-soft);
+  white-space: nowrap;
+}
+
+.table tbody td {
+  padding: 0.75rem 1.1rem;
+  border-bottom: 1px solid var(--border-soft);
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td { border-bottom: none; }
+.table tbody tr:hover { background: #f8fafc; }
+
+.table tfoot td {
+  padding: 0.8rem 1.1rem;
+  border-top: 2px solid var(--border-soft);
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.totales__label {
+  text-align: right;
+  color: var(--text-muted);
+}
+
+.table__empty {
+  padding: 2rem 1rem !important;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+/* Las cifras de dinero mandan en esta vista: se leen en oscuro y en negrita. */
+.money {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.col-actions {
+  width: 230px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.col-actions .btn + .btn {
+  margin-left: 0.35rem;
+}
+
+/* Celda profesional */
+.who {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.who__avatar {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.who__name {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+/* Motivo del rechazo, recortado a una línea bajo la píldora de estado. */
+.motivo {
+  display: block;
+  max-width: 220px;
+  margin-top: 3px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Marca de "valor hora base" en el detalle. */
+.origen {
+  margin-left: 4px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #eef2f7;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+/* ===== Tarifas ===== */
+.tarifas__intro {
+  margin: 0 0 1.1rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.tarifa-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 1rem 0 1.25rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+}
+
+.tarifa-form .form-field {
+  margin: 0;
+  min-width: 160px;
+  flex: 1 1 160px;
+}
+
+/* ===== Modal detalle ===== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(15, 23, 42, 0.45);
+  animation: fade-in 0.2s ease;
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 51;
+  display: flex;
+  flex-direction: column;
+  width: 860px;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 2rem);
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 60px rgba(0, 11, 80, 0.28);
+  overflow: hidden;
+  animation: modal-in 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.modal__title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.modal__sub {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.modal__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+.modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1.1rem 1.5rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border-soft);
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.icon-action svg { width: 17px; height: 17px; }
+
+.icon-action:hover {
+  background: #f1f5f9;
+  color: var(--secondary-color);
+  border-color: var(--accent-color);
+}
+
+.detalle__head {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.detalle__meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.detalle__loading {
+  padding: 2rem 0;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+/* ===== Animaciones ===== */
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+@keyframes modal-in {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.98); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 760px) {
+  .toolbar__filters,
+  .toolbar__export,
+  .toolbar__control {
+    width: 100%;
+  }
+
+  .col-actions {
+    width: auto;
+  }
+}

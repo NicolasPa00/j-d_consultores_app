@@ -108,9 +108,10 @@ export class DashboardComponent implements OnInit {
     if (!this.isBrowser) return;
     this.loadDashboard();
     this.loadOrders();
-    // La lista de profesionales solo alimentaba el drawer de asignación, hoy
-    // oculto (la tabla de órdenes recientes es de solo lectura): sin drawer, la
-    // petición no tendría destino en pantalla.
+    // Alimenta el desplegable de profesionales del drawer de asignación (ASG-01).
+    this.api.listProfessionals().subscribe((r) =>
+      this.professionals.set(r.data.filter((p) => p.estado === 'Activo')),
+    );
   }
 
   private loadDashboard(): void {

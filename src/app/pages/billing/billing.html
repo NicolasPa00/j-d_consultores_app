@@ -1,0 +1,367 @@
+<section class="page-head">
+  <h2 class="page-head__title">Pre-cuentas de cobro</h2>
+  <p class="page-head__sub">
+    Módulo 9 · Cierre mensual de horas ejecutadas, envío al profesional y seguimiento de su aceptación
+  </p>
+</section>
+
+<div class="tabs" role="tablist">
+  <button
+    type="button" class="tab" role="tab"
+    [class.tab--active]="tab() === 'precuentas'"
+    [attr.aria-selected]="tab() === 'precuentas'"
+    (click)="setTab('precuentas')"
+  >
+    Pre-cuentas
+  </button>
+  <button
+    type="button" class="tab" role="tab"
+    [class.tab--active]="tab() === 'tarifas'"
+    [attr.aria-selected]="tab() === 'tarifas'"
+    (click)="setTab('tarifas')"
+  >
+    Tarifas por actividad
+  </button>
+</div>
+
+<!-- ==================== PRE-CUENTAS ==================== -->
+@if (tab() === 'precuentas') {
+  @if (puedeGestionar()) {
+    <!-- PRE-01 · Cierre de mes -->
+    <div class="card generar">
+      <div class="generar__main">
+        <label class="form-field generar__field">
+          <span class="form-field__label">Periodo a cerrar</span>
+          <input class="form-control" type="month" [(ngModel)]="periodoGenerar" />
+        </label>
+        <button type="button" class="btn btn--primary" [disabled]="generating()" (click)="generar()">
+          @if (generating()) { <span class="spinner" aria-hidden="true"></span> }
+          {{ generating() ? 'Calculando…' : 'Generar pre-cuentas del mes' }}
+        </button>
+      </div>
+      <p class="generar__hint">
+        Suma las horas de las órdenes <strong>EJECUTADAS</strong> del mes por profesional y las valora con su
+        tarifa vigente. Se puede repetir: recalcula las abiertas y respeta las que el profesional ya respondió.
+      </p>
+      @if (periodos().length) {
+        <div class="periodos">
+          <span class="periodos__label">Meses con horas ejecutadas:</span>
+          @for (p of periodos(); track p.periodo) {
+            <button type="button" class="chip" [class.chip--on]="periodoGenerar === p.periodo" (click)="periodoGenerar = p.periodo">
+              {{ p.periodo }} · {{ horas(p.horas) }} h · {{ p.profesionales }} prof.
+            </button>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Filtros (PRE-08) -->
+  <div class="toolbar">
+    <div class="toolbar__filters">
+      <select class="form-control toolbar__control" [ngModel]="filtroPeriodo()" (ngModelChange)="onFiltro('periodo', $event)" aria-label="Filtrar por periodo">
+        <option value="">Todos los periodos</option>
+        @for (p of periodos(); track p.periodo) {
+          <option [value]="p.periodo">{{ periodoLargo(p.periodo) }}</option>
+        }
+      </select>
+      <select class="form-control toolbar__control" [ngModel]="filtroProf()" (ngModelChange)="onFiltro('prof', $event)" aria-label="Filtrar por profesional">
+        <option value="">Todos los profesionales</option>
+        @for (p of professionals(); track p.id) {
+          <option [value]="p.id">{{ p.nombre }}</option>
+        }
+      </select>
+      <select class="form-control toolbar__control" [ngModel]="filtroEstado()" (ngModelChange)="onFiltro('estado', $event)" aria-label="Filtrar por estado">
+        <option value="">Todos los estados</option>
+        @for (e of estados; track e.key) {
+          <option [value]="e.key">{{ e.label }}</option>
+        }
+      </select>
+      @if (hayFiltros()) {
+        <button type="button" class="btn btn--ghost btn--sm" (click)="limpiarFiltros()">Limpiar</button>
+      }
+    </div>
+
+    <div class="toolbar__export">
+      <!-- PRE-09 · Exportación para el proceso de pago -->
+      <button type="button" class="btn btn--ghost btn--sm" (click)="exportar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+          <path d="M14 3v5h5" />
+          <path d="m9.5 12.5 5 5M14.5 12.5l-5 5" />
+        </svg>
+        Exportar aceptadas
+      </button>
+    </div>
+  </div>
+
+  <!-- Totales del recorte visible -->
+  @if (precuentas().length) {
+    <div class="resumen">
+      <div class="resumen__item">
+        <span class="resumen__label">Pre-cuentas</span>
+        <strong class="resumen__value">{{ precuentas().length }}</strong>
+      </div>
+      <div class="resumen__item">
+        <span class="resumen__label">Horas</span>
+        <strong class="resumen__value">{{ horas(horasFiltradas()) }}</strong>
+      </div>
+      <div class="resumen__item resumen__item--money">
+        <span class="resumen__label">Total</span>
+        <strong class="resumen__value">{{ pesos(totalFiltrado()) }}</strong>
+      </div>
+    </div>
+  }
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Periodo</th>
+            <th>Profesional</th>
+            <th>Órdenes</th>
+            <th>Horas</th>
+            <th>Total a pagar</th>
+            <th>Estado</th>
+            <th class="col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of precuentas(); track p.id) {
+            <tr>
+              <td class="mono">{{ p.periodo }}</td>
+              <td>
+                <div class="who">
+                  <span class="who__avatar" aria-hidden="true">{{ p.profesional_nombre.charAt(0) }}</span>
+                  <span class="who__name">{{ p.profesional_nombre }}</span>
+                </div>
+              </td>
+              <td class="mono">{{ p.total_ordenes ?? '—' }}</td>
+              <td class="mono">{{ horas(p.total_horas) }}</td>
+              <td class="mono money">{{ pesos(p.total_monto) }}</td>
+              <td>
+                <span class="pill" [class]="estadoClass(p.estado)">{{ p.estado }}</span>
+                @if (p.estado === 'rechazada' && p.observaciones) {
+                  <span class="motivo" [title]="p.observaciones">{{ p.observaciones }}</span>
+                }
+              </td>
+              <td class="col-actions">
+                <button type="button" class="btn btn--ghost btn--sm" (click)="abrirDetalle(p)">Detalle</button>
+                <button type="button" class="btn btn--ghost btn--sm" (click)="verPdf(p)">PDF</button>
+                @if (puedeEnviar(p)) {
+                  <button
+                    type="button" class="btn btn--secondary btn--sm"
+                    [disabled]="sendingId() === p.id"
+                    (click)="enviar(p)"
+                  >
+                    {{ sendingId() === p.id ? 'Enviando…' : (p.estado === 'enviada' ? 'Reenviar' : 'Enviar') }}
+                  </button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="table__empty">
+                @if (loading()) {
+                  Cargando pre-cuentas…
+                } @else if (hayFiltros()) {
+                  No hay pre-cuentas que coincidan con los filtros.
+                } @else {
+                  Todavía no hay pre-cuentas. Genere el cierre de un mes para empezar.
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+<!-- ==================== TARIFAS (PRE-02) ==================== -->
+@if (tab() === 'tarifas') {
+  <div class="card">
+    <div class="card__head">
+      <h3 class="card__title">Valor hora por tipo de actividad</h3>
+    </div>
+    <div class="card__body">
+      <p class="tarifas__intro">
+        El cálculo busca la tarifa del profesional para el <strong>tipo de actividad</strong> de la orden,
+        vigente al cierre del periodo. Si la orden no trae tipo de actividad o no hay tarifa, se usa el
+        <strong>valor hora base</strong> del profesional (ficha de Profesionales).
+      </p>
+
+      <label class="form-field">
+        <span class="form-field__label">Profesional</span>
+        <select class="form-control" [ngModel]="tarifaProfId()" (ngModelChange)="seleccionarProfesionalTarifas($event)">
+          <option value="">Seleccione…</option>
+          @for (p of professionals(); track p.id) {
+            <option [value]="p.id">{{ p.nombre }}</option>
+          }
+        </select>
+      </label>
+
+      @if (tarifaProfId()) {
+        @if (puedeGestionar()) {
+          <div class="tarifa-form">
+            <label class="form-field">
+              <span class="form-field__label">Actividad</span>
+              <input class="form-control" type="text" placeholder="Capacitación, Inspección…" [(ngModel)]="nuevaActividad" />
+            </label>
+            <label class="form-field">
+              <span class="form-field__label">Valor hora (COP)</span>
+              <input class="form-control" type="number" min="1" step="1000" placeholder="85000" [(ngModel)]="nuevoValorHora" />
+            </label>
+            <label class="form-field">
+              <span class="form-field__label">Vigente desde</span>
+              <input class="form-control" type="date" [(ngModel)]="nuevaVigencia" />
+            </label>
+            <button type="button" class="btn btn--primary" [disabled]="savingTarifa()" (click)="agregarTarifa()">
+              {{ savingTarifa() ? 'Guardando…' : 'Agregar tarifa' }}
+            </button>
+          </div>
+        }
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Actividad</th>
+                <th>Valor hora</th>
+                <th>Vigente desde</th>
+                @if (puedeGestionar()) { <th class="col-actions"></th> }
+              </tr>
+            </thead>
+            <tbody>
+              @for (t of tarifas(); track t.id) {
+                <tr>
+                  <td>{{ t.actividad }}</td>
+                  <td class="mono money">{{ pesos(t.valor_hora) }}</td>
+                  <td class="mono">{{ fecha(t.vigente_desde) }}</td>
+                  @if (puedeGestionar()) {
+                    <td class="col-actions">
+                      <button type="button" class="btn btn--ghost btn--sm" (click)="eliminarTarifa(t)">Eliminar</button>
+                    </td>
+                  }
+                </tr>
+              } @empty {
+                <tr>
+                  <td [attr.colspan]="puedeGestionar() ? 4 : 3" class="table__empty">
+                    @if (loadingTarifas()) {
+                      Cargando tarifas…
+                    } @else {
+                      Sin tarifas propias. Se usará el valor hora base del profesional.
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<!-- ==================== MODAL DETALLE ==================== -->
+@if (detalle(); as pc) {
+  <div class="modal-backdrop" (click)="cerrarDetalle()"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pcTitle">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="pcTitle">Pre-cuenta · {{ periodoLargo(pc.periodo) }}</h3>
+        <p class="modal__sub">
+          {{ pc.profesional_nombre }}
+          @if (pc.profesional_correo) { · {{ pc.profesional_correo }} }
+        </p>
+      </div>
+      <button type="button" class="icon-action" (click)="cerrarDetalle()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="modal__body">
+      <div class="detalle__head">
+        <span class="pill" [class]="estadoClass(pc.estado)">{{ pc.estado }}</span>
+        @if (pc.enviado_en) { <span class="detalle__meta">Enviada: {{ fecha(pc.enviado_en) }}</span> }
+        @if (pc.respondido_en) { <span class="detalle__meta">Respondida: {{ fecha(pc.respondido_en) }}</span> }
+      </div>
+
+      @if (pc.observaciones) {
+        <div class="alert" [class]="pc.estado === 'rechazada' ? 'alert--error' : 'alert--info'">
+          <div class="alert__body">
+            <p class="alert__title">Observaciones del profesional</p>
+            <p class="alert__detail">{{ pc.observaciones }}</p>
+          </div>
+        </div>
+      }
+
+      @if (loadingDetalle()) {
+        <p class="detalle__loading"><span class="spinner" aria-hidden="true"></span> Cargando el detalle…</p>
+      } @else {
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Orden</th>
+                <th>Empresa</th>
+                <th>ARL</th>
+                <th>Horas</th>
+                <th>Valor hora</th>
+                <th>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (i of pc.items || []; track i.id) {
+                <tr>
+                  <td class="mono">{{ fecha(i.fecha_ejecucion) }}</td>
+                  <td class="mono">{{ i.orden_codigo || '—' }}</td>
+                  <td>{{ i.empresa_nombre || '—' }}</td>
+                  <td>{{ i.arl_nombre || '—' }}</td>
+                  <td class="mono">{{ horas(i.horas) }}</td>
+                  <td class="mono">
+                    {{ pesos(i.valor_hora_snapshot) }}
+                    @if (i.origen_tarifa === 'profesional') {
+                      <small class="origen" title="No había tarifa para el tipo de actividad: se aplicó el valor hora base del profesional">base</small>
+                    }
+                  </td>
+                  <td class="mono money">{{ pesos(i.monto) }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="7" class="table__empty">Sin órdenes ejecutadas en el periodo.</td></tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="4" class="totales__label">Totales</td>
+                <td class="mono">{{ horas(pc.total_horas) }}</td>
+                <td></td>
+                <td class="mono money">{{ pesos(pc.total_monto) }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      }
+    </div>
+
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--ghost" (click)="cerrarDetalle()">Cerrar</button>
+      <button type="button" class="btn btn--ghost" (click)="verPdf(pc)">Ver PDF</button>
+      <!-- PRE-07 · Cierre manual tras revisar un rechazo -->
+      @if (puedeGestionar() && pc.estado === 'rechazada') {
+        <button type="button" class="btn btn--primary" (click)="cambiarEstado(pc, 'aceptada')">
+          Marcar como aceptada
+        </button>
+      }
+      @if (puedeEnviar(pc)) {
+        <button type="button" class="btn btn--primary" [disabled]="sendingId() === pc.id" (click)="enviar(pc)">
+          {{ pc.estado === 'enviada' ? 'Reenviar al profesional' : 'Enviar al profesional' }}
+        </button>
+      }
+    </footer>
+  </div>
+}

@@ -20,9 +20,19 @@ export const routes: Routes = [
       import('./pages/reset-password/reset-password').then((m) => m.ResetPasswordComponent),
   },
   {
-    // Portal público del profesional (sin layout, sin autenticación)
+    // Portal público del profesional (sin layout, sin autenticación) · SUP-01/02
     path: 'soporte',
     loadComponent: () => import('./pages/portal/portal').then((m) => m.PortalComponent),
+  },
+  {
+    // Encuesta de satisfacción del cliente (pública, sin login) · ENC-02
+    path: 'encuesta',
+    loadComponent: () => import('./pages/survey/survey').then((m) => m.SurveyComponent),
+  },
+  {
+    // Aceptación/rechazo de la pre-cuenta por el profesional (pública) · PRE-05
+    path: 'precuenta',
+    loadComponent: () => import('./pages/precuenta/precuenta').then((m) => m.PrecuentaComponent),
   },
   {
     // Shell con sidebar + navbar; las vistas internas se renderizan dentro
@@ -61,6 +71,13 @@ export const routes: Routes = [
         canActivate: [permissionGuard],
         data: { vista: 'informes' },
         loadComponent: () => import('./pages/reports/reports').then((m) => m.ReportsComponent),
+      },
+      {
+        // M9 · Pre-cuentas de cobro (admin, contador y auditor)
+        path: 'precuentas',
+        canActivate: [permissionGuard],
+        data: { vista: 'precuentas' },
+        loadComponent: () => import('./pages/billing/billing').then((m) => m.BillingComponent),
       },
       {
         path: 'profesionales',

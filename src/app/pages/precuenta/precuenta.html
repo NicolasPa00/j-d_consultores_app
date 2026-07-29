@@ -1,0 +1,151 @@
+<div class="pc">
+  <div class="pc__container">
+    <header class="pc__brand">
+      <img src="logoJDD-Consultores.png" alt="JD&D Consultores" class="pc__logo" />
+    </header>
+
+    <div class="pc__head">
+      <span class="pill pill--info">Pre-cuenta de cobro</span>
+      <h1 class="pc__title">{{ info()?.periodo_largo || '' }}</h1>
+      <p class="pc__prof">{{ info()?.profesional_nombre || '' }}</p>
+    </div>
+
+    @if (loading()) {
+      <div class="pc__card pc__state">
+        <span class="spinner" aria-hidden="true"></span>
+        <p>Cargando su pre-cuenta…</p>
+      </div>
+    } @else if (error(); as msg) {
+      <div class="alert alert--error" role="alert">
+        <span class="alert__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 8v5M12 16h.01" />
+          </svg>
+        </span>
+        <div class="alert__body">
+          <p class="alert__title">{{ msg }}</p>
+          <p class="alert__detail">Si el enlace no funciona, escríbanos para reenviarle el documento.</p>
+        </div>
+      </div>
+    } @else if (resuelta(); as estado) {
+      <!-- Resultado: ya respondida (ahora o antes) -->
+      <div class="final" [class.final--rechazo]="estado === 'rechazada'">
+        <div class="final__icon" aria-hidden="true">
+          @if (estado === 'aceptada') {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          } @else {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 8v5M12 16h.01" />
+            </svg>
+          }
+        </div>
+        <h2 class="final__title">
+          {{ estado === 'aceptada' ? 'Pre-cuenta aceptada' : 'Pre-cuenta rechazada' }}
+        </h2>
+        <p class="final__text">
+          @if (estado === 'aceptada') {
+            Gracias por confirmar. Su pre-cuenta de {{ info()?.periodo_largo }} por
+            <strong>{{ pesos(info()?.total_monto) }}</strong> pasa al proceso de pago.
+          } @else {
+            Registramos su rechazo. Un administrador de JD&amp;D revisará sus observaciones y se
+            comunicará con usted antes de facturar.
+          }
+        </p>
+        @if (info()?.observaciones) {
+          <p class="final__obs">“{{ info()?.observaciones }}”</p>
+        }
+      </div>
+    } @else {
+      <!-- Resumen -->
+      <div class="pc__card totales">
+        <div class="totales__item">
+          <span class="totales__label">Órdenes ejecutadas</span>
+          <strong class="totales__value">{{ info()?.total_ordenes }}</strong>
+        </div>
+        <div class="totales__item">
+          <span class="totales__label">Total de horas</span>
+          <strong class="totales__value">{{ horas(info()?.total_horas) }}</strong>
+        </div>
+        <div class="totales__item totales__item--money">
+          <span class="totales__label">Total a pagar</span>
+          <strong class="totales__value">{{ pesos(info()?.total_monto) }}</strong>
+        </div>
+      </div>
+
+      <!-- Detalle de órdenes -->
+      <div class="pc__card">
+        <h2 class="pc__section">Detalle del periodo</h2>
+        <ul class="items">
+          @for (i of info()?.items || []; track i.orden_codigo) {
+            <li class="item">
+              <div class="item__main">
+                <span class="item__empresa">{{ i.empresa_nombre || 'Empresa sin nombre' }}</span>
+                <span class="item__meta">
+                  {{ fecha(i.fecha_ejecucion) }} · {{ i.orden_codigo }} · {{ i.arl_nombre }}
+                </span>
+              </div>
+              <div class="item__cifras">
+                <span class="item__horas">{{ horas(i.horas) }} h × {{ pesos(i.valor_hora) }}</span>
+                <strong class="item__monto">{{ pesos(i.monto) }}</strong>
+              </div>
+            </li>
+          } @empty {
+            <li class="item item--vacio">Sin órdenes ejecutadas en el periodo.</li>
+          }
+        </ul>
+      </div>
+
+      <!-- Decisión (PRE-05/06/07) -->
+      <div class="pc__card">
+        @if (!modoRechazo()) {
+          <p class="decision__intro">
+            Revise el detalle. Si todo está correcto, acepte la pre-cuenta; si algo no cuadra,
+            recházela indicando qué debemos corregir.
+          </p>
+          <div class="decision__acciones">
+            <button type="button" class="btn btn--primary btn--block" [disabled]="sending()" (click)="aceptar()">
+              @if (sending()) { <span class="spinner" aria-hidden="true"></span> }
+              {{ sending() ? 'Registrando…' : 'Aceptar pre-cuenta' }}
+            </button>
+            <button type="button" class="btn btn--ghost btn--block" [disabled]="sending()" (click)="abrirRechazo()">
+              Rechazar con observaciones
+            </button>
+          </div>
+        } @else {
+          <h2 class="pc__section">¿Qué debemos corregir?</h2>
+          <label class="form-field">
+            <span class="form-field__label">Observaciones</span>
+            <textarea
+              class="form-control"
+              rows="4"
+              maxlength="1000"
+              placeholder="Ej.: la OS-2026-1018 fue de 8 horas, no de 12."
+              [(ngModel)]="observaciones"
+            ></textarea>
+          </label>
+          <div class="decision__acciones">
+            <button
+              type="button" class="btn btn--primary btn--block"
+              [disabled]="!observaciones.trim() || sending()"
+              (click)="rechazar()"
+            >
+              {{ sending() ? 'Registrando…' : 'Enviar rechazo' }}
+            </button>
+            <button type="button" class="btn btn--ghost btn--block" [disabled]="sending()" (click)="cancelarRechazo()">
+              Volver
+            </button>
+          </div>
+          @if (!observaciones.trim()) {
+            <p class="decision__hint">Las observaciones son obligatorias para rechazar.</p>
+          }
+        }
+      </div>
+    }
+
+    <p class="pc__footer">© 2026 JD&amp;D Consultores · Documento generado automáticamente</p>
+  </div>
+</div>

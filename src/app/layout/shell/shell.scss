@@ -208,49 +208,8 @@
   gap: 8px;
 }
 
-.icon-btn {
-  position: relative;
-  width: 40px;
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 10px;
-  background: transparent;
-  color: #64748b;
-  cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease;
-}
-
-.icon-btn:hover {
-  background: #f1f5f9;
-  color: #0f172a;
-}
-
-.icon-btn svg {
-  width: 20px;
-  height: 20px;
-}
-
-.icon-btn__badge {
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  color: #ffffff;
-  background: var(--danger);
-  border-radius: 999px;
-  border: 2px solid #ffffff;
-}
+/* El botón de la campanita y su badge viven en <app-notifications>, que trae
+   sus propios estilos (la encapsulación del shell no llega hasta allí). */
 
 .profile-btn {
   position: relative;

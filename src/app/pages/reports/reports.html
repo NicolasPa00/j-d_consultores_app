@@ -27,12 +27,81 @@
   >
     Profesionales
   </button>
+  <button
+    type="button"
+    class="tab"
+    role="tab"
+    [class.tab--active]="activeTab() === 'satisfaccion'"
+    [attr.aria-selected]="activeTab() === 'satisfaccion'"
+    (click)="setTab('satisfaccion')"
+  >
+    Satisfacción
+  </button>
+  <button
+    type="button" class="tab" role="tab"
+    [class.tab--active]="activeTab() === 'vencidas'"
+    [attr.aria-selected]="activeTab() === 'vencidas'"
+    (click)="setTab('vencidas')"
+  >
+    Vencidas
+  </button>
+  <button
+    type="button" class="tab" role="tab"
+    [class.tab--active]="activeTab() === 'horas'"
+    [attr.aria-selected]="activeTab() === 'horas'"
+    (click)="setTab('horas')"
+  >
+    Horas
+  </button>
+  <button
+    type="button" class="tab" role="tab"
+    [class.tab--active]="activeTab() === 'cartera'"
+    [attr.aria-selected]="activeTab() === 'cartera'"
+    (click)="setTab('cartera')"
+  >
+    Cartera
+  </button>
 </div>
 
 <!-- ============ TOOLBAR (filtros + export) ============ -->
 <div class="toolbar">
   <div class="toolbar__filters">
-    @if (activeTab() !== 'ordenes') {
+    @if (activeTab() === 'satisfaccion') {
+      <select
+        class="form-control toolbar__control"
+        [ngModel]="encArl()"
+        (ngModelChange)="onEncFiltroChange('arl', $event)"
+        aria-label="Filtrar por ARL"
+      >
+        <option value="">Todas las ARL</option>
+        @for (a of encArlOptions(); track a.id) {
+          <option [value]="a.id">{{ a.nombre }}</option>
+        }
+      </select>
+      <select
+        class="form-control toolbar__control"
+        [ngModel]="encProf()"
+        (ngModelChange)="onEncFiltroChange('prof', $event)"
+        aria-label="Filtrar por profesional"
+      >
+        <option value="">Todos los profesionales</option>
+        @for (p of professionals(); track p.id) {
+          <option [value]="p.id">{{ p.nombre }}</option>
+        }
+      </select>
+      <select
+        class="form-control toolbar__control"
+        [ngModel]="encRespondida()"
+        (ngModelChange)="onEncFiltroChange('respondida', $event)"
+        aria-label="Filtrar por estado de la encuesta"
+      >
+        <option value="">Enviadas y respondidas</option>
+        <option value="true">Solo respondidas</option>
+        <option value="false">Solo pendientes</option>
+      </select>
+    }
+
+    @if (activeTab() === 'profesionales') {
       <select class="form-control toolbar__control" [ngModel]="profEstadoFilter()" (ngModelChange)="onProfEstadoChange($event)" aria-label="Filtrar por estado">
         <option value="">Todos</option>
         <option value="Activo">Activos</option>
@@ -40,16 +109,49 @@
       </select>
     }
 
-    <div class="toolbar__search">
-      <input
-        class="form-control"
-        type="text"
-        [placeholder]="activeTab() === 'ordenes' ? 'Buscar empresa, código o NIT…' : 'Buscar nombre, correo o especialidad…'"
-        [ngModel]="query()"
-        (ngModelChange)="query.set($event)"
-        (keyup.enter)="applyQuery()"
-      />
-    </div>
+    @if (activeTab() === 'vencidas') {
+      <label class="rango">
+        <span class="rango__label">Más de</span>
+        <input class="form-control rango__dias" type="number" min="0" step="5" [(ngModel)]="umbralDias" (keyup.enter)="cargarVencidas()" />
+        <span class="rango__label">días sin ejecutar</span>
+        <button type="button" class="btn btn--secondary btn--sm" (click)="cargarVencidas()">Aplicar</button>
+      </label>
+    }
+
+    @if (activeTab() === 'horas') {
+      <label class="rango">
+        <span class="rango__label">Del</span>
+        <input class="form-control rango__fecha" type="date" [(ngModel)]="desde" />
+        <span class="rango__label">al</span>
+        <input class="form-control rango__fecha" type="date" [(ngModel)]="hasta" />
+        <button type="button" class="btn btn--secondary btn--sm" (click)="cargarHoras()">Aplicar</button>
+      </label>
+    }
+
+    @if (activeTab() === 'cartera') {
+      <select class="form-control toolbar__control" [ngModel]="carteraPendiente()" (ngModelChange)="onCarteraFiltro($event)" aria-label="Filtrar por pendiente">
+        <option value="">Todo lo pendiente</option>
+        <option value="sin_facturar_ni_validar">Sin facturar ni validar</option>
+        <option value="sin_facturar">Solo sin facturar</option>
+        <option value="sin_validar_arl">Solo sin validar ARL</option>
+      </select>
+    }
+
+    <!-- La pestaña de Satisfacción filtra por ARL/profesional/estado, no por
+         texto libre: el recorte lo resuelve el backend con esos tres criterios.
+         Los reportes RPT-03/05/06 traen sus propios controles de rango. -->
+    @if (activeTab() === 'ordenes' || activeTab() === 'profesionales') {
+      <div class="toolbar__search">
+        <input
+          class="form-control"
+          type="text"
+          [placeholder]="activeTab() === 'ordenes' ? 'Buscar empresa, código o NIT…' : 'Buscar nombre, correo o especialidad…'"
+          [ngModel]="query()"
+          (ngModelChange)="query.set($event)"
+          (keyup.enter)="applyQuery()"
+        />
+      </div>
+    }
 
     @if (hasFilters()) {
       <button type="button" class="btn btn--ghost btn--sm" (click)="clearFilters()">Limpiar</button>
@@ -203,6 +305,442 @@
             <tr>
               <td colspan="5" class="table__empty">
                 @if (loadingProfs()) { Cargando profesionales… } @else { No hay profesionales que coincidan con los filtros. }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+<!-- ============ SATISFACCIÓN (M8 · ENC-05/07) ============ -->
+@if (activeTab() === 'satisfaccion') {
+  @if (surveyStats(); as st) {
+    <!-- KPIs -->
+    <div class="kpis">
+      <div class="kpi">
+        <span class="kpi__label">Promedio de satisfacción</span>
+        <strong class="kpi__value">
+          {{ promedio(st.totales.promedio_satisfaccion) }}<small>/5</small>
+        </strong>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label">¿Nos recomendaría?</span>
+        <strong class="kpi__value">
+          {{ promedio(st.totales.promedio_recomendacion) }}<small>/5</small>
+        </strong>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label">Tasa de respuesta</span>
+        <strong class="kpi__value">{{ tasaRespuesta(st.totales.respondidas, st.totales.enviadas) }}</strong>
+        <span class="kpi__hint">{{ st.totales.respondidas }} de {{ st.totales.enviadas }} enviadas</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label">Distribución de notas</span>
+        <div class="spark" role="img" aria-label="Distribución de calificaciones de 1 a 5">
+          @for (d of distribucionCompleta(); track d.nota) {
+            <span class="spark__col" [title]="d.total + ' respuesta(s) con nota ' + d.nota">
+              <span class="spark__bar" [style.height]="barraAltura(d.total)"></span>
+              <span class="spark__num">{{ d.nota }}</span>
+            </span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- RPT-04 · Gráfico de barras de satisfacción por profesional -->
+    @if (satisfaccionGrafico().length) {
+      <div class="card barras">
+        <div class="card__head">
+          <h3 class="card__title">Satisfacción promedio por profesional</h3>
+        </div>
+        <div class="card__body">
+          @for (p of satisfaccionGrafico(); track p.profesional_nombre) {
+            <div class="barra">
+              <span class="barra__label" [title]="p.profesional_nombre">{{ p.profesional_nombre }}</span>
+              <span class="barra__track">
+                <span
+                  class="barra__fill"
+                  [class]="notaClass(p.promedio_satisfaccion)"
+                  [style.width]="anchoBarra(num(p.promedio_satisfaccion), maxSatisfaccion)"
+                ></span>
+              </span>
+              <span class="barra__valor">{{ promedio(p.promedio_satisfaccion) }}/5</span>
+              <span class="barra__extra">{{ p.respondidas }} resp.</span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Promedios por profesional y por ARL -->
+    <div class="sat-grid">
+      <div class="card">
+        <div class="card__head">
+          <h3 class="card__title">Por profesional</h3>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr><th>Profesional</th><th>Respuestas</th><th>Satisfacción</th><th>Recomendación</th></tr>
+            </thead>
+            <tbody>
+              @for (p of st.por_profesional; track p.profesional_nombre) {
+                <tr>
+                  <td>{{ p.profesional_nombre }}</td>
+                  <td class="mono">{{ p.respondidas }}/{{ p.enviadas }}</td>
+                  <td><span class="pill" [class]="notaClass(p.promedio_satisfaccion)">{{ promedio(p.promedio_satisfaccion) }}</span></td>
+                  <td><span class="pill" [class]="notaClass(p.promedio_recomendacion)">{{ promedio(p.promedio_recomendacion) }}</span></td>
+                </tr>
+              } @empty {
+                <tr><td colspan="4" class="table__empty">Sin encuestas todavía.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card__head">
+          <h3 class="card__title">Por ARL y por mes</h3>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr><th>ARL</th><th>Respuestas</th><th>Satisfacción</th></tr>
+            </thead>
+            <tbody>
+              @for (a of st.por_arl; track a.arl_nombre) {
+                <tr>
+                  <td>{{ a.arl_nombre }}</td>
+                  <td class="mono">{{ a.respondidas }}/{{ a.enviadas }}</td>
+                  <td><span class="pill" [class]="notaClass(a.promedio_satisfaccion)">{{ promedio(a.promedio_satisfaccion) }}</span></td>
+                </tr>
+              } @empty {
+                <tr><td colspan="3" class="table__empty">Sin encuestas todavía.</td></tr>
+              }
+            </tbody>
+          </table>
+          <table class="table">
+            <thead>
+              <tr><th>Mes</th><th>Respuestas</th><th>Satisfacción</th></tr>
+            </thead>
+            <tbody>
+              @for (m of st.por_mes; track m.mes) {
+                <tr>
+                  <td class="mono">{{ m.mes }}</td>
+                  <td class="mono">{{ m.respondidas }}/{{ m.enviadas }}</td>
+                  <td><span class="pill" [class]="notaClass(m.promedio_satisfaccion)">{{ promedio(m.promedio_satisfaccion) }}</span></td>
+                </tr>
+              } @empty {
+                <tr><td colspan="3" class="table__empty">Sin encuestas todavía.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Detalle de respuestas -->
+  <div class="card">
+    <div class="card__head">
+      <h3 class="card__title">Respuestas</h3>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Empresa</th>
+            <th>ARL</th>
+            <th>Profesional</th>
+            <th>Satisf.</th>
+            <th>Recom.</th>
+            <th>Observaciones</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (e of surveys(); track e.id) {
+            <tr>
+              <td class="mono">{{ e.orden_codigo || '—' }}</td>
+              <td>{{ e.empresa_nombre || '—' }}</td>
+              <td>{{ e.arl_nombre || '—' }}</td>
+              <td>{{ e.profesional_nombre || '—' }}</td>
+              <td>
+                @if (e.satisfaccion) {
+                  <span class="pill" [class]="notaClass(e.satisfaccion)">{{ e.satisfaccion }}/5</span>
+                } @else { — }
+              </td>
+              <td>
+                @if (e.recomendacion) {
+                  <span class="pill" [class]="notaClass(e.recomendacion)">{{ e.recomendacion }}/5</span>
+                } @else { — }
+              </td>
+              <td class="sat-obs">{{ e.comentarios || '—' }}</td>
+              <td>
+                <span class="estado-pill" [class]="e.respondida ? 'tone-green' : 'tone-slate'">
+                  {{ e.respondida ? 'Respondida' : 'Pendiente' }}
+                </span>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="8" class="table__empty">
+                @if (loadingSurveys()) {
+                  Cargando encuestas…
+                } @else {
+                  Todavía no se han enviado encuestas. Se envían solas cuando una orden pasa a EJECUTADA.
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+<!-- ============ RPT-03 · VENCIDAS ============ -->
+@if (activeTab() === 'vencidas') {
+  @if (vencidas(); as rep) {
+    <div class="kpis">
+      <div class="kpi kpi--alerta">
+        <span class="kpi__label">Órdenes vencidas</span>
+        <strong class="kpi__value">{{ rep.resumen.total }}</strong>
+        <span class="kpi__hint">más de {{ rep.umbral_dias }} días sin ejecutar</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label">Críticas</span>
+        <strong class="kpi__value">{{ rep.resumen.criticas }}</strong>
+        <span class="kpi__hint">superan el doble del umbral</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label">Horas comprometidas</span>
+        <strong class="kpi__value">{{ num(rep.resumen.horas) }}</strong>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label">La más antigua</span>
+        <strong class="kpi__value">{{ rep.resumen.max_dias ?? 0 }}<small> días</small></strong>
+      </div>
+    </div>
+  }
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Días</th>
+            <th>Código</th>
+            <th>Empresa</th>
+            <th>ARL</th>
+            <th>Estado</th>
+            <th>Profesional</th>
+            <th>Horas</th>
+            <th>Vence</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (o of vencidas()?.ordenes || []; track o.id) {
+            <tr>
+              <td>
+                <span class="estado-pill" [class]="tonoDias(o.dias_transcurridos, vencidas()?.umbral_dias || 60)">
+                  {{ o.dias_transcurridos }} d
+                </span>
+              </td>
+              <td class="mono">{{ o.codigo }}</td>
+              <td>{{ o.empresa_nombre || '—' }}</td>
+              <td>{{ o.arl_nombre || '—' }}</td>
+              <td><span class="estado-pill" [class]="'tone-' + estadoTone(o.estado)">{{ o.estado }}</span></td>
+              <td>{{ o.profesional_nombre || 'Sin asignar' }}</td>
+              <td class="mono">{{ num(o.horas_asignadas) }}</td>
+              <td class="mono">
+                {{ fechaCorta(o.fecha_vencimiento) || '—' }}
+                @if (o.dias_para_vencer !== null && o.dias_para_vencer !== undefined && o.dias_para_vencer < 0) {
+                  <small class="venc">vencida</small>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="8" class="table__empty">
+                @if (loadingReporte()) {
+                  Calculando…
+                } @else {
+                  Ninguna orden supera el umbral. Nada por perseguir.
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+<!-- ============ RPT-05 · HORAS ============ -->
+@if (activeTab() === 'horas') {
+  @if (horasRep(); as rep) {
+    <div class="kpis">
+      <div class="kpi">
+        <span class="kpi__label">Horas ejecutadas</span>
+        <strong class="kpi__value">{{ num(rep.totales.horas) }}</strong>
+        <span class="kpi__hint">{{ fechaCorta(rep.desde) }} — {{ fechaCorta(rep.hasta) }}</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label">Órdenes</span>
+        <strong class="kpi__value">{{ rep.totales.ordenes }}</strong>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label">Profesionales</span>
+        <strong class="kpi__value">{{ rep.totales.profesionales }}</strong>
+      </div>
+    </div>
+
+    <div class="sat-grid">
+      <div class="card barras">
+        <div class="card__head"><h3 class="card__title">Por profesional</h3></div>
+        <div class="card__body">
+          @for (p of rep.por_profesional; track p.profesional_nombre) {
+            <div class="barra">
+              <span class="barra__label" [title]="p.profesional_nombre">{{ p.profesional_nombre }}</span>
+              <span class="barra__track">
+                <span class="barra__fill barra__fill--azul" [style.width]="anchoBarra(num(p.horas), maxHorasProf())"></span>
+              </span>
+              <span class="barra__valor">{{ num(p.horas) }} h</span>
+              <span class="barra__extra">{{ p.ordenes }} OS</span>
+            </div>
+          } @empty {
+            <p class="vacio">Sin horas ejecutadas en el rango.</p>
+          }
+        </div>
+      </div>
+
+      <div class="card barras">
+        <div class="card__head"><h3 class="card__title">Por ARL</h3></div>
+        <div class="card__body">
+          @for (a of rep.por_arl; track a.arl_nombre) {
+            <div class="barra">
+              <span class="barra__label" [title]="a.arl_nombre">{{ a.arl_nombre }}</span>
+              <span class="barra__track">
+                <span class="barra__fill barra__fill--azul" [style.width]="anchoBarra(num(a.horas), maxHorasArl())"></span>
+              </span>
+              <span class="barra__valor">{{ num(a.horas) }} h</span>
+              <span class="barra__extra">{{ a.ordenes }} OS</span>
+            </div>
+          } @empty {
+            <p class="vacio">Sin horas ejecutadas en el rango.</p>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__head"><h3 class="card__title">Detalle por mes</h3></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Mes</th><th>Órdenes</th><th>Horas</th></tr></thead>
+          <tbody>
+            @for (m of rep.por_mes; track m.mes) {
+              <tr>
+                <td class="mono">{{ m.mes }}</td>
+                <td class="mono">{{ m.ordenes }}</td>
+                <td class="mono">{{ num(m.horas) }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="3" class="table__empty">Sin datos en el rango elegido.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  } @else if (loadingReporte()) {
+    <div class="card"><p class="vacio">Calculando…</p></div>
+  }
+}
+
+<!-- ============ RPT-06 · CARTERA ============ -->
+@if (activeTab() === 'cartera') {
+  @if (cartera(); as rep) {
+    <div class="kpis">
+      <div class="kpi kpi--alerta">
+        <span class="kpi__label">Órdenes en cartera</span>
+        <strong class="kpi__value">{{ rep.resumen.total }}</strong>
+        <span class="kpi__hint">ejecutadas sin cerrar el ciclo</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label">Sin facturar</span>
+        <strong class="kpi__value">{{ rep.resumen.sin_facturar }}</strong>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label">Sin validar ARL</span>
+        <strong class="kpi__value">{{ rep.resumen.sin_validar }}</strong>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label">Monto involucrado</span>
+        <strong class="kpi__value kpi__value--money">{{ pesos(rep.resumen.monto) }}</strong>
+        <span class="kpi__hint">según el valor total de las OS</span>
+      </div>
+    </div>
+  }
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Días</th>
+            <th>Código</th>
+            <th>Empresa</th>
+            <th>ARL</th>
+            <th>Ejecutada</th>
+            <th>Valor</th>
+            <th>Pendiente</th>
+            @if (puedeMarcarCartera()) { <th class="col-cartera">Marcar</th> }
+          </tr>
+        </thead>
+        <tbody>
+          @for (o of cartera()?.ordenes || []; track o.id) {
+            <tr>
+              <td>
+                <span class="estado-pill" [class]="tonoDias(o.dias_desde_ejecucion, 30)">{{ o.dias_desde_ejecucion }} d</span>
+              </td>
+              <td class="mono">{{ o.codigo }}</td>
+              <td>{{ o.empresa_nombre || '—' }}</td>
+              <td>{{ o.arl_nombre || '—' }}</td>
+              <td class="mono">{{ fechaCorta(o.fecha_ejecucion) || '—' }}</td>
+              <td class="mono">{{ o.valor_total ? pesos(o.valor_total) : '—' }}</td>
+              <td>
+                <span class="estado-pill" [class]="o.pendiente === 'sin_facturar_ni_validar' ? 'tone-red' : 'tone-amber'">
+                  {{ pendienteLabel(o.pendiente) }}
+                </span>
+              </td>
+              @if (puedeMarcarCartera()) {
+                <td class="col-cartera">
+                  @if (!o.facturado_en) {
+                    <button type="button" class="btn btn--ghost btn--sm" [disabled]="marcandoId() === o.id" (click)="marcarCartera(o, 'facturado')">
+                      Facturada
+                    </button>
+                  }
+                  @if (!o.validado_arl_en) {
+                    <button type="button" class="btn btn--ghost btn--sm" [disabled]="marcandoId() === o.id" (click)="marcarCartera(o, 'validado_arl')">
+                      Validada ARL
+                    </button>
+                  }
+                </td>
+              }
+            </tr>
+          } @empty {
+            <tr>
+              <td [attr.colspan]="puedeMarcarCartera() ? 8 : 7" class="table__empty">
+                @if (loadingReporte()) {
+                  Calculando…
+                } @else {
+                  No hay cartera pendiente: todas las órdenes ejecutadas están facturadas y validadas.
+                }
               </td>
             </tr>
           }

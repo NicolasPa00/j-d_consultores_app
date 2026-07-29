@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@a
 import { RouterLink, RouterLinkActive, RouterOutlet, Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { Vista } from '../../core/models';
+import { NotificationsComponent } from '../notifications/notifications';
 
 interface NavItem {
   icon: string;
@@ -18,13 +19,14 @@ const NAV_ITEMS: NavItem[] = [
   { icon: 'import', label: 'Importar Archivos', hint: 'Módulo 2', route: '/importar', vista: 'importar' },
   { icon: 'ai', label: 'Órdenes', hint: 'Módulos 3 y 4', route: '/ordenes', vista: 'ordenes' },
   { icon: 'reports', label: 'Informes y Resúmenes', hint: 'Módulo 5', route: '/informes', vista: 'informes' },
-  { icon: 'people', label: 'Profesionales', hint: 'Módulo 9', route: '/profesionales', vista: 'profesionales' },
+  { icon: 'money', label: 'Pre-cuentas', hint: 'Módulo 9 · Cobro', route: '/precuentas', vista: 'precuentas' },
+  { icon: 'people', label: 'Profesionales', hint: 'Módulo 12 · CFG-01', route: '/profesionales', vista: 'profesionales' },
   { icon: 'settings', label: 'Configuración', hint: 'Perfil', route: '/configuracion', vista: 'configuracion' },
 ];
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, NotificationsComponent],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

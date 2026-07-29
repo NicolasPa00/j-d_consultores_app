@@ -62,7 +62,7 @@ export class SettingsComponent implements OnInit {
   protected readonly threshold = signal(70);
   protected readonly savingThreshold = signal(false);
 
-  // Informativos (Fase 2/3) — no persistidos
+  // Informativos (CFG-04 / ASG-06) — todavía sin persistencia en BD.
   protected rates: RateRow[] = [
     { activity: 'Capacitación', rate: 85000 },
     { activity: 'Asesoría', rate: 120000 },
@@ -97,7 +97,7 @@ export class SettingsComponent implements OnInit {
     { clave: 'importar', label: 'Importar Archivos', hint: 'Módulo 2 · carga de Excel/PDF' },
     { clave: 'ordenes', label: 'Órdenes', hint: 'Módulos 3 y 4 · validación IA y asignación' },
     { clave: 'informes', label: 'Informes y Resúmenes', hint: 'Módulo 5 · resúmenes y buscador' },
-    { clave: 'profesionales', label: 'Profesionales', hint: 'Módulo 9 · asesores de campo' },
+    { clave: 'profesionales', label: 'Profesionales', hint: 'Módulo 12 · asesores de campo' },
     { clave: 'configuracion', label: 'Configuración', hint: 'Perfil propio y ajustes' },
   ];
 
