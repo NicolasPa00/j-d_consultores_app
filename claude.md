@@ -9,6 +9,20 @@ humana → asignación → soportes → verificación → cierre → satisfacci�
 > Reescrito el **28-jul-2026**: la demo se presentó y se aprobó el 27-jul-2026, y el
 > proyecto está en **Fase 2**. Ya no hay mocks: la app habla con un backend real.
 
+## 📌 Regla permanente: mantener el HANDOFF
+
+**`HANDOFF.md` (junto a este archivo) es el estado vivo del proyecto** y es lo
+primero que hay que leer al retomar el trabajo, sobre todo desde otro equipo: la
+carpeta raíz del monorepo no es un repo git, así que `docs/` y `.claude/skills/`
+pueden estar desactualizados en cualquier máquina, pero `HANDOFF.md` y este archivo
+viajan con el código.
+
+**Al terminar cualquier tarea o módulo, actualizar `HANDOFF.md` antes de darlo por
+cerrado**: la fecha del encabezado, la tabla de estado por módulo, lo que quedó
+pendiente, las rutas o convenciones nuevas y —lo más valioso— las trampas que
+costaron tiempo. Mantener sincronizada también la tabla de estado de más abajo.
+Si no se commitea, no llega al otro equipo.
+
 ---
 
 ## 1. Alcance vigente (LEER ANTES DE CODIFICAR)
