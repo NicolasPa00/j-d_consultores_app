@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
-import { DashboardData, Orden, Profesional } from '../../core/models';
+import { DashboardData, Orden, Profesional, SoporteEnviado } from '../../core/models';
 
 interface Kpi {
   label: string;
@@ -63,6 +63,8 @@ interface MiOrden {
   contacto: string;
   /** Aún no ejecutada: es lo que el profesional tiene por hacer. */
   pendiente: boolean;
+  /** SUP-07 · Lo que ya envió por el enlace público. */
+  soportes: SoporteEnviado[];
 }
 
 /** Estados que el profesional todavía tiene que atender. */
@@ -269,7 +271,7 @@ function keyToKpi(estado: string): string {
  * profesional entra desde el celular en campo y una visita de las 8:00 no puede
  * aparecerle a otra hora por la configuración del equipo.
  */
-function toMiOrden(o: Orden): MiOrden {
+function toMiOrden(o: Orden & { soportes?: SoporteEnviado[] }): MiOrden {
   const iso = o.fecha_programada;
   return {
     id: o.id,
@@ -288,6 +290,7 @@ function toMiOrden(o: Orden): MiOrden {
     direccion: o.direccion || o.ciudad_ejecucion || '—',
     contacto: o.contacto_sst_nombre || '—',
     pendiente: ESTADOS_PENDIENTES.includes(o.estado),
+    soportes: o.soportes ?? [],
   };
 }
 

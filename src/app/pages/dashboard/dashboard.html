@@ -43,6 +43,7 @@
                 <th>ARL</th>
                 <th>Horas</th>
                 <th>Contacto SST</th>
+                <th>Soportes enviados</th>
                 <th>Estado</th>
               </tr>
             </thead>
@@ -56,7 +57,19 @@
                   <td>{{ o.empresa }}</td>
                   <td><span class="badge badge--arl">{{ o.arl }}</span></td>
                   <td>{{ o.horas }} h</td>
-                  <td>{{ o.contacto }}</td>
+                  <!-- SUP-07 · Lo que ya envió, para que no tenga que buscar el
+                       correo para saber si subió el acta o solo la asistencia. -->
+                  <td>
+                    @if (o.soportes.length) {
+                      <ul class="soportes">
+                        @for (s of o.soportes; track s.id) {
+                          <li class="soportes__item" [title]="s.nombre">{{ s.nombre }}</li>
+                        }
+                      </ul>
+                    } @else {
+                      <span class="soportes__vacio">Sin enviar</span>
+                    }
+                  </td>
                   <td><span class="badge badge--status">{{ o.estado }}</span></td>
                 </tr>
               }

@@ -148,6 +148,32 @@
   font-weight: 500;
 }
 
+/* SUP-07 · Archivos que el profesional ya subió por el enlace público. */
+.soportes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.soportes__item {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  /* Los nombres vienen del archivo del celular y son largos: se recortan para
+     no ensanchar la tabla, y el nombre completo queda en el title. */
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.soportes__vacio {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 .cell-code {
   font-weight: 600;
   color: var(--primary-color);

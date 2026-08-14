@@ -443,9 +443,16 @@ export interface Ocupacion {
  * `motivo` con la explicación que se le muestra al usuario.
  */
 export interface MisOrdenesResponse {
-  data: Orden[];
+  data: (Orden & { soportes?: SoporteEnviado[] })[];
   profesional: { id: string; nombre: string } | null;
   motivo?: string;
+}
+
+/** SUP-07 · Archivo que el profesional ya subió por el enlace público. */
+export interface SoporteEnviado {
+  id: string;
+  nombre: string;
+  subido_en: string;
 }
 
 export interface Orden {

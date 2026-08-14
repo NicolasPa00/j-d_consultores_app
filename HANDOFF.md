@@ -5,8 +5,10 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 13-ago-2026 · `docs/` y las skills entraron a git.
-> Antes: 28-jul-2026, tras cerrar M8, M9 y RPT-03..07.
+> **Última actualización:** 13-ago-2026 (noche) · se cerraron los requisitos que
+> la tabla de estado no rastreaba: **ASG-05, ASG-08 y SUP-07**, y se reparó la
+> matriz de permisos, que en BD tenía al admin sin acceso a Órdenes.
+> Antes: 13-ago-2026, `docs/` y las skills entraron a git.
 
 Para arrancar una sesión nueva basta con: *"Proyecto JD&D IA-Core: lee
 `jdd_consultores_app/HANDOFF.md` y continúa con lo pendiente."*
@@ -76,12 +78,12 @@ backend real. No queda nada mockeado ni ninguna costura de BD sin implementar.
 
 | Módulo | Estado |
 |---|---|
-| M1 Autenticación y roles (AUTH-01..04) | ✅ |
-| M2 Importación y extracción IA (IMP-01..07) | ✅ |
+| M1 Autenticación y roles (AUTH-01..05) | ✅ |
+| M2 Importación y extracción IA (IMP-01..09) | ✅ |
 | M3 Estados y auditoría (EST-01..06) | ✅ |
-| M4 Formatos PDF (FOR-01..04) | ✅ |
-| M5 Asignación y reprogramación (ASG-01..07) | ✅ |
-| M6 Soportes por enlace público (SUP-01..05) | ✅ |
+| M4 Formatos PDF (FOR-01..06) | ✅ |
+| M5 Asignación y reprogramación (ASG-01..08) | ✅ · salvo ASG-06 (WhatsApp), que el FRS deja en Fase 3 y declara omisible |
+| M6 Soportes por enlace público (SUP-01..07) | ✅ |
 | M7 Verificación y cierre (VER-01..05) | ✅ |
 | M8 Encuesta de satisfacción (ENC-01..07) | ✅ · ENC-03 editable desde Configuración → Formatos y encuesta |
 | M9 Pre-cuenta de cobro (PRE-01..09) | ✅ · el cierre de mes se dispara **a mano** (no hay cron); CFG-05 avisa de los meses vencidos |
@@ -157,14 +159,63 @@ lo que pide el requisito) y el KPI del dashboard ahora muestra esa cifra con el
 rótulo "Ejecutadas este mes". El acumulado histórico (`ejecutadas`) sigue en la
 vista porque lo usan los porcentajes por ARL.
 
+### ASG-05, ASG-08 y SUP-07 · lo que faltaba de verdad
+
+**La tabla de estado de este archivo venía con los rangos truncados** (`AUTH-01..04`,
+`ASG-01..07`, `SUP-01..05`…), heredados del recorte de la Fase 1. El FRS de
+`docs/requerimientos-completos.txt` tiene más requisitos por módulo, y los que
+sobresalían del rango nunca se habían mirado. Al auditarlos uno a uno:
+
+- Ya estaban hechos, solo sin rastrear: **AUTH-05** (perfil con teléfono y
+  especialidad), **IMP-08** (anti-duplicados por ARL+cronograma+secuencia *y* por
+  ARL+número de orden), **IMP-09**, **FOR-05** (espacios de firma), **FOR-06**
+  (CFG-03), **SUP-06** (`notifyAdmins`), **ENC-06** y **ENC-07**.
+- Faltaban: **ASG-08**, **ASG-05** y **SUP-07**. Construidos ahora.
+
+**ASG-08 · el profesional ve sus órdenes.** El cimiento que faltaba era el
+vínculo entre la cuenta de acceso y la ficha: `profesionales.usuario_id` existía
+desde el primer esquema pero estaba **NULL en las 11 fichas**, porque las fichas
+se dan de alta en `/profesionales` y las cuentas en Configuración → Usuarios, y
+nada las cruzaba. Ahora el seed lo rellena por correo (solo 1-a-1 por ambos
+lados: hay fichas que comparten buzón y enlazar las dos mostraría las órdenes de
+un compañero) y el alta/edición de ficha enlaza sola. `GET /orders/mias` acota
+por la sesión, **no por un parámetro**: el filtro del listado general acepta
+cualquier `profesional_id`. El dashboard se bifurca por rol y le muestra su
+agenda, porque la matriz de permisos le niega la vista Órdenes.
+
+**ASG-05 · evento de calendario.** Invitación iCalendar adjunta al correo de
+asignación, no la API de Google Calendar: esa exige OAuth por usuario (o cuenta
+de servicio con delegación de dominio) y credenciales que el despliegue no
+tiene, y solo funcionaría si administrador y profesional usaran cuentas del
+mismo dominio Google. El UID es estable por orden y `secuencia_calendario` sube
+en cada asignación, de modo que al reprogramar el calendario **mueve** la visita
+en vez de dejar dos eventos. El admin que asigna va como organizador y en copia,
+que es la otra mitad del requisito.
+
+**SUP-07 · sus envíos anteriores.** `GET /orders/mias` devuelve, por orden, los
+archivos ya subidos por el enlace público, y la agenda los lista: así el
+profesional comprueba si mandó el acta o solo la asistencia sin buscar el correo.
+
 ### Pendiente
 
-**Nada del FRS.** Lo que queda son mejoras opcionales, ninguna comprometida:
+**Nada del FRS**, salvo **ASG-06 (WhatsApp)**, que el propio FRS coloca en Fase 3
+y declara omisible si la API tiene costo. El resto son mejoras opcionales,
+ninguna comprometida:
 
 - Reasignar **una** OS suelta a otra empresa desde `/ordenes` (hoy solo se pueden
   fusionar fichas completas desde `/empresas`).
 - Disparo automático del cierre mensual de M9 si el despliegue llega a tener cron.
+  Con cron caerían también los recordatorios a los 3 y 7 días que el FRS propone
+  como mitigación de riesgo (hoy el aviso de la víspera lo da el `VALARM` del .ics).
 - Formatos a partir de un PDF base estampado, si el cliente lo pide.
+- **Acotar la API por rol.** La matriz de permisos esconde las *vistas*, pero
+  `GET /orders` y `GET /orders/:id` siguen abiertos a cualquier autenticado: un
+  profesional que arme la petición a mano ve órdenes que no son suyas. `/mias` ya
+  nace acotado; el resto no. No lo pide ningún requisito de forma explícita, pero
+  el FRS describe al Profesional como "ver órdenes **asignadas**".
+- Entregables del §6 del FRS que no son código: manual de usuario en PDF,
+  despliegue en producción y capacitación. NF-07 (backups) sigue marcado
+  "PENDIENTE VALIDAR" en el propio FRS.
 
 ---
 
@@ -288,7 +339,31 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
     Neon **sí** es compartida, el otro equipo veía las tablas nuevas sin el código
     que las usa, que es el peor de los dos estados. Al cerrar una tarea,
     commitear los **dos** repos.
-11. Matar el backend temporal de `:4010` **no basta con parar el `npm run dev`**:
+11. **La tabla de estado de este archivo mentía por omisión.** Los módulos se
+    rastreaban con rangos truncados del recorte de Fase 1 (`ASG-01..07` cuando el
+    FRS llega a ASG-08, `SUP-01..05` cuando llega a SUP-07…), así que tres
+    requisitos llevaban meses sin construir mientras el módulo figuraba en ✅.
+    Al dar un módulo por cerrado, contar los requisitos **en
+    `docs/requerimientos-completos.txt`**, no en esta tabla.
+12. **La matriz de `permisos_rol` estaba corrupta en la BD compartida**: el rol
+    admin tenía `importar`, `ordenes` e `informes` en FALSE y el profesional en
+    TRUE — es decir, la asistente administrativa no veía el núcleo del producto.
+    El código estaba bien; fue un guardado con el bug antiguo de los checkboxes
+    (el que arregló la clave de `track` con el rol incluido, en `settings.html`).
+    **El seed no lo repara**: usa `ON CONFLICT DO NOTHING` a propósito, para no
+    pisar los ajustes que un administrador haya hecho. Si algún rol vuelve a
+    perder vistas, hay que corregir las filas a mano contra los valores de
+    `db/seed.sql`.
+13. `profesionales.usuario_id` llevaba desde el primer esquema **NULL en todas
+    las filas**: la costura existía y nadie la llenaba, porque la ficha y la
+    cuenta se crean en pantallas distintas. Antes de construir sobre una columna
+    de enlace, comprobar que tiene datos y no solo que existe.
+14. Levantar el backend con `node src/server.js` **sin `--watch`** (por ejemplo
+    para esquivar un `Start-Process` que falla en Windows) reproduce la trampa 1
+    en su versión más engañosa: el servidor responde 200 y con datos, pero son
+    los de antes del cambio. Aquí costó una ronda de depuración creer que una
+    subconsulta nueva devolvía vacío cuando el problema era el proceso viejo.
+15. Matar el backend temporal de `:4010` **no basta con parar el `npm run dev`**:
     npm deja vivo el proceso hijo de node, que sigue escuchando el puerto. Hay
     que matarlo por puerto
     (`Get-NetTCPConnection -LocalPort 4010 -State Listen` → `Stop-Process -Id`).

@@ -45,12 +45,12 @@ pre-cuentas y los reportes/configuraciones avanzadas ya se pueden construir.
 
 | Módulo | Estado |
 |---|---|
-| M1 Autenticación y roles (AUTH-01..04) | ✅ backend + frontend |
-| M2 Importación y extracción IA (IMP-01..07) | ✅ backend + frontend |
+| M1 Autenticación y roles (AUTH-01..05) | ✅ backend + frontend |
+| M2 Importación y extracción IA (IMP-01..09) | ✅ backend + frontend |
 | M3 Estados y auditoría (EST-01..06) | ✅ backend + frontend |
-| M4 Formatos (FOR-01..04) | ✅ backend + frontend |
-| M5 Asignación y reprogramación (ASG-01..07) | ✅ backend + frontend |
-| M6 Soportes por enlace público (SUP-01..05) | ✅ backend + frontend |
+| M4 Formatos (FOR-01..06) | ✅ backend + frontend |
+| M5 Asignación y reprogramación (ASG-01..08) | ✅ backend + frontend · ASG-05 = invitación .ics adjunta al correo (no API de Google Calendar) · ASG-08 = el panel del profesional muestra su agenda · **ASG-06 (WhatsApp) fuera: el FRS lo deja en Fase 3 y omisible** |
+| M6 Soportes por enlace público (SUP-01..07) | ✅ backend + frontend · SUP-07 lista los archivos ya enviados en la agenda del profesional |
 | M7 Verificación y cierre (VER-01..05) | ✅ backend + frontend |
 | M8 Encuesta de satisfacción (ENC-01..07) | ✅ backend + frontend · ENC-03 se edita en Configuración → Formatos y encuesta |
 | M9 Pre-cuenta de cobro (PRE-01..09) | ✅ backend + frontend · el cierre de mes se dispara a mano (no hay cron); CFG-05 avisa de los periodos vencidos |
@@ -59,7 +59,17 @@ pre-cuentas y los reportes/configuraciones avanzadas ya se pueden construir.
 | M12 Configuración (CFG-01..05) | ✅ completo · CFG-02 = maestro `sst.empresas` + `/empresas` · CFG-03 = plantillas editables (texto impreso, no archivo base) · CFG-05 = día de corte que avisa, no automatiza |
 
 Antes de dar un módulo por cerrado, verificar requisito por requisito contra
-`requerimientos-completos.txt`.
+`requerimientos-completos.txt`. **Los rangos de esta tabla se contaban mal**:
+venían del recorte de Fase 1 (`ASG-01..07`, `SUP-01..05`…) y dejaban fuera
+requisitos reales del FRS, que estuvieron meses sin construir con el módulo
+marcado en verde. Contar en el `.txt`, no aquí.
+
+> 👤 **El panel es distinto según el rol.** El profesional no tiene la vista
+> Órdenes (ahí se importa, se valida y se asigna), así que `/dashboard` se
+> bifurca: a él le muestra su agenda —sus OS, la fecha de visita y los soportes
+> que ya envió— y no los KPIs de administración. Se apoya en
+> `profesionales.usuario_id`, que enlaza la ficha (CFG-01) con la cuenta de
+> acceso y se rellena solo por correo cuando la correspondencia es 1-a-1.
 
 ---
 
