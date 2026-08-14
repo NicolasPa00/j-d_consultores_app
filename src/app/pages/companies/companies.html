@@ -1,0 +1,362 @@
+<section class="page-head emp-head">
+  <div>
+    <h2 class="page-head__title">Empresas clientes</h2>
+    <p class="page-head__sub">
+      Maestro de clientes · CFG-02 · {{ activas() }} de {{ empresas().length }} activas
+    </p>
+  </div>
+
+  <div class="emp-head__actions">
+    <div class="emp-search">
+      <svg class="emp-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-3.5-3.5" />
+      </svg>
+      <input
+        class="emp-search__input"
+        type="text"
+        placeholder="Buscar por nombre, NIT, actividad o ciudad…"
+        [ngModel]="query()"
+        (ngModelChange)="query.set($event)"
+      />
+    </div>
+
+    <label class="emp-toggle">
+      <input type="checkbox" [checked]="soloActivas()" (change)="soloActivas.set(!soloActivas())" />
+      Solo activas
+    </label>
+
+    @if (puedeEditar()) {
+      <button type="button" class="btn btn--primary" (click)="openNew()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        Nueva empresa
+      </button>
+    }
+  </div>
+</section>
+
+<!-- ============ TABLA ============ -->
+<div class="card">
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Empresa</th>
+          <th>Actividad económica</th>
+          <th>Ciudad</th>
+          <th>Contacto</th>
+          <th class="col-num">Órdenes</th>
+          <th>Estado</th>
+          <th class="col-actions">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (emp of filtradas(); track emp.id) {
+          <tr class="emp-row" (click)="openDetalle(emp)">
+            <td>
+              <div class="who">
+                <span class="who__avatar" aria-hidden="true">{{ emp.nombre.charAt(0) }}</span>
+                <div class="who__text">
+                  <span class="who__name">{{ emp.nombre }}</span>
+                  <span class="who__nit mono">NIT {{ emp.nit || '—' }}</span>
+                </div>
+              </div>
+            </td>
+            <td class="emp-cell-wrap">{{ emp.actividad_economica || '—' }}</td>
+            <td>{{ emp.ciudad || '—' }}</td>
+            <td>
+              @if (emp.contacto_nombre) {
+                <div class="who__text">
+                  <span>{{ emp.contacto_nombre }}</span>
+                  <span class="who__nit">{{ emp.contacto_telefono || emp.contacto_correo || '' }}</span>
+                </div>
+              } @else {
+                —
+              }
+            </td>
+            <!-- El conteo distingue una empresa real de una ficha recién creada
+                 (o duplicada) que todavía no tiene ninguna OS a su nombre. -->
+            <td class="col-num mono">
+              {{ emp.total_ordenes ?? 0 }}
+              @if (emp.ordenes_ejecutadas) {
+                <small class="emp-num-hint">{{ emp.ordenes_ejecutadas }} ejec.</small>
+              }
+            </td>
+            <td>
+              <span class="pill" [class]="emp.activo ? 'pill--success' : 'pill--muted'">
+                {{ emp.activo ? 'Activa' : 'Inactiva' }}
+              </span>
+            </td>
+            <td class="col-actions" (click)="$event.stopPropagation()">
+              <div class="row-actions">
+                <button type="button" class="icon-action" (click)="openDetalle(emp)" aria-label="Ver ficha" title="Ver ficha">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
+                    <circle cx="12" cy="12" r="2.5" />
+                  </svg>
+                </button>
+
+                @if (puedeEditar()) {
+                  <button type="button" class="icon-action" (click)="openEdit(emp)" aria-label="Editar" title="Editar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                    </svg>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="icon-action"
+                    [class.icon-action--on]="emp.activo"
+                    (click)="toggleActivo(emp)"
+                    [attr.aria-label]="emp.activo ? 'Desactivar' : 'Activar'"
+                    [title]="emp.activo ? 'Desactivar' : 'Activar'"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M12 3v9" />
+                      <path d="M7.5 6.5a7 7 0 1 0 9 0" />
+                    </svg>
+                  </button>
+                }
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="table__empty">
+              @if (loading()) {
+                Cargando empresas…
+              } @else if (query()) {
+                No hay empresas que coincidan con “{{ query() }}”.
+              } @else {
+                Todavía no hay empresas registradas. Se crean solas al validar órdenes, o puede agregarlas a mano.
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============ DRAWER · FICHA ============ -->
+@if (detalle(); as emp) {
+  <div class="drawer-backdrop" (click)="closeDetalle()"></div>
+  <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="fichaTitle">
+    <header class="drawer__head">
+      <h3 class="drawer__title" id="fichaTitle">{{ emp.nombre }}</h3>
+      <button type="button" class="icon-action" (click)="closeDetalle()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="drawer__body">
+      <div class="ficha-top">
+        <span class="pill" [class]="emp.activo ? 'pill--success' : 'pill--muted'">
+          {{ emp.activo ? 'Activa' : 'Inactiva' }}
+        </span>
+        <span class="mono ficha-nit">NIT {{ emp.nit || '—' }}</span>
+      </div>
+
+      <dl class="ficha-datos">
+        <div><dt>Actividad económica</dt><dd>{{ emp.actividad_economica || '—' }}</dd></div>
+        <div><dt>Ciudad</dt><dd>{{ emp.ciudad || '—' }}</dd></div>
+        <div><dt>Dirección</dt><dd>{{ emp.direccion || '—' }}</dd></div>
+        <div>
+          <dt>Contacto administrativo</dt>
+          <dd>
+            {{ emp.contacto_nombre || '—' }}
+            @if (emp.contacto_cargo) { <small>· {{ emp.contacto_cargo }}</small> }
+            @if (emp.contacto_telefono) { <br /><span class="mono">{{ emp.contacto_telefono }}</span> }
+            @if (emp.contacto_correo) { <br />{{ emp.contacto_correo }} }
+          </dd>
+        </div>
+        <!-- El responsable de SST es a quien se le manda la encuesta (M8): por
+             eso vive en la ficha y no solo dentro de cada orden. -->
+        <div>
+          <dt>Responsable de SST</dt>
+          <dd>
+            {{ emp.contacto_sst_nombre || '—' }}
+            @if (emp.contacto_sst_telefono) { <br /><span class="mono">{{ emp.contacto_sst_telefono }}</span> }
+            @if (emp.contacto_sst_correo) { <br />{{ emp.contacto_sst_correo }} }
+          </dd>
+        </div>
+        @if (emp.notas) {
+          <div><dt>Notas</dt><dd>{{ emp.notas }}</dd></div>
+        }
+      </dl>
+
+      <h4 class="ficha-sub">Últimas órdenes de servicio</h4>
+      @if (loadingDetalle()) {
+        <p class="ficha-vacio">Cargando órdenes…</p>
+      } @else if (!detalleOrdenes().length) {
+        <p class="ficha-vacio">Esta empresa todavía no tiene órdenes a su nombre.</p>
+      } @else {
+        <ul class="ficha-ordenes">
+          @for (o of detalleOrdenes(); track o.id) {
+            <li class="ficha-orden">
+              <div class="ficha-orden__main">
+                <span class="mono">{{ o.codigo || 'Sin código' }}</span>
+                <span class="ficha-orden__act">{{ o.tipo_actividad || o.arl_nombre || '—' }}</span>
+              </div>
+              <div class="ficha-orden__meta">
+                <span class="pill pill--info">{{ o.estado }}</span>
+                <small>{{ o.fecha_ejecucion || o.fecha_orden || '' }}</small>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+
+      @if (puedeEditar()) {
+        <!-- Fusión: única salida para los duplicados que deja un NIT mal leído
+             por el OCR, porque con órdenes asociadas no se pueden eliminar. -->
+        <h4 class="ficha-sub">Fusionar con otra empresa</h4>
+        <p class="ficha-hint">
+          Traspasa las órdenes de <strong>{{ emp.nombre }}</strong> a la empresa que elija y elimina esta ficha.
+          Úselo cuando el mismo cliente quedó registrado dos veces.
+        </p>
+        <div class="ficha-fusion">
+          <select class="form-control" [(ngModel)]="destinoFusion" name="destinoFusion">
+            <option value="">Seleccione la empresa correcta…</option>
+            @for (c of candidatasFusion(); track c.id) {
+              <option [value]="c.id">{{ c.nombre }} — NIT {{ c.nit }}</option>
+            }
+          </select>
+          <button type="button" class="btn btn--ghost" [disabled]="!destinoFusion" (click)="fusionar()">
+            Fusionar
+          </button>
+        </div>
+      }
+    </div>
+
+    @if (puedeEditar()) {
+      <footer class="drawer__footer">
+        <button type="button" class="btn btn--ghost btn--danger" (click)="eliminar(emp)">Eliminar</button>
+        <button type="button" class="btn btn--ghost" (click)="toggleActivo(emp)">
+          {{ emp.activo ? 'Desactivar' : 'Activar' }}
+        </button>
+        <button type="button" class="btn btn--primary" (click)="openEdit(emp)">Editar</button>
+      </footer>
+    }
+  </aside>
+}
+
+<!-- ============ DRAWER · FORMULARIO ============ -->
+@if (formOpen()) {
+  <div class="drawer-backdrop" (click)="closeForm()"></div>
+  <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+    <header class="drawer__head">
+      <h3 class="drawer__title" id="formTitle">
+        {{ editingId() ? 'Editar empresa' : 'Nueva empresa' }}
+      </h3>
+      <button type="button" class="icon-action" (click)="closeForm()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </header>
+
+    <form class="drawer__body" (ngSubmit)="save()">
+      <div class="form-field">
+        <label class="form-field__label" for="eNombre">Razón social *</label>
+        <input id="eNombre" class="form-control" type="text" [(ngModel)]="draft.nombre" name="nombre" placeholder="Ej. Inversiones Andinas S.A.S" />
+      </div>
+
+      <!-- El NIT identifica a la empresa: se compara sin puntos ni dígito de
+           verificación, así que '901.225.480-3' y '901225480' son la misma. -->
+      <div class="form-field">
+        <label class="form-field__label" for="eNit">NIT *</label>
+        <input
+          id="eNit"
+          class="form-control"
+          [class.form-control--error]="nitDuplicado()"
+          type="text"
+          [(ngModel)]="draft.nit"
+          name="nit"
+          placeholder="900.123.456-7"
+        />
+        @if (nitDuplicado(); as dup) {
+          <p class="form-field__hint form-field__hint--error">
+            Este NIT ya está registrado a nombre de {{ dup.nombre }}.
+          </p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label class="form-field__label" for="eActividad">Actividad económica</label>
+        <input id="eActividad" class="form-control" type="text" [(ngModel)]="draft.actividad_economica" name="actividad" placeholder="Ej. Obras de ingeniería civil (CIIU 4290)" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-field__label" for="eCiudad">Ciudad</label>
+          <input id="eCiudad" class="form-control" type="text" [(ngModel)]="draft.ciudad" name="ciudad" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="eDireccion">Dirección</label>
+          <input id="eDireccion" class="form-control" type="text" [(ngModel)]="draft.direccion" name="direccion" />
+        </div>
+      </div>
+
+      <h4 class="form-section">Contacto administrativo</h4>
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-field__label" for="eCtoNombre">Nombre</label>
+          <input id="eCtoNombre" class="form-control" type="text" [(ngModel)]="draft.contacto_nombre" name="ctoNombre" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="eCtoCargo">Cargo</label>
+          <input id="eCtoCargo" class="form-control" type="text" [(ngModel)]="draft.contacto_cargo" name="ctoCargo" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-field__label" for="eCtoTel">Teléfono</label>
+          <input id="eCtoTel" class="form-control" type="tel" [(ngModel)]="draft.contacto_telefono" name="ctoTel" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="eCtoMail">Correo</label>
+          <input id="eCtoMail" class="form-control" type="email" [(ngModel)]="draft.contacto_correo" name="ctoMail" />
+        </div>
+      </div>
+
+      <h4 class="form-section">Responsable de SST</h4>
+      <div class="form-field">
+        <label class="form-field__label" for="eSstNombre">Nombre</label>
+        <input id="eSstNombre" class="form-control" type="text" [(ngModel)]="draft.contacto_sst_nombre" name="sstNombre" />
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-field__label" for="eSstTel">Teléfono</label>
+          <input id="eSstTel" class="form-control" type="tel" [(ngModel)]="draft.contacto_sst_telefono" name="sstTel" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="eSstMail">Correo</label>
+          <input id="eSstMail" class="form-control" type="email" [(ngModel)]="draft.contacto_sst_correo" name="sstMail" />
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label class="form-field__label" for="eNotas">Notas internas</label>
+        <textarea id="eNotas" class="form-control" rows="3" [(ngModel)]="draft.notas" name="notas"></textarea>
+      </div>
+    </form>
+
+    <footer class="drawer__footer">
+      <button type="button" class="btn btn--ghost" (click)="closeForm()" [disabled]="saving()">Cancelar</button>
+      <button type="button" class="btn btn--primary" [disabled]="saving() || !isValid()" (click)="save()">
+        @if (saving()) {
+          <span class="spinner" aria-hidden="true"></span>
+          Guardando…
+        } @else {
+          {{ editingId() ? 'Actualizar' : 'Guardar' }}
+        }
+      </button>
+    </footer>
+  </aside>
+}

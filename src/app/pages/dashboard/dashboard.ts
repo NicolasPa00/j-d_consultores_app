@@ -122,7 +122,9 @@ export class DashboardComponent implements OnInit {
         { label: 'Total Órdenes', value: String(k.total_ordenes ?? 0), icon: '📦', accent: 'blue' },
         { label: 'Programadas', value: String(k.programadas ?? 0), icon: '🗓️', accent: 'cyan' },
         { label: 'Órdenes sin programar', value: String(k.sin_programar ?? 0), icon: '⏳', accent: 'warning' },
-        { label: 'Ejecutadas', value: String(k.ejecutadas ?? 0), icon: '✅', accent: 'slate' },
+        // RPT-01 pide las ejecutadas DEL MES; el acumulado histórico sigue
+        // disponible en Informes y en el porcentaje por ARL de más abajo.
+        { label: 'Ejecutadas este mes', value: String(k.ejecutadas_mes ?? 0), icon: '✅', accent: 'slate' },
       ]);
     });
   }

@@ -80,6 +80,13 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/billing/billing').then((m) => m.BillingComponent),
       },
       {
+        // CFG-02 · Maestro de empresas clientes
+        path: 'empresas',
+        canActivate: [permissionGuard],
+        data: { vista: 'empresas' },
+        loadComponent: () => import('./pages/companies/companies').then((m) => m.CompaniesComponent),
+      },
+      {
         path: 'profesionales',
         canActivate: [permissionGuard],
         data: { vista: 'profesionales' },

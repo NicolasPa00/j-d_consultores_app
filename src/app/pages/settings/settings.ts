@@ -5,14 +5,30 @@ import { forkJoin } from 'rxjs';
 import { AuthService } from '../../core/auth.service';
 import { AlertService } from '../../core/alert.service';
 import { ApiService } from '../../core/api.service';
-import { PermisoRol, Rol, Usuario, Vista } from '../../core/models';
+import { Arl, PermisoRol, Plantilla, PreguntasEncuesta, Rol, Usuario, Vista } from '../../core/models';
 
 interface RateRow {
   activity: string;
   rate: number;
 }
 
-type Tab = 'profile' | 'system' | 'users' | 'roles';
+type Tab = 'profile' | 'system' | 'users' | 'roles' | 'formatos';
+
+/** CFG-03 · Formulario de una plantilla de formato. */
+interface PlantillaDraft {
+  nombre: string;
+  tipo: Plantilla['tipo'];
+  arl_id: string;
+  descripcion: string;
+  encabezado: string;
+  nota_pie: string;
+  orden: number;
+}
+
+const PLANTILLA_VACIA: PlantillaDraft = {
+  nombre: '', tipo: 'acta_visita', arl_id: '', descripcion: '',
+  encabezado: '', nota_pie: '', orden: 0,
+};
 
 interface UsuarioDraft {
   nombre: string;
@@ -70,6 +86,30 @@ export class SettingsComponent implements OnInit {
   ];
   protected whatsappEnabled = false;
 
+  // ----- Pestaña: Formatos y encuesta (CFG-03 / ENC-03) -----
+  // Es configuración del NEGOCIO (qué dice el acta que firma el cliente, cómo
+  // está redactada la encuesta), no mantenimiento de la plataforma: por eso la
+  // maneja el Administrador y no solo el Maestro.
+  protected readonly esAdmin = computed(() => this.auth.usuario()?.rol === 'admin');
+  protected readonly plantillas = signal<Plantilla[]>([]);
+  protected readonly arls = signal<Arl[]>([]);
+  protected readonly loadingFormatos = signal(false);
+  protected readonly savingPlantilla = signal(false);
+  /** null = formulario cerrado · 'nuevo' = alta · Plantilla = edición */
+  protected readonly plantillaForm = signal<'nuevo' | Plantilla | null>(null);
+  protected plantillaDraft: PlantillaDraft = { ...PLANTILLA_VACIA };
+  protected readonly tiposFormato: { valor: Plantilla['tipo']; label: string }[] = [
+    { valor: 'acta_visita', label: 'Acta de visita' },
+    { valor: 'asistencia', label: 'Lista de asistencia' },
+    { valor: 'ficha_gestion', label: 'Ficha de gestión' },
+  ];
+
+  /** ENC-03 · Enunciados de la encuesta pública. */
+  protected preguntas: PreguntasEncuesta = {
+    titulo: '', satisfaccion: '', recomendacion: '', comentarios: '',
+  };
+  protected readonly savingPreguntas = signal(false);
+
   // ----- Pestaña: Usuarios del Sistema (exclusiva del Administrador Maestro) -----
   protected readonly esMaestro = computed(() => this.auth.usuario()?.es_maestro === true);
   protected readonly usuarios = signal<Usuario[]>([]);
@@ -97,6 +137,8 @@ export class SettingsComponent implements OnInit {
     { clave: 'importar', label: 'Importar Archivos', hint: 'Módulo 2 · carga de Excel/PDF' },
     { clave: 'ordenes', label: 'Órdenes', hint: 'Módulos 3 y 4 · validación IA y asignación' },
     { clave: 'informes', label: 'Informes y Resúmenes', hint: 'Módulo 5 · resúmenes y buscador' },
+    { clave: 'precuentas', label: 'Pre-cuentas', hint: 'Módulo 9 · cobro a profesionales' },
+    { clave: 'empresas', label: 'Empresas', hint: 'Módulo 12 · CFG-02 · clientes' },
     { clave: 'profesionales', label: 'Profesionales', hint: 'Módulo 12 · asesores de campo' },
     { clave: 'configuracion', label: 'Configuración', hint: 'Perfil propio y ajustes' },
   ];
@@ -123,6 +165,156 @@ export class SettingsComponent implements OnInit {
     this.activeTab.set(tab);
     if (tab === 'users' && this.esMaestro() && !this.usuarios().length) this.loadUsuarios();
     if (tab === 'roles' && this.esMaestro() && !this.permisosMatrix().length) this.loadPermisos();
+    if (tab === 'formatos' && this.esAdmin() && !this.plantillas().length) this.loadFormatos();
+  }
+
+  // ---- CFG-03 · Formatos (plantillas) + ENC-03 (enunciados de la encuesta) ----
+  protected loadFormatos(): void {
+    this.loadingFormatos.set(true);
+    // `true` trae también las desactivadas: desde aquí se pueden reactivar.
+    forkJoin({
+      plantillas: this.api.listPlantillas(true),
+      arls: this.api.listArls(),
+      settings: this.api.getSettings(),
+    }).subscribe({
+      next: ({ plantillas, arls, settings }) => {
+        this.plantillas.set(plantillas.data);
+        this.arls.set(arls.data);
+        const p = settings.data['encuesta_preguntas'] as PreguntasEncuesta | undefined;
+        if (p) this.preguntas = { ...this.preguntas, ...p };
+        this.loadingFormatos.set(false);
+      },
+      error: (err) => {
+        this.loadingFormatos.set(false);
+        this.alerts.error('No se pudieron cargar los formatos', err?.error?.error || 'El servidor no respondió al catálogo de plantillas.');
+      },
+    });
+  }
+
+  protected openPlantillaNueva(): void {
+    this.plantillaDraft = { ...PLANTILLA_VACIA };
+    this.plantillaForm.set('nuevo');
+  }
+
+  protected openPlantillaEdit(p: Plantilla): void {
+    this.plantillaDraft = {
+      nombre: p.nombre,
+      tipo: p.tipo,
+      arl_id: p.arl_id || '',
+      descripcion: p.descripcion || '',
+      encabezado: p.encabezado || '',
+      nota_pie: p.nota_pie || '',
+      orden: p.orden ?? 0,
+    };
+    this.plantillaForm.set(p);
+  }
+
+  protected closePlantillaForm(): void {
+    if (this.savingPlantilla()) return;
+    this.plantillaForm.set(null);
+  }
+
+  protected savePlantilla(): void {
+    const editando = this.plantillaForm();
+    if (!editando || this.savingPlantilla()) return;
+    const d = this.plantillaDraft;
+    if (!d.nombre.trim()) {
+      this.alerts.warning('Falta el nombre', 'El nombre es el título que se imprime en la primera línea del PDF.');
+      return;
+    }
+    this.savingPlantilla.set(true);
+    const body: Partial<Plantilla> = {
+      nombre: d.nombre.trim(),
+      tipo: d.tipo,
+      // '' = "todas las ARL": el formato se genera para cualquier orden.
+      arl_id: d.arl_id || null,
+      descripcion: d.descripcion.trim(),
+      encabezado: d.encabezado.trim(),
+      nota_pie: d.nota_pie.trim(),
+      orden: Number(d.orden) || 0,
+    };
+    const req = editando === 'nuevo'
+      ? this.api.createPlantilla(body)
+      : this.api.updatePlantilla(editando.id, body);
+    req.subscribe({
+      next: () => {
+        this.savingPlantilla.set(false);
+        this.plantillaForm.set(null);
+        this.alerts.success(
+          editando === 'nuevo' ? 'Formato creado' : 'Formato actualizado',
+          `${body.nombre} se aplicará a los PDF que se generen a partir de ahora; los ya emitidos no cambian.`,
+        );
+        this.loadFormatos();
+      },
+      error: (err) => {
+        this.savingPlantilla.set(false);
+        this.alerts.error('No se pudo guardar el formato', err?.error?.error || 'El servidor rechazó los datos del formato.');
+      },
+    });
+  }
+
+  protected togglePlantilla(p: Plantilla): void {
+    this.api.togglePlantilla(p.id).subscribe({
+      next: (r) => {
+        this.plantillas.update((list) => list.map((x) => (x.id === r.data.id ? { ...x, ...r.data } : x)));
+        this.alerts.success(
+          r.data.activo ? 'Formato activado' : 'Formato desactivado',
+          r.data.activo
+            ? `${p.nombre} vuelve a generarse al asignar una orden.`
+            : `${p.nombre} deja de generarse; los PDF ya emitidos siguen disponibles.`,
+        );
+      },
+      error: (err) => this.alerts.error('No se pudo cambiar el estado', err?.error?.error || `El servidor rechazó el cambio sobre ${p.nombre}.`),
+    });
+  }
+
+  protected async deletePlantilla(p: Plantilla): Promise<void> {
+    const ok = await this.alerts.confirm({
+      title: 'Eliminar formato',
+      message: `Se eliminará la plantilla ${p.nombre}. Si solo quiere dejar de generarla, desactívela.`,
+      confirmText: 'Eliminar',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    this.api.deletePlantilla(p.id).subscribe({
+      next: () => {
+        this.alerts.success('Formato eliminado', `${p.nombre} ya no está en el catálogo de plantillas.`);
+        this.loadFormatos();
+      },
+      error: (err) => this.alerts.error('No se pudo eliminar el formato', err?.error?.error || 'El servidor rechazó la baja.'),
+    });
+  }
+
+  /** ENC-03 · Guarda la redacción; las escalas 1-5 y su significado no cambian. */
+  protected savePreguntas(): void {
+    if (this.savingPreguntas()) return;
+    const p = this.preguntas;
+    if (!p.titulo.trim() || !p.satisfaccion.trim() || !p.recomendacion.trim() || !p.comentarios.trim()) {
+      this.alerts.warning('Faltan enunciados', 'Los cuatro textos de la encuesta son obligatorios.');
+      return;
+    }
+    this.savingPreguntas.set(true);
+    this.api.setPreguntasEncuesta({
+      titulo: p.titulo.trim(), satisfaccion: p.satisfaccion.trim(),
+      recomendacion: p.recomendacion.trim(), comentarios: p.comentarios.trim(),
+    }).subscribe({
+      next: () => {
+        this.savingPreguntas.set(false);
+        this.alerts.success('Encuesta actualizada', 'Los clientes que reciban el enlace a partir de ahora verán la nueva redacción.');
+      },
+      error: (err) => {
+        this.savingPreguntas.set(false);
+        this.alerts.error('No se pudo guardar la encuesta', err?.error?.error || 'Revise que ningún enunciado quede vacío ni pase de 200 caracteres.');
+      },
+    });
+  }
+
+  protected arlLabel(p: Plantilla): string {
+    return p.arl_nombre || 'Todas las ARL';
+  }
+
+  protected tipoLabel(tipo: Plantilla['tipo']): string {
+    return this.tiposFormato.find((t) => t.valor === tipo)?.label || tipo;
   }
 
   // ---- Roles y permisos ----

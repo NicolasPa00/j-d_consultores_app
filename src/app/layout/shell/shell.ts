@@ -20,6 +20,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: 'ai', label: 'Órdenes', hint: 'Módulos 3 y 4', route: '/ordenes', vista: 'ordenes' },
   { icon: 'reports', label: 'Informes y Resúmenes', hint: 'Módulo 5', route: '/informes', vista: 'informes' },
   { icon: 'money', label: 'Pre-cuentas', hint: 'Módulo 9 · Cobro', route: '/precuentas', vista: 'precuentas' },
+  { icon: 'building', label: 'Empresas', hint: 'Módulo 12 · CFG-02', route: '/empresas', vista: 'empresas' },
   { icon: 'people', label: 'Profesionales', hint: 'Módulo 12 · CFG-01', route: '/profesionales', vista: 'profesionales' },
   { icon: 'settings', label: 'Configuración', hint: 'Perfil', route: '/configuracion', vista: 'configuracion' },
 ];

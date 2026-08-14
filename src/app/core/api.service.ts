@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from './config';
-import { ArchivoSoporte, Borrador, DashboardData, Encuesta, EncuestaPublica, EncuestaStats, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, Notificacion, Ocupacion, Orden, PeriodoEjecutado, Precuenta, PrecuentaPublica, Profesional, ReporteCartera, ReporteHoras, ReporteVencidas, Rol, Tarifa, Usuario, Vista } from './models';
+import { ArchivoSoporte, Arl, Borrador, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, ReporteCartera, ReporteHoras, ReporteVencidas, Rol, Tarifa, Usuario, Vista } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -223,6 +223,35 @@ export class ApiService {
     return this.http.patch<Wrap<Profesional>>(`${this.base}/professionals/${id}/estado`, {});
   }
 
+  // ---- Empresas clientes (CFG-02) ----
+  /** `activo` filtra el listado; sin él vienen activas e inactivas. */
+  listEmpresas(filtros: { q?: string; activo?: 'true' | 'false' } = {}): Observable<Wrap<Empresa[]>> {
+    const qs = new URLSearchParams(filtros as Record<string, string>).toString();
+    return this.http.get<Wrap<Empresa[]>>(`${this.base}/empresas${qs ? '?' + qs : ''}`);
+  }
+  /** Ficha + sus últimas órdenes de servicio. */
+  getEmpresa(id: string): Observable<Wrap<Empresa> & { ordenes: OrdenDeEmpresa[] }> {
+    return this.http.get<Wrap<Empresa> & { ordenes: OrdenDeEmpresa[] }>(`${this.base}/empresas/${id}`);
+  }
+  createEmpresa(body: Partial<Empresa>): Observable<Wrap<Empresa>> {
+    return this.http.post<Wrap<Empresa>>(`${this.base}/empresas`, body);
+  }
+  updateEmpresa(id: string, body: Partial<Empresa>): Observable<Wrap<Empresa>> {
+    return this.http.put<Wrap<Empresa>>(`${this.base}/empresas/${id}`, body);
+  }
+  toggleEmpresa(id: string): Observable<Wrap<Empresa>> {
+    return this.http.patch<Wrap<Empresa>>(`${this.base}/empresas/${id}/estado`, {});
+  }
+  /**
+   * Baja definitiva. Con `reasignarA` las órdenes pasan primero a esa empresa:
+   * es la fusión de duplicados (mismo cliente con el NIT mal leído por el OCR).
+   * Sin él, el backend rechaza borrar una empresa que tenga órdenes.
+   */
+  deleteEmpresa(id: string, reasignarA?: string): Observable<Wrap<{ id: string; reasignadas: number }>> {
+    const qs = reasignarA ? `?reasignar_a=${reasignarA}` : '';
+    return this.http.delete<Wrap<{ id: string; reasignadas: number }>>(`${this.base}/empresas/${id}${qs}`);
+  }
+
   // ---- Ocupaciones (agenda) del profesional ----
   listOcupaciones(profId: string): Observable<Wrap<Ocupacion[]>> {
     return this.http.get<Wrap<Ocupacion[]>>(`${this.base}/professionals/${profId}/ocupaciones`);
@@ -313,6 +342,38 @@ export class ApiService {
   }
   setThreshold(value: number): Observable<unknown> {
     return this.http.put(`${this.base}/settings/confidence-threshold`, { value });
+  }
+  /** ENC-03 · Redacción de los enunciados de la encuesta pública. */
+  setPreguntasEncuesta(preguntas: PreguntasEncuesta): Observable<unknown> {
+    return this.http.put(`${this.base}/settings/encuesta-preguntas`, preguntas);
+  }
+  /** CFG-05 · Día del mes en que se cierran las pre-cuentas (1-28). */
+  setDiaCorte(value: number): Observable<unknown> {
+    return this.http.put(`${this.base}/settings/precuenta-dia-corte`, { value });
+  }
+
+  /** Catálogo de ARLs (Bolívar, AXA Colpatria, Colmena). */
+  listArls(): Observable<Wrap<Arl[]>> {
+    return this.http.get<Wrap<Arl[]>>(`${this.base}/arls`);
+  }
+
+  // ---- Plantillas de formatos (CFG-03 · M4) ----
+  /** `todas` incluye las desactivadas (solo la pantalla de configuración). */
+  listPlantillas(todas = false): Observable<Wrap<Plantilla[]>> {
+    return this.http.get<Wrap<Plantilla[]>>(`${this.base}/templates${todas ? '?todas=true' : ''}`);
+  }
+  createPlantilla(body: Partial<Plantilla>): Observable<Wrap<Plantilla>> {
+    return this.http.post<Wrap<Plantilla>>(`${this.base}/templates`, body);
+  }
+  updatePlantilla(id: string, body: Partial<Plantilla>): Observable<Wrap<Plantilla>> {
+    return this.http.put<Wrap<Plantilla>>(`${this.base}/templates/${id}`, body);
+  }
+  togglePlantilla(id: string): Observable<Wrap<Plantilla>> {
+    return this.http.patch<Wrap<Plantilla>>(`${this.base}/templates/${id}/estado`, {});
+  }
+  /** El backend rechaza borrar una plantilla que ya emitió documentos. */
+  deletePlantilla(id: string): Observable<Wrap<{ id: string }>> {
+    return this.http.delete<Wrap<{ id: string }>>(`${this.base}/templates/${id}`);
   }
 
   // ---- Roles y permisos (Configuración) — exclusivo admin ----

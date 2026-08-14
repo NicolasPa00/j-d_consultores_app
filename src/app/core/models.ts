@@ -31,11 +31,13 @@ export interface MeResponse {
 
 /** Vistas gestionables desde Configuración → Roles y permisos (= ítems del sidebar). */
 export type Vista =
-  | 'dashboard' | 'importar' | 'ordenes' | 'informes' | 'precuentas' | 'profesionales' | 'configuracion';
+  | 'dashboard' | 'importar' | 'ordenes' | 'informes' | 'precuentas' | 'empresas'
+  | 'profesionales' | 'configuracion';
 
 /** Catálogo completo de vistas. Es también el fallback cuando no hay permisos conocidos. */
 export const VISTAS: Vista[] = [
-  'dashboard', 'importar', 'ordenes', 'informes', 'precuentas', 'profesionales', 'configuracion',
+  'dashboard', 'importar', 'ordenes', 'informes', 'precuentas', 'empresas',
+  'profesionales', 'configuracion',
 ];
 
 export interface PermisoRol {
@@ -374,6 +376,8 @@ export interface PeriodoEjecutado {
   ordenes: number;
   horas: string | number;
   profesionales: number;
+  /** CFG-05 · Cuántas pre-cuentas se generaron ya para el periodo (0 = sin cerrar). */
+  precuentas_generadas?: number;
 }
 
 /** Lo que ve el profesional en el enlace público (PRE-05). */
@@ -467,6 +471,73 @@ export interface Orden {
   metadatos_extraccion?: MetadatosExtraccion;
 }
 
+/** Catálogo de ARLs. */
+export interface Arl {
+  id: string;
+  nombre: string;
+  formato_origen: 'excel' | 'pdf';
+}
+
+/**
+ * CFG-03 · Plantilla de formato (M4). El PDF se dibuja con pdf-lib, así que lo
+ * editable es el contenido impreso —nombre, encabezado y nota al pie— y para qué
+ * ARL se genera; no hay archivo base que subir.
+ */
+export interface Plantilla {
+  id: string;
+  arl_id?: string | null;
+  arl_nombre?: string | null;
+  nombre: string;
+  tipo: 'acta_visita' | 'asistencia' | 'ficha_gestion';
+  descripcion?: string | null;
+  /** Párrafo introductorio bajo el título del formato. */
+  encabezado?: string | null;
+  /** Texto que se imprime justo encima de las firmas. */
+  nota_pie?: string | null;
+  orden: number;
+  activo: boolean;
+  /** PDF ya emitidos con esta plantilla: si hay, no se puede eliminar. */
+  documentos_generados?: number;
+}
+
+/** CFG-02 · Empresa cliente (maestro). Espejo de `sst.empresas`. */
+export interface Empresa {
+  id: string;
+  nit: string;
+  nombre: string;
+  actividad_economica?: string | null;
+  ciudad?: string | null;
+  direccion?: string | null;
+  contacto_nombre?: string | null;
+  contacto_cargo?: string | null;
+  contacto_telefono?: string | null;
+  contacto_correo?: string | null;
+  /** Responsable de SST: es quien recibe la encuesta de satisfacción (M8). */
+  contacto_sst_nombre?: string | null;
+  contacto_sst_telefono?: string | null;
+  contacto_sst_correo?: string | null;
+  notas?: string | null;
+  activo: boolean;
+  creado_en?: string;
+  actualizado_en?: string;
+  /** Derivados del listado (LEFT JOIN con órdenes); ausentes en la ficha. */
+  total_ordenes?: number;
+  ordenes_ejecutadas?: number;
+  ultima_orden?: string | null;
+}
+
+/** Orden resumida que devuelve la ficha de una empresa. */
+export interface OrdenDeEmpresa {
+  id: string;
+  codigo: string | null;
+  estado: EstadoOrden;
+  tipo_actividad?: string | null;
+  fecha_orden?: string | null;
+  fecha_ejecucion?: string | null;
+  horas_asignadas?: number | null;
+  arl_nombre?: string | null;
+}
+
 export interface Profesional {
   id: string;
   nombre: string;
@@ -484,6 +555,8 @@ export interface DashboardData {
     programadas: string | number;
     en_verificacion: string | number;
     ejecutadas: string | number;
+    /** RPT-01 · Ejecutadas del mes en curso (el KPI que pide el requisito). */
+    ejecutadas_mes: string | number;
     canceladas: string | number;
     alertas_baja_confianza: string | number;
   };

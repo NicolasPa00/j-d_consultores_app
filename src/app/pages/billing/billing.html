@@ -26,6 +26,21 @@
 
 <!-- ==================== PRE-CUENTAS ==================== -->
 @if (tab() === 'precuentas') {
+  <!-- CFG-05 · El cierre se dispara a mano (no hay cron en el despliegue), así
+       que el día de corte sirve para avisar de los meses que se quedaron sin
+       cobrar en vez de generarlos solo. -->
+  @if (periodosVencidos().length) {
+    <div class="alert alert--warning corte-aviso">
+      <strong>Hay {{ periodosVencidos().length }} periodo(s) sin cerrar</strong> que ya pasaron el día de corte
+      ({{ diaCorte() }} de cada mes):
+      @for (p of periodosVencidos(); track p.periodo) {
+        <button type="button" class="chip chip--warn" (click)="periodoGenerar = p.periodo">
+          {{ p.periodo }} · {{ horas(p.horas) }} h
+        </button>
+      }
+    </div>
+  }
+
   @if (puedeGestionar()) {
     <!-- PRE-01 · Cierre de mes -->
     <div class="card generar">
@@ -49,10 +64,26 @@
           @for (p of periodos(); track p.periodo) {
             <button type="button" class="chip" [class.chip--on]="periodoGenerar === p.periodo" (click)="periodoGenerar = p.periodo">
               {{ p.periodo }} · {{ horas(p.horas) }} h · {{ p.profesionales }} prof.
+              @if (p.precuentas_generadas) { <span class="chip__ok" title="Ya tiene pre-cuentas generadas">✓</span> }
             </button>
           }
         </div>
       }
+
+      <!-- CFG-05 · Día de corte configurable -->
+      <div class="corte">
+        <label class="form-field corte__field">
+          <span class="form-field__label">Día de corte</span>
+          <input class="form-control" type="number" min="1" max="28" [(ngModel)]="diaCorteEdit" />
+        </label>
+        <button type="button" class="btn btn--ghost" [disabled]="savingCorte()" (click)="guardarDiaCorte()">
+          {{ savingCorte() ? 'Guardando…' : 'Guardar día de corte' }}
+        </button>
+        <p class="corte__hint">
+          Día de cada mes en que se cierra el cobro del mes anterior. <strong>No genera nada solo</strong>:
+          a partir de esa fecha esta pantalla avisa de los periodos que sigan sin cerrarse.
+        </p>
+      </div>
     </div>
   }
 

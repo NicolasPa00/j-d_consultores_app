@@ -83,30 +83,88 @@ backend real. No queda nada mockeado ni ninguna costura de BD sin implementar.
 | M5 Asignación y reprogramación (ASG-01..07) | ✅ |
 | M6 Soportes por enlace público (SUP-01..05) | ✅ |
 | M7 Verificación y cierre (VER-01..05) | ✅ |
-| M8 Encuesta de satisfacción (ENC-01..07) | ✅ · falta UI para editar los enunciados → va con CFG-03 |
-| M9 Pre-cuenta de cobro (PRE-01..09) | ✅ · el cierre de mes se dispara **a mano** (no hay cron) → ver CFG-05 |
+| M8 Encuesta de satisfacción (ENC-01..07) | ✅ · ENC-03 editable desde Configuración → Formatos y encuesta |
+| M9 Pre-cuenta de cobro (PRE-01..09) | ✅ · el cierre de mes se dispara **a mano** (no hay cron); CFG-05 avisa de los meses vencidos |
 | M10 Reportes (RPT-01..07) | ✅ · dashboard, buscador NL, vencidas, satisfacción, horas, cartera, exportación |
 | M11 Notificaciones (NOT-01..04) | ✅ correos + campanita interna |
-| M12 Configuración | CFG-01 ✅ · CFG-04 ✅ (cubierto por las tarifas de M9) · **CFG-02, CFG-03 y CFG-05 pendientes** |
+| M12 Configuración | ✅ completo · CFG-01, CFG-02, CFG-03, CFG-04 (tarifas de M9) y CFG-05 |
 
-### Pendiente — lo único que falta del FRS
+### CFG-02 · qué quedó construido
 
-- **CFG-02 · CRUD de empresas clientes** (prioridad Media, el más importante de los tres).
-  Hoy la empresa vive como texto suelto en cada OS (`ordenes_servicio.empresa_nombre`,
-  `nit_nic`); **no existe tabla de empresas**. Hay que crearla, poder editarla, y
-  decidir cómo se enlaza con las OS existentes (lo natural: derivarlas por NIT y
-  conservar el texto como respaldo).
-- **CFG-03 · Plantillas de formatos** (Baja). `sst.plantillas` ya existe y la usa M4
-  para generar los PDF, con tres plantillas sembradas; falta la UI y los endpoints
-  para subir/editar. **Aquí encaja también la edición de los enunciados de la
-  encuesta (ENC-03)**, que hoy se cambian a mano en
-  `sst.configuracion → encuesta_preguntas`.
-- **CFG-05 · Días de corte para pre-cuentas** (Baja). Definir si es solo guardar el
-  día de corte o además automatizar la generación mensual de M9 (hoy es manual).
+Tabla `sst.empresas` + vista `/empresas` (sidebar, entre Pre-cuentas y Profesionales).
 
-Otra observación menor, fuera de CFG: **RPT-01** dice *"ejecutadas en el mes"* y el
-KPI del dashboard cuenta las ejecutadas de todos los tiempos. Es un cambio de una
-línea en `sst.vw_kpis_dashboard` más el rótulo, si se quiere ajustar.
+- La OS conserva `empresa_nombre` / `nit_nic` como **registro histórico de lo que
+  decía el documento de la ARL** y se enlaza por la columna nueva
+  `ordenes_servicio.empresa_id` (nullable, `ON DELETE SET NULL`).
+- El maestro se derivó de las 33 OS que ya había → **15 empresas, 33/33 enlazadas**.
+  La derivación vive en `db/seed.sql`, solo toca filas con `empresa_id IS NULL` y
+  es idempotente.
+- **Se alimenta sola:** al validar un borrador (`POST /drafts/:id/validate`) se
+  resuelve la empresa por NIT → por nombre → alta automática
+  (`modules/companies/companies.service.js`).
+- Identidad: NIT normalizado = dígitos antes del guion (el DV se descarta porque
+  las ARL lo omiten a discreción); nombre normalizado = alfanuméricos en
+  mayúscula. Están declarados como columnas generadas y replicados en JS/TS con
+  la misma regla.
+- Endpoints `/empresas`: listado con conteo de órdenes, ficha con sus últimas 20
+  OS, alta/edición/activar-desactivar (admin) y baja. **La baja de una empresa
+  con órdenes se rechaza**; para eso está `DELETE /empresas/:id?reasignar_a=<id>`,
+  que traspasa las órdenes y borra la ficha (fusión de duplicados, expuesta en la
+  ficha de la UI).
+- Queda fuera: reasignar **una** OS suelta a otra empresa desde `/ordenes` (hoy
+  solo se puede fusionar fichas completas).
+
+### CFG-03 y ENC-03 · qué quedó construido
+
+Pestaña **Configuración → "Formatos y encuesta"** (visible para el rol admin, no
+solo para el Maestro: es configuración del negocio, no mantenimiento de la
+plataforma).
+
+- CRUD de `sst.plantillas` (`/templates`): nombre, tipo, ARL, orden de impresión,
+  activar/desactivar y baja.
+- **Decisión: no hay "subir plantilla".** El PDF se dibuja con `pdf-lib` desde la
+  OS (`services/pdf.service.js`); un archivo base no tendría quién lo consumiera.
+  Lo que se hizo editable es lo que **sí sale impreso**: el título, un
+  `encabezado` bajo el título y una `nota_pie` justo encima de las firmas
+  (columnas nuevas de la tabla). Si algún día se quiere partir de un PDF
+  preexistente, hay que escribir el estampado de campos sobre el archivo, que es
+  otro trabajo.
+- Una plantilla con PDF ya emitidos **no se puede eliminar** (`documentos_generados`
+  la referencia): se desactiva, y así los documentos que ya están en manos de las
+  ARL conservan su origen.
+- ENC-03: los cuatro enunciados de la encuesta se editan en la misma pestaña.
+  Solo cambia la redacción — las dos escalas siguen siendo 1-5 y siguen
+  alimentando el promedio de satisfacción, así que las respuestas viejas siguen
+  siendo comparables.
+
+### CFG-05 · qué quedó construido
+
+Día de corte en `sst.configuracion → precuenta_dia_corte` (1-28, para que exista
+en febrero), editable desde `/precuentas`.
+
+- **No automatiza nada** y es deliberado: el despliegue no tiene cron. Lo que hace
+  es que `/precuentas` avise en rojo de los periodos que ya pasaron su fecha de
+  corte y siguen sin generarse, que era el riesgo real (un mes sin cobrar por
+  olvido). `GET /precuentas/periodos` devuelve ahora `precuentas_generadas` para
+  poder distinguirlos.
+- Si en algún momento hay cron (o un worker), el disparo automático son ~20 líneas
+  sobre `generarPrecuentas()` leyendo esta misma clave.
+
+### Ajuste de RPT-01
+
+`sst.vw_kpis_dashboard` ganó `ejecutadas_mes` (ejecutadas del mes en curso, que es
+lo que pide el requisito) y el KPI del dashboard ahora muestra esa cifra con el
+rótulo "Ejecutadas este mes". El acumulado histórico (`ejecutadas`) sigue en la
+vista porque lo usan los porcentajes por ARL.
+
+### Pendiente
+
+**Nada del FRS.** Lo que queda son mejoras opcionales, ninguna comprometida:
+
+- Reasignar **una** OS suelta a otra empresa desde `/ordenes` (hoy solo se pueden
+  fusionar fichas completas desde `/empresas`).
+- Disparo automático del cierre mensual de M9 si el despliegue llega a tener cron.
+- Formatos a partir de un PDF base estampado, si el cliente lo pide.
 
 ---
 
@@ -156,8 +214,9 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
 | `/ordenes` | `pages/validation` | **Vista central**: bandeja, validación, estados, asignación, verificación. Acepta `?os=<id>` |
 | `/informes` | `pages/reports` | 6 pestañas: Órdenes, Profesionales, Satisfacción, Vencidas, Horas, Cartera |
 | `/precuentas` | `pages/billing` | M9: generar, enviar, seguir y exportar. 2.ª pestaña: tarifas |
+| `/empresas` | `pages/companies` | CFG-02: maestro de clientes, ficha con sus OS y fusión de duplicados |
 | `/profesionales` | `pages/professionals` | CRUD y agenda |
-| `/configuracion` | `pages/settings` | Perfil, umbral IA, usuarios, roles y permisos |
+| `/configuracion` | `pages/settings` | Perfil · **Formatos y encuesta (CFG-03/ENC-03)** · umbral IA, usuarios, roles y permisos |
 | `/soporte` | `pages/portal` | **Pública**: el profesional sube soportes (M6) |
 | `/encuesta` | `pages/survey` | **Pública**: encuesta al cliente (M8) |
 | `/precuenta` | `pages/precuenta` | **Pública**: el profesional acepta/rechaza su cobro (M9) |
@@ -198,6 +257,30 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
    Fase 1, prohibido M8/M9/RPT-03..07"* mucho después de que esos módulos estuvieran
    construidos. Si vuelve a aparecer documentación nueva, **que nazca dentro de uno
    de los dos repos**.
+5. Añadir una **vista nueva al sidebar** son cinco sitios, no uno: `VISTAS_SISTEMA`
+   (`auth.service.js`, el backend valida contra esa lista), el seed de
+   `permisos_rol`, el tipo `Vista` + `VISTAS` de `core/models.ts`, `NAV_ITEMS` de
+   `shell.ts` (con su `@case` de icono en `shell.html`) y `vistasCatalogo` de
+   `settings.ts`. Si falta el último, el permiso existe pero nadie puede editarlo
+   desde Roles y permisos — así estuvo `precuentas` hasta ahora (ya corregido).
+6. **Los NIT llegan con ruido de OCR** ('900.184.?52-1' contra '900.184.552-1' de
+   la misma empresa). Agrupar empresas por NIT crea una ficha duplicada por cada
+   error de lectura: la derivación de CFG-02 agrupa por **nombre normalizado** y
+   se queda con el NIT que aparece en más órdenes. Contrapartida asumida: dos
+   empresas reales homónimas quedarían fusionadas.
+7. `node --watch` **no siempre recoge un archivo de módulo nuevo**. Síntoma: una
+   ruta recién creada devuelve **404 con un token válido** (variante del punto 1,
+   donde el 401 delata el router de catálogos). Reiniciar `:4000` antes de dudar
+   del código.
+8. `CREATE OR REPLACE VIEW` **solo admite columnas nuevas al final**. Al meter
+   `ejecutadas_mes` en medio de `vw_kpis_dashboard` hubo que pasar a
+   `DROP VIEW IF EXISTS` + `CREATE VIEW`, como ya hacen las otras vistas.
+9. En un `UPDATE`, `COALESCE($n, campo)` **no distingue "no lo mandes" de
+   "déjalo vacío"**: con textos que el formulario envía siempre (encabezado, nota
+   al pie) hay que pasar un booleano aparte —`CASE WHEN $n::boolean THEN $m ELSE
+   campo END`— o nunca se podrán borrar. Y ojo con `CASE` sobre un literal
+   casteado (`'sin-cambio'::uuid`): Postgres puede plegarlo en tiempo de plan y
+   reventar aunque esa rama no se tome.
 
 ---
 

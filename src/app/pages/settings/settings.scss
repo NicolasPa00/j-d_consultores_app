@@ -232,6 +232,22 @@
   color: var(--text-muted);
 }
 
+/* ===== Formatos y encuesta (CFG-03 / ENC-03) ===== */
+/* Descripción interna del formato, bajo su nombre en la tabla. */
+.tpl-desc {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* Los textos impresos son párrafos, no líneas sueltas. */
+.profile-form textarea.form-control {
+  min-height: 72px;
+  resize: vertical;
+  font-family: inherit;
+}
+
 /* ===== Roles y permisos ===== */
 .role-picker {
   display: flex;

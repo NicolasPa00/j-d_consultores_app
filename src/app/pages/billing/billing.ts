@@ -57,6 +57,32 @@ export class BillingComponent implements OnInit {
   // ---- Generación ----
   protected periodoGenerar = '';
 
+  // ---- CFG-05 · Día de corte ----
+  /** Día del mes en que se cierra el cobro del mes anterior (1-28). */
+  protected readonly diaCorte = signal(5);
+  protected diaCorteEdit = 5;
+  protected readonly savingCorte = signal(false);
+
+  /**
+   * CFG-05 · Periodos que ya pasaron su fecha de corte y siguen sin generar.
+   *
+   * El despliegue no tiene cron, así que el cierre se dispara a mano: este aviso
+   * es lo que evita que un mes se quede sin cobrar por olvido. Un periodo está
+   * vencido cuando ya llegó el día de corte del mes siguiente al suyo.
+   */
+  protected readonly periodosVencidos = computed(() => {
+    const hoy = new Date();
+    const corte = this.diaCorte();
+    return this.periodos().filter((p) => {
+      if ((p.precuentas_generadas ?? 0) > 0) return false;
+      const [y, m] = p.periodo.split('-').map(Number);
+      if (!y || !m) return false;
+      // Fecha límite = día de corte del mes siguiente al periodo.
+      const limite = new Date(y, m, corte);
+      return hoy >= limite;
+    });
+  });
+
   // ---- Detalle ----
   protected readonly detalle = signal<Precuenta | null>(null);
   protected readonly loadingDetalle = signal(false);
@@ -95,6 +121,42 @@ export class BillingComponent implements OnInit {
     this.api.listProfessionals().subscribe({
       next: (r) => this.professionals.set(r.data),
       error: () => this.professionals.set([]),
+    });
+    // CFG-05 · El día de corte vive en configuración: lo leen todos, lo cambia
+    // el administrador desde esta misma pantalla.
+    this.api.getSettings().subscribe({
+      next: (r) => {
+        const n = Number(r.data['precuenta_dia_corte']);
+        if (Number.isFinite(n)) {
+          this.diaCorte.set(n);
+          this.diaCorteEdit = n;
+        }
+      },
+      error: () => undefined,
+    });
+  }
+
+  /** CFG-05 · Guarda el día de corte (1-28 para que exista en febrero). */
+  protected guardarDiaCorte(): void {
+    const n = Number(this.diaCorteEdit);
+    if (!Number.isInteger(n) || n < 1 || n > 28) {
+      this.alerts.warning('Día de corte inválido', 'Debe ser un número entero entre 1 y 28.');
+      return;
+    }
+    this.savingCorte.set(true);
+    this.api.setDiaCorte(n).subscribe({
+      next: () => {
+        this.savingCorte.set(false);
+        this.diaCorte.set(n);
+        this.alerts.success(
+          'Día de corte actualizado',
+          `A partir del día ${n} de cada mes se avisará aquí de los periodos anteriores sin cerrar.`,
+        );
+      },
+      error: (err) => {
+        this.savingCorte.set(false);
+        this.alerts.error('No se pudo guardar el día de corte', err?.error?.error || 'El valor debe estar entre 1 y 28.');
+      },
     });
   }
 

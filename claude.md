@@ -52,11 +52,11 @@ pre-cuentas y los reportes/configuraciones avanzadas ya se pueden construir.
 | M5 Asignación y reprogramación (ASG-01..07) | ✅ backend + frontend |
 | M6 Soportes por enlace público (SUP-01..05) | ✅ backend + frontend |
 | M7 Verificación y cierre (VER-01..05) | ✅ backend + frontend |
-| M8 Encuesta de satisfacción (ENC-01..07) | ✅ backend + frontend · falta la UI para editar los enunciados (viven en `sst.configuracion → encuesta_preguntas`) |
-| M9 Pre-cuenta de cobro (PRE-01..09) | ✅ backend + frontend · el cierre de mes se dispara a mano (no hay cron en el despliegue) |
+| M8 Encuesta de satisfacción (ENC-01..07) | ✅ backend + frontend · ENC-03 se edita en Configuración → Formatos y encuesta |
+| M9 Pre-cuenta de cobro (PRE-01..09) | ✅ backend + frontend · el cierre de mes se dispara a mano (no hay cron); CFG-05 avisa de los periodos vencidos |
 | M10 Reportes (RPT-01..07) | ✅ backend + frontend · dashboard, buscador NL, vencidas, satisfacción, horas, cartera y exportación a Excel |
 | M11 Notificaciones (NOT-01..04) | ✅ correos + campanita interna |
-| M12 Configuración (CFG-01) | ✅ · **CFG-02/03/05 pendientes** |
+| M12 Configuración (CFG-01..05) | ✅ completo · CFG-02 = maestro `sst.empresas` + `/empresas` · CFG-03 = plantillas editables (texto impreso, no archivo base) · CFG-05 = día de corte que avisa, no automatiza |
 
 Antes de dar un módulo por cerrado, verificar requisito por requisito contra
 `requerimientos-completos.txt`.
@@ -93,7 +93,7 @@ jdd_consultores_app/          ← raíz del monorepo (NO es un repo git)
 Antes de escribir un endpoint, **revisar si ya existe** en
 `sst_ws/src/modules/*/*.routes.js`. Varias pantallas que parecen "a medias" no
 necesitan lógica nueva, solo cable. Endpoints ya montados en `sst_ws/src/routes/index.js`:
-`/auth`, `/professionals`, `/imports`, `/drafts`, `/orders`, `/files`,
+`/auth`, `/professionals`, `/empresas`, `/imports`, `/drafts`, `/orders`, `/files`,
 `/notifications`, `/reports`, `/permisos`, `/public` (sin auth) y los catálogos.
 
 ---
@@ -107,8 +107,9 @@ necesitan lógica nueva, solo cable. Endpoints ya montados en `sst_ws/src/routes
 | `/importar` | `pages/import` | Carga de Excel/PDF, extracción IA, revisión del lote y confirmación (M2). |
 | `/ordenes` (legado: `/validacion`) | `pages/validation` | **Vista central.** Bandeja, split-view de validación, detalle, cambio de estado + historial (M3), asignación y reprogramación (M5), visor de soportes y aceptar/rechazar (M7). Acepta `?os=<id>` para abrir una OS concreta (llegada desde la campanita). |
 | `/informes` | `pages/reports` | Centro de reportes (M10), seis pestañas: Órdenes, Profesionales, Satisfacción (ENC-05 + RPT-04), Vencidas (RPT-03), Horas (RPT-05) y Cartera (RPT-06). Todas exportan a Excel y PDF (RPT-07). |
+| `/empresas` | `pages/companies` | **CFG-02.** Maestro de empresas clientes: listado con conteo de órdenes, ficha con sus últimas OS, alta/edición y fusión de duplicados. La OS conserva su texto original (`empresa_nombre`/`nit_nic`) y se enlaza por `empresa_id`; al validar un borrador la empresa se resuelve (o se crea) sola. |
 | `/profesionales` | `pages/professionals` | CRUD de asesores y su agenda de ocupaciones (CFG-01). |
-| `/configuracion` | `pages/settings` | Perfil, umbral de confianza, usuarios internos y matriz de Roles y permisos. |
+| `/configuracion` | `pages/settings` | Perfil · **Formatos y encuesta** (CFG-03: plantillas de PDF con su encabezado y nota al pie; ENC-03: enunciados de la encuesta) · umbral de confianza, usuarios internos y matriz de Roles y permisos. |
 | `/soporte` | `pages/portal` | **Pública, sin login.** El profesional sube los soportes firmados con el token del correo (M6). |
 | `/encuesta` | `pages/survey` | **Pública, sin login.** Encuesta de satisfacción del cliente; el token llega en el correo que se dispara al pasar la OS a EJECUTADA (M8). |
 | `/precuentas` | `pages/billing` | Cierre mensual de cobro: generar, revisar el detalle valorado, enviar al profesional, seguir su respuesta y exportar las aceptadas. Segunda pestaña: tarifas por actividad (PRE-02). Visible para admin, contador y auditor. |
