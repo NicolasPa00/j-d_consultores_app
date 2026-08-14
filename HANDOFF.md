@@ -281,6 +281,19 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
    campo END`— o nunca se podrán borrar. Y ojo con `CASE` sobre un literal
    casteado (`'sin-cambio'::uuid`): Postgres puede plegarlo en tiempo de plan y
    reventar aunque esa rama no se tome.
+10. **Trabajo terminado pero sin commitear es trabajo perdido para el otro equipo.**
+    CFG-02, CFG-03/ENC-03 y CFG-05 estuvieron dos semanas completos, migrados en
+    Neon y funcionando, pero solo en el árbol de trabajo de una máquina: el
+    último commit de `jdd_consultores_app` era el de mover `docs/`. Como la BD
+    Neon **sí** es compartida, el otro equipo veía las tablas nuevas sin el código
+    que las usa, que es el peor de los dos estados. Al cerrar una tarea,
+    commitear los **dos** repos.
+11. Matar el backend temporal de `:4010` **no basta con parar el `npm run dev`**:
+    npm deja vivo el proceso hijo de node, que sigue escuchando el puerto. Hay
+    que matarlo por puerto
+    (`Get-NetTCPConnection -LocalPort 4010 -State Listen` → `Stop-Process -Id`).
+    Ojo con el punto 2: hacerlo con `:4000` y `:4001` levantados se los lleva por
+    delante.
 
 ---
 
