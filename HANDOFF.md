@@ -1,10 +1,12 @@
 # HANDOFF — JD&D IA-Core
 
 > **Estado del proyecto para retomar el trabajo en cualquier equipo.**
-> Este archivo vive dentro del repo del frontend a propósito: es de los pocos que
-> viaja por git (la carpeta raíz del monorepo **no** es un repo).
+> Este archivo vive dentro del repo del frontend a propósito, igual que `CLAUDE.md`,
+> `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
+> que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 28-jul-2026 · tras cerrar M8, M9 y RPT-03..07.
+> **Última actualización:** 13-ago-2026 · `docs/` y las skills entraron a git.
+> Antes: 28-jul-2026, tras cerrar M8, M9 y RPT-03..07.
 
 Para arrancar una sesión nueva basta con: *"Proyecto JD&D IA-Core: lee
 `jdd_consultores_app/HANDOFF.md` y continúa con lo pendiente."*
@@ -17,10 +19,17 @@ Para arrancar una sesión nueva basta con: *"Proyecto JD&D IA-Core: lee
 |---|---|---|
 | `jdd_consultores_app/HANDOFF.md` (este archivo) | ✅ sí | **Sí — fuente de verdad del estado** |
 | `jdd_consultores_app/CLAUDE.md` | ✅ sí | Sí (estado por módulo y convenciones) |
-| `docs/requerimientos-completos.txt` | ❌ no | Sí — **FRS v1.0, el alcance contratado** |
-| `docs/req_fase_1.txt` | ❌ no | **No** — era el recorte de la primera entrega |
-| `.claude/skills/*` | ❌ no | ⚠️ **Sospechar**: en equipos no sincronizados todavía dicen *"exclusivamente FASE 1, prohibido M8/M9/RPT-03..07/CFG-02..05"*. Eso ya no aplica; corregirlas en vez de obedecerlas. |
-| `docs/02-frs-detallado.md` | ❌ no | Mismo sistema, pero con **otra numeración de módulos**. Ante duda mandan los `.txt`. |
+| `jdd_consultores_app/.claude/skills/*` | ✅ sí | Sí — revisadas y alineadas con este archivo el 13-ago-2026 |
+| `jdd_consultores_app/docs/requerimientos-completos.txt` | ✅ sí | Sí — **FRS v1.0, el alcance contratado** |
+| `jdd_consultores_app/docs/req_fase_1.txt` | ✅ sí | **No** — era el recorte de la primera entrega. Se conserva solo como registro histórico. |
+| `jdd_consultores_app/docs/02-frs-detallado.md` | ✅ sí | Mismo sistema, pero con **otra numeración de módulos**. Ante duda mandan los `.txt`. |
+| `jdd_consultores_app/docs/{Ordenes,BasesDatos}Ejemplo/` | ❌ no (`.gitignore`) | Documentos **reales** de clientes; se pasan a mano entre equipos (ver §2). |
+
+**Desde el 13-ago-2026 ya no hay documentación de proyecto fuera de git.** `docs/` y
+`.claude/skills/` colgaban de la raíz del monorepo, que no es un repo, así que cada
+máquina tenía su copia y divergían: las skills llegaron a contradecir a este archivo
+durante semanas. Ahora ambas viven dentro de `jdd_consultores_app/` y un `git pull`
+las sincroniza. Las rutas de este archivo son relativas a la raíz del monorepo.
 
 La Fase 1 se entregó: la demo se presentó y **el cliente aprobó continuar el
 27-jul-2026**. Estamos en Fase 2 y el alcance vigente son los 12 módulos del FRS.
@@ -37,8 +46,8 @@ Dos repos git independientes (la raíz del monorepo no lo es):
 | `jdd_consultores_app/` | `github.com/NicolasPa00/j-d_consultores_app.git` | `main` |
 
 1. `git pull` en ambos. Verifica que existan `sst_ws/src/modules/billing/`,
-   `sst_ws/src/modules/surveys/` y `jdd_consultores_app/src/app/pages/billing/`;
-   si no están, el pull no trajo lo último.
+   `sst_ws/src/modules/surveys/`, `jdd_consultores_app/src/app/pages/billing/` y
+   `jdd_consultores_app/docs/`; si no están, el pull no trajo lo último.
 2. `npm install` en ambos.
 3. **`sst_ws/.env` está en `.gitignore`**: cada equipo necesita el suyo (hay
    `.env.example`). Mínimo: `DATABASE_URL` (Neon), `JWT_SECRET`, `OPENAI_API_KEY`
@@ -48,6 +57,15 @@ Dos repos git independientes (la raíz del monorepo no lo es):
    pero normalmente no hace falta.
 5. Levantar: `cd sst_ws && npm run dev` (**:4000**) y
    `cd jdd_consultores_app && npm start` (**:4001**).
+6. **Los documentos de ejemplo NO vienen por git.** `docs/OrdenesEjemplo/` (PDFs de
+   las tres ARL, ~23 MB) y `docs/BasesDatosEjemplo/` (los Excel de programación)
+   están en `.gitignore` porque son documentos reales de clientes: razones sociales,
+   NIT y hasta la seguridad social de una persona. No sirven para desarrollar, solo
+   para probar la extracción con archivos de verdad. Si los necesitas, cópialos a
+   mano desde otro equipo a `jdd_consultores_app/docs/`; **no los commitees**.
+7. Abre Claude Code desde la **raíz del monorepo**, no desde una de las dos carpetas:
+   así ve los dos proyectos y carga las skills de `jdd_consultores_app/.claude/skills/`
+   (aparecen prefijadas, `jdd_consultores_app:jdd-context`).
 
 ---
 
@@ -97,8 +115,11 @@ línea en `sst.vw_kpis_dashboard` más el rótulo, si se quiere ajustar.
 ```
 jdd_consultores_app/          ← raíz del monorepo (sin git)
 ├── jdd_consultores_app/      ← FRONTEND Angular 21   · repo git · :4001
-├── sst_ws/                   ← BACKEND Node 20 + Express 5 · repo git · :4000
-└── docs/                     ← FRS y documentación (sin git)
+│   ├── HANDOFF.md            ← este archivo
+│   ├── CLAUDE.md
+│   ├── .claude/skills/       ← jdd-context · jdd-backend-fase1 · jdd-ia-pipeline
+│   └── docs/                 ← FRS y documentación (los ejemplos, en .gitignore)
+└── sst_ws/                   ← BACKEND Node 20 + Express 5 · repo git · :4000
 ```
 
 - **Frontend:** Angular 21 standalone, **Signals**, `OnPush` en todos los
@@ -171,6 +192,12 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
    prueba reintenten.
 4. Las notificaciones referencian la OS/pre-cuenta por JSON (`datos->>'orden_id'`),
    **sin FK**: al borrar datos de prueba hay que limpiarlas a mano.
+5. **Documentación fuera de git = documentación que miente.** Hasta el 13-ago-2026
+   `docs/` y `.claude/skills/` vivían en la raíz del monorepo, que no es un repo:
+   cada equipo tenía su copia, y las skills siguieron ordenando *"exclusivamente
+   Fase 1, prohibido M8/M9/RPT-03..07"* mucho después de que esos módulos estuvieran
+   construidos. Si vuelve a aparecer documentación nueva, **que nazca dentro de uno
+   de los dos repos**.
 
 ---
 
@@ -186,6 +213,8 @@ trabajo por terminado.** Concretamente:
    sección 4.
 4. Si costó tiempo entender algo que no era obvio, agregarlo a la sección 6:
    ese registro es la parte más valiosa del archivo.
-5. Mantener sincronizado `CLAUDE.md` (tabla de estado y mapa de pantallas).
+5. Mantener sincronizado `CLAUDE.md` (tabla de estado y mapa de pantallas) y las
+   skills de `.claude/skills/`, que ahora viajan por git: si una contradice a este
+   archivo, la skill está mal. Las tres declaran su fecha de última revisión.
 
 Y **commitear**: si no se commitea, no llega al otro equipo.

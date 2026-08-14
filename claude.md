@@ -12,10 +12,10 @@ humana → asignación → soportes → verificación → cierre → satisfacci�
 ## 📌 Regla permanente: mantener el HANDOFF
 
 **`HANDOFF.md` (junto a este archivo) es el estado vivo del proyecto** y es lo
-primero que hay que leer al retomar el trabajo, sobre todo desde otro equipo: la
-carpeta raíz del monorepo no es un repo git, así que `docs/` y `.claude/skills/`
-pueden estar desactualizados en cualquier máquina, pero `HANDOFF.md` y este archivo
-viajan con el código.
+primero que hay que leer al retomar el trabajo, sobre todo desde otro equipo.
+Desde el **13-ago-2026** `docs/` y `.claude/skills/` también viven dentro de este
+repo, así que ya no se desincronizan entre máquinas: todo lo que importa viaja con
+el código.
 
 **Al terminar cualquier tarea o módulo, actualizar `HANDOFF.md` antes de darlo por
 cerrado**: la fecha del encabezado, la tabla de estado por módulo, lo que quedó
@@ -27,10 +27,16 @@ Si no se commitea, no llega al otro equipo.
 
 ## 1. Alcance vigente (LEER ANTES DE CODIFICAR)
 
-El documento que manda es **`../docs/requerimientos-completos.txt`** (FRS v1.0, los
-12 módulos). `../docs/req_fase_1.txt` era solo el recorte de la primera entrega y
-**ya no aplica**. `../docs/02-frs-detallado.md` describe el mismo sistema en
+El documento que manda es **`docs/requerimientos-completos.txt`** (FRS v1.0, los
+12 módulos). `docs/req_fase_1.txt` era solo el recorte de la primera entrega y
+**ya no aplica**. `docs/02-frs-detallado.md` describe el mismo sistema en
 markdown pero con OTRA numeración de módulos; ante duda mandan los `.txt`.
+
+> 📦 **`docs/` y `.claude/skills/` viven dentro de este repo desde el 13-ago-2026.**
+> Antes colgaban de la raíz del monorepo, que no es un repo git, así que cada equipo
+> tenía su propia copia y se desincronizaban. Ahora viajan con el código. Las dos
+> carpetas de ejemplos (`docs/OrdenesEjemplo/`, `docs/BasesDatosEjemplo/`) siguen
+> **fuera de git** a propósito: son documentos reales de clientes. Ver `HANDOFF.md` §2.
 
 Ya **no** existe la antigua "regla de oro" de Fase 1: los módulos de encuestas,
 pre-cuentas y los reportes/configuraciones avanzadas ya se pueden construir.
@@ -62,10 +68,12 @@ Antes de dar un módulo por cerrado, verificar requisito por requisito contra
 Monorepo con dos proyectos hermanos:
 
 ```
-jdd_consultores_app/          ← raíz del repo
-├── jdd_consultores_app/      ← FRONTEND Angular 21  (este CLAUDE.md)
-├── sst_ws/                   ← BACKEND Node 20 + Express 5
-└── docs/                     ← FRS, negocio, datos, pipeline IA
+jdd_consultores_app/          ← raíz del monorepo (NO es un repo git)
+├── jdd_consultores_app/      ← FRONTEND Angular 21 · repo git (este CLAUDE.md)
+│   ├── .claude/skills/       ← skills del proyecto (viajan por git)
+│   └── docs/                 ← FRS, negocio, datos, pipeline IA (viaja por git;
+│                                los ejemplos con datos reales, no)
+└── sst_ws/                   ← BACKEND Node 20 + Express 5 · repo git
 ```
 
 - **Frontend:** Angular 21 standalone + **Signals** + `ChangeDetectionStrategy.OnPush`

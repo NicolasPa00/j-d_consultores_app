@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>FRS - Sistema de Gestión de OS con IA - JD&D Consultores</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+            background-color: #f0f2f5;
+            padding: 40px 20px;
+            line-height: 1.5;
+            color: #1a2a3a;
+        }
+        .document {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            padding: 40px 50px;
+        }
+        h1 {
+            color: #0A2B4E;
+            font-size: 26px;
+            border-left: 5px solid #0A2B4E;
+            padding-left: 20px;
+            margin-bottom: 10px;
+        }
+        .subtitulo {
+            color: #2c3e6d;
+            font-size: 16px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e4e8;
+            padding-bottom: 15px;
+        }
+        h2 {
+            color: #0A2B4E;
+            font-size: 20px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            background: #eef2f7;
+            padding: 8px 15px;
+            border-radius: 6px;
+        }
+        h3 {
+            color: #1e3a5f;
+            font-size: 18px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            padding-left: 10px;
+            border-left: 3px solid #0A2B4E;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th {
+            background-color: #0A2B4E;
+            color: white;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        .badge {
+            background: #0A2B4E;
+            color: white;
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        .fase-box {
+            background: #e6f0fa;
+            border-left: 4px solid #0A2B4E;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .resaltado {
+            background: #fff8e1;
+            padding: 12px;
+            border-left: 4px solid #ffc107;
+            margin: 15px 0;
+        }
+        ul, ol {
+            margin: 10px 0 15px 25px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        hr {
+            margin: 25px 0;
+            border: none;
+            border-top: 1px solid #ddd;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e4e8;
+            font-size: 12px;
+            text-align: center;
+            color: #6c757d;
+        }
+        .page-break {
+            page-break-before: always;
+        }
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+            .document {
+                box-shadow: none;
+                padding: 20px;
+                max-width: 100%;
+            }
+            h2 {
+                break-after: avoid;
+            }
+            table {
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="document">
+
+    <!-- TÍTULO PRINCIPAL -->
+    <h1>ESPECIFICACIÓN DE REQUERIMIENTOS FUNCIONALES (FRS)</h1>
+    <div class="subtitulo">
+        <strong>Sistema de Gestión de Órdenes de Servicio con IA – JD&D Consultores</strong><br>
+        Versión 2.0 | Fecha: Mayo 2026 | Cliente: JD&D Consultores en Sistemas de Gestión
+    </div>
+
+    <!-- TABLA DE PROPIEDADES -->
+    <table style="width: 60%; margin-bottom: 30px;">
+        <tr><th style="width: 40%;">Propiedad</th><th>Valor</th></tr>
+        <tr><td>Versión</td><td>2.0</td></tr>
+        <tr><td>Fecha</td><td>Mayo 2026</td></tr>
+        <tr><td>Cliente</td><td>JD&D Consultores en Sistemas de Gestión</td></tr>
+        <tr><td>Sistema</td><td>Plataforma interna de gestión de OS con inteligencia artificial integrada</td></tr>
+        <tr><td>Tipo de desarrollo</td><td>Web application (responsive: escritorio + móvil)</td></tr>
+    </table>
+
+    <!-- 1. ESTRATEGIA DE IMPLEMENTACIÓN -->
+    <h2>1. ESTRATEGIA DE IMPLEMENTACIÓN POR FASES</h2>
+    <table>
+        <tr><th>Fase</th><th>Enfoque</th><th>Duración estimada</th></tr>
+        <tr><td><strong>Fase 1 – IA Core</strong></td><td>Implementación de inteligencia artificial sobre gestión de archivos + sistema base mínimo funcional</td><td>5-6 semanas</td></tr>
+        <tr><td><strong>Fase 2 – Gestión completa</strong></td><td>Resto de funcionalidades del sistema original (estados, asignación, pre-cuentas, encuestas, notificaciones, reportes avanzados)</td><td>4-6 semanas (posterior, fuera del alcance de este documento)</td></tr>
+    </table>
+    <p><strong>El presente documento especifica ÚNICAMENTE la Fase 1.</strong></p>
+
+    <!-- 2. ALCANCE -->
+    <h2>2. ALCANCE DE LA FASE 1 (IA CORE)</h2>
+    <div class="fase-box">
+        <strong>✓ Qué SÍ está incluido:</strong>
+        <ul>
+            <li>Sistema de autenticación y roles (mínimo: Administrador, Profesional)</li>
+            <li>Importación de archivos (Excel desde ARL Bolívar, PDF desde AXA y Colmena)</li>
+            <li><strong>INTELIGENCIA ARTIFICIAL aplicada a archivos:</strong> clasificación automática, extracción de campos clave, generación de resúmenes e informes</li>
+            <li>Almacenamiento seguro de archivos en la nube</li>
+            <li>Panel básico para visualizar resultados de IA</li>
+            <li>CRUD mínimo de profesionales</li>
+            <li>Reportes básicos (exportación de datos extraídos por IA)</li>
+        </ul>
+    </div>
+    <div class="fase-box" style="background:#fef2e8; border-left-color:#d9534f;">
+        <strong>✗ Qué NO está incluido en esta fase:</strong>
+        <ul>
+            <li>Flujo completo de estados (PROGRAMADA, EN VERIFICACIÓN, EJECUTADA, CANCELADA)</li>
+            <li>Asignación de órdenes a profesionales, formatos auto-diligenciados, link público para carga de soportes</li>
+            <li>Pre-cuentas de cobro, encuestas de satisfacción, notificaciones avanzadas, dashboards complejos</li>
+        </ul>
+        <em>Nota: Estos módulos están especificados en la versión 1.0 del FRS y serán implementados en la Fase 2.</em>
+    </div>
+
+    <!-- 3. ROLES -->
+    <h2>3. ROLES DE USUARIO (FASE 1)</h2>
+    <table>
+        <tr><th>Rol</th><th>Descripción</th><th>Usuario típico</th></tr>
+        <tr><td><strong>Administrador</strong></td><td>Gestión completa: importar archivos, ejecutar procesos de IA, revisar resultados, gestionar profesionales, ver reportes</td><td>Asistente administrativa</td></tr>
+        <tr><td><strong>Profesional</strong></td><td>Ver archivos procesados, consultar órdenes extraídas, visualizar informes generados por IA</td><td>Asesores de campo (solo consulta)</td></tr>
+    </table>
+    <p><em>Nota: Los roles Contador y Auditor se implementarán en la Fase 2.</em></p>
+
+    <!-- 4. REQUERIMIENTOS FUNCIONALES -->
+    <h2>4. REQUERIMIENTOS FUNCIONALES DETALLADOS – FASE 1</h2>
+
+    <!-- Módulo 1 -->
+    <h3>MÓDULO 1: AUTENTICACIÓN Y USUARIOS (BÁSICO)</h3>
+    <table>
+        <tr><th>ID</th><th>Requerimiento</th><th>Prioridad</th></tr>
+        <tr><td>AUTH-01</td><td>Inicio de sesión con usuario y contraseña</td><td>Alta</td></tr>
+        <tr><td>AUTH-02</td><td>Pantalla de login con logo corporativo (azul profundo #0A2B4E)</td><td>Alta</td></tr>
+        <tr><td>AUTH-03</td><td>Roles diferenciados (Admin, Profesional)</td><td>Alta</td></tr>
+        <tr><td>AUTH-04</td><td>Perfil de usuario: nombre, correo, teléfono</td><td>Alta</td></tr>
+        <tr><td>AUTH-05</td><td>Recuperación de contraseña por correo</td><td>Baja (Fase 2)</td></tr>
+    </table>
+
+    <!-- Módulo 2 -->
+    <h3>MÓDULO 2: IMPORTACIÓN DE ARCHIVOS</h3>
+    <table>
+        <tr><th>ID</th><th>Requerimiento</th><th>Prioridad</th></tr>
+        <tr><td>IMP-01</td><td>Importar archivos Excel (formato SIPAB ARL Bolívar)</td><td>Alta</td></tr>
+        <tr><td>IMP-02</td><td>Importar archivos PDF (ARL AXA Colpatria y Colmena)</td><td>Alta</td></tr>
+        <tr><td>IMP-03</td><td>Importación por lote (múltiples archivos simultáneamente)</td><td>Alta</td></tr>
+        <tr><td>IMP-04</td><td>Vista previa de archivos antes de procesar</td><td>Media</td></tr>
+        <tr><td>IMP-05</td><td>Almacenar archivo original en cloud storage</td><td>Alta</td></tr>
+        <tr><td>IMP-06</td><td>Registrar metadata del archivo: nombre, fecha importación, usuario, tamaño, tipo</td><td>Alta</td></tr>
+        <tr><td>IMP-07</td><td>No permitir duplicados por nombre y hash de archivo</td><td>Media</td></tr>
+    </table>
+
+    <!-- Módulo 3 IA Clasificación -->
+    <h3>MÓDULO 3: INTELIGENCIA ARTIFICIAL – CLASIFICACIÓN DE DOCUMENTOS</h3>
+    <table>
+        <tr><th>ID</th><th>Requerimiento</th><th>Prioridad</th></tr>
+        <tr><td>IA-01</td><td>Identificar automáticamente la ARL de origen (Bolívar, AXA Colpatria, Colmena) analizando el contenido del documento</td><td>Alta</td></tr>
+        <tr><td>IA-02</td><td>Clasificar el tipo de documento (Acta de visita, Listado de asistencia, Ficha de gestión, Orden de servicio, Informe técnico, Otro)</td><td>Alta</td></tr>
+        <tr><td>IA-03</td><td>Mostrar al usuario la clasificación sugerida con nivel de confianza (ej: "94% - ARL Bolívar")</td><td>Alta</td></tr>
+        <tr><td>IA-04</td><td>El administrador debe poder corregir manualmente la clasificación</td><td>Alta</td></tr>
+        <tr><td>IA-05</td><td>El sistema debe aprender de las correcciones del usuario (retroalimentación para mejorar el modelo)</td><td>Alta</td></tr>
+        <tr><td>IA-06</td><td>Procesar documentos en cola y notificar cuando termine</td><td>Media</td></tr>
+        <tr><td>IA-07</td><td>Manejar documentos escaneados (con y sin OCR)</td><td>Alta</td></tr>
+    </table>
+
+    <!-- Módulo 4 IA Extracción -->
+    <h3>MÓDULO 4: INTELIGENCIA ARTIFICIAL – EXTRACCIÓN DE DATOS</h3>
+    <table>
+        <tr><th>ID</th><th>Requerimiento</th><th>Prioridad</th></tr>
+        <tr><td>IA-08</td><td>Extraer automáticamente: código cronograma, secuencia, NIT/NIC, nombre de empresa, actividad, horas asignadas, contacto SST (nombre, teléfono, correo), descripción</td><td>Alta</td></tr>
+        <tr><td>IA-09</td><td>Mostrar los datos extraídos en una interfaz de validación</td><td>Alta</td></tr>
+        <tr><td>IA-10</td><td>El administrador debe poder editar/corregir cualquier campo extraído antes de guardar</td><td>Alta</td></tr>
+        <tr><td>IA-11</td><td>Mostrar nivel de confianza por cada campo extraído (ej: "NIT: 900.123.456 - 89%")</td><td>Alta</td></tr>
+        <tr><td>IA-12</td><td>Los datos validados deben guardarse como una "Orden de Servicio" estructurada</td><td>Alta</td></tr>
+        <tr><td>IA-13</td><td>Soportar extracción desde PDF con tablas complejas y desde Excel estructurado</td><td>Alta</td></tr>
+        <tr><td>IA-14</td><td>Permitir re-procesar un documento con IA si se corrigió la clasificación</td><td>Media</td></tr>
+        <tr><td>IA-15</td><td>Registrar qué versión del modelo IA procesó cada documento (auditoría)</td><td>Media</td></tr>
+    </table>
+
+    <!-- Módulo 5 IA Informes -->
+    <h3>MÓDULO 5: INTELIGENCIA ARTIFICIAL – GENERACIÓN DE INFORMES Y RESÚMENES</h3>
+    <table>
+        <tr><th>ID</th><th>Requerimiento</th><th>Prioridad</th></tr>
+        <tr><td>IA-16</td><td>Generar automáticamente un <strong>resumen ejecutivo</strong> de cada orden de servicio (máximo 3 párrafos) usando IA</td><td>Alta</td></tr>
+        <tr><td>IA-17</td><td>El resumen debe incluir: empresa, actividad principal, horas, alcance, requisitos especiales detectados</td><td>Alta</td></tr>
+        <tr><td>IA-18</td><td>El administrador debe poder regenerar el resumen con un botón</td><td>Media</td></tr>
+        <tr><td>IA-19</td><td>Generar un <strong>informe consolidado por ARL</strong> al cierre de cada semana, identificando patrones y tendencias</td><td>Alta</td></tr>
+        <tr><td>IA-20</td><td>El informe por ARL debe incluir: número de órdenes, tipos de actividad más comunes, empresas recurrentes, observaciones frecuentes</td><td>Alta</td></tr>
+        <tr><td>IA-21</td><td>Generar un <strong>informe de productividad</strong> que compare órdenes importadas vs. órdenes procesadas completamente</td><td>Media</td></tr>
+        <tr><td>IA-22</td><td>Todos los informes generados por IA deben ser descargables en PDF y exportables a Excel</td><td>Alta</td></tr>
+        <tr><td>IA-23</td><td>El usuario debe poder solicitar un informe personalizado escribiendo una consulta en lenguaje natural (ej: "muéstrame todas las órdenes de Bolívar de la última semana con más de 4 horas")</td><td>Alta</td></tr>
+        <tr><td>IA-24</td><td>La consulta en lenguaje natural debe convertirse a filtros estructurados automáticamente</td><td>Alta</td></tr>
+        <tr><td>IA-25</td><td>Ofrecer "insights automáticos" destacando anomalías (ej: "Se detectaron 5 órdenes con horas inusualmente altas")</td><td>Media</td></tr>
+    </table>
+
+    <!-- Módulo 6 Gestión básica -->
+    <h3>MÓDULO 6: GESTIÓN DE ÓRDENES (VERSIÓN BÁSICA)</h3>
+    <table>
+        <tr><th>ID</th><th>Requerimiento</th><th>Prioridad</th></tr>
+        <tr><td>ORD-01</td><td>Las órdenes extraídas por IA se almacenan con estado "IMPORTADA" (único estado en Fase 1)</td><td>Alta</td></tr>
+        <tr><td>ORD-02</td><td>Listar órdenes con filtros por ARL, empresa, fechas, profesional asignado</td><td>Alta</td></tr>
+        <tr><td>ORD-03</td><td>Ver detalle de orden con: datos extraídos, resumen IA, archivo original</td><td>Alta</td></tr>
+        <tr><td>ORD-04</td><td>Asignar manualmente un profesional a una orden (campo texto libre o selección del CRUD básico)</td><td>Media</td></tr>
+        <tr><td>ORD-05</td><td>Mostrar órdenes con datos incompletos según IA (baja confianza)</td><td>Alta</td></tr>
+        <tr><td>ORD-06</td><td>Eliminar órdenes (soft delete o hard delete según política)</td><td>Media</td></tr>
+    </table>
+
+    <!-- Módulo 7 Almacenamiento -->
+    <h3>MÓDULO 7: ALMACENAMIENTO DE ARCHIVOS</h3>
+    <table>
+        <tr><th>ID</th><th>Requerimiento</th><th>Prioridad</th></tr>
+        <tr><td>STO-01</td><td>Archivos originales almacenados en cloud storage (AWS S3, Google Cloud Storage o similar)</td><td>Alta</td></tr>
+        <tr><td>STO-02</td><td>Mantener relación archivo original → orden de servicio → datos extraídos → resúmenes generados</td><td>Alta</td></tr>
+        <tr><td>STO-03</td><td>El administrador debe poder descargar el archivo original desde la interfaz</td><td>Alta</td></tr>
+        <tr><td>STO-04</td><td>Visualizar PDF y Excel en el navegador (sin descargar)</td><td>Media</td></tr>
+        <tr><td>STO-05</td><td>Organizar archivos en carpetas virtuales por ARL y año/mes</td><td>Baja</td></tr>
+    </table>
+
+    <!-- Módulo 8 Reportes -->
+    <h3>MÓDULO 8: REPORTES Y DASHBOARDS BÁSICOS</h3>
+    <table>
+        <tr><th>ID</th><th>Requerimiento</th><th>Prioridad</th></tr>
+        <tr><td>RPT-01</td><td>Dashboard principal con total órdenes importadas, procesadas por IA, baja confianza, por ARL</td><td>Alta</td></tr>
+        <tr><td>RPT-02</td><td>Tabla de órdenes recientes con filtros básicos</td><td>Alta</td></tr>
+        <tr><td>RPT-03</td><td>Exportar listado de órdenes a Excel (con todos los datos extraídos por IA)</td><td>Alta</td></tr>
+        <tr><td>RPT-04</td><td>Reporte de "confianza de IA": órdenes con menos del 80% de confianza en algún campo</td><td>Alta</td></tr>
+        <tr><td>RPT-05</td><td>Dashboard de actividad de IA: documentos procesados, tiempo promedio, aciertos vs correcciones manuales</td><td>Media</td></tr>
+    </table>
+
+    <!-- Módulo 9 Configuración -->
+    <h3>MÓDULO 9: CONFIGURACIÓN BÁSICA</h3>
+    <table>
+        <tr><th>ID</th><th>Requerimiento</th><th>Prioridad</th></tr>
+        <tr><td>CFG-01</td><td>CRUD básico de profesionales (nombre, correo, teléfono, estado activo/inactivo)</td><td>Alta</td></tr>
+        <tr><td>CFG-02</td><td>Configuración de parámetros de IA: umbral de confianza mínimo (default 70%)</td><td>Media</td></tr>
+        <tr><td>CFG-03</td><td>Configuración de programación de informes automáticos</td><td>Baja</td></tr>
+        <tr><td>CFG-04</td><td>Logs del sistema para depuración de procesos IA</td><td>Media</td></tr>
+    </table>
+
+    <!-- 5. REQUERIMIENTOS NO FUNCIONALES -->
+    <h2>5. REQUERIMIENTOS NO FUNCIONALES (FASE 1)</h2>
+    <table>
+        <tr><th>ID</th><th>Requerimiento</th><th>Descripción</th></tr>
+        <tr><td>NF-01</td><td>Plataforma</td><td>Web responsive (escritorio + móvil)</td></tr>
+        <tr><td>NF-02</td><td>Base de datos</td><td>PostgreSQL (recomendado) o MySQL</td></tr>
+        <tr><td>NF-03</td><td>Seguridad</td><td>Contraseñas hasheadas, JWT, HTTPS</td></tr>
+        <tr><td>NF-04</td><td>Almacenamiento archivos</td><td>Cloud storage (AWS S3 / Google Cloud Storage / Linode / DigitalOcean Spaces)</td></tr>
+        <tr><td>NF-05</td><td>Modelo de IA</td><td>API externa (OpenAI, Anthropic, Google Gemini) o modelo local open-source</td></tr>
+        <tr><td>NF-06</td><td>Privacidad de datos</td><td>Los documentos de clientes no deben usarse para entrenar modelos de terceros sin autorización</td></tr>
+        <tr><td>NF-07</td><td>Rendimiento</td><td>Procesamiento IA de un documento ≤ 15 segundos</td></tr>
+        <tr><td>NF-08</td><td>Escalabilidad</td><td>Soporte inicial para 5.000 documentos</td></tr>
+        <tr><td>NF-09</td><td>Backup</td><td>Respaldos automáticos diarios de BD y archivos</td></tr>
+    </table>
+
+    <!-- 6. MODELO IA -->
+    <h2>6. MODELO DE IA – ESPECIFICACIONES TÉCNICAS</h2>
+    <table>
+        <tr><th style="width: 35%;">Aspecto</th><th>Especificación</th></tr>
+        <tr><td><strong>Tareas</strong></td><td>Clasificación de documentos, extracción de campos, generación de resúmenes, consultas lenguaje natural, insights automáticos</td></tr>
+        <tr><td><strong>Arquitectura sugerida</strong></td><td>Pipeline: OCR (si documento es escaneado) → LLM para extracción estructurada → LLM para resumen → Base vectorial (opcional)</td></tr>
+        <tr><td><strong>Proveedor recomendado</strong></td><td>OpenAI GPT-4o o Gemini 1.5 Pro (costo-beneficio y facilidad de integración)</td></tr>
+        <tr><td><strong>Alternativa open-source</strong></td><td>Llama 3 o Mistral (requiere infraestructura adicional)</td></tr>
+        <tr><td><strong>Costo estimado IA por documento</strong></td><td>~COP 200-500 por documento procesado (OCR + LLM)</td></tr>
+    </table>
+
+    <!-- 7. CRITERIOS DE ACEPTACIÓN -->
+    <h2>7. CRITERIOS DE ACEPTACIÓN – FASE 1</h2>
+    <table>
+        <tr><th>#</th><th>Criterio</th></tr>
+        <tr><td>CA-01</td><td>El administrador puede importar un archivo Excel o PDF y el sistema muestra los datos extraídos por IA en menos de 30 segundos</td></tr>
+        <tr><td>CA-02</td><td>El sistema identifica correctamente la ARL de origen en al menos el 85% de los documentos de prueba</td></tr>
+        <tr><td>CA-03</td><td>El administrador puede corregir cualquier campo extraído y guardar la orden</td></tr>
+        <tr><td>CA-04</td><td>El sistema genera un resumen ejecutivo legible para cada orden procesada</td></tr>
+        <tr><td>CA-05</td><td>El usuario puede escribir "muéstrame órdenes de AXA de la semana pasada" y el sistema filtra correctamente</td></tr>
+        <tr><td>CA-06</td><td>El dashboard muestra las métricas básicas de órdenes procesadas</td></tr>
+        <tr><td>CA-07</td><td>El administrador puede exportar a Excel todas las órdenes con sus datos extraídos</td></tr>
+    </table>
+
+    <!-- 8. ENTREGABLES -->
+    <h2>8. ENTREGABLES ESPERADOS – FASE 1</h2>
+    <table>
+        <tr><th>#</th><th>Entregable</th><th>Formato</th></tr>
+        <tr><td>1</td><td>Repositorio de código (privado)</td><td>Git</td></tr>
+        <tr><td>2</td><td>Scripts de creación de base de datos</td><td>SQL</td></tr>
+        <tr><td>3</td><td>Documentación técnica (README, variables de entorno, configuración de APIs IA)</td><td>Markdown</td></tr>
+        <tr><td>4</td><td>Manual de usuario (enfocado en IA)</td><td>PDF</td></tr>
+        <tr><td>5</td><td>Sistema desplegado en entorno de producción</td><td>URL</td></tr>
+        <tr><td>6</td><td>Capacitación (énfasis en uso de IA)</td><td>Sesión virtual/presencial</td></tr>
+    </table>
+
+    <!-- 9. PRESUPUESTO -->
+    <h2>9. PRESUPUESTO Y CRONOGRAMA – FASE 1</h2>
+    <h3>9.1 Valor del proyecto (Fase 1)</h3>
+    <table style="width: 60%;">
+        <tr><th>Concepto</th><th>Valor (COP)</th></tr>
+        <tr><td>Desarrollo Fase 1 (IA Core + sistema base)</td><td><strong>$1.500.000</strong></td></tr>
+    </table>
+    <p><em>Nota: Este valor NO incluye costos de API de IA (OpenAI u otro proveedor), los cuales serán asumidos por JD&D Consultores directamente o se facturarán por consumo.</em></p>
+
+    <h3>9.2 Forma de pago</h3>
+    <table style="width: 80%;">
+        <tr><th>Hito</th><th>Porcentaje</th><th>Valor</th><th>Acumulado</th></tr>
+        <tr><td>Inicio del proyecto (firma y arranque)</td><td>100%</td><td>$1.500.000</td><td>$1.500.000</td></tr>
+        <!-- <tr><td>Entrega final (sistema en producción, capacitación, documentación)</td><td>50%</td><td>$1.500.000</td><td>$3.000.000</td></tr> -->
+    </table>
+
+    <h3>9.3 Tiempo estimado</h3>
+    <table style="width: 70%;">
+        <tr><th>Actividad</th><th>Duración</th></tr>
+        <tr><td>Configuración inicial + autenticación</td><td>1 semana</td></tr>
+        <tr><td>Importación de archivos + almacenamiento</td><td>1 semana</td></tr>
+        <tr><td>Integración de IA (clasificación + extracción)</td><td>2 semanas</td></tr>
+        <tr><td>Generación de resúmenes + informes IA</td><td>1 semana</td></tr>
+        <tr><td>Dashboard + reportes + validaciones</td><td>0.5 semana</td></tr>
+        <tr><td>Pruebas, ajustes, documentación, capacitación</td><td>0.5 semana</td></tr>
+        <tr><td><strong>TOTAL</strong></td><td><strong>6 semanas</strong></td></tr>
+    </table>
+
+    <!-- 10. RESPONSABILIDADES -->
+    <h2>10. RESPONSABILIDADES DE INFRAESTRUCTURA</h2>
+    <table>
+        <tr><th>Responsabilidad</th><th>Encargado</th></tr>
+        <tr><td>Dominio (ej: jdydconsultores.com.co)</td><td>JD&D Consultores</td></tr>
+        <tr><td>Hosting / VPS (aplicación web + BD)</td><td>JD&D Consultores</td></tr>
+        <tr><td>Cloud storage (archivos)</td><td>JD&D Consultores</td></tr>
+        <tr><td>API Key de OpenAI / Gemini (costo por consumo)</td><td>JD&D Consultores</td></tr>
+        <tr><td>Respaldo de base de datos y archivos</td><td>JD&D Consultores</td></tr>
+        <tr><td>Recomendación técnica y configuración inicial</td><td>Desarrollador</td></tr>
+    </table>
+
+    <!-- 11. RIESGOS -->
+    <h2>11. RIESGOS IDENTIFICADOS – FASE 1</h2>
+    <table>
+        <tr><th>Riesgo</th><th>Mitigación</th></tr>
+        <tr><td>Costos de API IA más altos de lo esperado</td><td>Implementar límites de consumo diario + modo ahorro (procesamiento nocturno)</td></tr>
+        <tr><td>Extracción imprecisa en algunos formatos</td><td>Interfaz de validación manual robusta + entrenamiento con feedback</td></tr>
+        <tr><td>Documentos escaneados de mala calidad</td><td>Usar OCR de respaldo (Tesseract) cuando el principal falle</td></tr>
+        <tr><td>Tiempos de procesamiento largos</td><td>Procesamiento asíncrono con cola (Redis / Bull) y notificación al usuario</td></tr>
+    </table>
+
+    <!-- 12. APROBACIONES -->
+    <h2>12. APROBACIONES</h2>
+    <table>
+        <tr><th>Cargo</th><th>Nombre</th><th>Firma</th><th>Fecha</th></tr>
+        <tr><td>Cliente / Gerencia</td><td></td><td></td><td></td></tr>
+        <tr><td>Desarrollador</td><td>Nicolás Pantoja / Juan David Vela</td><td></td><td></td></tr>
+        <tr><td>Auditor interno</td><td></td><td></td><td></td></tr>
+    </table>
+
+    <div class="footer">
+        Documento FRS - Fase 1 (IA Core) - Sistema JD&D Consultores<br>
+        Página 1 de 1
+    </div>
+
+</div>
+</body>
+</html>

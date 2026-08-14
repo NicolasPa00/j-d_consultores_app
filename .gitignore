@@ -42,3 +42,9 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Documentación: los ejemplos son documentos REALES de clientes (razones sociales,
+# NIT y hasta la seguridad social de una persona). La documentación escrita sí viaja;
+# estas dos carpetas se copian a mano entre equipos. Ver HANDOFF.md §2.
+/docs/OrdenesEjemplo/
+/docs/BasesDatosEjemplo/

@@ -1,0 +1,539 @@
+ESPECIFICACIÓN DE REQUERIMIENTOS FUNCIONALES (FRS)
+Sistema de Gestión de Órdenes de Servicio – JD&D Consultores en Sistemas de Gestión
+Versión
+1.0
+Fecha
+Mayo 2026
+Cliente
+JD&D Consultores en Sistemas de Gestión
+Sistema
+Plataforma interna de gestión de órdenes de servicio (OS)
+Tipo de desarrollo
+Web application (responsive: escritorio + móvil)
+
+ 
+1. ALCANCE DEL SISTEMA
+El sistema debe permitir a JD&D Consultores gestionar el ciclo de vida completo de las Órdenes de Servicio (OS) cargadas por las ARL (Bolívar, AXA Colpatria, Colmena), desde su importación manual hasta la pre-cuenta de cobro para los profesionales, pasando por asignación, generación de formatos, validación de soportes, encuestas de satisfacción y reportería.
+No está dentro del alcance:
+La automatización de la descarga desde las plataformas externas de las ARL (SIPAB, AXA Portal, Colmena Portal).
+La integración directa con plataformas de radicación como Imagic o Home (sigue siendo manual por ahora).
+La generación de facturación electrónica DIAN (Mireya lo hace aparte).
+
+2. ROLES DE USUARIO
+Rol
+Descripción
+Usuario típico
+Administrador
+Gestión completa: importar, asignar, cambiar estados, revisar soportes, generar pre-cuentas.
+Asistente administrativa
+Profesional
+Ver órdenes asignadas, descargar formatos, subir soportes firmados, aceptar/rechazar pre-cuenta de cobro.
+Asesores de campo
+Contador
+Ver órdenes ejecutadas, descargar reportes, validar pre-cuentas aceptadas.
+Contadora
+Auditor
+Ver estadísticas, reportes de satisfacción, órdenes vencidas, cartera.
+Gerencia / Auditoría
+
+ 
+3. REQUERIMIENTOS FUNCIONALES DETALLADOS
+MÓDULO 1: AUTENTICACIÓN Y USUARIOS 
+
+ID
+Requerimiento
+Prioridad
+AUTH-01
+El sistema debe permitir inicio de sesión con usuario y contraseña.
+Alta
+AUTH-02
+Debe mostrar pantalla de login con logo corporativo (azul profundo #0A2B4E).
+Alta
+AUTH-03
+Debe permitir recuperación de contraseña por correo electrónico.
+Media
+AUTH-04
+Debe tener roles diferenciados (Admin, Profesional, Contador, Auditor).
+Alta
+AUTH-05
+Cada usuario debe tener perfil con: nombre, correo, teléfono, especialidad (si es profesional).
+Alta
+
+
+
+MÓDULO 2: IMPORTACIÓN DE ÓRDENES DE SERVICIO
+
+ID
+Requerimiento
+Prioridad
+IMP-01
+El sistema debe permitir importar órdenes desde archivo Excel (formato SIPAB de ARL Bolívar).
+Alta
+IMP-02
+Debe permitir importar órdenes desde archivo PDF (ARL AXA Colpatria y Colmena).
+Alta
+IMP-03
+Durante la importación, el sistema debe mostrar una vista previa de los datos para validación y corrección manual (especialmente el campo "descripción" que a veces viene truncado).
+Alta
+IMP-04
+El usuario debe poder editar/corregir cualquier campo antes de guardar.
+Alta
+IMP-05
+Al guardar, el sistema debe asignar automáticamente el campo ARL (Bolívar, AXA o Colmena) según el archivo de origen.
+Alta
+IMP-06
+El sistema debe almacenar todos los campos relevantes de la OS: código cronograma, secuencia, NIT o NIC de la empresa, nombre de la empresa, actividad, horas asignadas, fecha de carga, contacto SST (nombre, teléfono, correo), descripción.
+Alta
+IMP-07
+Al importar, la OS debe quedar con estado SIN PROGRAMAR.
+Alta
+IMP-08
+No debe permitir duplicados: validar por combinación de ARL + cronograma + secuencia.
+Media
+IMP-09
+Debe mostrar un mensaje de éxito o error detallado al importar.
+Media
+
+ 
+MÓDULO 3: GESTIÓN DE ÓRDENES Y ESTADOS
+ 
+ID
+Requerimiento
+Prioridad
+EST-01
+El sistema debe manejar los siguientes estados de una OS: SIN PROGRAMAR, PROGRAMADA, EN VERIFICACIÓN, EJECUTADA, CANCELADA.
+Alta
+EST-02
+El administrador puede cambiar manualmente el estado de cualquier orden.
+Alta
+EST-03
+El sistema debe registrar en un log quién cambió cada estado y cuándo (auditoría).
+Alta
+EST-04
+Cuando una orden pasa a CANCELADA, se debe solicitar un motivo (campo obligatorio).
+Media
+EST-05
+El sistema debe mostrar las órdenes en listados filtrables por estado, ARL, fecha, profesional.
+Alta
+EST-06
+Una orden no puede pasar de EJECUTADA a un estado anterior (protección de flujo).
+Media
+
+
+MÓDULO 4: GENERACIÓN DE FORMATOS (AUTO-DILIGENCIADO)
+ID
+Requerimiento
+Prioridad
+FOR-01
+El sistema debe tener plantillas precargadas de los formatos de cada ARL: Acta de visita (Bolívar), Listado de asistencia (Bolívar), Ficha de gestión (AXA), etc.
+Alta
+FOR-02
+Desde el detalle de una orden, el administrador debe poder generar un formato ya diligenciado con los datos de la OS (empresa, fecha, horas, actividad, profesional asignado).
+Alta
+FOR-03
+El formato generado debe ser descargable en PDF.
+Alta
+FOR-04
+El sistema debe permitir que el administrador pueda asignar un profesional a la orden antes o después de generar formatos.
+Alta
+FOR-05
+Los formatos deben incluir espacios para firma del profesional y del cliente (campos en blanco).
+Media
+FOR-06
+Debe ser posible personalizar las plantillas en el futuro (mantenimiento).
+Baja
+
+ 
+MÓDULO 5: ASIGNACIÓN Y PROGRAMACIÓN
+ID
+Requerimiento
+Prioridad
+ASG-01
+El administrador debe poder asignar una orden a un profesional desde una lista desplegable (datos precargados en el sistema).
+Alta
+ASG-02
+Al asignar, debe seleccionar fecha y hora de ejecución.
+Alta
+ASG-03
+Al guardar la asignación, la orden cambia a estado PROGRAMADA.
+Alta
+ASG-04
+Automáticamente, el sistema debe enviar por correo electrónico al profesional: los formatos diligenciados en PDF, la información de la orden (empresa, contacto, dirección si aplica).
+Alta
+ASG-05
+Automáticamente, el sistema debe agregar un evento al calendario del administrador y del profesional(GMAIL)
+Media
+ASG-06
+El sistema debe enviar un mensaje por WhatsApp (texto plano con información relevante) al profesional. Si WhatsApp API tiene costo, debe ser configurable (puede omitirse inicialmente).
+Media
+ASG-07
+Si la orden se reprograma, el sistema debe permitir cambiar fecha/hora y reenviar todo automáticamente (correo, calendario, WhatsApp).
+Alta
+ASG-08
+El sistema debe mostrar en el dashboard del profesional sus órdenes programadas.
+Alta
+
+ 
+MÓDULO 6: CARGA DE SOPORTES (PROFESIONAL)
+ID
+Requerimiento
+Prioridad
+SUP-01
+El sistema debe generar un link único y público para cada orden en estado PROGRAMADA.(VALIDAR SI SE SIGUE CON ESTE FORMATO)
+Alta
+SUP-02
+El profesional debe poder acceder al link sin necesidad de login.
+Alta
+SUP-03
+En la página del link, el profesional debe poder subir los formatos firmados (PDF, JPG, PNG)(O simplemente aceptar).
+Alta
+SUP-04
+Se deben permitir múltiples archivos por orden (ej: acta + listado + informe).
+Alta
+SUP-05
+Una vez subidos los archivos, la orden cambia automáticamente a estado EN VERIFICACIÓN.
+Alta
+SUP-06
+El administrador recibe una notificación por correo o dentro del sistema de que hay órdenes por verificar.
+Media
+SUP-07
+El profesional debe poder ver sus propios envíos anteriores.
+Baja
+
+ 
+MÓDULO 7: VERIFICACIÓN Y CIERRE
+ID
+Requerimiento
+Prioridad
+VER-01
+El administrador debe poder ver los soportes subidos por el profesional directamente desde el sistema (sin descargar).
+Alta
+VER-02
+El administrador puede aceptar o rechazar los soportes.
+Alta
+VER-03
+Si los soportes son aceptados, la orden pasa a EJECUTADA.
+Alta
+VER-04
+Si los soportes son rechazados, la orden vuelve a PROGRAMADA con un comentario obligatorio del motivo.
+Alta
+VER-05
+Al pasar a EJECUTADA, el sistema debe registrar automáticamente: fecha real de ejecución, profesional responsable, horas ejecutadas, tipo de actividad, si requiere informe o no.
+Alta
+
+ 
+MÓDULO 8: ENCUESTA DE SATISFACCIÓN
+ID
+Requerimiento
+Prioridad
+ENC-01
+Cuando una orden pasa a EJECUTADA, el sistema debe enviar automáticamente un correo electrónico al contacto SST de la empresa cliente(O cuando se termine la “capacitación”).
+Alta
+ENC-02
+El correo debe contener un link a un formulario público de encuesta.
+Alta
+ENC-03
+La encuesta debe contener:
+ - Pregunta 1: "Nivel de satisfacción de la actividad recibida" (escala 1 a 5).
+ - Pregunta 2: "¿Recomendaría a JD&D Consultores?" (escala 1 a 5).
+ - Pregunta 3: "Observaciones para mejorar el servicio" (campo texto opcional).(PREGUTAS VARIABLES)
+Alta
+ENC-04
+El sistema debe almacenar las respuestas asociadas a la orden, profesional, empresa y fecha.
+Alta
+ENC-05
+Se debe poder consultar un dashboard de satisfacción por profesional, por ARL y por mes.
+Alta
+ENC-06
+El sistema debe evitar que un mismo cliente conteste múltiples veces la misma orden (validación por link único o token).
+Media
+ENC-07
+Las respuestas deben ser exportables a Excel/CSV.
+Media
+
+ 
+MÓDULO 9: PRE-CUENTA DE COBRO (PROFESIONALES)
+ID
+Requerimiento
+Prioridad
+PRE-01
+El sistema debe calcular automáticamente, al cierre de cada mes, el total de horas ejecutadas por cada profesional en órdenes con estado EJECUTADA.
+Alta
+PRE-02
+El valor por hora debe ser configurable por tipo de actividad y por profesional.
+Media
+PRE-03
+El sistema debe generar un documento (web o PDF) que resuma: nombre del profesional, mes, lista de órdenes (fecha, empresa, ARL, horas, valor), total horas, total a pagar.
+Alta
+PRE-04
+El sistema debe enviar este documento por correo electrónico al profesional.
+Alta
+PRE-05
+El profesional debe poder "Aceptar" o "Rechazar con observaciones" la pre-cuenta desde un link en el correo.
+Alta
+PRE-06
+Si acepta, la pre-cuenta queda marcada como ACEPTADA y se notifica al administrador y contador.
+Alta
+PRE-07
+Si rechaza, el profesional debe escribir observaciones, y la pre-cuenta queda RECHAZADA pendiente de revisión manual.
+Alta
+PRE-08
+El administrador debe poder ver el histórico de pre-cuentas por profesional y mes.
+Media
+PRE-09
+El sistema debe permitir exportar las pre-cuentas aceptadas para el proceso de pago.
+Baja
+
+ 
+MÓDULO 10: REPORTES Y DASHBOARDS
+ID
+Requerimiento
+Prioridad
+RPT-01
+Dashboard principal debe mostrar KPIs: órdenes sin programar, programadas, en verificación, ejecutadas en el mes.
+Alta
+RPT-02
+Tabla de órdenes recientes con filtros por ARL, estado, profesional, fechas.
+Alta
+RPT-03
+Reporte de órdenes vencidas (más de 60 días sin ejecutar) con alerta visual.
+Alta
+RPT-04
+Reporte de satisfacción por profesional (gráfico de barras + tabla detallada).
+Alta
+RPT-05
+Reporte de horas ejecutadas por profesional y por ARL en un rango de fechas.
+Media
+RPT-06
+Reporte de cartera: órdenes ejecutadas que aún no han sido facturadas o validadas por ARL.
+Media
+RPT-07
+Todos los reportes deben poder exportarse a Excel.
+Media
+
+ 
+MÓDULO 11: NOTIFICACIONES
+ID
+Requerimiento
+Prioridad
+NOT-01
+El sistema debe enviar correos automáticos en estos eventos:
+ - Orden asignada al profesional (con formatos).
+ - Reprogramación de orden.
+ - Pre-cuenta de cobro generada.
+ - Encuesta de satisfacción al cliente.
+Alta
+NOT-02
+El administrador debe recibir notificación por correo cuando un profesional sube soportes (pasa a EN VERIFICACIÓN).
+Media
+NOT-03
+El profesional debe recibir notificación por correo cuando su pre-cuenta está lista para aceptar/rechazar.
+Alta
+NOT-04
+El sistema debe tener una bandeja de notificaciones interna (campanita) para eventos importantes.
+Baja
+
+ 
+MÓDULO 12: CONFIGURACIÓN Y MANTENIMIENTO
+ID
+Requerimiento
+Prioridad
+CFG-01
+CRUD completo de profesionales (nombre, teléfono, correo, especialidad, valor hora, estado activo/inactivo).
+Alta
+CFG-02
+CRUD de empresas clientes (puede extraerse de las órdenes, pero debe poderse editar).
+Media
+CFG-03
+Configuración de plantillas de formatos (subir nuevas o editar existentes).
+Baja
+CFG-04
+Configuración de valores por hora por tipo de actividad (capacitación, asesoría, asistencia técnica, informe).
+Media
+CFG-05
+Configuración de días de corte para pre-cuentas (ej: 1er día del mes).
+Baja
+
+ 
+4. REQUERIMIENTOS NO FUNCIONALES
+ID
+Requerimiento
+Descripción
+NF-01
+Plataforma
+Web responsive (escritorio + móvil).
+NF-02
+Base de datos
+Relacional (PostgreSQL o MySQL).
+NF-03
+Seguridad
+Contraseñas hasheadas, sesiones con JWT, HTTPS obligatorio.
+NF-04
+Almacenamiento de archivos
+Cloud storage (AWS S3 o similar) para PDFs y soportes.
+NF-05
+Rendimiento
+Las búsquedas y listados deben cargar en menos de 2 segundos.
+NF-06
+Escalabilidad
+Debe soportar hasta 10.000 órdenes por año inicialmente.
+NF-07
+Backup
+Respaldos automáticos diarios de base de datos y archivos. (PENDIENTE VALIDAD)
+NF-08
+Soporte
+Debe incluir 1 mes de soporte post-lanzamiento y capacitación.
+
+ 
+ 
+5. PRIORIZACIÓN POR FASES (MVP vs FUTURO)
+Fase 1 – MVP (4-6 semanas)
+AUTH-01 a 04, IMP-01 a 07, EST-01 a 05, FOR-01 a 04, ASG-01 a 05, SUP-01 a 05, VER-01 a 03, RPT-01 a 02, NOT-01 (parcial), CFG-01.
+Fase 2 – Mejoras (4 semanas adicionales)
+ENC-01 a 05, PRE-01 a 06, RPT-03 a 05, NOT-02 a 03, VER-04 a 05, reprogramación (ASG-07).
+Fase 3 – Futuro (según necesidad)
+WhatsApp API (ASG-06), integración Imagic/Home, reporte de cartera avanzado, dashboard de auditoría.
+
+6. ENTREGABLES ESPERADOS
+#
+Entregable
+Formato
+1
+Repositorio de código
+Git (privado)
+2
+Base de datos (scripts de creación y datos iniciales)
+SQL
+3
+Documentación técnica básica (README, variables de entorno)
+Markdown
+4
+Manual de usuario.
+PDF
+5
+Sistema desplegado en entorno de producción
+URL
+6
+Capacitación.
+Sesión
+
+ 
+7. RIESGOS IDENTIFICADOS
+Riesgo
+Mitigación
+Los formatos de ARL cambian sin previo aviso
+El sistema debe permitir editar plantillas fácilmente (módulo CFG-03)
+El profesional no sube los soportes a tiempo
+Recordatorios automáticos por correo a los 3 y 7 días después de la fecha programada
+El cliente no responde la encuesta
+¿El sistema debe reenviar el correo?
+
+ 
+8. CRITERIOS DE ACEPTACIÓN GENERALES
+Importar un Excel y ver las órdenes en el sistema.
+Al asignar una orden a un profesional, este recibe el correo con los formatos ya diligenciados.
+El profesional puede subir soportes desde un link sin necesidad de login.(Pendiente validar)
+El administrador puede cambiar estados y generar reportes básicos.
+Al final del mes, el sistema genera la pre-cuenta de cobro para cada profesional.
+
+9. PRESUPUESTO Y CRONOGRAMA DEL PROYECTO
+A continuación, se detalla la inversión económica y el tiempo estimado para el desarrollo, implementación y estabilización del sistema a medida para JD&D Consultores.
+
+10.1 Valor del proyecto
+Concepto
+Valor (COP)
+Desarrollo del sistema (MVP + Fase 2 + estabilización)
+$2.800.000
+
+
+
+
+
+Forma de pago sugerida:
+Hito
+Porcentaje
+Acumulado
+1. Inicio del proyecto (firma y arranque)
+50%
+$1.400.000
+2. Entrega final (sistema en producción, capacitación, documentación)
+50%
+$1.400.000
+
+
+10.2 Tiempo estimado del proyecto
+Fase
+Duración
+Actividades principales
+Fase 1 – Desarrollo y primera entrega (MVP)
+1 meses (4 semanas)
+- Configuración inicial y arquitectura
+ - Módulo de autenticación y roles
+ - Importación de órdenes (Excel y PDF)
+ - Gestión de estados de órdenes
+ - Generación de formatos auto-diligenciados
+ - Asignación a profesionales y envío de correos
+ - Link público para carga de soportes
+ - Dashboard básico 
+Fase 2 – Estabilización, ajustes y capacitación
+1 mes (4 semanas)
+- Corrección de errores o bugs detectados
+ - Implementación de cambios solicitados
+ - Pruebas con datos reales
+ - Capacitación práctica
+ - Elaboración de manual de usuario
+ - Despliegue en entorno de producción definitivo
+TOTAL ESTIMADO
+2 meses (8 semanas)
+
+
+
+ 
+Nota. El estimado de tiempo es extenso(debido a posibles contratiempos), pretendemos no demorar tanto.
+ 
+
+
+ 
+
+10. APROBACIONES
+Cargo
+Nombre
+Firma
+Fecha
+Cliente / Gerencia
+
+
+
+
+
+
+Desarrollador / Proveedor
+Nicolás Pantoja
+Juan David Vela
+
+
+
+
+Auditor interno
+
+
+
+
+
+
+
+ 
+ Nota importante sobre infraestructura y servicios de terceros:
+El presente proyecto corresponde a un desarrollo de software a la medida ("sistema dedicado"). Por lo tanto, la propiedad intelectual del código fuente será transferida al cliente una vez finalizado el desarrollo y pagado en su totalidad.
+Responsabilidades del cliente (JD&D Consultores):
+La contratación, configuración y pago oportuno del dominio (ej: jdydconsultores.com.co).
+La contratación, configuración y pago oportuno del servidor de hosting o VPS donde se alojará la aplicación web y la base de datos.
+La contratación, configuración y pago oportuno del servicio de almacenamiento en la nube (ej: AWS S3, Google Cloud Storage) para los archivos subidos por los profesionales (formatos firmados, actas, informes).
+La renovación anual de estos servicios, así como cualquier costo asociado a tráfico, transferencia de datos o soporte técnico de los proveedores.
+Responsabilidad del desarrollador:
+Recomendar opciones de servicios de infraestructura adecuados para el proyecto (relación costo-beneficio, ubicación en Colombia o región cercana, escalabilidad).
+Proveer documentación clara para la contratación, configuración inicial y despliegue del sistema en los servicios elegidos por el cliente.
+Asistir durante la fase de despliegue inicial para garantizar el correcto funcionamiento.
+Esta separación de responsabilidades permite a JD&D mantener el control total sobre sus datos y costos operativos, evitando dependencia del desarrollador para temas de infraestructura.
+
+
