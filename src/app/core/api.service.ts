@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from './config';
-import { ArchivoSoporte, Arl, Borrador, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, ReporteCartera, ReporteHoras, ReporteVencidas, Rol, Tarifa, Usuario, Vista } from './models';
+import { ArchivoSoporte, Arl, Borrador, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, ReporteCartera, ReporteHoras, ReporteVencidas, Rol, Tarifa, Usuario, Vista } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -52,6 +52,16 @@ export class ApiService {
   }
   getOrder(id: string): Observable<Wrap<Orden & Record<string, unknown>>> {
     return this.http.get<Wrap<Orden & Record<string, unknown>>>(`${this.base}/orders/${id}`);
+  }
+  /**
+   * ASG-08 · Las órdenes del profesional que tiene la sesión abierta.
+   *
+   * No se usa `listOrders({ profesional_id })` a propósito: ese parámetro acepta
+   * cualquier id, así que el acote tiene que venir del servidor. Si la cuenta no
+   * tiene ficha de profesional enlazada devuelve `profesional: null` y el motivo.
+   */
+  misOrdenes(): Observable<MisOrdenesResponse> {
+    return this.http.get<MisOrdenesResponse>(`${this.base}/orders/mias`);
   }
   /**
    * ASG-01..04 · Asigna (o reprograma, ASG-07) la OS: pasa a PROGRAMADA, genera

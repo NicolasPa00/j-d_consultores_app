@@ -135,6 +135,19 @@
   cursor: pointer;
 }
 
+/**
+ * ASG-08 · Fila de una orden que el profesional todavía tiene que atender.
+ * Se marca con un filete lateral y no con color de fondo: la tabla ya usa el
+ * fondo para el hover y las dos señales juntas se pisan.
+ */
+.row-pendiente td:first-child {
+  box-shadow: inset 3px 0 0 var(--secondary-color);
+}
+
+.row-pendiente td {
+  font-weight: 500;
+}
+
 .cell-code {
   font-weight: 600;
   color: var(--primary-color);

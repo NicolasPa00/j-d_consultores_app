@@ -1,3 +1,81 @@
+<!-- ============ ASG-08 · PANEL DEL PROFESIONAL ============ -->
+<!-- El profesional no tiene la vista Órdenes, así que este es el único sitio
+     donde ve su trabajo: su agenda, no los KPIs de administración. -->
+@if (esProfesional()) {
+  <section class="page-head">
+    <h2 class="page-head__title">Mi agenda</h2>
+    <p class="page-head__sub">Órdenes de servicio asignadas a usted.</p>
+  </section>
+
+  @if (cargandoMias()) {
+    <div class="spinner" aria-label="Cargando sus órdenes"></div>
+  } @else if (sinFicha(); as motivo) {
+    <div class="alert alert--warning">{{ motivo }}</div>
+  } @else {
+    <section class="kpi-grid">
+      @for (kpi of misKpis(); track kpi.label) {
+        <article class="kpi-card" [class]="'kpi-card--' + kpi.accent">
+          <div class="kpi-card__info">
+            <span class="kpi-card__label">{{ kpi.label }}</span>
+            <strong class="kpi-card__value">{{ kpi.value }}</strong>
+          </div>
+          <span class="kpi-card__icon">{{ kpi.icon }}</span>
+        </article>
+      }
+    </section>
+
+    <section class="panel">
+      <div class="panel__head">
+        <h3 class="panel__title">Mis órdenes</h3>
+        <span class="panel__hint">
+          {{ misPendientes().length }} por atender · ASG-08
+        </span>
+      </div>
+
+      @if (misOrdenes().length) {
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Código OS</th>
+                <th>Fecha de visita</th>
+                <th>Empresa</th>
+                <th>ARL</th>
+                <th>Horas</th>
+                <th>Contacto SST</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Las pendientes van primero (las ordena el backend) y se
+                   resaltan: es lo que el profesional tiene que hacer. -->
+              @for (o of misOrdenes(); track o.id) {
+                <tr [class.row-pendiente]="o.pendiente">
+                  <td class="cell-code">{{ o.codigo }}</td>
+                  <td>{{ o.fecha }}</td>
+                  <td>{{ o.empresa }}</td>
+                  <td><span class="badge badge--arl">{{ o.arl }}</span></td>
+                  <td>{{ o.horas }} h</td>
+                  <td>{{ o.contacto }}</td>
+                  <td><span class="badge badge--status">{{ o.estado }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <p class="stat-panel__empty">
+          No tiene órdenes asignadas. Cuando le asignen una recibirá el correo con los formatos.
+        </p>
+      }
+    </section>
+  }
+}
+
+<!-- ============ PANEL DE ADMINISTRACIÓN ============ -->
+<!-- Todo lo que sigue (hasta el final del archivo) es la vista de quien
+     gestiona: KPIs globales, tabla de órdenes y drawer de asignación. -->
+@if (!esProfesional()) {
 <section class="page-head">
   <h2 class="page-head__title">Panel de control</h2>
   <p class="page-head__sub">Resumen general de importación y validación de órdenes.</p>
@@ -219,5 +297,7 @@
     </footer>
   </aside>
 }
+}
+<!-- fin del panel de administración (@if !esProfesional) -->
 
 <!-- ============ TOAST ============ -->

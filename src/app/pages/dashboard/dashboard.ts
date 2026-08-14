@@ -3,6 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
 import { AlertService } from '../../core/alert.service';
+import { AuthService } from '../../core/auth.service';
 import { DashboardData, Orden, Profesional } from '../../core/models';
 
 interface Kpi {
@@ -49,6 +50,24 @@ interface WorkOrder {
   city: string;
 }
 
+/** ASG-08 · Fila de la agenda del profesional. */
+interface MiOrden {
+  id: string;
+  codigo: string;
+  empresa: string;
+  arl: string;
+  horas: number;
+  estado: string;
+  fecha: string;
+  direccion: string;
+  contacto: string;
+  /** Aún no ejecutada: es lo que el profesional tiene por hacer. */
+  pendiente: boolean;
+}
+
+/** Estados que el profesional todavía tiene que atender. */
+const ESTADOS_PENDIENTES = ['PROGRAMADA', 'EN VERIFICACIÓN'];
+
 @Component({
   selector: 'app-dashboard',
   imports: [FormsModule],
@@ -59,7 +78,33 @@ interface WorkOrder {
 export class DashboardComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly alerts = inject(AlertService);
+  private readonly auth = inject(AuthService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+
+  // ----- ASG-08 · Variante del panel para el rol Profesional -----
+  /**
+   * El profesional no tiene la vista Órdenes (la matriz de permisos se la niega:
+   * ahí se importa, se valida y se asigna), así que este panel es el único sitio
+   * donde ve su trabajo. Por eso el dashboard se bifurca entero en vez de
+   * añadirle una tarjeta al de administración.
+   */
+  protected readonly esProfesional = computed(() => this.auth.usuario()?.rol === 'profesional');
+  protected readonly misOrdenes = signal<MiOrden[]>([]);
+  protected readonly cargandoMias = signal(false);
+  /** Motivo por el que no hay agenda: la cuenta no tiene ficha enlazada. */
+  protected readonly sinFicha = signal<string | null>(null);
+
+  protected readonly misPendientes = computed(() => this.misOrdenes().filter((o) => o.pendiente));
+  protected readonly misKpis = computed<Kpi[]>(() => {
+    const todas = this.misOrdenes();
+    const cuenta = (estado: string) => todas.filter((o) => o.estado === estado).length;
+    return [
+      { label: 'Programadas', value: String(cuenta('PROGRAMADA')), icon: '🗓️', accent: 'blue' },
+      { label: 'En verificación', value: String(cuenta('EN VERIFICACIÓN')), icon: '🔎', accent: 'warning' },
+      { label: 'Ejecutadas', value: String(cuenta('EJECUTADA')), icon: '✅', accent: 'slate' },
+      { label: 'Horas asignadas', value: String(todas.reduce((s, o) => s + o.horas, 0)), icon: '⏱️', accent: 'cyan' },
+    ];
+  });
 
   protected readonly kpis = signal<Kpi[]>([]);
   protected readonly orders = signal<WorkOrder[]>([]);
@@ -106,12 +151,34 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     if (!this.isBrowser) return;
+    // El profesional no carga los KPIs globales ni el catálogo de asesores: no
+    // los ve y son dos peticiones que el backend le rechazaría o le sobran.
+    if (this.esProfesional()) {
+      this.loadMisOrdenes();
+      return;
+    }
     this.loadDashboard();
     this.loadOrders();
     // Alimenta el desplegable de profesionales del drawer de asignación (ASG-01).
     this.api.listProfessionals().subscribe((r) =>
       this.professionals.set(r.data.filter((p) => p.estado === 'Activo')),
     );
+  }
+
+  /** ASG-08 · Agenda del profesional autenticado. */
+  private loadMisOrdenes(): void {
+    this.cargandoMias.set(true);
+    this.api.misOrdenes().subscribe({
+      next: (r) => {
+        this.sinFicha.set(r.profesional ? null : r.motivo ?? 'No se encontró su ficha de profesional.');
+        this.misOrdenes.set(r.data.map(toMiOrden));
+        this.cargandoMias.set(false);
+      },
+      error: (err) => {
+        this.cargandoMias.set(false);
+        this.alerts.error('No se pudieron cargar sus órdenes', err?.error?.error || 'El servidor no respondió la agenda.');
+      },
+    });
   }
 
   private loadDashboard(): void {
@@ -193,6 +260,35 @@ function keyToKpi(estado: string): string {
     case 'CANCELADA': return 'canceladas';
     default: return '';
   }
+}
+
+/**
+ * ASG-08 · Mapea una OS a la fila de la agenda del profesional.
+ *
+ * La fecha se formatea en la zona de Colombia y no en la del navegador: el
+ * profesional entra desde el celular en campo y una visita de las 8:00 no puede
+ * aparecerle a otra hora por la configuración del equipo.
+ */
+function toMiOrden(o: Orden): MiOrden {
+  const iso = o.fecha_programada;
+  return {
+    id: o.id,
+    codigo: o.codigo,
+    empresa: o.empresa_nombre || '—',
+    arl: o.arl_nombre || '—',
+    horas: Number(o.horas_asignadas ?? 0),
+    estado: o.estado,
+    fecha: iso
+      ? new Date(iso).toLocaleString('es-CO', {
+          timeZone: 'America/Bogota',
+          day: '2-digit', month: 'short', year: 'numeric',
+          hour: '2-digit', minute: '2-digit',
+        })
+      : 'Sin fecha',
+    direccion: o.direccion || o.ciudad_ejecucion || '—',
+    contacto: o.contacto_sst_nombre || '—',
+    pendiente: ESTADOS_PENDIENTES.includes(o.estado),
+  };
 }
 
 /** Mapea una Orden del backend al modelo de vista del dashboard. */

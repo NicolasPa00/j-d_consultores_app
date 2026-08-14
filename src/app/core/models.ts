@@ -435,6 +435,19 @@ export interface Ocupacion {
   creado_en?: string;
 }
 
+/**
+ * ASG-08 · Respuesta de `GET /orders/mias`.
+ *
+ * `profesional` en null no es un error: la cuenta existe pero no tiene ficha de
+ * profesional enlazada (se crean en pantallas distintas), y entonces llega
+ * `motivo` con la explicación que se le muestra al usuario.
+ */
+export interface MisOrdenesResponse {
+  data: Orden[];
+  profesional: { id: string; nombre: string } | null;
+  motivo?: string;
+}
+
 export interface Orden {
   id: string;
   codigo: string;
