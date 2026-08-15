@@ -5,18 +5,22 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 15-ago-2026 · modales que escalan con la pantalla,
-> soportes del profesional visibles en el detalle y aviso de **ARL sin formatos**
-> (Colmena no tiene ninguno: sus correos salen sin PDF — ver trampa 17).
-> Antes, 14-ago-2026: **el modal de asignación pasó de dos campos a una agenda
-> semanal**, y con ella un concepto nuevo: **la visita se reparte en franjas**
-> (mañana y tarde, o varios días). Tabla nueva `sst.franjas_visita` → hay que
-> correr **`npm run migrate`**.
+> **Última actualización:** 15-ago-2026 · toda la tanda del **modal de
+> asignación**: pasó de dos campos a una **agenda semanal** y la visita dejó de
+> ser un instante para repartirse en **franjas** (tabla nueva
+> `sst.franjas_visita` → correr **`npm run migrate`**). Además: modales que
+> escalan con la pantalla, soportes del profesional visibles en el detalle,
+> formato de horas del correo (`08:00 AM`, `4 y 30 min`) y aviso de **ARL sin
+> formatos**. El detalle en §3; **lo que sigue, en "Pendiente" al final de §3**.
 > Antes: 13-ago-2026 (noche), se cerraron **ASG-05, ASG-08 y SUP-07** y se reparó
 > la matriz de permisos, que en BD tenía al admin sin acceso a Órdenes.
 
 Para arrancar una sesión nueva basta con: *"Proyecto JD&D IA-Core: lee
 `jdd_consultores_app/HANDOFF.md` y continúa con lo pendiente."*
+
+> 🔴 **Si vas a enseñar el producto hoy, lee primero el punto 1 de "Pendiente":**
+> las OS de **Colmena** salen por correo sin ningún formato adjunto porque esa ARL
+> no tiene plantillas cargadas. Se arregla desde la app, sin tocar código.
 
 ---
 
@@ -309,9 +313,66 @@ agenda del profesional u otra OS suya solo **advierte**.
 
 ### Pendiente
 
-**Nada del FRS**, salvo **ASG-06 (WhatsApp)**, que el propio FRS coloca en Fase 3
-y declara omisible si la API tiene costo. El resto son mejoras opcionales,
-ninguna comprometida:
+**Del FRS no falta nada**, salvo **ASG-06 (WhatsApp)**, que el propio FRS coloca
+en Fase 3 y declara omisible si la API tiene costo. Lo que sigue está ordenado
+por lo que de verdad conviene atacar primero.
+
+#### 1. Antes de volver a enseñar el producto (operación, no código)
+
+- 🔴 **Colmena no tiene formatos configurados.** Es lo único que hoy se ve roto
+  desde fuera: al asignar una OS de Colmena el profesional recibe un correo
+  **sin un solo PDF**. Al 15-ago-2026: Bolívar 2 plantillas, AXA Colpatria 1,
+  **Colmena 0**. Se arregla **sin tocar código**, en Configuración → Formatos y
+  encuesta; una plantilla **sin ARL** vale para todas y tapa el hueco de una vez.
+  El código ya avisa por los dos lados (antes de asignar y después, con
+  `formatos_generados`), pero avisar no es tener el formato. Ver trampa 17.
+- **Correr `npm run migrate`** en cualquier equipo que traiga este commit: la
+  tabla `sst.franjas_visita` es nueva. En la Neon compartida ya está aplicada.
+
+#### 2. Deuda de pruebas de esta tanda (lo que quedó sin verificar en vivo)
+
+Nada de esto se pudo probar de punta a punta porque el asistente **no tiene
+credenciales de administrador** para entrar a la app. Lo que sí se verificó va
+anotado; lo demás es lo primero que debería mirar quien retome:
+
+| Qué | Estado |
+|---|---|
+| Esquema y SQL nuevos (`franjas_visita`, agregado de `/mias`) | ✅ ejecutado contra la Neon real, en solo lectura |
+| `.ics` con visita partida (2 VEVENT, cancelación de sobrantes, horas de Colombia) | ✅ probado con un script |
+| Formato de horas/fechas del correo (`utils/formato.js`) | ✅ probado, casos borde incluidos |
+| Compilación (`ng build`) y sintaxis del backend | ✅ limpias |
+| **Asignar una OS de verdad con 2+ franjas** (persistencia, correo, .ics en Gmail) | ❌ sin probar |
+| **Cómo pinta Gmail el `.ics` con varios VEVENT** | ❌ sin probar (ver más abajo) |
+| Reprogramar bajando de 3 franjas a 2 (que la sobrante se tache en el calendario) | ❌ sin probar |
+
+#### 3. Rematar lo que quedó a medias en la agenda
+
+- **Franjas en la pre-asignación de un borrador.** Hoy, si la OS aún no está
+  materializada, solo se guarda la fecha de inicio: las franjas se pierden. El
+  pie del modal lo dice. Para arreglarlo de raíz hay que decidir antes otra cosa
+  que ya venía torcida: al validar un borrador, la OS nace SIN PROGRAMAR y **no
+  hereda ni el profesional ni la fecha** que se le habían anotado. O se hereda
+  todo (profesional + franjas) o la pre-asignación sigue siendo un post-it.
+- **El `.ics` con varios VEVENT es la apuesta menos verificada de la tanda.**
+  Outlook y los calendarios de móvil los importan bien; Gmail, con
+  `METHOD:REQUEST`, a veces solo muestra el primero. Si se confirma que Gmail se
+  queda corto, la salida es mandar **un adjunto .ics por franja** en vez de uno
+  con varios eventos. El cuerpo del correo ya lista todas las franjas, así que
+  el profesional nunca se queda sin la información.
+- **Las franjas no salen en el PDF del acta**, que sigue imprimiendo solo
+  "Fecha programada" (el inicio de la primera). No se añadieron porque la fila
+  del PDF se dibuja sin ajuste de línea y una lista larga se saldría de la caja;
+  hay que darle salto de línea primero.
+- **La rejilla de la app sigue en formato 24 h** (`14:00`) mientras el correo ya
+  va en 12 h con AM/PM. Fue deliberado —en una columna de calendario el formato
+  de 24 h ocupa menos y es lo habitual—, pero si se quiere unificar, el helper
+  del frontend está en `validation.ts` (`aHoraTexto`).
+- **La pre-cuenta (M9) no adoptó el formato nuevo de horas** (`4 y 30 min`): ahí
+  las horas son una cantidad que se multiplica por una tarifa y viven en una
+  columna numérica de una tabla. Decisión consciente; revisarla si el cliente
+  pide coherencia total.
+
+#### 4. Mejoras opcionales, ninguna comprometida
 
 - Reasignar **una** OS suelta a otra empresa desde `/ordenes` (hoy solo se pueden
   fusionar fichas completas desde `/empresas`).

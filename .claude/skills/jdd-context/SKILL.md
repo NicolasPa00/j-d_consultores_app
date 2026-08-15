@@ -13,12 +13,14 @@ Plataforma web interna para **JD&D Consultores** (SST, Colombia) que gestiona el
 > equipo tenía una copia distinta. Las rutas `../../../docs/...` de abajo resuelven
 > a `jdd_consultores_app/docs/`. Ver `../../../HANDOFF.md` §2.
 
-## ⚠️ ALCANCE VIGENTE (actualizado 13-ago-2026)
+## ⚠️ ALCANCE VIGENTE (actualizado 15-ago-2026)
 
 La Fase 1 se entregó: la demo se presentó y **el cliente aprobó continuar el 27-jul-2026**. Estamos en **FASE 2** y el documento que manda es `../../../docs/requerimientos-completos.txt` (FRS v1.0, los 12 módulos). `req_fase_1.txt` era el recorte de la primera entrega y ya no aplica.
 
 - **La antigua prohibición de codificar M8/M9/RPT-03..07/CFG-02..05 quedó SIN EFECTO**: esos módulos son el trabajo de esta fase.
-- Terminados y funcionando contra el backend real: **M1..M11 completos** (incluidos M8 Encuestas, M9 Pre-cuentas y los reportes RPT-01..07) y CFG-01. Falta únicamente **CFG-02/03/05**.
+- Terminados y funcionando contra el backend real: **los 12 módulos**, CFG-02/03/05 incluidos. Del FRS solo queda fuera **ASG-06 (WhatsApp)**, que el propio FRS deja en Fase 3 y declara omisible.
+- **Lo que sigue no sale del FRS**: está en `HANDOFF.md` §3 → "Pendiente" (deuda de pruebas, remates de la agenda y mejoras opcionales). Leerlo antes de proponer trabajo nuevo.
+- **La visita de una OS se reparte en franjas** (`sst.franjas_visita`), no es un solo instante: `fecha_programada` guarda el inicio de la primera. Si tocas asignación, agenda o correos, mira la regla ASG-02 en la skill **jdd-backend-fase1**.
 - **Antes de escribir un endpoint, revisar si ya existe** en `sst_ws/src/modules/*/*.routes.js`: el backend suele ir por delante del frontend.
 - Nada es mock: `jdd_consultores_app/` habla con `sst_ws` (`:4000`) por `core/api.service.ts`.
 

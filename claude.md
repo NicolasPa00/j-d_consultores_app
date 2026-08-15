@@ -48,7 +48,7 @@ pre-cuentas y los reportes/configuraciones avanzadas ya se pueden construir.
 | M1 Autenticación y roles (AUTH-01..05) | ✅ backend + frontend |
 | M2 Importación y extracción IA (IMP-01..09) | ✅ backend + frontend |
 | M3 Estados y auditoría (EST-01..06) | ✅ backend + frontend |
-| M4 Formatos (FOR-01..06) | ✅ backend + frontend |
+| M4 Formatos (FOR-01..06) | ✅ backend + frontend · ⚠️ **Colmena no tiene plantillas cargadas**, así que sus OS salen por correo sin PDF (se arregla en Configuración → Formatos y encuesta, sin tocar código) |
 | M5 Asignación y reprogramación (ASG-01..08) | ✅ backend + frontend · ASG-02 se programa sobre una agenda semanal y la visita se reparte en **franjas** (`sst.franjas_visita`; `fecha_programada` = inicio de la primera) · ASG-05 = invitación .ics adjunta al correo (no API de Google Calendar) · ASG-08 = el panel del profesional muestra su agenda · **ASG-06 (WhatsApp) fuera: el FRS lo deja en Fase 3 y omisible** |
 | M6 Soportes por enlace público (SUP-01..07) | ✅ backend + frontend · SUP-07 lista los archivos ya enviados en la agenda del profesional |
 | M7 Verificación y cierre (VER-01..05) | ✅ backend + frontend |
