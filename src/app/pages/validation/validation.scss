@@ -281,6 +281,10 @@
   animation: fade-in 0.2s ease;
 }
 
+/* Ancho fluido: crece con la pantalla en vez de quedarse en un valor fijo.
+   En un monitor de 27" un modal de 720 px se ve perdido en el centro, y en un
+   portátil de 13" uno de 1200 px no cabe. El término en `vw` da la escala y el
+   tope evita líneas de texto interminables en pantallas muy anchas. */
 .modal {
   position: fixed;
   top: 50%;
@@ -289,7 +293,7 @@
   z-index: 51;
   display: flex;
   flex-direction: column;
-  width: 720px;
+  width: min(calc(420px + 38vw), 1400px, calc(100vw - 2rem));
   max-width: calc(100vw - 2rem);
   max-height: calc(100vh - 2rem);
   background: var(--surface);
@@ -299,8 +303,15 @@
   overflow: hidden;
 }
 
+/* Con dos columnas (lista + panel) el reparto necesita más sitio. */
 .modal--wide {
-  width: 940px;
+  width: min(calc(460px + 46vw), 1700px, calc(100vw - 2rem));
+}
+
+/* La agenda necesita ancho: siete días por debajo de ~90 px por columna dejan
+   de ser legibles y la rejilla se pondría a scrollear en horizontal. */
+.modal--agenda {
+  width: min(calc(520px + 48vw), 1800px, calc(100vw - 2rem));
 }
 
 .modal__head {
@@ -449,6 +460,16 @@
   gap: 1.05rem;
 }
 
+/* En pantallas grandes el modal crece, así que el formulario aprovecha el ancho
+   con una tercera columna en vez de estirar cada campo hasta hacerlo ilegible.
+   Tres es el tope a propósito: con cuatro, la etiqueta y su valor quedan tan
+   separados de la siguiente que el ojo pierde el hilo. */
+@media (min-width: 1400px) {
+  .fields {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -497,9 +518,26 @@
 /* ===== Asignar profesional ===== */
 .assign {
   display: grid;
-  grid-template-columns: minmax(240px, 38%) 1fr;
+  grid-template-columns: minmax(200px, 28%) 1fr;
   gap: 1.5rem;
-  align-items: start;
+  /* stretch (por defecto) y no `start`: la lista de profesionales tiene que
+     medir lo mismo que la agenda, que es la que manda el alto del modal. */
+  align-items: stretch;
+}
+
+/* La columna de la izquierda no aporta alto: su contenido va absoluto dentro.
+   Así el alto de la fila lo fija la agenda y la lista se ajusta a él, en vez de
+   quedarse corta cuando el modal crece al cargar el calendario. */
+.assign__col {
+  position: relative;
+  min-height: 220px;
+}
+
+.assign__col-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .assign__section-title {
@@ -512,10 +550,11 @@
 }
 
 .assign__list {
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  max-height: 420px;
   overflow-y: auto;
   padding-right: 0.25rem;
 }
@@ -613,16 +652,6 @@
   margin: 0;
   font-size: 0.85rem;
   max-width: 240px;
-}
-
-.cal__hint {
-  margin: 0 0 0.9rem;
-  font-size: 0.82rem;
-  color: var(--text-muted);
-}
-
-.cal__hint strong {
-  color: var(--danger);
 }
 
 .cal__form {
@@ -786,23 +815,501 @@
   }
 }
 
-/* ===== ASG-02 · Fecha y hora de ejecución ===== */
-.cita {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+/* ===== ASG-02 · Agenda del profesional =====
+   Variables de la rejilla: tienen que cuadrar con las constantes del
+   componente (AG_PASO_PX y AG_PASO_MIN), que son las que traducen minutos a
+   píxeles. Si se cambia una, hay que cambiar la otra. */
+.agenda__scroll {
+  --ag-media: 22px;               /* alto de media hora  → AG_PASO_PX */
+  --ag-hora: 44px;                /* alto de una hora    → 2 × AG_PASO_PX */
+  --ag-regla: 54px;               /* ancho de la regla horaria */
+}
+
+/* Cabecera con la cita pactada: es el dato que se guarda en la OS, así que va
+   arriba y se lee de un vistazo, con los campos precisos al lado. */
+.cita-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.9rem;
+  background: linear-gradient(135deg, rgba(0, 11, 80, 0.05), rgba(45, 123, 200, 0.07));
+  border: 1px solid rgba(45, 123, 200, 0.22);
+  border-radius: var(--radius-md);
+}
+
+.cita-bar__chip {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.cita-bar__chip svg {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  color: var(--secondary-color);
+}
+
+.cita-bar__texto {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+  min-width: 0;
+}
+
+.cita-bar__label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.cita-bar__valor {
+  font-size: 0.95rem;
+  color: var(--primary-color);
+}
+
+/* Sin fecha la cita no es un dato todavía: se pinta apagada para que no compita
+   con la que sí está elegida. */
+.cita-bar__chip--vacia .cita-bar__valor {
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.cita-bar__chip--vacia svg {
+  color: var(--text-muted);
+}
+
+/* Las franjas ya programadas: se leen de corrido y cada una se quita sin tener
+   que buscarla en la rejilla. */
+.franjas {
+  /* Fila propia: con dos o tres franjas la lista compite con el resumen y el
+     bloque se lee peor que puesto debajo. */
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.6rem 0 0;
+  border-top: 1px solid rgba(45, 123, 200, 0.18);
+  list-style: none;
+}
+
+.franja-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.35rem 0.28rem 0.65rem;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: #ffffff;
+  background: var(--secondary-color);
+  border-radius: 999px;
+}
+
+.franja-chip__quitar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.22);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.franja-chip__quitar:hover {
+  background: var(--danger);
+}
+
+.franja-chip__quitar svg {
+  width: 10px;
+  height: 10px;
 }
 
 .cita__aviso {
-  margin-top: 0.75rem;
+  margin-bottom: 0.9rem;
 }
 
-/* Separa la cita del calendario de ocupaciones: son dos cosas distintas y
-   pegadas se leen como un solo formulario. */
-.cita__sep {
-  margin-top: 1.5rem;
-  padding-top: 1.25rem;
+/* ---- Barra de control: semana visible y modo de la rejilla ---- */
+.agenda__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.agenda__nav {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.agenda__rango {
+  margin: 0 0 0 0.4rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+/* Cuánto ocupa la visita. Va en la barra porque es lo que explica el alto del
+   bloque azul, que el usuario no elige: sale de las horas de la orden. */
+.agenda__duracion {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  background: #eef2f7;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.agenda__duracion strong {
+  color: var(--primary-color);
+}
+
+/* Sin profesional la agenda se puede usar igual (las franjas son de la orden),
+   pero no hay disponibilidad que mostrar: se avisa sin bloquear nada. */
+.agenda__duracion--aviso {
+  color: #92400e;
+  background: rgba(245, 158, 11, 0.14);
+}
+
+.agenda__hint {
+  margin: 0 0 0.7rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.agenda__hint strong {
+  color: var(--text-main);
+}
+
+/* ---- Rejilla ---- */
+.agenda__scroll {
+  max-height: 46vh;
+  overflow: auto;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+/* Ancho mínimo: por debajo de esto los días se vuelven ilegibles, así que la
+   rejilla scrollea en horizontal en vez de comprimirse. */
+.agenda__inner {
+  min-width: 620px;
+  user-select: none;
+}
+
+.agenda__head,
+.agenda__body {
+  display: grid;
+  grid-template-columns: var(--ag-regla) repeat(7, minmax(0, 1fr));
+}
+
+.agenda__head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.agenda__dia {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.25rem;
+  border-left: 1px solid var(--border-soft);
+}
+
+.agenda__dia-nombre {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.agenda__dia-num {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.agenda__dia--finde .agenda__dia-num,
+.agenda__dia--finde .agenda__dia-nombre {
+  color: #94a3b8;
+}
+
+.agenda__dia--hoy {
+  background: rgba(45, 123, 200, 0.08);
+}
+
+.agenda__dia--hoy .agenda__dia-num,
+.agenda__dia--hoy .agenda__dia-nombre {
+  color: var(--secondary-color);
+}
+
+/* El relleno vertical deja aire para las etiquetas de hora, que van centradas
+   sobre su línea y se saldrían por arriba y por abajo. */
+.agenda__body {
+  padding: 10px 0;
+}
+
+.agenda__gutter {
+  position: relative;
+}
+
+.agenda__hora {
+  position: absolute;
+  right: 0.5rem;
+  transform: translateY(-50%);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+/* Las líneas de la rejilla son fondo, no elementos: 200 divisiones vacías por
+   semana costarían más de lo que aportan. */
+.agenda__col {
+  position: relative;
+  border-left: 1px solid var(--border-soft);
+  cursor: pointer;
+  background-image:
+    repeating-linear-gradient(to bottom, var(--border-soft) 0 1px, transparent 1px var(--ag-hora)),
+    repeating-linear-gradient(to bottom, #f1f5f9 0 1px, transparent 1px var(--ag-media));
+}
+
+.agenda__col--finde {
+  background-color: #fafbfd;
+}
+
+.agenda__col--hoy {
+  background-color: rgba(45, 123, 200, 0.04);
+}
+
+/* ---- Bloques ---- */
+.ag-block {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 5px;
+  border-radius: 6px;
+  border-left: 3px solid transparent;
+  font-size: 0.68rem;
+  line-height: 1.2;
+}
+
+.ag-block__hora {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ag-block__texto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Franja bloqueada: ámbar, el mismo código de color que la lista de franjas. */
+.ag-block--ocupado {
+  background: rgba(245, 158, 11, 0.16);
+  border-left-color: var(--warning);
+  color: #92400e;
+}
+
+/* Todavía no está en la BD: se raya en diagonal para que se note que ese hueco
+   depende de pulsar "Asignar profesional". */
+.ag-block--ocupado.ag-block--nueva {
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(245, 158, 11, 0.22) 0 6px,
+      rgba(245, 158, 11, 0.08) 6px 12px
+    );
+  border: 1px dashed rgba(245, 158, 11, 0.75);
+  border-left: 3px solid var(--warning);
+}
+
+/* Otra OS del profesional: contexto, en gris azulado para no competir con la
+   visita que se está programando. */
+.ag-block--otra {
+  background: #eef2f8;
+  border-left-color: rgba(0, 11, 80, 0.45);
+  color: #475569;
+}
+
+/* La visita de esta orden es el protagonista de la pantalla. */
+.ag-block--visita {
+  background: var(--secondary-color);
+  border-left-color: var(--primary-color);
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 11, 80, 0.25);
+  z-index: 1;
+}
+
+.ag-block__quitar {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.7);
+  border: none;
+  border-radius: 4px;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.ag-block:hover .ag-block__quitar {
+  opacity: 1;
+}
+
+.ag-block__quitar:hover {
+  background: var(--danger);
+  color: #ffffff;
+}
+
+.ag-block__quitar svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* Previsualización: dónde caería la visita si se soltara el puntero aquí. Se
+   dibuja con su duración real, así que lo que se ve es lo que va a quedar. */
+.ag-ghost {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 1px;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  z-index: 2;
+  background: rgba(45, 123, 200, 0.18);
+  border: 1px dashed var(--secondary-color);
+  color: var(--primary-color);
+}
+
+/* ---- Leyenda y ajuste manual ---- */
+.agenda__leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.agenda__leyenda li {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.agenda__punto {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.agenda__punto--visita {
+  background: var(--secondary-color);
+}
+
+.agenda__punto--otra {
+  background: #cbd5e1;
+}
+
+.agenda__punto--ocupado {
+  background: rgba(245, 158, 11, 0.55);
+}
+
+.agenda__punto--nueva {
+  background: repeating-linear-gradient(45deg, rgba(245, 158, 11, 0.6) 0 3px, transparent 3px 6px);
+  border: 1px dashed var(--warning);
+}
+
+.agenda__manual {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
   border-top: 1px solid var(--border-soft);
+}
+
+.agenda__manual-head {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.agenda__manual-head .pill {
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+.agenda__manual-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.agenda__manual-title--sep {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.agenda__manual-hint {
+  margin: 0 0 0.8rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.cal__slots-empty--muted {
+  color: var(--text-muted);
+  background: #f8fafc;
+}
+
+.agenda__manual-hint strong {
+  color: var(--warning);
+}
+
+.agenda__manual[open] .agenda__manual-head {
+  margin-bottom: 0.9rem;
 }
 
 /* ===== M3 · Cambio de estado y auditoría ===== */
@@ -908,6 +1415,63 @@
   padding-right: 0.25rem;
 }
 
+/* ===== Soportes dentro del detalle ===== */
+.soportes-lista {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.soporte-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  text-align: left;
+  font-family: inherit;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.soporte-fila:hover {
+  border-color: var(--accent-color);
+  box-shadow: var(--shadow-card);
+}
+
+.soporte-fila__texto {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.soporte-fila__nombre {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.soporte-fila__meta {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.soporte-fila__accion {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--secondary-color);
+}
+
 /* Icono de archivo en el mismo hueco donde el profesional lleva su avatar. */
 .sup-pick__icon {
   flex-shrink: 0;
@@ -976,7 +1540,18 @@
     grid-template-columns: 1fr;
   }
 
+  /* Apiladas ya no hay nada que igualar: la lista vuelve a medir por su
+     contenido, acotada, y la agenda va debajo. */
+  .assign__col {
+    min-height: 0;
+  }
+
+  .assign__col-inner {
+    position: static;
+  }
+
   .assign__list {
+    flex: 0 1 auto;
     max-height: 260px;
   }
 
@@ -990,6 +1565,16 @@
 
   .verify__doc {
     height: 44vh;
+  }
+
+  /* Con el modal en una sola columna la agenda se lleva casi todo el alto
+     disponible, así que se recorta para que el pie siga a la vista. */
+  .agenda__scroll {
+    max-height: 38vh;
+  }
+
+  .cita-bar__campos {
+    flex: 1 1 100%;
   }
 }
 
@@ -1020,6 +1605,12 @@
 
   .cal__add {
     grid-column: 1 / -1;
+  }
+
+  /* En móvil la barra de la agenda se apila: la navegación de semanas y la
+     duración no caben en una línea. */
+  .agenda__bar {
+    align-items: stretch;
   }
 
   .modal__footer {

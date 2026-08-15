@@ -49,7 +49,7 @@ pre-cuentas y los reportes/configuraciones avanzadas ya se pueden construir.
 | M2 Importación y extracción IA (IMP-01..09) | ✅ backend + frontend |
 | M3 Estados y auditoría (EST-01..06) | ✅ backend + frontend |
 | M4 Formatos (FOR-01..06) | ✅ backend + frontend |
-| M5 Asignación y reprogramación (ASG-01..08) | ✅ backend + frontend · ASG-05 = invitación .ics adjunta al correo (no API de Google Calendar) · ASG-08 = el panel del profesional muestra su agenda · **ASG-06 (WhatsApp) fuera: el FRS lo deja en Fase 3 y omisible** |
+| M5 Asignación y reprogramación (ASG-01..08) | ✅ backend + frontend · ASG-02 se programa sobre una agenda semanal y la visita se reparte en **franjas** (`sst.franjas_visita`; `fecha_programada` = inicio de la primera) · ASG-05 = invitación .ics adjunta al correo (no API de Google Calendar) · ASG-08 = el panel del profesional muestra su agenda · **ASG-06 (WhatsApp) fuera: el FRS lo deja en Fase 3 y omisible** |
 | M6 Soportes por enlace público (SUP-01..07) | ✅ backend + frontend · SUP-07 lista los archivos ya enviados en la agenda del profesional |
 | M7 Verificación y cierre (VER-01..05) | ✅ backend + frontend |
 | M8 Encuesta de satisfacción (ENC-01..07) | ✅ backend + frontend · ENC-03 se edita en Configuración → Formatos y encuesta |
@@ -115,7 +115,7 @@ necesitan lógica nueva, solo cable. Endpoints ya montados en `sst_ws/src/routes
 | `/login`, `/recuperar`, `/reset-password` | `pages/login`, `pages/forgot-password`, `pages/reset-password` | AUTH-01..03. Públicas. |
 | `/dashboard` | `pages/dashboard` | KPIs y distribución por ARL (RPT-01/02). |
 | `/importar` | `pages/import` | Carga de Excel/PDF, extracción IA, revisión del lote y confirmación (M2). |
-| `/ordenes` (legado: `/validacion`) | `pages/validation` | **Vista central.** Bandeja, split-view de validación, detalle, cambio de estado + historial (M3), asignación y reprogramación (M5), visor de soportes y aceptar/rechazar (M7). Acepta `?os=<id>` para abrir una OS concreta (llegada desde la campanita). |
+| `/ordenes` (legado: `/validacion`) | `pages/validation` | **Vista central.** Bandeja, split-view de validación, detalle, cambio de estado + historial (M3), asignación y reprogramación sobre una **agenda semanal**, con la visita repartida en franjas (M5), visor de soportes y aceptar/rechazar (M7). Acepta `?os=<id>` para abrir una OS concreta (llegada desde la campanita). |
 | `/informes` | `pages/reports` | Centro de reportes (M10), seis pestañas: Órdenes, Profesionales, Satisfacción (ENC-05 + RPT-04), Vencidas (RPT-03), Horas (RPT-05) y Cartera (RPT-06). Todas exportan a Excel y PDF (RPT-07). |
 | `/empresas` | `pages/companies` | **CFG-02.** Maestro de empresas clientes: listado con conteo de órdenes, ficha con sus últimas OS, alta/edición y fusión de duplicados. La OS conserva su texto original (`empresa_nombre`/`nit_nic`) y se enlaza por `empresa_id`; al validar un borrador la empresa se resuelve (o se crea) sola. |
 | `/profesionales` | `pages/professionals` | CRUD de asesores y su agenda de ocupaciones (CFG-01). |

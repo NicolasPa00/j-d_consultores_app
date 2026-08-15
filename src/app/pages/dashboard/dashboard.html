@@ -53,7 +53,18 @@
               @for (o of misOrdenes(); track o.id) {
                 <tr [class.row-pendiente]="o.pendiente">
                   <td class="cell-code">{{ o.codigo }}</td>
-                  <td>{{ o.fecha }}</td>
+                  <td>
+                    {{ o.fecha }}
+                    <!-- ASG-02 · Si la visita va partida, el día de inicio no
+                         basta: hay que ver todas las franjas. -->
+                    @if (o.franjas.length) {
+                      <ul class="franjas-visita">
+                        @for (f of o.franjas; track f) {
+                          <li>{{ f }}</li>
+                        }
+                      </ul>
+                    }
+                  </td>
                   <td>{{ o.empresa }}</td>
                   <td><span class="badge badge--arl">{{ o.arl }}</span></td>
                   <td>{{ o.horas }} h</td>

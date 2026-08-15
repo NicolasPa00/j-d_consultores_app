@@ -5,10 +5,15 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 13-ago-2026 (noche) · se cerraron los requisitos que
-> la tabla de estado no rastreaba: **ASG-05, ASG-08 y SUP-07**, y se reparó la
-> matriz de permisos, que en BD tenía al admin sin acceso a Órdenes.
-> Antes: 13-ago-2026, `docs/` y las skills entraron a git.
+> **Última actualización:** 15-ago-2026 · modales que escalan con la pantalla,
+> soportes del profesional visibles en el detalle y aviso de **ARL sin formatos**
+> (Colmena no tiene ninguno: sus correos salen sin PDF — ver trampa 17).
+> Antes, 14-ago-2026: **el modal de asignación pasó de dos campos a una agenda
+> semanal**, y con ella un concepto nuevo: **la visita se reparte en franjas**
+> (mañana y tarde, o varios días). Tabla nueva `sst.franjas_visita` → hay que
+> correr **`npm run migrate`**.
+> Antes: 13-ago-2026 (noche), se cerraron **ASG-05, ASG-08 y SUP-07** y se reparó
+> la matriz de permisos, que en BD tenía al admin sin acceso a Órdenes.
 
 Para arrancar una sesión nueva basta con: *"Proyecto JD&D IA-Core: lee
 `jdd_consultores_app/HANDOFF.md` y continúa con lo pendiente."*
@@ -196,6 +201,112 @@ que es la otra mitad del requisito.
 archivos ya subidos por el enlace público, y la agenda los lista: así el
 profesional comprueba si mandó el acta o solo la asistencia sin buscar el correo.
 
+### ASG-02 · el modal de asignación es ahora una agenda (14-ago-2026)
+
+Solo frontend: `pages/validation/` (modal "Asignar profesional"). **No cambió
+ningún endpoint, ni el esquema, ni el contrato de datos**; lo que cambió es cómo
+se elige la hora.
+
+Antes había dos campos de fecha/hora para la visita y otros tres para registrar
+una franja ocupada, más una lista de texto. Para saber si el profesional estaba
+libre había que leer la lista y hacer la cuenta mentalmente. Ahora:
+
+- **Rejilla semanal** de lunes a domingo, de 6:00 a 20:00 en celdas de media
+  hora, con navegación por semanas y botón "Hoy". Abre en la semana de la cita
+  (o en la de hoy si aún no hay fecha).
+- **Tres capas sobre la misma rejilla**: la visita de esta orden (azul), las
+  **otras OS ya programadas al profesional** (gris, solo lectura, traídas con
+  `GET /orders?profesional_id=`) y sus franjas ocupadas (ámbar; rayadas mientras
+  no se guardan). El cruce se ve, ya no hay que deducirlo.
+- **Un solo gesto**: arrastrar traza una franja de la visita; un clic simple crea
+  una con las horas que falten por repartir (el caso normal, "las 4 h de un
+  tirón", es un clic). Hubo un interruptor "Programar visita / Marcar ocupado" y
+  se quitó por confuso: dos conceptos para el mismo gesto.
+- **La visita ya no es un instante: es un conjunto de franjas.** Ver más abajo.
+- Las **ocupaciones** se marcan en el `<details>` "Agregar franjas a mano", que
+  además es el camino accesible por teclado y el único que admite minutos
+  sueltos (10:15): la rejilla trabaja en medias horas.
+- La agenda se dibuja **siempre**, con o sin profesional elegido: las franjas son
+  de la orden, no del asesor. Así el modal no cambia de tamaño a mitad de camino.
+  Sin profesional no hay disponibilidad que pintar (se avisa en la barra) y el
+  botón de asignar sigue deshabilitado.
+- La lista de profesionales se estira al alto de la agenda: la columna izquierda
+  no aporta alto (su contenido va `position: absolute`), así que el alto de la
+  fila lo fija el calendario. Antes la lista medía por su contenido y se quedaba
+  corta cuando el modal crecía al cargar la agenda.
+- Aviso nuevo: si alguna franja de la visita choca con **otra OS** del
+  profesional se advierte, igual que ya se advertía el choque con una franja
+  ocupada. Avisa, no bloquea: el administrador puede tener contexto que la
+  agenda no refleja.
+
+### ASG-02 · La visita se reparte en franjas (concepto nuevo)
+
+Hasta ahora una OS tenía **un** instante (`ordenes_servicio.fecha_programada`) y
+punto. En la práctica una visita se parte: mañana y tarde, o dos días. Eso ya se
+puede modelar.
+
+- **BD:** tabla nueva `sst.franjas_visita` (`orden_id`, `fecha`, `hora_inicio`,
+  `hora_fin`, con `CHECK hora_fin > hora_inicio`). **`npm run migrate`** ya
+  aplicado en la Neon compartida el 14-ago-2026.
+- **`fecha_programada` NO desaparece** y no es redundante: de ella cuelgan los
+  reportes, la cartera, el periodo de la pre-cuenta y el orden de los listados.
+  Vale el **inicio de la primera franja** y la deriva el servidor
+  (`POST /orders/:id/assign`), no el cliente.
+- **Una OS sin franjas es una OS a la antigua** y todo sigue funcionando: el
+  modal, al reprogramarla, sintetiza una franja con su `fecha_programada` y sus
+  horas para no arrancar de un lienzo vacío.
+- **API:** `POST /orders/:id/assign` acepta `franjas: [{fecha, hora_inicio,
+  hora_fin}]` y las **reemplaza en bloque** (reprogramar es volver a decidir la
+  visita entera); `GET /orders/:id/franjas` las lee (el modal se abre desde el
+  listado de borradores, sin haber pedido la OS completa); `GET /orders/mias` y
+  el detalle las devuelven agregadas.
+- **Correo:** con más de una franja el cuerpo las lista una a una en vez de dar
+  una sola "fecha programada".
+- **.ics (ASG-05):** **un VEVENT por franja**, con UID `os-<id>-<n>`. Un único
+  evento largo le ocuparía al profesional también las horas del medio, que están
+  libres. Al reprogramar con menos franjas que antes, las sobrantes se mandan con
+  `STATUS:CANCELLED` y el mismo UID: si no, quedarían vivas en su calendario y se
+  presentaría un día que ya no toca.
+- **Lo que NO se toca:** `horas_asignadas` (lo contratado con la ARL, que valora
+  la pre-cuenta) sigue siendo solo una **referencia** en pantalla — la cabecera
+  compara "6 h en 2 franjas · de 6 h asignadas"—, pero no limita lo que se puede
+  programar ni se reescribe desde la agenda.
+- **Límite conocido:** una **pre-asignación sobre un borrador** (OS todavía sin
+  materializar) solo guarda la fecha de inicio, no las franjas; el pie del modal
+  lo dice. Es coherente con lo que ya pasaba: al validar el borrador, la OS nace
+  SIN PROGRAMAR y ni el profesional ni la fecha del borrador se copian.
+
+En el frontend, las franjas viven en el signal `franjasVisita` y **no tocan la BD
+hasta pulsar "Asignar profesional"**, igual que las ocupaciones. Dos franjas de
+la misma visita no pueden solaparse (se rechaza con aviso); cruzarse con la
+agenda del profesional u otra OS suya solo **advierte**.
+
+### Ajustes de `/ordenes` (15-ago-2026)
+
+- **Los modales escalan con la pantalla.** Eran fijos (720 / 940 / 1100 px) y en
+  un monitor de 27" se veían perdidos en el centro. Ahora
+  `width: min(calc(420px + 38vw), 1400px, 100vw - 2rem)` (y sus variantes
+  `--wide` y `--agenda`): el término en `vw` da la escala, el tope evita líneas
+  de texto interminables y el tercer término respeta los portátiles. A partir de
+  1400 px de viewport, "Datos de la orden" pasa a **tres columnas** en vez de
+  estirar cada campo.
+- **Los soportes del profesional se ven en el detalle**, no solo tras el icono
+  del clip de la fila —que además únicamente aparece cuando ya hay archivos, así
+  que sin conocerlo no había forma de saber si habían llegado—. La tarjeta lista
+  cada archivo y al pulsarlo abre el visor ya posicionado en él
+  (`openVerify(order, id)`).
+- **Aviso de ARL sin formatos** (ver trampa 17): en el modal de asignación antes
+  de enviar, y en el toast después si `formatos_generados` llega en 0.
+- **Cómo se escriben fechas y horas de cara al usuario: `sst_ws/src/utils/formato.js`.**
+  Horas en 12 h con AM/PM (`08:00 AM`, `02:00 PM`), fechas como `vie 14 ago 2026`
+  y cantidades de horas como `4`, `4 y 30 min` o `45 min` — nunca `4.00`. Lo usan
+  el correo de asignación, la invitación .ics y los formatos PDF: son la misma
+  visita contada por tres canales y tenían que decir la hora igual escrita.
+  El PDF además ganó la zona horaria, que no tenía (`toLocaleString` a secas usa
+  la del proceso: en un servidor en UTC imprimía el acta con cinco horas de más).
+  **La pre-cuenta (M9) queda aparte a propósito**: ahí las horas son una cantidad
+  que se multiplica por una tarifa, no un horario, y van en una columna numérica.
+
 ### Pendiente
 
 **Nada del FRS**, salvo **ASG-06 (WhatsApp)**, que el propio FRS coloca en Fase 3
@@ -369,6 +480,36 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
     (`Get-NetTCPConnection -LocalPort 4010 -State Listen` → `Stop-Process -Id`).
     Ojo con el punto 2: hacerlo con `:4000` y `:4001` levantados se los lleva por
     delante.
+16. La rejilla de la agenda (modal de asignación) traduce minutos a píxeles en
+    **dos sitios que hay que mantener a la par**: las constantes `AG_*` de
+    `validation.ts` (posición de los bloques) y las variables `--ag-media` /
+    `--ag-hora` de `.agenda__scroll` en `validation.scss` (las líneas de fondo,
+    que son un `repeating-linear-gradient`, no elementos). Cambiar una sola
+    descuadra los bloques respecto a las líneas sin que nada falle.
+17. **Un correo de asignación puede salir sin un solo formato adjunto y nadie se
+    entera.** `generateOrderDocuments` recorre `sst.plantillas` activas de la ARL
+    (o sin ARL, que valen para todas); si no hay ninguna devuelve `[]`, el correo
+    se manda igual y hasta prometía "adjuntamos los formatos". Estado al
+    15-ago-2026: **Bolívar 2 plantillas, AXA Colpatria 1, Colmena 0** — por eso
+    una OS de Colmena llega solo con el `.ics`. Ya avisa por los dos lados (el
+    modal antes de asignar y el toast después, con `formatos_generados`), pero
+    **el arreglo de fondo es cargar las plantillas de Colmena** en Configuración →
+    Formatos y encuesta. Antes de dar por roto el envío de correo, mirar cuántas
+    plantillas tiene la ARL de esa orden.
+18. **`horas_asignadas` es NUMERIC y el driver lo entrega como texto: `"8.00"`.**
+    Dos consecuencias que ya mordieron: (a) se imprimía tal cual en el correo y
+    en los formatos ("Horas: 4.00"); (b) el parser del frontend quitaba los
+    puntos por creerlos separador de miles y convertía **8 horas en 800**, con lo
+    que el bloque de esa OS tapaba la columna entera de la agenda y se leía
+    "06:00–806:00". Regla: el punto solo es separador de miles **cuando hay una
+    coma** en el número. Formatear siempre con `utils/formato.js` (`horasTexto`,
+    `horaAmPm`, `fechaHoraCO`), nunca interpolando el valor crudo.
+19. En la rejilla, la celda bajo el puntero se calcula con
+    `currentTarget.getBoundingClientRect()`, **nunca con `offsetY`**: si el
+    puntero está encima de un bloque hijo, `offsetY` es relativo al bloque y la
+    franja sale desplazada. Y el `preventDefault()` del arrastre se aplica solo
+    cuando `pointerType !== 'touch'`; cancelarlo en táctil deja la agenda sin
+    poder desplazarse en un móvil.
 
 ---
 

@@ -424,6 +424,21 @@ export interface Notificacion {
   creado_en: string;
 }
 
+/**
+ * ASG-02 · Franja en que se ejecuta la visita de una OS.
+ *
+ * Una visita se puede partir (mañana y tarde, o varios días).
+ * `Orden.fecha_programada` sigue existiendo y vale el INICIO de la primera:
+ * de ella cuelgan los reportes, la cartera y el periodo de la pre-cuenta.
+ */
+export interface FranjaVisita {
+  id: string;
+  orden_id?: string;
+  fecha: string;
+  hora_inicio: string;
+  hora_fin: string;
+}
+
 /** Franja de ocupación (agenda) de un profesional. */
 export interface Ocupacion {
   id: string;
@@ -488,6 +503,8 @@ export interface Orden {
   profesional_asignado_id?: string | null;
   profesional_nombre?: string | null;
   fecha_programada?: string | null;
+  /** ASG-02 · Franjas de la visita. Vacío = OS programada en un solo bloque. */
+  franjas?: FranjaVisita[];
   metadatos_extraccion?: MetadatosExtraccion;
 }
 

@@ -338,6 +338,58 @@
         </div>
       }
 
+      <!-- ---- Soportes del profesional (M6/M7) ----
+           Vive también aquí, y no solo tras el icono del clip: ese icono
+           aparece únicamente cuando ya hay archivos, así que sin abrirlo no
+           había forma de saber si el profesional había subido algo. -->
+      @if (order.validated && order.osId) {
+        <div class="card">
+          <div class="card__head">
+            <span class="card__title">Soportes del profesional</span>
+            @if (detailSupports().length) {
+              <button type="button" class="btn btn--ghost btn--sm" (click)="openVerify(order)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                {{ puedeDecidir() ? 'Revisar y verificar' : 'Abrir visor' }}
+              </button>
+            }
+          </div>
+
+          <div class="card__body">
+            @if (loadingDetailSupports()) {
+              <p class="doc-state">Consultando los archivos recibidos…</p>
+            } @else if (detailSupports().length) {
+              <ul class="soportes-lista">
+                @for (s of detailSupports(); track s.id) {
+                  <li>
+                    <button type="button" class="soporte-fila" (click)="verSoporte(order, s)">
+                      <span class="sup-pick__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+                          <path d="M14 3v5h5" />
+                        </svg>
+                      </span>
+                      <span class="soporte-fila__texto">
+                        <span class="soporte-fila__nombre">{{ s.nombre_original || 'Soporte' }}</span>
+                        <span class="soporte-fila__meta">{{ peso(s) }} · {{ fechaSoporte(s) }}</span>
+                      </span>
+                      <span class="soporte-fila__accion">Ver</span>
+                    </button>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="estado-cerrado">
+                El profesional todavía no ha subido soportes. Los sube con el enlace del
+                correo de asignación, sin necesidad de entrar a la plataforma.
+              </p>
+            }
+          </div>
+        </div>
+      }
+
       <!-- ---- Datos de la orden ---- -->
       <div class="card ai-form">
         <div class="card__head">
@@ -478,7 +530,7 @@
 <!-- ============ MODAL: ASIGNAR PROFESIONAL ============ -->
 @if (assignOrder(); as order) {
   <div class="modal-backdrop" (click)="closeAssign()"></div>
-  <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="assignTitle">
+  <div class="modal modal--wide modal--agenda" role="dialog" aria-modal="true" aria-labelledby="assignTitle">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="assignTitle">
@@ -496,9 +548,14 @@
     </header>
 
     <div class="modal__body assign">
-      <!-- ---- Lista de profesionales ---- -->
-      <div class="assign__list">
+      <!-- ---- Lista de profesionales ----
+           La lista se estira al alto de la agenda (columna posicionada + lista
+           absoluta): si midiera por su contenido, al cargar la agenda el modal
+           crecería y la lista se quedaría corta. -->
+      <div class="assign__col">
+       <div class="assign__col-inner">
         <p class="assign__section-title">Profesionales</p>
+        <div class="assign__list">
         @for (prof of professionals(); track prof.id) {
           <button
             type="button"
@@ -515,60 +572,278 @@
         } @empty {
           <p class="assign__empty">No hay profesionales activos disponibles.</p>
         }
+        </div>
+       </div>
       </div>
 
-      <!-- ---- Fecha de ejecución + calendario / disponibilidad ---- -->
+      <!-- ---- Agenda ----
+           ASG-02 · La visita se reparte en franjas (mañana y tarde, o varios
+           días) sobre la misma rejilla donde se ven las ocupaciones del
+           profesional y sus otras órdenes, para que el choque se vea antes de
+           enviar nada. La agenda se muestra SIEMPRE, con o sin profesional
+           elegido: las franjas son de la orden, no del asesor, y así el modal
+           no cambia de tamaño a mitad de camino. -->
       <div class="assign__calendar">
-        <!-- ASG-02 · Cuándo debe ejecutarse la visita. Viaja en el correo al
-             profesional y es lo que se cambia al reprogramar (ASG-07). -->
-        <p class="assign__section-title">Fecha y hora de ejecución</p>
+          <!-- Resumen de lo programado. Cada franja se puede quitar desde aquí
+               o desde su bloque en la rejilla. -->
+          <div class="cita-bar">
+            <div class="cita-bar__chip" [class.cita-bar__chip--vacia]="!franjasVisita().length">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <path d="M16 2v4M8 2v4M3 10h18" />
+              </svg>
+              <span class="cita-bar__texto">
+                <span class="cita-bar__label">Visita de esta orden</span>
+                <strong class="cita-bar__valor">
+                  @if (franjasVisita().length) {
+                    {{ duracionTexto(minutosProgramados()) }} en
+                    {{ franjasVisita().length }} franja{{ franjasVisita().length === 1 ? '' : 's' }}
+                    · de {{ duracionTexto(duracionVisita()) }} asignadas
+                  } @else {
+                    Sin programar · marque las horas en la agenda
+                  }
+                </strong>
+              </span>
+            </div>
 
-        <div class="cita">
-          <div class="form-field">
-            <label class="form-field__label" for="citaFecha">Fecha *</label>
-            <input id="citaFecha" class="form-control" type="date" [(ngModel)]="fechaEjecucion" name="citaFecha" />
+            @if (franjasOrdenadas().length) {
+              <ul class="franjas">
+                @for (f of franjasOrdenadas(); track f.id) {
+                  <li class="franja-chip">
+                    <span class="franja-chip__texto">{{ rotuloFranja(f) }}</span>
+                    <button
+                      type="button"
+                      class="franja-chip__quitar"
+                      (click)="quitarFranjaVisita(f.id)"
+                      [attr.aria-label]="'Quitar la franja ' + rotuloFranja(f)"
+                      title="Quitar franja"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M18 6 6 18M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
           </div>
-          <div class="form-field">
-            <label class="form-field__label" for="citaHora">Hora *</label>
-            <input id="citaHora" class="form-control" type="time" [(ngModel)]="horaEjecucion" name="citaHora" />
-          </div>
-        </div>
 
-        @if (cruceDeLaCita(); as cruce) {
-          <div class="alert alert--warning alert--sm cita__aviso" role="alert">
-            <div class="alert__body">
-              <p class="alert__title">
-                El profesional ya está ocupado el {{ cruce.fecha }} de {{ cruce.hora_inicio }} a {{ cruce.hora_fin }}.
-              </p>
-              <p class="alert__detail">Puede continuar si la agenda cambió, pero revise antes de enviar el correo.</p>
+          <!-- CFG-03 · Sin plantillas activas para esta ARL el correo saldría
+               sin un solo documento que diligenciar. Se avisa ANTES de enviarlo. -->
+          @if (arlSinFormatos()) {
+            <div class="alert alert--warning alert--sm cita__aviso" role="alert">
+              <div class="alert__body">
+                <p class="alert__title">La ARL {{ order.arl }} no tiene formatos configurados.</p>
+                <p class="alert__detail">
+                  El correo al profesional saldrá sin documentos para diligenciar. Créelos en
+                  Configuración → Formatos y encuesta (una plantilla sin ARL sirve para todas).
+                </p>
+              </div>
+            </div>
+          }
+
+          @if (cruceDeLaCita(); as cruce) {
+            <div class="alert alert--warning alert--sm cita__aviso" role="alert">
+              <div class="alert__body">
+                <p class="alert__title">
+                  El profesional ya está ocupado el {{ cruce.fecha }} de {{ cruce.hora_inicio }} a {{ cruce.hora_fin }}.
+                </p>
+                <p class="alert__detail">Puede continuar si la agenda cambió, pero revise antes de enviar el correo.</p>
+              </div>
+            </div>
+          } @else if (cruceConOtraOs(); as otra) {
+            <div class="alert alert--warning alert--sm cita__aviso" role="alert">
+              <div class="alert__body">
+                <p class="alert__title">
+                  A esa hora ya tiene la orden {{ otra.codigo }} en {{ otra.empresa_nombre }}.
+                </p>
+                <p class="alert__detail">Dos visitas a la misma hora obligan a reprogramar una; revise antes de continuar.</p>
+              </div>
+            </div>
+          }
+
+          <!-- Barra: semana visible + qué se marca al pulsar en la rejilla -->
+          <div class="agenda__bar">
+            <div class="agenda__nav">
+              <button type="button" class="icon-action" (click)="agendaSemana(-1)" aria-label="Semana anterior" title="Semana anterior">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
+              </button>
+              <button type="button" class="icon-action" (click)="agendaSemana(1)" aria-label="Semana siguiente" title="Semana siguiente">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </button>
+              <button type="button" class="btn btn--ghost btn--sm" (click)="agendaHoy()">Hoy</button>
+              <p class="agenda__rango">{{ rotuloSemana() }}</p>
+            </div>
+
+            @if (selectedProfId()) {
+              <span class="agenda__duracion">
+                Horas de la orden: <strong>{{ duracionTexto(duracionVisita()) }}</strong>
+              </span>
+            } @else {
+              <span class="agenda__duracion agenda__duracion--aviso">
+                Elija un profesional para ver su disponibilidad
+              </span>
+            }
+          </div>
+
+          <p class="agenda__hint">
+            <strong>Arrastre</strong> sobre la rejilla para marcar las horas de la visita; puede
+            partirla en varias franjas (mañana y tarde, o en días distintos). Un clic simple crea
+            una franja con las horas que falten por repartir.
+          </p>
+
+          <!-- Rejilla semanal. Cabecera y días comparten el mismo contenedor con
+               scroll para que no se desalineen al desplazar en horizontal. -->
+          <div class="agenda__scroll" (pointerleave)="agendaSalir()">
+            <div class="agenda__inner">
+              <div class="agenda__head">
+                <span class="agenda__gutter-head" aria-hidden="true"></span>
+                @for (dia of semana(); track dia.iso) {
+                  <span class="agenda__dia" [class.agenda__dia--hoy]="dia.hoy" [class.agenda__dia--finde]="dia.finde">
+                    <span class="agenda__dia-nombre">{{ dia.nombre }}</span>
+                    <span class="agenda__dia-num">{{ dia.num }}</span>
+                  </span>
+                }
+              </div>
+
+              <div class="agenda__body">
+                <div class="agenda__gutter" [style.height.px]="agendaAlto" aria-hidden="true">
+                  @for (h of agendaHoras; track h.top) {
+                    <span class="agenda__hora" [style.top.px]="h.top">{{ h.label }}</span>
+                  }
+                </div>
+
+                @for (dia of semana(); track dia.iso) {
+                  <div
+                    class="agenda__col"
+                    [class.agenda__col--hoy]="dia.hoy"
+                    [class.agenda__col--finde]="dia.finde"
+                    [style.height.px]="agendaAlto"
+                    (pointerdown)="agendaPresionar($event, dia.iso)"
+                    (pointermove)="agendaMover($event, dia.iso)"
+                    (pointerup)="agendaSoltar()"
+                    (pointercancel)="agendaCancelar()"
+                  >
+                    @for (b of bloquesDelDia(dia.iso); track b.id) {
+                      <div
+                        class="ag-block ag-block--{{ b.tipo }}"
+                        [class.ag-block--nueva]="b.nueva"
+                        [style.top.px]="b.top"
+                        [style.height.px]="b.alto"
+                        [title]="b.titulo"
+                      >
+                        <span class="ag-block__hora">{{ b.rango }}</span>
+                        <span class="ag-block__texto">{{ b.texto }}</span>
+                        @if (b.slot; as slot) {
+                          <button
+                            type="button"
+                            class="ag-block__quitar"
+                            (pointerdown)="$event.stopPropagation()"
+                            (click)="removeBusySlot(slot)"
+                            aria-label="Quitar franja ocupada"
+                            title="Quitar franja"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                              <path d="M18 6 6 18M6 6l12 12" />
+                            </svg>
+                          </button>
+                        } @else if (b.franjaId; as franjaId) {
+                          <button
+                            type="button"
+                            class="ag-block__quitar"
+                            (pointerdown)="$event.stopPropagation()"
+                            (click)="quitarFranjaVisita(franjaId)"
+                            aria-label="Quitar esta franja de la visita"
+                            title="Quitar franja"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                              <path d="M18 6 6 18M6 6l12 12" />
+                            </svg>
+                          </button>
+                        }
+                      </div>
+                    }
+
+                    @if (fantasma(dia.iso); as f) {
+                      <div class="ag-ghost" [style.top.px]="f.top" [style.height.px]="f.alto">
+                        <span>{{ f.rango }}</span>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
             </div>
           </div>
-        }
 
-        <p class="assign__section-title cita__sep">Calendario · disponibilidad</p>
+          <ul class="agenda__leyenda">
+            <li><span class="agenda__punto agenda__punto--visita"></span>Visita de esta orden</li>
+            <li><span class="agenda__punto agenda__punto--otra"></span>Otras órdenes suyas</li>
+            <li><span class="agenda__punto agenda__punto--ocupado"></span>Ocupado</li>
+            <li><span class="agenda__punto agenda__punto--nueva"></span>Sin guardar</li>
+          </ul>
 
-        @if (selectedProfId()) {
-          <div class="cal">
-            <p class="cal__hint">
-              Registra los rangos de fecha y hora en los que el profesional estará
-              <strong>ocupado</strong>. Las franjas se guardan al pulsar
-              <strong>Asignar profesional</strong>.
+          <!-- Camino manual: teclado, minutos sueltos (la rejilla trabaja en
+               medias horas) y repaso de lo que hay fuera de la semana visible. -->
+          <details class="agenda__manual">
+            <summary class="agenda__manual-head">
+              Agregar franjas a mano
+              <span class="pill pill--muted">{{ franjasVisita().length + selectedProfSlots().length }}</span>
+            </summary>
+
+            <p class="agenda__manual-title">Franja de la visita</p>
+            <div class="cal__form">
+              <div class="form-field">
+                <label class="form-field__label" for="visDate">Fecha</label>
+                <input id="visDate" class="form-control" type="date" [(ngModel)]="visitaDraft.fecha" name="visDate" />
+              </div>
+              <div class="form-field">
+                <label class="form-field__label" for="visStart">Desde</label>
+                <input id="visStart" class="form-control" type="time" [(ngModel)]="visitaDraft.hora_inicio" name="visStart" />
+              </div>
+              <div class="form-field">
+                <label class="form-field__label" for="visEnd">Hasta</label>
+                <input id="visEnd" class="form-control" type="time" [(ngModel)]="visitaDraft.hora_fin" name="visEnd" />
+              </div>
+              <button type="button" class="btn btn--primary btn--sm cal__add" [disabled]="!franjaManualValida()" (click)="agregarFranjaManual()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Agregar
+              </button>
+            </div>
+
+            <p class="agenda__manual-title agenda__manual-title--sep">
+              Horas ocupadas del profesional
             </p>
+            <p class="agenda__manual-hint">
+              Bloquea horas en las que <strong>no está disponible</strong> (otra actividad,
+              permiso, viaje). Se pintan en la agenda y se guardan al asignar.
+            </p>
+
+            @if (!selectedProfId()) {
+              <p class="cal__slots-empty cal__slots-empty--muted">
+                Elija primero un profesional para registrar sus ocupaciones.
+              </p>
+            }
 
             <div class="cal__form">
               <div class="form-field">
                 <label class="form-field__label" for="calDate">Fecha</label>
-                <input id="calDate" class="form-control" type="date" [(ngModel)]="busyDraft.fecha" name="calDate" />
+                <input id="calDate" class="form-control" type="date" [disabled]="!selectedProfId()" [(ngModel)]="busyDraft.fecha" name="calDate" />
               </div>
               <div class="form-field">
                 <label class="form-field__label" for="calStart">Desde</label>
-                <input id="calStart" class="form-control" type="time" [(ngModel)]="busyDraft.hora_inicio" name="calStart" />
+                <input id="calStart" class="form-control" type="time" [disabled]="!selectedProfId()" [(ngModel)]="busyDraft.hora_inicio" name="calStart" />
               </div>
               <div class="form-field">
                 <label class="form-field__label" for="calEnd">Hasta</label>
-                <input id="calEnd" class="form-control" type="time" [(ngModel)]="busyDraft.hora_fin" name="calEnd" />
+                <input id="calEnd" class="form-control" type="time" [disabled]="!selectedProfId()" [(ngModel)]="busyDraft.hora_fin" name="calEnd" />
               </div>
-              <button type="button" class="btn btn--secondary btn--sm cal__add" [disabled]="!slotIsValid()" (click)="addBusySlot()">
+              <button type="button" class="btn btn--secondary btn--sm cal__add" [disabled]="!selectedProfId() || !slotIsValid()" (click)="addBusySlot()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M12 5v14M5 12h14" />
                 </svg>
@@ -602,35 +877,33 @@
                   </button>
                 </div>
               } @empty {
-                <p class="cal__slots-empty">Sin ocupaciones registradas. El profesional está disponible.</p>
+                @if (selectedProfId()) {
+                  <p class="cal__slots-empty">Sin ocupaciones registradas. El profesional está disponible.</p>
+                }
               }
             </div>
-          </div>
-        } @else {
-          <div class="assign__placeholder">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="3" y="4" width="18" height="18" rx="2" />
-              <path d="M16 2v4M8 2v4M3 10h18" />
-            </svg>
-            <p>Selecciona un profesional para ver y editar su disponibilidad.</p>
-          </div>
-        }
+          </details>
       </div>
     </div>
 
     <footer class="modal__footer">
       <span class="modal__status">
         @if (!selectedProfId()) {
-          Selecciona un profesional para continuar.
+          Marque las franjas en la agenda y elija un profesional para poder asignar.
+        } @else if (!franjasVisita().length) {
+          Falta marcar en la agenda las horas de la visita.
         } @else if (!order.osId) {
-          Queda anotado en el borrador; los formatos y el correo salen al validar la orden.
+          <!-- El borrador solo guarda un instante: las franjas se pactan al
+               validar la OS, que es cuando existe la orden a la que cuelgan. -->
+          Queda anotado en el borrador (solo la fecha de inicio); los formatos, el correo
+          y las franjas salen al validar la orden.
         } @else if (esReprogramacion(order)) {
-          Se regenerarán los formatos y se reenviará el correo con la nueva fecha.
+          Se regenerarán los formatos y se reenviará el correo con la nueva programación.
         } @else {
           La orden pasará a PROGRAMADA y se enviará el correo con los formatos diligenciados.
         }
         @if (franjasPendientes().length) {
-          · {{ franjasPendientes().length }} franja(s) nueva(s) en su agenda.
+          · {{ franjasPendientes().length }} franja(s) ocupada(s) nueva(s) en su agenda.
         }
       </span>
       <div class="modal__footer-actions">

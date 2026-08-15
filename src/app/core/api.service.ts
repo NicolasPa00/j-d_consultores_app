@@ -2,9 +2,23 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from './config';
-import { ArchivoSoporte, Arl, Borrador, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, ReporteCartera, ReporteHoras, ReporteVencidas, Rol, Tarifa, Usuario, Vista } from './models';
+import { ArchivoSoporte, Arl, Borrador, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, ReporteCartera, ReporteHoras, ReporteVencidas, Rol, Tarifa, Usuario, Vista } from './models';
 
 interface Wrap<T> { data: T; }
+
+/**
+ * Respuesta de la asignación (ASG-01..04).
+ *
+ * `correo_enviado: false` significa que la asignación SÍ quedó guardada pero el
+ * envío falló. `formatos_generados: 0` significa que el correo salió **sin
+ * documentos** porque la ARL no tiene plantillas activas (CFG-03); las dos
+ * cosas hay que avisarlas sin presentarlas como un fallo de la operación.
+ */
+type RespuestaAsignacion = Wrap<Orden> & {
+  correo_enviado?: boolean;
+  correo_error?: string | null;
+  formatos_generados?: number;
+};
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -73,11 +87,19 @@ export class ApiService {
    */
   assignOrder(
     id: string,
-    body: { profesional_id: string; fecha_programada?: string },
-  ): Observable<Wrap<Orden> & { correo_enviado?: boolean; correo_error?: string | null }> {
-    return this.http.post<Wrap<Orden> & { correo_enviado?: boolean; correo_error?: string | null }>(
-      `${this.base}/orders/${id}/assign`, body,
-    );
+    body: {
+      profesional_id: string;
+      fecha_programada?: string;
+      /** ASG-02 · Franjas de la visita. El servidor deriva de ellas la fecha. */
+      franjas?: { fecha: string; hora_inicio: string; hora_fin: string }[];
+    },
+  ): Observable<RespuestaAsignacion> {
+    return this.http.post<RespuestaAsignacion>(`${this.base}/orders/${id}/assign`, body);
+  }
+
+  /** ASG-02 · Franjas ya guardadas de una visita (para reprogramar sobre ellas). */
+  listFranjasVisita(orderId: string): Observable<Wrap<FranjaVisita[]>> {
+    return this.http.get<Wrap<FranjaVisita[]>>(`${this.base}/orders/${orderId}/franjas`);
   }
 
   // ---- Verificación y cierre (M7) ----

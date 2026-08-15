@@ -61,6 +61,11 @@ interface MiOrden {
   fecha: string;
   direccion: string;
   contacto: string;
+  /**
+   * ASG-02 · Franjas en que se ejecuta la visita, ya formateadas. Vacío cuando
+   * la OS se programó en un solo bloque: ahí basta con `fecha`.
+   */
+  franjas: string[];
   /** Aún no ejecutada: es lo que el profesional tiene por hacer. */
   pendiente: boolean;
   /** SUP-07 · Lo que ya envió por el enlace público. */
@@ -289,6 +294,16 @@ function toMiOrden(o: Orden & { soportes?: SoporteEnviado[] }): MiOrden {
       : 'Sin fecha',
     direccion: o.direccion || o.ciudad_ejecucion || '—',
     contacto: o.contacto_sst_nombre || '—',
+    // ASG-02 · Una visita partida se cuenta franja a franja. Con una sola no se
+    // repite: la fila ya muestra esa fecha.
+    franjas:
+      (o.franjas?.length ?? 0) > 1
+        ? o.franjas!.map((f) => {
+            const d = new Date(`${f.fecha}T12:00:00`);
+            const dia = d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+            return `${dia} · ${f.hora_inicio}–${f.hora_fin}`;
+          })
+        : [],
     pendiente: ESTADOS_PENDIENTES.includes(o.estado),
     soportes: o.soportes ?? [],
   };

@@ -157,6 +157,18 @@
   gap: 0.15rem;
 }
 
+/* ASG-02 · Las franjas de una visita partida, bajo su fecha de inicio. */
+.franjas-visita {
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.1rem;
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
 .soportes__item {
   font-size: 0.78rem;
   color: var(--text-muted);
