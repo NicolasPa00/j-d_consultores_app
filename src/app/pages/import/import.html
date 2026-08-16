@@ -4,6 +4,8 @@
 </section>
 
 <!-- ===== Zona de carga (compacta) ===== -->
+<!-- Admite varios archivos a la vez: una tanda de PDFs de la misma ARL era el
+     caso normal y obligaba a repetir el ciclo completo archivo por archivo. -->
 <div class="uploader" [class.uploader--busy]="processing()">
   <span class="uploader__icon" aria-hidden="true">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -14,28 +16,44 @@
   </span>
 
   <div class="uploader__meta">
-    @if (fileName(); as name) {
-      <span class="uploader__file">{{ name }}</span>
+    @if (fileNames().length; as total) {
+      @if (total === 1) {
+        <span class="uploader__file">{{ fileNames()[0] }}</span>
+      } @else {
+        <span class="uploader__file">{{ total }} archivos seleccionados</span>
+        <ul class="uploader__list">
+          @for (n of fileNames(); track n) {
+            <li class="uploader__list-item" [title]="n">{{ n }}</li>
+          }
+        </ul>
+      }
     } @else {
       <span class="uploader__file uploader__file--empty">Ningún archivo seleccionado</span>
     }
-    <span class="uploader__hint">Excel (.xlsx) o PDF · máx. 10 MB</span>
+    <span class="uploader__hint">Excel (.xlsx) o PDF · puedes elegir varios a la vez</span>
   </div>
 
   <div class="uploader__actions">
+    @if (fileNames().length && !processing()) {
+      <button type="button" class="btn btn--ghost btn--sm" (click)="quitarSeleccion()">Quitar</button>
+    }
     <label class="btn btn--ghost btn--sm uploader__pick">
-      {{ fileName() ? 'Cambiar' : 'Seleccionar archivo' }}
-      <input type="file" class="uploader__input" accept=".xlsx,.xls,.pdf" (change)="onFileSelected($event)" />
+      {{ fileNames().length ? 'Cambiar' : 'Seleccionar archivos' }}
+      <input type="file" class="uploader__input" multiple accept=".xlsx,.xls,.pdf" (change)="onFileSelected($event)" />
     </label>
     <button
       type="button"
       class="btn btn--primary btn--sm"
-      [disabled]="!fileName() || processing()"
+      [disabled]="!fileNames().length || processing()"
       (click)="processWithAi()"
     >
       @if (processing()) {
         <span class="spinner" aria-hidden="true"></span>
-        Procesando…
+        @if (progreso(); as p) {
+          Procesando {{ p.hechos }}/{{ p.total }}…
+        } @else {
+          Procesando…
+        }
       } @else {
         Procesar con IA
       }
@@ -52,8 +70,78 @@
       </svg>
     </span>
     <div class="alert__body">
-      <p class="alert__title">No se pudo procesar el archivo</p>
+      <p class="alert__title">No hay órdenes para revisar</p>
       <p class="alert__detail">{{ msg }}</p>
+    </div>
+  </div>
+}
+
+<!-- ===== Archivos de la tanda que fallaron (los demás siguieron) ===== -->
+@if (fallos().length) {
+  <div class="alert alert--warning upload-error" role="alert">
+    <span class="alert__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 9v4M12 17h.01" />
+        <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+      </svg>
+    </span>
+    <div class="alert__body">
+      <p class="alert__title">{{ fallos().length }} archivo(s) no se pudieron procesar</p>
+      <ul class="alert__list">
+        @for (f of fallos(); track f.archivo) {
+          <li><strong>{{ f.archivo }}</strong> — {{ f.motivo }}</li>
+        }
+      </ul>
+    </div>
+  </div>
+}
+
+<!-- ===== IMP-07/09 · Órdenes descartadas por duplicadas =====
+     No entran a la tabla: no hay nada que revisar en ellas. Lo que sí hace
+     falta es saber en qué estado está la orden que YA existe, que es lo que
+     decide si esto es un reenvío normal o una orden que alguien deshabilitó. -->
+@if (duplicadas().length) {
+  <div class="alert alert--error dup-alert" role="alert">
+    <span class="alert__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="9" width="12" height="12" rx="2" />
+        <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+      </svg>
+    </span>
+    <div class="alert__body">
+      <p class="alert__title">
+        @if (duplicadas().length === 1) {
+          Una orden ya existe y se descartó del procesamiento
+        } @else {
+          {{ duplicadas().length }} órdenes ya existen y se descartaron del procesamiento
+        }
+      </p>
+      <ul class="dup-list">
+        @for (d of duplicadas(); track d.id) {
+          <li class="dup-item">
+            <span class="dup-item__id mono">{{ d.identidad }}</span>
+            <span class="dup-item__company">{{ d.company }} · {{ d.arl }}</span>
+            <span class="dup-item__state">
+              Ya registrada como
+              <strong>{{ d.codigoOS || 'OS existente' }}</strong>
+              <span class="pill" [class]="d.deshabilitada ? 'pill--muted' : 'pill--info'">{{ d.estadoOS }}</span>
+              @if (d.profesional) {
+                · asignada a {{ d.profesional }}
+              }
+            </span>
+            @if (d.deshabilitada) {
+              <span class="dup-item__hint">
+                Está deshabilitada en la bandeja: por eso no aparece en Órdenes. Si se
+                deshabilitó por error, restáurela desde la pestaña “Deshabilitadas”
+                de Órdenes — volver a importar el archivo no la reactiva.
+              </span>
+            }
+            @if (variosArchivos() && d.archivo) {
+              <span class="dup-item__file">Venía en {{ d.archivo }}</span>
+            }
+          </li>
+        }
+      </ul>
     </div>
   </div>
 }
@@ -82,21 +170,22 @@
             <th>ARL detectada</th>
             <th>Horas</th>
             <th>Confianza</th>
+            @if (variosArchivos()) {
+              <th>Archivo</th>
+            }
             <th class="col-actions">Revisar</th>
           </tr>
         </thead>
         <tbody>
-          @for (row of previewRows(); track row.id; let i = $index) {
-            <tr [class.preview__row--dup]="row.duplicada">
-              <td class="col-num mono">{{ i + 1 }}</td>
+          @for (row of pag.visibles(); track row.id; let i = $index) {
+            <tr>
+              <td class="col-num mono">{{ pag.desde() + i }}</td>
               <td class="mono">{{ row.identidad }}</td>
               <td class="mono">{{ row.nit }}</td>
               <td>
                 <div class="who__text">
                   <span class="who__name">{{ row.company }}</span>
-                  @if (row.duplicada) {
-                    <span class="pill pill--muted" title="Ya existe una OS con esta identidad">Duplicada</span>
-                  } @else if (sinVencimiento(row)) {
+                  @if (sinVencimiento(row)) {
                     <span class="pill pill--danger" title="Diligencie la fecha de vencimiento para poder guardar">
                       Sin vencimiento
                     </span>
@@ -115,25 +204,54 @@
               <td>
                 <span class="pill" [class]="pillClass(row.confidence)">{{ row.confidence }}%</span>
               </td>
+              @if (variosArchivos()) {
+                <td class="cell-file" [title]="row.lote.nombre">{{ row.lote.nombre }}</td>
+              }
               <td class="col-actions">
-                <button
-                  type="button"
-                  class="icon-action"
-                  (click)="openDetail(row.id)"
-                  aria-label="Revisar campos extraídos"
-                  title="Revisar campos extraídos"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                  </svg>
-                </button>
+                <div class="row-actions">
+                  <button
+                    type="button"
+                    class="icon-action"
+                    (click)="openDetail(row)"
+                    aria-label="Revisar campos extraídos"
+                    title="Revisar campos extraídos"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                    </svg>
+                  </button>
+                  <!-- IMP-04 · Guardar SOLO esta orden. Permite ir cerrando de a
+                       una en un lote largo en vez de revisarlo entero de una
+                       sentada para poder pulsar "Guardar todo". -->
+                  <button
+                    type="button"
+                    class="icon-action icon-action--save"
+                    [disabled]="row.guardando || confirming()"
+                    (click)="saveRow(row)"
+                    aria-label="Guardar esta orden en Órdenes"
+                    title="Guardar esta orden en Órdenes"
+                  >
+                    @if (row.guardando) {
+                      <span class="spinner spinner--xs" aria-hidden="true"></span>
+                    } @else {
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+                        <path d="M17 21v-8H7v8M7 3v5h8" />
+                      </svg>
+                    }
+                  </button>
+                </div>
               </td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="8" class="table__empty">
-                El archivo se procesó pero no se extrajo ninguna orden.
+              <td [attr.colspan]="variosArchivos() ? 9 : 8" class="table__empty">
+                @if (duplicadas().length) {
+                  Todas las órdenes de los archivos ya existían: no queda ninguna por guardar.
+                } @else {
+                  El archivo se procesó pero no se extrajo ninguna orden.
+                }
               </td>
             </tr>
           }
@@ -141,14 +259,13 @@
       </table>
     </div>
 
+    <app-paginador [pag]="pag" etiqueta="órdenes extraídas" />
+
     <div class="preview__footer">
       <span class="preview__status">
         @if (pendientesVencimiento().length; as faltan) {
           <strong>{{ faltan }} orden(es) sin fecha de vencimiento.</strong>
           Diligénciela en cada una para poder guardar.
-        } @else if (duplicateCount()) {
-          {{ confirmableCount() }} orden(es) se guardarán ·
-          <strong>{{ duplicateCount() }} duplicada(s)</strong> se omitirán.
         } @else {
           {{ confirmableCount() }} orden(es) se enviarán a Órdenes.
         }
@@ -167,7 +284,7 @@
             <span class="spinner" aria-hidden="true"></span>
             Guardando…
           } @else {
-            Guardar en Órdenes
+            Guardar todo en Órdenes
           }
         </button>
       </div>
@@ -181,7 +298,7 @@
   <div class="modal modal--split" role="dialog" aria-modal="true" aria-labelledby="reviewTitle">
     <header class="modal__head">
       <div>
-        <h3 class="modal__title" id="reviewTitle">Revisar extracción</h3>
+        <h3 class="modal__title" id="reviewTitle">Revisión de orden</h3>
         <p class="modal__sub">
           {{ order.company }} · {{ order.arl }}@if (order.arlConfidence) {<span class="modal__sub-conf"> ({{ order.arlConfidence }}% confianza ARL)</span>}
         </p>
@@ -199,6 +316,19 @@
         <div class="doc-pane__head">
           <span class="doc-pane__title">Documento original</span>
           <span class="doc-pane__file" [title]="docName()">{{ docName() }}</span>
+          <!-- En pantalla angosta el visor de PDF embebido no se puede
+               desplazar (ver .doc-pane en el SCSS): esta es la salida que
+               siempre funciona, así que se ofrece en todos los tamaños. -->
+          @if (puedeAbrirAparte()) {
+            <button type="button" class="doc-pane__open" (click)="abrirDocumentoAparte()" title="Abrir el PDF en otra pestaña">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 4h6v6" />
+                <path d="M20 4 11 13" />
+                <path d="M18 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5" />
+              </svg>
+              Abrir aparte
+            </button>
+          }
         </div>
 
         <div #docBody class="doc-pane__body" [class.doc-pane__body--flush]="docKind() === 'pdf'">
@@ -246,19 +376,7 @@
         </div>
 
         <div class="card__body">
-          @if (order.duplicada) {
-            <div class="alert alert--error ai-banner" role="alert">
-              <span class="alert__icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 9v4M12 17h.01" />
-                <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
-                </svg>
-              </span>
-              <div class="alert__body">
-                <p class="alert__title">Ya existe una OS con esta identidad. Esta orden no se guardará al confirmar el lote.</p>
-              </div>
-            </div>
-          } @else if (order.confidence < 70) {
+          @if (order.confidence < 70) {
             <div class="alert alert--warning ai-banner" role="alert">
               <span class="alert__icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

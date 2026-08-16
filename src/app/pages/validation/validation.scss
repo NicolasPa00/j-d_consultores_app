@@ -997,9 +997,16 @@
 }
 
 /* ---- Rejilla ---- */
+/* Un solo scroll en el modal: el del cuerpo.
+   La rejilla tenía `max-height` + `overflow: auto`, así que dentro del panel —que
+   ya se desplaza— aparecía un segundo scroll vertical y había que perseguir el
+   correcto para llegar a la tarde. Ahora se dibuja entera (el alto lo fija
+   `agendaAlto`, calculado a partir de las constantes AG_*) y solo queda el
+   desplazamiento horizontal para cuando los siete días no caben a lo ancho.
+   Nota: al no ser ya un contenedor con scroll vertical, la cabecera de días deja
+   de quedarse pegada arriba; a cambio la semana completa se ve de una vez. */
 .agenda__scroll {
-  max-height: 46vh;
-  overflow: auto;
+  overflow-x: auto;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
   background: var(--surface);
@@ -1569,10 +1576,6 @@
 
   /* Con el modal en una sola columna la agenda se lleva casi todo el alto
      disponible, así que se recorta para que el pie siga a la vista. */
-  .agenda__scroll {
-    max-height: 38vh;
-  }
-
   .cita-bar__campos {
     flex: 1 1 100%;
   }
@@ -1622,4 +1625,14 @@
   .modal__footer-actions {
     justify-content: flex-end;
   }
+}
+
+/* Cuánto falta por repartir. Va junto al resumen de la visita porque es la
+   condición que decide el estado: sin todas las horas la OS sigue SIN PROGRAMAR. */
+.cita-bar__falta {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--warning);
 }

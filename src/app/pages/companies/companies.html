@@ -17,12 +17,12 @@
         type="text"
         placeholder="Buscar por nombre, NIT, actividad o ciudad…"
         [ngModel]="query()"
-        (ngModelChange)="query.set($event)"
+        (ngModelChange)="buscar($event)"
       />
     </div>
 
     <label class="emp-toggle">
-      <input type="checkbox" [checked]="soloActivas()" (change)="soloActivas.set(!soloActivas())" />
+      <input type="checkbox" [checked]="soloActivas()" (change)="alternarActivas(!soloActivas())" />
       Solo activas
     </label>
 
@@ -53,7 +53,7 @@
         </tr>
       </thead>
       <tbody>
-        @for (emp of filtradas(); track emp.id) {
+        @for (emp of pag.visibles(); track emp.id) {
           <tr class="emp-row" (click)="openDetalle(emp)">
             <td>
               <div class="who">
@@ -139,6 +139,8 @@
       </tbody>
     </table>
   </div>
+
+  <app-paginador [pag]="pag" etiqueta="empresas" />
 </div>
 
 <!-- ============ DRAWER · FICHA ============ -->

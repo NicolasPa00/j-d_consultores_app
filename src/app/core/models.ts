@@ -134,11 +134,30 @@ export interface Borrador {
   os_fecha_programada?: string | null;
   os_profesional_id?: string | null;
   os_profesional_nombre?: string | null;
+
+  /**
+   * IMP-07/09 · Solo en los borradores DUPLICADA: la OS que ya existía y por la
+   * que este se descarta. Sin estos datos el aviso de "duplicada" no dice nada
+   * accionable — la orden puede estar en curso, ejecutada o deshabilitada, y
+   * cada caso se resuelve distinto.
+   */
+  duplicado_de?: string | null;
+  duplicado_codigo?: string | null;
+  duplicado_estado?: EstadoOrden | null;
+  duplicado_fecha_programada?: string | null;
+  duplicado_fecha_carga?: string | null;
+  duplicado_profesional?: string | null;
+  /** La OS existe pero su orden está deshabilitada en la bandeja (soft-delete). */
+  duplicado_deshabilitado?: boolean;
 }
 
 /** EST-01 · Estados del ciclo de vida de una OS. */
 export type EstadoOrden =
-  | 'SIN PROGRAMAR' | 'PROGRAMADA' | 'EN VERIFICACIÓN' | 'EJECUTADA' | 'CANCELADA';
+  | 'SIN PROGRAMAR' | 'PROGRAMADA' | 'EJECUTADA'
+  // Heredados: el ciclo se redujo a tres estados en ago-2026 y estos ya no se
+  // alcanzan, pero siguen en el enum de la BD y en órdenes antiguas, así que el
+  // tipo tiene que admitirlos para poder pintarlas.
+  | 'EN VERIFICACIÓN' | 'CANCELADA';
 
 /** M6 · Soporte firmado subido por el profesional desde el enlace público. */
 export interface ArchivoSoporte {

@@ -52,10 +52,12 @@
                 },
                 {
                   // Órdenes concentra tabla + 3 modales (detalle, asignación y
-                  // verificación); 8kB se quedaron cortos para esa pantalla.
+                  // verificación); 8kB se quedaron cortos para esa pantalla, y
+                  // la agenda semanal del modal de asignación (rejilla, bloques
+                  // y capas) volvió a pasarse de 20kB.
                   "type": "anyComponentStyle",
-                  "maximumWarning": "14kB",
-                  "maximumError": "20kB"
+                  "maximumWarning": "22kB",
+                  "maximumError": "28kB"
                 }
               ],
               "outputHashing": "all"

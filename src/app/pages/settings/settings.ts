@@ -6,6 +6,8 @@ import { AuthService } from '../../core/auth.service';
 import { AlertService } from '../../core/alert.service';
 import { ApiService } from '../../core/api.service';
 import { Arl, PermisoRol, Plantilla, PreguntasEncuesta, Rol, Usuario, Vista } from '../../core/models';
+import { paginar } from '../../shared/paginacion';
+import { PaginadorComponent } from '../../shared/paginador/paginador';
 
 interface RateRow {
   activity: string;
@@ -55,7 +57,7 @@ function claveDocumento(v: string): string {
 
 @Component({
   selector: 'app-settings',
-  imports: [FormsModule],
+  imports: [FormsModule, PaginadorComponent],
   templateUrl: './settings.html',
   styleUrl: './settings.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -92,6 +94,8 @@ export class SettingsComponent implements OnInit {
   // maneja el Administrador y no solo el Maestro.
   protected readonly esAdmin = computed(() => this.auth.usuario()?.rol === 'admin');
   protected readonly plantillas = signal<Plantilla[]>([]);
+  /** CFG-03 · Una plantilla por tipo de formato y ARL: crece con las tres ARL. */
+  protected readonly pagPlantillas = paginar(this.plantillas, 10);
   protected readonly arls = signal<Arl[]>([]);
   protected readonly loadingFormatos = signal(false);
   protected readonly savingPlantilla = signal(false);
@@ -113,6 +117,8 @@ export class SettingsComponent implements OnInit {
   // ----- Pestaña: Usuarios del Sistema (exclusiva del Administrador Maestro) -----
   protected readonly esMaestro = computed(() => this.auth.usuario()?.es_maestro === true);
   protected readonly usuarios = signal<Usuario[]>([]);
+  /** M1 · Las cuentas internas se acumulan; la tabla vive dentro de una pestaña. */
+  protected readonly pagUsuarios = paginar(this.usuarios, 10);
   protected readonly loadingUsers = signal(false);
   protected readonly savingUser = signal(false);
   /** Id del usuario cuya eliminación está en curso (bloquea su botón). */

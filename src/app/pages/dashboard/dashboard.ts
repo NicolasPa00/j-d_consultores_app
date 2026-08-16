@@ -1,16 +1,35 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_ID, signal } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser, NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
 import { DashboardData, Orden, Profesional, SoporteEnviado } from '../../core/models';
+import { aIsoFecha, fechaLocal } from '../../core/fechas';
+import { paginar } from '../../shared/paginacion';
+import { PaginadorComponent } from '../../shared/paginador/paginador';
+
+/**
+ * Icono de una tarjeta de KPI. Es una CLAVE, no un emoji: los pinta el propio
+ * template con el mismo trazo lineal que los iconos del sidebar, para que el
+ * panel no mezcle dos lenguajes gráficos (los emoji los dibuja el sistema
+ * operativo, así que además cambiaban de aspecto entre Windows, Mac y Android).
+ */
+type KpiIcon = 'orders' | 'calendar' | 'clock' | 'check' | 'search';
 
 interface Kpi {
   label: string;
   value: string;
-  icon: string;
+  icon: KpiIcon;
   accent: 'blue' | 'cyan' | 'warning' | 'slate';
+}
+
+/** Cómo se pinta la fecha de vencimiento de una orden (igual que en Órdenes). */
+interface Vencimiento {
+  fecha: string;
+  detalle: string;
+  tone: 'normal' | 'warn' | 'danger';
 }
 
 interface ArlStat {
@@ -32,11 +51,15 @@ interface EstadoStat {
 const ESTADOS: { key: string; label: string; tone: EstadoStat['tone'] }[] = [
   { key: 'SIN PROGRAMAR', label: 'Sin programar', tone: 'slate' },
   { key: 'PROGRAMADA', label: 'Programadas', tone: 'blue' },
-  { key: 'EN VERIFICACIÓN', label: 'En verificación', tone: 'amber' },
   { key: 'EJECUTADA', label: 'Ejecutadas', tone: 'green' },
-  { key: 'CANCELADA', label: 'Canceladas', tone: 'red' },
 ];
 
+/**
+ * Fila de "Órdenes recientes". Las columnas son las MISMAS que las de la vista
+ * Órdenes (NIT, razón social, ARL, horas, vencimiento, confianza y estado): es
+ * la misma orden vista en dos sitios, y que cada pantalla mostrara un subconjunto
+ * distinto obligaba a cruzarlas mentalmente.
+ */
 interface WorkOrder {
   id: string;
   code: string;
@@ -46,9 +69,15 @@ interface WorkOrder {
   hours: number;
   confidence: number; // 0 - 100
   status: string;
+  /** Profesional que la tiene a cargo; se muestra bajo la razón social. */
+  assignedProf: string | null;
+  vencimiento: Vencimiento | null;
   sstContact: string;
   city: string;
 }
+
+/** Cuántas órdenes caben en el resumen. El resto se consulta en /ordenes. */
+const RECIENTES_VISIBLES = 10;
 
 /** ASG-08 · Fila de la agenda del profesional. */
 interface MiOrden {
@@ -73,11 +102,11 @@ interface MiOrden {
 }
 
 /** Estados que el profesional todavía tiene que atender. */
-const ESTADOS_PENDIENTES = ['PROGRAMADA', 'EN VERIFICACIÓN'];
+const ESTADOS_PENDIENTES = ['PROGRAMADA'];
 
 @Component({
   selector: 'app-dashboard',
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink, NgTemplateOutlet, PaginadorComponent],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -102,19 +131,35 @@ export class DashboardComponent implements OnInit {
   protected readonly sinFicha = signal<string | null>(null);
 
   protected readonly misPendientes = computed(() => this.misOrdenes().filter((o) => o.pendiente));
+  /**
+   * ASG-08 · Página visible de la agenda. Es el único sitio donde el profesional
+   * ve su trabajo, y su histórico solo crece: sin paginar, con un par de años de
+   * órdenes había que bajar media pantalla para llegar al pie.
+   */
+  protected readonly pagMias = paginar(this.misOrdenes, 25);
   protected readonly misKpis = computed<Kpi[]>(() => {
     const todas = this.misOrdenes();
     const cuenta = (estado: string) => todas.filter((o) => o.estado === estado).length;
     return [
-      { label: 'Programadas', value: String(cuenta('PROGRAMADA')), icon: '🗓️', accent: 'blue' },
-      { label: 'En verificación', value: String(cuenta('EN VERIFICACIÓN')), icon: '🔎', accent: 'warning' },
-      { label: 'Ejecutadas', value: String(cuenta('EJECUTADA')), icon: '✅', accent: 'slate' },
-      { label: 'Horas asignadas', value: String(todas.reduce((s, o) => s + o.horas, 0)), icon: '⏱️', accent: 'cyan' },
+      { label: 'Programadas', value: String(cuenta('PROGRAMADA')), icon: 'calendar', accent: 'blue' },
+      { label: 'Ejecutadas', value: String(cuenta('EJECUTADA')), icon: 'check', accent: 'slate' },
+      { label: 'Horas asignadas', value: String(todas.reduce((s, o) => s + o.horas, 0)), icon: 'clock', accent: 'cyan' },
     ];
   });
 
   protected readonly kpis = signal<Kpi[]>([]);
   protected readonly orders = signal<WorkOrder[]>([]);
+  /**
+   * Lo que se pinta en el panel: solo las 10 más recientes (el backend ya las
+   * devuelve por fecha de carga descendente). Antes se listaban las 200 que trae
+   * el endpoint y el resumen se convertía en un segundo listado de Órdenes, con
+   * la página entera desplazándose. Para verlas todas está el botón "Ver todo".
+   */
+  protected readonly recentOrders = computed(() => this.orders().slice(0, RECIENTES_VISIBLES));
+  /** Cuántas quedan fuera del corte; 0 oculta la nota del pie. */
+  protected readonly ordersOcultas = computed(() =>
+    Math.max(0, this.orders().length - RECIENTES_VISIBLES),
+  );
   protected readonly professionals = signal<Profesional[]>([]);
   private readonly dashData = signal<DashboardData | null>(null);
 
@@ -193,12 +238,12 @@ export class DashboardComponent implements OnInit {
       this.dashData.set(r.data);
       const k = r.data.kpis;
       this.kpis.set([
-        { label: 'Total Órdenes', value: String(k.total_ordenes ?? 0), icon: '📦', accent: 'blue' },
-        { label: 'Programadas', value: String(k.programadas ?? 0), icon: '🗓️', accent: 'cyan' },
-        { label: 'Órdenes sin programar', value: String(k.sin_programar ?? 0), icon: '⏳', accent: 'warning' },
+        { label: 'Total Órdenes', value: String(k.total_ordenes ?? 0), icon: 'orders', accent: 'blue' },
+        { label: 'Programadas', value: String(k.programadas ?? 0), icon: 'calendar', accent: 'cyan' },
+        { label: 'Órdenes sin programar', value: String(k.sin_programar ?? 0), icon: 'clock', accent: 'warning' },
         // RPT-01 pide las ejecutadas DEL MES; el acumulado histórico sigue
         // disponible en Informes y en el porcentaje por ARL de más abajo.
-        { label: 'Ejecutadas este mes', value: String(k.ejecutadas_mes ?? 0), icon: '✅', accent: 'slate' },
+        { label: 'Ejecutadas este mes', value: String(k.ejecutadas_mes ?? 0), icon: 'check', accent: 'slate' },
       ]);
     });
   }
@@ -246,10 +291,22 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  protected confidenceTone(value: number): 'success' | 'warning' | 'danger' {
-    if (value >= 85) return 'success';
-    if (value >= 70) return 'warning';
-    return 'danger';
+  // ---- Helpers de presentación ----
+  // Replican los de Órdenes (`validation.ts`) para que la misma orden se vea
+  // igual en las dos pantallas: mismos umbrales de confianza y mismos colores
+  // de estado. Si allá cambian, aquí también.
+  protected pillClass(confidence: number): string {
+    if (confidence >= 80) return 'pill--success';
+    if (confidence >= 70) return 'pill--warning';
+    return 'pill--danger';
+  }
+
+  protected pillEstado(estado?: string | null): string {
+    switch (estado) {
+      case 'PROGRAMADA': return 'pill--info';
+      case 'EJECUTADA': return 'pill--success';
+      default: return 'pill--muted'; // SIN PROGRAMAR
+    }
   }
 }
 
@@ -262,9 +319,7 @@ function keyToKpi(estado: string): string {
   switch (estado) {
     case 'SIN PROGRAMAR': return 'sin_programar';
     case 'PROGRAMADA': return 'programadas';
-    case 'EN VERIFICACIÓN': return 'en_verificacion';
     case 'EJECUTADA': return 'ejecutadas';
-    case 'CANCELADA': return 'canceladas';
     default: return '';
   }
 }
@@ -320,7 +375,38 @@ function toWorkOrder(o: Orden): WorkOrder {
     hours: Number(o.horas_asignadas ?? 0),
     confidence: Math.round(Number(o.metadatos_extraccion?.overall_confidence ?? 0)),
     status: o.estado,
+    assignedProf: o.profesional_nombre || null,
+    vencimiento: calcVencimiento(o.fecha_vencimiento),
     sstContact: o.contacto_sst_nombre || '—',
-    city: '—',
+    city: o.ciudad_ejecucion || '—',
+  };
+}
+
+/**
+ * Vencimiento con los días que faltan, con el mismo criterio que Órdenes: conteo
+ * en días de calendario y aviso temprano a partir de 3 días, que es cuando ya no
+ * queda margen para reprogramar al profesional.
+ *
+ * La fecha llega de una columna DATE, así que el driver la serializa como
+ * timestamp; `aIsoFecha` se queda con la parte YYYY-MM-DD y `fechaLocal` la
+ * ancla a medianoche local para que el conteo no se corra un día (ver
+ * `core/fechas.ts`).
+ */
+function calcVencimiento(raw: string | null | undefined): Vencimiento | null {
+  const iso = aIsoFecha(raw);
+  const venc = iso ? fechaLocal(iso) : null;
+  if (!venc) return null;
+
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const dias = Math.round((venc.getTime() - hoy.getTime()) / 86_400_000);
+  const fecha = `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+
+  if (dias < 0) return { fecha, detalle: 'Vencida', tone: 'danger' };
+  if (dias === 0) return { fecha, detalle: 'Vence hoy', tone: 'warn' };
+  return {
+    fecha,
+    detalle: `Faltan ${dias} día${dias === 1 ? '' : 's'}`,
+    tone: dias <= 3 ? 'warn' : 'normal',
   };
 }

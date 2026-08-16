@@ -5,6 +5,8 @@ import { ApiService } from '../../core/api.service';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
 import { Empresa, OrdenDeEmpresa } from '../../core/models';
+import { paginar } from '../../shared/paginacion';
+import { PaginadorComponent } from '../../shared/paginador/paginador';
 
 /** Campos del formulario. Coinciden 1:1 con los editables del backend. */
 interface EmpresaDraft {
@@ -48,7 +50,7 @@ function claveNit(nit: string): string {
  */
 @Component({
   selector: 'app-companies',
-  imports: [FormsModule],
+  imports: [FormsModule, PaginadorComponent],
   templateUrl: './companies.html',
   styleUrl: './companies.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -90,6 +92,20 @@ export class CompaniesComponent implements OnInit {
         .some((campo) => (campo || '').toLowerCase().includes(q));
     });
   });
+
+  /** CFG-02 · El maestro de empresas solo crece: se alimenta solo al validar. */
+  protected readonly pag = paginar(this.filtradas, 25);
+
+  /** Buscar o cambiar el filtro es mirar otra lista: se vuelve a la página 1. */
+  protected buscar(texto: string): void {
+    this.query.set(texto);
+    this.pag.reiniciar();
+  }
+
+  protected alternarActivas(valor: boolean): void {
+    this.soloActivas.set(valor);
+    this.pag.reiniciar();
+  }
 
   protected readonly activas = computed(() => this.empresas().filter((e) => e.activo).length);
 

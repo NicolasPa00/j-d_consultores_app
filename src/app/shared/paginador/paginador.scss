@@ -1,0 +1,116 @@
+/* Pie de paginación. Comparte tokens con el design system de styles.scss para
+   que se vea igual dentro de una `.card`, de un `.panel` o de un modal. */
+:host {
+  display: block;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  padding: 0.7rem 1.1rem;
+  border-top: 1px solid var(--border-soft);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.pager__rango strong {
+  color: var(--text-main);
+}
+
+.pager__nav {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.pager__btn,
+.pager__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 0.45rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.pager__btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.pager__btn:hover:not([disabled]),
+.pager__num:hover:not(.pager__num--activa) {
+  background: rgba(45, 123, 200, 0.08);
+  color: var(--secondary-color);
+}
+
+.pager__btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* La página vigente se marca con el azul de marca: es el mismo recurso que usan
+   las pestañas y el sidebar para decir "estás aquí". */
+.pager__num--activa {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #ffffff;
+}
+
+.pager__elipsis {
+  padding: 0 0.15rem;
+  color: var(--text-muted);
+}
+
+.pager__tamano {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pager__tamano-label {
+  font-size: 0.75rem;
+}
+
+.pager__select {
+  height: 30px;
+  padding: 0 1.4rem 0 0.5rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 0.8rem;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.pager__select:focus {
+  outline: none;
+  border-color: var(--secondary-color);
+  box-shadow: 0 0 0 3px rgba(45, 123, 200, 0.15);
+}
+
+/* En pantalla estrecha el rango y el selector se van a los extremos y los
+   números quedan centrados debajo, en vez de comprimirse hasta no poder
+   pulsarse con el dedo. */
+@media (max-width: 640px) {
+  .pager {
+    justify-content: center;
+  }
+
+  .pager__nav {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+}

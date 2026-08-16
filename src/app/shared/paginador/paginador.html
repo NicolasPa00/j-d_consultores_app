@@ -1,0 +1,68 @@
+<!-- Sin filas no hay nada que paginar y el pie solo sería ruido. -->
+@if (pag().total()) {
+  <nav class="pager" role="navigation" [attr.aria-label]="'Paginación de ' + etiqueta()">
+    <span class="pager__rango">
+      {{ pag().desde() }}–{{ pag().hasta() }} de <strong>{{ pag().total() }}</strong> {{ etiqueta() }}
+    </span>
+
+    <!-- Con todo en una página los botones sobran, pero el selector de tamaño
+         sigue siendo útil: es como se vuelve a ver más de una vez. -->
+    @if (!pag().innecesaria()) {
+      <div class="pager__nav">
+        <button
+          type="button"
+          class="pager__btn"
+          [disabled]="pag().paginaActual() === 1"
+          (click)="pag().anterior()"
+          aria-label="Página anterior"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+        </button>
+
+        @for (p of paginas(); track $index) {
+          @if (p) {
+            <button
+              type="button"
+              class="pager__num"
+              [class.pager__num--activa]="p === pag().paginaActual()"
+              [attr.aria-current]="p === pag().paginaActual() ? 'page' : null"
+              (click)="pag().ir(p)"
+            >
+              {{ p }}
+            </button>
+          } @else {
+            <span class="pager__elipsis" aria-hidden="true">…</span>
+          }
+        }
+
+        <button
+          type="button"
+          class="pager__btn"
+          [disabled]="pag().paginaActual() === pag().totalPaginas()"
+          (click)="pag().siguiente()"
+          aria-label="Página siguiente"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
+      </div>
+    }
+
+    <label class="pager__tamano">
+      <span class="pager__tamano-label">Filas</span>
+      <select
+        class="pager__select"
+        [value]="pag().tamano()"
+        (change)="cambiarTamano($any($event.target).value)"
+        aria-label="Filas por página"
+      >
+        @for (t of tamanos; track t) {
+          <option [value]="t">{{ t }}</option>
+        }
+      </select>
+    </label>
+  </nav>
+}

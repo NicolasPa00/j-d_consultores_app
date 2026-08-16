@@ -9,15 +9,20 @@ import {
   ReporteCartera, ReporteHoras, ReporteVencidas,
 } from '../../core/models';
 import { AuthService } from '../../core/auth.service';
+import { paginar } from '../../shared/paginacion';
+import { PaginadorComponent } from '../../shared/paginador/paginador';
 
 type ReportTab = 'ordenes' | 'profesionales' | 'satisfaccion' | 'vencidas' | 'horas' | 'cartera';
 
 /** Estados de OS del backend, en orden de ciclo de vida. */
-const ESTADOS = ['SIN PROGRAMAR', 'PROGRAMADA', 'EN VERIFICACIÓN', 'EJECUTADA', 'CANCELADA'];
+// El ciclo vigente son tres estados; los dos últimos se conservan en la lista
+// porque las órdenes anteriores a ago-2026 todavía los tienen y los informes
+// deben poder filtrarlas.
+const ESTADOS = ['SIN PROGRAMAR', 'PROGRAMADA', 'EJECUTADA', 'EN VERIFICACIÓN', 'CANCELADA'];
 
 @Component({
   selector: 'app-reports',
-  imports: [FormsModule],
+  imports: [FormsModule, PaginadorComponent],
   templateUrl: './reports.html',
   styleUrl: './reports.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -120,6 +125,25 @@ export class ReportsComponent implements OnInit {
     );
   });
 
+  // ---- Paginación de las cinco tablas que crecen con los datos ----
+  // Cada pestaña tiene la suya: comparten componente pero no estado, porque
+  // volver a Órdenes tras mirar Cartera no debería mover la página de la otra.
+  // Las tablas de agregados (por profesional, por ARL, por mes) no se paginan:
+  // tienen tantas filas como profesionales, ARL o meses del rango.
+  protected readonly pagOrdenes = paginar(this.filteredOrders, 25);
+  protected readonly pagProfs = paginar(this.filteredProfs, 25);
+  protected readonly pagEncuestas = paginar(this.surveys, 25);
+  protected readonly pagVencidas = paginar(computed(() => this.vencidas()?.ordenes ?? []), 25);
+  protected readonly pagCartera = paginar(computed(() => this.cartera()?.ordenes ?? []), 25);
+  // Los desgloses también crecen, y esto se me pasó en la primera pasada: "por
+  // profesional" crece con el equipo y "por mes" con el rango que elige el
+  // usuario (en Horas, tres años son 36 filas). Los que NO se paginan son los
+  // que tienen un tamaño estructural: "por ARL" son las tres ARL y la
+  // distribución de notas son los cinco valores de la escala.
+  protected readonly pagSatProf = paginar(computed(() => this.surveyStats()?.por_profesional ?? []), 10);
+  protected readonly pagSatMes = paginar(computed(() => this.surveyStats()?.por_mes ?? []), 12);
+  protected readonly pagHorasMes = paginar(computed(() => this.horasRep()?.por_mes ?? []), 12);
+
   ngOnInit(): void {
     if (!this.isBrowser) return;
     this.loadOrders();
@@ -132,7 +156,7 @@ export class ReportsComponent implements OnInit {
     const params: Record<string, string> = {};
     if (this.query().trim()) params['q'] = this.query().trim();
     this.api.listOrders(params).subscribe({
-      next: (r) => { this.orders.set(r.data); this.loadingOrders.set(false); },
+      next: (r) => { this.orders.set(r.data); this.pagOrdenes.reiniciar(); this.loadingOrders.set(false); },
       error: () => { this.orders.set([]); this.loadingOrders.set(false); },
     });
   }
@@ -141,7 +165,7 @@ export class ReportsComponent implements OnInit {
     this.loadingProfs.set(true);
     const q = this.activeTab() === 'profesionales' ? this.query().trim() : '';
     this.api.listProfessionals(q || undefined).subscribe({
-      next: (r) => { this.professionals.set(r.data); this.loadingProfs.set(false); },
+      next: (r) => { this.professionals.set(r.data); this.pagProfs.reiniciar(); this.loadingProfs.set(false); },
       error: () => { this.professionals.set([]); this.loadingProfs.set(false); },
     });
   }
@@ -166,6 +190,9 @@ export class ReportsComponent implements OnInit {
       next: ({ lista, stats }) => {
         this.surveys.set(lista.data);
         this.surveyStats.set(stats.data);
+        this.pagEncuestas.reiniciar();
+        this.pagSatProf.reiniciar();
+        this.pagSatMes.reiniciar();
         this.loadingSurveys.set(false);
       },
       error: () => {
@@ -190,7 +217,7 @@ export class ReportsComponent implements OnInit {
     }
     this.loadingReporte.set(true);
     this.api.reporteVencidas(dias).subscribe({
-      next: (r) => { this.vencidas.set(r.data); this.loadingReporte.set(false); },
+      next: (r) => { this.vencidas.set(r.data); this.pagVencidas.reiniciar(); this.loadingReporte.set(false); },
       error: () => {
         this.vencidas.set(null);
         this.loadingReporte.set(false);
@@ -211,7 +238,7 @@ export class ReportsComponent implements OnInit {
     }
     this.loadingReporte.set(true);
     this.api.reporteHoras(this.desde, this.hasta).subscribe({
-      next: (r) => { this.horasRep.set(r.data); this.loadingReporte.set(false); },
+      next: (r) => { this.horasRep.set(r.data); this.pagHorasMes.reiniciar(); this.loadingReporte.set(false); },
       error: (err) => {
         this.horasRep.set(null);
         this.loadingReporte.set(false);
@@ -224,7 +251,7 @@ export class ReportsComponent implements OnInit {
   protected cargarCartera(): void {
     this.loadingReporte.set(true);
     this.api.reporteCartera(this.carteraPendiente() ? { pendiente: this.carteraPendiente() } : {}).subscribe({
-      next: (r) => { this.cartera.set(r.data); this.loadingReporte.set(false); },
+      next: (r) => { this.cartera.set(r.data); this.pagCartera.reiniciar(); this.loadingReporte.set(false); },
       error: () => {
         this.cartera.set(null);
         this.loadingReporte.set(false);
@@ -318,6 +345,16 @@ export class ReportsComponent implements OnInit {
   protected setTab(tab: ReportTab): void {
     this.activeTab.set(tab);
     this.query.set('');
+    // Cada pestaña recarga sus datos y su carga ya reinicia su propia tabla;
+    // esto cubre además las que se muestran con datos ya en memoria.
+    this.pagOrdenes.reiniciar();
+    this.pagProfs.reiniciar();
+    this.pagEncuestas.reiniciar();
+    this.pagVencidas.reiniciar();
+    this.pagCartera.reiniciar();
+    this.pagSatProf.reiniciar();
+    this.pagSatMes.reiniciar();
+    this.pagHorasMes.reiniciar();
     if (tab === 'ordenes') this.loadOrders();
     else if (tab === 'satisfaccion') this.loadSurveys();
     else if (tab === 'vencidas') this.cargarVencidas();
@@ -387,14 +424,17 @@ export class ReportsComponent implements OnInit {
   /** Marca/desmarca una ARL. Volver a pulsarla quita ese filtro. */
   protected toggleArl(arl: string): void {
     this.arlsSel.update((l) => (l.includes(arl) ? l.filter((x) => x !== arl) : [...l, arl]));
+    this.pagOrdenes.reiniciar();
   }
 
   protected toggleEstado(estado: string): void {
     this.estadosSel.update((l) => (l.includes(estado) ? l.filter((x) => x !== estado) : [...l, estado]));
+    this.pagOrdenes.reiniciar();
   }
 
   protected onProfEstadoChange(estado: string): void {
     this.profEstadoFilter.set(estado);
+    this.pagProfs.reiniciar();
   }
 
   protected applyQuery(): void {

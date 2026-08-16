@@ -5,6 +5,8 @@ import { ApiService } from '../../core/api.service';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
 import { EstadoPrecuenta, PeriodoEjecutado, Precuenta, Profesional, Tarifa } from '../../core/models';
+import { paginar } from '../../shared/paginacion';
+import { PaginadorComponent } from '../../shared/paginador/paginador';
 
 /** Pestañas de la vista: el cobro del mes y las tarifas que lo alimentan. */
 type BillingTab = 'precuentas' | 'tarifas';
@@ -26,7 +28,7 @@ const ESTADOS: { key: EstadoPrecuenta; label: string }[] = [
  */
 @Component({
   selector: 'app-billing',
-  imports: [FormsModule],
+  imports: [FormsModule, PaginadorComponent],
   templateUrl: './billing.html',
   styleUrl: './billing.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -42,6 +44,11 @@ export class BillingComponent implements OnInit {
 
   // ---- Datos ----
   protected readonly precuentas = signal<Precuenta[]>([]);
+  /**
+   * PRE-08 · El histórico crece un bloque por mes y profesional, así que a los
+   * pocos cierres la tabla pasaba de la pantalla.
+   */
+  protected readonly pag = paginar(this.precuentas, 25);
   protected readonly periodos = signal<PeriodoEjecutado[]>([]);
   protected readonly professionals = signal<Profesional[]>([]);
   protected readonly loading = signal(false);
@@ -168,7 +175,13 @@ export class BillingComponent implements OnInit {
       profesional_id: this.filtroProf() || undefined,
       estado: this.filtroEstado() || undefined,
     }).subscribe({
-      next: (r) => { this.precuentas.set(r.data); this.loading.set(false); },
+      next: (r) => {
+        this.precuentas.set(r.data);
+        // Los filtros los aplica el SERVIDOR: cada carga es una lista distinta,
+        // así que la paginación vuelve al principio.
+        this.pag.reiniciar();
+        this.loading.set(false);
+      },
       error: () => {
         this.precuentas.set([]);
         this.loading.set(false);

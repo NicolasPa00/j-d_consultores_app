@@ -125,9 +125,10 @@ export class ApiService {
   }
   // ---- Estados y auditoría (M3) ----
   /**
-   * EST-02/04 · Cambio manual de estado. El motivo es obligatorio para CANCELADA
-   * y para devolver una OS de EN VERIFICACIÓN a PROGRAMADA; la función de dominio
-   * en BD valida tanto la transición como el motivo.
+   * EST-02 · Cambio manual de estado. El motivo es obligatorio en las dos
+   * marchas atrás —rechazar soportes (EJECUTADA → PROGRAMADA) y devolver una
+   * visita a la bandeja (PROGRAMADA → SIN PROGRAMAR)—; la función de dominio en
+   * BD valida tanto la transición como el motivo.
    */
   changeOrderStatus(orderId: string, estado: EstadoOrden, motivo?: string): Observable<Wrap<Orden>> {
     return this.http.post<Wrap<Orden>>(`${this.base}/orders/${orderId}/status`, { estado, motivo });
@@ -296,6 +297,14 @@ export class ApiService {
   }
 
   // ---- Importación (M2) ----
+  /**
+   * IMP-01/02 · Sube UN archivo y abre un lote.
+   *
+   * Un lote = un archivo, y no es una limitación del cliente: `lotes_importacion`
+   * guarda un solo `nombre_archivo`/`url_archivo`, y la vista previa compara cada
+   * orden contra su documento de origen. Para varios archivos se llama una vez
+   * por archivo (ver `ImportComponent`), no se agrupan en un lote común.
+   */
   uploadImport(file: File): Observable<{ message: string; batch: { id: string; estado: string } }> {
     const fd = new FormData();
     fd.append('file', file);
@@ -316,8 +325,14 @@ export class ApiService {
     return this.http.get<Wrap<HojaImportada>>(`${this.base}/imports/${id}/sheet`);
   }
   /** IMP-04 · Envía a Órdenes los borradores del lote ya revisados. */
-  confirmImport(id: string): Observable<{ message: string; data: { confirmadas: number } }> {
-    return this.http.post<{ message: string; data: { confirmadas: number } }>(`${this.base}/imports/${id}/confirm`, {});
+  confirmImport(id: string): Observable<{
+    message: string;
+    data: { confirmadas: number; ya_guardadas?: number; codigos?: string[]; fallidas?: string[] };
+  }> {
+    return this.http.post<{
+      message: string;
+      data: { confirmadas: number; ya_guardadas?: number; codigos?: string[]; fallidas?: string[] };
+    }>(`${this.base}/imports/${id}/confirm`, {});
   }
   /** Descarta el lote completo: nada llega a Órdenes. */
   discardImport(id: string): Observable<{ message: string; data: { descartadas: number } }> {
@@ -330,6 +345,18 @@ export class ApiService {
   }
   updateDraft(id: string, fields: Record<string, { value: string; confidence?: number }>): Observable<Wrap<Borrador>> {
     return this.http.put<Wrap<Borrador>>(`${this.base}/drafts/${id}`, { fields });
+  }
+  /**
+   * IMP-04 · Envía a Órdenes una sola orden de la vista previa, sin arrastrar el
+   * resto del lote. El equivalente por lote completo es `confirmImport`.
+   *
+   * Devuelve la **OS ya materializada** (no el borrador): confirmar valida, así
+   * que la orden entra a la bandeja en SIN PROGRAMAR sin pasos intermedios.
+   */
+  confirmDraft(id: string): Observable<{ message: string; ya_estaba?: boolean; data: Orden }> {
+    return this.http.post<{ message: string; ya_estaba?: boolean; data: Orden }>(
+      `${this.base}/drafts/${id}/confirm`, {},
+    );
   }
   validateDraft(id: string): Observable<Wrap<Orden>> {
     return this.http.post<Wrap<Orden>>(`${this.base}/drafts/${id}/validate`, {});

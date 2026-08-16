@@ -17,7 +17,7 @@
         type="text"
         placeholder="Buscar por nombre o especialidad…"
         [ngModel]="query()"
-        (ngModelChange)="query.set($event)"
+        (ngModelChange)="buscar($event)"
       />
     </div>
     <button type="button" class="btn btn--primary" (click)="openNew()">
@@ -43,7 +43,7 @@
         </tr>
       </thead>
       <tbody>
-        @for (pro of filtered(); track pro.id) {
+        @for (pro of pag.visibles(); track pro.id) {
           <tr>
             <td>
               <div class="who">
@@ -95,6 +95,8 @@
       </tbody>
     </table>
   </div>
+
+  <app-paginador [pag]="pag" etiqueta="profesionales" />
 </div>
 
 <!-- ============ DRAWER / FORMULARIO ============ -->

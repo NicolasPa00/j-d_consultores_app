@@ -64,6 +64,29 @@
   color: var(--text-muted);
 }
 
+/* Con varios archivos en la tanda, el nombre de cada uno bajo el conteo: sin
+   esto "5 archivos seleccionados" no deja comprobar que son los correctos. */
+.uploader__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.5rem;
+  margin: 0.3rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.uploader__list-item {
+  max-width: 16rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(45, 123, 200, 0.09);
+  font-size: 0.72rem;
+  color: var(--secondary-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .uploader__actions {
   flex-shrink: 0;
   display: flex;
@@ -110,6 +133,70 @@
 /* Alerta de error de subida bajo la barra de carga */
 .upload-error {
   margin-top: 0.7rem;
+}
+
+/* Lista de archivos fallidos dentro de la alerta de la tanda. */
+.alert__list {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+/* ===== IMP-07/09 · Aviso de órdenes que ya existen =====
+   Ocupa el sitio que antes tenían como filas de la tabla. Cada entrada dice qué
+   orden es, con qué OS choca y en qué estado está esa OS: sin el estado, el
+   aviso obligaba a ir a Órdenes a averiguar por qué el archivo no entraba. */
+.dup-alert {
+  margin-top: 0.7rem;
+}
+
+.dup-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dup-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-left: 0.75rem;
+  border-left: 3px solid rgba(220, 38, 38, 0.35);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.dup-item__id {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.dup-item__company {
+  color: var(--text-muted);
+}
+
+.dup-item__state {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  color: var(--text-main);
+}
+
+/* La deshabilitada es el caso que más confunde: la OS existe pero no se ve en
+   la bandeja, y el reflejo es volver a importar el archivo. */
+.dup-item__hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.dup-item__file {
+  font-size: 0.72rem;
+  color: var(--text-muted);
 }
 
 /* Banner de alerta dentro del modal (usa el primitivo global .alert) */
@@ -172,8 +259,49 @@
 }
 
 .col-actions {
-  width: 88px;
+  width: 108px;
   text-align: right;
+}
+
+/* Revisar + guardar, en ese orden: primero se mira, luego se guarda. */
+.row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+/* El guardado de una sola orden es la acción positiva de la fila, así que se
+   distingue del lápiz de revisar sin llegar a ser un botón primario. */
+.icon-action--save {
+  color: var(--success);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.icon-action--save:hover:not([disabled]) {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.icon-action[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Spinner dentro de un botón de icono: hereda el color, no va sobre relleno. */
+.spinner--xs {
+  width: 13px;
+  height: 13px;
+  border-color: rgba(16, 185, 129, 0.3);
+  border-top-color: var(--success);
+}
+
+/* Con varios archivos en la tanda hace falta saber de cuál salió cada fila. */
+.cell-file {
+  max-width: 12rem;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mono {
@@ -189,12 +317,6 @@
 
 .who__name {
   font-weight: 600;
-}
-
-/* Fila de una orden ya existente en la BD: no se guardará. */
-.preview__row--dup td {
-  background: #f8fafc;
-  color: var(--text-muted);
 }
 
 .preview__footer {
@@ -239,7 +361,11 @@
   flex-direction: column;
   width: 720px;
   max-width: calc(100vw - 2rem);
+  /* `dvh` = alto REALMENTE visible. En móvil `100vh` incluye la franja que ocupa
+     la barra de direcciones, así que el modal quedaba más alto que la pantalla y
+     su pie —y parte del documento— caían fuera sin forma de alcanzarlos. */
   max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
   background: var(--surface);
   border-radius: var(--radius-lg);
   box-shadow: 0 24px 60px rgba(0, 11, 80, 0.28);
@@ -285,6 +411,7 @@
   /* Aprovecha la pantalla: un documento vertical necesita ancho para leerse. */
   width: min(1560px, 96vw);
   height: calc(100vh - 2rem);
+  height: calc(100dvh - 2rem);
 }
 
 /* El documento pesa más que el formulario: los campos son de ancho fijo y el
@@ -332,12 +459,40 @@
 }
 
 .doc-pane__file {
+  flex: 1 1 auto;
   min-width: 0;
+  text-align: right;
   font-size: 0.78rem;
   color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Salida al visor del navegador. Ver el comentario de `.doc-pane__body--flush`:
+   el PDF incrustado no siempre se puede desplazar, y esto siempre funciona. */
+.doc-pane__open {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--secondary-color);
+  cursor: pointer;
+}
+
+.doc-pane__open:hover {
+  background: rgba(45, 123, 200, 0.08);
+}
+
+.doc-pane__open svg {
+  width: 13px;
+  height: 13px;
 }
 
 .doc-pane__body {
@@ -347,7 +502,13 @@
   padding: 1rem;
 }
 
-/* El visor de PDF ocupa todo el panel: sin padding ni scroll propio. */
+/* El visor de PDF ocupa todo el panel: sin padding ni scroll propio, porque el
+   scroll lo hace el visor del navegador DENTRO del iframe.
+   Ojo: ese scroll interno solo responde al ratón. Con puntero grueso (móvil,
+   tableta o el modo responsive de las DevTools) el iframe no recibe los gestos
+   táctiles y el documento queda clavado en la primera página; en Android ni
+   siquiera se renderiza. Por eso la cabecera ofrece "Abrir aparte", que es la
+   única vía fiable en esos casos. */
 .doc-pane__body--flush {
   padding: 0;
   overflow: hidden;
@@ -508,13 +669,51 @@
 @media (max-width: 1100px) {
   .modal__split {
     grid-template-columns: minmax(0, 1fr);
-    /* Apilados, el documento necesita alto por la misma razón que antes ancho. */
-    grid-template-rows: minmax(0, 50%) minmax(0, 50%);
+    /* Apilados, el documento necesita alto por la misma razón que antes ancho.
+       Las filas se miden en fracciones y no en porcentajes: un `50%` se resuelve
+       contra el alto del contenedor, que aquí lo fija un flex, y bastaba con que
+       ese alto quedara indefinido un instante para que el panel colapsara. */
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
   }
 
   .doc-pane {
     border-right: none;
     border-bottom: 1px solid var(--border-soft);
+  }
+
+  /* La hoja de Excel sí se desplaza con el dedo; se le pide al navegador que no
+     se quede el gesto para desplazar la página de detrás. */
+  .doc-pane__body {
+    touch-action: pan-x pan-y;
+    overscroll-behavior: contain;
+  }
+}
+
+/* Puntero grueso (dedo): el visor de PDF incrustado no recibe los gestos, así
+   que se avisa en el propio panel en vez de dejar creer que el documento está
+   cortado. El aviso se apoya en el medio de entrada, no en el ancho: una
+   tableta ancha tiene el mismo problema que un móvil. */
+@media (pointer: coarse) {
+  .doc-pane__body--flush::after {
+    content: 'Si el documento no se desplaza al arrastrar, ábrelo con “Abrir aparte”.';
+    display: block;
+    padding: 0.45rem 0.75rem;
+    border-top: 1px solid var(--border-soft);
+    background: rgba(245, 158, 11, 0.08);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+  }
+
+  /* El aviso ocupa alto: el iframe deja de ser el 100% del panel para que no lo
+     empuje fuera de la caja. */
+  .doc-pane__body--flush {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .doc-pane__frame {
+    flex: 1 1 auto;
+    height: auto;
   }
 }
 

@@ -4,12 +4,14 @@ import { isPlatformBrowser } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { forkJoin, map, of, switchMap } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { ExtractedField, ServiceOrder } from '../../data/service-orders';
 import { ApiService } from '../../core/api.service';
 import { AlertService } from '../../core/alert.service';
 import { ArchivoSoporte, Borrador, EstadoOrden, FranjaVisita, HistorialEstado, Ocupacion, Orden, Plantilla, Profesional } from '../../core/models';
 import { aIsoFecha, fechaLocal } from '../../core/fechas';
+import { paginar } from '../../shared/paginacion';
+import { PaginadorComponent } from '../../shared/paginador/paginador';
 
 interface FormFieldDescriptor {
   label: string;
@@ -22,23 +24,41 @@ interface FormFieldDescriptor {
  * Filtro activo del listado. Cada pestaña corresponde a un estado real de la
  * orden dentro de la bandeja; "todas" agrupa las que siguen activas.
  */
-type OrdersView = 'todas' | 'pendientes' | 'proceso' | 'finalizadas' | 'deshabilitadas';
+type OrdersView = 'todas' | 'sin-programar' | 'programadas' | 'ejecutadas' | 'deshabilitadas';
 
 /** Estados de OS que cuentan como cerradas: ya no admiten trabajo de campo. */
-const ESTADOS_FINALES = ['EJECUTADA', 'CANCELADA'];
+const ESTADOS_FINALES = ['EJECUTADA'];
 
 /**
- * EST-01 · Transiciones válidas, en espejo de `sst.cambiar_estado_orden`. La BD
- * es la autoridad; esta tabla existe para no ofrecer en pantalla un cambio que
- * el servidor va a rechazar. Desde EJECUTADA y CANCELADA no se sale (EST-06).
+ * Transiciones válidas, en espejo de `sst.cambiar_estado_orden`. La BD es la
+ * autoridad; esta tabla existe para no ofrecer en pantalla un cambio que el
+ * servidor va a rechazar.
+ *
+ * El ciclo son tres estados (ago-2026): SIN PROGRAMAR → PROGRAMADA → EJECUTADA.
+ * EJECUTADA → PROGRAMADA es el rechazo de soportes, la única marcha atrás.
+ * Los motivos obligatorios son los dos retrocesos.
  */
 const TRANSICIONES: Record<string, EstadoOrden[]> = {
-  'SIN PROGRAMAR': ['PROGRAMADA', 'CANCELADA'],
-  'PROGRAMADA': ['EN VERIFICACIÓN', 'SIN PROGRAMAR', 'CANCELADA'],
-  'EN VERIFICACIÓN': ['EJECUTADA', 'PROGRAMADA', 'CANCELADA'],
-  'EJECUTADA': [],
-  'CANCELADA': [],
+  'SIN PROGRAMAR': ['PROGRAMADA'],
+  'PROGRAMADA': ['EJECUTADA', 'SIN PROGRAMAR'],
+  'EJECUTADA': ['PROGRAMADA'],
 };
+
+/** Transiciones que exigen motivo (las que deshacen trabajo ya hecho). */
+const EXIGEN_MOTIVO: Record<string, EstadoOrden[]> = {
+  'PROGRAMADA': ['SIN PROGRAMAR'],
+  'EJECUTADA': ['PROGRAMADA'],
+};
+
+/** Lo que devuelve la asignación, venga de la OS materializada o del borrador. */
+interface ResultadoAsignacion {
+  os: Orden | null;
+  borrador: Borrador | null;
+  /** false solo cuando la OS se asignó pero el correo no salió. */
+  correo: boolean;
+  /** CFG-03 · Cuántos formatos se adjuntaron; null si no aplica. */
+  formatos: number | null;
+}
 
 /** Cómo se pinta la fecha de vencimiento de una orden en la tabla. */
 interface Vencimiento {
@@ -52,11 +72,11 @@ interface Vencimiento {
 /**
  * Franja mostrada en el calendario del modal de asignación.
  *
- * `nueva` marca las agregadas con "Ocupar" que todavía NO existen en la BD: se
- * persisten al confirmar con "Asignar profesional". Mientras tanto viven solo
- * en pantalla, así que cerrar el modal no deja basura en la agenda.
+ * Todas existen en la BD: desde que se retiró el formulario manual, las
+ * ocupaciones se dan de alta en /profesionales y aquí solo se leen (o se
+ * liberan). Ya no hay franjas "sin guardar" flotando en el modal.
  */
-type FranjaVista = Ocupacion & { nueva?: boolean };
+type FranjaVista = Ocupacion;
 
 /* ===== Rejilla de la agenda (ASG-02) =====
    La agenda se dibuja como una semana laboral de 6:00 a 20:00 en celdas de media
@@ -103,8 +123,6 @@ interface BloqueAgenda {
   alto: number;
   rango: string;
   texto: string;
-  titulo: string;
-  nueva: boolean;
   /** Ocupación que representa el bloque; null en las visitas. */
   slot: FranjaVista | null;
   /** Franja de la visita que representa el bloque; ausente en el resto. */
@@ -113,7 +131,7 @@ interface BloqueAgenda {
 
 @Component({
   selector: 'app-validation',
-  imports: [FormsModule],
+  imports: [FormsModule, PaginadorComponent],
   templateUrl: './validation.html',
   styleUrl: './validation.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -136,9 +154,9 @@ export class ValidationComponent implements OnInit, OnDestroy {
   /** Pestañas de filtro por estado (el orden es el del ciclo de vida). */
   protected readonly tabs: { key: OrdersView; label: string }[] = [
     { key: 'todas', label: 'Todas' },
-    { key: 'pendientes', label: 'Pendientes' },
-    { key: 'proceso', label: 'En proceso' },
-    { key: 'finalizadas', label: 'Finalizadas' },
+    { key: 'sin-programar', label: 'Sin programar' },
+    { key: 'programadas', label: 'Programadas' },
+    { key: 'ejecutadas', label: 'Ejecutadas' },
     { key: 'deshabilitadas', label: 'Deshabilitadas' },
   ];
   protected readonly loading = signal(false);
@@ -193,8 +211,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
    */
   protected readonly franjasVisita = signal<FranjaVisita[]>([]);
   /** Formulario manual para agregar una franja de visita (camino de teclado). */
-  protected visitaDraft = this.emptySlot();
-  protected busyDraft = this.emptySlot();
   /** Contador para los id temporales de las franjas aún no persistidas. */
   private tmpSeq = 0;
 
@@ -236,6 +252,16 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected readonly minutosProgramados = computed(() =>
     this.franjasVisita().reduce((t, f) => t + (aMinutos(f.hora_fin) - aMinutos(f.hora_inicio)), 0),
   );
+  /** Minutos que faltan por repartir. Nunca negativo: el tope es duro. */
+  protected readonly minutosPorRepartir = computed(() =>
+    Math.max(0, this.duracionVisita() - this.minutosProgramados()),
+  );
+  /** ¿La visita cubre EXACTAMENTE las horas de la orden? Es lo que la programa. */
+  protected readonly visitaCompleta = computed(() =>
+    this.duracionVisita() > 0
+      ? this.minutosProgramados() === this.duracionVisita()
+      : this.franjasVisita().length > 0,
+  );
   /** Minutos → "4 h", "1 h 30 min". */
   protected duracionTexto(min: number): string {
     if (min <= 0) return '0 h';
@@ -270,24 +296,35 @@ export class ValidationComponent implements OnInit, OnDestroy {
   });
 
   /**
-   * ¿La orden pertenece a la pestaña indicada? Las deshabilitadas se apartan de
-   * todas las demás: siguen teniendo su estado (pendiente o validada), pero
-   * mientras estén inactivas no deben aparecer mezcladas con las vigentes.
+   * Página visible de la tabla. La bandeja llega a traer las 200 órdenes que
+   * devuelve el endpoint y la tabla se estiraba hasta que la página entera
+   * dejaba de poder recorrerse.
+   */
+  protected readonly pag = paginar(this.filtered, 25);
+
+  /**
+   * ¿La orden pertenece a la pestaña indicada?
    *
-   * Una vez validado el borrador, la fila deja de hablar de validación y pasa a
-   * reflejar el ciclo de vida de la OS: "en proceso" mientras siga habiendo
-   * trabajo por hacer y "finalizadas" cuando quedó EJECUTADA o CANCELADA.
+   * Las pestañas SON los estados del ciclo de vida, no etapas inventadas: desde
+   * ago-2026 las órdenes llegan de Importar ya validadas, así que no hay una
+   * fase "pendiente" que separar. Las deshabilitadas se apartan de todas las
+   * demás: conservan su estado, pero mientras estén inactivas no deben
+   * mezclarse con las vigentes.
+   *
+   * Los borradores heredados que nunca se validaron (los que quedaron en la
+   * bandeja antes del cambio) caen en "sin programar", que es justo lo que son:
+   * órdenes sin fecha ni responsable.
    */
   private enVista(o: ServiceOrder, view: OrdersView): boolean {
     if (view === 'deshabilitadas') return !!o.disabled;
     if (o.disabled) return false;
-    if (view === 'pendientes') return !o.validated;
-    if (view === 'proceso') return o.validated && !this.esFinal(o);
-    if (view === 'finalizadas') return o.validated && this.esFinal(o);
+    if (view === 'sin-programar') return !o.validated || o.osEstado === 'SIN PROGRAMAR';
+    if (view === 'programadas') return o.validated && o.osEstado === 'PROGRAMADA';
+    if (view === 'ejecutadas') return o.validated && this.esFinal(o);
     return true;
   }
 
-  /** La OS llegó al final de su ciclo (EJECUTADA o CANCELADA). */
+  /** La OS llegó al final de su ciclo (EJECUTADA). */
   private esFinal(o: ServiceOrder): boolean {
     return ESTADOS_FINALES.includes(o.osEstado || '');
   }
@@ -426,19 +463,28 @@ export class ValidationComponent implements OnInit, OnDestroy {
     return confidence < 70;
   }
 
+  /** Buscar reinicia la paginación: el resultado es otra lista. */
+  protected buscar(texto: string): void {
+    this.query.set(texto);
+    this.pag.reiniciar();
+  }
+
   protected setView(v: OrdersView): void {
     this.view.set(v);
+    // Cambiar de pestaña es empezar a mirar otra cosa: seguir en la página 4
+    // dejaría la tabla en un tramo que el usuario no eligió.
+    this.pag.reiniciar();
   }
 
   /**
    * Etiqueta de estado de la fila. Una orden deshabilitada lo está por encima de
-   * todo; si ya se validó manda el estado real de la OS (EST-01) y, mientras siga
-   * en la bandeja, solo puede estar pendiente de validación.
+   * todo. "Sin validar" solo lo ven los borradores heredados de antes de que
+   * Importar validara solo: las órdenes nuevas nacen con estado de OS.
    */
   protected estadoLabel(o: ServiceOrder): string {
     if (o.disabled) return 'Deshabilitada';
-    if (!o.validated) return 'Pendiente';
-    return o.osEstado || 'VALIDADA';
+    if (!o.validated) return 'Sin validar';
+    return o.osEstado || 'SIN PROGRAMAR';
   }
 
   protected estadoClass(o: ServiceOrder): string {
@@ -451,21 +497,26 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected pillEstado(estado?: string | null): string {
     switch (estado) {
       case 'PROGRAMADA': return 'pill--info';
-      case 'EN VERIFICACIÓN': return 'pill--warning';
       case 'EJECUTADA': return 'pill--success';
-      case 'CANCELADA': return 'pill--danger';
       default: return 'pill--muted'; // SIN PROGRAMAR
     }
   }
 
-  /** ¿Hay soportes que revisar? Solo entonces tiene sentido abrir la verificación. */
+  /**
+   * ¿Hay soportes que revisar (VER-01/02)?
+   *
+   * Al desaparecer EN VERIFICACIÓN, la orden queda EJECUTADA en cuanto llegan
+   * los archivos: la revisión del administrador pasó a hacerse SOBRE la orden ya
+   * ejecutada. Aceptar deja constancia y dispara la encuesta; rechazar la
+   * devuelve a PROGRAMADA.
+   */
   protected puedeVerificar(o: ServiceOrder): boolean {
-    return !!o.osId && o.osEstado === 'EN VERIFICACIÓN';
+    return !!o.osId && o.osEstado === 'EJECUTADA';
   }
 
-  /** Las ejecutadas conservan sus soportes: se pueden consultar, no decidir. */
+  /** Los soportes se consultan desde que existen, es decir, desde EJECUTADA. */
   protected tieneSoportes(o: ServiceOrder): boolean {
-    return !!o.osId && (o.osEstado === 'EN VERIFICACIÓN' || o.osEstado === 'EJECUTADA');
+    return !!o.osId && o.osEstado === 'EJECUTADA';
   }
 
   /**
@@ -659,8 +710,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.selectedProfSlots.set([]);
     this.otrasVisitas.set([]);
     this.franjasVisita.set([]);
-    this.visitaDraft = this.emptySlot();
-    this.busyDraft = this.emptySlot();
     this.agendaSel.set(null);
     this.agendaHover.set(null);
 
@@ -793,6 +842,80 @@ export class ValidationComponent implements OnInit, OnDestroy {
     return undefined;
   }
 
+  /**
+   * Lo que ocupa al profesional en ese hueco: una franja bloqueada de su agenda
+   * o la visita de otra OS suya. Devuelve null si está libre.
+   *
+   * Es la fuente única para las tres cosas que dependen de la ocupación: no
+   * dejar empezar un trazo encima, recortarlo si llega hasta ahí y rechazar la
+   * franja si aun así se cuela.
+   */
+  private ocupacionEn(
+    fecha: string, ini: number, fin: number,
+  ): { motivo: string; desde: string; hasta: string; iniMin: number } | null {
+    const slot = this.selectedProfSlots().find(
+      (f) => f.fecha === fecha && aMinutos(f.hora_inicio) < fin && ini < aMinutos(f.hora_fin),
+    );
+    if (slot) {
+      return {
+        motivo: slot.motivo || 'Tiene ocupado',
+        desde: slot.hora_inicio,
+        hasta: slot.hora_fin,
+        iniMin: aMinutos(slot.hora_inicio),
+      };
+    }
+    for (const o of this.otrasVisitas()) {
+      const cita = o.fecha_programada ? new Date(o.fecha_programada) : null;
+      if (!cita || isoFecha(cita) !== fecha) continue;
+      const otraIni = cita.getHours() * 60 + cita.getMinutes();
+      const otraFin = otraIni + duracionDeOrden(o.horas_asignadas);
+      if (otraIni < fin && ini < otraFin) {
+        return {
+          motivo: `Tiene otra orden (${o.empresa_nombre || o.codigo})`,
+          desde: aHoraTexto(otraIni),
+          hasta: aHoraTexto(otraFin),
+          iniMin: otraIni,
+        };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Recorta el trazo para que muera justo antes de lo primero que estorbe: una
+   * franja ocupada, otra franja de esta misma visita o el tope de horas de la
+   * orden. Así arrastrar de más no "rebota" con un aviso, simplemente se para.
+   */
+  private recortar(fecha: string, desde: number, hasta: number): number {
+    let tope = hasta;
+
+    const objetivo = this.duracionVisita();
+    if (objetivo > 0) {
+      tope = Math.min(tope, desde + Math.max(AG_PASO_MIN, this.minutosPorRepartir()));
+    }
+    // Lo que empiece después del trazo y se cruce con él marca el final.
+    const inicios = [
+      ...this.selectedProfSlots()
+        .filter((f) => f.fecha === fecha)
+        .map((f) => aMinutos(f.hora_inicio)),
+      ...this.franjasVisita()
+        .filter((f) => f.fecha === fecha)
+        .map((f) => aMinutos(f.hora_inicio)),
+      ...this.otrasVisitas()
+        .map((o) => (o.fecha_programada ? new Date(o.fecha_programada) : null))
+        .filter((d): d is Date => !!d && isoFecha(d) === fecha)
+        .map((d) => d.getHours() * 60 + d.getMinutes()),
+    ].filter((min) => min > desde);
+
+    for (const min of inicios) tope = Math.min(tope, min);
+    return Math.max(desde + AG_PASO_MIN, tope);
+  }
+
+  /** ¿Se puede empezar a marcar en esta celda? */
+  protected celdaLibre(fecha: string, min: number): boolean {
+    return !this.ocupacionEn(fecha, min, min + AG_PASO_MIN);
+  }
+
   // ---- Franjas de la visita ----
   /**
    * Agrega una franja a la visita. Devuelve false si se cruza con otra de la
@@ -813,6 +936,30 @@ export class ValidationComponent implements OnInit, OnDestroy {
       );
       return false;
     }
+
+    // La agenda del profesional NO se pisa. Antes se avisaba y se dejaba pasar,
+    // y se acababa citando a alguien a dos sitios a la vez; ahora el hueco
+    // ocupado sencillamente no se puede marcar.
+    const ocupado = this.ocupacionEn(fecha, ini, fin);
+    if (ocupado) {
+      this.alerts.warning(
+        'Ese horario ya está ocupado',
+        `${ocupado.motivo} el ${fecha} de ${ocupado.desde} a ${ocupado.hasta}. Elija un hueco libre.`,
+      );
+      return false;
+    }
+
+    // Tope duro: la pre-cuenta (M9) valora las horas contratadas con la ARL, así
+    // que programar de más es trabajo que nadie factura.
+    const objetivo = this.duracionVisita();
+    if (objetivo > 0 && this.minutosProgramados() + (fin - ini) > objetivo) {
+      this.alerts.warning(
+        'Se pasa de las horas de la orden',
+        `La orden tiene ${this.duracionTexto(objetivo)} y quedan ` +
+        `${this.duracionTexto(this.minutosPorRepartir())} por repartir.`,
+      );
+      return false;
+    }
     this.franjasVisita.update((list) => [
       ...list,
       {
@@ -823,20 +970,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
       },
     ]);
     return true;
-  }
-
-  /** Alta desde el formulario manual (teclado y minutos sueltos). */
-  protected agregarFranjaManual(): void {
-    const d = this.visitaDraft;
-    if (!this.franjaManualValida()) return;
-    if (this.agregarFranjaVisita(d.fecha, aMinutos(d.hora_inicio), aMinutos(d.hora_fin))) {
-      this.visitaDraft = this.emptySlot();
-    }
-  }
-
-  protected franjaManualValida(): boolean {
-    const d = this.visitaDraft;
-    return !!d.fecha && !!d.hora_inicio && !!d.hora_fin && d.hora_inicio < d.hora_fin;
   }
 
   /**
@@ -856,13 +989,12 @@ export class ValidationComponent implements OnInit, OnDestroy {
 
   protected async closeAssign(): Promise<void> {
     if (this.assigning()) return;
-    // Las franjas agregadas viven solo en pantalla: cerrar sin asignar las
-    // pierde, así que conviene avisarlo antes de descartarlas.
-    const pendientes = this.franjasPendientes().length;
-    if (pendientes) {
+    // Lo marcado en la agenda vive solo en pantalla hasta pulsar "Asignar":
+    // cerrar sin guardar lo descarta, y conviene avisarlo.
+    if (this.franjasVisita().length) {
       const ok = await this.alerts.confirm({
-        title: 'Franjas sin guardar',
-        message: `Agregó ${pendientes} franja(s) que aún no se han registrado. Se guardan al pulsar "Asignar profesional"; si cierra ahora se descartarán.`,
+        title: 'La programación no se ha guardado',
+        message: `Marcó ${this.franjasVisita().length} franja(s) de la visita que todavía no se han guardado. Si cierra ahora se descartarán.`,
         confirmText: 'Cerrar y descartar',
         tone: 'danger',
       });
@@ -877,20 +1009,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
 
   protected async selectProf(id: string): Promise<void> {
     if (id === this.selectedProfId()) return;
-    // Las franjas pendientes pertenecen al profesional que se estaba editando;
-    // cambiar de asesor las dejaría sin dueño.
-    const pendientes = this.franjasPendientes().length;
-    if (pendientes) {
-      const ok = await this.alerts.confirm({
-        title: 'Franjas sin guardar',
-        message: `Agregó ${pendientes} franja(s) al profesional actual que aún no se han registrado. Si cambia de profesional se descartarán.`,
-        confirmText: 'Descartar y cambiar',
-        tone: 'danger',
-      });
-      if (!ok) return;
-    }
     this.selectedProfId.set(id);
-    this.busyDraft = this.emptySlot();
     this.loadSlots(id);
   }
 
@@ -958,9 +1077,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
         tipo: 'ocupado',
         ...geo,
         rango: `${f.hora_inicio}–${f.hora_fin}`,
-        texto: f.nueva ? 'Sin guardar' : f.motivo || 'Ocupado',
-        titulo: `Ocupado ${f.hora_inicio}–${f.hora_fin}${f.motivo ? ` · ${f.motivo}` : ''}`,
-        nueva: !!f.nueva,
+        texto: f.motivo || 'Ocupado',
         slot: f,
       });
     }
@@ -979,8 +1096,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
         ...geo,
         rango: `${aHoraTexto(ini)}–${aHoraTexto(fin)}`,
         texto: o.empresa_nombre || o.codigo,
-        titulo: `${o.codigo} · ${o.empresa_nombre ?? ''} · ${o.estado}`,
-        nueva: false,
         slot: null,
       });
     }
@@ -999,8 +1114,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
         ...geo,
         rango: `${v.hora_inicio}–${v.hora_fin}`,
         texto: order?.company || 'Esta orden',
-        titulo: `Visita de esta orden · ${v.hora_inicio}–${v.hora_fin} (${this.duracionTexto(fin - ini)})`,
-        nueva: false,
         slot: null,
         franjaId: v.id,
       });
@@ -1022,7 +1135,11 @@ export class ValidationComponent implements OnInit, OnDestroy {
     }
     const hover = this.agendaHover();
     if (!hover || hover.fecha !== iso || sel) return null;
-    const hasta = hover.min + this.duracionSugerida();
+    // Sobre un hueco ocupado no se previsualiza nada: no se puede marcar ahí, y
+    // pintar un fantasma encima invitaba a intentarlo.
+    if (!this.celdaLibre(iso, hover.min)) return null;
+    if (this.duracionVisita() > 0 && !this.minutosPorRepartir()) return null;
+    const hasta = this.recortar(iso, hover.min, hover.min + this.duracionSugerida());
     const geo = this.geometria(hover.min, hasta);
     return geo && { ...geo, rango: `${aHoraTexto(hover.min)}–${aHoraTexto(hasta)}` };
   }
@@ -1033,17 +1150,22 @@ export class ValidationComponent implements OnInit, OnDestroy {
    * un solo bloque— se resuelve con un clic, y para partirla se arrastra.
    */
   private duracionSugerida(): number {
-    const falta = this.duracionVisita() - this.minutosProgramados();
+    const falta = this.minutosPorRepartir();
     return Math.max(AG_PASO_MIN, Math.round(falta / AG_PASO_MIN) * AG_PASO_MIN);
   }
 
   /**
-   * Rango de la selección. Si el puntero no se movió (clic simple) se usa la
-   * duración sugerida; si se arrastró, manda el trazo, celda a celda.
+   * Rango de la selección, ya recortado. Si el puntero no se movió (clic simple)
+   * se usa la duración sugerida; si se arrastró, manda el trazo, celda a celda.
+   * En los dos casos el recorte impide pasar por encima de lo ocupado o de las
+   * horas contratadas.
    */
-  private rangoDeSeleccion(sel: { a: number; b: number }): { desde: number; hasta: number } {
-    if (sel.a === sel.b) return { desde: sel.a, hasta: sel.a + this.duracionSugerida() };
-    return { desde: Math.min(sel.a, sel.b), hasta: Math.max(sel.a, sel.b) + AG_PASO_MIN };
+  private rangoDeSeleccion(sel: { fecha: string; a: number; b: number }): { desde: number; hasta: number } {
+    const desde = sel.a === sel.b ? sel.a : Math.min(sel.a, sel.b);
+    const bruto = sel.a === sel.b
+      ? sel.a + this.duracionSugerida()
+      : Math.max(sel.a, sel.b) + AG_PASO_MIN;
+    return { desde, hasta: this.recortar(sel.fecha, desde, bruto) };
   }
 
   /** Minutos → posición en la rejilla, recortado a las horas visibles. */
@@ -1079,6 +1201,27 @@ export class ValidationComponent implements OnInit, OnDestroy {
     if (ev.button !== 0) return;
     if (ev.pointerType !== 'touch') ev.preventDefault();
     const min = this.minutoEnColumna(ev);
+
+    // Un hueco ocupado no se puede ni empezar a marcar. Antes se dejaba trazar y
+    // se avisaba después; el aviso llegaba cuando el usuario ya creía haberlo
+    // programado, que es el peor momento para enterarse.
+    const ocupado = this.ocupacionEn(iso, min, min + AG_PASO_MIN);
+    if (ocupado) {
+      this.alerts.warning(
+        'Ese horario ya está ocupado',
+        `${ocupado.motivo}, de ${ocupado.desde} a ${ocupado.hasta}.`,
+      );
+      return;
+    }
+    // Sin horas por repartir no hay nada más que marcar.
+    if (this.duracionVisita() > 0 && !this.minutosPorRepartir()) {
+      this.alerts.warning(
+        'La visita ya está completa',
+        `Las ${this.duracionTexto(this.duracionVisita())} de la orden ya están repartidas. ` +
+        'Quite una franja si quiere moverla.',
+      );
+      return;
+    }
     this.agendaSel.set({ fecha: iso, a: min, b: min });
   }
 
@@ -1117,75 +1260,26 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.agendaSoltar();
   }
 
-  /** Horas bien formadas y en orden. El cruce se evalúa aparte. */
-  private slotBienFormado(): boolean {
-    const s = this.busyDraft;
-    return !!s.fecha && !!s.hora_inicio && !!s.hora_fin && s.hora_inicio < s.hora_fin;
-  }
-
   /**
-   * Franja ya listada que se cruzaría con el borrador. Dos franjas se solapan
-   * si comparten fecha y sus intervalos se intersecan; tocarse en el borde
-   * (10:00–12:00 y 12:00–14:00) no es cruce. Las horas son 'HH:MM', así que la
-   * comparación de texto equivale a la comparación cronológica.
+   * Quita una franja ocupada de la agenda del profesional.
    *
-   * Cubre tanto las franjas de la BD (de otras órdenes) como las pendientes de
-   * guardar en este mismo modal. El backend valida lo mismo.
-   */
-  protected cruceDelBorrador(): FranjaVista | undefined {
-    const s = this.busyDraft;
-    if (!this.slotBienFormado()) return undefined;
-    return this.selectedProfSlots().find(
-      (f) => f.fecha === s.fecha && f.hora_inicio < s.hora_fin && s.hora_inicio < f.hora_fin,
-    );
-  }
-
-  protected slotIsValid(): boolean {
-    return this.slotBienFormado() && !this.cruceDelBorrador();
-  }
-
-  /**
-   * Agrega la franja al calendario en pantalla. NO toca la BD: se persiste al
-   * pulsar "Asignar profesional".
-   */
-  protected addBusySlot(): void {
-    const profId = this.selectedProfId();
-    if (!profId || !this.slotIsValid()) return;
-    const nueva: FranjaVista = {
-      id: `tmp-${++this.tmpSeq}`,
-      profesional_id: profId,
-      fecha: this.busyDraft.fecha,
-      hora_inicio: this.busyDraft.hora_inicio,
-      hora_fin: this.busyDraft.hora_fin,
-      nueva: true,
-    };
-    this.selectedProfSlots.update((list) => this.ordenarFranjas([...list, nueva]));
-    this.busyDraft = this.emptySlot();
-  }
-
-  /**
-   * Quita una franja, siempre previa confirmación. Si es temporal desaparece
-   * solo de la vista (en BD no existe); si ya está guardada, se elimina de la
-   * agenda del profesional.
+   * Se conserva aunque ya no se puedan CREAR ocupaciones desde aquí (el
+   * formulario manual se retiró): si una franja bloquea un horario por error,
+   * hay que poder liberarla sin salir del modal. Las ocupaciones se dan de alta
+   * en /profesionales, que es donde vive su agenda.
    */
   protected async removeBusySlot(slot: FranjaVista): Promise<void> {
     const profId = this.selectedProfId();
     if (!profId) return;
     const rango = `${slot.fecha} · ${slot.hora_inicio}–${slot.hora_fin}`;
     const ok = await this.alerts.confirm({
-      title: 'Quitar franja ocupada',
-      message: slot.nueva
-        ? `La franja ${rango} todavía no se ha guardado. ¿Quitarla del calendario?`
-        : `Se eliminará la franja ${rango} de la agenda del profesional. Esta acción no se puede deshacer.`,
-      confirmText: 'Quitar franja',
+      title: 'Liberar franja ocupada',
+      message: `Se eliminará la franja ${rango} de la agenda del profesional. Esta acción no se puede deshacer.`,
+      confirmText: 'Liberar franja',
       tone: 'danger',
     });
     if (!ok) return;
 
-    if (slot.nueva) {
-      this.selectedProfSlots.update((list) => list.filter((f) => f.id !== slot.id));
-      return;
-    }
     this.api.removeOcupacion(profId, slot.id).subscribe({
       next: () => {
         this.selectedProfSlots.update((list) => list.filter((f) => f.id !== slot.id));
@@ -1195,11 +1289,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Franjas pendientes de persistir (las agregadas con "Ocupar"). */
-  protected franjasPendientes(): FranjaVista[] {
-    return this.selectedProfSlots().filter((f) => f.nueva);
-  }
-
   private ordenarFranjas(list: FranjaVista[]): FranjaVista[] {
     return [...list].sort((a, b) =>
       (a.fecha + a.hora_inicio).localeCompare(b.fecha + b.hora_inicio),
@@ -1207,10 +1296,8 @@ export class ValidationComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Único punto donde se escribe en BD: primero se registran las franjas
-   * pendientes y solo si TODAS entran se asigna el profesional. Si alguna se
-   * cruza (por ejemplo, otro administrador ocupó ese horario mientras el modal
-   * estaba abierto) la asignación no llega a ejecutarse.
+   * Único punto donde se escribe en BD. Hasta aquí, todo lo marcado en la agenda
+   * vive solo en pantalla: cerrar el modal no deja nada a medias.
    */
   protected confirmAssign(): void {
     const order = this.assignOrder();
@@ -1229,24 +1316,14 @@ export class ValidationComponent implements OnInit, OnDestroy {
     const nombreProf = this.professionals().find((p) => p.id === profId)?.nombre || 'El profesional';
     this.assigning.set(true);
 
-    const pendientes = this.franjasPendientes();
-    const guardarFranjas = pendientes.length
-      ? forkJoin(
-          pendientes.map((f) =>
-            this.api.addOcupacion(profId, {
-              fecha: f.fecha,
-              hora_inicio: f.hora_inicio,
-              hora_fin: f.hora_fin,
-            }),
-          ),
-        )
-      : of([]);
-
     // Con la OS ya materializada se usa el endpoint de órdenes: ese es el que
     // pasa a PROGRAMADA, genera los formatos y envía el correo con los adjuntos
     // (ASG-03/04). Mientras siga siendo un borrador solo se deja anotado quién
     // lo atenderá; el envío ocurre al validar y asignar la OS.
-    const asignacion = order.osId
+    // El tipo va explícito: las dos ramas devuelven observables de formas
+    // distintas y sin anotarlas TypeScript arma una unión que no se puede
+    // suscribir. Antes lo unificaba el `switchMap` que envolvía la llamada.
+    const asignacion: Observable<ResultadoAsignacion> = order.osId
       ? this.api
           .assignOrder(order.osId, {
             profesional_id: profId,
@@ -1271,21 +1348,22 @@ export class ValidationComponent implements OnInit, OnDestroy {
           .assignDraft(order.id, { profesional_id: profId, fecha_programada: fechaProgramada })
           .pipe(map((r) => ({ os: null, borrador: r.data, correo: true, formatos: null })));
 
-    guardarFranjas.pipe(switchMap(() => asignacion)).subscribe({
+    asignacion.subscribe({
       next: (res) => {
         this.assigning.set(false);
         if (res.borrador) {
           this.replaceOrder(res.borrador);
         } else if (res.os) {
+          const os = res.os;
           this.orders.update((list) =>
             list.map((o) =>
               o.id === order.id
                 ? {
                     ...o,
-                    osEstado: res.os.estado,
-                    assignedProf: res.os.profesional_nombre ?? nombreProf,
+                    osEstado: os.estado,
+                    assignedProf: os.profesional_nombre ?? nombreProf,
                     assignedProfId: profId,
-                    scheduledAt: res.os.fecha_programada ?? fechaProgramada,
+                    scheduledAt: os.fecha_programada ?? fechaProgramada,
                   }
                 : o,
             ),
@@ -1297,9 +1375,9 @@ export class ValidationComponent implements OnInit, OnDestroy {
         this.selectedProfSlots.set([]);
         this.franjasVisita.set([]);
 
-        const franjas =
-          (pendientes.length ? ` Se registraron ${pendientes.length} franja(s) ocupada(s) en su agenda.` : '') +
-          (res.os && visita > 1 ? ` La visita quedó repartida en ${visita} franjas.` : '');
+        const franjas = res.os && visita > 1
+          ? ` La visita quedó repartida en ${visita} franjas.`
+          : '';
         if (res.os && !res.correo) {
           // La asignación quedó guardada; lo único que falló fue el envío.
           this.alerts.warning(
@@ -1366,15 +1444,16 @@ export class ValidationComponent implements OnInit, OnDestroy {
   });
 
   /**
-   * EST-04 · ¿La transición elegida exige motivo? Cancelar siempre lo pide, y
-   * devolver una orden de EN VERIFICACIÓN a PROGRAMADA es un rechazo de
-   * soportes: el profesional necesita saber qué corregir.
+   * ¿La transición elegida exige motivo? Las dos marchas atrás: rechazar
+   * soportes (EJECUTADA → PROGRAMADA) y devolver una visita a la bandeja
+   * (PROGRAMADA → SIN PROGRAMAR). En ambas alguien deshace trabajo hecho y el
+   * profesional necesita saber por qué.
    */
   protected readonly requiereMotivo = computed(() => {
     const destino = this.estadoDestino();
-    if (!destino) return false;
-    if (destino === 'CANCELADA') return true;
-    return this.detailOrder()?.osEstado === 'EN VERIFICACIÓN' && destino === 'PROGRAMADA';
+    const actual = this.detailOrder()?.osEstado;
+    if (!destino || !actual) return false;
+    return (EXIGEN_MOTIVO[actual] ?? []).includes(destino);
   });
 
   protected setEstadoDestino(estado: string): void {
@@ -1391,17 +1470,17 @@ export class ValidationComponent implements OnInit, OnDestroy {
     if (this.requiereMotivo() && !motivo) {
       this.alerts.warning(
         'Falta el motivo',
-        destino === 'CANCELADA'
-          ? 'Cancelar una orden exige dejar constancia del porqué en la auditoría.'
+        destino === 'SIN PROGRAMAR'
+          ? 'Devolver la visita a la bandeja exige dejar constancia del porqué en la auditoría.'
           : 'Al devolver la orden al profesional debe indicarse qué se necesita corregir.',
       );
       return;
     }
 
-    // Devolver de EN VERIFICACIÓN a PROGRAMADA es el rechazo de soportes (VER-04):
-    // se usa ese endpoint y no el genérico porque además reabre el enlace público
-    // de carga y notifica al profesional.
-    const esRechazo = order.osEstado === 'EN VERIFICACIÓN' && destino === 'PROGRAMADA';
+    // Devolver de EJECUTADA a PROGRAMADA es el rechazo de soportes (VER-04): se
+    // usa ese endpoint y no el genérico porque además reabre el enlace público de
+    // carga y notifica al profesional.
+    const esRechazo = order.osEstado === 'EJECUTADA' && destino === 'PROGRAMADA';
     const peticion = esRechazo
       ? this.api.rejectOrder(order.osId, motivo)
       : this.api.changeOrderStatus(order.osId, destino, motivo || undefined);
@@ -1443,9 +1522,14 @@ export class ValidationComponent implements OnInit, OnDestroy {
     () => this.supports().find((s) => s.id === this.selectedSupportId()) ?? null,
   );
 
-  /** Solo se decide sobre una OS que sigue EN VERIFICACIÓN (una ejecutada es consulta). */
+  /**
+   * Se decide sobre una OS EJECUTADA: al desaparecer EN VERIFICACIÓN, subir los
+   * soportes la deja ejecutada y la revisión pasa a hacerse sobre ese estado.
+   * Aceptar deja constancia y manda la encuesta; rechazar la devuelve a
+   * PROGRAMADA y reabre el enlace de carga.
+   */
   protected readonly puedeDecidir = computed(
-    () => this.verifyOrder()?.osEstado === 'EN VERIFICACIÓN',
+    () => this.verifyOrder()?.osEstado === 'EJECUTADA',
   );
 
   protected openVerify(order: ServiceOrder, abrirId?: string): void {
@@ -1654,10 +1738,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ---- Helpers ----
-  private emptySlot(): { fecha: string; hora_inicio: string; hora_fin: string } {
-    return { fecha: '', hora_inicio: '', hora_fin: '' };
-  }
 }
 
 /** Fecha local en el formato que espera <input type="date"> (YYYY-MM-DD). */

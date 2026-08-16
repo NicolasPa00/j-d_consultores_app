@@ -19,7 +19,9 @@
             <span class="kpi-card__label">{{ kpi.label }}</span>
             <strong class="kpi-card__value">{{ kpi.value }}</strong>
           </div>
-          <span class="kpi-card__icon">{{ kpi.icon }}</span>
+          <span class="kpi-card__icon" aria-hidden="true">
+            <ng-container *ngTemplateOutlet="kpiIcon; context: { $implicit: kpi.icon }" />
+          </span>
         </article>
       }
     </section>
@@ -50,7 +52,7 @@
             <tbody>
               <!-- Las pendientes van primero (las ordena el backend) y se
                    resaltan: es lo que el profesional tiene que hacer. -->
-              @for (o of misOrdenes(); track o.id) {
+              @for (o of pagMias.visibles(); track o.id) {
                 <tr [class.row-pendiente]="o.pendiente">
                   <td class="cell-code">{{ o.codigo }}</td>
                   <td>
@@ -87,6 +89,8 @@
             </tbody>
           </table>
         </div>
+
+        <app-paginador [pag]="pagMias" etiqueta="órdenes" />
       } @else {
         <p class="stat-panel__empty">
           No tiene órdenes asignadas. Cuando le asignen una recibirá el correo con los formatos.
@@ -113,7 +117,9 @@
         <span class="kpi-card__label">{{ kpi.label }}</span>
         <strong class="kpi-card__value">{{ kpi.value }}</strong>
       </div>
-      <span class="kpi-card__icon">{{ kpi.icon }}</span>
+      <span class="kpi-card__icon" aria-hidden="true">
+        <ng-container *ngTemplateOutlet="kpiIcon; context: { $implicit: kpi.icon }" />
+      </span>
     </article>
   }
 </section>
@@ -175,57 +181,92 @@
 </div>
 
 <!-- Tabla de órdenes recientes -->
+<!-- Mismas columnas que la vista Órdenes: es la misma orden y tenía que leerse
+     igual en los dos sitios. Lo único que no se replica son las acciones: aquí
+     es un resumen de consulta y para operar está "Ver todo". -->
 <section class="panel">
   <div class="panel__head">
     <h3 class="panel__title">Órdenes recientes</h3>
-    <span class="panel__hint">Consulta de solo lectura · ORD-01</span>
+    <div class="panel__head-right">
+      <span class="panel__hint">Las {{ recentOrders().length }} más recientes · solo lectura</span>
+      <a class="btn btn--ghost btn--sm" routerLink="/ordenes">
+        Ver todo
+        <svg class="btn__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12h14" />
+          <path d="m13 6 6 6-6 6" />
+        </svg>
+      </a>
+    </div>
   </div>
 
   <div class="table-wrap">
     <table class="table">
       <thead>
         <tr>
-          <th>Código OS</th>
-          <th>Empresa Cliente</th>
-          <th>ARL Detectada</th>
+          <th class="col-num">#</th>
+          <th>NIT</th>
+          <th>Razón social</th>
+          <th>ARL</th>
           <th>Horas</th>
-          <th>Nivel de Confianza</th>
+          <th>Fecha de vencimiento</th>
+          <th>Confianza</th>
           <th>Estado</th>
         </tr>
       </thead>
       <tbody>
         <!-- Al pulsar una fila se abre el drawer de detalle y asignación (M5). -->
-        @for (order of orders(); track order.code) {
+        @for (order of recentOrders(); track order.id; let i = $index) {
           <tr class="row-clickable" (click)="openOrder(order)">
-            <td class="cell-code">{{ order.code }}</td>
-            <td>{{ order.client }}</td>
+            <td class="col-num mono">{{ i + 1 }}</td>
+            <td class="mono">{{ order.nit }}</td>
             <td>
-              <span class="badge badge--arl">{{ order.arl }}</span>
+              <div class="who__text">
+                <span class="who__name">{{ order.client }}</span>
+                @if (order.assignedProf) {
+                  <span class="who__assigned">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="8" r="4" />
+                      <path d="M4 21a8 8 0 0 1 16 0" />
+                    </svg>
+                    {{ order.assignedProf }}
+                  </span>
+                }
+              </div>
             </td>
-            <td>{{ order.hours }} h</td>
+            <td>{{ order.arl }}</td>
+            <td class="mono">{{ order.hours }}</td>
             <td>
-              @let tone = confidenceTone(order.confidence);
-              <span class="confidence">
-                <span class="confidence__bar">
-                  <span
-                    class="confidence__fill"
-                    [class]="'confidence__fill--' + tone"
-                    [style.width.%]="order.confidence"
-                  ></span>
-                </span>
-                <span class="confidence__value" [class]="'confidence__value--' + tone">
-                  {{ order.confidence }}%
-                </span>
-              </span>
+              @if (order.vencimiento; as v) {
+                <div class="venc" [class]="'venc--' + v.tone">
+                  <span class="venc__date mono">{{ v.fecha }}</span>
+                  <span class="venc__left">{{ v.detalle }}</span>
+                </div>
+              } @else {
+                <span class="venc__none">—</span>
+              }
             </td>
             <td>
-              <span class="badge badge--status">{{ order.status }}</span>
+              <span class="pill" [class]="pillClass(order.confidence)">{{ order.confidence }}%</span>
             </td>
+            <td>
+              <span class="pill" [class]="pillEstado(order.status)">{{ order.status }}</span>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="8" class="table__empty">Aún no hay órdenes registradas.</td>
           </tr>
         }
       </tbody>
     </table>
   </div>
+
+  @if (ordersOcultas(); as ocultas) {
+    <p class="panel__more">
+      {{ ocultas }} orden(es) más no se muestran aquí.
+      <a routerLink="/ordenes">Verlas en Órdenes</a>
+    </p>
+  }
 </section>
 
 <!-- ============ DRAWER DE DETALLE Y ASIGNACIÓN (Módulo ASG) ============ -->
@@ -323,5 +364,45 @@
 }
 }
 <!-- fin del panel de administración (@if !esProfesional) -->
+
+<!-- ============ ICONOS DE LOS KPI ============ -->
+<!-- Un solo juego para los dos paneles (administración y profesional). Mismo
+     trazo lineal de 1.8 y misma caja 24×24 que los iconos del sidebar: las
+     tarjetas usaban emoji y desentonaban con el resto de la interfaz. -->
+<ng-template #kpiIcon let-icon>
+  @switch (icon) {
+    @case ('orders') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2" />
+        <rect x="8" y="2" width="8" height="4" rx="1" />
+        <path d="M8.5 11h7M8.5 15.5h4.5" />
+      </svg>
+    }
+    @case ('calendar') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4.5" width="18" height="17" rx="2" />
+        <path d="M16 2.5v4M8 2.5v4M3 10h18" />
+      </svg>
+    }
+    @case ('clock') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7.5V12l3 2" />
+      </svg>
+    }
+    @case ('check') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9" />
+        <path d="m8.5 12.3 2.4 2.4 4.6-4.9" />
+      </svg>
+    }
+    @case ('search') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-3.5-3.5" />
+      </svg>
+    }
+  }
+</ng-template>
 
 <!-- ============ TOAST ============ -->

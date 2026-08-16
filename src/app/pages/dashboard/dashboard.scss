@@ -59,23 +59,33 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.35rem;
+}
+
+/* El icono es un SVG de trazo (como los del sidebar), no un emoji: hereda el
+   color del acento de la tarjeta en vez de traer el suyo propio. */
+.kpi-card__icon svg {
+  width: 22px;
+  height: 22px;
 }
 
 .kpi-card--blue .kpi-card__icon {
   background: rgba(45, 123, 200, 0.1);
+  color: var(--secondary-color);
 }
 
 .kpi-card--cyan .kpi-card__icon {
   background: rgba(136, 178, 232, 0.18);
+  color: var(--primary-color);
 }
 
 .kpi-card--warning .kpi-card__icon {
   background: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
 }
 
 .kpi-card--slate .kpi-card__icon {
   background: rgba(100, 116, 139, 0.1);
+  color: #64748b;
 }
 
 /* ---- Panel / Tabla ---- */
@@ -102,6 +112,103 @@
 
 .panel__hint {
   font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* "Ver todo" vive en la cabecera del panel, junto a la nota de cuántas se ven. */
+.panel__head-right {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.btn__arrow {
+  width: 15px;
+  height: 15px;
+  margin-left: 0.3rem;
+  vertical-align: -2px;
+}
+
+.panel__more {
+  margin: 0;
+  padding: 0.75rem 1.4rem;
+  border-top: 1px solid var(--border-soft);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  background: #f8fafc;
+}
+
+.panel__more a {
+  color: var(--secondary-color);
+  font-weight: 600;
+}
+
+/* ---- Columnas replicadas de la vista Órdenes ----
+   Se copian aquí (y no se extraen a styles.scss) porque son estilos de fila de
+   una tabla concreta; el día que se unifiquen, el sitio es el design system. */
+.col-num {
+  width: 3rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+}
+
+.who__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.who__name {
+  font-weight: 600;
+}
+
+/* El profesional a cargo va bajo la razón social: es de quién depende la orden,
+   no una columna aparte que ensancharía la tabla. */
+.who__assigned {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.73rem;
+  color: var(--text-muted);
+}
+
+.who__assigned svg {
+  width: 13px;
+  height: 13px;
+}
+
+.venc {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.venc__date {
+  font-size: 0.86rem;
+  color: var(--text-main);
+}
+
+.venc__left {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.venc--warn .venc__date,
+.venc--warn .venc__left {
+  color: var(--warning);
+}
+
+.venc--danger .venc__date,
+.venc--danger .venc__left {
+  color: var(--danger);
+}
+
+.venc__none {
   color: var(--text-muted);
 }
 
@@ -214,59 +321,6 @@
   color: var(--success);
   border: 1px solid rgba(16, 185, 129, 0.25);
   letter-spacing: 0.03em;
-}
-
-/* ---- Indicador de confianza IA ---- */
-.confidence {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  min-width: 160px;
-}
-
-.confidence__bar {
-  flex: 1;
-  height: 7px;
-  background: var(--border-soft);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.confidence__fill {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-}
-
-.confidence__fill--success {
-  background: var(--success);
-}
-
-.confidence__fill--warning {
-  background: var(--warning);
-}
-
-.confidence__fill--danger {
-  background: var(--danger);
-}
-
-.confidence__value {
-  font-size: 0.8rem;
-  font-weight: 600;
-  min-width: 38px;
-  text-align: right;
-}
-
-.confidence__value--success {
-  color: var(--success);
-}
-
-.confidence__value--warning {
-  color: var(--warning);
-}
-
-.confidence__value--danger {
-  color: var(--danger);
 }
 
 /* ============ DRAWER (Offcanvas) ============ */

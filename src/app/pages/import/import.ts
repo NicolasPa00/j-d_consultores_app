@@ -6,6 +6,8 @@ import { ApiService } from '../../core/api.service';
 import { AlertService } from '../../core/alert.service';
 import { Borrador, CampoExtraido, HojaImportada, MetadatosExtraccion } from '../../core/models';
 import { aIsoFecha } from '../../core/fechas';
+import { paginar } from '../../shared/paginacion';
+import { PaginadorComponent } from '../../shared/paginador/paginador';
 
 /** Un campo extraído editable (etiqueta + valor + confianza). */
 interface PreviewField {
@@ -19,11 +21,22 @@ interface PreviewField {
   required?: boolean;
 }
 
+/**
+ * Un lote de importación: SIEMPRE un archivo. Se puede procesar una tanda de
+ * archivos a la vez, pero cada uno abre su propio lote porque
+ * `lotes_importacion` guarda un solo documento y la vista previa compara cada
+ * orden contra el suyo.
+ */
+interface LoteCargado {
+  id: string;
+  nombre: string | null;
+  mime: string | null;
+}
+
 /** Una orden extraída del lote, con su resumen de fila y su detalle completo. */
 interface PreviewOrder {
   id: string;
   estado: string;
-  duplicada: boolean;
   identidad: string;
   nit: string;
   company: string;
@@ -33,7 +46,40 @@ interface PreviewOrder {
   confidence: number;
   /** Solo Excel: fila de la hoja de origen, para resaltarla en la vista previa. */
   sourceRow: number | null;
+  /** De qué archivo salió. Con varios en la tanda, la fila sola no lo diría. */
+  lote: LoteCargado;
+  /** Se está enviando a Órdenes ella sola (botón de guardar de la fila). */
+  guardando?: boolean;
   fields: PreviewField[];
+}
+
+/**
+ * IMP-07/09 · Una orden que el sistema descarta porque su OS ya existe.
+ *
+ * No entra a la tabla: no hay nada que revisar ni que corregir en ella, y
+ * listarla solo obligaba a distinguir a ojo las filas que sí se van a guardar.
+ * Se informa aparte, con el estado de la orden que ya está en el sistema, que es
+ * lo que decide qué hacer: una EJECUTADA no se vuelve a cargar, pero una
+ * deshabilitada por error se restaura desde Órdenes.
+ */
+interface DuplicadaInfo {
+  id: string;
+  identidad: string;
+  company: string;
+  arl: string;
+  archivo: string | null;
+  codigoOS: string | null;
+  /** Estado de la OS existente, o 'Deshabilitada' si su orden está inactiva. */
+  estadoOS: string;
+  deshabilitada: boolean;
+  profesional: string | null;
+  fechaProgramada: string | null;
+}
+
+/** Un archivo de la tanda que no se pudo procesar; los demás siguen su curso. */
+interface FalloArchivo {
+  archivo: string;
+  motivo: string;
 }
 
 /** Cómo se puede mostrar el documento original en el panel izquierdo del modal. */
@@ -41,7 +87,7 @@ type DocKind = 'pdf' | 'sheet' | 'none';
 
 @Component({
   selector: 'app-import',
-  imports: [FormsModule],
+  imports: [FormsModule, PaginadorComponent],
   templateUrl: './import.html',
   styleUrl: './import.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -52,13 +98,19 @@ export class ImportComponent implements OnDestroy {
   private readonly router = inject(Router);
   private readonly sanitizer = inject(DomSanitizer);
 
-  protected readonly fileName = signal<string | null>(null);
   protected readonly processing = signal(false);
   protected readonly showPreview = signal(false);
   protected readonly error = signal<string | null>(null);
 
-  protected readonly batchId = signal<string | null>(null);
+  /** Lotes abiertos en esta tanda (uno por archivo procesado con éxito). */
+  protected readonly batches = signal<LoteCargado[]>([]);
   protected readonly previewRows = signal<PreviewOrder[]>([]);
+  /** Órdenes descartadas por duplicadas; se informan, no se listan. */
+  protected readonly duplicadas = signal<DuplicadaInfo[]>([]);
+  /** Archivos de la tanda que fallaron; el resto se procesa igual. */
+  protected readonly fallos = signal<FalloArchivo[]>([]);
+  /** Avance de la tanda ("3 de 7"). Null cuando no hay proceso en curso. */
+  protected readonly progreso = signal<{ hechos: number; total: number } | null>(null);
 
   /** Orden abierta en el modal de revisión. */
   protected readonly detailId = signal<string | null>(null);
@@ -66,11 +118,11 @@ export class ImportComponent implements OnDestroy {
   protected readonly confirming = signal(false);
 
   // ----- Vista previa del documento original (panel izquierdo del modal) -----
-  // El documento es el MISMO para todas las órdenes del lote, así que se carga
-  // una sola vez por lote y se reutiliza al abrir cada fila.
+  // El documento es el MISMO para todas las órdenes de UN lote, así que se carga
+  // una vez por lote; con varios archivos en la tanda se recarga al abrir una
+  // orden que viene de otro.
   protected readonly docKind = signal<DocKind>('none');
   protected readonly docName = signal<string | null>(null);
-  protected readonly docMime = signal<string | null>(null);
   protected readonly docLoading = signal(false);
   protected readonly docError = signal<string | null>(null);
   protected readonly docUrl = signal<SafeResourceUrl | null>(null);
@@ -81,98 +133,194 @@ export class ImportComponent implements OnDestroy {
   /** Panel del documento; se consulta para centrar la fila de origen. */
   private readonly docBody = viewChild<ElementRef<HTMLElement>>('docBody');
 
-  private selectedFile: File | null = null;
+  private selectedFiles: File[] = [];
+  /** Nombres de lo seleccionado, para pintarlos sin exponer los File. */
+  protected readonly fileNames = signal<string[]>([]);
 
   protected readonly detailOrder = computed(
     () => this.previewRows().find((r) => r.id === this.detailId()) ?? null,
   );
 
-  /** Órdenes que realmente se enviarán a Órdenes al confirmar (las duplicadas no). */
-  protected readonly confirmableCount = computed(
-    () => this.previewRows().filter((r) => !r.duplicada).length,
-  );
+  /** Órdenes que se enviarán a Órdenes al guardar todo. */
+  protected readonly confirmableCount = computed(() => this.previewRows().length);
 
-  protected readonly duplicateCount = computed(
-    () => this.previewRows().filter((r) => r.duplicada).length,
-  );
+  /**
+   * Página visible de la vista previa. Un SIPAB de Bolívar trae 31 órdenes y una
+   * tanda de varios archivos las suma, así que la tabla se estiraba hasta dejar
+   * el pie con "Guardar todo" fuera de la pantalla.
+   */
+  protected readonly pag = paginar(this.previewRows, 25);
 
   protected onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0] ?? null;
-    this.selectedFile = file;
-    this.fileName.set(file ? file.name : null);
+    const files = Array.from(input.files ?? []);
+    this.selectedFiles = files;
+    this.fileNames.set(files.map((f) => f.name));
     this.error.set(null);
+    // Se limpia el input (no los File, que ya están capturados): así volver a
+    // elegir el MISMO archivo dispara el evento change otra vez, que es justo lo
+    // que hace falta para reintentar una tanda que falló.
+    input.value = '';
   }
 
-  /** Sube el archivo, procesa con IA (async) y muestra la extracción. */
+  protected quitarSeleccion(): void {
+    if (this.processing()) return;
+    this.selectedFiles = [];
+    this.fileNames.set([]);
+  }
+
+  /**
+   * IMP-01/02 · Sube la tanda, la procesa con IA y muestra la extracción.
+   *
+   * Cada archivo abre su propio lote y se procesa por separado: uno que falle
+   * (formato no soportado, PDF ilegible) no puede tumbar a los demás, así que
+   * los errores se acumulan y se muestran junto a las órdenes que sí salieron.
+   */
   protected processWithAi(): void {
-    if (this.processing() || !this.selectedFile) return;
+    if (this.processing() || !this.selectedFiles.length) return;
     this.processing.set(true);
     this.showPreview.set(false);
     this.error.set(null);
-    // Nuevo lote ⇒ el documento previo ya no aplica.
+    // Tanda nueva ⇒ nada de la anterior aplica.
     this.resetDocument();
+    this.batches.set([]);
+    this.previewRows.set([]);
+    this.duplicadas.set([]);
+    this.fallos.set([]);
 
-    this.api.uploadImport(this.selectedFile).subscribe({
-      next: (res) => {
-        this.batchId.set(res.batch.id);
-        this.pollBatch(res.batch.id, 0);
-      },
-      error: (err) => {
-        this.processing.set(false);
-        this.error.set(err?.error?.error || 'No se pudo subir el archivo.');
-      },
-    });
+    const archivos = this.selectedFiles;
+    this.progreso.set({ hechos: 0, total: archivos.length });
+    let pendientes = archivos.length;
+    const terminarUno = () => {
+      this.progreso.update((p) => (p ? { ...p, hechos: p.hechos + 1 } : p));
+      if (--pendientes === 0) this.terminarTanda();
+    };
+
+    for (const file of archivos) {
+      this.api.uploadImport(file).subscribe({
+        next: (res) => this.pollBatch(res.batch.id, file.name, 0, terminarUno),
+        error: (err) => {
+          this.anotarFallo(file.name, err?.error?.error || 'No se pudo subir el archivo.');
+          terminarUno();
+        },
+      });
+    }
   }
 
-  private pollBatch(batchId: string, attempt: number): void {
+  private pollBatch(batchId: string, archivo: string, attempt: number, listo: () => void): void {
     if (attempt > 30) {
-      this.processing.set(false);
-      this.error.set('El procesamiento está tardando más de lo esperado. Vuelve a intentarlo.');
+      this.anotarFallo(archivo, 'El procesamiento está tardando más de lo esperado.');
+      listo();
       return;
     }
     this.api.importStatus(batchId).subscribe({
       next: (r) => {
         const estado = r.data.estado;
         if (estado === 'PROCESANDO') {
-          setTimeout(() => this.pollBatch(batchId, attempt + 1), 700);
+          setTimeout(() => this.pollBatch(batchId, archivo, attempt + 1, listo), 700);
         } else if (estado === 'ERROR') {
-          this.processing.set(false);
-          this.error.set(r.data.mensaje_error || 'Error al procesar el archivo.');
+          this.anotarFallo(archivo, r.data.mensaje_error || 'Error al procesar el archivo.');
+          listo();
         } else {
-          this.loadPreview(batchId);
+          this.loadPreview(batchId, archivo, listo);
         }
       },
       error: () => {
-        this.processing.set(false);
-        this.error.set('No se pudo consultar el estado del procesamiento.');
+        this.anotarFallo(archivo, 'No se pudo consultar el estado del procesamiento.');
+        listo();
       },
     });
   }
 
-  private loadPreview(batchId: string): void {
+  private loadPreview(batchId: string, archivo: string, listo: () => void): void {
     this.api.importDetail(batchId).subscribe({
       next: (r) => {
-        // El archivo del lote (no el input) manda para la vista previa: sigue
+        // El archivo del LOTE (no el del input) manda para la vista previa: sigue
         // siendo el correcto aunque el usuario cambie la selección sin procesar.
-        this.docName.set(r.data.nombre_archivo || null);
-        this.docMime.set(r.data.tipo_mime || null);
-        this.previewRows.set(r.data.borradores.map(toPreview));
-        this.detailId.set(null);
-        this.processing.set(false);
-        this.showPreview.set(true);
+        const lote: LoteCargado = {
+          id: batchId,
+          nombre: r.data.nombre_archivo || archivo,
+          mime: r.data.tipo_mime || null,
+        };
+        this.batches.update((list) => [...list, lote]);
+
+        const borradores = r.data.borradores ?? [];
+        // Un Excel que no es el SIPAB de Bolívar se procesa "bien" y devuelve
+        // CERO órdenes: el parser exige las columnas de cronograma y secuencia,
+        // y sin ellas ninguna fila cuenta. Pasaba callado, así que el usuario
+        // veía una tabla vacía sin saber si el archivo estaba mal o la app.
+        if (!borradores.length) {
+          this.anotarFallo(
+            lote.nombre || archivo,
+            'Se procesó pero no se extrajo ninguna orden. En Excel solo se reconoce el ' +
+              'formato SIPAB de Bolívar (columnas “Numero Cronograma” y “Actividad ' +
+              'Cronograma”); las órdenes de AXA Colpatria y Colmena se cargan en PDF.',
+          );
+        }
+
+        this.previewRows.update((list) => [
+          ...list,
+          ...borradores.filter((b) => b.estado !== 'DUPLICADA').map((b) => toPreview(b, lote)),
+        ]);
+        this.duplicadas.update((list) => [
+          ...list,
+          ...borradores.filter((b) => b.estado === 'DUPLICADA').map((b) => toDuplicada(b, lote)),
+        ]);
+        listo();
       },
       error: () => {
-        this.processing.set(false);
-        this.error.set('No se pudo cargar la extracción.');
+        this.anotarFallo(archivo, 'No se pudo cargar la extracción.');
+        listo();
       },
     });
+  }
+
+  private anotarFallo(archivo: string, motivo: string): void {
+    this.fallos.update((list) => [...list, { archivo, motivo }]);
+  }
+
+  /** Cierra la tanda: decide qué mostrar y avisa de lo que se descartó. */
+  private terminarTanda(): void {
+    this.processing.set(false);
+    this.progreso.set(null);
+    this.detailId.set(null);
+    this.pag.reiniciar();   // tanda nueva, se empieza por la primera página
+
+    // El panel solo aparece si hay algo que revisar. Sin órdenes ni duplicadas,
+    // una tabla vacía no aporta nada: lo que hay que leer son los avisos de
+    // arriba, que dicen qué pasó con cada archivo.
+    const hayAlgoQueMostrar = !!this.previewRows().length || !!this.duplicadas().length;
+    this.showPreview.set(hayAlgoQueMostrar);
+
+    if (!hayAlgoQueMostrar) {
+      const fallos = this.fallos();
+      // Con un solo archivo el motivo concreto es más útil que un recuento.
+      if (fallos.length === 1) this.error.set(fallos[0].motivo);
+      else if (fallos.length) this.error.set(`Ninguno de los ${fallos.length} archivos dejó órdenes para revisar.`);
+      else this.error.set('Los archivos se procesaron pero no se extrajo ninguna orden.');
+      return;
+    }
+
+    // IMP-07/09 · El duplicado se avisa de una, sin esperar a que el usuario lea
+    // la tabla: la orden ya existe y no hay nada que decidir sobre ella aquí.
+    const dups = this.duplicadas();
+    if (dups.length) {
+      const detalle = dups
+        .slice(0, 3)
+        .map((d) => `${d.identidad} (${d.company}) — ya existe como ${d.codigoOS ?? 'OS registrada'}, estado ${d.estadoOS}`)
+        .join('. ');
+      const resto = dups.length > 3 ? ` Y ${dups.length - 3} más.` : '';
+      this.alerts.warning(
+        dups.length === 1 ? 'La orden ya existe' : `${dups.length} órdenes ya existen`,
+        `${detalle}.${resto} Se descartaron del procesamiento; el detalle queda listado abajo.`,
+      );
+    }
   }
 
   // ================= Modal de revisión =================
-  protected openDetail(id: string): void {
-    this.detailId.set(id);
-    this.loadDocument();
+  protected openDetail(row: PreviewOrder): void {
+    this.detailId.set(row.id);
+    this.loadDocument(row.lote);
     this.scrollToSourceRow();
   }
 
@@ -194,24 +342,28 @@ export class ImportComponent implements OnDestroy {
    * IMP-03 · Carga el documento original del lote para compararlo contra los
    * campos extraídos. PDF → se incrusta el archivo tal cual (visor nativo del
    * navegador); Excel → se pide la hoja en texto plano, porque el navegador no
-   * sabe renderizar .xlsx. Se hace una sola vez por lote.
+   * sabe renderizar .xlsx. Se hace una vez por lote y se reutiliza mientras se
+   * revisen órdenes del mismo archivo.
    */
-  private loadDocument(): void {
-    const batch = this.batchId();
-    if (!batch || this.docBatchId === batch || this.docLoading()) return;
+  private loadDocument(lote: LoteCargado): void {
+    if (this.docBatchId === lote.id || this.docLoading()) return;
+    // Se viene de otro archivo de la tanda: hay que soltar el documento anterior
+    // (y su object URL) antes de pedir el nuevo.
+    this.resetDocument();
+    this.docName.set(lote.nombre);
 
     // Mismo criterio que el backend: algunos clientes suben .xlsx como
     // application/octet-stream, así que la extensión también cuenta.
-    const esExcel = /sheet|excel/.test(this.docMime() || '') || /\.(xlsx|xls)$/i.test(this.docName() || '');
+    const esExcel = /sheet|excel/.test(lote.mime || '') || /\.(xlsx|xls)$/i.test(lote.nombre || '');
     this.docLoading.set(true);
     this.docError.set(null);
 
     if (esExcel) {
-      this.api.importSheet(batch).subscribe({
+      this.api.importSheet(lote.id).subscribe({
         next: (r) => {
           this.sheet.set(r.data);
           this.docKind.set('sheet');
-          this.docBatchId = batch;
+          this.docBatchId = lote.id;
           this.docLoading.set(false);
           // La hoja acaba de aparecer: recién ahora existe la fila a resaltar.
           this.scrollToSourceRow();
@@ -221,7 +373,7 @@ export class ImportComponent implements OnDestroy {
       return;
     }
 
-    this.api.importFile(batch).subscribe({
+    this.api.importFile(lote.id).subscribe({
       next: (blob) => {
         this.releaseObjectUrl();
         this.objectUrl = URL.createObjectURL(blob);
@@ -232,12 +384,28 @@ export class ImportComponent implements OnDestroy {
         // es seguro incrustarlo en el iframe.
         this.docUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(`${this.objectUrl}#view=FitH`));
         this.docKind.set('pdf');
-        this.docBatchId = batch;
+        this.docBatchId = lote.id;
         this.docLoading.set(false);
       },
       error: () => this.failDocument('No se pudo cargar el documento original.'),
     });
   }
+
+  /**
+   * Abre el documento original en otra pestaña.
+   *
+   * No es un adorno: en pantalla angosta (y en móvil) el visor de PDF embebido
+   * en un iframe no se puede desplazar —Chrome no le entrega los gestos táctiles
+   * y Android directamente no lo renderiza—, así que sin esta salida el
+   * documento queda inservible justo donde menos espacio hay para leerlo.
+   */
+  protected abrirDocumentoAparte(): void {
+    if (!this.objectUrl) return;
+    window.open(this.objectUrl, '_blank', 'noopener');
+  }
+
+  /** ¿Hay un PDF cargado que se pueda abrir aparte? */
+  protected readonly puedeAbrirAparte = computed(() => this.docKind() === 'pdf');
 
   private failDocument(mensaje: string): void {
     this.docLoading.set(false);
@@ -263,7 +431,6 @@ export class ImportComponent implements OnDestroy {
     this.sheet.set(null);
     this.docKind.set('none');
     this.docName.set(null);
-    this.docMime.set(null);
     this.docError.set(null);
     this.docLoading.set(false);
     this.docBatchId = null;
@@ -275,12 +442,40 @@ export class ImportComponent implements OnDestroy {
 
   protected closeDetail(): void {
     if (this.saving()) return;
-    // Se recarga desde el servidor para descartar ediciones no guardadas.
-    const batch = this.batchId();
-    if (batch) this.api.importDetail(batch).subscribe({
-      next: (r) => this.previewRows.set(r.data.borradores.map(toPreview)),
-    });
+    // Se recarga el lote de esa orden desde el servidor para descartar ediciones
+    // no guardadas, sin tocar las filas de los demás archivos de la tanda.
+    const order = this.detailOrder();
+    if (order) this.recargarLote(order.lote);
     this.detailId.set(null);
+  }
+
+  /**
+   * Vuelve a leer un lote y refresca SUS filas, dejando intactas las de los
+   * demás archivos de la tanda.
+   *
+   * Se refrescan en su sitio en vez de quitarlas y volver a añadirlas: con
+   * varios archivos, reinsertarlas al final reordenaba la tabla cada vez que se
+   * cerraba el modal y la fila que se acababa de revisar cambiaba de posición.
+   */
+  private recargarLote(lote: LoteCargado): void {
+    this.api.importDetail(lote.id).subscribe({
+      next: (r) => {
+        // Solo las que siguen pendientes: las que se guardaron de a una ya
+        // pasaron a PENDIENTE_VALIDACION y no vuelven a la vista previa.
+        const frescas = new Map(
+          (r.data.borradores ?? [])
+            .filter((b) => b.estado === 'PENDIENTE_REVISION')
+            .map((b) => [b.id, toPreview(b, lote)] as const),
+        );
+        this.previewRows.update((list) =>
+          list.flatMap((row) => {
+            if (row.lote.id !== lote.id) return [row];
+            const fresca = frescas.get(row.id);
+            return fresca ? [fresca] : [];
+          }),
+        );
+      },
+    });
   }
 
   // ---- Fecha de vencimiento obligatoria ----
@@ -289,9 +484,9 @@ export class ImportComponent implements OnDestroy {
     return !row.fields.find((f) => f.key === 'fecha_vencimiento')?.value.trim();
   }
 
-  /** Órdenes que se guardarían (no duplicadas) a las que les falta la fecha. */
+  /** Órdenes a las que les falta la fecha y por eso no se pueden guardar. */
   protected pendientesVencimiento(): PreviewOrder[] {
-    return this.previewRows().filter((r) => !r.duplicada && this.sinVencimiento(r));
+    return this.previewRows().filter((r) => this.sinVencimiento(r));
   }
 
   /** IMP-03 · Persiste las correcciones manuales del borrador (confianza → 100%). */
@@ -312,7 +507,7 @@ export class ImportComponent implements OnDestroy {
 
     this.api.updateDraft(order.id, fields).subscribe({
       next: (r) => {
-        const updated = toPreview(r.data);
+        const updated = toPreview(r.data, order.lote);
         this.previewRows.update((list) => list.map((o) => (o.id === updated.id ? updated : o)));
         this.saving.set(false);
         this.detailId.set(null);
@@ -320,16 +515,86 @@ export class ImportComponent implements OnDestroy {
       },
       error: (err) => {
         this.saving.set(false);
+        // 409 = la orden ya se guardó en Órdenes mientras el modal estaba
+        // abierto, así que este borrador ya no manda. Se quita de la vista
+        // previa y se dice dónde seguir editando; dejar la fila ahí llevaba a
+        // corregir una y otra vez algo que no tenía efecto.
+        if (err?.status === 409) {
+          this.previewRows.update((list) => list.filter((o) => o.id !== order.id));
+          this.detailId.set(null);
+          this.alerts.warning(
+            'Esta orden ya está en Órdenes',
+            err?.error?.error || 'Los cambios se hacen desde la sección Órdenes, no desde la vista previa.',
+          );
+          if (!this.previewRows().length) {
+            this.showPreview.set(false);
+            this.batches.set([]);
+            this.resetDocument();
+          }
+          return;
+        }
         this.alerts.error('No se pudieron guardar las correcciones', err?.error?.error || 'Los cambios no llegaron al servidor; vuelva a intentarlo.');
       },
     });
   }
 
-  // ================= Confirmar / descartar el lote =================
-  /** IMP-04 · Recién aquí las órdenes entran a la bandeja de Órdenes. */
+  // ================= Guardar en Órdenes =================
+  /**
+   * IMP-04 · Envía a Órdenes UNA sola orden, la de esta fila.
+   *
+   * Es lo que permite trabajar un SIPAB de decenas de órdenes por partes: se
+   * revisa una, se guarda y desaparece de la vista previa. Lo que quede sin
+   * guardar sigue ahí para la próxima.
+   */
+  protected saveRow(row: PreviewOrder): void {
+    if (row.guardando || this.confirming()) return;
+    if (this.sinVencimiento(row)) {
+      this.alerts.warning(
+        'Fecha de vencimiento obligatoria',
+        `${row.company} no tiene fecha de vencimiento. Ábrala con el lápiz y diligéncienla antes de guardarla.`,
+      );
+      return;
+    }
+    this.marcarGuardando(row.id, true);
+
+    this.api.confirmDraft(row.id).subscribe({
+      next: (r) => {
+        this.previewRows.update((list) => list.filter((o) => o.id !== row.id));
+        // `ya_estaba` = el servidor encontró la OS ya creada (reintento tras un
+        // aviso que no se vio, doble clic, corte de red). La fila se quita
+        // igual, pero decirlo evita que parezca que se guardó dos veces.
+        if (r.ya_estaba) {
+          this.alerts.info(
+            'Esta orden ya estaba guardada',
+            `${row.company} ya había entrado a Órdenes${r.data?.codigo ? ` como ${r.data.codigo}` : ''}. No se duplicó.`,
+          );
+        } else {
+          this.alerts.success('Orden guardada', `${row.company} ya está disponible en la sección Órdenes${r.data?.codigo ? ` como ${r.data.codigo}` : ''}.`);
+        }
+        // Si era la última, la tabla deja de tener sentido y se cierra. El aviso
+        // de duplicadas SÍ se conserva: es lo único que queda por leer de esta
+        // tanda y borrarlo con la tabla lo haría desaparecer sin que nadie lo
+        // hubiera atendido.
+        if (!this.previewRows().length) {
+          this.showPreview.set(false);
+          this.batches.set([]);
+          this.resetDocument();
+        }
+      },
+      error: (err) => {
+        this.marcarGuardando(row.id, false);
+        this.alerts.error('No se pudo guardar la orden', err?.error?.error || 'El servidor rechazó la operación.');
+      },
+    });
+  }
+
+  private marcarGuardando(id: string, valor: boolean): void {
+    this.previewRows.update((list) => list.map((o) => (o.id === id ? { ...o, guardando: valor } : o)));
+  }
+
+  /** IMP-04 · Envía a Órdenes todo lo que quede en la vista previa. */
   protected confirmBatch(): void {
-    const batch = this.batchId();
-    if (!batch || this.confirming() || !this.confirmableCount()) return;
+    if (this.confirming() || !this.confirmableCount()) return;
 
     // Ninguna orden entra a la bandeja sin vencimiento: una vez guardada, el
     // campo ya no se pide en Órdenes y la orden quedaría sin fecha de control.
@@ -345,39 +610,88 @@ export class ImportComponent implements OnDestroy {
     }
     this.confirming.set(true);
 
-    this.api.confirmImport(batch).subscribe({
-      next: (r) => {
-        this.confirming.set(false);
-        this.alerts.success('Órdenes guardadas', r.message || 'Las órdenes revisadas ya están disponibles en la sección Órdenes.');
-        this.clearPreview();
-        this.router.navigateByUrl('/ordenes');
-      },
-      error: (err) => {
-        this.confirming.set(false);
-        this.alerts.error('No se pudieron guardar las órdenes', err?.error?.error || 'El lote no pudo confirmarse; revise que siga pendiente de revisión.');
-      },
-    });
+    // Solo los lotes que todavía tienen filas: los que se vaciaron guardando de
+    // a una ya no tienen nada pendiente y el backend rechazaría la llamada.
+    const lotes = [...new Set(this.previewRows().map((r) => r.lote.id))];
+    let pendientes = lotes.length;
+    let guardadas = 0;
+    let yaEstaban = 0;
+    const errores: string[] = [];
+
+    const cerrar = () => {
+      if (--pendientes > 0) return;
+      this.confirming.set(false);
+
+      // Un archivo cuyas órdenes YA estaban guardadas no es un fallo: el
+      // servidor responde 0 confirmadas y se cuenta aparte. Antes cualquier
+      // respuesta que no fuera "todo bien" se presentaba como error y dejaba la
+      // vista previa abierta con filas que en realidad ya estaban en Órdenes.
+      if (errores.length) {
+        this.alerts.error(
+          guardadas ? 'Algunas órdenes no se guardaron' : 'No se pudo guardar',
+          [
+            guardadas ? `${guardadas} sí entraron a Órdenes.` : '',
+            ...errores,
+          ].filter(Boolean).join(' · '),
+        );
+        // Se refresca lo que quede pendiente de verdad en vez de dejar filas
+        // fantasma: las que sí entraron desaparecen solas.
+        for (const lote of this.batches()) this.recargarLote(lote);
+        return;
+      }
+
+      const detalle = [
+        guardadas ? `${guardadas} orden(es) entraron a Órdenes.` : '',
+        yaEstaban ? `${yaEstaban} ya estaban guardadas de antes.` : '',
+      ].filter(Boolean).join(' ');
+      this.alerts.success('Listo', detalle || 'No quedaba nada por guardar.');
+      this.clearPreview();
+      this.router.navigateByUrl('/ordenes');
+    };
+
+    for (const loteId of lotes) {
+      this.api.confirmImport(loteId).subscribe({
+        next: (r) => {
+          guardadas += r.data?.confirmadas ?? 0;
+          yaEstaban += r.data?.ya_guardadas ?? 0;
+          for (const f of r.data?.fallidas ?? []) errores.push(f);
+          cerrar();
+        },
+        error: (err) => {
+          errores.push(err?.error?.error || 'Un archivo no pudo confirmarse.');
+          cerrar();
+        },
+      });
+    }
   }
 
   protected async discardBatch(): Promise<void> {
-    const batch = this.batchId();
-    if (!batch || this.confirming()) return;
+    const lotes = this.batches();
+    if (!lotes.length || this.confirming()) return;
     const ok = await this.alerts.confirm({
       title: 'Descartar importación',
-      message: `Se descartarán las ${this.previewRows().length} órdenes extraídas de este archivo. No llegarán a Órdenes.`,
+      message: `Se descartarán las ${this.previewRows().length} órdenes extraídas de ${lotes.length} archivo(s). No llegarán a Órdenes.`,
       confirmText: 'Sí, descartar',
       cancelText: 'Cancelar',
       tone: 'danger',
     });
     if (!ok) return;
 
-    this.api.discardImport(batch).subscribe({
-      next: () => {
-        this.alerts.success('Importación descartada', 'Ninguna orden de este archivo llegó a la sección Órdenes.');
-        this.clearPreview();
-      },
-      error: (err) => this.alerts.error('No se pudo descartar la importación', err?.error?.error || 'El servidor rechazó la operación.'),
-    });
+    let pendientes = lotes.length;
+    const cerrar = () => {
+      if (--pendientes > 0) return;
+      this.alerts.success('Importación descartada', 'Ninguna orden de estos archivos llegó a la sección Órdenes.');
+      this.clearPreview();
+    };
+    for (const lote of lotes) {
+      this.api.discardImport(lote.id).subscribe({
+        next: () => cerrar(),
+        error: (err) => {
+          this.alerts.error('No se pudo descartar la importación', err?.error?.error || 'El servidor rechazó la operación.');
+          cerrar();
+        },
+      });
+    }
   }
 
   // ================= Helpers =================
@@ -391,13 +705,18 @@ export class ImportComponent implements OnDestroy {
     return confidence < 70;
   }
 
+  /** Con un solo archivo la columna "Archivo" sobra: todas vienen del mismo. */
+  protected readonly variosArchivos = computed(() => this.batches().length > 1);
+
   private clearPreview(): void {
-    this.fileName.set(null);
-    this.selectedFile = null;
+    this.selectedFiles = [];
+    this.fileNames.set([]);
     this.showPreview.set(false);
     this.previewRows.set([]);
+    this.duplicadas.set([]);
+    this.fallos.set([]);
     this.detailId.set(null);
-    this.batchId.set(null);
+    this.batches.set([]);
     this.error.set(null);
     this.resetDocument();
   }
@@ -468,14 +787,18 @@ function buildFields(m: MetadatosExtraccion): PreviewField[] {
   return rows;
 }
 
-function toPreview(b: Borrador): PreviewOrder {
-  const m = b.metadatos_extraccion || {};
+/** Identidad legible de la orden según la ARL (número, o cronograma+secuencia). */
+function identidadDe(m: MetadatosExtraccion): string {
   const cronograma = [text(m.codigo_cronograma), text(m.secuencia)].filter(Boolean).join(' · ');
+  return text(m.numero_orden) || cronograma || '—';
+}
+
+function toPreview(b: Borrador, lote: LoteCargado): PreviewOrder {
+  const m = b.metadatos_extraccion || {};
   return {
     id: b.id,
     estado: b.estado,
-    duplicada: b.estado === 'DUPLICADA',
-    identidad: text(m.numero_orden) || cronograma || '—',
+    identidad: identidadDe(m),
     nit: text(m.nit_nic) || '—',
     company: text(m.empresa_nombre) || 'Sin nombre',
     arl: b.arl_nombre || '—',
@@ -483,6 +806,31 @@ function toPreview(b: Borrador): PreviewOrder {
     hours: text(m.horas_asignadas) || '—',
     confidence: Math.round(Number(b.confianza_general ?? m.overall_confidence ?? 0)),
     sourceRow: m.source_row != null ? Number(m.source_row) : null,
+    lote,
     fields: buildFields(m),
+  };
+}
+
+/**
+ * Mapea un borrador DUPLICADA al aviso que ve el usuario.
+ *
+ * El estado que se muestra es el de la OS que YA existe. Una orden deshabilitada
+ * lo está por encima de su estado —igual que en la vista Órdenes—, porque es la
+ * explicación de por qué el usuario no la encuentra en la bandeja y vuelve a
+ * cargar el archivo pensando que se perdió.
+ */
+function toDuplicada(b: Borrador, lote: LoteCargado): DuplicadaInfo {
+  const m = b.metadatos_extraccion || {};
+  return {
+    id: b.id,
+    identidad: identidadDe(m),
+    company: text(m.empresa_nombre) || 'Sin nombre',
+    arl: b.arl_nombre || '—',
+    archivo: lote.nombre,
+    codigoOS: b.duplicado_codigo ?? null,
+    estadoOS: b.duplicado_deshabilitado ? 'Deshabilitada' : (b.duplicado_estado ?? 'desconocido'),
+    deshabilitada: !!b.duplicado_deshabilitado,
+    profesional: b.duplicado_profesional ?? null,
+    fechaProgramada: b.duplicado_fecha_programada ?? null,
   };
 }

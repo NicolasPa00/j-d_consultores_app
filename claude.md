@@ -46,12 +46,12 @@ pre-cuentas y los reportes/configuraciones avanzadas ya se pueden construir.
 | Módulo | Estado |
 |---|---|
 | M1 Autenticación y roles (AUTH-01..05) | ✅ backend + frontend |
-| M2 Importación y extracción IA (IMP-01..09) | ✅ backend + frontend |
-| M3 Estados y auditoría (EST-01..06) | ✅ backend + frontend |
+| M2 Importación y extracción IA (IMP-01..09) | ✅ backend + frontend · se cargan **varios archivos a la vez** (un lote por archivo) y cada orden se puede guardar suelta · confirmar **materializa la OS** directamente en SIN PROGRAMAR (ya no hay paso de "validar" en la bandeja) · ⚠️ **el SIPAB de Bolívar no trae fecha de vencimiento** y la app la exige, así que hoy son 31 fechas a mano por archivo (ver HANDOFF §3, "Pendiente") |
+| M3 Estados y auditoría (EST-01..06) | ✅ backend + frontend · ⚠️ **el ciclo se redujo a TRES estados** (ago-2026, a pedido del cliente): **SIN PROGRAMAR → PROGRAMADA → EJECUTADA**. Se eliminaron EN VERIFICACIÓN y CANCELADA (divergen de EST-01). Una OS solo pasa a PROGRAMADA cuando las franjas cubren **todas** sus horas; `EJECUTADA → PROGRAMADA` es el rechazo de soportes, la única marcha atrás (diverge de EST-06). "Deshabilitada" no es un estado de la OS: es el soft-delete del borrador |
 | M4 Formatos (FOR-01..06) | ✅ backend + frontend · ⚠️ **Colmena no tiene plantillas cargadas**, así que sus OS salen por correo sin PDF (se arregla en Configuración → Formatos y encuesta, sin tocar código) |
 | M5 Asignación y reprogramación (ASG-01..08) | ✅ backend + frontend · ASG-02 se programa sobre una agenda semanal y la visita se reparte en **franjas** (`sst.franjas_visita`; `fecha_programada` = inicio de la primera) · ASG-05 = invitación .ics adjunta al correo (no API de Google Calendar) · ASG-08 = el panel del profesional muestra su agenda · **ASG-06 (WhatsApp) fuera: el FRS lo deja en Fase 3 y omisible** |
-| M6 Soportes por enlace público (SUP-01..07) | ✅ backend + frontend · SUP-07 lista los archivos ya enviados en la agenda del profesional |
-| M7 Verificación y cierre (VER-01..05) | ✅ backend + frontend |
+| M6 Soportes por enlace público (SUP-01..07) | ✅ backend + frontend · SUP-07 lista los archivos ya enviados en la agenda del profesional · **SUP-05 diverge: subir soportes deja la OS EJECUTADA**, no EN VERIFICACIÓN |
+| M7 Verificación y cierre (VER-01..05) | ✅ backend + frontend · la revisión se hace **sobre la OS ya EJECUTADA**: `POST /orders/:id/verify` deja constancia y dispara la encuesta (no cambia el estado); rechazar la devuelve a PROGRAMADA con motivo y reabre el enlace de carga |
 | M8 Encuesta de satisfacción (ENC-01..07) | ✅ backend + frontend · ENC-03 se edita en Configuración → Formatos y encuesta |
 | M9 Pre-cuenta de cobro (PRE-01..09) | ✅ backend + frontend · el cierre de mes se dispara a mano (no hay cron); CFG-05 avisa de los periodos vencidos |
 | M10 Reportes (RPT-01..07) | ✅ backend + frontend · dashboard, buscador NL, vencidas, satisfacción, horas, cartera y exportación a Excel |
@@ -113,9 +113,9 @@ necesitan lógica nueva, solo cable. Endpoints ya montados en `sst_ws/src/routes
 | Ruta | Carpeta | Qué hace |
 |---|---|---|
 | `/login`, `/recuperar`, `/reset-password` | `pages/login`, `pages/forgot-password`, `pages/reset-password` | AUTH-01..03. Públicas. |
-| `/dashboard` | `pages/dashboard` | KPIs y distribución por ARL (RPT-01/02). |
-| `/importar` | `pages/import` | Carga de Excel/PDF, extracción IA, revisión del lote y confirmación (M2). |
-| `/ordenes` (legado: `/validacion`) | `pages/validation` | **Vista central.** Bandeja, split-view de validación, detalle, cambio de estado + historial (M3), asignación y reprogramación sobre una **agenda semanal**, con la visita repartida en franjas (M5), visor de soportes y aceptar/rechazar (M7). Acepta `?os=<id>` para abrir una OS concreta (llegada desde la campanita). |
+| `/dashboard` | `pages/dashboard` | KPIs y distribución por ARL (RPT-01/02). "Órdenes recientes" muestra **10 filas** con las mismas columnas que Órdenes y un botón "Ver todo". |
+| `/importar` | `pages/import` | Carga de **varios** Excel/PDF a la vez (un lote por archivo), extracción IA, revisión y confirmación (M2). Cada fila se puede **guardar suelta** (`POST /drafts/:id/confirm`) además del "Guardar todo". Las **duplicadas no se listan**: se descartan y se avisan con el estado de la OS que ya existe. |
+| `/ordenes` (legado: `/validacion`) | `pages/validation` | **Vista central.** Bandeja con pestañas **por estado** (Todas · Sin programar · Programadas · Ejecutadas · Deshabilitadas), detalle y edición, cambio de estado + historial (M3), asignación y reprogramación sobre una **agenda semanal** con la visita repartida en franjas (M5) —no deja marcar sobre horarios ocupados ni pasarse de las horas de la orden—, visor de soportes y aceptar/rechazar (M7). Acepta `?os=<id>`. |
 | `/informes` | `pages/reports` | Centro de reportes (M10), seis pestañas: Órdenes, Profesionales, Satisfacción (ENC-05 + RPT-04), Vencidas (RPT-03), Horas (RPT-05) y Cartera (RPT-06). Todas exportan a Excel y PDF (RPT-07). |
 | `/empresas` | `pages/companies` | **CFG-02.** Maestro de empresas clientes: listado con conteo de órdenes, ficha con sus últimas OS, alta/edición y fusión de duplicados. La OS conserva su texto original (`empresa_nombre`/`nit_nic`) y se enlaza por `empresa_id`; al validar un borrador la empresa se resuelve (o se crea) sola. |
 | `/profesionales` | `pages/professionals` | CRUD de asesores y su agenda de ocupaciones (CFG-01). |
@@ -150,6 +150,11 @@ directamente por `seed:demo` NO se ven en esa pantalla.
   librerías de estado externas. Nada de `setTimeout` simulando trabajo: el
   spinner refleja una petición real.
 - **Ninguna vista implementa su propio toast**: todo pasa por `AlertService`.
+- **Ninguna vista implementa su propia paginación.** Las tablas se paginan con
+  `paginar()` de `shared/paginacion.ts` (envuelve una señal de lista y expone
+  `visibles()`) y el pie `<app-paginador [pag]="…" etiqueta="…" />` de
+  `shared/paginador/`. La página se acota al calcular, no escribiendo la señal:
+  así filtrar estando en la última página no deja la tabla en blanco.
 
 ### UI
 - Identidad: azul del logo **`#000b50`** (`--primary-color`), apoyo

@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
 import { AlertService } from '../../core/alert.service';
 import { Profesional } from '../../core/models';
+import { paginar } from '../../shared/paginacion';
+import { PaginadorComponent } from '../../shared/paginador/paginador';
 
 type ProfessionalStatus = 'Activo' | 'Inactivo';
 
@@ -26,7 +28,7 @@ interface ProfessionalDraft {
 
 @Component({
   selector: 'app-professionals',
-  imports: [FormsModule],
+  imports: [FormsModule, PaginadorComponent],
   templateUrl: './professionals.html',
   styleUrl: './professionals.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -61,6 +63,14 @@ export class ProfessionalsComponent implements OnInit {
       (p) => p.name.toLowerCase().includes(q) || p.specialty.toLowerCase().includes(q),
     );
   });
+
+  /** CFG-01 · La lista de asesores crece con el equipo. */
+  protected readonly pag = paginar(this.filtered, 25);
+
+  protected buscar(texto: string): void {
+    this.query.set(texto);
+    this.pag.reiniciar();
+  }
 
   protected readonly activeCount = computed(
     () => this.professionals().filter((p) => p.status === 'Activo').length,

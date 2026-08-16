@@ -159,7 +159,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (p of precuentas(); track p.id) {
+          @for (p of pag.visibles(); track p.id) {
             <tr>
               <td class="mono">{{ p.periodo }}</td>
               <td>
@@ -207,6 +207,8 @@
         </tbody>
       </table>
     </div>
+
+    <app-paginador [pag]="pag" etiqueta="pre-cuentas" />
   </div>
 }
 
