@@ -35,8 +35,36 @@ La **extracción de documentos** (el corazón del pipeline) se implementa contra
 ### C. Extracción (el corazón) — dos caminos según formato
 
 **Excel SIPAB (Bolívar) — determinista:**
-- Parsing con SheetJS (Node) / EPPlus (.NET). Mapeo directo columna → campo canónico.
-- Confianza alta (~100%) por ser estructurado. La "IA" aquí es mínima.
+- Parsing con ExcelJS. El reporte exporta **siempre las mismas 41 columnas**, así
+  que el mapeo es por **nombre exacto de encabezado** (`SIPAB_HEADERS`), no por
+  parecido: `Descripcion Estado Empresa` (el estado de la empresa: "Activa") y
+  `Descripcion` (el título de la actividad) se llaman casi igual, y buscar por
+  subcadena hacía que la primera ganara el campo `descripcion`. Las columnas que
+  el SIPAB trae y no se extraen se declaran explícitamente para que el respaldo
+  aproximado —reservado a hojas con columnas añadidas a mano— no las pesque.
+- Una orden por fila; `sourceRow` guarda la fila real de la hoja.
+- Tres cosas **no** vienen en su columna y se derivan (por eso llevan confianza
+  menor: es lo que debe mirar quien revisa):
+  - **`Ubicacion Actividad`** es un solo texto —`Departamento: … - Ciudad: … -
+    Dirección: … - Teléfono: … - Contacto: …`— y es el único sitio del SIPAB con
+    ciudad, dirección y contacto de la empresa. Se parte en `ciudad_ejecucion`,
+    `direccion`, `contacto_empresa_nombre` y `contacto_empresa_telefono` (95).
+  - El **correo y el celular del responsable de SST**, cuando existen, van
+    escritos dentro de `Observaciones`; se rescatan con confianza **60** (por
+    debajo del umbral) para que salgan marcados.
+  - **`Act Programadas` son horas solo si `Unidad Medida` = HORAS**; en UNIDADES
+    (una investigación de accidente, p. ej.) el número es una cantidad de
+    actividades y `horas_asignadas` baja a 60 para que se revise.
+- **Las fechas llegan en dos formatos en la misma columna**: fecha de Excel y el
+  texto `01/aug/2026` (mes abreviado en inglés). Se normalizan a ISO en la
+  extracción **y** en la vista de la hoja, para que las dos se lean idénticas.
+- Confianza alta (99) para todo lo que sí viene en su propia columna.
+- Las columnas que no son campos canónicos pero explican la orden (unidad de
+  medida, tipo de servicio, n.º de trabajadores, hora programada, póliza,
+  departamento, profesional sugerido por la ARL) se conservan en
+  `metadatos_extraccion.sipab`.
+- Comprobación de un archivo real sin tocar la BD:
+  `node --import tsx scripts/verificar-sipab.mjs "<ruta al .xlsx>"`.
 
 **PDF (AXA/Colmena) — IA con OpenAI (motor principal):**
 - Implementación real: `openai-extraction.bridge.js` extrae la **capa de texto** del PDF con `pdf-extractor` (pdfjs) y la envía a **OpenAI (`gpt-4o-mini`)** con **Structured Outputs** (`response_format` con esquema Zod, `OrderImportSchema`), que devuelve el objeto canónico **+ un score de confianza por campo**.
@@ -58,15 +86,21 @@ Ver el contrato exacto en `sst_ws/src/validation/order-import.schema.ts` (Zod, f
 |---|---|---|---|
 | Identidad | `codigo_cronograma` + `secuencia` | `numero_orden` (ej. `71 - 0001104518`) | `numero_orden` (ej. `2239049`) |
 | `nit_nic` / `empresa_nombre` | ✅ | ✅ | ✅ |
-| `actividad_economica` | código (`508.08.02`) | código (`SEI652`) | — |
-| `tipo_actividad` | — | `CAP SEGURIDAD VIAL` | `Capacitación a conductores` |
-| `horas_asignadas` | ✅ (`Act Programadas`) | ✅ (`Cantidad`) | ✅ (`Solicitada`) |
+| `actividad_economica` | código (`Actividad Programa`, `508.08.02`) | código (`SEI652`) | — |
+| `tipo_actividad` | ✅ (`Descripcion` — título de la actividad) | `CAP SEGURIDAD VIAL` | `Capacitación a conductores` |
+| `horas_asignadas` | ✅ (`Act Programadas`; solo son horas si `Unidad Medida`=HORAS) | ✅ (`Cantidad`) | ✅ (`Solicitada`) |
 | `valor_unitario` / `valor_total` | — | ✅ | — |
-| `fecha_orden` / `fecha_vencimiento` | `Fecha Programada` / — | ✅ | — |
-| `ciudad_ejecucion` / `direccion` | `Ubicacion Actividad` | ✅ | `ciudad` |
-| `nro_afiliacion` | — | ✅ (`Afiliación No`) | — |
-| `contacto_empresa` | — | ✅ (rep. legal) | (form en blanco) |
-| `contacto_sst` | `Nombre Profesional` | ✅ (en OBSERVACIONES) | — |
+| `fecha_orden` / `fecha_vencimiento` | `Fecha Programada` / **— (se escribe a mano)** | ✅ | — |
+| `ciudad_ejecucion` / `direccion` | ✅ (partiendo `Ubicacion Actividad`) | ✅ | `ciudad` |
+| `nro_afiliacion` | — (`Num pol` va a `metadatos_extraccion.sipab`) | ✅ (`Afiliación No`) | — |
+| `contacto_empresa` | ✅ nombre y teléfono (de `Ubicacion Actividad`) | ✅ (rep. legal) | (form en blanco) |
+| `contacto_sst` | correo y celular, si están escritos en `Observaciones` | ✅ (en OBSERVACIONES) | — |
+| `descripcion` | ✅ (`Observaciones`: tema, contacto y requisitos) | ✅ | ✅ |
+
+> ⚠️ **`Nombre Profesional` del SIPAB NO es el contacto SST de la empresa**: es el
+> profesional que sugiere la ARL (viene vacío en 97 de 99 filas del archivo real).
+> Se mapeaba a `contacto_sst_nombre` y con eso ensuciaba el maestro de empresas;
+> hoy se guarda como contexto en `metadatos_extraccion.sipab`.
 
 > **Regla clave de identidad (excluyente por ARL):** `numero_orden` y el par `codigo_cronograma + secuencia` **no coexisten**. AXA/Colmena → `numero_orden` (cronograma/secuencia en `null`); Bolívar → cronograma+secuencia (`numero_orden` en `null`). El system prompt de OpenAI lo obliga y el parser de Excel lo respeta.
 

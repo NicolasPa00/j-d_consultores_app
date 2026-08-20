@@ -403,9 +403,24 @@ export class ImportComponent implements OnDestroy {
     }
   }
 
+  /**
+   * Espera a que el lote termine de procesarse.
+   *
+   * El presupuesto es de TIEMPO, no de intentos: un Excel SIPAB trae ~100
+   * órdenes y tarda bastante más que un PDF suelto. Con 30 intentos cada 700 ms
+   * la espera moría a los 21 s, y el SIPAB real de 99 órdenes —que el servidor
+   * procesaba entero y sin un solo error— se anunciaba como "1 archivo(s) no se
+   * pudieron procesar" mientras sus 99 borradores quedaban en el servidor sin
+   * que nadie los viera. Se consulta seguido al principio (un PDF está listo en
+   * segundos) y cada vez más espaciado después, hasta 3 minutos.
+   */
   private pollBatch(batchId: string, archivo: string, attempt: number, listo: () => void): void {
-    if (attempt > 30) {
-      this.anotarFallo(archivo, 'El procesamiento está tardando más de lo esperado.');
+    const espera = attempt < 10 ? 700 : attempt < 25 ? 1500 : 3000;
+    if (attempt > 75) {
+      this.anotarFallo(
+        archivo,
+        'El servidor sigue procesando este archivo. No se perdió: vuelva a Importar en un momento y súbalo de nuevo para ver sus órdenes.',
+      );
       listo();
       return;
     }
@@ -413,7 +428,7 @@ export class ImportComponent implements OnDestroy {
       next: (r) => {
         const estado = r.data.estado;
         if (estado === 'PROCESANDO') {
-          setTimeout(() => this.pollBatch(batchId, archivo, attempt + 1, listo), 700);
+          setTimeout(() => this.pollBatch(batchId, archivo, attempt + 1, listo), espera);
         } else if (estado === 'ERROR') {
           this.anotarFallo(archivo, r.data.mensaje_error || 'Error al procesar el archivo.');
           listo();
