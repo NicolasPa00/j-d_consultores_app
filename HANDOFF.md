@@ -5,7 +5,85 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 16-ago-2026 (cierre de sesión).
+> **Última actualización:** 18-ago-2026 (tanda 12) — **el tipo de orden es
+> obligatorio** y de él sale el valor hora con el que se le paga al profesional.
+> "Valores por hora según actividad" dejó de ser una lista escrita a mano y pasó
+> a ser el catálogo con el que se categoriza cada OS; al asignar, la orden se
+> queda con una **copia** del valor, para que subir una tarifa no reescriba el
+> historial. Ver §3, "Tanda 12".
+>
+> **Tanda 11 (misma fecha):** la campanita tiene
+> **papelera y tres recortes** (No leídas · Leídas · Eliminadas), la fila entera
+> lleva al registro y el aviso de encuesta ya abre las calificaciones del
+> profesional (hizo falta **rellenar los avisos viejos**, que no traían a quién).
+> Y el enlace de soportes se cierra al entregar: solo vuelve a abrirse si
+> devuelven algo, y cada casilla guarda **un** documento — el nuevo borra al
+> anterior. Ver §3, "Tanda 11".
+>
+> **Tanda 10 (misma fecha):** el ciclo de la orden tiene
+> un cierre de verdad: **FINALIZADA**. La pone el administrador al aceptar los
+> soportes, y de ella cuelgan la encuesta al cliente y la cuenta de cobro; la
+> bandeja por fin distingue lo revisado de lo que nadie ha mirado. Además, la
+> campanita **recarga** antes de abrir, y el aviso de encuesta respondida lleva a
+> la ficha del profesional. Ver §3, "Tanda 10".
+>
+> **Tanda 9 (misma fecha):** la **encuesta de satisfacción**
+> pasó a calificar también al **profesional**: pregunta nueva, correo con la
+> maqueta de marca, observaciones topadas a 500 caracteres, y el promedio con
+> estrellas en el listado de Profesionales (con el detalle de cada nota y su
+> observación a un clic). El historial de estados de una orden ahora es un
+> **acordeón**, y el sidebar cambió de orden. Ver §3, "Tanda 9".
+>
+> **Tanda 8 (misma fecha):** el rechazo de soportes pasó a
+> ser **por documento**: el administrador marca cuál se devuelve y el portal solo
+> le abre esa casilla al profesional, que además **ve lo que ya envió**, tiene que
+> mandar **todo lo devuelto junto**, y cuyo archivo anterior **se borra al llegar
+> el nuevo**. Importar **ya no gasta IA en órdenes repetidas**: se comprueban al
+> elegirlas. La campanita entra al **visor de archivos**. Los errores de archivo
+> dejaron de salir en inglés, y el **máximo por archivo bajó a 4 MB**.
+> Ver §3, "Tanda 8".
+>
+> **Tanda 7 (16-ago-2026):** "Pre-cuentas" pasó a llamarse
+> **Cuentas de cobro** y se rehízo: se entra por año y mes, las filas aparecen al
+> **aceptar los soportes** (ya no con un botón de cierre mensual), hay columna Mes,
+> las aceptadas tienen su pestaña y **ya no se pueden generar cuentas en cero**.
+> Ver §3, "Tanda 7".
+>
+> **Tanda 6 (misma fecha):** una OS de más de 24 h **no se podía
+> programar**: la app acotaba las horas a un día y anunciaba "faltan 0 h por repartir"
+> mientras el servidor guardaba un avance. Y el correo de rechazo sí funcionaba: el
+> servidor de :4000 corría con `npm start` (sin `--watch`) y no tenía ese código.
+> Ver §3, "Tanda 6".
+>
+> **Tanda 5 (misma fecha):** reparto de responsabilidades en
+> `/ordenes`: el cambio de estado solo en "Editar", los soportes solo en "Verificar
+> soportes", y los tres botones del visor por fin se distinguen. Y **el rechazo de
+> soportes ya avisa al profesional por correo**, que no lo hacía. Ver §3, "Tanda 5".
+>
+> **Tanda 4 (misma fecha):** **las tres ARL tienen ya su
+> formato oficial** (llegó el de AXA Colpatria); el registro de asistencia de
+> Colmena pasó de `.docx` a PDF porque Word descuadraba las casillas; y se
+> corrigió que **no se pudiera cambiar de profesional en una orden con la visita
+> a medio repartir**. Ver §3, "Tanda 4".
+>
+> **Tanda 3 (misma fecha):** el correo de asignación deja de
+> mandar hojas genéricas: adjunta los **formatos oficiales de Bolívar y Colmena
+> ya diligenciados** con los datos de la orden, uno por franja de visita. Ver §3,
+> "FOR · El correo de asignación lleva los formatos REALES de la ARL". Por el
+> camino se descubrió y corrigió que **la compresión de soportes de la tanda 2
+> guardaba los archivos en blanco** (trampas 40-42); ningún soporte real se
+> perdió. Las cifras de compresión de la tanda 2 eran falsas y están corregidas.
+>
+> **Tanda 2 (misma fecha):** tres correcciones reportadas por el
+> cliente: `/precuentas` devolvía 400 y no abría, el paginado no respetaba las 10
+> filas que anunciaba, y Empresas y Profesionales abrían paneles laterales en vez
+> de modales. Ver §3, "Tres correcciones del 16-ago-2026 (tanda 2)". Además, el
+> correo de la pre-cuenta (PRE-04) dejó el texto plano y usa ya la maqueta de
+> marca del correo de asignación. Cierra la tanda 2: **editar la OS en cualquier
+> estado** (`PUT /orders/:id`), el portal de soportes ya no anuncia un éxito
+> falso, **la migración de estados quedó aplicada** en la Neon compartida y los
+> soportes se guardan **comprimidos (95-96 % en fotos; los PDF ya optimizados no bajan), con nombre
+> propio y clasificados** por casilla.
 
 ---
 
@@ -13,16 +91,22 @@
 
 **Tres cosas antes de tocar nada:**
 
-1. 🔴 **Correr `cd sst_ws && npm run migrate`. Esta vez MODIFICA DATOS.** Trae la
-   matriz de transiciones nueva, el trigger de EST-06 relajado y una migración de
-   filas: las OS que quedaron en `EN VERIFICACIÓN` pasan a `EJECUTADA`. **No se
-   ejecutó** contra la Neon compartida porque toca datos reales de clientes y esa
-   decisión es del equipo. Al 16-ago había **5 OS** en ese estado. Mientras no se
-   corra, esas 5 están en un estado sin transiciones válidas y el backend nuevo
-   no sabrá moverlas.
-2. 🔴 **Colmena sigue sin plantillas de formato**, así que sus OS salen por correo
-   sin un solo PDF. Se arregla en Configuración → Formatos y encuesta, sin tocar
-   código. Ver el punto 1 de "Pendiente" y la trampa 17.
+1. ✅ **La migración de estados YA SE APLICÓ** contra la Neon compartida
+   (16-ago-2026, tanda 2, con el visto bueno del equipo). Quedó viva la matriz de
+   tres estados, el trigger de EST-06 relajado y las **5 OS** que estaban en
+   `EN VERIFICACIÓN` pasaron a `EJECUTADA` con su entrada de auditoría. Se aplicó
+   **solo esa parte**, no `npm run migrate` entero: el runner completo además
+   corre `seed.sql` y **reescribe el correo y el celular de la cuenta admin del
+   cliente con lo que haya en el `.env`**, que es un efecto que nadie pidió.
+   Las 23 tablas del `schema.sql` ya existían, así que no había más DDL pendiente.
+   El SQL aplicado se extrajo literal de `db/schema.sql` (las dos funciones y el
+   bloque `DO $$` de migración).
+2. ✅ **Las tres ARL mandan ya sus formatos oficiales prediligenciados**
+   (Bolívar y Colmena en la tanda 3, AXA Colpatria en la tanda 4) y ninguna
+   necesita ya plantillas genéricas. Los archivos base viven en
+   `sst_ws/assets/formatos-arl/`, con su README. La plantilla genérica "Ficha de
+   Gestión — AXA" que sigue en Configuración → Formatos **ya no se emite**: el
+   formato propio manda sobre ella, y se puede dar de baja.
 3. ⚠️ **Casi nada de las últimas cuatro tandas se probó dentro de la app**: no hay
    credenciales de administrador para el asistente. Lo verificado va anotado tanda
    por tanda en §3 ("Deuda de pruebas"); lo demás es lo primero que debería
@@ -38,6 +122,30 @@
 | Paginación | 16 tablas de 8 módulos, con helper y componente compartidos | §3 |
 | Órdenes de ejemplo | Generador de PDF de AXA y Excel SIPAB con **datos inventados** | §2 punto 8 |
 | Errores en cadena de Importar | Editar un borrador ya guardado se rechaza; reintentar no parece fallo; mensajes de error que dicen qué falló | §3 + trampas 29-31 |
+| **Tanda 2** · tres correcciones del cliente | `/precuentas` devolvía 400 y no abría (`?estado=undefined`); el paginado empezaba en 25 aunque el pie dijera 10; Empresas y Profesionales abrían **panel lateral** en vez de modal | §3 + trampas 32-34 |
+| **Tanda 2** · correo de la pre-cuenta | PRE-04 pasó de texto plano a la **misma maqueta de marca** que el de asignación: total destacado, órdenes incluidas y botón de respuesta | §3 |
+| **Tanda 2** · editar en cualquier estado + soportes | `PUT /orders/:id` (nuevo) para corregir una OS ya materializada; el portal público dejó de anunciar éxito cuando el envío falla; **migración de estados aplicada** a la Neon | §3 + trampas 35-36 |
+| **Tanda 2** · almacenamiento de soportes | Compresión (**95-96 %** en fotos), nombre interno propio (`acta.pdf`) y **categoría** visible en el visor del administrador | §3 + trampas 37-38 |
+| **Tanda 3** · formatos reales de la ARL | El correo de asignación adjunta los **formatos oficiales de Bolívar y Colmena prediligenciados**, uno por franja; `assets/formatos-arl/` + `formatos-arl.service.js` | §3 + trampa 43 |
+| **Tanda 3** · la compresión guardaba hojas en blanco | Dos fallos silenciosos de la tanda 2, corregidos y con red de seguridad; las cifras de compresión de la tanda 2 eran falsas | §3 + trampas 40-42 |
+| **Tanda 4** · las tres ARL con formato | Llegó el de AXA Colpatria; el de asistencia de Colmena pasó de `.docx` a PDF porque Word descuadraba las casillas | §3 + trampa 46 |
+| **Tanda 4** · agenda a medio repartir | Se podía quedar sin poder cambiar de profesional en una orden larga: el guardado de avance existía en el backend pero la UI lo hacía inalcanzable | §3 + trampas 44-45 |
+| **Tanda 5** · `/ordenes`: cada cosa en su sitio | Estado solo en "Editar", soportes solo en "Verificar soportes", los tres botones del visor diferenciados (`.btn--danger` nuevo) | §3 |
+| **Tanda 5** · el rechazo no avisaba | `POST /orders/:id/reject` solo tocaba la campanita —y solo con ficha enlazada a una cuenta—; ahora manda correo con el motivo y el enlace reabierto | §3 + trampa 47 |
+| **Tanda 6** · órdenes de más de 24 h | El tope de un día se aplicaba al total de la orden: una OS de 50 h se creía de 24 y nunca llegaba a PROGRAMADA ("faltan 0 h") | §3 + trampas 49-50 |
+| **Tanda 7** · Cuentas de cobro | Renombrada, reorganizada por año/mes, alimentada por la aceptación de soportes y con la generación en cero bloqueada | §3 |
+| **Tanda 8** · rechazo por documento | El administrador marca QUÉ se devuelve; el portal abre solo esa casilla, enseña lo ya enviado y **reemplaza** el archivo anterior | §3 + trampas 51-53 |
+| **Tanda 8** · importar sin gastar IA | Comprobación previa por huella del archivo y por número de orden en su texto: la orden repetida se aparta al elegirla | §3 + trampa 51 |
+| **Tanda 8** · avisos y tamaño | La campanita de soportes abre el visor de archivos (`&vista=soportes`); el máximo por archivo pasó de 25 MB a **4 MB** en importación y soportes | §3 |
+| **Tanda 12** · tipo de orden obligatorio | Catálogo real (`sst.tipos_orden`), obligatorio al importar y editable en Órdenes; de él sale el valor hora | §3 + trampa 59 |
+| **Tanda 12** · el valor se congela en la orden | `valor_hora_cobro` + `valor_cobro_total` (columna generada): cambiar el catálogo no toca lo ya asignado | §3 |
+| **Tanda 11** · papelera de la campanita | Eliminar (en blando) + recortes No leídas / Leídas / Eliminadas, con restaurar; la fila entera es el enlace | §3 |
+| **Tanda 11** · el enlace de soportes se cierra | Solo admite carga en la entrega inicial y en la corrección; cada casilla guarda un documento y el nuevo reemplaza al anterior | §3 + trampa 58 |
+| **Tanda 10** · estado FINALIZADA | Cierre real del ciclo: EJECUTADA la pone el profesional al subir soportes, FINALIZADA el administrador al aceptarlos | §3 + trampas 56-57 |
+| **Tanda 10** · avisos que refrescan | La campanita recarga la bandeja antes de abrir el visor, y "encuesta respondida" lleva a las calificaciones del profesional | §3 |
+| **Tanda 9** · la encuesta califica al profesional | Pregunta nueva (ENC-03), correo con la maqueta de marca, observaciones a 500 caracteres y `calificacion_profesional` en BD | §3 + trampa 55 |
+| **Tanda 9** · calificación en Profesionales | Columna con órdenes ejecutadas + estrellas del promedio; al pulsarlas, las encuestas de ese asesor con su observación | §3 |
+| **Tanda 8** · errores en cristiano | "Error de archivo: File too large" y compañía, traducidos; `core/errores.ts` centraliza el mensaje en las 13 vistas | §3 + trampa 54 |
 
 ---
 
@@ -129,10 +237,10 @@ backend real. No queda nada mockeado ni ninguna costura de BD sin implementar.
 | M1 Autenticación y roles (AUTH-01..05) | ✅ |
 | M2 Importación y extracción IA (IMP-01..09) | ✅ |
 | M3 Estados y auditoría (EST-01..06) | ✅ · ⚠️ **EST-01 y EST-06 divergen del FRS a pedido del cliente**: el ciclo son tres estados (SIN PROGRAMAR → PROGRAMADA → EJECUTADA) |
-| M4 Formatos PDF (FOR-01..06) | ✅ |
+| M4 Formatos (FOR-01..06) | ✅ · el correo lleva los **formatos oficiales de la ARL prediligenciados**, uno por franja de visita · ⚠️ **falta el formato de AXA Colpatria**: sus OS siguen saliendo con la hoja genérica |
 | M5 Asignación y reprogramación (ASG-01..08) | ✅ · salvo ASG-06 (WhatsApp), que el FRS deja en Fase 3 y declara omisible |
 | M6 Soportes por enlace público (SUP-01..07) | ✅ · SUP-05 diverge: subir soportes deja la OS **EJECUTADA**, no EN VERIFICACIÓN |
-| M7 Verificación y cierre (VER-01..05) | ✅ · la revisión se hace **sobre la OS ya EJECUTADA**: aceptar deja constancia y manda la encuesta, rechazar la devuelve a PROGRAMADA |
+| M7 Verificación y cierre (VER-01..05) | ✅ · la revisión se hace **sobre la OS ya EJECUTADA**: aceptar deja constancia y manda la encuesta, rechazar la devuelve a PROGRAMADA y **avisa al profesional por correo** |
 | M8 Encuesta de satisfacción (ENC-01..07) | ✅ · ENC-03 editable desde Configuración → Formatos y encuesta |
 | M9 Pre-cuenta de cobro (PRE-01..09) | ✅ · el cierre de mes se dispara **a mano** (no hay cron); CFG-05 avisa de los meses vencidos |
 | M10 Reportes (RPT-01..07) | ✅ · dashboard, buscador NL, vencidas, satisfacción, horas, cartera, exportación |
@@ -469,8 +577,8 @@ CANCELADA históricas **no se tocan**: son un hecho del pasado.
 ### Correo de asignación: HTML con identidad (16-ago-2026)
 
 - **`services/email-layout.service.js`** (nuevo): maqueta de marca reutilizable
-  (`correoHtml`, `parrafo`, `tablaDatos`, `filaDato`, `bloqueFranjas`,
-  `bloqueAviso`, `boton`, `enlaceCrudo`). Tablas y estilos **en línea**, sin
+  (`correoHtml`, `parrafo`, `tablaDatos`, `filaDato`, `bloqueLista`,
+  `bloqueTotal`, `bloqueAviso`, `boton`, `enlaceCrudo`). Tablas y estilos **en línea**, sin
   `<style>`, sin clases y sin recursos externos: Gmail descarta lo primero y
   bloquea lo último. El texto plano se conserva íntegro en paralelo.
 - **`.ics`: un archivo por franja.** Se confirmó lo que este archivo daba por
@@ -503,18 +611,11 @@ página 7 dejaba la tabla en blanco porque el resultado ya solo tenía 2 página
 escrituras cruzadas — y como la página *pedida* se conserva, quitar el filtro
 devuelve al usuario donde estaba.
 
-| Módulo | Tabla | Por página |
-|---|---|---|
-| `/ordenes` | bandeja | 25 |
-| `/importar` | vista previa de extracción | 25 |
-| `/dashboard` | agenda del profesional (ASG-08) | 25 |
-| `/empresas` | maestro de empresas | 25 |
-| `/profesionales` | asesores | 25 |
-| `/precuentas` | histórico de pre-cuentas | 25 |
-| `/informes` | Órdenes, Profesionales, Satisfacción (respuestas), Vencidas y Cartera | 25 cada una |
-| `/informes` | Satisfacción → "Por profesional" | 10 |
-| `/informes` | Satisfacción → "Por mes" · Horas → "Detalle por mes" | 12 (un año por página) |
-| `/configuracion` | usuarios internos y plantillas | 10 |
+**Todas arrancan en 10 filas** (16-ago-2026, tanda 2). Antes cada vista elegía su tamaño
+inicial —25 en casi todas, 12 en los desgloses por mes— y ninguna coincidía con
+lo que anunciaba el pie; ver más abajo "Filas por página: lo que el pie decía y
+lo que la tabla hacía". El tamaño inicial ya no se pasa por parámetro: es
+`TAMANOS_PAGINA[0]`, la primera opción del selector.
 
 En Órdenes e Importar la columna `#` numera **en global** (`pag.desde() + i`), no
 desde 1 en cada página. Filtrar, buscar o cambiar de pestaña reinicia la página.
@@ -566,6 +667,775 @@ guardado**, y el sistema lo aceptó sin efecto.
 pudo reproducir**. `materializarOrden` con sus datos exactos no falla y ninguna
 FK de ese camino encaja. Si reaparece, el log del backend ya imprime
 `[error 23503] <restricción> · <tabla> · <detalle>`: con eso se cierra.
+
+### Tres correcciones del 16-ago-2026 (tanda 2)
+
+Reportadas por el cliente en la misma tanda. Las tres estaban en piezas
+**compartidas**, así que ninguna era del módulo donde se vio.
+
+**1 · `/precuentas` no abría: 400 en el listado.** La petición salía como
+`?periodo=undefined&profesional_id=undefined&estado=undefined`. La causa es una
+trampa de `URLSearchParams`: **no omite las claves cuyo valor es `undefined`, las
+serializa con el texto literal `"undefined"`**. Eso llega al backend como un
+filtro real, entra al `WHERE`, y contra la columna uuid Postgres devuelve `22P02`
+→ 400 "Valor no válido en la solicitud". Con la pantalla sin datos no se podía ni
+revisar el módulo.
+
+- **Frontend (la causa):** `core/api.service.ts` arma ahora las cadenas de
+  consulta con `queryString()`, que descarta `undefined`, `null` y `''` antes de
+  construir la URL. Se aplicó a **las siete** llamadas que las armaban a mano
+  (pre-cuentas, encuestas y sus estadísticas, empresas, cartera, vencidas y
+  órdenes), no solo a la que falló: el fallo era del patrón, no del endpoint.
+- **Backend (defensa):** `GET /precuentas` ignora los valores vacíos y los
+  literales `"undefined"`/`"null"`. Un filtro ausente es *sin filtrar*, nunca un
+  filtro con basura.
+
+**2 · Filas por página: el pie decía 10 y la tabla mostraba 25.** Cambiar a 25 y
+volver a 10 lo arreglaba; al abrir, no. Eran dos fallos superpuestos:
+
+- El `<select>` del paginador se ataba con `[value]="pag().tamano()"`. En Angular
+  ese binding se aplica **antes** de que el `@for` cree las `<option>`, así que el
+  navegador no encontraba el valor y se quedaba mostrando la primera opción (10)
+  mientras la tabla paginaba de 25 en 25. Ahora la opción vigente se marca con
+  `[selected]` en cada `<option>`, que sí sobrevive al orden de render.
+- El tamaño inicial real era 25. Ahora `paginar()` arranca en `TAMANOS_PAGINA[0]`
+  = **10** y ninguna vista pasa el parámetro.
+
+Si algún día una vista necesita un tamaño fuera de la lista estándar, el selector
+lo añade solo (`tamanos()` en `paginador.ts`): sin eso volvería a enseñar un
+número que no es el que la tabla usa.
+
+**3 · Empresas y Profesionales: los paneles laterales pasaron a modales.** El
+alta, la edición y la ficha de `/empresas` y el formulario de `/profesionales`
+eran `.drawer` deslizantes desde la derecha; el resto de la aplicación
+(pre-cuentas, órdenes, importación) usa el **diálogo centrado** `.modal`. Ahora
+las cuatro usan el mismo: `.modal-backdrop` + `.modal` con `__head`/`__body`/
+`__footer`, y el filete de marca superior que `styles.scss` ya pinta con
+`.modal::before`. La ficha de empresa aprovecha el ancho para poner sus datos en
+dos columnas. **El único drawer que queda** es el del dashboard, que está oculto
+desde la entrega de Fase 1.
+
+### Correo de la pre-cuenta: la misma maqueta que el de asignación (16-ago-2026, tanda 2)
+
+`PRE-04` salía en **texto plano** mientras el de asignación ya iba con la
+identidad de la casa. El profesional recibe los dos y no tiene por qué reconocer
+solo uno como nuestro, así que ahora comparten `email-layout.service.js`:
+cabecera azul, tabla de datos, botón y pie.
+
+- **`bloqueTotal(etiqueta, valor, nota)`** (nuevo en la maqueta): la cifra en
+  grande, porque es el dato por el que se abre ese correo. La `nota` es el
+  desglose que la sostiene ("12 órdenes · 38 h 15 min").
+- **`bloqueFranjas` pasó a llamarse `bloqueLista`**: ya no es solo para las
+  franjas de una visita, también lista las órdenes incluidas en la pre-cuenta.
+- **El listado se corta en 8 órdenes** y remite al PDF adjunto para el resto. Un
+  profesional con treinta visitas recibiría si no un correo de tres pantallas, y
+  el detalle valorado orden por orden ya va adjunto (PRE-03).
+- **`horasConUnidad()`** en `utils/formato.js`: `horasTexto` devuelve "4" a secas
+  porque siempre va bajo una etiqueta "Horas", pero suelto dentro de una línea de
+  listado ese "4" no se entiende — y "4 y 30 min h" tampoco. Da `4 h`,
+  `4 h 30 min`, `45 min`.
+- **La fecha de cada orden se arma sin convertir zonas.** `fecha_ejecucion` es
+  `DATE` y el driver la entrega como un `Date` a medianoche **local del proceso**:
+  pasarla por un formateador con zona horaria la correría un día en un servidor
+  en UTC y la visita del 1 de agosto aparecería fechada el 31 de julio, fuera del
+  periodo que se está cobrando.
+
+**Siguen en texto plano** los correos de `auth` (recuperación de contraseña) y el
+de la encuesta de satisfacción (M8): no se tocaron en esta tanda.
+
+### Editar una OS en cualquier estado · EST-05 (16-ago-2026, tanda 2)
+
+El lápiz de la bandeja solo aparecía mientras el borrador seguía **sin validar**.
+En cuanto la OS existía, un dato mal leído por el OCR se quedaba dentro para
+siempre — y eso es justo cuando se descubre, al ir a llamar al contacto. Ahora se
+edita en **cualquier estado**, incluida una OS EJECUTADA.
+
+- **`PUT /orders/:id`** (nuevo, admin). Lista blanca de 23 columnas; el resto
+  tiene dueño: `estado` se mueve con `POST /:id/status` (valida la transición y
+  deja auditoría) y el profesional con `POST /:id/assign` (regenera formatos y
+  reenvía el correo). Un UPDATE plano se saltaría las dos cosas.
+- **Editar no mueve el ciclo de vida.** Una OS EJECUTADA sigue EJECUTADA.
+- **Sí se recalcula el enlace con el maestro de empresas (CFG-02)**: corregir el
+  NIT o la razón social suele ser precisamente lo que arregla una OS colgada de
+  la ficha equivocada.
+- **La identidad no puede quedar vacía**: se exige `numero_orden`, o bien
+  `codigo_cronograma` + `secuencia`. Sin eso la OS no se reconoce contra el
+  documento de la ARL ni se detectan duplicados.
+- **El formulario lee la OS, no el borrador.** `abrirDetalle` pide
+  `GET /orders/:id` y superpone los valores vigentes: el
+  `metadatos_extraccion` del borrador es lo que leyó la IA el día de la
+  importación y, tras una corrección, deja de ser cierto. La confianza por campo
+  sí se conserva del borrador, porque es de la extracción, no del dato.
+- **`utils/parseo.js`** (nuevo): `parseNumeroCO`/`parseFechaCO` salieron de
+  `drafts.routes.js` para que la materialización y la edición conviertan igual.
+  Si divergieran, el mismo "588.560,00" quedaría guardado como dos números
+  distintos según por dónde entrara.
+- El listado trae `o.empresa_nombre AS os_empresa_nombre` y la fila lo prefiere:
+  sin eso, corregir la razón social no se veía en la bandeja.
+
+### El portal de soportes anunciaba un éxito falso (16-ago-2026, tanda 2)
+
+Dos fallos distintos que se sumaban, y el segundo tapaba al primero:
+
+1. **La transición estaba prohibida en la BD.** `PROGRAMADA → EJECUTADA` daba
+   `Transición de estado inválida` porque la Neon tenía todavía la matriz de
+   cinco estados. Se resolvió aplicando la migración (ver §0, punto 1).
+2. **El portal daba por bueno el envío igualmente.** La condición era
+   `@if (!sent() && !error())` para el formulario y `@else` para el banner de
+   éxito, así que **cualquier error caía en el `@else`** y el profesional veía a
+   la vez el mensaje del servidor y un "Soportes enviados con éxito · Estado:
+   EJECUTADA" que era mentira: se iba convencido de haber entregado. Ahora el
+   banner se pinta solo con `sent()`, el formulario sigue en pantalla tras un
+   fallo de envío (los archivos siguen elegidos, reintentar es lo razonable) y un
+   token inválido no enseña formulario porque la orden nunca cargó.
+
+### Soportes: compresión, nombres propios y categoría (16-ago-2026, tanda 2)
+
+El grueso del almacenamiento en producción son **actas fotografiadas con el
+móvil y escaneos**: 2-6 MB por archivo, tres por visita, decenas de visitas al
+mes. Además llegaban con el nombre del móvil (`IMG_20260815_142233(1).jpg`), que
+no le dice nada a quien revisa y mete símbolos raros en la clave de S3.
+
+**Compresión — `services/compress.service.js`.**
+
+> 🩹 **Corregido el 16-ago-2026 (tanda 3).** La versión de la tanda 2 **guardaba
+> los archivos en blanco** y las cifras de abajo eran otras, mucho mejores y
+> falsas. Ver "Dos formas de guardar una hoja en blanco" más abajo. Ningún
+> soporte real se perdió: los 3 que habían pasado por ahí eran PDF y tomaron la
+> ruta de reescritura, que es intacta.
+
+Medido sobre los documentos reales del cliente, ya con el arreglo:
+
+| Entrada | Antes | Después | Ahorro | Vía |
+|---|---|---|---|---|
+| Foto 2449×1567 desde el móvil | 845 KB | 33 KB | **96 %** | imagen recomprimida |
+| PDF de "escanear a PDF" (foto por página) | 1,63 MB | 77 KB | **95 %** | páginas rasterizadas |
+| PDF ya escaneado y optimizado (2 pág.) | 517 KB | 517 KB | 0 % | reescritura de estructura |
+| PDF vectorial (formato de la ARL) | 169 KB | 169 KB | 0 % | se queda el original |
+
+Lo que de verdad pesa **son las fotos**, sueltas o metidas en un PDF por la app
+de escanear del móvil. Un PDF que ya venía optimizado no da nada, y está bien:
+la alternativa sería estropearlo.
+
+- **Nunca se guarda algo más grande ni peor que el original.** Rasterizar un
+  escaneo ya comprimido lo **engorda entre un 4 y un 8 %**, y a un PDF vectorial
+  le quita además el texto seleccionable, así que cada estrategia se mide y solo
+  gana si de verdad recorta. Rasterizar exige un ahorro mínimo del **25 %** para
+  aceptar ese peaje, y ni se intenta por debajo de 300 KB.
+- Imágenes: lado mayor a 2000 px y JPEG q72 (un PNG de cámara sale como JPEG:
+  no hay transparencia en la foto de un acta).
+- **Ante cualquier fallo se guarda el archivo tal como llegó.** Un soporte es
+  prueba de una visita; perderlo por optimizar sería absurdo.
+- ⚠️ **`@napi-rs/canvas` pasó a ser dependencia DIRECTA de `sst_ws`.** Ya se
+  instalaba, pero como dependencia *opcional* de `pdfjs-dist`, es decir sin
+  garantía de estar en producción. El servicio la carga tarde y, si no está, se
+  desactiva sola y guarda sin comprimir — pero entonces no habría compresión
+  ninguna, así que conviene comprobar tras el despliegue que el log dice
+  `[soportes] … % menos`.
+- Coste: ~1,1 s por un PDF de 1,6 MB con dos páginas-foto (la rasterización es
+  lo caro); las imágenes sueltas van en décimas de segundo.
+
+**Dos formas de guardar una hoja en blanco (16-ago-2026, tanda 3).** La
+compresión de la tanda 2 producía archivos diminutos, perfectamente válidos y
+**vacíos**. Dos causas independientes, las dos del mismo tipo:
+
+1. `new Image(); img.src = buffer` de `@napi-rs/canvas` **no decodifica a
+   tiempo**. El alto y el ancho quedan disponibles enseguida —así que todo
+   parecía ir bien y hasta se escalaba correctamente— pero los píxeles aún no
+   están cuando llega el `drawImage`. Toda foto salía como un rectángulo blanco.
+   Se arregla con `await loadImage(buffer)`.
+2. `getDocument()` sin `standardFontDataUrl`. Fuera del navegador pdf.js no tiene
+   de dónde sacar las 14 fuentes estándar del formato, así que **rasterizaba los
+   PDF sin su texto**: un acta escrita a máquina se convertía en una hoja de
+   rayas. Se resuelve apuntando a `pdfjs-dist/standard_fonts/`, resuelto con
+   `createRequire` y no por ruta relativa.
+
+Las dos daban 0 % de tinta medida sobre el resultado, y ninguna lanzaba error.
+Por eso ahora hay una **comprobación explícita de que el resultado no salió en
+blanco**: si la imagen recomprimida no tiene tinta se descarta y se guarda el
+original, y si la primera página rasterizada sale en blanco teniendo contenido se
+aborta el rasterizado entero.
+
+⚠️ **Al medir compresión, medir la TINTA, no solo los bytes.** Un 99 % de ahorro
+en un acta escaneada es sospechoso, no una buena noticia.
+
+**Nombres — `services/soportes.service.js`.** El nombre lo pone el sistema:
+`acta.pdf`, `asistencia.pdf`, `evidencias.jpg`, y `evidencias-2.jpg` para el
+segundo de la misma casilla. La extensión sale del mime **final**, después de
+comprimir, o el visor (que elige `<iframe>` o `<img>` por el tipo) mentiría. El
+nombre del usuario ya no llega a la clave del objeto. `nombre_original` se
+conserva aparte para poder decirle al profesional cuál de los suyos repetir — y
+se **decodifica**: busboy interpreta el `filename` como latin1, así que
+`simbolos ¿?¡!.pdf` se guardaba como `simbolos Â¿?Â¡!.pdf`.
+
+**Categoría.** Los archivos viajan en un campo POR CASILLA (`acta`,
+`asistencia`, `evidencias`) en vez de un montón anónimo en `files`, que es como
+se perdía la clasificación. El campo `files` se mantiene como cajón de
+compatibilidad → categoría `otros`: una pestaña del portal abierta desde antes
+del cambio sigue enviando por ahí. El visor del administrador enseña **qué es**
+cada documento (etiqueta grande) y con qué nombre se guardó (pastilla
+monoespaciada), y `GET /orders/:id/supports` los devuelve **ordenados por
+categoría** —acta primero, que es la que decide si la visita se da por buena—
+en vez de por hora de subida.
+
+**Migración aplicada** a la Neon: `archivos_soporte` ganó `categoria`,
+`nombre_archivo` y `tamano_original_bytes`. Los **35 soportes ya existentes**
+quedan con categoría NULL y se muestran como "Sin clasificar"; no se
+reclasifican porque no hay forma de saber cuál era cuál.
+
+### FOR · El correo de asignación lleva los formatos REALES de la ARL (16-ago-2026, tanda 3)
+
+Hasta ahora el profesional recibía hojas genéricas dibujadas por la plataforma
+(`sst.plantillas` + `pdf.service.js`). Servían para comprobar que el correo traía
+adjuntos, pero **no para radicar**: lo que la ARL acepta es SU formato, con su
+membrete y su código de forma. Ahora se abre el formato en blanco que entrega la
+ARL y se le escriben encima los datos que la orden ya conoce.
+
+**Dónde viven.** `sst_ws/assets/formatos-arl/`, versionados en git (son
+formularios vacíos de la ARL, no documentación de clientes) con un `README.md` al
+lado. Sin ellos el despliegue no genera nada. Los ejemplos diligenciados que
+sirvieron para mapear las casillas **no** están ahí: llevan nombres, cédulas y
+firmas de asistentes reales y siguen fuera de git, en `documentos/`.
+
+| ARL | Formato | Tecnología |
+|---|---|---|
+| Bolívar | Registro de Asistencia · FORMA AT-028 | campos AcroForm |
+| Bolívar | Seguimiento de Reuniones y Actividades · Forma AT-031 | campos AcroForm |
+| Colmena | Registro de asistencia · PSP-F-006 | texto dibujado por coordenadas |
+| Colmena | Evaluación Sesión de Capacitación · PSP-F-010 | texto dibujado por coordenadas |
+| AXA Colpatria | Formato Registro Listado de Asistencia | texto dibujado por coordenadas |
+
+**Las tres ARL quedaron cubiertas** (tanda 4, 16-ago-2026). Ya no hay ninguna
+cayendo en la hoja genérica, así que la plantilla "Ficha de Gestión — AXA" que
+sigue viva en Configuración → Formatos ya no se emite y se puede dar de baja.
+
+**Qué se rellena y qué no.** Va prediligenciado todo lo que la OS ya sabe
+—empresa, NIT, dirección, teléfono, correo, ciudad, fecha, horario, horas, tema,
+profesional y su cargo, contacto de la empresa, aliado estratégico— y queda
+**intacto** todo lo que solo existe después de la sesión: temas desarrollados,
+compromisos, observaciones, próxima reunión, la lista de asistentes y las firmas.
+Rellenar eso sería inventarse el acta de una visita que aún no ocurrió.
+
+**Un juego de formatos POR FRANJA.** Una visita partida en dos días son dos
+sesiones, cada una con su fecha, su horario, sus horas y su propia lista de
+asistentes; los adjuntos salen como `asistencia-1.pdf`, `asistencia-2.pdf`… y sin
+sufijo cuando hay una sola. Tope de **8 juegos** por correo. Sin franjas (se
+puede asignar profesional antes de cerrar la fecha) sale un juego con las
+casillas de fecha y horario en blanco: en el papel un hueco se rellena a
+bolígrafo, una fecha inventada no se puede corregir.
+
+**Decisiones que costaron descubrirlas:**
+
+- Los PDF de Bolívar **no llegan vacíos**: arrastran `PECAT` en el plan y el
+  nombre y código de aliado de la última vez que alguien los usó. Se limpian
+  todos los campos antes de escribir. Esos tres valores pasaron a
+  `sst.configuracion → aliado_estrategico` (`{nombre, codigo_bolivar,
+  plan_bolivar}`), ya aplicado en la Neon, para que el formato siga saliendo como
+  hasta ahora pero sea editable sin tocar código.
+- **Los campos se dejan de solo lectura, no se aplana el PDF.** Así el
+  profesional todavía puede escribir a máquina el resto si prefiere no hacerlo a
+  mano, pero no puede alterar sin querer lo que la orden ya fijó.
+- **Las casillas son estrechas de verdad** — la de "De:" del horario mide 33
+  puntos, donde `08:00 AM` a 8 pt no cabe, y el visor recorta por el borde sin
+  avisar (salía `08:00 A`). `ajustarACasilla()` encoge la letra hasta 5,5 pt y,
+  si aun así no entra, recorta con puntos suspensivos.
+- Los **grupos de opción** de Bolívar (Tipo de Actividad, Tipo de Servicio,
+  ¿Próxima reunión?) van sin marcar: sus seis botones comparten el mismo valor de
+  exportación (`Opción1`), así que marcar uno los encendería todos. Se marcan a
+  mano sobre el impreso.
+- El `.docx` de Colmena venía **con los datos de una sesión anterior** y con el
+  texto partido en fragmentos por Word. La plantilla del repo se derivó vaciándolo
+  y dejando un marcador por casilla, cada uno en un único `<w:r>` para que
+  sustituirlo sea un reemplazo de texto plano. Sus dos imágenes de membrete
+  pesaban 1,7 MB entre las dos y se recomprimieron: la plantilla pasó de 1,27 MB
+  a **61 KB**.
+- `jszip` pasó a dependencia DIRECTA de `sst_ws` (venía solo como transitiva de
+  `exceljs`), igual que `@napi-rs/canvas` en la tanda anterior.
+
+**Qué más cambió por arrastre:**
+
+- `generateOrderDocuments()` decide el origen y **no los mezcla**: si la ARL trae
+  formato propio, sus plantillas genéricas dejan de emitirse. Adjuntar los dos
+  dejaría al profesional eligiendo entre dos hojas parecidas sin saber cuál vale.
+  AXA Colpatria sigue con la plantilla genérica, sin cambios.
+- `GET /files/documents/:id/download` deducía la extensión: servía **todo** como
+  `application/pdf`, así que el `.docx` de Colmena habría llegado roto. Ahora la
+  saca de la key almacenada.
+- `GET /catalog/arls` devuelve `formatos_propios`, y el aviso de "la ARL no tiene
+  formatos configurados" de `/ordenes` ya no salta para Bolívar ni Colmena, que
+  es donde ahora sería justo al revés.
+- El correo dice qué falta por diligenciar en vez de un genérico "para
+  diligenciar y firmar".
+
+### Tanda 4 (16-ago-2026): agenda a medias, Colmena en PDF y el formato de AXA
+
+**1. Cambiar de profesional en una orden larga era imposible.** El botón de
+asignar exigía la visita COMPLETA (`visitaCompleta()`), así que en una OS de 50 h
+con 24 h repartidas no se podía guardar nada — ni siquiera un simple cambio de
+asesor— sin repartir antes las 26 h restantes. El backend sí sabía guardar el
+avance (`if (!result.completa)`), pero la UI hacía ese camino **inalcanzable**.
+
+- Ahora basta con haber elegido profesional; el botón dice **"Guardar avance"**
+  cuando la visita está a medias y el pie explica qué falta.
+- De paso: las dos respuestas del endpoint tenían **forma distinta** —en el caso
+  completo `correo_enviado` va en la raíz y en el parcial iba dentro de `data`—,
+  así que si ese camino se hubiera alcanzado, el frontend habría leído
+  `undefined`, lo habría tomado por "sí" y habría anunciado un correo que nunca
+  salió. Las dos ramas devuelven ya la misma forma, con un `completa` explícito.
+- La fecha solo se exige cuando la asignación va a salir por correo: guardar el
+  avance sin haber marcado nada en la agenda es válido.
+
+**2. El registro de asistencia de Colmena dejó de ser `.docx`.** Word recolocaba
+el texto a su aire y con el dato dentro la casilla de "Empresa" saltaba a una
+segunda línea. Se convirtió **una vez** a PDF (con Word, tras vaciar los datos de
+la sesión anterior que traía el documento del cliente) y ahora el valor se dibuja
+sobre la raya, donde no se mueve. Efectos: el adjunto es PDF, `rellenarDocx`
+desapareció y **`jszip` volvió a salir de las dependencias** de `sst_ws`.
+
+⚠️ Al vaciar la plantilla hay que cuidar el largo de la raya: el guion bajo de
+Gill Sans MT mide ~5,5 pt, así que una raya demasiado larga hace saltar la línea
+**ya en el formato vacío**. Se comprobó contra el documento original del cliente,
+que no salta.
+
+**3. AXA Colpatria ya tiene su formato** (`colpatria/asistencia.pdf`, apaisado,
+plano): ciudad, fecha, duración, orden de servicio, empresa, sede (la dirección
+de la OS), proveedor, tema y expositor. "Pagina" se numera a mano, porque el
+profesional añade hojas si se le llenan los 15 renglones.
+
+### Tanda 5 (16-ago-2026): dónde vive cada cosa en `/ordenes`, y el rechazo que no avisaba
+
+**Reparto de responsabilidades del detalle.** "Ver orden" se había convertido en
+un cajón donde cabía todo: consultar, cambiar el estado y revisar soportes.
+
+- El **cambio manual de estado** solo aparece ya en modo **edición**
+  (`editMode()`). En "Ver" quedaba un desplegable que cambia el ciclo de vida de
+  la orden e invitaba a tocarlo de paso; la pastilla del encabezado sigue
+  diciendo en qué estado está.
+- Los **soportes del profesional** salieron del detalle: se ven solo en
+  **"Verificar soportes"**, que es la pantalla hecha para eso (visor, aceptar y
+  rechazar). Se fueron con ellos `detailSupports`, `cargarSoportesDelDetalle` y
+  `verSoporte` — y **una petición menos** cada vez que se abre una orden.
+- El icono de soportes de la lista ya no se pinta en ámbar cuando hay algo por
+  verificar: va gris como los demás.
+
+**Los tres botones del visor de soportes se distinguen.** "Rechazar" y "Cerrar"
+eran los dos `.btn--ghost` y se confundían. Ahora: **Cerrar** en gris (no decide
+nada), **Rechazar soportes** con la nueva variante `.btn--danger` (contorno rojo)
+y **Aceptar soportes** en primario, los dos últimos con icono. El botón "Cerrar"
+además no existía en el modo decisión: solo se salía por la X.
+
+⚠️ `.btn--danger` es nuevo en `styles.scss` y está pensado para todo lo
+destructivo; conviene usarlo en vez de inventar estilos sueltos.
+
+**El rechazo de soportes no avisaba al profesional (VER-04).** Solo creaba la
+notificación de la campanita, y **solo si la ficha del profesional está enlazada
+a una cuenta de acceso** (`profesionales.usuario_id`), cosa que muchas no tienen.
+Un profesional trabaja en campo y no vive dentro de la plataforma: el rechazo
+podía quedarse semanas sin que se enterara nadie.
+
+Ahora `POST /orders/:id/reject` manda correo con la maqueta de marca: el motivo
+destacado en un bloque de aviso, los datos de la orden y el **botón al enlace de
+carga reabierto** (se reutiliza el token vigente, así que el enlace que ya tenía
+le sigue sirviendo). El administrador va en copia. Si el envío falla el rechazo
+NO se deshace —ya está guardado— pero la respuesta trae `correo_enviado: false`
+y la app avisa con "Soportes rechazados, pero sin avisar · avísele por otro
+medio" en vez de dar por notificado a quien no lo está.
+
+Probado de punta a punta contra una instancia temporal en :4010 con
+`EMAIL_DRIVER=console` y una OS desechable: correo con destinatario, motivo y
+enlace correctos, OS de vuelta en PROGRAMADA y enlace reabierto. Todo borrado
+después.
+
+### Tanda 6 (16-ago-2026): "faltan 0 h por repartir", y por qué el rechazo no mandaba correo
+
+**1. Una orden de más de 24 h no se podía programar nunca.** `duracionDeOrden()`
+acotaba las horas a un día (`Math.min(…, 24 * 60)`). El tope tenía sentido para
+PINTAR el bloque de otra visita en la agenda —no puede desbordar la columna del
+día— pero se aplicaba también al total de la orden que se está programando.
+
+Con una OS de **50 h** el frontend creía que eran 24: a las 24 h daba la visita
+por completa, el botón decía "Asignar profesional"… y el servidor, que sí sabía
+que eran 50, guardaba un avance. El aviso salía como **"faltan 0 h por
+repartir"**, porque `minutosPorRepartir` va con `Math.max(0, …)` y el cálculo
+partía de las 24 h equivocadas.
+
+- `duracionDeOrden()` ya no acota; el tope vive en `duracionEnLaRejilla()`, que
+  es la que usan los tres sitios que pintan bloques de OTRAS visitas.
+- Y el "faltan" **lo manda ahora el servidor** (`faltan_minutos`,
+  `minutos_orden`, `minutos_programados` en la respuesta incompleta). La app
+  calculaba su propia cuenta y por eso pudo contradecirse; quien decide si la
+  visita está completa es el backend, así que también dice cuánto falta.
+
+Comprobado contra el endpoint real con una OS desechable de 50 h: con 24 h
+repartidas responde `completa:false, faltan_minutos:1560, minutos_orden:3000`;
+con las 50 h pasa a PROGRAMADA, manda el correo y genera los 14 formatos (7
+franjas × 2). Todo borrado después.
+
+**2. El rechazo SÍ manda correo; el servidor de :4000 no tenía ese código.** El
+proceso se había arrancado a las 22:24 con `node --import tsx src/server.js`
+—o sea `npm start`, **sin `--watch`**— y el cambio del rechazo se escribió a las
+23:12. Node no recarga solo en ese modo.
+
+⚠️ **Para desarrollo, `npm run dev` (con `--watch`), no `npm start`.** Con
+`npm start` el proceso se queda con el código del momento en que arrancó y da
+igual cuántas veces se guarde el archivo.
+
+Lo que sí era un fallo de la app: anunciaba "recibió por correo el motivo"
+aunque la respuesta **no dijera nada** del envío. La condición era
+`correo_enviado === false`, así que un servidor que no informa —porque falló o
+porque corre una versión anterior— pasaba por éxito. Ahora es `!== true`: si no
+hay confirmación explícita, se avisa de que hay que avisar por otro medio.
+
+### Tanda 12 (18-ago-2026): el tipo de orden manda, y el valor hora se congela
+
+**"Valores por hora según actividad" no guardaba nada.** Eran tres filas escritas
+en el HTML de Configuración, sin tabla detrás y sin forma de que una orden
+apuntara a ellas. Ahora es `sst.tipos_orden` —nombre, valor hora, activo— con su
+CRUD (`/tipos-orden`), y es **el catálogo con el que se categoriza cada OS**.
+
+**El tipo es obligatorio al cargar la orden.** Se elige en la vista previa de
+Importar —hay un desplegable **en cada fila de la tabla**, porque un SIPAB trae
+31 órdenes y abrirlas una a una solo para eso sería media hora de clics— y el
+servidor no deja confirmar sin él, igual que con la fecha de vencimiento. El
+pipeline lo **preselecciona** cuando el título de la actividad lo dice ("CAP
+SEGURIDAD VIAL" → Capacitación); si no lo dice, llega vacío y hay que elegirlo:
+adivinar aquí sale caro. También se puede corregir después desde Órdenes.
+
+**Al asignar el profesional, la orden se queda con SU valor hora.** Es el punto
+del cambio y viene pedido: si la orden leyera el precio por la clave foránea,
+subir mañana la hora de "Capacitación" reescribiría el historial entero —
+incluidas las cuentas de cobro ya enviadas—. Así que `ordenes_servicio` guarda
+una **copia**: `valor_hora_cobro`, `valor_hora_origen` (de dónde salió) y
+`valor_cobro_total`, esta última como **columna generada** (horas × valor), que
+se recalcula sola si cambian las horas y no puede quedar desincronizada.
+
+La resolución, de lo más específico a lo más general, es la misma al asignar y al
+cobrar: **tarifa del profesional** para ese tipo → **valor del tipo** → valor
+hora base del profesional. Las cuentas de cobro leen lo congelado y solo
+resuelven al vuelo las órdenes anteriores a la columna.
+
+**Migración aplicada a la Neon:** el catálogo con los tres tipos que estaban en
+pantalla, `tipo_orden_id` en órdenes y borradores, y el relleno: **las 38 órdenes
+existentes quedaron categorizadas** (por el título de la actividad, y las que no
+decían nada —la mayoría— como Capacitación, que es lo que hace esta empresa casi
+siempre; es una suposición, corregible orden por orden). Las 29 que ya tenían
+profesional se quedaron además con su valor hora congelado, o habrían entrado a
+la cuenta de cobro en cero.
+
+⚠️ Con esto, **la cuenta en $0 de Ricardo Rios deja de poder repetirse**: sus
+órdenes ahora valen 85.000/hora por ser Capacitación. La cuenta ya aceptada en
+cero sigue como estaba — una cuenta cerrada no se recalcula sola.
+
+**Lo demás de la pantalla de Configuración:** se quitó "Notificaciones
+automáticas por WhatsApp" (era un interruptor sin efecto, ASG-06 es de Fase 3), y
+"Umbral mínimo de confianza" y "Día de corte del cobro" —un campo y un botón cada
+uno— pasaron a **dos columnas** en pantallas anchas; por debajo de 900 px se
+apilan solos.
+
+### Tanda 11 (18-ago-2026): papelera en la campanita y un enlace de soportes que se cierra
+
+**La bandeja de avisos solo sabía marcar leído.** Crecía sin fin y lo ya resuelto
+seguía estorbando. Ahora cada fila tiene su **papelera** y el panel abre con
+cuatro recortes: *Todas* (la bandeja viva), *No leídas*, *Leídas* y *Eliminadas*,
+cada uno con su contador. El borrado es **en blando** (`notificaciones.eliminado_en`)
+y la papelera puede devolverlo: una notificación es el rastro de un hecho de
+negocio, y ese rastro no se tira por limpiar la vista.
+
+⚠️ *Todas* muestra lo leído y lo no leído, **no** las eliminadas. Se pidió que
+"inicialmente se muestren todos", pero si lo borrado siguiera en la lista el
+botón de eliminar no haría nada visible, que es lo único que se le pide; las
+eliminadas tienen su propio recorte, como la papelera de un correo.
+
+También desapareció el enlace "Ver orden →": la fila **entera** ya lleva al
+registro. La papelera va fuera de esa fila-enlace —un `<button>` no puede
+anidarse en otro— y su clic corta la propagación, o borrar te llevaría además a
+la orden que acabas de quitar de la vista.
+
+**El aviso de encuesta ya abre las calificaciones del profesional.** Se implementó
+en la tanda 9… y seguía llevando a Órdenes, porque los avisos **ya existentes** no
+traían `profesional_id` en `datos` y la campanita caía al comportamiento
+anterior. El código nuevo estaba bien; lo que faltaba era rellenar los seis
+avisos viejos desde la OS. Hay backfill en `schema.sql`.
+
+**El enlace de soportes se cierra al entregar.** Admitía carga mientras la orden
+estuviera PROGRAMADA **o EJECUTADA** —"por si el profesional olvidó uno"—, y eso
+lo dejaba abierto para siempre: se podía volver a entrar y seguir añadiendo
+documentos sobre una visita que el administrador ya estaba revisando. Ahora hay
+dos ventanas y solo dos: la **entrega inicial** y la **corrección de lo
+devuelto**. Entre medias, abrir el enlace enseña lo que se mandó, en solo
+lectura, con el estado ("en revisión" o "visita cerrada") — reabrir el correo
+para comprobar qué se envió es un gesto normal y merece una respuesta útil, no un
+error.
+
+**Y cada casilla guarda un documento, no un historial.** El reemplazo del
+anterior existía solo al subsanar; ahora es siempre. En la bandeja actual quedan
+los duplicados de antes: **OS-2026-0036** (3 actas, 2 asistencias, 2 evidencias)
+y **OS-2026-0031** (2 actas). No se tocaron —son archivos reales de un cliente—;
+limpiarlos es una decisión del equipo.
+
+### Tanda 10 (18-ago-2026): la orden por fin se cierra — nace FINALIZADA
+
+**El ciclo se quedaba a medias.** El profesional subía los soportes y la OS
+pasaba a EJECUTADA… y ahí se quedaba para siempre. Mirando la bandeja no había
+forma de saber si alguien había revisado esos documentos: lo aceptado y lo que
+nadie había abierto se veían igual. Ahora son cuatro estados:
+
+    SIN PROGRAMAR → PROGRAMADA → EJECUTADA → FINALIZADA
+                                      ↘ PROGRAMADA (rechazo de soportes)
+
+**EJECUTADA la pone el profesional; FINALIZADA, el administrador.** Aceptar los
+soportes ya no era un hecho invisible que solo dejaba una fila de historial: es
+la transición que cierra la orden. De FINALIZADA no se sale —lo impiden la
+matriz y el trigger—, porque de ese estado cuelgan la encuesta al cliente y la
+cuenta de cobro del profesional; reabrir una orden cerrada es una decisión de
+negocio, no un clic.
+
+En la bandeja de Órdenes hay **dos pestañas** donde había una: *Ejecutadas* (el
+trabajo entregado que espera revisión: es una bandeja de tareas) y *Finalizadas*
+(el archivo). Los colores acompañan: EJECUTADA pasó a **ámbar** —pide una acción—
+y el verde se reservó para FINALIZADA. El visor de soportes se sigue abriendo en
+una orden finalizada, en solo lectura: el expediente es justo lo que hay que
+poder enseñar cuando la ARL pregunta.
+
+**Lo que cambió alrededor**, para que el estado nuevo no rompiera lo que ya
+medía cada módulo:
+
+- La **encuesta** (ENC-01) se dispara al FINALIZAR, no al ejecutar: antes se le
+  preguntaba al cliente por una visita cuyos documentos no había mirado nadie.
+- **Horas ejecutadas** (RPT-05), **cuentas de cobro**, **cartera** (RPT-06),
+  **órdenes por ARL**, **empresas** y el **desempeño del profesional** cuentan
+  los dos estados: el trabajo hecho no deja de estarlo porque lo revisen.
+- **Vencidas** (RPT-03) excluye los dos: una orden cerrada no está vencida.
+- Los **KPIs del dashboard** llevan un contador por estado —cada uno puro— y la
+  tarjeta de "Ejecutadas" suma los dos, que es una decisión de presentación.
+- El **portal del profesional** rechaza subidas a una orden ya cerrada con un
+  mensaje que dice qué pasó y a quién acudir.
+
+**Migración aplicada a la Neon**: el valor `FINALIZADA` en `sst.estado_orden` y
+un backfill que pasó a FINALIZADA las **5 órdenes cuyos soportes ya se habían
+aceptado** —se revisaron cuando el final era EJECUTADA, y sin el backfill
+habrían quedado mezcladas con las que nadie ha mirado—. El movimiento queda en
+el historial. Las cuentas de cobro no se movieron: siguen siendo 5.
+
+**La campanita recarga antes de abrir.** Estando en Órdenes y pulsando un aviso
+de "soportes recibidos", el visor se abría con la orden todavía en PROGRAMADA y
+los botones de aceptar/rechazar apagados sobre unos archivos que sí estaban ahí:
+la lista en memoria era de antes de que el profesional subiera nada. El aviso
+llega justo *porque* algo cambió, así que ahora la llegada por query param
+recarga la bandeja y abre sobre datos frescos.
+
+**Y el aviso de encuesta respondida lleva al profesional.** Antes abría el
+detalle de la orden; lo que se quiere ver al pulsarlo es cómo va calificado quien
+dictó la actividad, así que ahora va a `/profesionales?profesional=<id>&vista=calificaciones`
+y abre su panel de encuestas. Para eso el aviso viaja con `profesional_id`; los
+avisos anteriores, que no lo traen, siguen abriendo la orden.
+
+### Tanda 9 (18-ago-2026): la encuesta ya califica al profesional, y esa nota se ve
+
+**La encuesta medía una sola cosa.** Preguntaba por la actividad y por si
+recomendaría a JD&D, así que una nota baja no se podía accionar: no se sabía si
+era de quien fue a dictarla o de la empresa que lo mandó. Ahora son tres escalas:
+la actividad **que dictó el profesional**, el profesional mismo (puntualidad,
+dominio del tema, claridad) y la recomendación de JD&D. La segunda es la que
+alimenta el promedio del asesor; se guarda aparte, en
+`respuestas_encuesta.calificacion_profesional`.
+
+Los enunciados siguen siendo configurables (ENC-03, Configuración → Formatos y
+encuesta), y el nuevo se sembró junto a los otros. La redacción guardada en
+`sst.configuracion` **se actualizó** en la Neon porque seguía siendo la del seed
+—nadie la había tocado—; si alguien la hubiera personalizado, se habría
+respetado y solo se habría añadido la pregunta que faltaba.
+
+**Las observaciones tienen tope: 500 caracteres.** Es texto libre que se pinta en
+la tabla de Informes y en la ficha del profesional, y un correo entero pegado en
+la caja rompe las dos vistas. El formulario lo impide y lo cuenta mientras se
+escribe, el servidor lo valida, y la BD lo repite como CHECK — que es la única
+barrera que no se puede saltar.
+
+**El correo del cliente iba en texto plano.** Era el único que sale de la
+plataforma hacia fuera y era el único sin maqueta, mientras los internos
+—asignación, rechazo, cuenta de cobro— llegaban con la marca puesta. Ahora usa
+`correoHtml` como los demás, con la ficha de la visita y el botón de responder.
+
+**Dónde se ve todo esto**, que era la pregunta del cliente:
+
+- **Profesionales** · columna nueva: las órdenes ejecutadas y, debajo, las
+  estrellas del promedio con el número de encuestas entre paréntesis. Las dos
+  cifras van juntas a propósito: un 5,0 de una encuesta no dice lo mismo que un
+  4,6 de cuarenta, y la encuesta es **opcional** —un asesor puede tener 100
+  órdenes y 10 respuestas—. Pulsando las estrellas se abre el detalle: cada
+  encuesta con su nota, la de la actividad y **la observación del cliente**, que
+  es lo único accionable de todo el módulo.
+- **Informes → Satisfacción** · ya existía y sigue siendo el sitio del panorama:
+  KPIs (ahora también el promedio del profesional), gráfico por asesor, tablas
+  por ARL y por mes, y el listado completo de respuestas con sus observaciones.
+
+Las encuestas anteriores a la pregunta nueva no se pierden: aportan su
+satisfacción general al promedio (`nota_profesional = COALESCE(calificacion_profesional, satisfaccion)`
+en `vw_encuestas`) y se marcan como **"aprox."** donde se listan, para que nadie
+las lea como una calificación directa. Descartarlas habría dejado a media
+plantilla sin historial de un día para otro.
+
+**Base de datos** (aplicada a la Neon): `respuestas_encuesta.calificacion_profesional`
++ sus dos CHECK (nota 1-5, comentario ≤ 500), `vw_encuestas` con
+`nota_profesional`, y la vista nueva `vw_profesionales_desempeno` (órdenes
+ejecutadas, encuestas enviadas/respondidas y promedio por asesor), que es lo que
+consume `GET /professionals`.
+
+**El historial de estados es un acordeón.** Es auditoría: se consulta cuando algo
+no cuadra, no cada vez que se abre una orden, y desplegado empujaba hacia abajo
+los datos que sí se miran siempre. Cerrado además **no se pide al servidor** — la
+petición se hace al abrirlo.
+
+**El sidebar cambió de orden** a petición del cliente: Inicio · Importar ·
+Órdenes · Profesionales · Cuentas de cobro · Empresas · Informes · Configuración.
+
+### Tanda 8 (18-ago-2026): el rechazo dejó de ser "todo o nada", e importar dejó de pagar IA por lo que ya está
+
+**Rechazar soportes ahora se hace por documento.** Era una decisión de una sola
+pieza: se devolvía la visita entera y el profesional volvía a subir los tres
+archivos aunque solo fallara el registro fotográfico — y el administrador tenía
+que revisar otra vez lo que ya había dado por bueno. En el modal de "Verificar
+soportes" hay ahora una casilla por documento (con cuántos archivos tiene cada
+una, y las que no subió también, porque *"falta la lista de asistencia"* es un
+motivo de rechazo tan válido como *"el acta viene sin firmar"*). Lo marcado viaja
+en `POST /orders/:id/reject` y se guarda en
+`ordenes_servicio.soportes_rechazados`; el correo dice exactamente qué repetir.
+
+**El portal del profesional obedece esa lista.** Al abrir el enlace del correo de
+rechazo ve el motivo arriba, **sus archivos anteriores** —abribles, sin login, por
+`GET /public/support/:token/files/:id`— y solo puede reemplazar lo devuelto: el
+resto de casillas salen bloqueadas y marcadas como "Aceptado". El servidor no se
+fía de la pantalla y rechaza con un 400 explicado cualquier casilla que no esté
+en la lista.
+
+Que pudiera ver lo ya subido era la mitad que faltaba: el correo le pedía
+corregir *el acta* y al llegar encontraba tres casillas vacías, sin forma de
+comparar lo que mandó con lo que le piden.
+
+**El archivo anterior se borra al llegar el nuevo.** Antes se acumulaban
+`evidencias.jpg` y `evidencias-2.jpg` y el administrador elegía a ojo cuál era la
+buena. Ahora, al subsanar, las filas de esa categoría se borran dentro de la
+transacción y los binarios **después** de confirmarla — al revés, un rollback
+dejaría al profesional sin el soporte viejo y sin el nuevo. Un fallo borrando el
+binario no tumba la carga: deja un huérfano, que es mucho menos grave.
+
+**La corrección va completa o no va.** Si se devolvieron dos documentos, los dos
+viajan en el mismo envío: el botón del portal no se habilita mientras falte
+alguno —y dice cuál— y el servidor responde 400 si llegan a medias. Se probó
+primero dejándolo subir de a poco y no sirve: la orden queda en tierra de nadie
+(ni cerrada ni devuelta) y el administrador espera un documento que nadie le
+recuerda al profesional que falta. Con la corrección completa, la OS vuelve a
+EJECUTADA y el rechazo se cierra; aceptar los soportes también lo limpia.
+
+**Importar ya no gasta una petición de IA en una orden que ya está.** El dedup
+existía, pero corría DESPUÉS de la extracción: el archivo repetido pagaba una
+extracción completa para acabar en "esta orden ya existe" (en la bandeja hay un
+PDF cargado cuatro veces). Ahora, al ELEGIR los archivos, cada uno pasa por
+`POST /imports/precheck`, que no guarda nada y responde por dos caminos sin IA:
+
+- **la huella del archivo** (`sha256` en `lotes_importacion.hash_archivo`, con
+  backfill de los lotes que aún conservan su binario: `db/backfill-hash-lotes.js`,
+  10 de 46 — el resto son lotes sembrados sin archivo);
+- **el texto del PDF**, preguntando a la BD si alguna orden registrada tiene su
+  número dentro. La dirección importa: no se adivina el número con una expresión
+  regular para buscarlo luego, se parte de los números que ya existen.
+
+Lo que sale positivo se **quita del selector** y baja al panel de "ya existen"
+que ya estaba, con un "Procesar de todos modos" por si acaso: la detección
+acierta, pero un documento que mencione otra orden podría apartarse sin serlo, y
+nadie puede quedarse sin poder importar. `POST /imports` repite la comprobación y
+responde 409 sin crear lote ni encolar nada — el gasto se decide ahí, no en la
+pantalla. El Excel SIPAB solo se aparta si **todas** sus filas ya están cargadas.
+
+**Los errores de archivo dejaron de hablar en inglés.** En pantalla llegó a verse
+"Error de archivo: File too large". Ahora `middleware/error.js` traduce cada
+código de multer (con el límite escrito una sola vez, exportado desde
+`upload.js`), y también el cuerpo demasiado grande, el JSON cortado, la BD caída
+(503, no un 500 con referencia que manda a buscar un fallo que no existe), la
+consulta cancelada y las fechas inválidas. En el frontend, `core/errores.ts`
+centraliza la decisión en las 13 vistas: se respeta lo que escribe el backend,
+se descarta la jerga que se le cuele, y **los fallos de transporte mandan sobre
+el mensaje de la vista** — decir "el servidor rechazó la operación" con el
+portátil sin red señala al sitio equivocado. Además el archivo se revisa **antes**
+de subirlo (`revisarArchivo`), con su peso real en la frase: en campo, mandar 30
+MB para que los rechacen es un minuto perdido. Los soportes avisan del caso más
+común de todos, la foto **HEIC** de iPhone, que ni el servidor ni la pantalla
+nombraban.
+
+**La campanita entra al visor, no a la ficha.** Un aviso de "soportes recibidos"
+se pulsa para ver lo que llegó, y uno de "soportes rechazados" para ver lo que
+hay que corregir: en los dos casos, abrir el detalle de la orden dejaba a un
+clic justo lo que se venía a mirar. Esos dos tipos navegan ahora a
+`/ordenes?os=<id>&vista=soportes`, que abre el modal de archivos; los de
+asignación siguen abriendo la ficha, porque cuando llegan todavía no hay ningún
+archivo que enseñar.
+
+⚠️ **El máximo por archivo bajó de 25 MB a 4 MB**, para las órdenes que se
+importan y para los soportes del profesional (`LIMITE_ARCHIVO_MB` en
+`middleware/upload.js`, con espejo en `core/errores.ts` para no hacer el viaje).
+Tiene una consecuencia que conviene tener presente: **la compresión de imágenes
+corre DESPUÉS del filtro**, así que una foto de móvil a resolución máxima (5-12
+MB en cualquier teléfono reciente) se rechaza sin llegar a comprimirse, aunque
+comprimida ocuparía 200 KB. Es una decisión del cliente, no un efecto colateral;
+el mensaje de error explica cómo bajarla de peso (bajar la resolución de la
+cámara, o pasarla por WhatsApp y subir la copia).
+
+**Base de datos** (aplicada a la Neon, solo estas sentencias):
+`ordenes_servicio.soportes_rechazados TEXT[]`, `soportes_rechazo_motivo`,
+`soportes_rechazados_en` y `lotes_importacion.hash_archivo` + su índice.
+
+### Tanda 7 (16-ago-2026): "Pre-cuentas" pasó a ser **Cuentas de cobro** y cambió de forma
+
+La vista tenía muchas opciones y ninguna respondía la pregunta con la que se
+entra: *de este año, ¿qué queda por pagarle a los profesionales?*
+
+**Se entra por año y mes.** Arriba, selector de año (arranca en el actual) y una
+tira de doce meses; cada mes muestra su total y cuántas cuentas siguen sin
+cobrar, así que el año se recorre de un vistazo. Debajo, la tabla del recorte,
+**con columna Mes**: un profesional que trabajó en julio y agosto sale en dos
+filas y se le genera una cuenta por cada mes.
+
+**Las filas ya no las crea un botón.** Antes había que pulsar "Generar
+pre-cuentas del mes" para que apareciera algo. Ahora una orden entra en cuanto un
+administrador **acepta sus soportes**, agrupada por su mes de EJECUCIÓN (no el de
+la revisión: una visita de agosto revisada en septiembre se cobra en agosto).
+"Generar" quedó como lo que de verdad es: congelar la cifra y emitir el documento
+de esa fila.
+
+Para sostenerlo hicieron falta dos cosas en la BD, **ya aplicadas** a la Neon:
+
+- `ordenes_servicio.soportes_aceptados_en` / `_por`. La aceptación solo quedaba
+  como una fila de historial con el motivo `'Soportes revisados y aceptados'`, y
+  sobre un texto así no se construye una consulta de cobro. **Hay backfill** desde
+  ese historial (4 órdenes recuperadas), o habrían desaparecido al desplegar.
+- Vista `vw_horas_por_cobrar` = `vw_horas_ejecutadas` + soportes aceptados. Va
+  aparte y no como filtro de la primera **a propósito**: los informes de horas
+  (RPT-05) miden trabajo ejecutado y colarles la revisión les cambiaría la cifra
+  sin que nadie lo pidiera.
+
+**Cuentas en $0, prohibidas.** Un profesional con horas pero sin `valor_hora` ni
+tarifa por actividad generaba igual: se le mandaba un documento pidiéndole que
+aceptara cobrar $0. Ahora se omite con un motivo que dice qué arreglar, la fila
+se marca con "sin tarifa" y su botón de generar queda deshabilitado con el
+porqué en el `title`. Segunda barrera en el envío, por las cuentas en cero que ya
+existan (hay una: Ricardo Rios, 2026-08, aceptada en $0).
+
+**Lo demás de la vista:** las opciones de la tabla son iconos como en Órdenes;
+las aceptadas salen del listado y viven en su pestaña; los estados se escriben
+con inicial en mayúscula y una fila sin cuenta dice "Por generar"; y el documento
+que se envía ya no imprime las observaciones — son notas internas del
+seguimiento y se leen en el detalle.
+
+⚠️ **El día de corte (CFG-05) se movió a Configuración → Sistema.** Estaba dentro
+de Cuentas de cobro y es un ajuste que se toca una vez; se movió en vez de
+borrarlo para no dejar el requisito sin interfaz. El aviso de "periodos vencidos"
+que vivía en esa pantalla desapareció: la tira de meses ya dice cuáles tienen
+cuentas por cobrar, que era la información que ese aviso daba.
+
+**Sidebar:** los subtítulos decían en qué módulo del FRS caía cada opción
+("Módulo 9 · Cobro"). Eso es vocabulario del documento de requisitos, no del
+trabajo diario; ahora dicen qué se hace ahí ("Pago a profesionales").
 
 ### Historial de tandas anteriores
 
@@ -957,6 +1827,174 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
     restricción exacta en el log y, en los 500, devuelve una **referencia corta**
     (`ref A3F9K2`) que aparece también en el log del servidor para poder
     encontrarlo después.
+32. **`new URLSearchParams({ x: undefined })` NO omite la clave: la escribe como
+    `x=undefined`.** Ese texto viaja como un filtro real y, contra una columna
+    uuid o un enum, Postgres responde `22P02` → 400 y la pantalla se queda vacía
+    (así murió `/precuentas`). En el frontend las cadenas de consulta se arman
+    **solo** con `queryString()` de `core/api.service.ts`, que descarta vacíos;
+    en el backend, un filtro de query vale únicamente si trae valor real.
+33. **En un `<select>` con las `<option>` generadas por `@for`, `[value]` en el
+    `select` no funciona.** El binding se aplica antes de que existan las
+    opciones, el navegador descarta el valor y se queda con la primera: el
+    selector de "Filas" enseñaba 10 mientras la tabla paginaba de 25 en 25, y
+    solo se sincronizaba si el usuario lo tocaba. La opción vigente se marca con
+    `[selected]` en la `<option>`, no con `[value]` en el `<select>`.
+34. **Un control que muestra un valor distinto del que el sistema usa es peor que
+    uno roto**: el usuario no tiene motivo para desconfiar de él. Las dos
+    trampas anteriores son el mismo error visto desde dos sitios. Cuando un
+    componente pinte un estado, el valor pintado y el aplicado tienen que salir
+    de la misma señal.
+35. **Un `@else` no es "el caso de error": es TODO lo demás.** El portal de
+    soportes pintaba el formulario con `@if (!sent() && !error())` y el banner de
+    éxito en el `@else`, así que un fallo del servidor mostraba a la vez el error
+    y "Soportes enviados con éxito · Estado: EJECUTADA". El profesional se iba
+    convencido de haber entregado. **El estado de éxito se pinta con su propia
+    condición afirmativa** (`@if (sent())`), nunca por descarte.
+36. **Cuando el código y la BD discrepan, mirar la BD ANTES de tocar el código.**
+    El error de soportes parecía del backend y el backend estaba bien: lo que
+    fallaba era `sst.cambiar_estado_orden`, que en Neon seguía teniendo la matriz
+    de cinco estados porque la migración nunca se había corrido. Un
+    `pg_get_functiondef` contra la base viva lo resolvió en un minuto. Las
+    funciones y los triggers **no viajan con el `git pull`**.
+37. **"Comprimir al máximo" no es una sola operación: depende del contenido.**
+    Rasterizar páginas encoge un 86 % un PDF escaneado y **engorda un 19 %** uno
+    vectorial, además de quitarle el texto seleccionable. La regla que funciona
+    es medir cada estrategia y quedarse con la más pequeña, **nunca por encima
+    del original**, y exigir un ahorro grande antes de aceptar una que degrada
+    la calidad.
+38. **El nombre de archivo que manda el navegador viene en latin1.** busboy no
+    lo decodifica: `simbolos ¿?¡!.pdf` se guarda como `simbolos Â¿?Â¡!.pdf` y
+    cualquier tilde de un nombre en español queda rota. Se arregla
+    reinterpretando (`Buffer.from(n,'latin1').toString('utf8')`), comprobando
+    antes que el resultado no traiga el carácter de reemplazo — si lo trae, el
+    nombre ya venía bien y tocarlo lo estropea.
+39. **Un servidor de pruebas que "ya está levantado" puede ser el viejo.** Al
+    relanzar en el mismo puerto, el proceso anterior seguía escuchando, el nuevo
+    moría con EADDRINUSE en segundo plano y las pruebas iban contra el código
+    antiguo: un arreglo correcto parecía no funcionar. Comprobar el PID del
+    puerto (`netstat -ano | grep :4010`) antes de dar por buena una prueba.
+40. **Un archivo más pequeño no es un archivo bueno.** Las dos veces que la
+    compresión se rompió, el síntoma fue un ahorro *estupendo* (99 %) sobre un
+    contenido borrado. Cuando se mida compresión hay que medir también la
+    **tinta** del resultado (porcentaje de píxeles no blancos), no solo los
+    bytes. Vale igual para cualquier conversión: PDF→imagen, redimensionados,
+    miniaturas.
+41. **`new Image(); img.src = buffer` de `@napi-rs/canvas` miente.** Deja el alto
+    y el ancho listos enseguida, así que el código parece correcto y hasta
+    escala bien, pero los píxeles no están decodificados cuando llega el
+    `drawImage`. Usar siempre `await loadImage(buffer)`.
+42. **pdf.js fuera del navegador no dibuja las fuentes estándar.** Sin
+    `standardFontDataUrl` apuntando a `pdfjs-dist/standard_fonts/`, cualquier
+    PDF que use Helvetica o Times sin incrustarlas se **renderiza sin su texto**,
+    en silencio. Afecta al rasterizado de soportes y a cualquier verificación
+    visual: un formato relleno que "sale en blanco" al renderizarlo con pdf.js
+    puede estar perfectamente bien — comprobarlo aplanando el PDF y extrayendo el
+    texto antes de tocar nada.
+43. **Los formatos "en blanco" que entrega una ARL no lo están.** Los PDF de
+    Bolívar traían valores de la última vez que alguien los usó (`PECAT`, el
+    nombre del aliado) y el `.docx` de Colmena venía con los datos completos de
+    una sesión anterior. Antes de usar una plantilla nueva, volcar sus campos y
+    limpiarlos.
+44. **Un endpoint con dos ramas debe devolver la MISMA forma.** `POST
+    /orders/:id/assign` ponía `correo_enviado` en la raíz al asignar completo y
+    dentro de `data` al guardar un avance. El frontend leía la raíz, encontraba
+    `undefined`, lo tomaba por `true` y habría anunciado un correo que nunca
+    salió. Si una rama devuelve menos, que devuelva menos **en el mismo sitio**.
+45. **Una validación de más en la UI puede tapar una función entera del
+    backend.** El botón de asignar exigía la visita completa, así que el guardado
+    parcial que el backend implementa —y que es la única forma de cambiar de
+    profesional en una orden de muchas horas— era inalcanzable desde la app.
+    Cuando el servidor tiene una rama que el cliente nunca puede provocar,
+    sobra la rama o sobra la validación; aquí sobraba la validación.
+46. **Word recoloca el texto y no avisa.** Rellenar un `.docx` por sustitución de
+    texto funciona hasta que el dato hace que la línea no quepa: entonces la
+    casilla salta de renglón y el formato se descuadra. Para un formato que se
+    imprime tal cual, convertirlo una vez a PDF y dibujar el valor sobre la raya
+    es más fiable que pelearse con el flujo de Word.
+47. **`npm start` no recarga; `npm run dev` sí.** `start` es `node --import tsx src/server.js` y `dev` añade `--watch`. Un servidor de desarrollo levantado con `npm start` se queda con el código del momento en que arrancó, así que un arreglo correcto "no funciona" y se busca el fallo donde no está. Comparar `CreationDate` del proceso con el `LastWriteTime` del archivo lo resuelve en un minuto (hermana de la trampa 39).
+48. **La campanita NO es avisar.** `notificaciones` cuelga de
+    `profesionales.usuario_id`, y muchas fichas no tienen cuenta enlazada: una
+    notificación interna para alguien que trabaja en campo y no entra a la
+    plataforma no llega a nadie. Cualquier aviso que le cambie el trabajo al
+    profesional —rechazo de soportes, reprogramación— tiene que salir **por
+    correo**, y la campanita queda como refuerzo. Así estaba el rechazo de
+    soportes desde que se construyó.
+49. **Un tope que sirve para dibujar no sirve para calcular.** `duracionDeOrden()`
+    acotaba las horas a un día porque el bloque de la agenda no puede desbordar
+    la columna, y ese mismo tope se aplicaba al total de la orden: una OS de 50 h
+    se creía de 24 y no había forma de programarla. Si un valor se usa para
+    pintar Y para decidir, o son dos funciones o el tope acaba en la decisión.
+50. **"No confirmado" no es "sí".** Un `if (respuesta.correo_enviado === false)`
+    trata la ausencia del campo como éxito, y la ausencia es justo lo que
+    devuelve un backend que falló o que corre una versión anterior. Para algo que
+    hay que dar por hecho —un aviso, un cobro, un envío— la condición se escribe
+    en positivo: `!== true`.
+
+51. **El dedup que llega tarde es un dedup que cuesta dinero.** Detectar el
+    duplicado DESPUÉS de la extracción da el resultado correcto y la factura
+    equivocada. Si la comprobación se puede hacer sin el modelo —una huella, un
+    número que ya está en la BD— hay que hacerla antes de llamarlo, y repetirla
+    en el endpoint: el gasto se decide en el servidor, no en la pantalla.
+
+52. **Borrar el binario dentro de la transacción es perder el archivo.** Al
+    reemplazar un soporte, la fila se borra dentro y el objeto **después** de
+    confirmar: si se hace al revés y algo falla, el rollback devuelve la fila a
+    una BD que apunta a un archivo que ya no existe. Y al contrario, un fallo
+    borrando el objeto no puede tumbar la carga: un huérfano en el
+    almacenamiento se limpia; un soporte perdido, no.
+
+53. **Un parámetro que solo se compara con `IS NULL` no tiene tipo.** Postgres
+    responde `42P08 could not determine data type of parameter $2` a un
+    `CASE WHEN $2 IS NULL` cuando el valor llega en null: no hay nada de donde
+    deducir el tipo. Se arregla con el cast explícito (`$2::text[]`), y solo
+    aparece en la rama en la que el parámetro va vacío — que es justo la que
+    cierra el flujo.
+
+54. **El mensaje de relleno del cliente miente cuando el fallo es de red.** Un
+    `err?.error?.error || 'El servidor rechazó la operación'` enseña esa frase
+    cuando no hubo servidor que rechazara nada: el portátil está sin red. La
+    causa (status 0, 401, 413, 5xx) tiene que ganarle al respaldo de la vista; el
+    respaldo solo vale cuando el fallo sí es de la operación.
+
+55. **Una pregunta nueva no llega sola a los formularios ya enviados.** Cada
+    encuesta guarda SUS enunciados (para poder leerse como se envió), así que
+    añadir una pregunta deja fuera a todas las que están en la bandeja del
+    cliente sin responder. Se arregla completando los enunciados **al leer**
+    (`conDefectos`), no al guardar: la redacción vieja se respeta y la pregunta
+    nueva aparece igual. Y ojo con `sst.configuracion`: si hay una redacción
+    guardada, gana sobre el valor por defecto del código — cambiar el default no
+    cambia nada en un sistema que ya arrancó.
+
+56. **`$$` en la cadena de reemplazo de `String.replace()` se convierte en `$`.**
+    Editar SQL con `s.replace(viejo, nuevo)` destrozó en silencio cada bloque
+    `DO $$ … END $$;` insertado —quedaron como `DO $ … END $;`— y el fallo solo
+    apareció al enviarlo a Postgres ("syntax error at or near \"$\""). Con
+    función de reemplazo (`s.replace(viejo, () => nuevo)`) no hay interpretación
+    de patrones. Es el mismo motivo por el que `$&` o `$1` desaparecen.
+
+57. **Un valor de enum nuevo no se puede USAR en la misma transacción en que se
+    agrega.** `ALTER TYPE … ADD VALUE` sí corre dentro de una transacción
+    (PG ≥ 12), pero cualquier vista o consulta que nombre el valor nuevo falla
+    con "unsafe use of new value". Y `schema.sql` se aplica en UNA sentencia
+    múltiple, es decir, una sola transacción. Por eso el ALTER vive en
+    `db/migrate.js` (`asegurarEstados`), antes del esquema, y el `CREATE TYPE`
+    del esquema ya trae el valor para las bases nuevas.
+
+58. **Cambiar el código no cambia lo que ya está guardado.** El aviso de
+    encuesta se arregló para llevar al profesional y siguió llevando a la orden:
+    las filas anteriores no tenían el dato nuevo en su `datos` JSONB y el
+    fallback hacía su trabajo. Cuando una función depende de un campo que se
+    acaba de añadir a datos históricos, el cambio no está terminado hasta que se
+    rellenan — y hay que probarlo con una fila VIEJA, no solo con una recién
+    creada.
+
+59. **Un precio leído por clave foránea reescribe el pasado.** Si la orden
+    consulta el valor hora del catálogo cada vez que se muestra, subir una
+    tarifa cambia de golpe todo el historial — incluidas las cuentas ya
+    enviadas y aceptadas. Los datos que sostienen un acuerdo (precios, tarifas,
+    porcentajes) se COPIAN en el momento del acuerdo; la clave foránea se queda
+    para la categoría, que sí es estable. Aquí el acuerdo es la asignación del
+    profesional.
 
 ---
 

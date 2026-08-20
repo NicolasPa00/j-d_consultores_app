@@ -1,9 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_ID, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, OnInit, PLATFORM_ID, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../core/api.service';
+import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
-import { Profesional } from '../../core/models';
+import { Encuesta, Profesional } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
@@ -16,6 +19,11 @@ interface Professional {
   phone: string;
   specialty: string;
   status: ProfessionalStatus;
+  /** ENC-05 · Trabajo cerrado y cómo lo califican; van juntos a propósito. */
+  ordenesEjecutadas: number;
+  encuestas: number;
+  /** null = todavía nadie lo ha calificado (la encuesta es opcional). */
+  nota: number | null;
 }
 
 interface ProfessionalDraft {
@@ -36,6 +44,9 @@ interface ProfessionalDraft {
 export class ProfessionalsComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly alerts = inject(AlertService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   protected readonly professionals = signal<Professional[]>([]);
@@ -51,7 +62,7 @@ export class ProfessionalsComponent implements OnInit {
     'Seguridad en el Trabajo',
   ];
 
-  protected readonly drawerOpen = signal(false);
+  protected readonly modalOpen = signal(false);
   protected readonly editingId = signal<string | null>(null);
   protected draft: ProfessionalDraft = this.emptyDraft();
 
@@ -65,7 +76,7 @@ export class ProfessionalsComponent implements OnInit {
   });
 
   /** CFG-01 · La lista de asesores crece con el equipo. */
-  protected readonly pag = paginar(this.filtered, 25);
+  protected readonly pag = paginar(this.filtered);
 
   protected buscar(texto: string): void {
     this.query.set(texto);
@@ -77,18 +88,150 @@ export class ProfessionalsComponent implements OnInit {
   );
 
   ngOnInit(): void {
-    if (this.isBrowser) this.load();
+    if (!this.isBrowser) return;
+    this.load();
+    // ENC-05 · Llegada desde la campanita: `?profesional=<id>&vista=calificaciones`
+    // abre su panel de encuestas. Se escuchan los cambios y no solo el snapshot
+    // porque pulsar otro aviso estando YA aquí solo cambia el query param — el
+    // componente no se reconstruye.
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const id = params.get('profesional');
+      if (!id || params.get('vista') !== 'calificaciones') return;
+      this.profSolicitado = id;
+      if (!this.cargando()) this.abrirSolicitado();
+    });
   }
+
+  /** Id que pidió la campanita y todavía no se ha abierto. */
+  private profSolicitado: string | null = null;
+  protected readonly cargando = signal(false);
 
   private load(): void {
-    this.api.listProfessionals().subscribe((r) => this.professionals.set(r.data.map(toView)));
+    this.cargando.set(true);
+    this.api.listProfessionals().subscribe({
+      next: (r) => {
+        this.professionals.set(r.data.map(toView));
+        this.cargando.set(false);
+        this.abrirSolicitado();
+      },
+      error: (err) => {
+        this.cargando.set(false);
+        this.alerts.error(
+          'No se pudieron cargar los profesionales',
+          mensajeError(err, 'El servidor no devolvió la lista de asesores.'),
+        );
+      },
+    });
   }
 
-  // ---- Acciones: drawer ----
+  /**
+   * Abre el panel de calificaciones del profesional que pidió el aviso.
+   *
+   * El parámetro se limpia de la URL para que recargar la página no vuelva a
+   * abrir el modal, y se avisa si el asesor ya no está en la lista en vez de
+   * dejar el clic sin efecto.
+   */
+  private abrirSolicitado(): void {
+    const id = this.profSolicitado;
+    if (!id) return;
+    this.profSolicitado = null;
+    this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+
+    const pro = this.professionals().find((x) => x.id === id);
+    if (!pro) {
+      this.alerts.info(
+        'El profesional del aviso ya no está en la lista',
+        'Puede que se haya eliminado desde que llegó la notificación.',
+      );
+      return;
+    }
+    // Se abre por `abrirPanel` y no por `openRatings`: este último exige que el
+    // contador de encuestas sea mayor que cero, y el aviso puede ser justo la
+    // primera respuesta, llegada después de cargarse la lista.
+    this.abrirPanel(pro);
+  }
+
+  // ================= ENC-05 · Calificación del profesional =================
+  /**
+   * Las cinco estrellas de una nota: llenas, media y vacías.
+   *
+   * Se redondea a la media estrella y no al entero porque la diferencia entre un
+   * 4,2 y un 4,7 es justo la que interesa mirar, y con estrellas enteras las dos
+   * se pintarían igual.
+   */
+  protected estrellas(nota: number | null): ('full' | 'half' | 'empty')[] {
+    const n = nota ?? 0;
+    return [1, 2, 3, 4, 5].map((i) => (n >= i - 0.25 ? 'full' : n >= i - 0.75 ? 'half' : 'empty'));
+  }
+
+  /** '4,6' — con coma, que es como se escriben los decimales aquí. */
+  protected nota(n: number | null): string {
+    return n == null ? '—' : n.toFixed(1).replace('.', ',');
+  }
+
+  protected readonly ratingsOpen = signal(false);
+  protected readonly ratingsProf = signal<Professional | null>(null);
+  protected readonly ratingsLoading = signal(false);
+  protected readonly ratings = signal<Encuesta[]>([]);
+
+  /**
+   * ENC-05 · El detalle detrás del promedio: qué visita, qué nota y qué escribió
+   * el cliente. Un 4,6 no se puede accionar; "el profesional llegó tarde" sí.
+   */
+  protected openRatings(pro: Professional): void {
+    if (!pro.encuestas) return;
+    this.abrirPanel(pro);
+  }
+
+  private abrirPanel(pro: Professional): void {
+    this.ratingsProf.set(pro);
+    this.ratings.set([]);
+    this.ratingsOpen.set(true);
+    this.ratingsLoading.set(true);
+    this.api.encuestasProfesional(pro.id).subscribe({
+      next: (r) => {
+        this.ratings.set(r.data);
+        this.ratingsLoading.set(false);
+      },
+      error: (err) => {
+        this.ratingsLoading.set(false);
+        this.alerts.error(
+          'No se pudieron cargar las calificaciones',
+          mensajeError(err, 'El servidor no devolvió las encuestas de este profesional.'),
+        );
+      },
+    });
+  }
+
+  protected closeRatings(): void {
+    this.ratingsOpen.set(false);
+    this.ratingsProf.set(null);
+    this.ratings.set([]);
+  }
+
+  /** Los comentarios son lo que de verdad se lee del panel: se cuentan aparte. */
+  protected readonly ratingsConComentario = computed(
+    () => this.ratings().filter((e) => (e.comentarios || '').trim()).length,
+  );
+
+  protected fechaEncuesta(iso?: string | null): string {
+    return iso ? new Date(iso).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+  }
+
+  /** Color de la pastilla de una nota 1-5, igual que en Informes. */
+  protected notaClass(n?: number | null): string {
+    const v = Number(n);
+    if (!Number.isFinite(v) || v <= 0) return 'pill--muted';
+    if (v >= 4) return 'pill--success';
+    if (v >= 3) return 'pill--warning';
+    return 'pill--danger';
+  }
+
+  // ---- Acciones: modal ----
   protected openNew(): void {
     this.editingId.set(null);
     this.draft = this.emptyDraft();
-    this.drawerOpen.set(true);
+    this.modalOpen.set(true);
   }
 
   protected openEdit(professional: Professional): void {
@@ -100,12 +243,12 @@ export class ProfessionalsComponent implements OnInit {
       specialty: professional.specialty,
       status: professional.status,
     };
-    this.drawerOpen.set(true);
+    this.modalOpen.set(true);
   }
 
-  protected closeDrawer(): void {
+  protected closeModal(): void {
     if (this.saving()) return;
-    this.drawerOpen.set(false);
+    this.modalOpen.set(false);
   }
 
   /**
@@ -157,7 +300,7 @@ export class ProfessionalsComponent implements OnInit {
     req.subscribe({
       next: () => {
         this.saving.set(false);
-        this.drawerOpen.set(false);
+        this.modalOpen.set(false);
         this.alerts.success(
           id ? 'Profesional actualizado' : 'Profesional creado',
           `${body.nombre} quedó registrado con especialidad ${body.especialidad} y estado ${body.estado}.`,
@@ -166,7 +309,7 @@ export class ProfessionalsComponent implements OnInit {
       },
       error: (err) => {
         this.saving.set(false);
-        this.alerts.error('No se pudo guardar el profesional', err?.error?.error || 'Revise que el correo no esté ya registrado y que los campos obligatorios estén completos.');
+        this.alerts.error('No se pudo guardar el profesional', mensajeError(err, 'Revise que el correo no esté ya registrado y que los campos obligatorios estén completos.'));
       },
     });
   }
@@ -177,7 +320,7 @@ export class ProfessionalsComponent implements OnInit {
       next: (r) => {
         this.professionals.update((list) => list.map((p) => (p.id === r.data.id ? toView(r.data) : p)));
       },
-      error: (err) => this.alerts.error('No se pudo cambiar el estado', err?.error?.error || `El servidor rechazó el cambio de estado de ${professional.name}.`),
+      error: (err) => this.alerts.error('No se pudo cambiar el estado', mensajeError(err, `El servidor rechazó el cambio de estado de ${professional.name}.`)),
     });
   }
 
@@ -197,6 +340,7 @@ function claveTelefono(v: string): string {
 }
 
 function toView(p: Profesional): Professional {
+  const nota = Number(p.calificacion_promedio);
   return {
     id: p.id,
     name: p.nombre,
@@ -204,5 +348,8 @@ function toView(p: Profesional): Professional {
     phone: p.telefono || '',
     specialty: p.especialidad || '',
     status: p.estado,
+    ordenesEjecutadas: Number(p.ordenes_ejecutadas ?? 0),
+    encuestas: Number(p.encuestas_respondidas ?? 0),
+    nota: Number.isFinite(nota) && nota > 0 ? nota : null,
   };
 }

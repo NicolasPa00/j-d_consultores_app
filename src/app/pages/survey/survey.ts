@@ -3,7 +3,8 @@ import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../core/api.service';
-import { EncuestaPublica } from '../../core/models';
+import { mensajeError } from '../../core/errores';
+import { EncuestaPublica, MAX_COMENTARIOS_ENCUESTA } from '../../core/models';
 
 /** Etiqueta de cada nota de la escala 1-5 (ENC-03). */
 const ESCALA = [
@@ -12,6 +13,20 @@ const ESCALA = [
   { valor: 3, label: 'Neutral' },
   { valor: 4, label: 'Satisfecho' },
   { valor: 5, label: 'Muy satisfecho' },
+];
+
+/**
+ * ENC-03 · Escala de la pregunta del profesional. Se etiqueta distinto que la de
+ * satisfacción a propósito: aquí no se califica cómo salió la actividad sino a
+ * la persona que la dio, y con las mismas palabras las dos preguntas se
+ * responderían igual sin leerlas.
+ */
+const ESCALA_PROFESIONAL = [
+  { valor: 1, label: 'Muy deficiente' },
+  { valor: 2, label: 'Deficiente' },
+  { valor: 3, label: 'Aceptable' },
+  { valor: 4, label: 'Bueno' },
+  { valor: 5, label: 'Excelente' },
 ];
 
 const ESCALA_RECOMENDACION = [
@@ -42,7 +57,9 @@ export class SurveyComponent implements OnInit {
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   protected readonly escala = ESCALA;
+  protected readonly escalaProfesional = ESCALA_PROFESIONAL;
   protected readonly escalaRecomendacion = ESCALA_RECOMENDACION;
+  protected readonly maxComentarios = MAX_COMENTARIOS_ENCUESTA;
 
   protected readonly info = signal<EncuestaPublica | null>(null);
   protected readonly loading = signal(true);
@@ -51,6 +68,7 @@ export class SurveyComponent implements OnInit {
   protected readonly error = signal<string | null>(null);
 
   protected readonly satisfaccion = signal<number | null>(null);
+  protected readonly profesional = signal<number | null>(null);
   protected readonly recomendacion = signal<number | null>(null);
   protected comentarios = '';
 
@@ -73,19 +91,22 @@ export class SurveyComponent implements OnInit {
       },
       error: (err) => {
         this.loading.set(false);
-        this.error.set(err?.error?.error || 'No se pudo cargar la encuesta.');
+        this.error.set(mensajeError(err, 'No se pudo cargar la encuesta.'));
       },
     });
   }
 
-  protected elegir(pregunta: 'satisfaccion' | 'recomendacion', valor: number): void {
+  protected elegir(pregunta: 'satisfaccion' | 'profesional' | 'recomendacion', valor: number): void {
     if (this.sending()) return;
-    (pregunta === 'satisfaccion' ? this.satisfaccion : this.recomendacion).set(valor);
+    const destino = pregunta === 'satisfaccion' ? this.satisfaccion
+      : pregunta === 'profesional' ? this.profesional
+      : this.recomendacion;
+    destino.set(valor);
   }
 
-  /** Las dos escalas son obligatorias; el comentario es opcional (ENC-03). */
+  /** Las tres escalas son obligatorias; el comentario es opcional (ENC-03). */
   protected completo(): boolean {
-    return this.satisfaccion() !== null && this.recomendacion() !== null;
+    return this.satisfaccion() !== null && this.profesional() !== null && this.recomendacion() !== null;
   }
 
   protected enviar(): void {
@@ -95,6 +116,7 @@ export class SurveyComponent implements OnInit {
     this.api
       .submitSurvey(this.token, {
         satisfaccion: this.satisfaccion()!,
+        calificacion_profesional: this.profesional()!,
         recomendacion: this.recomendacion()!,
         comentarios: this.comentarios.trim() || undefined,
       })
@@ -105,7 +127,7 @@ export class SurveyComponent implements OnInit {
         },
         error: (err) => {
           this.sending.set(false);
-          this.error.set(err?.error?.error || 'No se pudo registrar su respuesta.');
+          this.error.set(mensajeError(err, 'No se pudo registrar su respuesta.'));
         },
       });
   }

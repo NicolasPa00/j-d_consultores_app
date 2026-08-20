@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
+import { mensajeError } from '../../core/errores';
 
 @Component({
   selector: 'app-login',
@@ -42,7 +43,7 @@ export class LoginComponent {
       },
       error: (err) => {
         this.loading.set(false);
-        this.error.set(err?.error?.error || 'No se pudo iniciar sesión. Verifique sus credenciales.');
+        this.error.set(mensajeError(err, 'No se pudo iniciar sesión. Verifique sus credenciales.'));
       },
     });
   }

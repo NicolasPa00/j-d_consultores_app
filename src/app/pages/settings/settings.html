@@ -103,6 +103,10 @@
 
 <!-- ===== Pestaña 2: Sistema ===== -->
 @if (activeTab() === 'system' && esMaestro()) {
+  <!-- Dos ajustes de una línea cada uno: en una pantalla ancha ocupaban una
+       fila entera para un solo campo. Se reparten en dos columnas y se apilan
+       solos por debajo de 900 px. -->
+  <div class="ajustes-par">
   <!-- Umbral de confianza (persistido en BD) -->
   <div class="card">
     <div class="card__head">
@@ -122,48 +126,117 @@
     </div>
   </div>
 
-  <!-- CFG-04 · Valores por hora por tipo de actividad (alimenta la pre-cuenta
-       de cobro, M9). Todavía NO se persiste: falta el endpoint. -->
+  <!-- CFG-05 · Día de corte del cobro a profesionales.
+       Vivía dentro de Cuentas de cobro, pero ahí es un ajuste que se configura
+       una vez y estorbaba en una pantalla de trabajo diario. -->
+  <div class="card">
+    <div class="card__head">
+      <h3 class="card__title">Día de corte del cobro</h3>
+      <span class="card__hint">Avisa, no genera nada solo</span>
+    </div>
+    <div class="card__body">
+      <div class="profile-form__row" style="align-items: end;">
+        <label class="form-field">
+          <span class="form-field__label">Día del mes (1-28)</span>
+          <input class="form-control" type="number" min="1" max="28" [(ngModel)]="diaCorte" name="diaCorte" />
+        </label>
+        <button type="button" class="btn btn--primary" [disabled]="savingCorte()" (click)="guardarDiaCorte()">
+          {{ savingCorte() ? 'Guardando…' : 'Guardar día de corte' }}
+        </button>
+      </div>
+      <p class="form-note">
+        Día de cada mes en que se cierra el cobro del mes anterior. El despliegue no tiene tareas
+        programadas, así que <strong>no genera nada por su cuenta</strong>: sirve para saber a partir
+        de cuándo un mes lleva retraso.
+      </p>
+    </div>
+  </div>
+  </div>
+
+  <!-- CFG-04 · Tipos de orden y su valor hora.
+       Es la lista con la que se categoriza CADA orden al cargarla y de la que
+       sale lo que se le paga al profesional por hora. -->
   <div class="card">
     <div class="card__head">
       <h3 class="card__title">Valores por hora según actividad</h3>
-      <span class="card__hint">Solo administradores · CFG-04</span>
+      <span class="card__hint">Tipo de orden · CFG-04</span>
     </div>
     <div class="card__body">
-      <div class="rates">
-        @for (row of rates; track row.activity) {
-          <label class="rate-row">
-            <span class="rate-row__label">{{ row.activity }}</span>
-            <span class="rate-row__input">
-              <span class="rate-row__currency">$</span>
-              <input class="form-control" type="number" [(ngModel)]="row.rate" name="rate{{ $index }}" />
-            </span>
-          </label>
-        }
+      <p class="form-note tipos__intro">
+        Cada orden se carga con uno de estos tipos —es obligatorio— y de él sale el valor hora
+        con el que se le paga al profesional. Cambiar un valor afecta a las órdenes que se
+        <strong>asignen de ahora en adelante</strong>: las ya asignadas se quedaron con el valor
+        que tenían, para que una cuenta de cobro ya enviada no cambie sola.
+      </p>
+
+      <div class="table-wrap">
+        <table class="table tipos">
+          <thead>
+            <tr>
+              <th>Tipo de orden</th>
+              <th>Valor hora</th>
+              <th>Órdenes</th>
+              <th class="col-actions">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (t of tipos(); track t.id) {
+              <tr [class.tipos__fila--off]="!t.activo">
+                <td>
+                  <span class="tipos__nombre">{{ t.nombre }}</span>
+                  @if (!t.activo) { <span class="pill pill--muted">Desactivado</span> }
+                </td>
+                <td>
+                  <span class="rate-row__input">
+                    <span class="rate-row__currency">$</span>
+                    <input
+                      class="form-control"
+                      type="number"
+                      min="0"
+                      step="1000"
+                      [(ngModel)]="valorTipo[t.id]"
+                      [name]="'valor' + t.id"
+                      [disabled]="guardandoTipo() === t.id"
+                      (blur)="guardarValorTipo(t)"
+                    />
+                  </span>
+                </td>
+                <td class="mono">{{ t.ordenes ?? 0 }}</td>
+                <td class="col-actions">
+                  <button
+                    type="button"
+                    class="btn btn--ghost btn--sm"
+                    [disabled]="guardandoTipo() === t.id"
+                    (click)="alternarTipo(t)"
+                  >
+                    {{ t.activo ? 'Desactivar' : 'Reactivar' }}
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="table__empty">
+                  {{ cargandoTipos() ? 'Cargando…' : 'Todavía no hay tipos de orden. Cree el primero abajo.' }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
-    </div>
-  </div>
 
-  <!-- ASG-06 · Notificación por WhatsApp: configurable y hoy sin efecto real. -->
-  <div class="card system-extra">
-    <div class="card__body">
-      <div class="toggle-row">
-        <div class="toggle-row__text">
-          <span class="toggle-row__label">Notificaciones automáticas por WhatsApp</span>
-          <span class="toggle-row__hint">Disponible en la Fase 3 del proyecto.</span>
-        </div>
-
-        <button
-          type="button"
-          class="switch"
-          [class.switch--on]="whatsappEnabled"
-          role="switch"
-          [attr.aria-checked]="whatsappEnabled"
-          (click)="whatsappEnabled = !whatsappEnabled"
-        >
-          <span class="switch__knob"></span>
+      <form class="tipo-nuevo" (ngSubmit)="crearTipo()">
+        <label class="form-field">
+          <span class="form-field__label">Nuevo tipo</span>
+          <input class="form-control" type="text" placeholder="Ej. Inducción" [(ngModel)]="tipoNuevo.nombre" name="tipoNombre" />
+        </label>
+        <label class="form-field">
+          <span class="form-field__label">Valor hora</span>
+          <input class="form-control" type="number" min="0" step="1000" [(ngModel)]="tipoNuevo.valor_hora" name="tipoValor" />
+        </label>
+        <button type="submit" class="btn btn--primary" [disabled]="guardandoTipo() === 'nuevo'">
+          {{ guardandoTipo() === 'nuevo' ? 'Creando…' : 'Agregar tipo' }}
         </button>
-      </div>
+      </form>
     </div>
   </div>
 }
@@ -523,8 +596,15 @@
           <input class="form-control" type="text" [(ngModel)]="preguntas.titulo" name="qTitulo" />
         </label>
         <label class="form-field">
-          <span class="form-field__label">Pregunta de satisfacción (escala 1-5)</span>
+          <span class="form-field__label">Pregunta sobre la actividad (escala 1-5)</span>
           <input class="form-control" type="text" [(ngModel)]="preguntas.satisfaccion" name="qSat" />
+        </label>
+        <label class="form-field">
+          <span class="form-field__label">Pregunta sobre el profesional (escala 1-5)</span>
+          <input class="form-control" type="text" [(ngModel)]="preguntas.profesional" name="qProf" />
+          <span class="form-field__hint">
+            Es la nota que promedia la calificación de cada asesor en Profesionales.
+          </span>
         </label>
         <label class="form-field">
           <span class="form-field__label">Pregunta de recomendación (escala 1-5)</span>
@@ -536,9 +616,10 @@
         </label>
 
         <p class="form-note">
-          Solo cambia la <strong>redacción</strong>. Las dos escalas siguen siendo de 1 a 5 y siguen
-          alimentando el promedio de satisfacción de Informes, así que las respuestas anteriores
-          siguen siendo comparables.
+          Solo cambia la <strong>redacción</strong>. Las tres escalas siguen siendo de 1 a 5 y siguen
+          alimentando los promedios de Informes y la calificación de los profesionales, así que las
+          respuestas anteriores siguen siendo comparables. Las observaciones admiten hasta
+          <strong>500 caracteres</strong>.
         </p>
 
         <div class="profile-form__actions">

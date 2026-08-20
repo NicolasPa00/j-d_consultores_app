@@ -3,10 +3,11 @@ import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../core/api.service';
+import { mensajeError } from '../../core/errores';
 import { EstadoPrecuenta, PrecuentaPublica } from '../../core/models';
 
 /**
- * M9 · PRE-05 · Página pública donde el profesional revisa su pre-cuenta y la
+ * M9 · PRE-05 · Página pública donde el profesional revisa su cuenta de cobro y la
  * acepta o la rechaza. Sin login: el token del correo es la credencial, igual
  * que en el portal de soportes (M6) y la encuesta (M8).
  *
@@ -42,7 +43,7 @@ export class PrecuentaComponent implements OnInit {
     if (!this.isBrowser) return;
     if (!this.token) {
       this.loading.set(false);
-      this.error.set('Enlace inválido: falta el token de la pre-cuenta.');
+      this.error.set('Enlace inválido: falta el token de la cuenta de cobro.');
       return;
     }
     this.api.publicPrecuenta(this.token).subscribe({
@@ -55,7 +56,7 @@ export class PrecuentaComponent implements OnInit {
       },
       error: (err) => {
         this.loading.set(false);
-        this.error.set(err?.error?.error || 'No se pudo cargar la pre-cuenta.');
+        this.error.set(mensajeError(err, 'No se pudo cargar la cuenta de cobro.'));
       },
     });
   }
@@ -89,7 +90,7 @@ export class PrecuentaComponent implements OnInit {
       },
       error: (err) => {
         this.sending.set(false);
-        this.error.set(err?.error?.error || 'No se pudo registrar su respuesta.');
+        this.error.set(mensajeError(err, 'No se pudo registrar su respuesta.'));
       },
     });
   }

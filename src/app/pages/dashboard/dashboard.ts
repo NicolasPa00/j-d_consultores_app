@@ -3,6 +3,7 @@ import { isPlatformBrowser, NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
+import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
 import { DashboardData, Orden, Profesional, SoporteEnviado } from '../../core/models';
@@ -51,7 +52,8 @@ interface EstadoStat {
 const ESTADOS: { key: string; label: string; tone: EstadoStat['tone'] }[] = [
   { key: 'SIN PROGRAMAR', label: 'Sin programar', tone: 'slate' },
   { key: 'PROGRAMADA', label: 'Programadas', tone: 'blue' },
-  { key: 'EJECUTADA', label: 'Ejecutadas', tone: 'green' },
+  { key: 'EJECUTADA', label: 'Ejecutadas', tone: 'amber' },
+  { key: 'FINALIZADA', label: 'Finalizadas', tone: 'green' },
 ];
 
 /**
@@ -136,13 +138,15 @@ export class DashboardComponent implements OnInit {
    * ve su trabajo, y su histórico solo crece: sin paginar, con un par de años de
    * órdenes había que bajar media pantalla para llegar al pie.
    */
-  protected readonly pagMias = paginar(this.misOrdenes, 25);
+  protected readonly pagMias = paginar(this.misOrdenes);
   protected readonly misKpis = computed<Kpi[]>(() => {
     const todas = this.misOrdenes();
     const cuenta = (estado: string) => todas.filter((o) => o.estado === estado).length;
     return [
       { label: 'Programadas', value: String(cuenta('PROGRAMADA')), icon: 'calendar', accent: 'blue' },
-      { label: 'Ejecutadas', value: String(cuenta('EJECUTADA')), icon: 'check', accent: 'slate' },
+      // "Ejecutadas" suma las finalizadas: el KPI mide trabajo hecho, y una
+      // orden revisada no deja de estarlo. La distinción se ve en la bandeja.
+      { label: 'Ejecutadas', value: String(cuenta('EJECUTADA') + cuenta('FINALIZADA')), icon: 'check', accent: 'slate' },
       { label: 'Horas asignadas', value: String(todas.reduce((s, o) => s + o.horas, 0)), icon: 'clock', accent: 'cyan' },
     ];
   });
@@ -228,7 +232,7 @@ export class DashboardComponent implements OnInit {
       },
       error: (err) => {
         this.cargandoMias.set(false);
-        this.alerts.error('No se pudieron cargar sus órdenes', err?.error?.error || 'El servidor no respondió la agenda.');
+        this.alerts.error('No se pudieron cargar sus órdenes', mensajeError(err, 'El servidor no respondió la agenda.'));
       },
     });
   }
@@ -286,7 +290,7 @@ export class DashboardComponent implements OnInit {
       },
       error: (err) => {
         this.saving.set(false);
-        this.alerts.error('No se pudo asignar la orden', err?.error?.error || 'El servidor rechazó la asignación. Verifique el profesional y la fecha programada.');
+        this.alerts.error('No se pudo asignar la orden', mensajeError(err, 'El servidor rechazó la asignación. Verifique el profesional y la fecha programada.'));
       },
     });
   }
@@ -304,7 +308,8 @@ export class DashboardComponent implements OnInit {
   protected pillEstado(estado?: string | null): string {
     switch (estado) {
       case 'PROGRAMADA': return 'pill--info';
-      case 'EJECUTADA': return 'pill--success';
+      case 'EJECUTADA': return 'pill--warning';
+      case 'FINALIZADA': return 'pill--success';
       default: return 'pill--muted'; // SIN PROGRAMAR
     }
   }
@@ -320,6 +325,7 @@ function keyToKpi(estado: string): string {
     case 'SIN PROGRAMAR': return 'sin_programar';
     case 'PROGRAMADA': return 'programadas';
     case 'EJECUTADA': return 'ejecutadas';
+    case 'FINALIZADA': return 'finalizadas';
     default: return '';
   }
 }

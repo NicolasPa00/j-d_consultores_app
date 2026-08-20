@@ -199,6 +199,37 @@
   color: var(--text-muted);
 }
 
+/* Aclaración del panel: lo importante de este cambio es que NO se gastó IA. */
+.dup-alert__lead {
+  margin: 0.15rem 0 0.6rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* Salida para el falso positivo: discreta, pero presente. */
+.dup-item__force {
+  margin-left: 0.45rem;
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--secondary-color);
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.dup-item__force:hover {
+  color: var(--primary-color);
+}
+
+/* Mientras se comprueba la selección contra lo ya cargado. */
+.uploader__hint--busy {
+  color: var(--secondary-color);
+  font-weight: 600;
+}
+
 /* Banner de alerta dentro del modal (usa el primitivo global .alert) */
 .ai-banner {
   margin-bottom: 1.25rem;
@@ -745,4 +776,18 @@
     width: 100%;
     justify-content: flex-end;
   }
+}
+
+/* CFG-04 · Desplegable del tipo de orden dentro de la tabla. */
+.form-control--sm {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.82rem;
+  min-width: 130px;
+}
+
+/* En el modal, separado de la rejilla de campos extraídos. */
+.tipo-orden {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-soft);
 }

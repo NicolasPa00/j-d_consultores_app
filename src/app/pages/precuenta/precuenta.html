@@ -5,7 +5,7 @@
     </header>
 
     <div class="pc__head">
-      <span class="pill pill--info">Pre-cuenta de cobro</span>
+      <span class="pill pill--info">Cuenta de cobro</span>
       <h1 class="pc__title">{{ info()?.periodo_largo || '' }}</h1>
       <p class="pc__prof">{{ info()?.profesional_nombre || '' }}</p>
     </div>
@@ -13,7 +13,7 @@
     @if (loading()) {
       <div class="pc__card pc__state">
         <span class="spinner" aria-hidden="true"></span>
-        <p>Cargando su pre-cuenta…</p>
+        <p>Cargando su cuenta de cobro…</p>
       </div>
     } @else if (error(); as msg) {
       <div class="alert alert--error" role="alert">
@@ -44,7 +44,7 @@
           }
         </div>
         <h2 class="final__title">
-          {{ estado === 'aceptada' ? 'Pre-cuenta aceptada' : 'Pre-cuenta rechazada' }}
+          {{ estado === 'aceptada' ? 'Cuenta de cobro aceptada' : 'Cuenta de cobro rechazada' }}
         </h2>
         <p class="final__text">
           @if (estado === 'aceptada') {
@@ -103,13 +103,13 @@
       <div class="pc__card">
         @if (!modoRechazo()) {
           <p class="decision__intro">
-            Revise el detalle. Si todo está correcto, acepte la pre-cuenta; si algo no cuadra,
+            Revise el detalle. Si todo está correcto, acepte la cuenta; si algo no cuadra,
             recházela indicando qué debemos corregir.
           </p>
           <div class="decision__acciones">
             <button type="button" class="btn btn--primary btn--block" [disabled]="sending()" (click)="aceptar()">
               @if (sending()) { <span class="spinner" aria-hidden="true"></span> }
-              {{ sending() ? 'Registrando…' : 'Aceptar pre-cuenta' }}
+              {{ sending() ? 'Registrando…' : 'Aceptar la cuenta' }}
             </button>
             <button type="button" class="btn btn--ghost btn--block" [disabled]="sending()" (click)="abrirRechazo()">
               Rechazar con observaciones

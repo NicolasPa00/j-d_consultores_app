@@ -1,145 +1,90 @@
 <section class="page-head">
-  <h2 class="page-head__title">Pre-cuentas de cobro</h2>
+  <h2 class="page-head__title">Cuentas de cobro</h2>
   <p class="page-head__sub">
-    Módulo 9 · Cierre mensual de horas ejecutadas, envío al profesional y seguimiento de su aceptación
+    Lo que se le debe a cada profesional, mes a mes. Una orden entra aquí cuando se aceptan sus soportes.
   </p>
 </section>
 
 <div class="tabs" role="tablist">
-  <button
-    type="button" class="tab" role="tab"
-    [class.tab--active]="tab() === 'precuentas'"
-    [attr.aria-selected]="tab() === 'precuentas'"
-    (click)="setTab('precuentas')"
-  >
-    Pre-cuentas
-  </button>
-  <button
-    type="button" class="tab" role="tab"
-    [class.tab--active]="tab() === 'tarifas'"
-    [attr.aria-selected]="tab() === 'tarifas'"
-    (click)="setTab('tarifas')"
-  >
-    Tarifas por actividad
-  </button>
+  @for (t of tabs; track t.key) {
+    <button
+      type="button" class="tab" role="tab"
+      [class.tab--active]="tab() === t.key"
+      [attr.aria-selected]="tab() === t.key"
+      (click)="setTab(t.key)"
+    >
+      {{ t.label }}
+      @if (t.key !== 'tarifas') {
+        <span class="tab__count">{{ conteo(t.key) }}</span>
+      }
+    </button>
+  }
 </div>
 
-<!-- ==================== PRE-CUENTAS ==================== -->
-@if (tab() === 'precuentas') {
-  <!-- CFG-05 · El cierre se dispara a mano (no hay cron en el despliegue), así
-       que el día de corte sirve para avisar de los meses que se quedaron sin
-       cobrar en vez de generarlos solo. -->
-  @if (periodosVencidos().length) {
-    <div class="alert alert--warning corte-aviso">
-      <strong>Hay {{ periodosVencidos().length }} periodo(s) sin cerrar</strong> que ya pasaron el día de corte
-      ({{ diaCorte() }} de cada mes):
-      @for (p of periodosVencidos(); track p.periodo) {
-        <button type="button" class="chip chip--warn" (click)="periodoGenerar = p.periodo">
-          {{ p.periodo }} · {{ horas(p.horas) }} h
-        </button>
-      }
-    </div>
-  }
-
-  @if (puedeGestionar()) {
-    <!-- PRE-01 · Cierre de mes -->
-    <div class="card generar">
-      <div class="generar__main">
-        <label class="form-field generar__field">
-          <span class="form-field__label">Periodo a cerrar</span>
-          <input class="form-control" type="month" [(ngModel)]="periodoGenerar" />
-        </label>
-        <button type="button" class="btn btn--primary" [disabled]="generating()" (click)="generar()">
-          @if (generating()) { <span class="spinner" aria-hidden="true"></span> }
-          {{ generating() ? 'Calculando…' : 'Generar pre-cuentas del mes' }}
-        </button>
-      </div>
-      <p class="generar__hint">
-        Suma las horas de las órdenes <strong>EJECUTADAS</strong> del mes por profesional y las valora con su
-        tarifa vigente. Se puede repetir: recalcula las abiertas y respeta las que el profesional ya respondió.
-      </p>
-      @if (periodos().length) {
-        <div class="periodos">
-          <span class="periodos__label">Meses con horas ejecutadas:</span>
-          @for (p of periodos(); track p.periodo) {
-            <button type="button" class="chip" [class.chip--on]="periodoGenerar === p.periodo" (click)="periodoGenerar = p.periodo">
-              {{ p.periodo }} · {{ horas(p.horas) }} h · {{ p.profesionales }} prof.
-              @if (p.precuentas_generadas) { <span class="chip__ok" title="Ya tiene pre-cuentas generadas">✓</span> }
-            </button>
+<!-- ==================== CUENTAS (pendientes y aceptadas) ==================== -->
+@if (tab() !== 'tarifas') {
+  <!-- Año + meses. Es lo primero porque la pregunta al entrar siempre es la
+       misma: "¿de este año, qué queda por pagar?". -->
+  <div class="card periodo-nav">
+    <div class="periodo-nav__anio">
+      <label class="form-field">
+        <span class="form-field__label">Año</span>
+        <select class="form-control" [ngModel]="anio()" (ngModelChange)="cambiarAnio($event)" aria-label="Año">
+          @for (a of anios(); track a) {
+            <option [value]="a" [selected]="a === anio()">{{ a }}</option>
           }
-        </div>
-      }
-
-      <!-- CFG-05 · Día de corte configurable -->
-      <div class="corte">
-        <label class="form-field corte__field">
-          <span class="form-field__label">Día de corte</span>
-          <input class="form-control" type="number" min="1" max="28" [(ngModel)]="diaCorteEdit" />
-        </label>
-        <button type="button" class="btn btn--ghost" [disabled]="savingCorte()" (click)="guardarDiaCorte()">
-          {{ savingCorte() ? 'Guardando…' : 'Guardar día de corte' }}
-        </button>
-        <p class="corte__hint">
-          Día de cada mes en que se cierra el cobro del mes anterior. <strong>No genera nada solo</strong>:
-          a partir de esa fecha esta pantalla avisa de los periodos que sigan sin cerrarse.
-        </p>
-      </div>
-    </div>
-  }
-
-  <!-- Filtros (PRE-08) -->
-  <div class="toolbar">
-    <div class="toolbar__filters">
-      <select class="form-control toolbar__control" [ngModel]="filtroPeriodo()" (ngModelChange)="onFiltro('periodo', $event)" aria-label="Filtrar por periodo">
-        <option value="">Todos los periodos</option>
-        @for (p of periodos(); track p.periodo) {
-          <option [value]="p.periodo">{{ periodoLargo(p.periodo) }}</option>
-        }
-      </select>
-      <select class="form-control toolbar__control" [ngModel]="filtroProf()" (ngModelChange)="onFiltro('prof', $event)" aria-label="Filtrar por profesional">
-        <option value="">Todos los profesionales</option>
-        @for (p of professionals(); track p.id) {
-          <option [value]="p.id">{{ p.nombre }}</option>
-        }
-      </select>
-      <select class="form-control toolbar__control" [ngModel]="filtroEstado()" (ngModelChange)="onFiltro('estado', $event)" aria-label="Filtrar por estado">
-        <option value="">Todos los estados</option>
-        @for (e of estados; track e.key) {
-          <option [value]="e.key">{{ e.label }}</option>
-        }
-      </select>
-      @if (hayFiltros()) {
-        <button type="button" class="btn btn--ghost btn--sm" (click)="limpiarFiltros()">Limpiar</button>
-      }
+        </select>
+      </label>
     </div>
 
-    <div class="toolbar__export">
-      <!-- PRE-09 · Exportación para el proceso de pago -->
-      <button type="button" class="btn btn--ghost btn--sm" (click)="exportar()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
-          <path d="M14 3v5h5" />
-          <path d="m9.5 12.5 5 5M14.5 12.5l-5 5" />
-        </svg>
-        Exportar aceptadas
+    <div class="meses" role="group" aria-label="Filtrar por mes">
+      <button
+        type="button" class="mes" [class.mes--on]="!mes()"
+        (click)="cambiarMes('')"
+      >
+        <span class="mes__nombre">Todo el año</span>
+        <span class="mes__dato">{{ pesos(totalDelAnio()) }}</span>
       </button>
+      @for (m of meses; track m.num) {
+        <button
+          type="button"
+          class="mes"
+          [class.mes--on]="mes() === m.num"
+          [class.mes--vacio]="!resumenMes(m.num).filas"
+          [class.mes--pendiente]="resumenMes(m.num).pendientes > 0"
+          (click)="cambiarMes(m.num)"
+        >
+          <span class="mes__nombre">{{ m.label }}</span>
+          @if (resumenMes(m.num); as r) {
+            @if (r.filas) {
+              <span class="mes__dato">{{ pesos(r.monto) }}</span>
+              @if (r.pendientes) {
+                <span class="mes__pend">{{ r.pendientes }} por cobrar</span>
+              } @else {
+                <span class="mes__ok">Al día</span>
+              }
+            } @else {
+              <span class="mes__dato mes__dato--vacio">—</span>
+            }
+          }
+        </button>
+      }
     </div>
   </div>
 
-  <!-- Totales del recorte visible -->
-  @if (precuentas().length) {
+  @if (filas().length) {
     <div class="resumen">
       <div class="resumen__item">
-        <span class="resumen__label">Pre-cuentas</span>
-        <strong class="resumen__value">{{ precuentas().length }}</strong>
+        <span class="resumen__label">Cuentas</span>
+        <strong class="resumen__value">{{ filas().length }}</strong>
       </div>
       <div class="resumen__item">
         <span class="resumen__label">Horas</span>
-        <strong class="resumen__value">{{ horas(horasFiltradas()) }}</strong>
+        <strong class="resumen__value">{{ horas(horasVisibles()) }}</strong>
       </div>
       <div class="resumen__item resumen__item--money">
         <span class="resumen__label">Total</span>
-        <strong class="resumen__value">{{ pesos(totalFiltrado()) }}</strong>
+        <strong class="resumen__value">{{ pesos(totalVisible()) }}</strong>
       </div>
     </div>
   }
@@ -149,57 +94,105 @@
       <table class="table">
         <thead>
           <tr>
-            <th>Periodo</th>
+            <th>Mes</th>
             <th>Profesional</th>
             <th>Órdenes</th>
             <th>Horas</th>
             <th>Total a pagar</th>
             <th>Estado</th>
-            <th class="col-actions">Acciones</th>
+            <th class="col-actions">Opciones</th>
           </tr>
         </thead>
         <tbody>
-          @for (p of pag.visibles(); track p.id) {
+          @for (f of pag.visibles(); track f.periodo + f.profesional_id) {
             <tr>
-              <td class="mono">{{ p.periodo }}</td>
+              <td>{{ nombreMes(f.periodo) }}</td>
               <td>
                 <div class="who">
-                  <span class="who__avatar" aria-hidden="true">{{ p.profesional_nombre.charAt(0) }}</span>
-                  <span class="who__name">{{ p.profesional_nombre }}</span>
+                  <span class="who__avatar" aria-hidden="true">{{ f.profesional_nombre.charAt(0) }}</span>
+                  <span class="who__name">{{ f.profesional_nombre }}</span>
                 </div>
               </td>
-              <td class="mono">{{ p.total_ordenes ?? '—' }}</td>
-              <td class="mono">{{ horas(p.total_horas) }}</td>
-              <td class="mono money">{{ pesos(p.total_monto) }}</td>
-              <td>
-                <span class="pill" [class]="estadoClass(p.estado)">{{ p.estado }}</span>
-                @if (p.estado === 'rechazada' && p.observaciones) {
-                  <span class="motivo" [title]="p.observaciones">{{ p.observaciones }}</span>
+              <td class="mono">{{ f.total_ordenes }}</td>
+              <td class="mono">{{ horas(f.total_horas) }}</td>
+              <td class="mono money">
+                {{ pesos(f.total_monto) }}
+                <!-- PRE-02 · Sin tarifa la cuenta saldría en $0 y no se puede
+                     generar: se dice aquí, que es donde se mira la cifra. -->
+                @if (f.ordenes_sin_tarifa) {
+                  <span class="sin-tarifa" [title]="avisoSinTarifa(f)">sin tarifa</span>
                 }
               </td>
+              <td>
+                <span class="pill" [class]="estadoClass(f.estado)">{{ estadoLabel(f.estado) }}</span>
+              </td>
               <td class="col-actions">
-                <button type="button" class="btn btn--ghost btn--sm" (click)="abrirDetalle(p)">Detalle</button>
-                <button type="button" class="btn btn--ghost btn--sm" (click)="verPdf(p)">PDF</button>
-                @if (puedeEnviar(p)) {
-                  <button
-                    type="button" class="btn btn--secondary btn--sm"
-                    [disabled]="sendingId() === p.id"
-                    (click)="enviar(p)"
-                  >
-                    {{ sendingId() === p.id ? 'Enviando…' : (p.estado === 'enviada' ? 'Reenviar' : 'Enviar') }}
-                  </button>
-                }
+                <div class="row-actions">
+                  @if (f.precuenta_id) {
+                    <button type="button" class="icon-action" (click)="abrirDetalle(f)" aria-label="Ver detalle" title="Ver detalle">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    </button>
+                    <button type="button" class="icon-action" (click)="verPdf(f)" aria-label="Ver documento" title="Ver documento">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+                        <path d="M14 3v5h5" />
+                        <path d="M9 13h6M9 17h4" />
+                      </svg>
+                    </button>
+                  }
+                  @if (puedeGestionar()) {
+                    @if (!f.precuenta_id || f.estado === 'rechazada') {
+                      <button
+                        type="button" class="icon-action"
+                        [disabled]="ocupada() === clave(f) || !!f.ordenes_sin_tarifa"
+                        (click)="generar(f)"
+                        [attr.aria-label]="f.ordenes_sin_tarifa ? avisoSinTarifa(f) : 'Generar cuenta de cobro'"
+                        [title]="f.ordenes_sin_tarifa ? avisoSinTarifa(f) : 'Generar cuenta de cobro'"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+                          <path d="M14 3v5h5" />
+                          <path d="M12 12v5M9.5 14.5h5" />
+                        </svg>
+                      </button>
+                    }
+                    @if (puedeEnviar(f)) {
+                      <button
+                        type="button" class="icon-action"
+                        [disabled]="ocupada() === clave(f)"
+                        (click)="enviar(f)"
+                        [attr.aria-label]="f.estado === 'enviada' ? 'Reenviar al profesional' : 'Enviar al profesional'"
+                        [title]="f.estado === 'enviada' ? 'Reenviar al profesional' : 'Enviar al profesional'"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <path d="m22 2-7 20-4-9-9-4Z" />
+                          <path d="M22 2 11 13" />
+                        </svg>
+                      </button>
+                    }
+                    @if (f.estado === 'rechazada') {
+                      <button type="button" class="icon-action" (click)="marcarAceptada(f)" aria-label="Marcar como aceptada" title="Marcar como aceptada">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <path d="M20 6 9 17l-5-5" />
+                        </svg>
+                      </button>
+                    }
+                  }
+                </div>
               </td>
             </tr>
           } @empty {
             <tr>
               <td colspan="7" class="table__empty">
                 @if (loading()) {
-                  Cargando pre-cuentas…
-                } @else if (hayFiltros()) {
-                  No hay pre-cuentas que coincidan con los filtros.
+                  Cargando…
+                } @else if (tab() === 'aceptadas') {
+                  Todavía no hay cuentas aceptadas {{ rotuloRecorte() }}.
                 } @else {
-                  Todavía no hay pre-cuentas. Genere el cierre de un mes para empezar.
+                  No queda nada por cobrar {{ rotuloRecorte() }}.
                 }
               </td>
             </tr>
@@ -208,8 +201,22 @@
       </table>
     </div>
 
-    <app-paginador [pag]="pag" etiqueta="pre-cuentas" />
+    <app-paginador [pag]="pag" etiqueta="cuentas" />
   </div>
+
+  @if (tab() === 'aceptadas' && filas().length) {
+    <div class="acciones-pie">
+      <!-- PRE-09 · Exportación para el proceso de pago -->
+      <button type="button" class="btn btn--ghost btn--sm" (click)="exportar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+          <path d="M14 3v5h5" />
+          <path d="m9.5 12.5 5 5M14.5 12.5l-5 5" />
+        </svg>
+        Exportar a Excel
+      </button>
+    </div>
+  }
 }
 
 <!-- ==================== TARIFAS (PRE-02) ==================== -->
@@ -222,7 +229,8 @@
       <p class="tarifas__intro">
         El cálculo busca la tarifa del profesional para el <strong>tipo de actividad</strong> de la orden,
         vigente al cierre del periodo. Si la orden no trae tipo de actividad o no hay tarifa, se usa el
-        <strong>valor hora base</strong> del profesional (ficha de Profesionales).
+        <strong>valor hora base</strong> del profesional (ficha de Profesionales). Sin ninguno de los dos
+        la cuenta saldría en $0 y no se puede generar.
       </p>
 
       <label class="form-field">
@@ -263,7 +271,7 @@
                 <th>Actividad</th>
                 <th>Valor hora</th>
                 <th>Vigente desde</th>
-                @if (puedeGestionar()) { <th class="col-actions"></th> }
+                @if (puedeGestionar()) { <th class="col-actions">Opciones</th> }
               </tr>
             </thead>
             <tbody>
@@ -274,7 +282,12 @@
                   <td class="mono">{{ fecha(t.vigente_desde) }}</td>
                   @if (puedeGestionar()) {
                     <td class="col-actions">
-                      <button type="button" class="btn btn--ghost btn--sm" (click)="eliminarTarifa(t)">Eliminar</button>
+                      <button type="button" class="icon-action" (click)="eliminarTarifa(t)" aria-label="Eliminar tarifa" title="Eliminar tarifa">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <path d="M4 7h16M10 11v6M14 11v6" />
+                          <path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M9 7V4h6v3" />
+                        </svg>
+                      </button>
                     </td>
                   }
                 </tr>
@@ -284,7 +297,7 @@
                     @if (loadingTarifas()) {
                       Cargando tarifas…
                     } @else {
-                      Sin tarifas propias. Se usará el valor hora base del profesional.
+                      Sin tarifas por actividad: se aplicará el valor hora base de su ficha.
                     }
                   </td>
                 </tr>
@@ -303,7 +316,7 @@
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pcTitle">
     <header class="modal__head">
       <div>
-        <h3 class="modal__title" id="pcTitle">Pre-cuenta · {{ periodoLargo(pc.periodo) }}</h3>
+        <h3 class="modal__title" id="pcTitle">Cuenta de cobro · {{ periodoLargo(pc.periodo) }}</h3>
         <p class="modal__sub">
           {{ pc.profesional_nombre }}
           @if (pc.profesional_correo) { · {{ pc.profesional_correo }} }
@@ -318,15 +331,17 @@
 
     <div class="modal__body">
       <div class="detalle__head">
-        <span class="pill" [class]="estadoClass(pc.estado)">{{ pc.estado }}</span>
+        <span class="pill" [class]="estadoClass(pc.estado)">{{ estadoLabel(pc.estado) }}</span>
         @if (pc.enviado_en) { <span class="detalle__meta">Enviada: {{ fecha(pc.enviado_en) }}</span> }
         @if (pc.respondido_en) { <span class="detalle__meta">Respondida: {{ fecha(pc.respondido_en) }}</span> }
       </div>
 
+      <!-- Seguimiento interno: lo que el profesional escribió al rechazar. No
+           viaja en el documento que se le manda; se lee aquí. -->
       @if (pc.observaciones) {
         <div class="alert" [class]="pc.estado === 'rechazada' ? 'alert--error' : 'alert--info'">
           <div class="alert__body">
-            <p class="alert__title">Observaciones del profesional</p>
+            <p class="alert__title">Nota interna del seguimiento</p>
             <p class="alert__detail">{{ pc.observaciones }}</p>
           </div>
         </div>
@@ -365,7 +380,7 @@
                   <td class="mono money">{{ pesos(i.monto) }}</td>
                 </tr>
               } @empty {
-                <tr><td colspan="7" class="table__empty">Sin órdenes ejecutadas en el periodo.</td></tr>
+                <tr><td colspan="7" class="table__empty">Sin órdenes en el periodo.</td></tr>
               }
             </tbody>
             <tfoot>
@@ -383,18 +398,7 @@
 
     <footer class="modal__footer">
       <button type="button" class="btn btn--ghost" (click)="cerrarDetalle()">Cerrar</button>
-      <button type="button" class="btn btn--ghost" (click)="verPdf(pc)">Ver PDF</button>
-      <!-- PRE-07 · Cierre manual tras revisar un rechazo -->
-      @if (puedeGestionar() && pc.estado === 'rechazada') {
-        <button type="button" class="btn btn--primary" (click)="cambiarEstado(pc, 'aceptada')">
-          Marcar como aceptada
-        </button>
-      }
-      @if (puedeEnviar(pc)) {
-        <button type="button" class="btn btn--primary" [disabled]="sendingId() === pc.id" (click)="enviar(pc)">
-          {{ pc.estado === 'enviada' ? 'Reenviar al profesional' : 'Enviar al profesional' }}
-        </button>
-      }
+      <button type="button" class="btn btn--ghost" (click)="verPdfDe(pc.id)">Ver documento</button>
     </footer>
   </div>
 }

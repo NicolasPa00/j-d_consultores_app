@@ -1,4 +1,4 @@
-/* M9 · Pre-cuentas de cobro. Reutiliza el lenguaje visual de Informes
+/* M9 · Cuentas de cobro. Reutiliza el lenguaje visual de Informes y Órdenes
    (segmentado, toolbar, tabla y modal); los estilos se repiten aquí porque la
    encapsulación de Angular no cruza de un componente a otro. */
 
@@ -39,144 +39,117 @@
   border-color: var(--accent-color);
 }
 
-/* ===== Generación del cierre (PRE-01) ===== */
-.generar {
-  padding: 1.25rem 1.5rem;
-  margin-bottom: 1.25rem;
-}
-
-.generar__main {
-  display: flex;
-  align-items: flex-end;
-  gap: 0.9rem;
-  flex-wrap: wrap;
-}
-
-.generar__field {
-  margin: 0;
-  min-width: 190px;
-}
-
-.generar__hint {
-  margin: 0.85rem 0 0;
-  font-size: 0.82rem;
-  line-height: 1.55;
-  color: var(--text-muted);
-}
-
-.periodos {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  flex-wrap: wrap;
-  margin-top: 0.9rem;
-  padding-top: 0.9rem;
-  border-top: 1px dashed var(--border-soft);
-}
-
-.periodos__label {
-  font-size: 0.76rem;
+.tab__count {
+  margin-left: 0.45rem;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.chip {
-  padding: 0.35rem 0.75rem;
-  border: 1px solid var(--border-soft);
+  color: inherit;
+  background: rgba(15, 23, 42, 0.08);
   border-radius: 999px;
-  background: #fff;
-  color: var(--text-main);
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.chip:hover {
-  border-color: var(--secondary-color);
-  color: var(--secondary-color);
-}
-
-.chip--on,
-.chip--on:hover {
-  background: var(--primary-color);
-  border-color: var(--primary-color);
-  color: #fff;
-}
-
-/* Periodo que ya tiene pre-cuentas generadas (CFG-05). */
-.chip__ok {
-  margin-left: 0.3rem;
-  color: var(--success);
-  font-weight: 700;
-}
-
-/* ===== CFG-05 · Día de corte ===== */
-.corte {
+/* ===== Año + meses =====
+   Es el mando de la vista: se entra por aquí y todo lo de abajo obedece. */
+.periodo-nav {
   display: flex;
   align-items: flex-end;
-  gap: 0.9rem;
+  gap: 1.25rem;
   flex-wrap: wrap;
-  margin-top: 0.9rem;
-  padding-top: 0.9rem;
-  border-top: 1px dashed var(--border-soft);
+  padding: 1.1rem 1.35rem;
+  margin-bottom: 1.15rem;
 }
 
-.corte__field {
-  margin: 0;
-  width: 130px;
+.periodo-nav__anio .form-control {
+  min-width: 120px;
 }
 
-.corte__hint {
-  flex: 1 1 260px;
-  margin: 0;
+.meses {
+  display: flex;
+  gap: 0.4rem;
+  flex: 1 1 420px;
+  flex-wrap: wrap;
+}
+
+.mes {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  min-width: 84px;
+  padding: 0.5rem 0.7rem;
+  font-family: inherit;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.mes:hover {
+  background: #f1f5f9;
+}
+
+.mes--on {
+  border-color: var(--primary-color);
+  box-shadow: inset 0 0 0 1px var(--primary-color);
+}
+
+/* Un mes sin trabajo no se esconde: su hueco es la respuesta a "¿y ese mes?". */
+.mes--vacio {
+  opacity: 0.55;
+}
+
+.mes--pendiente {
+  border-color: color-mix(in srgb, var(--warning) 55%, transparent);
+}
+
+.mes__nombre {
   font-size: 0.8rem;
-  line-height: 1.5;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.mes__dato {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.mes__dato--vacio {
   color: var(--text-muted);
 }
 
-/* Aviso de periodos vencidos: va sobre la tarjeta de generación. */
-.corte-aviso {
-  display: block;
-  margin-bottom: 1.25rem;
+.mes__pend {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--warning);
 }
 
-.corte-aviso .chip {
-  margin: 0.35rem 0.35rem 0 0;
+.mes__ok {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--success);
 }
 
-.chip--warn {
-  border-color: rgba(189, 134, 38, 0.45);
-  color: #8a5f13;
-  background: rgba(189, 134, 38, 0.06);
+/* PRE-02 · Marca la fila que no se puede cobrar todavía. */
+.sin-tarifa {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border-radius: 999px;
+  cursor: help;
 }
 
-/* ===== Toolbar ===== */
-.toolbar {
+.acciones-pie {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-
-.toolbar__filters,
-.toolbar__export {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
-.toolbar__control {
-  width: auto;
-  min-width: 175px;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-  font-size: 0.85rem;
+  justify-content: flex-end;
+  margin-top: 0.9rem;
 }
 
 .btn--sm {
@@ -291,13 +264,9 @@
 }
 
 .col-actions {
-  width: 230px;
+  width: 150px;
   text-align: right;
   white-space: nowrap;
-}
-
-.col-actions .btn + .btn {
-  margin-left: 0.35rem;
 }
 
 /* Celda profesional */
@@ -326,17 +295,6 @@
   color: var(--text-main);
 }
 
-/* Motivo del rechazo, recortado a una línea bajo la píldora de estado. */
-.motivo {
-  display: block;
-  max-width: 220px;
-  margin-top: 3px;
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 
 /* Marca de "valor hora base" en el detalle. */
 .origen {
@@ -453,10 +411,25 @@
 
 .icon-action svg { width: 17px; height: 17px; }
 
-.icon-action:hover {
+.icon-action:hover:not([disabled]) {
   background: #f1f5f9;
   color: var(--secondary-color);
   border-color: var(--accent-color);
+}
+
+/* Deshabilitado con motivo: la acción existe pero hoy no se puede (una cuenta
+   sin tarifa). Se deja visible y con `title` en vez de esconderla, para que se
+   vea que falta algo en vez de que la opción simplemente no esté. */
+.icon-action[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Misma disposición que en Órdenes: los iconos alineados a la derecha. */
+.row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.35rem;
 }
 
 .detalle__head {

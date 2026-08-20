@@ -143,12 +143,12 @@
   <app-paginador [pag]="pag" etiqueta="empresas" />
 </div>
 
-<!-- ============ DRAWER · FICHA ============ -->
+<!-- ============ MODAL · FICHA ============ -->
 @if (detalle(); as emp) {
-  <div class="drawer-backdrop" (click)="closeDetalle()"></div>
-  <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="fichaTitle">
-    <header class="drawer__head">
-      <h3 class="drawer__title" id="fichaTitle">{{ emp.nombre }}</h3>
+  <div class="modal-backdrop" (click)="closeDetalle()"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="fichaTitle">
+    <header class="modal__head">
+      <h3 class="modal__title" id="fichaTitle">{{ emp.nombre }}</h3>
       <button type="button" class="icon-action" (click)="closeDetalle()" aria-label="Cerrar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M18 6 6 18M6 6l12 12" />
@@ -156,7 +156,7 @@
       </button>
     </header>
 
-    <div class="drawer__body">
+    <div class="modal__body">
       <div class="ficha-top">
         <span class="pill" [class]="emp.activo ? 'pill--success' : 'pill--muted'">
           {{ emp.activo ? 'Activa' : 'Inactiva' }}
@@ -237,7 +237,7 @@
     </div>
 
     @if (puedeEditar()) {
-      <footer class="drawer__footer">
+      <footer class="modal__footer">
         <button type="button" class="btn btn--ghost btn--danger" (click)="eliminar(emp)">Eliminar</button>
         <button type="button" class="btn btn--ghost" (click)="toggleActivo(emp)">
           {{ emp.activo ? 'Desactivar' : 'Activar' }}
@@ -245,15 +245,15 @@
         <button type="button" class="btn btn--primary" (click)="openEdit(emp)">Editar</button>
       </footer>
     }
-  </aside>
+  </div>
 }
 
-<!-- ============ DRAWER · FORMULARIO ============ -->
+<!-- ============ MODAL · FORMULARIO ============ -->
 @if (formOpen()) {
-  <div class="drawer-backdrop" (click)="closeForm()"></div>
-  <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="formTitle">
-    <header class="drawer__head">
-      <h3 class="drawer__title" id="formTitle">
+  <div class="modal-backdrop" (click)="closeForm()"></div>
+  <div class="modal modal--form" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+    <header class="modal__head">
+      <h3 class="modal__title" id="formTitle">
         {{ editingId() ? 'Editar empresa' : 'Nueva empresa' }}
       </h3>
       <button type="button" class="icon-action" (click)="closeForm()" aria-label="Cerrar">
@@ -263,7 +263,7 @@
       </button>
     </header>
 
-    <form class="drawer__body" (ngSubmit)="save()">
+    <form class="modal__body" (ngSubmit)="save()">
       <div class="form-field">
         <label class="form-field__label" for="eNombre">Razón social *</label>
         <input id="eNombre" class="form-control" type="text" [(ngModel)]="draft.nombre" name="nombre" placeholder="Ej. Inversiones Andinas S.A.S" />
@@ -349,7 +349,7 @@
       </div>
     </form>
 
-    <footer class="drawer__footer">
+    <footer class="modal__footer">
       <button type="button" class="btn btn--ghost" (click)="closeForm()" [disabled]="saving()">Cancelar</button>
       <button type="button" class="btn btn--primary" [disabled]="saving() || !isValid()" (click)="save()">
         @if (saving()) {
@@ -360,5 +360,5 @@
         }
       </button>
     </footer>
-  </aside>
+  </div>
 }

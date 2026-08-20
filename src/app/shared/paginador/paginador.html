@@ -53,14 +53,17 @@
 
     <label class="pager__tamano">
       <span class="pager__tamano-label">Filas</span>
+      <!-- La opción vigente se marca con `[selected]`, NO con `[value]` en el
+           `<select>`: el binding de `value` se aplica antes de que el `@for`
+           cree las opciones, así que el navegador se quedaba mostrando la
+           primera (10) mientras la tabla paginaba de 25 en 25. -->
       <select
         class="pager__select"
-        [value]="pag().tamano()"
         (change)="cambiarTamano($any($event.target).value)"
         aria-label="Filas por página"
       >
-        @for (t of tamanos; track t) {
-          <option [value]="t">{{ t }}</option>
+        @for (t of tamanos(); track t) {
+          <option [value]="t" [selected]="t === pag().tamano()">{{ t }}</option>
         }
       </select>
     </label>

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
+import { mensajeError } from '../../core/errores';
 
 /** AUTH-03 · Establece la nueva contraseña con el token recibido por correo. */
 @Component({
@@ -51,7 +52,7 @@ export class ResetPasswordComponent {
       },
       error: (err) => {
         this.loading.set(false);
-        this.error.set(err?.error?.error || 'El enlace no es válido o ya expiró. Solicite uno nuevo.');
+        this.error.set(mensajeError(err, 'El enlace no es válido o ya expiró. Solicite uno nuevo.'));
       },
     });
   }

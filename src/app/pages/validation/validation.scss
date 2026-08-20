@@ -1496,6 +1496,27 @@
   height: 18px;
 }
 
+/* Fila de la lista de soportes: qué documento es + con qué nombre se guardó. */
+.sup-pick__head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+/* Pastilla pequeña: acompaña a la etiqueta sin competir con ella. */
+.pill--sm {
+  padding: 0.1rem 0.45rem;
+  font-size: 0.68rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* El nombre del archivo, junto al título del visor, en segundo plano. */
+.verify__filename {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
 .verify__frame {
   display: grid;
   place-items: center;
@@ -1534,10 +1555,61 @@
   padding: 0 1.5rem 0.25rem;
 }
 
-/* Fila con soportes pendientes de revisar: se destaca la acción que toca. */
-.icon-action--alert {
-  color: var(--warning);
-  border-color: color-mix(in srgb, var(--warning) 45%, transparent);
+/* VER-04 · Las casillas que se devuelven. Van en fila y con su recuento de
+   archivos: lo que decide qué marcar es qué hay en cada una. */
+.reject-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 0.9rem;
+}
+
+.reject-cat {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  flex: 1 1 210px;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.reject-cat:hover {
+  background: #f8fafc;
+}
+
+/* Marcada = se devuelve. Se tiñe en rojo porque es lo que va a pasar. */
+.reject-cat--on {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 7%, transparent);
+}
+
+.reject-cat__box {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--danger);
+  cursor: pointer;
+}
+
+.reject-cat__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.reject-cat__name {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.reject-cat__meta {
+  font-size: 0.74rem;
+  color: var(--text-muted);
 }
 
 /* ===== Responsive ===== */
@@ -1635,4 +1707,70 @@
   font-size: 0.74rem;
   font-weight: 600;
   color: var(--warning);
+}
+
+/* ===== EST-03 · Acordeón del historial =====
+   La cabecera es el botón entero: en una tarjeta, pedirle al usuario que acierte
+   en una flecha de 16 px es pedirle puntería. */
+.acordeon__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  font-family: inherit;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.acordeon__cabecera:hover {
+  background: #f8fafc;
+}
+
+.acordeon__texto {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.acordeon__chevron {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted);
+  transition: transform 0.18s ease;
+}
+
+.acordeon__chevron--abierto {
+  transform: rotate(180deg);
+}
+
+/* Ya lo separa la cabecera; el borde de arriba sobraría. */
+.acordeon .card__body {
+  padding-top: 0;
+}
+
+/* CFG-04 · Tipo de orden y su valor hora, arriba de los campos extraídos. */
+.tipo-orden {
+  margin-bottom: 1rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.tipo-orden__valor {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  cursor: help;
+}
+
+.field__hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--text-muted);
 }

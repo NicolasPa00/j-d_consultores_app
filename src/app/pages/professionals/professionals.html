@@ -38,6 +38,7 @@
           <th>Profesional</th>
           <th>Teléfono</th>
           <th>Especialidad</th>
+          <th>Órdenes y calificación</th>
           <th>Estado</th>
           <th class="col-actions">Acciones</th>
         </tr>
@@ -56,6 +57,52 @@
             </td>
             <td class="mono">{{ pro.phone }}</td>
             <td>{{ pro.specialty }}</td>
+            <!-- ENC-05 · Las dos cifras juntas: el trabajo cerrado arriba y cómo
+                 lo califican debajo. Separarlas invitaba a leer un 5,0 de una
+                 sola encuesta como si valiera lo mismo que un 4,6 de cuarenta. -->
+            <td class="desempeno">
+              <span class="desempeno__ordenes">
+                {{ pro.ordenesEjecutadas }}
+                {{ pro.ordenesEjecutadas === 1 ? 'orden ejecutada' : 'órdenes ejecutadas' }}
+              </span>
+
+              @if (pro.nota !== null) {
+                <button
+                  type="button"
+                  class="rating"
+                  (click)="openRatings(pro)"
+                  [title]="'Ver las ' + pro.encuestas + ' encuesta(s) de ' + pro.name"
+                >
+                  <span class="rating__stars" aria-hidden="true">
+                    @for (e of estrellas(pro.nota); track $index) {
+                      <svg class="star" [class.star--on]="e !== 'empty'" viewBox="0 0 24 24">
+                        @if (e === 'half') {
+                          <defs>
+                            <linearGradient [attr.id]="'media-' + pro.id + '-' + $index">
+                              <stop offset="50%" stop-color="currentColor" />
+                              <stop offset="50%" stop-color="transparent" />
+                            </linearGradient>
+                          </defs>
+                          <path
+                            [attr.fill]="'url(#media-' + pro.id + '-' + $index + ')'"
+                            stroke="currentColor" stroke-width="1.4"
+                            d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z" />
+                        } @else {
+                          <path
+                            [attr.fill]="e === 'full' ? 'currentColor' : 'none'"
+                            stroke="currentColor" stroke-width="1.4"
+                            d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z" />
+                        }
+                      </svg>
+                    }
+                  </span>
+                  <span class="rating__valor">{{ nota(pro.nota) }}</span>
+                  <span class="rating__n">({{ pro.encuestas }})</span>
+                </button>
+              } @else {
+                <span class="desempeno__sin">Sin encuestas respondidas</span>
+              }
+            </td>
             <td>
               <span class="pill" [class]="pro.status === 'Activo' ? 'pill--success' : 'pill--muted'">
                 {{ pro.status }}
@@ -87,7 +134,7 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="5" class="table__empty">
+            <td colspan="6" class="table__empty">
               No hay profesionales que coincidan con “{{ query() }}”.
             </td>
           </tr>
@@ -99,22 +146,22 @@
   <app-paginador [pag]="pag" etiqueta="profesionales" />
 </div>
 
-<!-- ============ DRAWER / FORMULARIO ============ -->
-@if (drawerOpen()) {
-  <div class="drawer-backdrop" (click)="closeDrawer()"></div>
-  <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
-    <header class="drawer__head">
-      <h3 class="drawer__title" id="drawerTitle">
+<!-- ============ MODAL / FORMULARIO ============ -->
+@if (modalOpen()) {
+  <div class="modal-backdrop" (click)="closeModal()"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <header class="modal__head">
+      <h3 class="modal__title" id="modalTitle">
         {{ editingId() ? 'Editar Profesional' : 'Nuevo Profesional' }}
       </h3>
-      <button type="button" class="icon-action" (click)="closeDrawer()" aria-label="Cerrar">
+      <button type="button" class="icon-action" (click)="closeModal()" aria-label="Cerrar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M18 6 6 18M6 6l12 12" />
         </svg>
       </button>
     </header>
 
-    <form class="drawer__body" (ngSubmit)="save()">
+    <form class="modal__body" (ngSubmit)="save()">
       <div class="form-field">
         <label class="form-field__label" for="pName">Nombre completo *</label>
         <input id="pName" class="form-control" type="text" [(ngModel)]="draft.name" name="name" placeholder="Ej. Laura Gómez Restrepo" />
@@ -176,8 +223,8 @@
       </div>
     </form>
 
-    <footer class="drawer__footer">
-      <button type="button" class="btn btn--ghost" (click)="closeDrawer()" [disabled]="saving()">Cancelar</button>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--ghost" (click)="closeModal()" [disabled]="saving()">Cancelar</button>
       <button type="button" class="btn btn--primary" [disabled]="saving() || !isValid()" (click)="save()">
         @if (saving()) {
           <span class="spinner" aria-hidden="true"></span>
@@ -187,5 +234,92 @@
         }
       </button>
     </footer>
-  </aside>
+  </div>
+}
+
+<!-- ============ ENC-05 · Calificaciones y observaciones del profesional ============
+     Aquí es donde JD&D hace el seguimiento: el promedio de la tabla dice CÓMO va
+     un asesor, y esto dice POR QUÉ — de qué visita salió cada nota y qué escribió
+     el cliente. Solo se listan las encuestas RESPONDIDAS: una enviada sin
+     contestar no es una calificación. -->
+@if (ratingsOpen() && ratingsProf(); as pro) {
+  <div class="modal-backdrop" (click)="closeRatings()"></div>
+  <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="ratingsTitle">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="ratingsTitle">Calificaciones de {{ pro.name }}</h3>
+        <p class="modal__sub">
+          {{ pro.encuestas }} encuesta(s) respondida(s) sobre {{ pro.ordenesEjecutadas }} orden(es)
+          ejecutada(s) · promedio {{ nota(pro.nota) }} / 5
+        </p>
+      </div>
+      <button type="button" class="icon-action" (click)="closeRatings()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="modal__body">
+      @if (ratingsLoading()) {
+        <p class="ratings__estado">Cargando las encuestas…</p>
+      } @else {
+        <p class="ratings__resumen">
+          {{ ratingsConComentario() }} de {{ ratings().length }} traen observaciones del cliente.
+        </p>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Orden</th>
+                <th>Empresa</th>
+                <th>Profesional</th>
+                <th>Actividad</th>
+                <th>Observaciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (e of ratings(); track e.id) {
+                <tr>
+                  <td class="mono">{{ fechaEncuesta(e.respondido_en) }}</td>
+                  <td class="mono">{{ e.orden_codigo || '—' }}</td>
+                  <td>{{ e.empresa_nombre || '—' }}</td>
+                  <td>
+                    <span class="pill" [class]="notaClass(e.nota_profesional)">
+                      {{ e.nota_profesional || '—' }}/5
+                    </span>
+                    @if (!e.calificacion_profesional) {
+                      <!-- Encuesta anterior a la pregunta del profesional: la
+                           nota que aporta es la de la actividad. Se marca para
+                           que nadie la lea como una calificación directa. -->
+                      <span class="ratings__aprox" title="Encuesta anterior a la pregunta sobre el profesional: aporta la nota de la actividad.">aprox.</span>
+                    }
+                  </td>
+                  <td>
+                    <span class="pill" [class]="notaClass(e.satisfaccion)">{{ e.satisfaccion || '—' }}/5</span>
+                  </td>
+                  <td class="ratings__obs">{{ e.comentarios || '—' }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6" class="table__empty">
+                    Todavía no hay encuestas respondidas para este profesional.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+
+    <footer class="modal__footer">
+      <span class="modal__status">
+        Las encuestas son opcionales: el cliente puede no responderlas, así que el promedio
+        se calcula solo sobre las {{ ratings().length }} recibidas.
+      </span>
+      <button type="button" class="btn btn--ghost" (click)="closeRatings()">Cerrar</button>
+    </footer>
+  </div>
 }

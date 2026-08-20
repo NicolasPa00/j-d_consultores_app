@@ -14,15 +14,21 @@ interface NavItem {
   vista: Vista;
 }
 
+/**
+ * El `hint` es la línea pequeña bajo cada opción. Antes decía en qué módulo del
+ * FRS caía ("Módulo 9 · Cobro"), que es vocabulario del documento de requisitos
+ * y no del trabajo diario: a quien usa la plataforma no le dice nada. Ahora dice
+ * en tres palabras qué se hace ahí.
+ */
 const NAV_ITEMS: NavItem[] = [
-  { icon: 'home', label: 'Inicio', hint: '', route: '/dashboard', vista: 'dashboard' },
-  { icon: 'import', label: 'Importar Archivos', hint: 'Módulo 2', route: '/importar', vista: 'importar' },
-  { icon: 'ai', label: 'Órdenes', hint: 'Módulos 3 y 4', route: '/ordenes', vista: 'ordenes' },
-  { icon: 'reports', label: 'Informes y Resúmenes', hint: 'Módulo 5', route: '/informes', vista: 'informes' },
-  { icon: 'money', label: 'Pre-cuentas', hint: 'Módulo 9 · Cobro', route: '/precuentas', vista: 'precuentas' },
-  { icon: 'building', label: 'Empresas', hint: 'Módulo 12 · CFG-02', route: '/empresas', vista: 'empresas' },
-  { icon: 'people', label: 'Profesionales', hint: 'Módulo 12 · CFG-01', route: '/profesionales', vista: 'profesionales' },
-  { icon: 'settings', label: 'Configuración', hint: 'Perfil', route: '/configuracion', vista: 'configuracion' },
+  { icon: 'home', label: 'Inicio', hint: 'Resumen del día', route: '/dashboard', vista: 'dashboard' },
+  { icon: 'import', label: 'Importar Archivos', hint: 'Cargar órdenes de la ARL', route: '/importar', vista: 'importar' },
+  { icon: 'ai', label: 'Órdenes', hint: 'Programar y hacer seguimiento', route: '/ordenes', vista: 'ordenes' },
+  { icon: 'people', label: 'Profesionales', hint: 'Asesores y calificación', route: '/profesionales', vista: 'profesionales' },
+  { icon: 'money', label: 'Cuentas de cobro', hint: 'Pago a profesionales', route: '/precuentas', vista: 'precuentas' },
+  { icon: 'building', label: 'Empresas', hint: 'Clientes y contactos', route: '/empresas', vista: 'empresas' },
+  { icon: 'reports', label: 'Informes y Resúmenes', hint: 'Indicadores y exportaciones', route: '/informes', vista: 'informes' },
+  { icon: 'settings', label: 'Configuración', hint: 'Cuenta y ajustes', route: '/configuracion', vista: 'configuracion' },
 ];
 
 @Component({

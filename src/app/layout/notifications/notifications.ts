@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, HostListener, OnDestroy
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { NotificationsService } from '../../core/notifications.service';
-import { Notificacion } from '../../core/models';
+import { FiltroNotificaciones, Notificacion } from '../../core/models';
 
 /**
  * NOT-04 · Campanita del navbar: badge de no leídas + bandeja desplegable.
@@ -14,7 +14,8 @@ import { Notificacion } from '../../core/models';
  * Las notificaciones las crea el backend en los eventos de negocio: asignación
  * y reprogramación de OS (M5), rechazo de soportes (VER-04) y carga de soportes
  * por el enlace público (M6). Cada una trae `datos.orden_id`, así que al
- * pulsarla se salta a esa OS en la vista Órdenes.
+ * pulsarla se salta a esa OS en la vista Órdenes — al visor de archivos si el
+ * aviso va de soportes, y a la ficha en los demás casos.
  */
 @Component({
   selector: 'app-notifications',
@@ -67,12 +68,50 @@ export class NotificationsComponent implements OnInit, OnDestroy {
     this.store.markAllRead();
   }
 
+  /** Los tres recortes, más "Todas" (la bandeja viva) como punto de partida. */
+  protected readonly filtros: { key: FiltroNotificaciones; label: string }[] = [
+    { key: 'todas', label: 'Todas' },
+    { key: 'no-leidas', label: 'No leídas' },
+    { key: 'leidas', label: 'Leídas' },
+    { key: 'eliminadas', label: 'Eliminadas' },
+  ];
+
+  protected conteo(f: FiltroNotificaciones): number {
+    const c = this.store.conteos();
+    if (f === 'no-leidas') return c.no_leidas;
+    if (f === 'leidas') return c.leidas;
+    if (f === 'eliminadas') return c.eliminadas;
+    return c.no_leidas + c.leidas;
+  }
+
+  protected verFiltro(f: FiltroNotificaciones): void {
+    this.store.verFiltro(f);
+  }
+
+  /**
+   * Elimina el aviso. `stopPropagation` es imprescindible: el botón vive dentro
+   * de la fila, que entera es el enlace, y sin esto borrar te llevaría además a
+   * la orden que acabas de quitar de la vista.
+   */
+  protected eliminar(n: Notificacion, ev: MouseEvent): void {
+    ev.stopPropagation();
+    this.store.remove(n);
+  }
+
+  protected restaurar(n: Notificacion, ev: MouseEvent): void {
+    ev.stopPropagation();
+    this.store.restore(n);
+  }
+
   /**
    * Abre lo que el aviso referencia: la OS (M3..M8) o la pre-cuenta (M9). Si el
    * rol no tiene esa vista —p. ej. un contador no ve Órdenes— la notificación
    * se marca como leída y no se navega a una ruta que el guard rechazaría.
    */
   protected abrir(n: Notificacion): void {
+    // En la papelera el clic no lleva a ninguna parte: lo que corresponde ahí es
+    // restaurarla, y navegar desde una lista de descartes desorienta.
+    if (n.eliminado_en) return;
     this.store.markRead(n);
     const destino = this.destino(n);
     if (!destino) return;
@@ -81,14 +120,37 @@ export class NotificationsComponent implements OnInit, OnDestroy {
   }
 
   protected esNavegable(n: Notificacion): boolean {
-    return !!this.destino(n);
+    return !n.eliminado_en && !!this.destino(n);
   }
+
+  /**
+   * Avisos que van directos a los ARCHIVOS de la orden y no a su ficha.
+   *
+   * Un "soportes recibidos" se pulsa para ver lo que llegó, y un "soportes
+   * rechazados" para ver lo que hay que corregir: en los dos casos, abrir el
+   * detalle de la orden dejaba a un clic de distancia justo lo que se venía a
+   * mirar. Los de asignación sí abren la ficha — cuando llegan todavía no hay
+   * ningún archivo que enseñar.
+   */
+  private static readonly DE_ARCHIVOS = ['SOPORTE_CARGADO', 'RECHAZO'];
 
   /** Ruta asociada al aviso, o null si no hay a dónde ir (o falta permiso). */
   private destino(n: Notificacion): { ruta: string[]; params?: Record<string, string> } | null {
+    // ENC-05 · Una encuesta respondida se pulsa para ver CÓMO va calificado el
+    // profesional, no para releer la orden: lleva a su ficha y abre el panel de
+    // calificaciones. Si el aviso es viejo y no trae el profesional, cae al
+    // comportamiento de siempre (la orden).
+    if (n.tipo === 'ENCUESTA_RESPONDIDA' && n.datos?.profesional_id && this.auth.puedeVer('profesionales')) {
+      return {
+        ruta: ['/profesionales'],
+        params: { profesional: n.datos.profesional_id, vista: 'calificaciones' },
+      };
+    }
     const ordenId = n.datos?.orden_id;
     if (ordenId && this.auth.puedeVer('ordenes')) {
-      return { ruta: ['/ordenes'], params: { os: ordenId } };
+      const params: Record<string, string> = { os: ordenId };
+      if (NotificationsComponent.DE_ARCHIVOS.includes(n.tipo)) params['vista'] = 'soportes';
+      return { ruta: ['/ordenes'], params };
     }
     if (n.datos?.precuenta_id && this.auth.puedeVer('precuentas')) {
       return { ruta: ['/precuentas'] };
@@ -117,8 +179,8 @@ export class NotificationsComponent implements OnInit, OnDestroy {
       case 'RECHAZO': return 'Rechazo';
       case 'SOPORTE_CARGADO': return 'Soportes';
       case 'ENCUESTA_RESPONDIDA': return 'Encuesta';
-      case 'PRECUENTA_ACEPTADA': return 'Pre-cuenta aceptada';
-      case 'PRECUENTA_RECHAZADA': return 'Pre-cuenta rechazada';
+      case 'PRECUENTA_ACEPTADA': return 'Cuenta de cobro aceptada';
+      case 'PRECUENTA_RECHAZADA': return 'Cuenta de cobro rechazada';
       default: return 'Aviso';
     }
   }

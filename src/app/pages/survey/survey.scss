@@ -272,3 +272,11 @@
     display: none;
   }
 }
+
+/* Cuántos caracteres quedan en las observaciones (tope de 500). */
+.q__contador {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: right;
+}

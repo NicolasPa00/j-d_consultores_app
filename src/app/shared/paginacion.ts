@@ -46,9 +46,11 @@ export const TAMANOS_PAGINA = [10, 25, 50, 100];
  * Envuelve una lista reactiva en una paginación.
  *
  * @param origen  Lista completa, ya filtrada y ordenada por la vista.
- * @param tamanoInicial  Filas por página al abrir la pantalla.
+ * @param tamanoInicial  Filas por página al abrir la pantalla. Por defecto la
+ *   primera opción del selector: la tabla nunca arranca mostrando más filas de
+ *   las que anuncia el pie.
  */
-export function paginar<T>(origen: Signal<T[]>, tamanoInicial = 25): Paginacion<T> {
+export function paginar<T>(origen: Signal<T[]>, tamanoInicial = TAMANOS_PAGINA[0]): Paginacion<T> {
   const pagina = signal(1);
   const tamano = signal(tamanoInicial);
 

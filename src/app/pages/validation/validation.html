@@ -114,14 +114,14 @@
                       <circle cx="12" cy="12" r="3" />
                     </svg>
                   </button>
-                  @if (!order.validated) {
-                    <button type="button" class="icon-action" (click)="openEdit(order.id)" aria-label="Editar" title="Editar">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M12 20h9" />
-                        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                      </svg>
-                    </button>
-                  }
+                  <!-- Editable en CUALQUIER estado: un dato mal leído por el OCR
+                       se descubre casi siempre después de crear la OS. -->
+                  <button type="button" class="icon-action" (click)="openEdit(order.id)" aria-label="Editar" title="Editar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                    </svg>
+                  </button>
                   <!-- VER-01 · Soportes firmados. Mientras la OS esté EN
                        VERIFICACIÓN se decide aquí; una vez ejecutada queda como
                        consulta del expediente. -->
@@ -129,7 +129,6 @@
                     <button
                       type="button"
                       class="icon-action"
-                      [class.icon-action--alert]="puedeVerificar(order)"
                       (click)="openVerify(order)"
                       [attr.aria-label]="puedeVerificar(order) ? 'Verificar soportes' : 'Ver soportes'"
                       [title]="puedeVerificar(order) ? 'Verificar soportes' : 'Ver soportes'"
@@ -216,7 +215,7 @@
         <p class="modal__sub">{{ order.company }} · {{ order.arl }}@if (order.arlConfidence) {<span class="modal__sub-conf"> ({{ order.arlConfidence }}% confianza ARL)</span>}</p>
       </div>
       <div class="modal__head-actions">
-        @if (!editMode() && !order.validated) {
+        @if (!editMode()) {
           <button type="button" class="btn btn--ghost btn--sm" (click)="enableEdit()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M12 20h9" />
@@ -267,8 +266,11 @@
         </button>
       </div>
 
-      <!-- ---- Estado del ciclo de vida · EST-02/04 (solo OS materializadas) ---- -->
-      @if (order.validated && order.osId) {
+      <!-- ---- Estado del ciclo de vida · EST-02/04 ----
+           Solo en modo edición: "Ver orden" es para consultar, y tener ahí un
+           desplegable que cambia el estado invitaba a tocarlo de paso. La
+           pastilla del encabezado sigue diciendo en qué estado está. -->
+      @if (order.validated && order.osId && editMode()) {
         <div class="card">
           <div class="card__head">
             <span class="card__title">Estado de la orden</span>
@@ -340,58 +342,6 @@
         </div>
       }
 
-      <!-- ---- Soportes del profesional (M6/M7) ----
-           Vive también aquí, y no solo tras el icono del clip: ese icono
-           aparece únicamente cuando ya hay archivos, así que sin abrirlo no
-           había forma de saber si el profesional había subido algo. -->
-      @if (order.validated && order.osId) {
-        <div class="card">
-          <div class="card__head">
-            <span class="card__title">Soportes del profesional</span>
-            @if (detailSupports().length) {
-              <button type="button" class="btn btn--ghost btn--sm" (click)="openVerify(order)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-                {{ puedeDecidir() ? 'Revisar y verificar' : 'Abrir visor' }}
-              </button>
-            }
-          </div>
-
-          <div class="card__body">
-            @if (loadingDetailSupports()) {
-              <p class="doc-state">Consultando los archivos recibidos…</p>
-            } @else if (detailSupports().length) {
-              <ul class="soportes-lista">
-                @for (s of detailSupports(); track s.id) {
-                  <li>
-                    <button type="button" class="soporte-fila" (click)="verSoporte(order, s)">
-                      <span class="sup-pick__icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
-                          <path d="M14 3v5h5" />
-                        </svg>
-                      </span>
-                      <span class="soporte-fila__texto">
-                        <span class="soporte-fila__nombre">{{ s.nombre_original || 'Soporte' }}</span>
-                        <span class="soporte-fila__meta">{{ peso(s) }} · {{ fechaSoporte(s) }}</span>
-                      </span>
-                      <span class="soporte-fila__accion">Ver</span>
-                    </button>
-                  </li>
-                }
-              </ul>
-            } @else {
-              <p class="estado-cerrado">
-                El profesional todavía no ha subido soportes. Los sube con el enlace del
-                correo de asignación, sin necesidad de entrar a la plataforma.
-              </p>
-            }
-          </div>
-        </div>
-      }
-
       <!-- ---- Datos de la orden ---- -->
       <div class="card ai-form">
         <div class="card__head">
@@ -415,6 +365,44 @@
               </div>
             </div>
           }
+
+          <!-- CFG-04 / PRE-02 · Con qué se cobra esta orden.
+               No es un campo extraído del documento —la ARL no manda categoría—,
+               así que va antes de la rejilla y sin porcentaje de confianza. El
+               valor hora se enseña junto al tipo porque es la consecuencia:
+               cambiar el tipo cambia lo que se le paga al profesional. -->
+          <div class="field field--full tipo-orden">
+            <div class="field__labelrow">
+              <label class="form-field__label" for="tipoOrdenOS">Tipo de orden</label>
+              @if (order.valorHoraCobro) {
+                <span class="tipo-orden__valor" [title]="origenValorHora(order)">
+                  {{ pesos(order.valorHoraCobro) }}/hora
+                </span>
+              }
+            </div>
+
+            @if (editMode()) {
+              <select id="tipoOrdenOS" class="form-control" [(ngModel)]="tipoOrdenEdit" name="tipoOrdenOS">
+                <option value="">Sin tipo</option>
+                @for (t of tiposOrden(); track t.id) {
+                  <option [value]="t.id">{{ t.nombre }}</option>
+                }
+              </select>
+              <p class="field__hint">
+                De aquí sale el valor hora con el que se le paga al profesional. Cambiarlo
+                afecta a la próxima asignación; si la orden ya está asignada, conserva el
+                valor con el que se asignó.
+              </p>
+            } @else {
+              <input class="form-control" type="text" [value]="order.tipoOrden || 'Sin tipo'" readonly />
+              @if (order.valorHoraCobro && order.fields.horas.value) {
+                <p class="field__hint">
+                  {{ order.fields.horas.value }} h × {{ pesos(order.valorHoraCobro) }} =
+                  <strong>{{ pesos(totalOrden(order)) }}</strong> · {{ origenValorHora(order) }}
+                </p>
+              }
+            }
+          </div>
 
           <form class="fields">
             @for (item of formFields(); track item.label) {
@@ -457,12 +445,29 @@
 
       <!-- ---- EST-03 · Auditoría: quién cambió qué y por qué ---- -->
       @if (order.validated && order.osId) {
-        <div class="card">
-          <div class="card__head">
-            <span class="card__title">Historial de estados</span>
-            <span class="card__hint">Registro de auditoría</span>
-          </div>
+        <div class="card acordeon">
+          <!-- Plegado por defecto: es auditoría, se mira cuando algo no cuadra. -->
+          <button
+            type="button"
+            class="acordeon__cabecera"
+            [attr.aria-expanded]="historialAbierto()"
+            (click)="toggleHistorial()"
+          >
+            <span class="acordeon__texto">
+              <span class="card__title">Historial de estados</span>
+              <span class="card__hint">Registro de auditoría</span>
+            </span>
+            <svg
+              class="acordeon__chevron"
+              [class.acordeon__chevron--abierto]="historialAbierto()"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
 
+          @if (historialAbierto()) {
           <div class="card__body">
             @if (loadingHistorial()) {
               <p class="estado-cerrado">Cargando historial…</p>
@@ -499,6 +504,7 @@
               </ol>
             }
           </div>
+          }
         </div>
       }
     </div>
@@ -515,12 +521,14 @@
           Cerrar
         </button>
         @if (editMode()) {
-          <button type="button" class="btn btn--primary" [disabled]="saving()" (click)="validateOrder()">
+          <button type="button" class="btn btn--primary" [disabled]="saving()" (click)="guardarDetalle()">
             @if (saving()) {
               <span class="spinner" aria-hidden="true"></span>
               Guardando en Base de Datos…
             } @else {
-              Validar y Guardar
+              <!-- Sobre un borrador, guardar CREA la orden; sobre una OS que ya
+                   existe, solo corrige sus datos. El botón lo dice. -->
+              {{ order.osId ? 'Guardar cambios' : 'Validar y Guardar' }}
             }
           </button>
         }
@@ -800,11 +808,12 @@
       <span class="modal__status">
         @if (!selectedProfId()) {
           Marque las franjas en la agenda y elija un profesional para poder asignar.
-        } @else if (!franjasVisita().length) {
-          Falta marcar en la agenda las horas de la visita.
         } @else if (!visitaCompleta()) {
-          Faltan {{ duracionTexto(minutosPorRepartir()) }} por repartir: la orden solo pasa a
-          PROGRAMADA cuando la visita cubre las {{ duracionTexto(duracionVisita()) }} de la orden.
+          <!-- ASG-02 · No es un bloqueo: se puede guardar el avance (o solo el
+               cambio de profesional) y volver luego a repartir el resto. -->
+          Faltan {{ duracionTexto(minutosPorRepartir()) }} por repartir de
+          {{ duracionTexto(duracionVisita()) }}. Se guarda el avance, pero la orden no pasa a
+          PROGRAMADA ni sale el correo hasta cubrirlas todas.
         } @else if (!order.osId) {
           <!-- El borrador solo guarda un instante: las franjas se pactan al
                validar la OS, que es cuando existe la orden a la que cuelgan. -->
@@ -818,10 +827,16 @@
       </span>
       <div class="modal__footer-actions">
         <button type="button" class="btn btn--ghost" (click)="closeAssign()" [disabled]="assigning()">Cancelar</button>
-        <button type="button" class="btn btn--primary" [disabled]="!selectedProfId() || !visitaCompleta() || assigning()" (click)="confirmAssign()">
+        <!-- ASG-02 · Basta con haber elegido profesional. Exigir además la visita
+             completa dejaba sin salida el caso de cambiar de asesor en una orden
+             de muchas horas: había que repartirlas todas antes de poder guardar
+             nada, y el backend sí sabe guardar el avance. -->
+        <button type="button" class="btn btn--primary" [disabled]="!selectedProfId() || assigning()" (click)="confirmAssign()">
           @if (assigning()) {
             <span class="spinner" aria-hidden="true"></span>
-            {{ esReprogramacion(order) ? 'Reprogramando…' : 'Asignando…' }}
+            {{ !visitaCompleta() ? 'Guardando…' : (esReprogramacion(order) ? 'Reprogramando…' : 'Asignando…') }}
+          } @else if (!visitaCompleta()) {
+            Guardar avance
           } @else {
             {{ esReprogramacion(order) ? 'Reprogramar y reenviar' : 'Asignar profesional' }}
           }
@@ -872,7 +887,12 @@
               </svg>
             </span>
             <span class="prof-pick__text">
-              <span class="prof-pick__name">{{ soporte.nombre_original || 'Soporte' }}</span>
+              <!-- Primero QUÉ es. El nombre del archivo va debajo y en pequeño:
+                   saber que es el acta importa más que cómo se llame. -->
+              <span class="sup-pick__head">
+                <span class="prof-pick__name">{{ etiquetaSoporte(soporte) }}</span>
+                <span class="pill pill--sm" [class]="pillSoporte(soporte)">{{ nombreSoporte(soporte) }}</span>
+              </span>
               <span class="prof-pick__spec">{{ peso(soporte) }} · {{ fechaSoporte(soporte) }}</span>
             </span>
           </button>
@@ -890,7 +910,11 @@
       <!-- ---- Visor: se revisa dentro de la plataforma, sin descargar ---- -->
       <div class="verify__viewer">
         <p class="assign__section-title">
-          {{ selectedSupport()?.nombre_original || 'Vista previa' }}
+          @if (selectedSupport(); as s) {
+            {{ etiquetaSoporte(s) }} <span class="verify__filename">· {{ nombreSoporte(s) }}</span>
+          } @else {
+            Vista previa
+          }
         </p>
 
         <div class="verify__frame">
@@ -916,9 +940,37 @@
       </div>
     </div>
 
-    <!-- ---- VER-04 · El rechazo exige motivo, así que se pide en línea ---- -->
+    <!-- ---- VER-04 · Qué se devuelve y por qué. Las dos cosas son obligatorias:
+         el motivo lo lee el profesional, y lo marcado decide qué casillas se le
+         abren en el portal — lo demás le queda bloqueado y aceptado. ---- -->
     @if (rejectMode()) {
       <div class="verify__reject">
+        <p class="assign__section-title">¿Qué documentos debe volver a subir?</p>
+        <div class="reject-cats">
+          @for (cat of rejectCats(); track cat.clave) {
+            <label class="reject-cat" [class.reject-cat--on]="cat.marcada">
+              <input
+                type="checkbox"
+                class="reject-cat__box"
+                [checked]="cat.marcada"
+                (change)="toggleRejectCat(cat.clave)"
+              />
+              <span class="reject-cat__text">
+                <span class="reject-cat__name">{{ cat.etiqueta }}</span>
+                <span class="reject-cat__meta">
+                  @if (cat.archivos === 0) {
+                    Sin archivo — no lo envió
+                  } @else if (cat.archivos === 1) {
+                    1 archivo · se reemplaza al subir el nuevo
+                  } @else {
+                    {{ cat.archivos }} archivos · se reemplazan al subir los nuevos
+                  }
+                </span>
+              </span>
+            </label>
+          }
+        </div>
+
         <label class="form-field">
           <span class="form-field__label">Motivo del rechazo *</span>
           <textarea
@@ -929,7 +981,8 @@
             name="rejectMotivo"
           ></textarea>
           <span class="form-field__hint">
-            El profesional recibe este texto y el enlace de carga se reabre para que suba los soportes corregidos.
+            El profesional recibe este texto y el enlace de carga se reabre solo para
+            los documentos marcados; los demás quedan aceptados.
           </span>
         </label>
       </div>
@@ -938,8 +991,8 @@
     <footer class="modal__footer">
       <span class="modal__status">
         @if (puedeDecidir()) {
-          Estado actual: <strong>EJECUTADA</strong> · al aceptar se da por buena y se envía la
-          encuesta al cliente; al rechazar vuelve a PROGRAMADA.
+          Estado actual: <strong>EJECUTADA</strong> · al aceptar pasa a <strong>FINALIZADA</strong>
+          y se envía la encuesta al cliente; al rechazar vuelve a PROGRAMADA.
         } @else {
           Estado actual: <strong>{{ order.osEstado }}</strong> · expediente de solo lectura.
         }
@@ -949,26 +1002,40 @@
         @if (puedeDecidir()) {
           @if (rejectMode()) {
             <button type="button" class="btn btn--ghost" (click)="cancelReject()" [disabled]="deciding()">
-              Cancelar
+              Volver
             </button>
-            <button type="button" class="btn btn--primary" (click)="confirmReject()" [disabled]="deciding()">
+            <button type="button" class="btn btn--danger" (click)="confirmReject()" [disabled]="deciding()">
               @if (deciding()) {
                 <span class="spinner" aria-hidden="true"></span>
                 Enviando…
               } @else {
-                Confirmar rechazo
+                Devolver {{ rejectMarcadas().length || '' }} documento{{ rejectMarcadas().length === 1 ? '' : 's' }} y avisar
               }
             </button>
           } @else {
-            <button type="button" class="btn btn--ghost" (click)="startReject()" [disabled]="deciding() || !supports().length">
-              Rechazar
+            <!-- Las tres acciones tienen peso distinto y deben verse distintas:
+                 cerrar no decide nada, rechazar devuelve la orden al profesional
+                 y aceptar la da por buena. Cuando "Rechazar" y "Cerrar" eran los
+                 dos un botón gris, se confundían. -->
+            <button type="button" class="btn btn--ghost" (click)="closeVerify()" [disabled]="deciding()">
+              Cerrar
+            </button>
+            <button type="button" class="btn btn--danger" (click)="startReject()" [disabled]="deciding() || !supports().length">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <path d="m15 9-6 6M9 9l6 6" />
+              </svg>
+              Rechazar soportes
             </button>
             <button type="button" class="btn btn--primary" (click)="acceptSupports()" [disabled]="deciding() || !supports().length">
               @if (deciding()) {
                 <span class="spinner" aria-hidden="true"></span>
-                Cerrando…
+                Aceptando…
               } @else {
-                Aceptar y cerrar
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+                Aceptar soportes
               }
             </button>
           }

@@ -287,12 +287,94 @@
   word-break: break-word;
 }
 
-.note__go {
-  display: inline-block;
-  margin-top: 6px;
-  font-size: 11px;
-  font-weight: 600;
+/* ===== NOT-04 · Fila con acción =====
+   La fila entera es el enlace y la papelera va al lado, no dentro: un <button>
+   no puede anidarse en otro. */
+.note-row {
+  display: flex;
+  align-items: stretch;
+}
+
+.note-row:hover .note__accion {
+  opacity: 1;
+}
+
+.note__accion {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  padding: 0;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  /* Discreta hasta que el puntero pasa por la fila: la acción principal es
+     abrir el aviso, no borrarlo. En táctil no hay hover, así que nunca baja
+     del 55 % — invisible del todo sería inalcanzable. */
+  opacity: 0.55;
+  cursor: pointer;
+  transition: color 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+}
+
+.note__accion svg {
+  width: 16px;
+  height: 16px;
+}
+
+.note__accion:hover {
+  background: rgba(15, 23, 42, 0.05);
   color: var(--secondary-color);
+}
+
+.note__accion--del:hover {
+  color: var(--danger);
+}
+
+/* ===== Recortes de la bandeja ===== */
+.tray__filtros {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  overflow-x: auto;
+}
+
+.tray__filtro {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.tray__filtro:hover {
+  background: #f1f5f9;
+  color: var(--text-main);
+}
+
+.tray__filtro--on {
+  color: var(--primary-color);
+  background: rgba(45, 123, 200, 0.1);
+  border-color: var(--accent-color);
+}
+
+.tray__filtro-n {
+  padding: 0 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: inherit;
+  background: rgba(15, 23, 42, 0.08);
+  border-radius: 999px;
 }
 
 .note__dot {

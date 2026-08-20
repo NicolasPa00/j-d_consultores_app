@@ -22,54 +22,49 @@
         </span>
         <div class="alert__body">
           <p class="alert__title">{{ msg }}</p>
-          <p class="alert__detail">Si el enlace ya venció o los soportes fueron cargados, solicite uno nuevo al administrador.</p>
+          <!-- El consejo depende de dónde falló: si la orden ni siquiera cargó,
+               el enlace no sirve y hay que pedir otro; si falló el envío, los
+               archivos siguen elegidos y volver a intentarlo es lo razonable. -->
+          <p class="alert__detail">
+            @if (info()) {
+              Sus archivos siguen seleccionados: vuelva a intentarlo. Si el problema persiste, avise al administrador.
+            } @else {
+              Si el enlace ya venció o los soportes fueron cargados, solicite uno nuevo al administrador.
+            }
+          </p>
         </div>
       </div>
     }
 
-    @if (!sent() && !error()) {
-      <!-- Tarjeta de carga -->
-      <div class="upload-card">
-        <h2 class="upload-card__title">Carga de soportes</h2>
-        <p class="upload-card__desc">
-          Adjunte los formatos firmados en PDF o fotos de la visita realizada.
-        </p>
-
-        @for (slot of slots(); track slot.key) {
-          <label class="slot">
-            <span class="slot__info">
-              <span class="slot__icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
-                  <path d="M14 3v5h5" />
-                </svg>
-              </span>
-              <span class="slot__text">
-                <span class="slot__label">{{ slot.label }}</span>
-                @if (slot.fileName) {
-                  <span class="slot__file">{{ slot.fileName }}</span>
-                } @else {
-                  <span class="slot__placeholder">PDF, JPG o PNG</span>
-                }
-              </span>
-            </span>
-            <span class="slot__action" [class.slot__action--done]="slot.fileName">
-              {{ slot.fileName ? 'Cambiar' : 'Subir' }}
-            </span>
-            <input
-              type="file"
-              class="slot__input"
-              accept=".pdf,image/*"
-              (change)="onFileSelected(slot.key, $event)"
-            />
-          </label>
-        }
-
-        <button type="button" class="btn btn--primary btn--block portal__send" [disabled]="!hasAnyFile() || sending()" (click)="send()">
-          {{ sending() ? 'Enviando…' : 'Enviar Soportes' }}
-        </button>
+    <!-- VER-04 · Se llegó por un correo de rechazo: lo primero es QUÉ hay que
+         corregir y por qué, con las palabras del administrador. -->
+    @if (enSubsanacion() && !sent()) {
+      <div class="alert alert--warning" role="alert">
+        <span class="alert__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 9v4M12 17h.01" />
+            <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+          </svg>
+        </span>
+        <div class="alert__body">
+          <p class="alert__title">Hay documentos por corregir</p>
+          @if (info()?.soportes_rechazo_motivo; as motivo) {
+            <p class="alert__detail">{{ motivo }}</p>
+          }
+          <p class="alert__detail">
+            Solo puede volver a subir lo que aparece habilitado abajo; lo demás ya fue
+            aceptado. Al subir el archivo nuevo, el anterior se reemplaza.
+          </p>
+        </div>
       </div>
-    } @else {
+    }
+
+    <!-- El banner de éxito se pinta SOLO si el envío salió bien.
+         Antes la condición era `!sent() && !error()`, así que cualquier fallo
+         caía en el `@else` y el profesional veía a la vez el error del servidor
+         y un "Soportes enviados con éxito · Estado: EJECUTADA" que era mentira:
+         se iba convencido de haber entregado. -->
+    @if (sent()) {
       <!-- Banner de éxito -->
       <div class="success">
         <div class="success__icon" aria-hidden="true">
@@ -83,6 +78,166 @@
         </p>
         <span class="pill pill--success">Estado: EJECUTADA</span>
       </div>
+    } @else if (info() && !puedeSubir()) {
+      <!-- SUP-05 · Entregado (o cerrado): el enlace enseña lo que se mandó y no
+           ofrece subir nada. Se llega aquí al reabrir el correo, que es un gesto
+           normal: la respuesta útil es "esto fue lo que enviaste", no un error. -->
+      <div class="upload-card">
+        <h2 class="upload-card__title">
+          {{ cerrada() ? 'Visita cerrada' : 'Soportes en revisión' }}
+        </h2>
+        <p class="upload-card__desc">
+          @if (cerrada()) {
+            El equipo administrativo revisó y aceptó los soportes de esta visita. No hay
+            nada más que enviar.
+          } @else {
+            Ya envió los soportes de esta visita y están en revisión. Si hay que corregir
+            algo, se lo devolverán por correo y este enlace volverá a abrirse.
+          }
+        </p>
+
+        <ul class="entregados">
+          @for (doc of entregados(); track doc.id) {
+            <li class="entregados__item">
+              <span class="entregados__casilla">{{ doc.casilla }}</span>
+              <a class="previos__link" [href]="doc.url" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                {{ doc.nombre }}
+              </a>
+              @if (doc.subidoEn) {
+                <span class="previos__meta">enviado el {{ doc.subidoEn }}</span>
+              }
+            </li>
+          } @empty {
+            <li class="entregados__item">
+              <span class="previos__meta">No hay archivos registrados para esta visita.</span>
+            </li>
+          }
+        </ul>
+      </div>
+    } @else if (info()) {
+      <!-- Tarjeta de carga -->
+      <div class="upload-card">
+        <h2 class="upload-card__title">
+          {{ enSubsanacion() ? 'Corrección de soportes' : 'Carga de soportes' }}
+        </h2>
+        <p class="upload-card__desc">
+          @if (enSubsanacion()) {
+            Vuelva a subir únicamente el documento que se le devolvió. Puede abrir los
+            archivos anteriores para ver qué fue lo que envió.
+          } @else {
+            Adjunte los formatos firmados en PDF o fotos de la visita realizada.
+          }
+        </p>
+
+        @for (slot of slots(); track slot.key) {
+          <!-- Una casilla bloqueada NO se pinta como <label>: si lo fuera, tocarla
+               abriría el selector de archivos del móvil aunque el input esté
+               deshabilitado, y parecería que la app no responde. -->
+          <div class="slot-wrap">
+            @if (slot.bloqueada) {
+              <div class="slot slot--locked">
+                <span class="slot__info">
+                  <span class="slot__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="4" y="10" width="16" height="11" rx="2" />
+                      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                    </svg>
+                  </span>
+                  <span class="slot__text">
+                    <span class="slot__label">{{ slot.label }}</span>
+                    <span class="slot__placeholder">Ya aceptado · no hay que volver a subirlo</span>
+                  </span>
+                </span>
+                <span class="slot__action slot__action--locked">Aceptado</span>
+              </div>
+            } @else {
+              <label class="slot">
+                <span class="slot__info">
+                  <span class="slot__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+                      <path d="M14 3v5h5" />
+                    </svg>
+                  </span>
+                  <span class="slot__text">
+                    <span class="slot__label">
+                      {{ slot.label }}
+                      @if (enSubsanacion()) {
+                        <span class="slot__tag">Por corregir</span>
+                      }
+                    </span>
+                    @if (slot.fileName) {
+                      <span class="slot__file">{{ slot.fileName }}</span>
+                    } @else {
+                      <span class="slot__placeholder">PDF, JPG o PNG · máx. 4 MB</span>
+                    }
+                  </span>
+                </span>
+                <span class="slot__action" [class.slot__action--done]="slot.fileName">
+                  <!-- "Reemplazar" solo cuando de verdad reemplaza: en la carga
+                       normal, un segundo archivo de la misma casilla se suma
+                       (evidencias-2), no sustituye al primero. -->
+                  @if (slot.fileName) {
+                    Cambiar
+                  } @else if (enSubsanacion() && slot.previos.length) {
+                    Reemplazar
+                  } @else {
+                    Subir
+                  }
+                </span>
+                <input
+                  type="file"
+                  class="slot__input"
+                  accept=".pdf,image/jpeg,image/png"
+                  (change)="onFileSelected(slot.key, $event)"
+                />
+              </label>
+            }
+
+            <!-- SUP-07 · Lo que ya mandó. Sin esto, un "corrige el acta" obligaba
+                 a recordar de memoria qué había enviado; y en una casilla
+                 bloqueada es lo único que se puede hacer con el documento:
+                 abrirlo y comprobar que está bien. -->
+            @if (slot.previos.length) {
+              <ul class="previos">
+                @for (previo of slot.previos; track previo.id) {
+                  <li class="previos__item">
+                    <a class="previos__link" [href]="previo.url" target="_blank" rel="noopener">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                      {{ previo.nombre }}
+                    </a>
+                    <span class="previos__meta">
+                      @if (previo.subidoEn) { enviado el {{ previo.subidoEn }} }
+                      @if (enSubsanacion() && !slot.bloqueada) { · se reemplaza al subir el nuevo }
+                    </span>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        }
+
+        <!-- La corrección va completa: mientras falte alguno de los documentos
+             devueltos, el botón dice cuál y no deja enviar. Enterarse después de
+             subir —o peor, no enterarse— dejaba la orden esperando por algo que
+             el profesional creía haber entregado. -->
+        @if (enSubsanacion() && faltantes().length) {
+          <p class="portal__falta">Falta adjuntar: <strong>{{ faltantesTexto() }}</strong></p>
+        }
+        <button type="button" class="btn btn--primary btn--block portal__send" [disabled]="!puedeEnviar() || sending()" (click)="send()">
+          {{ sending() ? 'Enviando…' : (enSubsanacion() ? 'Enviar corrección' : 'Enviar Soportes') }}
+        </button>
+      </div>
+    } @else if (!error()) {
+      <!-- Ni enviado, ni cargado, ni fallido: la orden todavía viene en camino. -->
+      <p class="portal__loading">Cargando la orden…</p>
     }
 
     <p class="portal__footer">© 2026 JD&amp;D Consultores · Enlace seguro de carga</p>

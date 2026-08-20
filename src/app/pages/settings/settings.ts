@@ -1,18 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Observable } from 'rxjs';
 import { AuthService } from '../../core/auth.service';
+import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { ApiService } from '../../core/api.service';
-import { Arl, PermisoRol, Plantilla, PreguntasEncuesta, Rol, Usuario, Vista } from '../../core/models';
+import { Arl, PermisoRol, Plantilla, PreguntasEncuesta, Rol, TipoOrden, Usuario, Vista } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
-
-interface RateRow {
-  activity: string;
-  rate: number;
-}
 
 type Tab = 'profile' | 'system' | 'users' | 'roles' | 'formatos';
 
@@ -79,14 +75,125 @@ export class SettingsComponent implements OnInit {
   // ----- Pestaña: Preferencias del sistema -----
   protected readonly threshold = signal(70);
   protected readonly savingThreshold = signal(false);
+  /** CFG-05 · Día del mes en que se cierra el cobro del mes anterior (1-28). */
+  protected diaCorte = 5;
+  protected readonly savingCorte = signal(false);
 
-  // Informativos (CFG-04 / ASG-06) — todavía sin persistencia en BD.
-  protected rates: RateRow[] = [
-    { activity: 'Capacitación', rate: 85000 },
-    { activity: 'Asesoría', rate: 120000 },
-    { activity: 'Inspección', rate: 95000 },
-  ];
-  protected whatsappEnabled = false;
+  // ----- CFG-04 · Tipos de orden y su valor hora -----
+  //
+  // Era una lista escrita a mano que no se guardaba en ninguna parte. Ahora es
+  // el catálogo con el que se categoriza CADA orden al cargarla y del que sale
+  // lo que se le paga al profesional por hora.
+  protected readonly tipos = signal<TipoOrden[]>([]);
+  protected readonly cargandoTipos = signal(false);
+  protected readonly guardandoTipo = signal<string | null>(null);
+  /** Alta: nombre y valor del tipo nuevo. */
+  protected tipoNuevo = { nombre: '', valor_hora: 0 };
+  /** Valor en edición por fila, para no guardar en cada tecla. */
+  protected valorTipo: Record<string, number> = {};
+
+  private cargarTipos(): void {
+    this.cargandoTipos.set(true);
+    this.api.listTiposOrden(true).subscribe({
+      next: (r) => {
+        this.tipos.set(r.data);
+        this.valorTipo = Object.fromEntries(r.data.map((t) => [t.id, Number(t.valor_hora)]));
+        this.cargandoTipos.set(false);
+      },
+      error: (err) => {
+        this.cargandoTipos.set(false);
+        this.alerts.error(
+          'No se pudieron cargar los tipos de orden',
+          mensajeError(err, 'El servidor no devolvió el catálogo de actividades.'),
+        );
+      },
+    });
+  }
+
+  protected crearTipo(): void {
+    const nombre = this.tipoNuevo.nombre.trim();
+    const valor = Number(this.tipoNuevo.valor_hora);
+    if (!nombre) {
+      this.alerts.warning('Falta el nombre', 'Escriba cómo se llama el tipo de orden.');
+      return;
+    }
+    if (!Number.isFinite(valor) || valor < 0) {
+      this.alerts.warning('Valor hora inválido', 'Debe ser un número mayor o igual que cero.');
+      return;
+    }
+    this.guardandoTipo.set('nuevo');
+    this.api.crearTipoOrden({ nombre, valor_hora: valor }).subscribe({
+      next: () => {
+        this.guardandoTipo.set(null);
+        this.tipoNuevo = { nombre: '', valor_hora: 0 };
+        this.cargarTipos();
+        this.alerts.success('Tipo de orden creado', `Ya se puede elegir "${nombre}" al cargar una orden.`);
+      },
+      error: (err) => {
+        this.guardandoTipo.set(null);
+        this.alerts.error('No se pudo crear el tipo', mensajeError(err, 'El servidor rechazó los datos.'));
+      },
+    });
+  }
+
+  /**
+   * Guarda el valor hora. Se avisa de lo que NO hace: las órdenes ya asignadas
+   * conservan el valor con el que se asignaron, y eso hay que decirlo o parecerá
+   * que el cambio no tuvo efecto.
+   */
+  protected guardarValorTipo(t: TipoOrden): void {
+    const valor = Number(this.valorTipo[t.id]);
+    if (!Number.isFinite(valor) || valor < 0) {
+      this.alerts.warning('Valor hora inválido', 'Debe ser un número mayor o igual que cero.');
+      return;
+    }
+    if (valor === Number(t.valor_hora)) return;
+    this.guardandoTipo.set(t.id);
+    this.api.actualizarTipoOrden(t.id, { valor_hora: valor }).subscribe({
+      next: () => {
+        this.guardandoTipo.set(null);
+        this.cargarTipos();
+        this.alerts.success(
+          'Valor hora actualizado',
+          `"${t.nombre}" se cobrará a este valor en las órdenes que se asignen de ahora en adelante; ` +
+          'las ya asignadas conservan el suyo.',
+        );
+      },
+      error: (err) => {
+        this.guardandoTipo.set(null);
+        this.alerts.error('No se pudo guardar el valor', mensajeError(err, 'El servidor rechazó el cambio.'));
+      },
+    });
+  }
+
+  protected async alternarTipo(t: TipoOrden): Promise<void> {
+    if (t.activo) {
+      const ok = await this.alerts.confirm({
+        title: 'Desactivar tipo de orden',
+        message: `"${t.nombre}" dejará de aparecer al cargar órdenes nuevas. Las ${t.ordenes ?? 0} ` +
+                 'que ya lo usan lo conservan, con el valor con el que se asignaron.',
+        confirmText: 'Desactivar',
+        tone: 'danger',
+      });
+      if (!ok) return;
+    }
+    this.guardandoTipo.set(t.id);
+    // Los dos endpoints devuelven cosas distintas (un mensaje y el tipo), así
+    // que el observable se tipa como `unknown`: aquí solo importa si salió bien.
+    const peticion: Observable<unknown> = t.activo
+      ? this.api.desactivarTipoOrden(t.id)
+      : this.api.actualizarTipoOrden(t.id, { activo: true });
+    peticion.subscribe({
+      next: () => {
+        this.guardandoTipo.set(null);
+        this.cargarTipos();
+      },
+      error: (err: unknown) => {
+        this.guardandoTipo.set(null);
+        this.alerts.error('No se pudo cambiar el tipo', mensajeError(err, 'El servidor rechazó el cambio.'));
+      },
+    });
+  }
 
   // ----- Pestaña: Formatos y encuesta (CFG-03 / ENC-03) -----
   // Es configuración del NEGOCIO (qué dice el acta que firma el cliente, cómo
@@ -95,7 +202,7 @@ export class SettingsComponent implements OnInit {
   protected readonly esAdmin = computed(() => this.auth.usuario()?.rol === 'admin');
   protected readonly plantillas = signal<Plantilla[]>([]);
   /** CFG-03 · Una plantilla por tipo de formato y ARL: crece con las tres ARL. */
-  protected readonly pagPlantillas = paginar(this.plantillas, 10);
+  protected readonly pagPlantillas = paginar(this.plantillas);
   protected readonly arls = signal<Arl[]>([]);
   protected readonly loadingFormatos = signal(false);
   protected readonly savingPlantilla = signal(false);
@@ -110,7 +217,7 @@ export class SettingsComponent implements OnInit {
 
   /** ENC-03 · Enunciados de la encuesta pública. */
   protected preguntas: PreguntasEncuesta = {
-    titulo: '', satisfaccion: '', recomendacion: '', comentarios: '',
+    titulo: '', satisfaccion: '', profesional: '', recomendacion: '', comentarios: '',
   };
   protected readonly savingPreguntas = signal(false);
 
@@ -118,7 +225,7 @@ export class SettingsComponent implements OnInit {
   protected readonly esMaestro = computed(() => this.auth.usuario()?.es_maestro === true);
   protected readonly usuarios = signal<Usuario[]>([]);
   /** M1 · Las cuentas internas se acumulan; la tabla vive dentro de una pestaña. */
-  protected readonly pagUsuarios = paginar(this.usuarios, 10);
+  protected readonly pagUsuarios = paginar(this.usuarios);
   protected readonly loadingUsers = signal(false);
   protected readonly savingUser = signal(false);
   /** Id del usuario cuya eliminación está en curso (bloquea su botón). */
@@ -143,7 +250,7 @@ export class SettingsComponent implements OnInit {
     { clave: 'importar', label: 'Importar Archivos', hint: 'Módulo 2 · carga de Excel/PDF' },
     { clave: 'ordenes', label: 'Órdenes', hint: 'Módulos 3 y 4 · validación IA y asignación' },
     { clave: 'informes', label: 'Informes y Resúmenes', hint: 'Módulo 5 · resúmenes y buscador' },
-    { clave: 'precuentas', label: 'Pre-cuentas', hint: 'Módulo 9 · cobro a profesionales' },
+    { clave: 'precuentas', label: 'Cuentas de cobro', hint: 'Cobro a profesionales' },
     { clave: 'empresas', label: 'Empresas', hint: 'Módulo 12 · CFG-02 · clientes' },
     { clave: 'profesionales', label: 'Profesionales', hint: 'Módulo 12 · asesores de campo' },
     { clave: 'configuracion', label: 'Configuración', hint: 'Perfil propio y ajustes' },
@@ -163,7 +270,10 @@ export class SettingsComponent implements OnInit {
       this.api.getSettings().subscribe((r) => {
         const t = Number(r.data['confidence_threshold']);
         if (Number.isFinite(t)) this.threshold.set(t);
+        const c = Number(r.data['precuenta_dia_corte']);
+        if (Number.isFinite(c)) this.diaCorte = c;
       });
+      this.cargarTipos();
     }
   }
 
@@ -192,7 +302,7 @@ export class SettingsComponent implements OnInit {
       },
       error: (err) => {
         this.loadingFormatos.set(false);
-        this.alerts.error('No se pudieron cargar los formatos', err?.error?.error || 'El servidor no respondió al catálogo de plantillas.');
+        this.alerts.error('No se pudieron cargar los formatos', mensajeError(err, 'El servidor no respondió al catálogo de plantillas.'));
       },
     });
   }
@@ -254,7 +364,7 @@ export class SettingsComponent implements OnInit {
       },
       error: (err) => {
         this.savingPlantilla.set(false);
-        this.alerts.error('No se pudo guardar el formato', err?.error?.error || 'El servidor rechazó los datos del formato.');
+        this.alerts.error('No se pudo guardar el formato', mensajeError(err, 'El servidor rechazó los datos del formato.'));
       },
     });
   }
@@ -270,7 +380,7 @@ export class SettingsComponent implements OnInit {
             : `${p.nombre} deja de generarse; los PDF ya emitidos siguen disponibles.`,
         );
       },
-      error: (err) => this.alerts.error('No se pudo cambiar el estado', err?.error?.error || `El servidor rechazó el cambio sobre ${p.nombre}.`),
+      error: (err) => this.alerts.error('No se pudo cambiar el estado', mensajeError(err, `El servidor rechazó el cambio sobre ${p.nombre}.`)),
     });
   }
 
@@ -287,7 +397,7 @@ export class SettingsComponent implements OnInit {
         this.alerts.success('Formato eliminado', `${p.nombre} ya no está en el catálogo de plantillas.`);
         this.loadFormatos();
       },
-      error: (err) => this.alerts.error('No se pudo eliminar el formato', err?.error?.error || 'El servidor rechazó la baja.'),
+      error: (err) => this.alerts.error('No se pudo eliminar el formato', mensajeError(err, 'El servidor rechazó la baja.')),
     });
   }
 
@@ -295,13 +405,15 @@ export class SettingsComponent implements OnInit {
   protected savePreguntas(): void {
     if (this.savingPreguntas()) return;
     const p = this.preguntas;
-    if (!p.titulo.trim() || !p.satisfaccion.trim() || !p.recomendacion.trim() || !p.comentarios.trim()) {
-      this.alerts.warning('Faltan enunciados', 'Los cuatro textos de la encuesta son obligatorios.');
+    if (!p.titulo.trim() || !p.satisfaccion.trim() || !p.profesional.trim()
+        || !p.recomendacion.trim() || !p.comentarios.trim()) {
+      this.alerts.warning('Faltan enunciados', 'Los cinco textos de la encuesta son obligatorios.');
       return;
     }
     this.savingPreguntas.set(true);
     this.api.setPreguntasEncuesta({
       titulo: p.titulo.trim(), satisfaccion: p.satisfaccion.trim(),
+      profesional: p.profesional.trim(),
       recomendacion: p.recomendacion.trim(), comentarios: p.comentarios.trim(),
     }).subscribe({
       next: () => {
@@ -310,7 +422,7 @@ export class SettingsComponent implements OnInit {
       },
       error: (err) => {
         this.savingPreguntas.set(false);
-        this.alerts.error('No se pudo guardar la encuesta', err?.error?.error || 'Revise que ningún enunciado quede vacío ni pase de 200 caracteres.');
+        this.alerts.error('No se pudo guardar la encuesta', mensajeError(err, 'Revise que ningún enunciado quede vacío ni pase de 200 caracteres.'));
       },
     });
   }
@@ -334,7 +446,7 @@ export class SettingsComponent implements OnInit {
       },
       error: (err) => {
         this.loadingPermisos.set(false);
-        this.alerts.error('No se pudo cargar la matriz de permisos', err?.error?.error || 'Solo el Administrador Maestro puede consultar los permisos por rol.');
+        this.alerts.error('No se pudo cargar la matriz de permisos', mensajeError(err, 'Solo el Administrador Maestro puede consultar los permisos por rol.'));
       },
     });
   }
@@ -409,7 +521,7 @@ export class SettingsComponent implements OnInit {
       },
       error: (err) => {
         this.savingPermisos.set(false);
-        this.alerts.error('No se pudieron guardar los permisos', err?.error?.error || 'El servidor rechazó el cambio. Se recargó el estado vigente.');
+        this.alerts.error('No se pudieron guardar los permisos', mensajeError(err, 'El servidor rechazó el cambio. Se recargó el estado vigente.'));
         // Parte de los cambios pudo aplicarse: se recarga la verdad del servidor.
         this.loadPermisos();
       },
@@ -447,7 +559,7 @@ export class SettingsComponent implements OnInit {
       },
       error: (err) => {
         this.loadingUsers.set(false);
-        this.alerts.error('No se pudo cargar la lista de usuarios', err?.error?.error || 'Solo el Administrador Maestro puede consultar los usuarios internos.');
+        this.alerts.error('No se pudo cargar la lista de usuarios', mensajeError(err, 'Solo el Administrador Maestro puede consultar los usuarios internos.'));
       },
     });
   }
@@ -543,7 +655,7 @@ export class SettingsComponent implements OnInit {
         );
         this.loadUsuarios();
       },
-      error: (err) => this.alerts.error('No se pudo cambiar el estado', err?.error?.error || `El servidor rechazó el cambio de estado de ${u.nombre}.`),
+      error: (err) => this.alerts.error('No se pudo cambiar el estado', mensajeError(err, `El servidor rechazó el cambio de estado de ${u.nombre}.`)),
     });
   }
 
@@ -576,7 +688,7 @@ export class SettingsComponent implements OnInit {
       },
       error: (err) => {
         this.deletingUser.set(null);
-        this.alerts.error('No se pudo eliminar el usuario', err?.error?.error || `El servidor rechazó la baja de ${u.nombre}.`);
+        this.alerts.error('No se pudo eliminar el usuario', mensajeError(err, `El servidor rechazó la baja de ${u.nombre}.`));
       },
     });
   }
@@ -595,7 +707,30 @@ export class SettingsComponent implements OnInit {
       },
       error: (err) => {
         this.savingThreshold.set(false);
-        this.alerts.error('No se pudo actualizar el umbral', err?.error?.error || 'El valor debe estar entre 0 y 100.');
+        this.alerts.error('No se pudo actualizar el umbral', mensajeError(err, 'El valor debe estar entre 0 y 100.'));
+      },
+    });
+  }
+
+  /** CFG-05 · Guarda el día de corte (1-28 para que exista también en febrero). */
+  protected guardarDiaCorte(): void {
+    const n = Number(this.diaCorte);
+    if (!Number.isInteger(n) || n < 1 || n > 28) {
+      this.alerts.warning('Día de corte inválido', 'Debe ser un número entero entre 1 y 28.');
+      return;
+    }
+    this.savingCorte.set(true);
+    this.api.setDiaCorte(n).subscribe({
+      next: () => {
+        this.savingCorte.set(false);
+        this.alerts.success(
+          'Día de corte actualizado',
+          `A partir del día ${n} de cada mes se considera vencido el cobro del mes anterior.`,
+        );
+      },
+      error: (err) => {
+        this.savingCorte.set(false);
+        this.alerts.error('No se pudo guardar el día de corte', mensajeError(err, 'El valor debe estar entre 1 y 28.'));
       },
     });
   }

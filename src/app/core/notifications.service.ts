@@ -1,7 +1,7 @@
 import { Injectable, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { ApiService } from './api.service';
-import { Notificacion } from './models';
+import { ConteosNotificaciones, FiltroNotificaciones, Notificacion } from './models';
 
 /** Cada cuánto se refresca el contador del badge mientras la app está abierta. */
 const POLL_MS = 60_000;
@@ -26,11 +26,16 @@ export class NotificationsService {
   private readonly _unread = signal(0);
   private readonly _loading = signal(false);
   private readonly _error = signal<string | null>(null);
+  private readonly _filtro = signal<FiltroNotificaciones>('todas');
+  private readonly _conteos = signal<ConteosNotificaciones>({ no_leidas: 0, leidas: 0, eliminadas: 0 });
 
   readonly items = this._items.asReadonly();
   readonly unread = this._unread.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
+  /** Recorte visible. 'todas' = la bandeja viva (sin las eliminadas). */
+  readonly filtro = this._filtro.asReadonly();
+  readonly conteos = this._conteos.asReadonly();
 
   /** El badge no muestra números de tres cifras: por encima de 99 se corta. */
   readonly badge = computed(() => {
@@ -65,23 +70,68 @@ export class NotificationsService {
     });
   }
 
-  /** Carga la bandeja completa. Se llama al abrir el panel. */
+  /** Cambia el recorte visible y lo recarga. */
+  verFiltro(f: FiltroNotificaciones): void {
+    this._filtro.set(f);
+    this.load();
+  }
+
+  /** Carga la bandeja del recorte activo. Se llama al abrir el panel. */
   load(): void {
     if (!this.isBrowser) return;
     this._loading.set(true);
     this._error.set(null);
-    this.api.listNotifications().subscribe({
+    this.api.listNotifications(this._filtro()).subscribe({
       next: (r) => {
-        const items = r.data ?? [];
-        this._items.set(items);
-        // La lista recién traída es más fresca que el último sondeo.
-        this._unread.set(items.filter((n) => !n.leido_en).length);
+        this._items.set(r.data ?? []);
+        // El badge sale de los conteos y no de la lista: mirando "Leídas" la
+        // lista no tiene ninguna sin leer, y contarlas ahí lo dejaría en cero.
+        if (r.conteos) {
+          this._conteos.set(r.conteos);
+          this._unread.set(r.conteos.no_leidas);
+        }
         this._loading.set(false);
       },
       error: () => {
         this._loading.set(false);
         this._error.set('No se pudieron cargar las notificaciones.');
       },
+    });
+  }
+
+  /**
+   * NOT-04 · Elimina una notificación. Sale de la lista en el acto —es lo que se
+   * acaba de pedir— y se repone si el servidor dice que no.
+   *
+   * Estando en "Eliminadas" no se quita: ahí es donde tiene que aparecer.
+   */
+  remove(n: Notificacion): void {
+    const antes = this._items();
+    const conteosAntes = this._conteos();
+    if (this._filtro() !== 'eliminadas') {
+      this._items.update((list) => list.filter((x) => x.id !== n.id));
+    }
+    this._conteos.update((c) => ({
+      no_leidas: Math.max(0, c.no_leidas - (n.leido_en ? 0 : 1)),
+      leidas: Math.max(0, c.leidas - (n.leido_en ? 1 : 0)),
+      eliminadas: c.eliminadas + 1,
+    }));
+    if (!n.leido_en) this._unread.update((v) => Math.max(0, v - 1));
+    this.api.deleteNotification(n.id).subscribe({
+      next: () => this.load(),
+      error: () => {
+        this._items.set(antes);
+        this._conteos.set(conteosAntes);
+        this._unread.set(conteosAntes.no_leidas);
+      },
+    });
+  }
+
+  /** Devuelve a la bandeja algo eliminado por error. */
+  restore(n: Notificacion): void {
+    this.api.restoreNotification(n.id).subscribe({
+      next: () => this.load(),
+      error: () => this._error.set('No se pudo restaurar la notificación.'),
     });
   }
 

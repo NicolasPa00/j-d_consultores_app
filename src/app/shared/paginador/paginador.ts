@@ -22,7 +22,18 @@ export class PaginadorComponent {
   /** Cómo se llaman las filas: "órdenes", "empresas", "profesionales"… */
   readonly etiqueta = input('registros');
 
-  protected readonly tamanos = TAMANOS_PAGINA;
+  /**
+   * Opciones de "filas por página". Si una vista arranca con un tamaño que no
+   * está en la lista estándar, se añade en su sitio: sin él, el selector no
+   * tendría ninguna opción marcada y mostraría un número que no es el que la
+   * tabla está usando.
+   */
+  protected readonly tamanos = computed<number[]>(() => {
+    const actual = this.pag().tamano();
+    return TAMANOS_PAGINA.includes(actual)
+      ? TAMANOS_PAGINA
+      : [...TAMANOS_PAGINA, actual].sort((a, b) => a - b);
+  });
 
   /**
    * Números de página a mostrar, con elipsis. Se acota a una ventana alrededor

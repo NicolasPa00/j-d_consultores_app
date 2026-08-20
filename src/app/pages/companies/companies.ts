@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
+import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
 import { Empresa, OrdenDeEmpresa } from '../../core/models';
@@ -70,12 +71,12 @@ export class CompaniesComponent implements OnInit {
   /** Solo el administrador escribe; contador y auditor consultan. */
   protected readonly puedeEditar = computed(() => this.auth.usuario()?.rol === 'admin');
 
-  // ---- Drawer: formulario de alta/edición ----
+  // ---- Modal: formulario de alta/edición ----
   protected readonly formOpen = signal(false);
   protected readonly editingId = signal<string | null>(null);
   protected draft: EmpresaDraft = { ...DRAFT_VACIO };
 
-  // ---- Drawer: ficha con las últimas órdenes ----
+  // ---- Modal: ficha con las últimas órdenes ----
   protected readonly detalle = signal<Empresa | null>(null);
   protected readonly detalleOrdenes = signal<OrdenDeEmpresa[]>([]);
   protected readonly loadingDetalle = signal(false);
@@ -94,7 +95,7 @@ export class CompaniesComponent implements OnInit {
   });
 
   /** CFG-02 · El maestro de empresas solo crece: se alimenta solo al validar. */
-  protected readonly pag = paginar(this.filtradas, 25);
+  protected readonly pag = paginar(this.filtradas);
 
   /** Buscar o cambiar el filtro es mirar otra lista: se vuelve a la página 1. */
   protected buscar(texto: string): void {
@@ -130,7 +131,7 @@ export class CompaniesComponent implements OnInit {
       },
       error: (err) => {
         this.loading.set(false);
-        this.alerts.error('No se pudieron cargar las empresas', err?.error?.error || 'El servidor no respondió al listado de empresas clientes.');
+        this.alerts.error('No se pudieron cargar las empresas', mensajeError(err, 'El servidor no respondió al listado de empresas clientes.'));
       },
     });
   }
@@ -206,7 +207,7 @@ export class CompaniesComponent implements OnInit {
       },
       error: (err) => {
         this.saving.set(false);
-        this.alerts.error('No se pudo guardar la empresa', err?.error?.error || 'Revise que el NIT no esté ya registrado y que el nombre no quede vacío.');
+        this.alerts.error('No se pudo guardar la empresa', mensajeError(err, 'Revise que el NIT no esté ya registrado y que el nombre no quede vacío.'));
       },
     });
   }
@@ -225,7 +226,7 @@ export class CompaniesComponent implements OnInit {
       },
       error: (err) => {
         this.loadingDetalle.set(false);
-        this.alerts.error('No se pudo abrir la ficha', err?.error?.error || `El servidor no devolvió los datos de ${e.nombre}.`);
+        this.alerts.error('No se pudo abrir la ficha', mensajeError(err, `El servidor no devolvió los datos de ${e.nombre}.`));
       },
     });
   }
@@ -247,7 +248,7 @@ export class CompaniesComponent implements OnInit {
             : `${r.data.nombre} deja de ofrecerse, pero conserva su historial de órdenes.`,
         );
       },
-      error: (err) => this.alerts.error('No se pudo cambiar el estado', err?.error?.error || `El servidor rechazó el cambio de estado de ${e.nombre}.`),
+      error: (err) => this.alerts.error('No se pudo cambiar el estado', mensajeError(err, `El servidor rechazó el cambio de estado de ${e.nombre}.`)),
     });
   }
 
@@ -269,7 +270,7 @@ export class CompaniesComponent implements OnInit {
         if (this.detalle()?.id === e.id) this.closeDetalle();
         this.load();
       },
-      error: (err) => this.alerts.error('No se pudo eliminar la empresa', err?.error?.error || 'El servidor rechazó la baja.'),
+      error: (err) => this.alerts.error('No se pudo eliminar la empresa', mensajeError(err, 'El servidor rechazó la baja.')),
     });
   }
 
@@ -295,7 +296,7 @@ export class CompaniesComponent implements OnInit {
         this.closeDetalle();
         this.load();
       },
-      error: (err) => this.alerts.error('No se pudo fusionar', err?.error?.error || 'El servidor rechazó la fusión.'),
+      error: (err) => this.alerts.error('No se pudo fusionar', mensajeError(err, 'El servidor rechazó la fusión.')),
     });
   }
 }

@@ -30,7 +30,15 @@
     } @else {
       <span class="uploader__file uploader__file--empty">Ningún archivo seleccionado</span>
     }
-    <span class="uploader__hint">Excel (.xlsx) o PDF · puedes elegir varios a la vez</span>
+    @if (revisando()) {
+      <!-- IMP-09 · Comprobación previa: dura menos de un segundo, pero si no se
+           dice nada el usuario pulsa "Procesar" antes de que termine. -->
+      <span class="uploader__hint uploader__hint--busy">
+        Comprobando si estas órdenes ya están en el sistema…
+      </span>
+    } @else {
+      <span class="uploader__hint">Excel (.xlsx) o PDF · máx. 4 MB por archivo · puedes elegir varios a la vez</span>
+    }
   </div>
 
   <div class="uploader__actions">
@@ -44,7 +52,7 @@
     <button
       type="button"
       class="btn btn--primary btn--sm"
-      [disabled]="!fileNames().length || processing()"
+      [disabled]="!fileNames().length || processing() || revisando()"
       (click)="processWithAi()"
     >
       @if (processing()) {
@@ -116,6 +124,10 @@
           {{ duplicadas().length }} órdenes ya existen y se descartaron del procesamiento
         }
       </p>
+      <p class="dup-alert__lead">
+        No se procesaron con IA: la comprobación se hace al elegir el archivo y no
+        gasta ninguna petición.
+      </p>
       <ul class="dup-list">
         @for (d of duplicadas(); track d.id) {
           <li class="dup-item">
@@ -136,7 +148,17 @@
                 de Órdenes — volver a importar el archivo no la reactiva.
               </span>
             }
-            @if (variosArchivos() && d.archivo) {
+            @if (d.previa) {
+              <span class="dup-item__file">
+                {{ d.archivo }} · se apartó de la selección
+                <!-- La detección acierta pero no es infalible: si el documento
+                     menciona otra orden, podría apartarse uno legítimo. Antes de
+                     dejar a alguien sin poder importarlo, se le deja insistir. -->
+                <button type="button" class="dup-item__force" (click)="procesarIgual(d.archivo)">
+                  Procesar de todos modos
+                </button>
+              </span>
+            } @else if (variosArchivos() && d.archivo) {
               <span class="dup-item__file">Venía en {{ d.archivo }}</span>
             }
           </li>
@@ -168,6 +190,11 @@
             <th>NIT</th>
             <th>Razón Social</th>
             <th>ARL detectada</th>
+            <!-- CFG-04 · Obligatorio: de aquí sale el valor hora del profesional.
+                 Va en la tabla y no solo en el modal porque un SIPAB trae 31
+                 órdenes y abrirlas una a una solo para elegir el tipo sería
+                 media hora de clics. -->
+            <th>Tipo de orden *</th>
             <th>Horas</th>
             <th>Confianza</th>
             @if (variosArchivos()) {
@@ -199,6 +226,20 @@
                     {{ row.arlConfidence }}%
                   </span>
                 }
+              </td>
+              <td>
+                <select
+                  class="form-control form-control--sm"
+                  [class.form-control--error]="sinTipo(row)"
+                  [value]="row.tipoOrdenId || ''"
+                  (change)="cambiarTipo(row, $any($event.target).value)"
+                  [attr.aria-label]="'Tipo de orden de ' + row.company"
+                >
+                  <option value="">Elegir…</option>
+                  @for (t of tiposOrden(); track t.id) {
+                    <option [value]="t.id" [selected]="t.id === row.tipoOrdenId">{{ t.nombre }}</option>
+                  }
+                </select>
               </td>
               <td class="mono">{{ row.hours }}</td>
               <td>
@@ -246,7 +287,7 @@
             </tr>
           } @empty {
             <tr>
-              <td [attr.colspan]="variosArchivos() ? 9 : 8" class="table__empty">
+              <td [attr.colspan]="variosArchivos() ? 10 : 9" class="table__empty">
                 @if (duplicadas().length) {
                   Todas las órdenes de los archivos ya existían: no queda ninguna por guardar.
                 } @else {
@@ -263,7 +304,10 @@
 
     <div class="preview__footer">
       <span class="preview__status">
-        @if (pendientesVencimiento().length; as faltan) {
+        @if (pendientesTipo().length; as faltan) {
+          <strong>{{ faltan }} orden(es) sin tipo de orden.</strong>
+          Elíjalo en cada fila: de él sale el valor hora con el que se cobra.
+        } @else if (pendientesVencimiento().length; as faltan) {
           <strong>{{ faltan }} orden(es) sin fecha de vencimiento.</strong>
           Diligénciela en cada una para poder guardar.
         } @else {
@@ -389,6 +433,32 @@
               </div>
             </div>
           }
+
+          <!-- CFG-04 · La categoría con la que se cobra. No es un campo
+               extraído del documento —la ARL no la manda—, así que va aparte de
+               la rejilla de campos y sin porcentaje de confianza. -->
+          <div class="field field--full tipo-orden">
+            <div class="field__labelrow">
+              <label class="form-field__label" for="tipoOrden">Tipo de orden *</label>
+            </div>
+            <select
+              id="tipoOrden"
+              class="form-control"
+              [class.form-control--error]="sinTipo(order)"
+              [value]="order.tipoOrdenId || ''"
+              (change)="cambiarTipo(order, $any($event.target).value)"
+            >
+              <option value="">Elegir…</option>
+              @for (t of tiposOrden(); track t.id) {
+                <option [value]="t.id" [selected]="t.id === order.tipoOrdenId">{{ t.nombre }}</option>
+              }
+            </select>
+            @if (sinTipo(order)) {
+              <p class="field__alert">
+                Campo obligatorio — de él sale el valor hora con el que se le paga al profesional.
+              </p>
+            }
+          </div>
 
           <form class="fields">
             @for (item of order.fields; track item.key) {

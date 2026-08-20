@@ -3,6 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../../core/api.service';
+import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import {
   Encuesta, EncuestaStats, FiltroEncuestas, Orden, Profesional,
@@ -18,7 +19,7 @@ type ReportTab = 'ordenes' | 'profesionales' | 'satisfaccion' | 'vencidas' | 'ho
 // El ciclo vigente son tres estados; los dos últimos se conservan en la lista
 // porque las órdenes anteriores a ago-2026 todavía los tienen y los informes
 // deben poder filtrarlas.
-const ESTADOS = ['SIN PROGRAMAR', 'PROGRAMADA', 'EJECUTADA', 'EN VERIFICACIÓN', 'CANCELADA'];
+const ESTADOS = ['SIN PROGRAMAR', 'PROGRAMADA', 'EJECUTADA', 'FINALIZADA', 'EN VERIFICACIÓN', 'CANCELADA'];
 
 @Component({
   selector: 'app-reports',
@@ -130,19 +131,19 @@ export class ReportsComponent implements OnInit {
   // volver a Órdenes tras mirar Cartera no debería mover la página de la otra.
   // Las tablas de agregados (por profesional, por ARL, por mes) no se paginan:
   // tienen tantas filas como profesionales, ARL o meses del rango.
-  protected readonly pagOrdenes = paginar(this.filteredOrders, 25);
-  protected readonly pagProfs = paginar(this.filteredProfs, 25);
-  protected readonly pagEncuestas = paginar(this.surveys, 25);
-  protected readonly pagVencidas = paginar(computed(() => this.vencidas()?.ordenes ?? []), 25);
-  protected readonly pagCartera = paginar(computed(() => this.cartera()?.ordenes ?? []), 25);
+  protected readonly pagOrdenes = paginar(this.filteredOrders);
+  protected readonly pagProfs = paginar(this.filteredProfs);
+  protected readonly pagEncuestas = paginar(this.surveys);
+  protected readonly pagVencidas = paginar(computed(() => this.vencidas()?.ordenes ?? []));
+  protected readonly pagCartera = paginar(computed(() => this.cartera()?.ordenes ?? []));
   // Los desgloses también crecen, y esto se me pasó en la primera pasada: "por
   // profesional" crece con el equipo y "por mes" con el rango que elige el
   // usuario (en Horas, tres años son 36 filas). Los que NO se paginan son los
   // que tienen un tamaño estructural: "por ARL" son las tres ARL y la
   // distribución de notas son los cinco valores de la escala.
-  protected readonly pagSatProf = paginar(computed(() => this.surveyStats()?.por_profesional ?? []), 10);
-  protected readonly pagSatMes = paginar(computed(() => this.surveyStats()?.por_mes ?? []), 12);
-  protected readonly pagHorasMes = paginar(computed(() => this.horasRep()?.por_mes ?? []), 12);
+  protected readonly pagSatProf = paginar(computed(() => this.surveyStats()?.por_profesional ?? []));
+  protected readonly pagSatMes = paginar(computed(() => this.surveyStats()?.por_mes ?? []));
+  protected readonly pagHorasMes = paginar(computed(() => this.horasRep()?.por_mes ?? []));
 
   ngOnInit(): void {
     if (!this.isBrowser) return;
@@ -284,7 +285,7 @@ export class ReportsComponent implements OnInit {
       },
       error: (err) => {
         this.marcandoId.set(null);
-        this.alerts.error('No se pudo actualizar', err?.error?.error || 'El servidor rechazó el cambio.');
+        this.alerts.error('No se pudo actualizar', mensajeError(err, 'El servidor rechazó el cambio.'));
       },
     });
   }
@@ -473,7 +474,8 @@ export class ReportsComponent implements OnInit {
     switch (estado) {
       case 'PROGRAMADA': return 'blue';
       case 'EN VERIFICACIÓN': return 'amber';
-      case 'EJECUTADA': return 'green';
+      case 'EJECUTADA': return 'amber';
+      case 'FINALIZADA': return 'green';
       case 'CANCELADA': return 'red';
       default: return 'slate';
     }

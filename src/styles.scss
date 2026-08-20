@@ -183,6 +183,24 @@ h4 {
   background: #f1f5f9;
 }
 
+/**
+ * Acción destructiva o de rechazo. Existe porque "Rechazar" no puede parecerse
+ * a "Cancelar": los dos iban de `.btn--ghost` y en el visor de soportes se
+ * confundía el botón que devuelve la orden al profesional con el que solo
+ * cierra la ventana. El contorno rojo lo separa sin gritar tanto como un botón
+ * relleno, que competiría con la acción principal.
+ */
+.btn--danger {
+  background: var(--surface);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.btn--danger:hover {
+  background: var(--danger);
+  color: #ffffff;
+}
+
 .btn--block {
   width: 100%;
 }

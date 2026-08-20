@@ -88,10 +88,39 @@
           </div>
         </fieldset>
 
-        <!-- Pregunta 2 · recomendación (escala 1-5) -->
+        <!-- Pregunta 2 · el PROFESIONAL (escala 1-5) · ENC-03
+             Es la que alimenta el promedio del asesor en Profesionales, y por
+             eso va separada de la anterior: una capacitación puede salir floja
+             por el tema o el sitio sin que sea culpa de quien la dictó. -->
         <fieldset class="q">
           <legend class="q__title">
             <span class="q__num">2</span>
+            {{ info()?.preguntas?.profesional }}
+            @if (info()?.profesional_nombre; as nombre) {
+              <small class="q__opt">({{ nombre }})</small>
+            }
+          </legend>
+          <div class="scale" role="radiogroup" [attr.aria-label]="info()?.preguntas?.profesional">
+            @for (op of escalaProfesional; track op.valor) {
+              <button
+                type="button"
+                class="scale__opt"
+                [class.scale__opt--on]="profesional() === op.valor"
+                role="radio"
+                [attr.aria-checked]="profesional() === op.valor"
+                (click)="elegir('profesional', op.valor)"
+              >
+                <span class="scale__num">{{ op.valor }}</span>
+                <span class="scale__label">{{ op.label }}</span>
+              </button>
+            }
+          </div>
+        </fieldset>
+
+        <!-- Pregunta 3 · recomendación de JD&D como empresa (escala 1-5) -->
+        <fieldset class="q">
+          <legend class="q__title">
+            <span class="q__num">3</span>
             {{ info()?.preguntas?.recomendacion }}
           </legend>
           <div class="scale" role="radiogroup" [attr.aria-label]="info()?.preguntas?.recomendacion">
@@ -111,10 +140,10 @@
           </div>
         </fieldset>
 
-        <!-- Pregunta 3 · comentarios (opcional) -->
+        <!-- Pregunta 4 · comentarios (opcional) -->
         <div class="q">
           <label class="q__title" for="comentarios">
-            <span class="q__num">3</span>
+            <span class="q__num">4</span>
             {{ info()?.preguntas?.comentarios }}
             <small class="q__opt">(opcional)</small>
           </label>
@@ -122,10 +151,13 @@
             id="comentarios"
             class="form-control"
             rows="4"
-            maxlength="1000"
+            [attr.maxlength]="maxComentarios"
             placeholder="Cuéntenos qué podemos mejorar…"
             [(ngModel)]="comentarios"
           ></textarea>
+          <!-- El tope se ve mientras se escribe: enterarse al enviar de que
+               sobran caracteres obliga a recortar un texto ya escrito. -->
+          <p class="q__contador">{{ comentarios.length }} / {{ maxComentarios }} caracteres</p>
         </div>
 
         <button
@@ -139,7 +171,7 @@
         </button>
 
         @if (!completo()) {
-          <p class="survey__hint">Responda las dos preguntas de calificación para enviar.</p>
+          <p class="survey__hint">Responda las tres preguntas de calificación para enviar.</p>
         }
       </div>
     }

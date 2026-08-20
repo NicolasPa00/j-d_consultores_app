@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
+import { mensajeError } from '../../core/errores';
 
 /** AUTH-03 · "Olvidé mi contraseña": solicita el correo de recuperación. */
 @Component({
@@ -35,7 +36,7 @@ export class ForgotPasswordComponent {
       },
       error: (err) => {
         this.loading.set(false);
-        this.error.set(err?.error?.error || 'No se pudo procesar la solicitud. Intente de nuevo.');
+        this.error.set(mensajeError(err, 'No se pudo procesar la solicitud. Intente de nuevo.'));
       },
     });
   }

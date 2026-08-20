@@ -499,11 +499,11 @@
             </tr>
           } @empty {
             <tr>
-              <td colspan="8" class="table__empty">
+              <td colspan="9" class="table__empty">
                 @if (loadingSurveys()) {
                   Cargando encuestas…
                 } @else {
-                  Todavía no se han enviado encuestas. Se envían solas cuando una orden pasa a EJECUTADA.
+                  Todavía no se han enviado encuestas. Se envían solas cuando un administrador acepta los soportes y la orden pasa a FINALIZADA.
                 }
               </td>
             </tr>

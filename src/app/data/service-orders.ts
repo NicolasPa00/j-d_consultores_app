@@ -34,6 +34,15 @@ export interface ServiceOrder {
   /** Asignación vigente (M5): profesional y fecha/hora de ejecución en ISO. */
   assignedProfId?: string | null;
   scheduledAt?: string | null;
+  // ---- CFG-04 / PRE-02 · Con qué se cobra ----
+  /** Tipo de orden del catálogo (obligatorio desde ago-2026). */
+  tipoOrdenId?: string | null;
+  /** Su nombre, ya resuelto por el backend. */
+  tipoOrden?: string | null;
+  /** Valor hora congelado al asignar el profesional; null si aún no se asignó. */
+  valorHoraCobro?: number | null;
+  /** De dónde salió ese valor: 'tarifa', 'tipo' o 'profesional'. */
+  valorHoraOrigen?: string | null;
   fields: {
     codigoCronograma: ExtractedField;
     secuencia: ExtractedField;

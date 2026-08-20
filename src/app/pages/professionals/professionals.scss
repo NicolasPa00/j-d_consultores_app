@@ -111,31 +111,36 @@
   color: var(--text-muted);
 }
 
-/* ===== Drawer ===== */
-.drawer-backdrop {
+/* ===== Modal =====
+   Diálogo centrado, igual que en el resto de la aplicación: el alta y la
+   edición NO se abren como panel lateral. */
+.modal-backdrop {
   position: fixed;
   inset: 0;
   z-index: 50;
-  background: rgba(15, 23, 42, 0.42);
+  background: rgba(15, 23, 42, 0.45);
   animation: fade-in 0.2s ease;
 }
 
-.drawer {
+.modal {
   position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   z-index: 51;
-  width: 420px;
-  max-width: 92vw;
   display: flex;
   flex-direction: column;
+  width: 560px;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 2rem);
   background: var(--surface);
-  box-shadow: -12px 0 40px rgba(0, 11, 80, 0.16);
-  animation: slide-in 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 60px rgba(0, 11, 80, 0.28);
+  overflow: hidden;
+  animation: modal-in 0.24s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.drawer__head {
+.modal__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -144,13 +149,13 @@
   border-bottom: 1px solid var(--border-soft);
 }
 
-.drawer__title {
+.modal__title {
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--text-main);
 }
 
-.drawer__body {
+.modal__body {
   flex: 1 1 auto;
   overflow-y: auto;
   padding: 1.5rem;
@@ -159,7 +164,7 @@
   gap: 1.1rem;
 }
 
-.drawer__footer {
+.modal__footer {
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
@@ -198,12 +203,14 @@
   }
 }
 
-@keyframes slide-in {
+@keyframes modal-in {
   from {
-    transform: translateX(100%);
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.98);
   }
   to {
-    transform: translateX(0);
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
   }
 }
 
@@ -235,3 +242,112 @@
   }
 
   }
+
+/* ===== ENC-05 · Órdenes ejecutadas y calificación =====
+   Van en la misma celda: el número de arriba le da tamaño a la nota de abajo. */
+.desempeno {
+  white-space: nowrap;
+}
+
+.desempeno__ordenes {
+  display: block;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.desempeno__sin {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+/* Las estrellas son un botón: llevan al detalle de las encuestas. */
+.rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.15rem;
+  padding: 0;
+  font-family: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.rating:hover .rating__valor {
+  text-decoration: underline;
+}
+
+.rating__stars {
+  display: inline-flex;
+  gap: 1px;
+  color: #d1d5db;
+}
+
+.star {
+  width: 15px;
+  height: 15px;
+}
+
+.star--on {
+  color: #f59e0b;
+}
+
+.rating__valor {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.rating__n {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+/* ===== Panel de calificaciones ===== */
+.modal--wide {
+  width: 940px;
+}
+
+.modal__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem;
+}
+
+.modal__status {
+  flex: 1 1 auto;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.ratings__estado {
+  padding: 2rem 0;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.ratings__resumen {
+  margin: 0 0 0.9rem;
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+
+/* La observación es lo que se viene a leer: se deja respirar y se corta el ancho. */
+.ratings__obs {
+  min-width: 240px;
+  max-width: 420px;
+  white-space: normal;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+/* Nota heredada de la satisfacción general, no respondida sobre el profesional. */
+.ratings__aprox {
+  margin-left: 0.3rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: help;
+}

@@ -7,8 +7,9 @@ import { FormsModule } from '@angular/forms';
 import { map, Observable } from 'rxjs';
 import { ExtractedField, ServiceOrder } from '../../data/service-orders';
 import { ApiService } from '../../core/api.service';
+import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
-import { ArchivoSoporte, Borrador, EstadoOrden, FranjaVisita, HistorialEstado, Ocupacion, Orden, Plantilla, Profesional } from '../../core/models';
+import { ArchivoSoporte, Borrador, CategoriaSoporte, EstadoOrden, TipoOrden, FranjaVisita, HistorialEstado, Ocupacion, Orden, Plantilla, Profesional } from '../../core/models';
 import { aIsoFecha, fechaLocal } from '../../core/fechas';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
@@ -24,24 +25,36 @@ interface FormFieldDescriptor {
  * Filtro activo del listado. Cada pestaña corresponde a un estado real de la
  * orden dentro de la bandeja; "todas" agrupa las que siguen activas.
  */
-type OrdersView = 'todas' | 'sin-programar' | 'programadas' | 'ejecutadas' | 'deshabilitadas';
+type OrdersView =
+  | 'todas' | 'sin-programar' | 'programadas' | 'ejecutadas' | 'finalizadas' | 'deshabilitadas';
 
-/** Estados de OS que cuentan como cerradas: ya no admiten trabajo de campo. */
-const ESTADOS_FINALES = ['EJECUTADA'];
+/**
+ * Estados en los que el trabajo de campo ya se hizo.
+ *
+ * Son dos y no uno porque significan cosas distintas: EJECUTADA es "el
+ * profesional subió los soportes" —le falta que alguien los revise— y
+ * FINALIZADA es "un administrador los aceptó". Cada uno tiene su pestaña: la
+ * primera es una bandeja de trabajo, la segunda un archivo.
+ */
+const ESTADOS_HECHOS = ['EJECUTADA', 'FINALIZADA'];
 
 /**
  * Transiciones válidas, en espejo de `sst.cambiar_estado_orden`. La BD es la
  * autoridad; esta tabla existe para no ofrecer en pantalla un cambio que el
  * servidor va a rechazar.
  *
- * El ciclo son tres estados (ago-2026): SIN PROGRAMAR → PROGRAMADA → EJECUTADA.
- * EJECUTADA → PROGRAMADA es el rechazo de soportes, la única marcha atrás.
- * Los motivos obligatorios son los dos retrocesos.
+ * El ciclo son cuatro estados (ago-2026):
+ *   SIN PROGRAMAR → PROGRAMADA → EJECUTADA → FINALIZADA
+ * EJECUTADA la pone el profesional al subir los soportes; FINALIZADA, el
+ * administrador al aceptarlos. EJECUTADA → PROGRAMADA es el rechazo de
+ * soportes, la única marcha atrás. Los motivos obligatorios son los dos
+ * retrocesos.
  */
 const TRANSICIONES: Record<string, EstadoOrden[]> = {
   'SIN PROGRAMAR': ['PROGRAMADA'],
   'PROGRAMADA': ['EJECUTADA', 'SIN PROGRAMAR'],
-  'EJECUTADA': ['PROGRAMADA'],
+  'EJECUTADA': ['FINALIZADA', 'PROGRAMADA'],
+  // FINALIZADA no aparece: es el cierre del ciclo y no tiene salida.
 };
 
 /** Transiciones que exigen motivo (las que deshacen trabajo ya hecho). */
@@ -58,6 +71,16 @@ interface ResultadoAsignacion {
   correo: boolean;
   /** CFG-03 · Cuántos formatos se adjuntaron; null si no aplica. */
   formatos: number | null;
+  /**
+   * ASG-02 · false cuando la visita quedó a medio repartir: se guardó el
+   * profesional y las franjas marcadas, pero la OS sigue SIN PROGRAMAR y nadie
+   * recibió nada.
+   */
+  completa: boolean;
+  /** Minutos que faltan según el SERVIDOR, que es quien decide. */
+  faltan: number | null;
+  /** Minutos que tiene la orden según el servidor. */
+  horasOrden: number | null;
 }
 
 /** Cómo se pinta la fecha de vencimiento de una orden en la tabla. */
@@ -147,8 +170,14 @@ export class ValidationComponent implements OnInit, OnDestroy {
 
   /** NOT-04 · OS que hay que abrir apenas cargue el listado (?os=<id>). */
   private osSolicitada: string | null = null;
+  /** Qué se abre al llegar por la campanita: la ficha o el visor de archivos. */
+  private vistaSolicitada: 'detalle' | 'soportes' = 'detalle';
 
   protected readonly orders = signal<ServiceOrder[]>([]);
+  /** CFG-04 · Catálogo de tipos de orden, para el desplegable del detalle. */
+  protected readonly tiposOrden = signal<TipoOrden[]>([]);
+  /** Tipo elegido mientras se edita; se manda con el resto de la corrección. */
+  protected tipoOrdenEdit = '';
   protected readonly query = signal('');
   protected readonly view = signal<OrdersView>('todas');
   /** Pestañas de filtro por estado (el orden es el del ciclo de vida). */
@@ -157,6 +186,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
     { key: 'sin-programar', label: 'Sin programar' },
     { key: 'programadas', label: 'Programadas' },
     { key: 'ejecutadas', label: 'Ejecutadas' },
+    { key: 'finalizadas', label: 'Finalizadas' },
     { key: 'deshabilitadas', label: 'Deshabilitadas' },
   ];
   protected readonly loading = signal(false);
@@ -170,14 +200,18 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected readonly historial = signal<HistorialEstado[]>([]);
   protected readonly loadingHistorial = signal(false);
   protected readonly historialError = signal<string | null>(null);
+  /**
+   * EST-03 · El historial se pliega.
+   *
+   * Es auditoría: se consulta cuando algo no cuadra, no cada vez que se abre una
+   * orden, y desplegado empujaba hacia abajo los datos que sí se miran siempre.
+   * Cerrado además no se pide al servidor — la petición se hace al abrirlo.
+   */
+  protected readonly historialAbierto = signal(false);
   /** Estado elegido en el desplegable de cambio manual ('' = ninguno). */
   protected readonly estadoDestino = signal<EstadoOrden | ''>('');
   protected motivoCambio = '';
   protected readonly cambiandoEstado = signal(false);
-
-  /** Soportes ya recibidos, listados dentro del modal de detalle. */
-  protected readonly detailSupports = signal<ArchivoSoporte[]>([]);
-  protected readonly loadingDetailSupports = signal(false);
 
   // ---- Modal de verificación de soportes (M7) ----
   protected readonly verifyId = signal<string | null>(null);
@@ -193,6 +227,15 @@ export class ValidationComponent implements OnInit, OnDestroy {
   /** El motivo de rechazo se pide en línea: VER-04 lo exige y no puede ir vacío. */
   protected readonly rejectMode = signal(false);
   protected rejectMotivo = '';
+  /**
+   * VER-04 · Qué documentos se devuelven.
+   *
+   * Rechazar era todo o nada, y el profesional volvía a subir los tres archivos
+   * aunque solo fallara el registro fotográfico: el administrador acababa
+   * revisando otra vez lo que ya había aprobado. Marcando aquí, el portal solo
+   * le abre esas casillas.
+   */
+  protected readonly rejectCats = signal<CategoriaRechazo[]>([]);
   /** URL viva del visor; se libera al cambiar de archivo o cerrar el modal. */
   private supportObjectUrl: string | null = null;
 
@@ -233,6 +276,12 @@ export class ValidationComponent implements OnInit, OnDestroy {
    * diligenciar y hasta ahora eso solo se descubría abriendo el buzón.
    */
   protected readonly plantillasActivas = signal<Plantilla[]>([]);
+  /**
+   * FOR · ARLs cuyos formatos oficiales ya vienen con el backend. Para ellas el
+   * correo sale con el formato de la propia ARL, prediligenciado, y no hace
+   * falta ninguna plantilla genérica.
+   */
+  protected readonly arlsConFormatoPropio = signal<string[]>([]);
   /** Alto total de la rejilla; se comparte entre la regla de horas y los días. */
   protected readonly agendaAlto = ((AG_HASTA_MIN - AG_DESDE_MIN) / AG_PASO_MIN) * AG_PASO_PX;
   /** Etiquetas de la regla horaria, ya posicionadas. */
@@ -300,7 +349,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
    * devuelve el endpoint y la tabla se estiraba hasta que la página entera
    * dejaba de poder recorrerse.
    */
-  protected readonly pag = paginar(this.filtered, 25);
+  protected readonly pag = paginar(this.filtered);
 
   /**
    * ¿La orden pertenece a la pestaña indicada?
@@ -320,13 +369,9 @@ export class ValidationComponent implements OnInit, OnDestroy {
     if (o.disabled) return false;
     if (view === 'sin-programar') return !o.validated || o.osEstado === 'SIN PROGRAMAR';
     if (view === 'programadas') return o.validated && o.osEstado === 'PROGRAMADA';
-    if (view === 'ejecutadas') return o.validated && this.esFinal(o);
+    if (view === 'ejecutadas') return o.validated && o.osEstado === 'EJECUTADA';
+    if (view === 'finalizadas') return o.validated && o.osEstado === 'FINALIZADA';
     return true;
-  }
-
-  /** La OS llegó al final de su ciclo (EJECUTADA). */
-  private esFinal(o: ServiceOrder): boolean {
-    return ESTADOS_FINALES.includes(o.osEstado || '');
   }
 
   protected count(view: OrdersView): number {
@@ -395,12 +440,32 @@ export class ValidationComponent implements OnInit, OnDestroy {
       const os = params.get('os');
       if (!os) return;
       this.osSolicitada = os;
-      if (!this.loading()) this.abrirOsSolicitada();
+      // 'soportes' entra directo al visor de archivos; sin el parámetro, a la
+      // ficha de la orden, como siempre.
+      this.vistaSolicitada = params.get('vista') === 'soportes' ? 'soportes' : 'detalle';
+      // Se RECARGA la bandeja antes de abrir nada. El aviso llega justo porque
+      // algo cambió —el profesional acaba de subir los soportes—, y la lista en
+      // memoria es de antes: sin recargar, el visor se abría con la orden en
+      // PROGRAMADA y los botones de aceptar/rechazar deshabilitados sobre unos
+      // archivos que sí estaban ahí.
+      if (!this.loading()) this.load();
     });
   }
 
+  /**
+   * Trae la bandeja. Al terminar abre la orden pedida por la campanita, si la
+   * hay: el orden importa, porque `abrirOsSolicitada` busca en esta misma lista.
+   */
   private load(): void {
     this.loading.set(true);
+    // El catálogo se pide una vez: lo usan el detalle y la edición de cualquier
+    // fila, y es una lista de tres o cuatro nombres.
+    if (!this.tiposOrden().length) {
+      this.api.listTiposOrden().subscribe({
+        next: (r) => this.tiposOrden.set(r.data),
+        error: () => {},
+      });
+    }
     // Pendientes Y validadas: validar una orden ya no la saca de esta vista, solo
     // le cambia el estado. 'all' trae además las deshabilitadas; los cuatro
     // grupos se separan por pestaña en el cliente.
@@ -419,8 +484,9 @@ export class ValidationComponent implements OnInit, OnDestroy {
 
   /**
    * NOT-04 · Llegada desde la campanita: `/ordenes?os=<id de la OS>` abre el
-   * detalle de esa orden. El parámetro se limpia de la URL para que recargar la
-   * página (o volver con el botón atrás) no reabra el modal.
+   * detalle de esa orden, y `&vista=soportes` el visor de archivos adjuntos.
+   * El parámetro se limpia de la URL para que recargar la página (o volver con
+   * el botón atrás) no reabra el modal.
    *
    * El aviso apunta a la OS, pero esta bandeja lista borradores: la orden se
    * busca por `osId`. Si no aparece —quedó fuera de la bandeja o la OS nació de
@@ -443,6 +509,14 @@ export class ValidationComponent implements OnInit, OnDestroy {
     // Una orden deshabilitada no se ve en la pestaña por defecto: se cambia para
     // que al cerrar el modal la fila siga a la vista.
     if (orden.disabled) this.view.set('deshabilitadas');
+
+    // Al visor solo se puede entrar si la OS existe; un borrador sin materializar
+    // no tiene archivos que enseñar, así que en ese caso se cae al detalle.
+    if (this.vistaSolicitada === 'soportes' && orden.osId) {
+      this.vistaSolicitada = 'detalle';
+      this.openVerify(orden);
+      return;
+    }
     this.openDetail(orden.id);
   }
 
@@ -497,7 +571,11 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected pillEstado(estado?: string | null): string {
     switch (estado) {
       case 'PROGRAMADA': return 'pill--info';
-      case 'EJECUTADA': return 'pill--success';
+      // EJECUTADA es trabajo entregado pero SIN revisar: pide una acción del
+      // administrador, así que no puede verse igual de "terminado" que el
+      // cierre. El verde se reserva para FINALIZADA.
+      case 'EJECUTADA': return 'pill--warning';
+      case 'FINALIZADA': return 'pill--success';
       default: return 'pill--muted'; // SIN PROGRAMAR
     }
   }
@@ -505,18 +583,23 @@ export class ValidationComponent implements OnInit, OnDestroy {
   /**
    * ¿Hay soportes que revisar (VER-01/02)?
    *
-   * Al desaparecer EN VERIFICACIÓN, la orden queda EJECUTADA en cuanto llegan
-   * los archivos: la revisión del administrador pasó a hacerse SOBRE la orden ya
-   * ejecutada. Aceptar deja constancia y dispara la encuesta; rechazar la
-   * devuelve a PROGRAMADA.
+   * Solo sobre una EJECUTADA: la orden queda así en cuanto el profesional sube
+   * los archivos, y es exactamente el estado que espera decisión. Aceptar la
+   * pasa a FINALIZADA y dispara la encuesta; rechazar la devuelve a PROGRAMADA.
+   * Sobre una FINALIZADA ya no hay nada que decidir — el visor se abre igual,
+   * en solo lectura.
    */
   protected puedeVerificar(o: ServiceOrder): boolean {
     return !!o.osId && o.osEstado === 'EJECUTADA';
   }
 
-  /** Los soportes se consultan desde que existen, es decir, desde EJECUTADA. */
+  /**
+   * Los soportes se consultan desde que existen (EJECUTADA) y siguen
+   * consultándose después de cerrada la orden: el expediente de una FINALIZADA
+   * es justo lo que hay que poder abrir cuando la ARL pregunta.
+   */
   protected tieneSoportes(o: ServiceOrder): boolean {
-    return !!o.osId && o.osEstado === 'EJECUTADA';
+    return !!o.osId && ESTADOS_HECHOS.includes(o.osEstado || '');
   }
 
   /**
@@ -553,9 +636,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
   }
 
   protected openEdit(id: string): void {
-    // Una orden ya validada se abre en solo lectura: sus datos viven en la OS
-    // materializada, y editar el borrador a estas alturas no la modificaría.
-    this.abrirDetalle(id, !this.orders().find((o) => o.id === id)?.validated);
+    this.abrirDetalle(id, true);
   }
 
   /** Único punto de apertura del modal: deja el panel de estado en limpio. */
@@ -566,40 +647,39 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.motivoCambio = '';
     this.historial.set([]);
     this.historialError.set(null);
-    this.detailSupports.set([]);
+    this.historialAbierto.set(false);
     const order = this.orders().find((o) => o.id === id);
+    this.tipoOrdenEdit = order?.tipoOrdenId ?? '';
     if (order?.osId) {
-      this.cargarHistorial(order.osId);
-      this.cargarSoportesDelDetalle(order.osId);
+      this.cargarCamposDeLaOS(order.id, order.osId);
     }
   }
 
   /**
-   * SUP/VER-01 · Lo que el profesional ya subió, dentro del detalle.
+   * Trae al formulario los valores que tiene HOY la OS, no los que extrajo la
+   * IA del documento.
    *
-   * Antes solo se veía abriendo el visor de verificación desde el icono del
-   * clip, que aparece únicamente cuando hay archivos: quien no lo conocía no
-   * tenía forma de saber si habían llegado. Aquí es información de apoyo, así
-   * que un fallo no interrumpe el resto del detalle.
+   * En cuanto el borrador se valida, la fuente de verdad es la orden: si alguien
+   * corrigió un teléfono la semana pasada, el `metadatos_extraccion` del
+   * borrador sigue con el valor viejo y el detalle estaría enseñando —y
+   * ofreciendo editar— un dato que ya no es el de la orden.
+   *
+   * Es información de apoyo: si la petición falla se conservan los valores del
+   * borrador y el resto del detalle sigue funcionando.
    */
-  private cargarSoportesDelDetalle(osId: string): void {
-    this.loadingDetailSupports.set(true);
-    this.api.listSupports(osId).subscribe({
+  private cargarCamposDeLaOS(draftId: string, osId: string): void {
+    this.api.getOrder(osId).subscribe({
       next: (r) => {
-        this.detailSupports.set(r.data);
-        this.loadingDetailSupports.set(false);
+        const os = r.data as Record<string, unknown>;
+        this.orders.update((list) =>
+          list.map((o) => (o.id === draftId ? { ...o, fields: camposDesdeOS(o.fields, os) } : o)),
+        );
       },
-      error: () => this.loadingDetailSupports.set(false),
+      error: () => undefined,
     });
   }
 
-  /** Abre el visor de soportes directamente en el archivo pulsado. */
-  protected verSoporte(order: ServiceOrder, soporte: ArchivoSoporte): void {
-    this.openVerify(order, soporte.id);
-  }
-
   protected enableEdit(): void {
-    if (this.detailOrder()?.validated) return;
     this.editMode.set(true);
   }
 
@@ -630,10 +710,77 @@ export class ValidationComponent implements OnInit, OnDestroy {
     URL.revokeObjectURL(url);
   }
 
-  /** Guarda las correcciones y persiste la OS (SIN PROGRAMAR) en la BD. */
-  protected validateOrder(): void {
+  /**
+   * Guarda las correcciones del detalle. Hay DOS destinos según dónde viva ya
+   * el dato, y confundirlos es lo que hacía que una corrección se perdiera:
+   *
+   * - **Borrador sin validar** → se corrige el borrador y se materializa la OS.
+   * - **OS ya creada** (cualquier estado) → se corrige la ORDEN. Escribir en el
+   *   borrador a estas alturas no cambiaría nada: el backend ya no lo lee, y
+   *   `PUT /drafts/:id` responde 409 justamente para no aceptarlo en silencio.
+   */
+  protected guardarDetalle(): void {
     const current = this.detailOrder();
     if (!current || this.saving()) return;
+    if (current.osId) {
+      this.guardarEnLaOrden(current.osId, current);
+      return;
+    }
+    this.validateOrder(current);
+  }
+
+  /**
+   * EST-05 · Corrección sobre la OS materializada. No mueve el estado ni la
+   * asignación: solo los datos de la orden.
+   */
+  private guardarEnLaOrden(osId: string, current: ServiceOrder): void {
+    this.saving.set(true);
+    const campos: Record<string, string> = {};
+    for (const [clave, columna] of CAMPOS_OS) {
+      const f = current.fields[clave];
+      // Solo se mandan los campos que el formulario está mostrando: los que la
+      // ARL no trae no aparecen en pantalla y enviarlos vacíos borraría datos
+      // que el usuario nunca vio.
+      if (f) campos[columna] = f.value;
+    }
+    // CFG-04 · El tipo no es un campo extraído: viaja aparte y solo si cambió.
+    if (this.tipoOrdenEdit && this.tipoOrdenEdit !== (current.tipoOrdenId ?? '')) {
+      campos['tipo_orden_id'] = this.tipoOrdenEdit;
+    }
+    this.api.updateOrder(osId, campos).subscribe({
+      next: (r) => {
+        this.saving.set(false);
+        this.editMode.set(false);
+        // La razón social de la fila sale de la OS: se refleja sin releer todo.
+        const empresa = String((r.data as Record<string, unknown>)['empresa_nombre'] ?? current.company);
+        this.orders.update((list) =>
+          list.map((o) => (o.id === current.id
+            ? {
+                ...o,
+                company: empresa,
+                tipoOrdenId: (r.data as Record<string, unknown>)['tipo_orden_id'] as string ?? o.tipoOrdenId,
+                tipoOrden: (r.data as Record<string, unknown>)['tipo_orden'] as string ?? o.tipoOrden,
+                fields: camposDesdeOS(o.fields, r.data as Record<string, unknown>),
+              }
+            : o)),
+        );
+        this.alerts.success(
+          'Orden actualizada',
+          `Se guardaron los cambios de ${current.osCode || empresa}. El estado y la asignación no se modificaron.`,
+        );
+      },
+      error: (err) => {
+        this.saving.set(false);
+        this.alerts.error(
+          'No se pudieron guardar los cambios',
+          mensajeError(err, 'El servidor rechazó la corrección; revise los campos obligatorios de identidad.'),
+        );
+      },
+    });
+  }
+
+  /** Guarda las correcciones y persiste la OS (SIN PROGRAMAR) en la BD. */
+  private validateOrder(current: ServiceOrder): void {
     this.saving.set(true);
 
     const f = current.fields;
@@ -679,13 +826,13 @@ export class ValidationComponent implements OnInit, OnDestroy {
           },
           error: (err) => {
             this.saving.set(false);
-            this.alerts.error('No se pudo validar la orden', err?.error?.error || 'Revise que la orden tenga número de orden, o bien cronograma y secuencia, y que no esté duplicada.');
+            this.alerts.error('No se pudo validar la orden', mensajeError(err, 'Revise que la orden tenga número de orden, o bien cronograma y secuencia, y que no esté duplicada.'));
           },
         });
       },
       error: (err) => {
         this.saving.set(false);
-        this.alerts.error('No se pudieron guardar las correcciones', err?.error?.error || 'Los cambios no llegaron al servidor; vuelva a intentarlo.');
+        this.alerts.error('No se pudieron guardar las correcciones', mensajeError(err, 'Los cambios no llegaron al servidor; vuelva a intentarlo.'));
       },
     });
   }
@@ -753,6 +900,16 @@ export class ValidationComponent implements OnInit, OnDestroy {
         error: () => this.plantillasActivas.set([]),
       });
     }
+    // FOR · Y las ARL, que dicen cuáles traen sus formatos oficiales propios:
+    // esas no necesitan plantilla genérica y avisar de ellas sería mentir.
+    if (!this.arlsConFormatoPropio().length) {
+      this.api.listArls().subscribe({
+        next: (r) => this.arlsConFormatoPropio.set(
+          r.data.filter((a) => a.formatos_propios).map((a) => a.nombre),
+        ),
+        error: () => this.arlsConFormatoPropio.set([]),
+      });
+    }
 
     const traerAgenda = () => {
       const prof = this.selectedProfId();
@@ -781,8 +938,12 @@ export class ValidationComponent implements OnInit, OnDestroy {
    */
   protected arlSinFormatos(): boolean {
     const arl = this.assignOrder()?.arl;
+    if (!arl) return false;
+    // FOR · Bolívar y Colmena traen sus formatos oficiales con el backend, así
+    // que aquí no falta nada aunque no tengan ni una plantilla genérica.
+    if (this.arlsConFormatoPropio().includes(arl)) return false;
     const plantillas = this.plantillasActivas();
-    if (!arl || !plantillas.length) return false;
+    if (!plantillas.length) return false;
     return !plantillas.some((p) => !p.arl_id || p.arl_nombre === arl);
   }
 
@@ -835,7 +996,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
         const cita = o.fecha_programada ? new Date(o.fecha_programada) : null;
         if (!cita || isoFecha(cita) !== v.fecha) return false;
         const otra = cita.getHours() * 60 + cita.getMinutes();
-        return otra < fin && ini < otra + duracionDeOrden(o.horas_asignadas);
+        return otra < fin && ini < otra + duracionEnLaRejilla(o.horas_asignadas);
       });
       if (choque) return choque;
     }
@@ -868,7 +1029,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
       const cita = o.fecha_programada ? new Date(o.fecha_programada) : null;
       if (!cita || isoFecha(cita) !== fecha) continue;
       const otraIni = cita.getHours() * 60 + cita.getMinutes();
-      const otraFin = otraIni + duracionDeOrden(o.horas_asignadas);
+      const otraFin = otraIni + duracionEnLaRejilla(o.horas_asignadas);
       if (otraIni < fin && ini < otraFin) {
         return {
           motivo: `Tiene otra orden (${o.empresa_nombre || o.codigo})`,
@@ -1032,7 +1193,8 @@ export class ValidationComponent implements OnInit, OnDestroy {
               !!o.fecha_programada &&
               o.id !== propia &&
               o.estado !== 'CANCELADA' &&
-              o.estado !== 'EJECUTADA',
+              // Una visita ya hecha no ocupa agenda futura, esté revisada o no.
+              !ESTADOS_HECHOS.includes(o.estado || ''),
           ),
         );
       },
@@ -1087,7 +1249,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
       if (!cita || isoFecha(cita) !== iso) continue;
       const ini = cita.getHours() * 60 + cita.getMinutes();
       // Cada OS dura sus propias horas, igual que la de este modal.
-      const fin = ini + duracionDeOrden(o.horas_asignadas);
+      const fin = ini + duracionEnLaRejilla(o.horas_asignadas);
       const geo = this.geometria(ini, fin);
       if (!geo) continue;
       bloques.push({
@@ -1285,7 +1447,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
         this.selectedProfSlots.update((list) => list.filter((f) => f.id !== slot.id));
         this.alerts.success('Franja liberada', `${rango} quedó disponible en la agenda del profesional.`);
       },
-      error: (err) => this.alerts.error('No se pudo quitar la franja', err?.error?.error || 'El servidor rechazó la eliminación de la ocupación.'),
+      error: (err) => this.alerts.error('No se pudo quitar la franja', mensajeError(err, 'El servidor rechazó la eliminación de la ocupación.')),
     });
   }
 
@@ -1305,9 +1467,11 @@ export class ValidationComponent implements OnInit, OnDestroy {
     if (!order || !profId || this.assigning()) return;
 
     // ASG-02 · Sin franjas el profesional no sabe cuándo presentarse, y el
-    // correo saldría con "por definir".
+    // correo saldría con "por definir". Solo se exige para la asignación que de
+    // verdad sale por correo: guardar el avance —o cambiar de profesional sin
+    // tocar la agenda— es válido con la visita a medias.
     const fechaProgramada = this.fechaProgramadaIso();
-    if (!fechaProgramada) {
+    if (!fechaProgramada && this.visitaCompleta()) {
       this.alerts.warning('Falta programar la visita', 'Marque en la agenda al menos una franja con el día y las horas en que se ejecuta la visita.');
       return;
     }
@@ -1327,7 +1491,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
       ? this.api
           .assignOrder(order.osId, {
             profesional_id: profId,
-            fecha_programada: fechaProgramada,
+            fecha_programada: fechaProgramada ?? undefined,
             // ASG-02 · La visita entera, franja a franja. El servidor las
             // reemplaza en bloque y deriva `fecha_programada` de la primera.
             franjas: this.franjasOrdenadas().map((f) => ({
@@ -1342,11 +1506,20 @@ export class ValidationComponent implements OnInit, OnDestroy {
               borrador: null,
               correo: r.correo_enviado !== false,
               formatos: r.formatos_generados ?? null,
+              completa: r.completa !== false,
+              faltan: r.faltan_minutos ?? null,
+              horasOrden: r.minutos_orden ?? null,
             })),
           )
       : this.api
-          .assignDraft(order.id, { profesional_id: profId, fecha_programada: fechaProgramada })
-          .pipe(map((r) => ({ os: null, borrador: r.data, correo: true, formatos: null })));
+          .assignDraft(order.id, {
+            profesional_id: profId,
+            fecha_programada: fechaProgramada ?? undefined,
+          })
+          .pipe(map((r) => ({
+            os: null, borrador: r.data, correo: true, formatos: null, completa: true,
+            faltan: null, horasOrden: null,
+          })));
 
     asignacion.subscribe({
       next: (res) => {
@@ -1370,6 +1543,10 @@ export class ValidationComponent implements OnInit, OnDestroy {
           );
         }
         const visita = this.franjasOrdenadas().length;
+        // Se leen ANTES de limpiar las señales del modal: los mensajes de abajo
+        // hablan de lo que se acaba de guardar, no del formulario ya vaciado.
+        const duracionObjetivo = this.duracionVisita();
+        const minutosMarcados = this.minutosProgramados();
         this.assignId.set(null);
         this.selectedProfId.set(null);
         this.selectedProfSlots.set([]);
@@ -1378,7 +1555,23 @@ export class ValidationComponent implements OnInit, OnDestroy {
         const franjas = res.os && visita > 1
           ? ` La visita quedó repartida en ${visita} franjas.`
           : '';
-        if (res.os && !res.correo) {
+        if (res.os && !res.completa) {
+          // ASG-02 · Avance guardado: la OS sigue SIN PROGRAMAR y nadie recibió
+          // nada. Se avisa como aviso y no como éxito para que quien asigna no
+          // se quede pensando que el profesional ya está notificado.
+          // El "faltan" lo manda el servidor; el cálculo local solo se usa si
+          // la respuesta viniera sin él (backend viejo).
+          const faltanMin = res.faltan ?? Math.max(0, duracionObjetivo - minutosMarcados);
+          const total = res.horasOrden
+            ? ` La orden son ${this.duracionTexto(res.horasOrden)} en total.`
+            : '';
+          this.alerts.warning(
+            'Avance guardado, la orden sigue SIN PROGRAMAR',
+            `${nombreProf} queda anotado en la orden con lo que lleva marcado, pero faltan ` +
+            `${this.duracionTexto(faltanMin)} por repartir.${total} No se envió el correo ni se ` +
+            `generaron los formatos: salen cuando la visita cubra todas las horas.`,
+          );
+        } else if (res.os && !res.correo) {
           // La asignación quedó guardada; lo único que falló fue el envío.
           this.alerts.warning(
             reprograma ? 'Orden reprogramada, sin correo' : 'Orden asignada, sin correo',
@@ -1408,7 +1601,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
         this.assigning.set(false);
         this.alerts.error(
           reprograma ? 'No se pudo reprogramar la orden' : 'No se pudo asignar el profesional',
-          err?.error?.error || 'Verifique que el profesional esté activo y sin cruce de horario.',
+          mensajeError(err, 'Verifique que el profesional esté activo y sin cruce de horario.'),
         );
         // Alguna franja pudo haberse creado antes del fallo: se recarga la
         // agenda real para que el calendario no muestre un estado inventado.
@@ -1419,6 +1612,42 @@ export class ValidationComponent implements OnInit, OnDestroy {
 
   // ================= M3 · Estados y auditoría =================
   /** EST-03 · Trae el log de la OS para pintarlo como línea de tiempo. */
+  /** Abre o cierra la auditoría; la primera apertura es la que la pide. */
+  /** '85.000' — en pesos, sin decimales, como en el resto del producto. */
+  protected pesos(v?: number | null): string {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency', currency: 'COP', maximumFractionDigits: 0,
+    }).format(Number(v) || 0);
+  }
+
+  /** horas × valor hora congelado. */
+  protected totalOrden(o: ServiceOrder): number {
+    const horas = Number(String(o.fields.horas.value).replace(',', '.')) || 0;
+    return Math.round(horas * (o.valorHoraCobro || 0));
+  }
+
+  /**
+   * De dónde salió el valor hora. Importa: "85.000" a secas no se puede
+   * discutir, y "85.000 por ser Capacitación" sí.
+   */
+  protected origenValorHora(o: ServiceOrder): string {
+    switch (o.valorHoraOrigen) {
+      case 'tarifa': return 'tarifa pactada con el profesional para este tipo';
+      case 'tipo': return `valor hora del tipo "${o.tipoOrden || 'de orden'}"`;
+      case 'profesional': return 'valor hora base del profesional';
+      default: return 'valor congelado al asignar la orden';
+    }
+  }
+
+  protected toggleHistorial(): void {
+    const abrir = !this.historialAbierto();
+    this.historialAbierto.set(abrir);
+    const osId = this.detailOrder()?.osId;
+    if (abrir && osId && !this.historial().length && !this.loadingHistorial()) {
+      this.cargarHistorial(osId);
+    }
+  }
+
   private cargarHistorial(osId: string): void {
     this.loadingHistorial.set(true);
     this.historialError.set(null);
@@ -1492,7 +1721,10 @@ export class ValidationComponent implements OnInit, OnDestroy {
         this.aplicarEstado(order.id, r.data.estado);
         this.estadoDestino.set('');
         this.motivoCambio = '';
-        if (order.osId) this.cargarHistorial(order.osId);
+        // Si está plegado no se recarga: se vacía para que la próxima apertura
+        // traiga el movimiento recién hecho en vez de una lista desactualizada.
+        if (order.osId && this.historialAbierto()) this.cargarHistorial(order.osId);
+        else this.historial.set([]);
         this.alerts.success(
           'Estado actualizado',
           `${order.osCode || order.company} quedó en ${r.data.estado}.`,
@@ -1502,7 +1734,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
         this.cambiandoEstado.set(false);
         this.alerts.error(
           'No se pudo cambiar el estado',
-          err?.error?.error || 'El servidor rechazó la transición solicitada.',
+          mensajeError(err, 'El servidor rechazó la transición solicitada.'),
         );
       },
     });
@@ -1523,10 +1755,10 @@ export class ValidationComponent implements OnInit, OnDestroy {
   );
 
   /**
-   * Se decide sobre una OS EJECUTADA: al desaparecer EN VERIFICACIÓN, subir los
-   * soportes la deja ejecutada y la revisión pasa a hacerse sobre ese estado.
-   * Aceptar deja constancia y manda la encuesta; rechazar la devuelve a
-   * PROGRAMADA y reabre el enlace de carga.
+   * Solo se decide sobre una OS EJECUTADA: subir los soportes la deja así, y ese
+   * es el estado que espera revisión. Aceptar la pasa a FINALIZADA y manda la
+   * encuesta; rechazar la devuelve a PROGRAMADA y reabre el enlace de carga.
+   * En una FINALIZADA el visor se abre igual, pero de solo lectura.
    */
   protected readonly puedeDecidir = computed(
     () => this.verifyOrder()?.osEstado === 'EJECUTADA',
@@ -1540,6 +1772,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.releaseSupportUrl();
     this.rejectMode.set(false);
     this.rejectMotivo = '';
+    this.rejectCats.set([]);
     this.loadingSupports.set(true);
     this.api.listSupports(order.osId).subscribe({
       next: (r) => {
@@ -1552,7 +1785,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.loadingSupports.set(false);
-        this.alerts.error('No se pudieron cargar los soportes', err?.error?.error || 'El servidor no devolvió los archivos de esta orden.');
+        this.alerts.error('No se pudieron cargar los soportes', mensajeError(err, 'El servidor no devolvió los archivos de esta orden.'));
       },
     });
   }
@@ -1564,6 +1797,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.selectedSupportId.set(null);
     this.rejectMode.set(false);
     this.rejectMotivo = '';
+    this.rejectCats.set([]);
     this.releaseSupportUrl();
   }
 
@@ -1603,13 +1837,13 @@ export class ValidationComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** VER-02/03 · Aceptar: la OS queda EJECUTADA y el ciclo se cierra. */
+  /** VER-02/03 · Aceptar: la OS pasa a FINALIZADA y el ciclo se cierra. */
   protected async acceptSupports(): Promise<void> {
     const order = this.verifyOrder();
     if (!order?.osId || this.deciding()) return;
     const ok = await this.alerts.confirm({
       title: 'Aceptar soportes',
-      message: `Los soportes de ${order.company} se darán por buenos y la orden ${order.osCode || ''} pasará a EJECUTADA. Desde ese estado ya no se puede retroceder.`,
+      message: `Los soportes de ${order.company} se darán por buenos y la orden ${order.osCode || ''} pasará a FINALIZADA, que cierra el ciclo. Desde ahí ya no se puede retroceder.`,
       confirmText: 'Aceptar y cerrar',
     });
     if (!ok) return;
@@ -1620,24 +1854,60 @@ export class ValidationComponent implements OnInit, OnDestroy {
         this.deciding.set(false);
         this.aplicarEstado(order.id, r.data.estado);
         this.closeVerify();
-        this.alerts.success('Orden ejecutada', `${order.company} quedó cerrada como EJECUTADA.`);
+        this.alerts.success('Orden finalizada', `${order.company} quedó cerrada como FINALIZADA.`);
       },
       error: (err) => {
         this.deciding.set(false);
-        this.alerts.error('No se pudo cerrar la orden', err?.error?.error || 'El servidor rechazó el cambio de estado.');
+        this.alerts.error('No se pudo cerrar la orden', mensajeError(err, 'El servidor rechazó el cambio de estado.'));
       },
     });
   }
 
   protected startReject(): void {
     this.rejectMotivo = '';
+    // Nada viene marcado: el administrador tiene que decir QUÉ está mal. Una
+    // marca por defecto acabaría devolviendo documentos correctos sin querer.
+    this.rejectCats.set(this.catalogoRechazo());
     this.rejectMode.set(true);
   }
+
+  /**
+   * Las casillas que se pueden devolver, con el archivo que hay en cada una.
+   *
+   * Se listan las tres siempre, tenga archivo o no: "falta la lista de
+   * asistencia" es un motivo de rechazo tan válido como "el acta está sin
+   * firmar", y sin la casilla no habría forma de pedirlo. 'Sin clasificar' solo
+   * aparece si de verdad hay algo ahí.
+   */
+  private catalogoRechazo(): CategoriaRechazo[] {
+    const conteo = new Map<string, number>();
+    for (const s of this.supports()) {
+      const c = s.categoria ?? 'otros';
+      conteo.set(c, (conteo.get(c) ?? 0) + 1);
+    }
+    const claves: CategoriaSoporte[] = ['acta', 'asistencia', 'evidencias'];
+    if (conteo.get('otros')) claves.push('otros');
+    return claves.map((clave) => ({
+      clave,
+      etiqueta: ETIQUETAS_SOPORTE[clave],
+      archivos: conteo.get(clave) ?? 0,
+      marcada: false,
+    }));
+  }
+
+  protected toggleRejectCat(clave: string): void {
+    this.rejectCats.update((list) =>
+      list.map((c) => (c.clave === clave ? { ...c, marcada: !c.marcada } : c)),
+    );
+  }
+
+  protected readonly rejectMarcadas = computed(() => this.rejectCats().filter((c) => c.marcada));
 
   protected cancelReject(): void {
     if (this.deciding()) return;
     this.rejectMode.set(false);
     this.rejectMotivo = '';
+    this.rejectCats.set([]);
   }
 
   /**
@@ -1654,17 +1924,47 @@ export class ValidationComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const marcadas = this.rejectMarcadas();
+    if (!marcadas.length) {
+      this.alerts.warning(
+        'Falta marcar el documento',
+        'Señale cuál hay que volver a subir: en el portal solo se le abrirán esas casillas, y las demás quedan aceptadas.',
+      );
+      return;
+    }
+
     this.deciding.set(true);
-    this.api.rejectOrder(order.osId, motivo).subscribe({
+    this.api.rejectOrder(order.osId, motivo, marcadas.map((c) => c.clave)).subscribe({
       next: (r) => {
         this.deciding.set(false);
         this.aplicarEstado(order.id, r.data.estado);
+        const devueltos = marcadas.map((c) => c.etiqueta).join(', ');
         this.closeVerify();
-        this.alerts.success('Soportes rechazados', `${order.company} volvió a PROGRAMADA y se notificó al profesional.`);
+        // El correo es la parte que de verdad importa del rechazo: si no salió
+        // hay que decirlo, o se da por avisado a alguien que no lo está.
+        //
+        // La condición es `!== true` y no `=== false` a propósito: un servidor
+        // que no informe del envío —porque falló o porque corre una versión
+        // anterior— dejaba pasar el mensaje de éxito, y el administrador se
+        // quedaba tranquilo con un profesional que nunca se enteró.
+        if (r.correo_enviado !== true) {
+          this.alerts.warning(
+            'Soportes rechazados, pero sin avisar',
+            `${order.company} volvió a PROGRAMADA y el enlace de carga quedó reabierto para ` +
+            `${devueltos}, pero el correo a ${order.assignedProf || 'el profesional'} no salió. ` +
+            'Avísele por otro medio.',
+          );
+        } else {
+          this.alerts.success(
+            'Soportes rechazados',
+            `${order.company} volvió a PROGRAMADA. ${order.assignedProf || 'El profesional'} ` +
+            `recibió por correo el motivo y el enlace, y solo podrá reemplazar: ${devueltos}.`,
+          );
+        }
       },
       error: (err) => {
         this.deciding.set(false);
-        this.alerts.error('No se pudo rechazar', err?.error?.error || 'El servidor rechazó la operación. Verifique el motivo e intente de nuevo.');
+        this.alerts.error('No se pudo rechazar', mensajeError(err, 'El servidor rechazó la operación. Verifique el motivo e intente de nuevo.'));
       },
     });
   }
@@ -1698,6 +1998,30 @@ export class ValidationComponent implements OnInit, OnDestroy {
     return soporte.subido_en ? new Date(soporte.subido_en).toLocaleString('es-CO') : '—';
   }
 
+  /**
+   * Qué documento es, en palabras. Es lo que el administrador necesita saber
+   * ANTES de abrirlo: la lista dejó de ser tres 'IMG_20260815_142233.jpg'
+   * indistinguibles.
+   */
+  protected etiquetaSoporte(soporte: ArchivoSoporte): string {
+    return ETIQUETAS_SOPORTE[soporte.categoria ?? 'otros'] ?? ETIQUETAS_SOPORTE['otros'];
+  }
+
+  /** Nombre a mostrar: el que puso el sistema; el del móvil solo si no hay. */
+  protected nombreSoporte(soporte: ArchivoSoporte): string {
+    return soporte.nombre_archivo || soporte.nombre_original || 'Soporte';
+  }
+
+  /** Clase de la pastilla, para que cada categoría se distinga de un vistazo. */
+  protected pillSoporte(soporte: ArchivoSoporte): string {
+    switch (soporte.categoria) {
+      case 'acta': return 'pill--success';
+      case 'asistencia': return 'pill--info';
+      case 'evidencias': return 'pill--warning';
+      default: return 'pill--muted';
+    }
+  }
+
   ngOnDestroy(): void {
     this.releaseSupportUrl();
   }
@@ -1717,7 +2041,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
         this.replaceOrder(r.data);
         this.alerts.success('Orden deshabilitada', `${order.company} salió del listado activo. Puede restaurarla desde la pestaña Deshabilitadas.`);
       },
-      error: (err) => this.alerts.error('No se pudo deshabilitar la orden', err?.error?.error || 'El servidor rechazó la operación.'),
+      error: (err) => this.alerts.error('No se pudo deshabilitar la orden', mensajeError(err, 'El servidor rechazó la operación.')),
     });
   }
 
@@ -1734,7 +2058,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
         this.replaceOrder(r.data);
         this.alerts.success('Orden restaurada', `${order.company} volvió al listado de órdenes activas.`);
       },
-      error: (err) => this.alerts.error('No se pudo restaurar la orden', err?.error?.error || 'El servidor rechazó la operación.'),
+      error: (err) => this.alerts.error('No se pudo restaurar la orden', mensajeError(err, 'El servidor rechazó la operación.')),
     });
   }
 
@@ -1798,7 +2122,23 @@ function aNumeroCO(v: string | number | null | undefined): number {
  */
 function duracionDeOrden(horas: string | number | null | undefined): number {
   const h = aNumeroCO(horas);
-  return h > 0 ? Math.min(Math.round(h * 60), 24 * 60) : AG_VISITA_MIN;
+  return h > 0 ? Math.round(h * 60) : AG_VISITA_MIN;
+}
+
+/**
+ * Lo mismo, pero acotado a un día, para PINTAR el bloque de otra visita en la
+ * agenda: una orden de 50 h ocupa varios días y su bloque no puede desbordar la
+ * columna del día en que empieza.
+ *
+ * Son dos funciones y no una porque el tope estaba antes dentro de
+ * `duracionDeOrden`, y de ahí lo heredaba también el total de la orden que se
+ * está programando: una OS de 50 h se creía de 24 h, así que la agenda daba la
+ * visita por completa a las 24 h, el botón decía "Asignar profesional" y el
+ * servidor —que sí sabía que eran 50— guardaba un avance. El aviso resultante
+ * era "faltan 0 h por repartir", que no hay forma de entender.
+ */
+function duracionEnLaRejilla(horas: string | number | null | undefined): number {
+  return Math.min(duracionDeOrden(horas), 24 * 60);
 }
 
 /** Suma días respetando el calendario local (meses y años incluidos). */
@@ -1808,17 +2148,107 @@ function sumarDias(iso: string, dias: number): string {
   return isoFecha(new Date(d.getFullYear(), d.getMonth(), d.getDate() + dias));
 }
 
+/**
+ * Cómo se llama cada casilla de soportes de cara al administrador. Espejo de
+ * `CATEGORIAS_SOPORTE` del backend (`services/soportes.service.js`); si allí se
+ * añade una casilla, aquí hay que ponerle nombre o saldrá como "Otros".
+ */
+/** Una casilla del portal en el diálogo de rechazo, con lo que hay en ella. */
+interface CategoriaRechazo {
+  clave: CategoriaSoporte;
+  etiqueta: string;
+  /** Cuántos archivos hay hoy; 0 significa que el profesional no lo subió. */
+  archivos: number;
+  marcada: boolean;
+}
+
+const ETIQUETAS_SOPORTE: Record<string, string> = {
+  acta: 'Acta de visita firmada',
+  asistencia: 'Lista de asistencia',
+  evidencias: 'Registro fotográfico',
+  otros: 'Sin clasificar',
+};
+
 const field = (c?: { value: string; confidence: number }): ExtractedField => ({
   value: c?.value ?? '',
   confidence: Math.round(c?.confidence ?? 0),
 });
+
+/**
+ * Correspondencia entre los campos del formulario y las columnas de la OS.
+ *
+ * Se recorre en los DOS sentidos —al abrir el detalle (columna → campo) y al
+ * guardar (campo → columna)— justamente para que no puedan divergir: una
+ * corrección que se guardase bajo un nombre y se releyese bajo otro volvería a
+ * aparecer sin aplicar y parecería que el guardado no funciona.
+ */
+const CAMPOS_OS: [keyof ServiceOrder['fields'], string][] = [
+  ['numeroOrden', 'numero_orden'],
+  ['nroAfiliacion', 'nro_afiliacion'],
+  ['codigoCronograma', 'codigo_cronograma'],
+  ['secuencia', 'secuencia'],
+  ['nit', 'nit_nic'],
+  ['company', 'empresa_nombre'],
+  ['actividadEconomica', 'actividad_economica'],
+  ['horas', 'horas_asignadas'],
+  ['tipoActividad', 'tipo_actividad'],
+  ['modalidad', 'modalidad'],
+  ['valorUnitario', 'valor_unitario'],
+  ['valorTotal', 'valor_total'],
+  ['fechaOrden', 'fecha_orden'],
+  ['fechaVencimiento', 'fecha_vencimiento'],
+  ['ciudadEjecucion', 'ciudad_ejecucion'],
+  ['direccion', 'direccion'],
+  ['contactoEmpresaNombre', 'contacto_empresa_nombre'],
+  ['contactoEmpresaCargo', 'contacto_empresa_cargo'],
+  ['contactoEmpresaTelefono', 'contacto_empresa_telefono'],
+  ['contactoNombre', 'contacto_sst_nombre'],
+  ['contactoTelefono', 'contacto_sst_telefono'],
+  ['contactoCorreo', 'contacto_sst_correo'],
+  ['descripcion', 'descripcion'],
+];
+
+/**
+ * Valor de una columna de la OS tal como se escribe en el formulario.
+ *
+ * Los NUMERIC llegan como '8.00' y las fechas como un ISO con hora
+ * ('2026-06-26T05:00:00.000Z'): sin normalizar, el formulario enseñaría "8.00"
+ * donde el documento decía 8, y una fecha con hora que no significa nada.
+ */
+function valorDeColumna(bruto: unknown): string {
+  if (bruto == null) return '';
+  const s = String(bruto);
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return s.slice(0, 10);
+  if (/^-?\d+\.\d+$/.test(s)) return String(Number(s));
+  return s;
+}
+
+/** Superpone los valores vigentes de la OS sobre los campos del borrador. */
+function camposDesdeOS(
+  actuales: ServiceOrder['fields'],
+  os: Record<string, unknown>,
+): ServiceOrder['fields'] {
+  const fields = { ...actuales };
+  for (const [clave, columna] of CAMPOS_OS) {
+    if (!(columna in os)) continue;
+    const valor = valorDeColumna(os[columna]);
+    const previo = fields[clave];
+    // La confianza es de la extracción, no del dato: se conserva la del
+    // borrador para que el aviso de "baja confianza" siga señalando los campos
+    // que la IA leyó mal, que son los que hay que mirar contra el documento.
+    fields[clave] = { value: valor, confidence: previo?.confidence ?? 0 };
+  }
+  return fields;
+}
 
 /** Mapea un borrador del backend al modelo ServiceOrder que consume la vista. */
 function toServiceOrder(b: Borrador): ServiceOrder {
   const m = b.metadatos_extraccion || {};
   return {
     id: b.id,
-    company: m.empresa_nombre?.value || 'Sin nombre',
+    // Con la OS ya creada manda su razón social: es la que se corrige desde el
+    // detalle, y la del borrador es lo que leyó la IA del documento.
+    company: b.os_empresa_nombre || m.empresa_nombre?.value || 'Sin nombre',
     arl: b.arl_nombre || '—',
     arlConfidence: m.arl_confidence != null ? Math.round(Number(m.arl_confidence)) : undefined,
     fileName: b.nombre_archivo || 'documento',
@@ -1836,6 +2266,10 @@ function toServiceOrder(b: Borrador): ServiceOrder {
     osId: b.orden_servicio_id ?? null,
     osCode: b.os_codigo ?? null,
     osEstado: b.os_estado ?? null,
+    tipoOrdenId: b.tipo_orden_id ?? null,
+    tipoOrden: b.tipo_orden ?? null,
+    valorHoraCobro: b.valor_hora_cobro != null ? Number(b.valor_hora_cobro) : null,
+    valorHoraOrigen: b.valor_hora_origen ?? null,
     fields: {
       codigoCronograma: field(m.codigo_cronograma),
       secuencia: field(m.secuencia),

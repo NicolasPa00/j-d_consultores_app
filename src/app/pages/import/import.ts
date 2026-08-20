@@ -2,9 +2,10 @@ import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, computed, in
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router } from '@angular/router';
-import { ApiService } from '../../core/api.service';
+import { ApiService, DuplicadoImportacion } from '../../core/api.service';
 import { AlertService } from '../../core/alert.service';
-import { Borrador, CampoExtraido, HojaImportada, MetadatosExtraccion } from '../../core/models';
+import { mensajeError, revisarArchivo } from '../../core/errores';
+import { Borrador, CampoExtraido, HojaImportada, MetadatosExtraccion, TipoOrden } from '../../core/models';
 import { aIsoFecha } from '../../core/fechas';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
@@ -48,6 +49,14 @@ interface PreviewOrder {
   sourceRow: number | null;
   /** De qué archivo salió. Con varios en la tanda, la fila sola no lo diría. */
   lote: LoteCargado;
+  /**
+   * CFG-04 · Tipo de orden con el que se cobra. Obligatorio para guardar.
+   *
+   * El pipeline lo preselecciona cuando el título de la actividad lo dice
+   * ("CAP SEGURIDAD VIAL" → Capacitación); si no, llega vacío y hay que
+   * elegirlo, porque de aquí sale el valor hora del profesional.
+   */
+  tipoOrdenId: string | null;
   /** Se está enviando a Órdenes ella sola (botón de guardar de la fila). */
   guardando?: boolean;
   fields: PreviewField[];
@@ -74,6 +83,14 @@ interface DuplicadaInfo {
   deshabilitada: boolean;
   profesional: string | null;
   fechaProgramada: string | null;
+  /**
+   * IMP-09 · Se detectó al ELEGIR el archivo, sin procesarlo. Ese archivo salió
+   * de la selección y no gastó ninguna petición de IA; la marca existe porque
+   * esos son los únicos que se pueden devolver a la tanda a mano.
+   */
+  previa?: boolean;
+  /** Cómo se reconoció: bytes idénticos, número en el texto, filas del Excel. */
+  via?: string | null;
 }
 
 /** Un archivo de la tanda que no se pudo procesar; los demás siguen su curso. */
@@ -81,6 +98,15 @@ interface FalloArchivo {
   archivo: string;
   motivo: string;
 }
+
+/**
+ * Lo que admite la importación, POR EXTENSIÓN. Un .doc, una imagen o un .csv se
+ * colaban en la tanda y morían uno por uno en el servidor; el navegador ya sabe
+ * el nombre antes de subir nada. Se mira la extensión y no el tipo MIME porque
+ * un .xlsx llega muchas veces como 'application/octet-stream' —el mismo motivo
+ * por el que el filtro del servidor tiene esa excepción—.
+ */
+const EXTENSIONES_IMPORTACION = ['xlsx', 'xls', 'pdf'];
 
 /** Cómo se puede mostrar el documento original en el panel izquierdo del modal. */
 type DocKind = 'pdf' | 'sheet' | 'none';
@@ -136,6 +162,16 @@ export class ImportComponent implements OnDestroy {
   private selectedFiles: File[] = [];
   /** Nombres de lo seleccionado, para pintarlos sin exponer los File. */
   protected readonly fileNames = signal<string[]>([]);
+  /** IMP-09 · Comprobando la selección contra lo que ya está en el sistema. */
+  protected readonly revisando = signal(false);
+  /** CFG-04 · Catálogo de tipos de orden, para el desplegable de cada fila. */
+  protected readonly tiposOrden = signal<TipoOrden[]>([]);
+  /**
+   * Archivos apartados por existir ya. Se conservan para poder devolverlos a la
+   * tanda: la detección es buena, no infalible, y una orden legítima que se
+   * parezca a otra no puede quedar fuera del sistema sin salida.
+   */
+  private apartados = new Map<string, File>();
 
   protected readonly detailOrder = computed(
     () => this.previewRows().find((r) => r.id === this.detailId()) ?? null,
@@ -149,24 +185,176 @@ export class ImportComponent implements OnDestroy {
    * tanda de varios archivos las suma, así que la tabla se estiraba hasta dejar
    * el pie con "Guardar todo" fuera de la pantalla.
    */
-  protected readonly pag = paginar(this.previewRows, 25);
+  protected readonly pag = paginar(this.previewRows);
+
+  /** El catálogo se pide una vez: la vista previa lo usa en todas las filas. */
+  private cargarTipos(): void {
+    if (this.tiposOrden().length) return;
+    this.api.listTiposOrden().subscribe({
+      next: (r) => this.tiposOrden.set(r.data),
+      error: () => this.alerts.warning(
+        'No se pudo cargar la lista de tipos de orden',
+        'Sin ella no se puede elegir el tipo, y sin tipo la orden no se guarda. Recargue la página.',
+      ),
+    });
+  }
+
+  /** ¿Falta la categoría con la que se cobra? */
+  protected sinTipo(row: PreviewOrder): boolean {
+    return !row.tipoOrdenId;
+  }
+
+  protected pendientesTipo(): PreviewOrder[] {
+    return this.previewRows().filter((r) => this.sinTipo(r));
+  }
+
+  /**
+   * Cambia el tipo desde la tabla y lo guarda en el acto.
+   *
+   * Se persiste sin esperar a "Guardar todo" porque el backend lee el tipo del
+   * borrador al materializar la OS: dejarlo solo en memoria haría fallar el
+   * guardado con un "falta el tipo" sobre una fila que en pantalla lo tiene.
+   */
+  protected cambiarTipo(row: PreviewOrder, tipoOrdenId: string): void {
+    const valor = tipoOrdenId || null;
+    const previo = row.tipoOrdenId;
+    this.previewRows.update((list) =>
+      list.map((r) => (r.id === row.id ? { ...r, tipoOrdenId: valor } : r)),
+    );
+    this.api.updateDraft(row.id, undefined, valor).subscribe({
+      error: (err) => {
+        this.previewRows.update((list) =>
+          list.map((r) => (r.id === row.id ? { ...r, tipoOrdenId: previo } : r)),
+        );
+        this.alerts.error(
+          'No se pudo guardar el tipo de orden',
+          mensajeError(err, 'El servidor rechazó el cambio; vuelva a intentarlo.'),
+        );
+      },
+    });
+  }
 
   protected onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const files = Array.from(input.files ?? []);
-    this.selectedFiles = files;
-    this.fileNames.set(files.map((f) => f.name));
+    const elegidos = Array.from(input.files ?? []);
     this.error.set(null);
+    // Selección nueva ⇒ los avisos de la anterior ya no aplican.
+    this.duplicadas.set([]);
+    this.fallos.set([]);
+    this.apartados.clear();
     // Se limpia el input (no los File, que ya están capturados): así volver a
     // elegir el MISMO archivo dispara el evento change otra vez, que es justo lo
     // que hace falta para reintentar una tanda que falló.
     input.value = '';
+
+    // Lo que el servidor va a rechazar de todas formas se descarta aquí, con el
+    // peso real en la frase. Subir 40 MB para que vuelvan con un error es un
+    // minuto perdido, y el resto de la tanda no tiene por qué esperarlo.
+    const files: File[] = [];
+    for (const file of elegidos) {
+      const problema = revisarArchivo(file, { extensiones: EXTENSIONES_IMPORTACION });
+      if (problema) this.anotarFallo(file.name, problema);
+      else files.push(file);
+    }
+    this.selectedFiles = files;
+    this.fileNames.set(files.map((f) => f.name));
+    this.revisarSeleccion(files);
+  }
+
+  /**
+   * IMP-09 · Aparta de la tanda lo que ya está en el sistema, ANTES de la IA.
+   *
+   * Esta comprobación no gasta ninguna petición: el servidor compara la huella
+   * del archivo y busca en el texto los números de orden que ya existen. Lo que
+   * sale positivo se quita del selector y baja al panel de "ya existen", que es
+   * donde el usuario ya estaba acostumbrado a leerlo — solo que ahora llega
+   * ahí sin haber pagado una extracción por el camino.
+   *
+   * Si la comprobación falla (servidor caído, red intermitente) el archivo se
+   * queda en la tanda: el dedup del pipeline sigue detrás, así que lo peor que
+   * pasa es volver al comportamiento anterior.
+   */
+  private revisarSeleccion(files: File[]): void {
+    if (!files.length) return;
+    this.revisando.set(true);
+    let pendientes = files.length;
+    const listo = () => {
+      if (--pendientes === 0) {
+        this.revisando.set(false);
+        this.avisarApartados();
+      }
+    };
+
+    for (const file of files) {
+      this.api.precheckImport(file).subscribe({
+        next: (r) => {
+          if (r.data.existe && r.data.ordenes.length) this.apartar(file, r.data);
+          listo();
+        },
+        error: () => listo(),
+      });
+    }
+  }
+
+  /** Saca el archivo de la tanda y lo anota como orden ya registrada. */
+  private apartar(file: File, info: DuplicadoImportacion): void {
+    this.apartados.set(file.name, file);
+    this.selectedFiles = this.selectedFiles.filter((f) => f !== file);
+    this.fileNames.set(this.selectedFiles.map((f) => f.name));
+    this.duplicadas.update((list) => [
+      ...list,
+      ...info.ordenes.map((o) => ({
+        id: `${file.name}#${o.id}`,
+        identidad: o.identidad,
+        company: o.empresa_nombre || 'Sin nombre',
+        arl: o.arl_nombre || '—',
+        archivo: file.name,
+        codigoOS: o.codigo,
+        estadoOS: o.deshabilitado ? 'Deshabilitada' : o.estado,
+        deshabilitada: o.deshabilitado,
+        profesional: o.profesional_nombre,
+        fechaProgramada: o.fecha_programada,
+        previa: true,
+        via: info.via,
+      })),
+    ]);
+  }
+
+  private avisarApartados(): void {
+    const previas = this.duplicadas().filter((d) => d.previa);
+    if (!previas.length) return;
+    const archivos = [...new Set(previas.map((d) => d.archivo))];
+    this.alerts.warning(
+      archivos.length === 1 ? 'Ese archivo ya está en el sistema' : `${archivos.length} archivos ya están en el sistema`,
+      `Se apartaron de la tanda sin procesarlos, así que no gastaron ninguna petición de IA. ` +
+      `El detalle queda listado abajo.`,
+    );
+  }
+
+  /**
+   * Devuelve a la tanda un archivo apartado.
+   *
+   * La detección se basa en la huella del archivo y en los números de orden que
+   * aparecen en su texto: acierta, pero un documento que mencione otra orden
+   * puede salir marcado sin serlo. Antes de dejar a alguien sin poder importar
+   * una orden legítima, se le deja insistir.
+   */
+  protected procesarIgual(archivo: string | null): void {
+    if (!archivo || this.processing()) return;
+    const file = this.apartados.get(archivo);
+    if (!file) return;
+    this.apartados.delete(archivo);
+    this.selectedFiles = [...this.selectedFiles, file];
+    this.fileNames.set(this.selectedFiles.map((f) => f.name));
+    this.duplicadas.update((list) => list.filter((d) => !(d.previa && d.archivo === archivo)));
   }
 
   protected quitarSeleccion(): void {
     if (this.processing()) return;
     this.selectedFiles = [];
     this.fileNames.set([]);
+    this.apartados.clear();
+    this.duplicadas.update((list) => list.filter((d) => !d.previa));
   }
 
   /**
@@ -178,6 +366,7 @@ export class ImportComponent implements OnDestroy {
    */
   protected processWithAi(): void {
     if (this.processing() || !this.selectedFiles.length) return;
+    this.cargarTipos();
     this.processing.set(true);
     this.showPreview.set(false);
     this.error.set(null);
@@ -185,7 +374,9 @@ export class ImportComponent implements OnDestroy {
     this.resetDocument();
     this.batches.set([]);
     this.previewRows.set([]);
-    this.duplicadas.set([]);
+    // Lo apartado al elegir los archivos NO se borra: es el resultado de esta
+    // misma tanda, solo que averiguado antes de procesar nada.
+    this.duplicadas.update((list) => list.filter((d) => d.previa));
     this.fallos.set([]);
 
     const archivos = this.selectedFiles;
@@ -200,7 +391,12 @@ export class ImportComponent implements OnDestroy {
       this.api.uploadImport(file).subscribe({
         next: (res) => this.pollBatch(res.batch.id, file.name, 0, terminarUno),
         error: (err) => {
-          this.anotarFallo(file.name, err?.error?.error || 'No se pudo subir el archivo.');
+          // 409 = el servidor reconoció la orden como ya cargada y no gastó IA.
+          // No es un archivo "que falló": es la misma respuesta que da la
+          // comprobación previa, cuando esta no llegó a hacerse.
+          const dup = err?.status === 409 ? err?.error?.duplicado : null;
+          if (dup) this.apartar(file, dup);
+          else this.anotarFallo(file.name, mensajeError(err, 'No se pudo subir el archivo.'));
           terminarUno();
         },
       });
@@ -524,7 +720,7 @@ export class ImportComponent implements OnDestroy {
           this.detailId.set(null);
           this.alerts.warning(
             'Esta orden ya está en Órdenes',
-            err?.error?.error || 'Los cambios se hacen desde la sección Órdenes, no desde la vista previa.',
+            mensajeError(err, 'Los cambios se hacen desde la sección Órdenes, no desde la vista previa.'),
           );
           if (!this.previewRows().length) {
             this.showPreview.set(false);
@@ -533,7 +729,7 @@ export class ImportComponent implements OnDestroy {
           }
           return;
         }
-        this.alerts.error('No se pudieron guardar las correcciones', err?.error?.error || 'Los cambios no llegaron al servidor; vuelva a intentarlo.');
+        this.alerts.error('No se pudieron guardar las correcciones', mensajeError(err, 'Los cambios no llegaron al servidor; vuelva a intentarlo.'));
       },
     });
   }
@@ -548,6 +744,13 @@ export class ImportComponent implements OnDestroy {
    */
   protected saveRow(row: PreviewOrder): void {
     if (row.guardando || this.confirming()) return;
+    if (this.sinTipo(row)) {
+      this.alerts.warning(
+        'Tipo de orden obligatorio',
+        `${row.company} no tiene tipo de orden. Elíjalo en su fila: de él sale el valor hora con el que se cobra.`,
+      );
+      return;
+    }
     if (this.sinVencimiento(row)) {
       this.alerts.warning(
         'Fecha de vencimiento obligatoria',
@@ -583,7 +786,7 @@ export class ImportComponent implements OnDestroy {
       },
       error: (err) => {
         this.marcarGuardando(row.id, false);
-        this.alerts.error('No se pudo guardar la orden', err?.error?.error || 'El servidor rechazó la operación.');
+        this.alerts.error('No se pudo guardar la orden', mensajeError(err, 'El servidor rechazó la operación.'));
       },
     });
   }
@@ -598,6 +801,18 @@ export class ImportComponent implements OnDestroy {
 
     // Ninguna orden entra a la bandeja sin vencimiento: una vez guardada, el
     // campo ya no se pide en Órdenes y la orden quedaría sin fecha de control.
+    const sinTipo = this.pendientesTipo();
+    if (sinTipo.length) {
+      const nombres = sinTipo.slice(0, 3).map((r) => r.company).join(', ');
+      const resto = sinTipo.length > 3 ? ` y ${sinTipo.length - 3} más` : '';
+      this.alerts.warning(
+        'Tipo de orden obligatorio',
+        `${sinTipo.length} orden(es) no lo tienen: ${nombres}${resto}. De él sale el valor hora ` +
+        'con el que se le paga al profesional.',
+      );
+      return;
+    }
+
     const faltantes = this.pendientesVencimiento();
     if (faltantes.length) {
       const nombres = faltantes.slice(0, 3).map((r) => r.company).join(', ');
@@ -658,7 +873,7 @@ export class ImportComponent implements OnDestroy {
           cerrar();
         },
         error: (err) => {
-          errores.push(err?.error?.error || 'Un archivo no pudo confirmarse.');
+          errores.push(mensajeError(err, 'Un archivo no pudo confirmarse.'));
           cerrar();
         },
       });
@@ -687,7 +902,7 @@ export class ImportComponent implements OnDestroy {
       this.api.discardImport(lote.id).subscribe({
         next: () => cerrar(),
         error: (err) => {
-          this.alerts.error('No se pudo descartar la importación', err?.error?.error || 'El servidor rechazó la operación.');
+          this.alerts.error('No se pudo descartar la importación', mensajeError(err, 'El servidor rechazó la operación.'));
           cerrar();
         },
       });
@@ -711,6 +926,7 @@ export class ImportComponent implements OnDestroy {
   private clearPreview(): void {
     this.selectedFiles = [];
     this.fileNames.set([]);
+    this.apartados.clear();
     this.showPreview.set(false);
     this.previewRows.set([]);
     this.duplicadas.set([]);
@@ -806,6 +1022,7 @@ function toPreview(b: Borrador, lote: LoteCargado): PreviewOrder {
     hours: text(m.horas_asignadas) || '—',
     confidence: Math.round(Number(b.confianza_general ?? m.overall_confidence ?? 0)),
     sourceRow: m.source_row != null ? Number(m.source_row) : null,
+    tipoOrdenId: b.tipo_orden_id ?? null,
     lote,
     fields: buildFields(m),
   };

@@ -125,6 +125,14 @@ export interface Borrador {
   fecha_programada?: string | null;
   deshabilitado?: boolean;
   deshabilitado_en?: string | null;
+  /** CFG-04 · Tipo de orden elegido en la vista previa; obligatorio para guardar. */
+  tipo_orden_id?: string | null;
+  /** Nombre del tipo, resuelto por el backend (de la OS si ya existe). */
+  tipo_orden?: string | null;
+  /** PRE-02 · Lo que se le paga por esta orden, congelado al asignarla. */
+  valor_hora_cobro?: string | number | null;
+  valor_hora_origen?: 'tarifa' | 'tipo' | 'profesional' | null;
+  valor_cobro_total?: string | number | null;
   /** OS materializada al validar el borrador (null mientras siga pendiente). */
   orden_servicio_id?: string | null;
   /** Estado real de esa OS (EST-01) y su código legible OS-AAAA-NNNN. */
@@ -134,6 +142,12 @@ export interface Borrador {
   os_fecha_programada?: string | null;
   os_profesional_id?: string | null;
   os_profesional_nombre?: string | null;
+  /**
+   * Razón social según la OS. Manda sobre la del borrador en cuanto la orden
+   * está materializada: es la que se corrige desde el detalle y la que sale en
+   * los formatos y los correos.
+   */
+  os_empresa_nombre?: string | null;
 
   /**
    * IMP-07/09 · Solo en los borradores DUPLICADA: la OS que ya existía y por la
@@ -153,19 +167,32 @@ export interface Borrador {
 
 /** EST-01 · Estados del ciclo de vida de una OS. */
 export type EstadoOrden =
-  | 'SIN PROGRAMAR' | 'PROGRAMADA' | 'EJECUTADA'
+  | 'SIN PROGRAMAR' | 'PROGRAMADA' | 'EJECUTADA' | 'FINALIZADA'
   // Heredados: el ciclo se redujo a tres estados en ago-2026 y estos ya no se
   // alcanzan, pero siguen en el enum de la BD y en órdenes antiguas, así que el
   // tipo tiene que admitirlos para poder pintarlas.
   | 'EN VERIFICACIÓN' | 'CANCELADA';
 
 /** M6 · Soporte firmado subido por el profesional desde el enlace público. */
+/** Casilla del portal en la que el profesional subió el soporte (SUP-02). */
+export type CategoriaSoporte = 'acta' | 'asistencia' | 'evidencias' | 'otros';
+
 export interface ArchivoSoporte {
   id: string;
   orden_id: string;
+  /**
+   * Nombre que le puso el sistema ('acta.pdf'). Es el que se enseña: el del
+   * móvil del profesional no dice qué documento es. NULL en los soportes
+   * anteriores a la clasificación.
+   */
+  nombre_archivo?: string | null;
+  /** Lo que traía el archivo al subirse. Se conserva solo como referencia. */
   nombre_original?: string | null;
+  categoria?: CategoriaSoporte | null;
   mime?: string | null;
   tamano_bytes?: number | string | null;
+  /** Peso antes de comprimir; permite ver cuánto está ahorrando el servidor. */
+  tamano_original_bytes?: number | string | null;
   via_enlace_publico?: boolean;
   subido_en: string;
 }
@@ -188,10 +215,17 @@ export interface HistorialEstado {
 /** ENC-03 · Enunciados configurables del formulario. */
 export interface PreguntasEncuesta {
   titulo: string;
+  /** Escala 1-5 sobre la ACTIVIDAD que dictó el profesional. */
   satisfaccion: string;
+  /** ENC-03 · Escala 1-5 sobre el PROFESIONAL; alimenta su promedio (CFG-01). */
+  profesional: string;
+  /** Escala 1-5 sobre JD&D como empresa. */
   recomendacion: string;
   comentarios: string;
 }
+
+/** Tope de las observaciones de la encuesta. Espejo de `LIMITE_COMENTARIOS`. */
+export const MAX_COMENTARIOS_ENCUESTA = 500;
 
 /** Lo que ve el cliente en el enlace público (sin login). */
 export interface EncuestaPublica {
@@ -223,6 +257,10 @@ export interface Encuesta {
   contacto_nombre?: string | null;
   contacto_correo?: string | null;
   satisfaccion?: number | null;
+  /** Nota del profesional. NULL en las encuestas anteriores a la pregunta. */
+  calificacion_profesional?: number | null;
+  /** Lo que entra al promedio del asesor: su nota, o la satisfacción si no hay. */
+  nota_profesional?: number | null;
   recomendacion?: number | null;
   comentarios?: string | null;
   enviado_en?: string | null;
@@ -237,6 +275,8 @@ export interface EncuestaStats {
     enviadas: number;
     respondidas: number;
     promedio_satisfaccion?: string | number | null;
+    /** Promedio de la nota AL PROFESIONAL, distinta de la de la actividad. */
+    promedio_profesional?: string | number | null;
     promedio_recomendacion?: string | number | null;
   };
   por_profesional: {
@@ -245,6 +285,7 @@ export interface EncuestaStats {
     enviadas: number;
     respondidas: number;
     promedio_satisfaccion?: string | number | null;
+    promedio_profesional?: string | number | null;
     promedio_recomendacion?: string | number | null;
   }[];
   por_arl: {
@@ -345,6 +386,28 @@ export interface ReporteCartera {
 /** PRE-01..07 · Estados del ciclo de vida de una pre-cuenta. */
 export type EstadoPrecuenta = 'generada' | 'enviada' | 'aceptada' | 'rechazada';
 
+/**
+ * PRE-01 · Una fila de Cuentas de cobro: el trabajo por cobrar de UN profesional
+ * en UN mes. Existe desde que se aceptan los soportes de su primera orden del
+ * mes, con o sin cuenta generada todavía — de ahí que `precuenta_id` y `estado`
+ * puedan venir nulos, que es lo que se lee como "pendiente de generar".
+ */
+export interface CuentaDelMes {
+  periodo: string;
+  profesional_id: string;
+  profesional_nombre: string;
+  total_horas: number;
+  total_monto: number;
+  total_ordenes: number;
+  /** Órdenes que quedarían valoradas en $0: bloquean la generación. */
+  ordenes_sin_tarifa: number;
+  precuenta_id: string | null;
+  estado: EstadoPrecuenta | null;
+  enviado_en?: string | null;
+  respondido_en?: string | null;
+  observaciones?: string | null;
+}
+
 /** Una orden ejecutada dentro de la pre-cuenta, ya valorada. */
 export interface PrecuentaItem {
   id: string;
@@ -377,6 +440,23 @@ export interface Precuenta {
   respondido_en?: string | null;
   creado_en?: string;
   items?: PrecuentaItem[];
+}
+
+/**
+ * CFG-04 · Tipo de orden con su valor hora.
+ *
+ * Es la lista de "Valores por hora según actividad" de Configuración. Cada OS se
+ * carga con uno y de ahí sale lo que se le paga al profesional por hora.
+ */
+export interface TipoOrden {
+  id: string;
+  nombre: string;
+  valor_hora: string | number;
+  activo: boolean;
+  /** Cuántas OS lo usan; es lo que impide borrarlo sin dejar historial huérfano. */
+  ordenes?: number;
+  creado_en?: string;
+  actualizado_en?: string;
 }
 
 /** PRE-02 · Valor hora por profesional y tipo de actividad. */
@@ -437,10 +517,22 @@ export interface Notificacion {
   tipo: TipoNotificacion | (string & {});
   titulo?: string | null;
   mensaje?: string | null;
-  datos?: { orden_id?: string; precuenta_id?: string } | null;
+  datos?: { orden_id?: string; precuenta_id?: string; profesional_id?: string | null } | null;
   /** null = sin leer. */
   leido_en?: string | null;
+  /** NOT-04 · null = en la bandeja; con fecha = en la papelera. */
+  eliminado_en?: string | null;
   creado_en: string;
+}
+
+/** NOT-04 · Qué recorte de la bandeja se está mirando. */
+export type FiltroNotificaciones = 'todas' | 'no-leidas' | 'leidas' | 'eliminadas';
+
+/** Cuántas hay en cada recorte; viaja con la lista. */
+export interface ConteosNotificaciones {
+  no_leidas: number;
+  leidas: number;
+  eliminadas: number;
 }
 
 /**
@@ -502,6 +594,17 @@ export interface Orden {
   empresa_nombre?: string;
   actividad_economica?: string;
   tipo_actividad?: string | null;
+  // ---- CFG-04 / PRE-02 · Categoría y lo que se paga por ella ----
+  /** Tipo de orden del catálogo; obligatorio desde ago-2026. */
+  tipo_orden_id?: string | null;
+  /** Nombre del tipo, resuelto por el backend para no pedir el catálogo. */
+  tipo_orden?: string | null;
+  /** Valor hora CONGELADO al asignar el profesional (no se relee del catálogo). */
+  valor_hora_cobro?: string | number | null;
+  /** De dónde salió: 'tarifa' del profesional, 'tipo' del catálogo o 'profesional'. */
+  valor_hora_origen?: 'tarifa' | 'tipo' | 'profesional' | null;
+  /** horas × valor hora, calculado por la BD. */
+  valor_cobro_total?: string | number | null;
   modalidad?: string | null;
   horas_asignadas?: number;
   valor_unitario?: number | null;
@@ -532,6 +635,11 @@ export interface Arl {
   id: string;
   nombre: string;
   formato_origen: 'excel' | 'pdf';
+  /**
+   * FOR · La ARL trae sus formatos oficiales cargados en el backend, así que no
+   * necesita plantillas genéricas en Configuración → Formatos.
+   */
+  formatos_propios?: boolean;
 }
 
 /**
@@ -602,6 +710,14 @@ export interface Profesional {
   especialidad?: string;
   valor_hora?: number;
   estado: 'Activo' | 'Inactivo';
+  // --- Desempeño (vista `vw_profesionales_desempeno`) ---
+  /** Órdenes suyas con el trabajo hecho (EJECUTADA o FINALIZADA). */
+  ordenes_ejecutadas?: number;
+  encuestas_enviadas?: number;
+  /** La encuesta es opcional: esto es lo que le da peso al promedio. */
+  encuestas_respondidas?: number;
+  calificacion_promedio?: string | number | null;
+  ultima_calificacion_en?: string | null;
 }
 
 export interface DashboardData {
@@ -610,7 +726,10 @@ export interface DashboardData {
     sin_programar: string | number;
     programadas: string | number;
     en_verificacion: string | number;
+    /** Solo EJECUTADA: soportes subidos y pendientes de revisión. */
     ejecutadas: string | number;
+    /** Cerradas: un administrador aceptó los soportes. */
+    finalizadas: string | number;
     /** RPT-01 · Ejecutadas del mes en curso (el KPI que pide el requisito). */
     ejecutadas_mes: string | number;
     canceladas: string | number;
