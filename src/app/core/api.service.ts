@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from './config';
-import { ArchivoSoporte, Arl, Borrador, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, ReporteCartera, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, Usuario, Vista } from './models';
+import { ArchivoSoporte, Arl, Borrador, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, Usuario, Vista } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -113,14 +113,6 @@ export class ApiService {
   /** RPT-05 · Horas ejecutadas por profesional y ARL en un rango. */
   reporteHoras(desde: string, hasta: string): Observable<Wrap<ReporteHoras>> {
     return this.http.get<Wrap<ReporteHoras>>(`${this.base}/reports/horas?desde=${desde}&hasta=${hasta}`);
-  }
-  /** RPT-06 · Cartera: ejecutadas sin facturar o sin validar por la ARL. */
-  reporteCartera(filtros: { arl_id?: string; pendiente?: string } = {}): Observable<Wrap<ReporteCartera>> {
-    return this.http.get<Wrap<ReporteCartera>>(`${this.base}/reports/cartera${queryString(filtros)}`);
-  }
-  /** RPT-06 · Marca facturación / validación de la ARL sobre una OS. */
-  marcarCartera(orderId: string, body: { facturado?: boolean; validado_arl?: boolean }): Observable<Wrap<{ id: string }>> {
-    return this.http.patch<Wrap<{ id: string }>>(`${this.base}/orders/${orderId}/cartera`, body);
   }
 
   /** Convierte headers + filas en un .xlsx real (el backend lo arma con ExcelJS). */
@@ -343,6 +335,17 @@ export class ApiService {
     },
   ): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.base}/public/survey/${token}`, body);
+  }
+
+  /**
+   * AUTH-05 · El usuario corrige SUS datos (nombre, teléfono, especialidad).
+   *
+   * El correo y el documento no se tocan aquí: identifican la cuenta y son con
+   * lo que se inicia sesión, así que los cambia el Administrador Maestro.
+   */
+  actualizarMiPerfil(body: { nombre: string; telefono?: string; especialidad?: string }):
+    Observable<{ message: string; usuario: Usuario }> {
+    return this.http.put<{ message: string; usuario: Usuario }>(`${this.base}/auth/me`, body);
   }
 
   // ---- CFG-04 · Tipos de orden y su valor hora ----

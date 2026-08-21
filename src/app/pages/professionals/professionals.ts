@@ -5,6 +5,10 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
+import {
+  normalizarTexto, normalizarCorreo, soloDigitos, validarNombre, validarCorreo,
+  validarTelefono, validarTextoOpcional, primerProblema, tecleoLetras, tecleoDigitos,
+} from '../../core/personas';
 import { AlertService } from '../../core/alert.service';
 import { Encuesta, Profesional } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
@@ -77,6 +81,11 @@ export class ProfessionalsComponent implements OnInit {
 
   /** CFG-01 · La lista de asesores crece con el equipo. */
   protected readonly pag = paginar(this.filtered);
+
+  // CFG-01 · Filtros de tecleo: lo que no corresponde al campo no llega ni a
+  // escribirse (letras en el teléfono, dígitos en el nombre).
+  protected readonly tecleoLetras = tecleoLetras;
+  protected readonly tecleoDigitos = tecleoDigitos;
 
   protected buscar(texto: string): void {
     this.query.set(texto);
@@ -275,23 +284,49 @@ export class ProfessionalsComponent implements OnInit {
     return this.professionals().filter((p) => p.id !== id);
   }
 
-  protected isValid(): boolean {
-    return (
-      this.draft.name.trim().length > 0 &&
-      this.draft.email.trim().length > 0 &&
-      !this.duplicadoCorreo() &&
-      !this.duplicadoTelefono()
+  /**
+   * CFG-01 · Lo que impide guardar, en una frase, o null si todo está bien.
+   *
+   * Se usa para dos cosas a la vez: deshabilitar el botón y explicar por qué.
+   * Antes bastaba con que el nombre y el correo tuvieran UN carácter, así que
+   * entraban fichas con nombre "a" y correo "x".
+   */
+  protected problemaFicha(): string | null {
+    if (this.duplicadoCorreo()) return `El correo ya está registrado a nombre de ${this.duplicadoCorreo()!.name}.`;
+    if (this.duplicadoTelefono()) return `El teléfono ya está registrado a nombre de ${this.duplicadoTelefono()!.name}.`;
+    return primerProblema(
+      validarNombre(this.draft.name),
+      validarCorreo(this.draft.email),
+      validarTelefono(this.draft.phone),
+      validarTextoOpcional(this.draft.specialty, 'La especialidad'),
     );
+  }
+
+  protected isValid(): boolean {
+    return this.problemaFicha() === null;
   }
 
   /** Crea o actualiza el profesional contra la base de datos. */
   protected save(): void {
-    if (this.saving() || !this.isValid()) return;
+    if (this.saving()) return;
+    // Se normaliza ANTES de validar: los textos van en mayúsculas y el teléfono
+    // solo con dígitos, que es como se guardan y como se comparan los duplicados.
+    this.draft.name = normalizarTexto(this.draft.name);
+    this.draft.email = normalizarCorreo(this.draft.email);
+    this.draft.phone = soloDigitos(this.draft.phone);
+    this.draft.specialty = normalizarTexto(this.draft.specialty);
+
+    const problema = this.problemaFicha();
+    if (problema) {
+      this.alerts.warning('Revise los datos', problema);
+      return;
+    }
+
     this.saving.set(true);
     const body: Partial<Profesional> = {
-      nombre: this.draft.name.trim(),
-      correo: this.draft.email.trim(),
-      telefono: this.draft.phone.trim(),
+      nombre: this.draft.name,
+      correo: this.draft.email,
+      telefono: this.draft.phone,
       especialidad: this.draft.specialty,
       estado: this.draft.status,
     };

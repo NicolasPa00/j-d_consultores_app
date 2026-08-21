@@ -68,9 +68,12 @@ export class NotificationsComponent implements OnInit, OnDestroy {
     this.store.markAllRead();
   }
 
-  /** Los tres recortes, más "Todas" (la bandeja viva) como punto de partida. */
+  /**
+   * Los tres recortes. No hay chip de "Todas": sin ninguno marcado la bandeja
+   * ya sale entera, y un botón para "no filtrar" al lado de los filtros es un
+   * estado de más que hay que explicar.
+   */
   protected readonly filtros: { key: FiltroNotificaciones; label: string }[] = [
-    { key: 'todas', label: 'Todas' },
     { key: 'no-leidas', label: 'No leídas' },
     { key: 'leidas', label: 'Leídas' },
     { key: 'eliminadas', label: 'Eliminadas' },
@@ -84,8 +87,13 @@ export class NotificationsComponent implements OnInit, OnDestroy {
     return c.no_leidas + c.leidas;
   }
 
+  /**
+   * Alterna: el filtro activo se apaga al volver a pulsarlo y la bandeja vuelve
+   * a mostrarse entera. Sin esto, quitar un filtro obligaba a buscar otro botón
+   * que lo deshiciera.
+   */
   protected verFiltro(f: FiltroNotificaciones): void {
-    this.store.verFiltro(f);
+    this.store.verFiltro(this.store.filtro() === f ? 'todas' : f);
   }
 
   /**
@@ -146,6 +154,11 @@ export class NotificationsComponent implements OnInit, OnDestroy {
         params: { profesional: n.datos.profesional_id, vista: 'calificaciones' },
       };
     }
+    // CFG-05 · El aviso del día de corte no apunta a una orden ni a una cuenta:
+    // apunta al mes que quedó sin cobrar, y eso se resuelve en la vista.
+    if (n.tipo === 'CORTE_COBRO' && this.auth.puedeVer('precuentas')) {
+      return { ruta: ['/precuentas'] };
+    }
     const ordenId = n.datos?.orden_id;
     if (ordenId && this.auth.puedeVer('ordenes')) {
       const params: Record<string, string> = { os: ordenId };
@@ -167,7 +180,8 @@ export class NotificationsComponent implements OnInit, OnDestroy {
       case 'SOPORTE_CARGADO': return 'soporte';
       case 'ENCUESTA_RESPONDIDA': return 'encuesta';
       case 'PRECUENTA_ACEPTADA':
-      case 'PRECUENTA_RECHAZADA': return 'precuenta';
+      case 'PRECUENTA_RECHAZADA':
+      case 'CORTE_COBRO': return 'precuenta';
       default: return 'aviso';
     }
   }
@@ -181,6 +195,7 @@ export class NotificationsComponent implements OnInit, OnDestroy {
       case 'ENCUESTA_RESPONDIDA': return 'Encuesta';
       case 'PRECUENTA_ACEPTADA': return 'Cuenta de cobro aceptada';
       case 'PRECUENTA_RECHAZADA': return 'Cuenta de cobro rechazada';
+      case 'CORTE_COBRO': return 'Día de corte';
       default: return 'Aviso';
     }
   }

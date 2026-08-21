@@ -7,13 +7,12 @@ import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import {
   Encuesta, EncuestaStats, FiltroEncuestas, Orden, Profesional,
-  ReporteCartera, ReporteHoras, ReporteVencidas,
+  ReporteHoras, ReporteVencidas,
 } from '../../core/models';
-import { AuthService } from '../../core/auth.service';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
-type ReportTab = 'ordenes' | 'profesionales' | 'satisfaccion' | 'vencidas' | 'horas' | 'cartera';
+type ReportTab = 'ordenes' | 'profesionales' | 'satisfaccion' | 'vencidas' | 'horas';
 
 /** Estados de OS del backend, en orden de ciclo de vida. */
 // El ciclo vigente son tres estados; los dos últimos se conservan en la lista
@@ -31,14 +30,7 @@ const ESTADOS = ['SIN PROGRAMAR', 'PROGRAMADA', 'EJECUTADA', 'FINALIZADA', 'EN V
 export class ReportsComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly alerts = inject(AlertService);
-  private readonly auth = inject(AuthService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
-
-  /** Solo admin y contador marcan facturación / validación de la ARL (RPT-06). */
-  protected readonly puedeMarcarCartera = computed(() => {
-    const rol = this.auth.usuario()?.rol;
-    return rol === 'admin' || rol === 'contador';
-  });
 
   protected readonly activeTab = signal<ReportTab>('ordenes');
 
@@ -71,16 +63,11 @@ export class ReportsComponent implements OnInit {
   // ---- RPT-03/05/06 · Reportes avanzados ----
   protected readonly vencidas = signal<ReporteVencidas | null>(null);
   protected readonly horasRep = signal<ReporteHoras | null>(null);
-  protected readonly cartera = signal<ReporteCartera | null>(null);
   protected readonly loadingReporte = signal(false);
   /** Umbral de RPT-03; el FRS pide 60 días, pero se puede mirar con otro corte. */
   protected umbralDias = 60;
   protected desde = primerDiaDelAnio();
   protected hasta = hoyIso();
-  protected readonly carteraPendiente = signal('');
-  /** Marcar facturación bloquea solo la fila en curso. */
-  protected readonly marcandoId = signal<string | null>(null);
-
   // ---- Modal de resumen ----
   protected readonly summaryOrder = signal<Orden | null>(null);
   protected readonly summaryLoading = signal(false);
@@ -128,14 +115,13 @@ export class ReportsComponent implements OnInit {
 
   // ---- Paginación de las cinco tablas que crecen con los datos ----
   // Cada pestaña tiene la suya: comparten componente pero no estado, porque
-  // volver a Órdenes tras mirar Cartera no debería mover la página de la otra.
+  // volver a Órdenes tras mirar Horas no debería mover la página de la otra.
   // Las tablas de agregados (por profesional, por ARL, por mes) no se paginan:
   // tienen tantas filas como profesionales, ARL o meses del rango.
   protected readonly pagOrdenes = paginar(this.filteredOrders);
   protected readonly pagProfs = paginar(this.filteredProfs);
   protected readonly pagEncuestas = paginar(this.surveys);
   protected readonly pagVencidas = paginar(computed(() => this.vencidas()?.ordenes ?? []));
-  protected readonly pagCartera = paginar(computed(() => this.cartera()?.ordenes ?? []));
   // Los desgloses también crecen, y esto se me pasó en la primera pasada: "por
   // profesional" crece con el equipo y "por mes" con el rango que elige el
   // usuario (en Horas, tres años son 36 filas). Los que NO se paginan son los
@@ -248,58 +234,7 @@ export class ReportsComponent implements OnInit {
     });
   }
 
-  /** RPT-06 · Cartera pendiente de facturar o de validar por la ARL. */
-  protected cargarCartera(): void {
-    this.loadingReporte.set(true);
-    this.api.reporteCartera(this.carteraPendiente() ? { pendiente: this.carteraPendiente() } : {}).subscribe({
-      next: (r) => { this.cartera.set(r.data); this.pagCartera.reiniciar(); this.loadingReporte.set(false); },
-      error: () => {
-        this.cartera.set(null);
-        this.loadingReporte.set(false);
-        this.alerts.error('No se pudo cargar el reporte de cartera');
-      },
-    });
-  }
-
-  protected onCarteraFiltro(valor: string): void {
-    this.carteraPendiente.set(valor);
-    this.cargarCartera();
-  }
-
-  /**
-   * RPT-06 · Confirma que una OS ya se facturó o que la ARL la validó. Al
-   * quedar sin pendientes desaparece del reporte, que es la señal de que el
-   * ciclo se cerró.
-   */
-  protected marcarCartera(o: { id: string; codigo: string }, campo: 'facturado' | 'validado_arl'): void {
-    if (this.marcandoId()) return;
-    this.marcandoId.set(o.id);
-    this.api.marcarCartera(o.id, { [campo]: true }).subscribe({
-      next: () => {
-        this.marcandoId.set(null);
-        this.alerts.success(
-          campo === 'facturado' ? 'Marcada como facturada' : 'Validación de la ARL registrada',
-          `${o.codigo} actualizada.`,
-        );
-        this.cargarCartera();
-      },
-      error: (err) => {
-        this.marcandoId.set(null);
-        this.alerts.error('No se pudo actualizar', mensajeError(err, 'El servidor rechazó el cambio.'));
-      },
-    });
-  }
-
-  /** Etiqueta legible del pendiente de cartera. */
-  protected pendienteLabel(p: string): string {
-    switch (p) {
-      case 'sin_facturar': return 'Sin facturar';
-      case 'sin_validar_arl': return 'Sin validar ARL';
-      default: return 'Sin facturar ni validar';
-    }
-  }
-
-  /** Tono de la fila según la antigüedad (misma escala en vencidas y cartera). */
+  /** Tono de la fila según la antigüedad (RPT-03). */
   protected tonoDias(dias: number, umbral: number): string {
     if (dias > umbral * 2) return 'tone-red';
     if (dias > umbral) return 'tone-amber';
@@ -352,7 +287,6 @@ export class ReportsComponent implements OnInit {
     this.pagProfs.reiniciar();
     this.pagEncuestas.reiniciar();
     this.pagVencidas.reiniciar();
-    this.pagCartera.reiniciar();
     this.pagSatProf.reiniciar();
     this.pagSatMes.reiniciar();
     this.pagHorasMes.reiniciar();
@@ -360,7 +294,6 @@ export class ReportsComponent implements OnInit {
     else if (tab === 'satisfaccion') this.loadSurveys();
     else if (tab === 'vencidas') this.cargarVencidas();
     else if (tab === 'horas') this.cargarHoras();
-    else if (tab === 'cartera') this.cargarCartera();
     else this.loadProfessionals();
   }
 
@@ -574,19 +507,6 @@ export class ReportsComponent implements OnInit {
         ...(rep?.por_mes ?? []).map((m) => ['Mes', m.mes, m.ordenes, this.num(m.horas)]),
       ];
       this.downloadXlsx('horas_ejecutadas', 'Horas', ['Agrupación', 'Detalle', 'Órdenes', 'Horas'], rows);
-    } else if (this.activeTab() === 'cartera') {
-      // RPT-06 + RPT-07
-      const rows = (this.cartera()?.ordenes ?? []).map((o) => [
-        o.codigo, o.empresa_nombre || '', o.nit_nic || '', o.arl_nombre || '',
-        o.profesional_nombre || '', this.num(o.horas_asignadas), this.num(o.valor_total),
-        fechaCorta(o.fecha_ejecucion), o.dias_desde_ejecucion,
-        o.facturado_en ? 'Sí' : 'No', o.validado_arl_en ? 'Sí' : 'No',
-        this.pendienteLabel(o.pendiente),
-      ]);
-      this.downloadXlsx('cartera', 'Cartera', [
-        'Código', 'Empresa', 'NIT', 'ARL', 'Profesional', 'Horas', 'Valor total',
-        'Ejecutada el', 'Días desde ejecución', 'Facturada', 'Validada ARL', 'Pendiente',
-      ], rows);
     } else if (this.activeTab() === 'satisfaccion') {
       // ENC-07 · Respuestas exportables. Se incluyen también las enviadas sin
       // responder: saber a quién falta encuestar es parte del seguimiento.
@@ -652,17 +572,6 @@ export class ReportsComponent implements OnInit {
       filtro =
         `Rango: ${fechaCorta(rep?.desde)} a ${fechaCorta(rep?.hasta)}` +
         ` · Total: ${this.num(rep?.totales?.horas)} horas en ${rep?.totales?.ordenes ?? 0} órdenes`;
-    } else if (this.activeTab() === 'cartera') {
-      const rep = this.cartera();
-      title = 'Cartera · órdenes ejecutadas pendientes';
-      headers = ['Código', 'Empresa', 'ARL', 'Ejecutada el', 'Días', 'Pendiente'];
-      rows = (rep?.ordenes ?? []).map((o) => [
-        o.codigo, o.empresa_nombre || '', o.arl_nombre || '',
-        fechaCorta(o.fecha_ejecucion), o.dias_desde_ejecucion, this.pendienteLabel(o.pendiente),
-      ]);
-      filtro =
-        `Sin facturar: ${rep?.resumen?.sin_facturar ?? 0} · Sin validar ARL: ${rep?.resumen?.sin_validar ?? 0}` +
-        ` · Monto involucrado: ${this.pesos(rep?.resumen?.monto)}`;
     } else if (this.activeTab() === 'satisfaccion') {
       const t = this.surveyStats()?.totales;
       title = 'Informe de satisfacción del cliente';

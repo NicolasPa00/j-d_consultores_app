@@ -88,6 +88,17 @@ export class AuthService {
     this.writeStorage(PERMISOS_KEY, JSON.stringify(efectivos));
   }
 
+  /**
+   * AUTH-05 · Refresca los datos del usuario en sesión tras editarlos.
+   *
+   * El nombre se pinta en el navbar y en el avatar: sin esto habría que cerrar
+   * sesión para ver el cambio que se acaba de guardar.
+   */
+  actualizarUsuario(usuario: Usuario): void {
+    this._usuario.set(usuario);
+    this.writeStorage(USER_KEY, JSON.stringify(usuario));
+  }
+
   /** Muestra la recomendación de cambiar contraseña si aún es la cédula. */
   recomendarCambioContrasena(): void {
     this.alert.warning(

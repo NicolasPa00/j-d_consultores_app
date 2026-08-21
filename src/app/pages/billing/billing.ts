@@ -438,6 +438,23 @@ export class BillingComponent implements OnInit {
    * ("enviada"), que en una columna con título en mayúscula se lee a medio
    * escribir. Sin cuenta todavía no hay estado: la fila está por cobrar.
    */
+  /**
+   * PRE-01 · ¿Esta fila es una cuenta complementaria (o lo será)?
+   *
+   * Pasa cuando se finalizan órdenes de un mes cuya cuenta ya estaba cerrada:
+   * la aceptada no se toca —es un acuerdo— y lo nuevo se cobra aparte, como una
+   * factura complementaria.
+   */
+  protected esComplemento(f: CuentaDelMes): boolean {
+    return f.numero ? f.numero > 1 : (f.del_mes ?? 0) > 0;
+  }
+
+  protected avisoComplemento(f: CuentaDelMes): string {
+    return f.numero && f.numero > 1
+      ? `Cuenta ${f.numero} de ${f.profesional_nombre} para este mes: recoge trabajo finalizado después de cerrar la anterior.`
+      : 'Este trabajo se finalizó después de cerrarse la cuenta del mes; se cobra en una cuenta complementaria.';
+  }
+
   protected estadoLabel(estado: EstadoPrecuenta | null): string {
     if (!estado) return 'Por generar';
     return estado.charAt(0).toUpperCase() + estado.slice(1);

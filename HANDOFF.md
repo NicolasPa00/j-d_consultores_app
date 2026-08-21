@@ -5,7 +5,24 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 18-ago-2026 (tanda 12) — **el tipo de orden es
+> **Última actualización:** 19-ago-2026 (tanda 15) — el rol **'profesional' pasó
+> a llamarse 'administrativo'** (se confundía con los profesionales de campo) y
+> ya no le pide una ficha que no necesita; **"Guardar cambios" del perfil por fin
+> guarda**; los formularios de personas **validan y guardan en mayúsculas**; el
+> **día de corte** ahora avisa por la campanita; y las plantillas de PDF a medida
+> quedaron ocultas. Ver §3, "Tanda 15".
+>
+> **Tanda 14 (misma fecha):** se **retiró la pestaña
+> Cartera** (RPT-06) de Informes: pestaña, endpoints, vista `vw_cartera` y las
+> tres columnas de la orden. No tenía datos. Ver §3, "Tanda 14".
+>
+> **Tanda 13 (misma fecha):** se cerró el agujero de la
+> cuenta de cobro: lo ya facturado sale de "por cobrar", y el trabajo que se
+> finaliza **después** de cerrarse la cuenta del mes se cobra en una **cuenta
+> complementaria** en vez de desaparecer. Se anularon dos cuentas de agosto
+> aceptadas en $0 que estaban tapando el mes entero. Ver §3, "Tanda 13".
+>
+> **Tanda 12 (18-ago-2026):** **el tipo de orden es
 > obligatorio** y de él sale el valor hora con el que se le paga al profesional.
 > "Valores por hora según actividad" dejó de ser una lista escrita a mano y pasó
 > a ser el catálogo con el que se categoriza cada OS; al asignar, la orden se
@@ -137,6 +154,11 @@
 | **Tanda 8** · rechazo por documento | El administrador marca QUÉ se devuelve; el portal abre solo esa casilla, enseña lo ya enviado y **reemplaza** el archivo anterior | §3 + trampas 51-53 |
 | **Tanda 8** · importar sin gastar IA | Comprobación previa por huella del archivo y por número de orden en su texto: la orden repetida se aparta al elegirla | §3 + trampa 51 |
 | **Tanda 8** · avisos y tamaño | La campanita de soportes abre el visor de archivos (`&vista=soportes`); el máximo por archivo pasó de 25 MB a **4 MB** en importación y soportes | §3 |
+| **Tanda 15** · rol Administrativo | `profesional` → `administrativo` (rename del enum, sin perder cuentas ni permisos); el panel de inicio se bifurca por FICHA enlazada, no por rol | §3 + trampa 61 |
+| **Tanda 15** · validación de personas | Nombre, correo, teléfono y documento con reglas reales y en MAYÚSCULAS, compartidas por usuarios y profesionales (`utils/personas.js` / `core/personas.ts`) | §3 |
+| **Tanda 15** · perfil y día de corte | "Guardar cambios" del perfil existía sin endpoint; el día de corte ahora avisa por la campanita del mes anterior sin cobrar | §3 |
+| **Tanda 14** · Cartera retirada | Fuera la pestaña RPT-06 completa: UI, `GET /reports/cartera`, `PATCH /orders/:id/cartera`, `vw_cartera` y `facturado_en` / `validado_arl_en` / `cartera_marcada_por` | §3 |
+| **Tanda 13** · cuentas complementarias | Lo facturado sale de "por cobrar"; el trabajo finalizado tras cerrar la cuenta del mes genera una cuenta complementaria en vez de perderse | §3 + trampa 60 |
 | **Tanda 12** · tipo de orden obligatorio | Catálogo real (`sst.tipos_orden`), obligatorio al importar y editable en Órdenes; de él sale el valor hora | §3 + trampa 59 |
 | **Tanda 12** · el valor se congela en la orden | `valor_hora_cobro` + `valor_cobro_total` (columna generada): cambiar el catálogo no toca lo ya asignado | §3 |
 | **Tanda 11** · papelera de la campanita | Eliminar (en blando) + recortes No leídas / Leídas / Eliminadas, con restaurar; la fila entera es el enlace | §3 |
@@ -243,7 +265,7 @@ backend real. No queda nada mockeado ni ninguna costura de BD sin implementar.
 | M7 Verificación y cierre (VER-01..05) | ✅ · la revisión se hace **sobre la OS ya EJECUTADA**: aceptar deja constancia y manda la encuesta, rechazar la devuelve a PROGRAMADA y **avisa al profesional por correo** |
 | M8 Encuesta de satisfacción (ENC-01..07) | ✅ · ENC-03 editable desde Configuración → Formatos y encuesta |
 | M9 Pre-cuenta de cobro (PRE-01..09) | ✅ · el cierre de mes se dispara **a mano** (no hay cron); CFG-05 avisa de los meses vencidos |
-| M10 Reportes (RPT-01..07) | ✅ · dashboard, buscador NL, vencidas, satisfacción, horas, cartera, exportación |
+| M10 Reportes (RPT-01..05, 07) | ✅ · dashboard, buscador NL, vencidas, satisfacción, horas, exportación · **RPT-06 (Cartera) retirado** |
 | M11 Notificaciones (NOT-01..04) | ✅ correos + campanita interna |
 | M12 Configuración | ✅ completo · CFG-01, CFG-02, CFG-03, CFG-04 (tarifas de M9) y CFG-05 |
 
@@ -1086,6 +1108,130 @@ aunque la respuesta **no dijera nada** del envío. La condición era
 porque corre una versión anterior— pasaba por éxito. Ahora es `!== true`: si no
 hay confirmación explícita, se avisa de que hay que avisar por otro medio.
 
+### Tanda 15 (19-ago-2026): rol Administrativo, perfil que guarda y formularios con reglas
+
+**El rol 'profesional' se llama ahora 'administrativo'.** Se confundía con los
+PROFESIONALES que hacen las visitas —que no tienen cuenta: son fichas de
+`sst.profesionales` y trabajan por enlaces públicos—. Es personal interno de
+JD&D y su acceso lo define la matriz de permisos, nada más. Se **renombró el
+valor del enum** (`ALTER TYPE … RENAME VALUE`) en vez de crear otro: la cuenta
+que ya existía y sus 8 filas de `permisos_rol` siguieron valiendo sin tocar nada.
+
+Con eso se arregla lo que se veía: al entrar, esa cuenta aterrizaba en un panel
+que le pedía "una ficha de profesional enlazada". **El panel de inicio se bifurca
+ahora por la FICHA, no por el rol**: quien tenga `profesionales.usuario_id`
+apuntando a su cuenta ve su agenda (ASG-08 sigue vivo), y el resto ve el panel de
+administración. El login y `/auth/me` devuelven `profesional_id` para poder
+decidirlo sin un viaje extra.
+
+**"Guardar cambios" del perfil no guardaba nada.** El formulario de *Mi perfil
+corporativo* hacía `preventDefault()` y ahí terminaba: no existía ni el endpoint.
+Ahora hay `PUT /auth/me` (nombre, teléfono y especialidad; el correo y el
+documento los cambia el Maestro porque identifican la cuenta) y la sesión se
+refresca para que el nombre del navbar cambie sin volver a entrar.
+
+**Los formularios de personas validan de verdad.** Entraban nombres de una letra,
+correos sin arroba y teléfonos con letras. La regla vive una sola vez —
+`sst_ws/src/utils/personas.js`, con espejo en `sst_app/src/app/core/personas.ts`—
+y la aplican los dos formularios (usuarios y fichas de profesional):
+
+- **nombre**: 3-120 caracteres, solo letras y espacios;
+- **correo**: formato real, en minúsculas;
+- **teléfono**: 7-15 **dígitos**, y se guarda solo con dígitos (así '+57 300 111
+  2233' y '3001112233' dejan de ser dos números distintos);
+- **documento**: 5-20 alfanuméricos sin puntos ni espacios;
+- **valor hora**: número en formato colombiano — "70.000" son setenta mil, no
+  setenta. Ese sí era un error que costaba dinero.
+
+Los textos se guardan **en MAYÚSCULAS**, como pidió el cliente, y además se
+filtran al teclear: en el nombre no entran dígitos y en el teléfono no entran
+letras. El correo es la excepción y va en minúsculas: es la credencial con la que
+se recupera la contraseña y con la que se comparan duplicados.
+
+**El día de corte (CFG-05) ya hace algo.** Guardaba un número y nada más. Ahora,
+pasado ese día del mes, si el **mes anterior** todavía tiene trabajo sin cobrar,
+deja un aviso en la campanita de administradores y contadores con cuántas órdenes
+y por cuánto dinero, y ese aviso lleva a Cuentas de cobro. Nada más: no genera
+cuentas ni escribe al profesional.
+
+⚠️ Sin tareas programadas en el despliegue, el aviso se materializa al **abrir
+una pantalla** (el panel de inicio o Cuentas de cobro), que es lo más parecido a
+un cron que hay aquí. Es idempotente por periodo y usuario: la condición se
+cumple todos los días hasta que alguien cobre, y sin la deduplicación la
+campanita se llenaría del mismo aviso.
+
+**Plantillas de PDF a medida (CFG-03): ocultas.** Servían para dibujar formatos
+propios cuando una ARL no traía los suyos; desde que las tres tienen sus formatos
+oficiales, esa pantalla no hace nada visible. Se oculta con un interruptor
+(`plantillasVisibles` en `settings.ts`) en vez de borrarse: el generador sigue en
+el backend y hará falta el día que entre una ARL sin formato propio.
+
+### Tanda 14 (19-ago-2026): fuera la pestaña Cartera
+
+El cliente la descartó: no la usan. Se quitó **entera**, no solo de la pantalla —
+una pestaña oculta con su endpoint vivo y su columna en la tabla es deuda que
+alguien vuelve a encontrar dentro de seis meses sin saber si sirve:
+
+- **UI:** la pestaña, su filtro, su tabla, sus dos exportaciones (Excel y PDF),
+  los estilos de su columna y el permiso `puedeMarcarCartera`. Con él se fue la
+  única razón por la que `reports.ts` inyectaba `AuthService`.
+- **API:** `GET /reports/cartera` y `PATCH /orders/:id/cartera` (ambos responden
+  ya 404), y sus métodos en `api.service.ts`.
+- **Tipos:** `OrdenCartera` y `ReporteCartera`.
+- **BD:** la vista `vw_cartera` y las columnas `facturado_en`,
+  `validado_arl_en` y `cartera_marcada_por` de `ordenes_servicio`. Se comprobó
+  antes: las tres estaban **vacías en las 40 órdenes**, así que no se perdió
+  nada. Las bajadas quedan escritas en `schema.sql` para que `npm run migrate`
+  limpie también cualquier otra base.
+
+⚠️ Ojo con el orden en el esquema: `vw_ordenes_expandidas` es `SELECT o.*`, así
+que dependía de esas columnas. Hay que soltarla **antes** del `DROP COLUMN`; se
+vuelve a crear más abajo en el mismo archivo, ya sin ellas.
+
+Quedan cinco pestañas en Informes: Órdenes, Profesionales, Satisfacción,
+Vencidas y Horas. El FRS pedía RPT-06; esta es una divergencia deliberada, a
+petición del cliente.
+
+### Tanda 13 (19-ago-2026): el trabajo finalizado tarde ya no se pierde
+
+**El síntoma:** se finalizaban órdenes y no aparecía nada en *Cuentas de cobro →
+Por cobrar*. El flujo estaba bien —la fila nace al **aceptar los soportes**, no
+hay ningún botón de "cargar"— pero dos cosas lo tapaban.
+
+**1. Dos cuentas de agosto aceptadas en $0.** Se generaron el 16 y el 17 de
+agosto, antes de que el tipo de orden diera el valor hora: nacieron sin tarifa
+aplicable y se aceptaron en cero. Como la fila del mes existía y estaba
+*aceptada*, se iba a la pestaña "Aceptadas" con sus cifras congeladas y las ocho
+órdenes que se finalizaron después quedaban invisibles. **Se anularon** (decisión
+del cliente): agosto volvió a "Por cobrar" con Ricardo Rios 8 órdenes / 67 h /
+$5.695.000 y Nicolas Prieto 50 h / $2.000.000, ya con las tarifas correctas.
+
+**2. El agujero de fondo: una cuenta por profesional y mes, y punto.** Había un
+índice único `(profesional_id, periodo)`, así que una orden finalizada después de
+cerrarse la cuenta de ese mes **no tenía dónde ir**: la fila mostraba las cifras
+congeladas de la cuenta y el trabajo nuevo se sumaba a un grupo que ya nadie
+volvía a mirar. Ahora:
+
+- `vw_horas_por_cobrar` excluye las órdenes que ya están dentro de una cuenta.
+  "Por cobrar" significa por fin lo que dice.
+- Las **cuentas** y el **trabajo pendiente** son filas distintas aunque caigan en
+  el mismo profesional y mes: la cuenta se lee como lo que es (un acuerdo
+  cerrado) y lo nuevo como lo que es (dinero por cobrar).
+- Se eliminó el índice único: un mes puede tener varias cuentas. La aceptada no
+  se toca —igual que una factura— y lo nuevo se emite como **complementaria**. La
+  vista las numera (`numero`, `del_mes`), la tabla la marca con una pastilla, y
+  el asunto del correo y el PDF lo dicen: el profesional recibe dos documentos
+  del mismo mes y sin eso parecerían el mismo.
+- Regenerar una cuenta **abierta** sigue recalculándola (incluye sus propios
+  ítems); las cerradas no se tocan nunca.
+
+**El flujo completo, para tenerlo escrito:** Importar (la OS nace con su tipo) →
+Órdenes → *Asignar profesional* (se congela el valor hora) → el profesional sube
+los soportes por su enlace (EJECUTADA) → Órdenes → *Verificar soportes → Aceptar
+soportes* (**FINALIZADA**; aquí es donde la orden entra a la cuenta de cobro) →
+Cuentas de cobro → año y mes → *Generar* congela la cifra y emite el documento →
+*Enviar* se lo manda al profesional.
+
 ### Tanda 12 (18-ago-2026): el tipo de orden manda, y el valor hora se congela
 
 **"Valores por hora según actividad" no guardaba nada.** Eran tres filas escritas
@@ -1135,13 +1281,16 @@ apilan solos.
 ### Tanda 11 (18-ago-2026): papelera en la campanita y un enlace de soportes que se cierra
 
 **La bandeja de avisos solo sabía marcar leído.** Crecía sin fin y lo ya resuelto
-seguía estorbando. Ahora cada fila tiene su **papelera** y el panel abre con
-cuatro recortes: *Todas* (la bandeja viva), *No leídas*, *Leídas* y *Eliminadas*,
-cada uno con su contador. El borrado es **en blando** (`notificaciones.eliminado_en`)
+seguía estorbando. Ahora cada fila tiene su **papelera** y el panel abre con tres
+recortes que se **alternan** —*No leídas*, *Leídas*, *Eliminadas*—, cada uno con
+su contador: pulsar el que ya está activo lo apaga y la bandeja vuelve a verse
+entera. No hay chip de "Todas": sin ningún filtro marcado la bandeja ya sale
+completa, y un botón para "no filtrar" al lado de los filtros es un estado de
+más que hay que explicar. El borrado es **en blando** (`notificaciones.eliminado_en`)
 y la papelera puede devolverlo: una notificación es el rastro de un hecho de
 negocio, y ese rastro no se tira por limpiar la vista.
 
-⚠️ *Todas* muestra lo leído y lo no leído, **no** las eliminadas. Se pidió que
+⚠️ Sin filtro se ve lo leído y lo no leído, **no** las eliminadas. Se pidió que
 "inicialmente se muestren todos", pero si lo borrado siguiera en la lista el
 botón de eliminar no haría nada visible, que es lo único que se le pide; las
 eliminadas tienen su propio recorte, como la papelera de un correo.
@@ -1202,8 +1351,8 @@ medía cada módulo:
 
 - La **encuesta** (ENC-01) se dispara al FINALIZAR, no al ejecutar: antes se le
   preguntaba al cliente por una visita cuyos documentos no había mirado nadie.
-- **Horas ejecutadas** (RPT-05), **cuentas de cobro**, **cartera** (RPT-06),
-  **órdenes por ARL**, **empresas** y el **desempeño del profesional** cuentan
+- **Horas ejecutadas** (RPT-05), **cuentas de cobro**, **órdenes por ARL**,
+  **empresas** y el **desempeño del profesional** cuentan
   los dos estados: el trabajo hecho no deja de estarlo porque lo revisen.
 - **Vencidas** (RPT-03) excluye los dos: una orden cerrada no está vencida.
 - Los **KPIs del dashboard** llevan un contador por estado —cada uno puro— y la
@@ -1320,13 +1469,18 @@ transacción y los binarios **después** de confirmarla — al revés, un rollba
 dejaría al profesional sin el soporte viejo y sin el nuevo. Un fallo borrando el
 binario no tumba la carga: deja un huérfano, que es mucho menos grave.
 
-**La corrección va completa o no va.** Si se devolvieron dos documentos, los dos
-viajan en el mismo envío: el botón del portal no se habilita mientras falte
-alguno —y dice cuál— y el servidor responde 400 si llegan a medias. Se probó
-primero dejándolo subir de a poco y no sirve: la orden queda en tierra de nadie
-(ni cerrada ni devuelta) y el administrador espera un documento que nadie le
-recuerda al profesional que falta. Con la corrección completa, la OS vuelve a
-EJECUTADA y el rechazo se cierra; aceptar los soportes también lo limpia.
+**El envío va completo o no va** — la entrega inicial y la corrección, las dos.
+Los documentos viajan en un solo envío: el botón del portal no se habilita
+mientras falte alguno —y dice cuál— y el servidor responde 400 si llegan a
+medias. Se probó primero dejándolo subir de a poco y no sirve: la orden queda en
+tierra de nadie (el administrador la ve EJECUTADA, la abre para revisar y faltan
+dos documentos, sin nadie a quien reclamárselos porque el enlace ya se cerró).
+Con el envío completo, la OS pasa a EJECUTADA y el rechazo —si lo había— se
+cierra; aceptar los soportes también lo limpia.
+
+*(Al principio la regla solo cubría la corrección y la entrega inicial seguía
+admitiendo 1 de 3; se corrigió el 19-ago-2026. La validación es ahora una sola:
+`requeridas = hayRechazo ? rechazados : las tres casillas`.)*
 
 **Importar ya no gasta una petición de IA en una orden que ya está.** El dedup
 existía, pero corría DESPUÉS de la extracción: el archivo repetido pagaba una
@@ -1609,7 +1763,7 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
 | `/dashboard` | `pages/dashboard` | KPIs y distribución por ARL |
 | `/importar` | `pages/import` | Carga de Excel/PDF y extracción IA |
 | `/ordenes` | `pages/validation` | **Vista central**: bandeja, validación, estados, asignación, verificación. Acepta `?os=<id>` |
-| `/informes` | `pages/reports` | 6 pestañas: Órdenes, Profesionales, Satisfacción, Vencidas, Horas, Cartera |
+| `/informes` | `pages/reports` | 5 pestañas: Órdenes, Profesionales, Satisfacción, Vencidas, Horas |
 | `/precuentas` | `pages/billing` | M9: generar, enviar, seguir y exportar. 2.ª pestaña: tarifas |
 | `/empresas` | `pages/companies` | CFG-02: maestro de clientes, ficha con sus OS y fusión de duplicados |
 | `/profesionales` | `pages/professionals` | CRUD y agenda |
@@ -1995,6 +2149,21 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
     porcentajes) se COPIAN en el momento del acuerdo; la clave foránea se queda
     para la categoría, que sí es estable. Aquí el acuerdo es la asignación del
     profesional.
+
+60. **Una fila que agrupa dos cosas distintas termina escondiendo una.** La
+    cuenta de cobro y el trabajo pendiente se pintaban en la MISMA fila
+    (profesional + mes): si había cuenta, mandaban sus cifras congeladas, y todo
+    lo que se finalizara después quedaba tapado sin ningún aviso. Cuando dos
+    conceptos tienen ciclos de vida distintos —uno se congela, el otro sigue
+    creciendo— son dos filas, aunque compartan la clave por la que se agrupan.
+
+61. **Un rol no es una capacidad.** El panel de inicio se bifurcaba por
+    `rol === 'profesional'` para enseñar la agenda de campo, y el día que ese rol
+    pasó a ser personal administrativo, gente que no sale a visitas aterrizó en
+    una pantalla pidiéndoles una ficha que no necesitan. Lo que decidía no era el
+    rol sino tener FICHA enlazada; cuando una pantalla depende de "tener algo",
+    la condición se escribe sobre ese algo y no sobre la etiqueta que suele
+    acompañarlo.
 
 ---
 

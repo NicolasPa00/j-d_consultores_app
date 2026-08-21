@@ -70,7 +70,7 @@
       </div>
 
       <!-- Formulario -->
-      <form class="profile-form" (submit)="$event.preventDefault()">
+      <form class="profile-form" (ngSubmit)="saveProfile()">
         <label class="form-field">
           <span class="form-field__label">Nombre completo</span>
           <input class="form-control" type="text" [(ngModel)]="fullName" name="fullName" />
@@ -94,7 +94,9 @@
         </div>
 
         <div class="profile-form__actions">
-          <button type="submit" class="btn btn--primary">Guardar cambios</button>
+          <button type="submit" class="btn btn--primary" [disabled]="savingProfile()">
+            {{ savingProfile() ? 'Guardando…' : 'Guardar cambios' }}
+          </button>
         </div>
       </form>
     </div>
@@ -145,9 +147,10 @@
         </button>
       </div>
       <p class="form-note">
-        Día de cada mes en que se cierra el cobro del mes anterior. El despliegue no tiene tareas
-        programadas, así que <strong>no genera nada por su cuenta</strong>: sirve para saber a partir
-        de cuándo un mes lleva retraso.
+        Pasado este día del mes, si el <strong>mes anterior</strong> todavía tiene trabajo sin
+        cobrar, llega un aviso a la campanita de administradores y contadores con cuántas órdenes
+        y por cuánto dinero. Eso es todo lo que hace: <strong>no genera cuentas ni envía correos
+        al profesional</strong>, y el aviso se manda una sola vez por mes.
       </p>
     </div>
   </div>
@@ -255,13 +258,24 @@
           <div class="profile-form__row">
             <label class="form-field">
               <span class="form-field__label">Nombre completo *</span>
-              <input class="form-control" type="text" [(ngModel)]="draft.nombre" name="uNombre" placeholder="Ej. Laura Gómez Restrepo" />
+              <input
+                class="form-control"
+                type="text"
+                maxlength="120"
+                [ngModel]="draft.nombre"
+                (ngModelChange)="draft.nombre = tecleoLetras($event)"
+                name="uNombre"
+                placeholder="EJ. LAURA GÓMEZ RESTREPO"
+              />
             </label>
             <!-- El documento identifica al usuario (es su credencial de acceso):
                  no puede repetirse. En BD la columna es UNIQUE. -->
             <label class="form-field">
               <span class="form-field__label">Documento de identidad {{ editing === 'nuevo' ? '*' : '' }}</span>
-              <input class="form-control" type="text" inputmode="numeric" [(ngModel)]="draft.documento" name="uDocumento"
+              <input class="form-control" type="text" inputmode="numeric" maxlength="20"
+                     [ngModel]="draft.documento"
+                     (ngModelChange)="draft.documento = tecleoDocumento($event)"
+                     name="uDocumento"
                      [class.form-control--error]="documentoDuplicado()"
                      [disabled]="editing !== 'nuevo'" placeholder="Ej. 1020304050" />
               @if (documentoDuplicado(); as dup) {
@@ -275,11 +289,28 @@
           <div class="profile-form__row">
             <label class="form-field">
               <span class="form-field__label">Correo electrónico *</span>
-              <input class="form-control" type="email" [(ngModel)]="draft.correo" name="uCorreo" placeholder="nombre@correo.com" />
+              <input
+                class="form-control"
+                type="email"
+                maxlength="150"
+                [ngModel]="draft.correo"
+                (ngModelChange)="draft.correo = $event.trim().toLowerCase()"
+                name="uCorreo"
+                placeholder="nombre@correo.com"
+              />
             </label>
             <label class="form-field">
               <span class="form-field__label">Teléfono</span>
-              <input class="form-control" type="tel" [(ngModel)]="draft.telefono" name="uTelefono" placeholder="3xx xxx xxxx" />
+              <input
+                class="form-control"
+                type="tel"
+                inputmode="numeric"
+                maxlength="15"
+                [ngModel]="draft.telefono"
+                (ngModelChange)="draft.telefono = tecleoDigitos($event)"
+                name="uTelefono"
+                placeholder="3xx xxx xxxx"
+              />
             </label>
           </div>
 
@@ -294,7 +325,15 @@
             </label>
             <label class="form-field">
               <span class="form-field__label">Especialidad</span>
-              <input class="form-control" type="text" [(ngModel)]="draft.especialidad" name="uEspecialidad" placeholder="Ej. Higiene Industrial" />
+              <input
+                class="form-control"
+                type="text"
+                maxlength="120"
+                [ngModel]="draft.especialidad"
+                (ngModelChange)="draft.especialidad = tecleoLetras($event)"
+                name="uEspecialidad"
+                placeholder="EJ. HIGIENE INDUSTRIAL"
+              />
             </label>
           </div>
 
@@ -419,168 +458,181 @@
 
 <!-- ===== Pestaña: Formatos y encuesta (CFG-03 · ENC-03) ===== -->
 @if (activeTab() === 'formatos' && esAdmin()) {
-  <!-- --- Plantillas de formatos (CFG-03) --- -->
-  @if (plantillaForm(); as editando) {
-    <div class="card">
-      <div class="card__head">
-        <h3 class="card__title">{{ editando === 'nuevo' ? 'Nuevo formato' : 'Editar formato' }}</h3>
-        <span class="card__hint">Se aplica a los PDF que se generen de aquí en adelante</span>
+  <!-- CFG-03 · Plantillas de PDF a medida: OCULTAS (19-ago-2026).
+
+       Servían para que el sistema dibujara sus propios formatos cuando una
+       ARL no traía los suyos. Desde que las tres ARL tienen sus formatos
+       oficiales (`assets/formatos-arl/`), esta pantalla no hace nada visible:
+       el correo de asignación siempre adjunta los oficiales.
+
+       Se OCULTA, no se borra: el generador sigue en el backend y hará falta
+       el día que entre una ARL sin formato propio. Para volver a verla, poner
+       `plantillasVisibles` en true. -->
+  @if (plantillasVisibles) {
+    <!-- --- Plantillas de formatos (CFG-03) --- -->
+    @if (plantillaForm(); as editando) {
+      <div class="card">
+        <div class="card__head">
+          <h3 class="card__title">{{ editando === 'nuevo' ? 'Nuevo formato' : 'Editar formato' }}</h3>
+          <span class="card__hint">Se aplica a los PDF que se generen de aquí en adelante</span>
+        </div>
+        <div class="card__body">
+          <form class="profile-form" (ngSubmit)="savePlantilla()">
+            <div class="profile-form__row">
+              <label class="form-field">
+                <span class="form-field__label">Nombre del formato *</span>
+                <input class="form-control" type="text" [(ngModel)]="plantillaDraft.nombre" name="fNombre"
+                       placeholder="Ej. Acta de Visita — Bolívar" />
+                <span class="form-field__hint">Es el título que se imprime bajo el encabezado del PDF.</span>
+              </label>
+              <label class="form-field">
+                <span class="form-field__label">Tipo *</span>
+                <select class="form-control" [(ngModel)]="plantillaDraft.tipo" name="fTipo">
+                  @for (t of tiposFormato; track t.valor) {
+                    <option [value]="t.valor">{{ t.label }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+
+            <div class="profile-form__row">
+              <label class="form-field">
+                <span class="form-field__label">ARL</span>
+                <select class="form-control" [(ngModel)]="plantillaDraft.arl_id" name="fArl">
+                  <option value="">Todas las ARL</option>
+                  @for (a of arls(); track a.id) {
+                    <option [value]="a.id">{{ a.nombre }}</option>
+                  }
+                </select>
+                <span class="form-field__hint">Solo se genera para las órdenes de esa ARL.</span>
+              </label>
+              <label class="form-field">
+                <span class="form-field__label">Orden de impresión</span>
+                <input class="form-control" type="number" min="0" [(ngModel)]="plantillaDraft.orden" name="fOrden" />
+                <span class="form-field__hint">Menor primero, cuando la ARL tiene varios formatos.</span>
+              </label>
+            </div>
+
+            <label class="form-field">
+              <span class="form-field__label">Descripción interna</span>
+              <input class="form-control" type="text" [(ngModel)]="plantillaDraft.descripcion" name="fDesc"
+                     placeholder="Para qué sirve este formato (no se imprime)" />
+            </label>
+
+            <!-- Lo editable es el CONTENIDO impreso: el PDF se dibuja con pdf-lib
+                 a partir de la OS, no se rellena un archivo base. -->
+            <label class="form-field">
+              <span class="form-field__label">Encabezado impreso</span>
+              <textarea class="form-control" rows="3" [(ngModel)]="plantillaDraft.encabezado" name="fEnc"
+                        placeholder="Párrafo introductorio que aparece bajo el título."></textarea>
+            </label>
+
+            <label class="form-field">
+              <span class="form-field__label">Nota al pie (sobre las firmas)</span>
+              <textarea class="form-control" rows="3" [(ngModel)]="plantillaDraft.nota_pie" name="fNota"
+                        placeholder="Compromisos, aviso legal o instrucciones que el cliente lee antes de firmar."></textarea>
+            </label>
+
+            <div class="profile-form__actions">
+              <button type="button" class="btn btn--ghost" (click)="closePlantillaForm()">Cancelar</button>
+              <button type="submit" class="btn btn--primary" [disabled]="savingPlantilla()">
+                {{ savingPlantilla() ? 'Guardando…' : (editando === 'nuevo' ? 'Crear formato' : 'Guardar cambios') }}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-      <div class="card__body">
-        <form class="profile-form" (ngSubmit)="savePlantilla()">
-          <div class="profile-form__row">
-            <label class="form-field">
-              <span class="form-field__label">Nombre del formato *</span>
-              <input class="form-control" type="text" [(ngModel)]="plantillaDraft.nombre" name="fNombre"
-                     placeholder="Ej. Acta de Visita — Bolívar" />
-              <span class="form-field__hint">Es el título que se imprime bajo el encabezado del PDF.</span>
-            </label>
-            <label class="form-field">
-              <span class="form-field__label">Tipo *</span>
-              <select class="form-control" [(ngModel)]="plantillaDraft.tipo" name="fTipo">
-                @for (t of tiposFormato; track t.valor) {
-                  <option [value]="t.valor">{{ t.label }}</option>
-                }
-              </select>
-            </label>
-          </div>
-
-          <div class="profile-form__row">
-            <label class="form-field">
-              <span class="form-field__label">ARL</span>
-              <select class="form-control" [(ngModel)]="plantillaDraft.arl_id" name="fArl">
-                <option value="">Todas las ARL</option>
-                @for (a of arls(); track a.id) {
-                  <option [value]="a.id">{{ a.nombre }}</option>
-                }
-              </select>
-              <span class="form-field__hint">Solo se genera para las órdenes de esa ARL.</span>
-            </label>
-            <label class="form-field">
-              <span class="form-field__label">Orden de impresión</span>
-              <input class="form-control" type="number" min="0" [(ngModel)]="plantillaDraft.orden" name="fOrden" />
-              <span class="form-field__hint">Menor primero, cuando la ARL tiene varios formatos.</span>
-            </label>
-          </div>
-
-          <label class="form-field">
-            <span class="form-field__label">Descripción interna</span>
-            <input class="form-control" type="text" [(ngModel)]="plantillaDraft.descripcion" name="fDesc"
-                   placeholder="Para qué sirve este formato (no se imprime)" />
-          </label>
-
-          <!-- Lo editable es el CONTENIDO impreso: el PDF se dibuja con pdf-lib
-               a partir de la OS, no se rellena un archivo base. -->
-          <label class="form-field">
-            <span class="form-field__label">Encabezado impreso</span>
-            <textarea class="form-control" rows="3" [(ngModel)]="plantillaDraft.encabezado" name="fEnc"
-                      placeholder="Párrafo introductorio que aparece bajo el título."></textarea>
-          </label>
-
-          <label class="form-field">
-            <span class="form-field__label">Nota al pie (sobre las firmas)</span>
-            <textarea class="form-control" rows="3" [(ngModel)]="plantillaDraft.nota_pie" name="fNota"
-                      placeholder="Compromisos, aviso legal o instrucciones que el cliente lee antes de firmar."></textarea>
-          </label>
-
-          <div class="profile-form__actions">
-            <button type="button" class="btn btn--ghost" (click)="closePlantillaForm()">Cancelar</button>
-            <button type="submit" class="btn btn--primary" [disabled]="savingPlantilla()">
-              {{ savingPlantilla() ? 'Guardando…' : (editando === 'nuevo' ? 'Crear formato' : 'Guardar cambios') }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  } @else {
-    <div class="card">
-      <div class="card__head">
-        <h3 class="card__title">Formatos PDF (M4 · CFG-03)</h3>
-        <button type="button" class="btn btn--primary" (click)="openPlantillaNueva()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          Nuevo formato
-        </button>
-      </div>
-      @if (loadingFormatos()) {
-        <div class="card__body"><p class="users-empty">Cargando formatos…</p></div>
-      } @else if (!plantillas().length) {
-        <div class="card__body"><p class="users-empty">No hay formatos configurados.</p></div>
-      } @else {
-        <div class="table-wrap">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Formato</th>
-                <th>Tipo</th>
-                <th>ARL</th>
-                <th>Orden</th>
-                <th>Estado</th>
-                <th class="col-actions">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (p of pagPlantillas.visibles(); track p.id) {
+    } @else {
+      <div class="card">
+        <div class="card__head">
+          <h3 class="card__title">Formatos PDF (M4 · CFG-03)</h3>
+          <button type="button" class="btn btn--primary" (click)="openPlantillaNueva()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Nuevo formato
+          </button>
+        </div>
+        @if (loadingFormatos()) {
+          <div class="card__body"><p class="users-empty">Cargando formatos…</p></div>
+        } @else if (!plantillas().length) {
+          <div class="card__body"><p class="users-empty">No hay formatos configurados.</p></div>
+        } @else {
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
                 <tr>
-                  <td>
-                    {{ p.nombre }}
-                    @if (p.descripcion) {
-                      <small class="tpl-desc">{{ p.descripcion }}</small>
-                    }
-                  </td>
-                  <td>{{ tipoLabel(p.tipo) }}</td>
-                  <td>{{ arlLabel(p) }}</td>
-                  <td>{{ p.orden }}</td>
-                  <td>
-                    <span class="pill" [class.pill--success]="p.activo" [class.pill--muted]="!p.activo">
-                      {{ p.activo ? 'Activo' : 'Inactivo' }}
-                    </span>
-                  </td>
-                  <td class="col-actions">
-                    <div class="row-actions">
-                      <button type="button" class="icon-action" (click)="openPlantillaEdit(p)" aria-label="Editar" title="Editar">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                          <path d="M12 20h9" />
-                          <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                        </svg>
-                      </button>
-                      <button
-                        type="button"
-                        class="icon-action"
-                        [class.icon-action--on]="p.activo"
-                        (click)="togglePlantilla(p)"
-                        [attr.aria-label]="p.activo ? 'Desactivar' : 'Activar'"
-                        [title]="p.activo ? 'Desactivar' : 'Activar'"
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                          <path d="M12 3v9" />
-                          <path d="M7.5 6.5a7 7 0 1 0 9 0" />
-                        </svg>
-                      </button>
-                      <!-- Con documentos ya emitidos el backend rechaza la baja;
-                           el botón solo se ofrece cuando no los hay. -->
-                      @if (!p.documentos_generados) {
-                        <button type="button" class="icon-action icon-action--danger" (click)="deletePlantilla(p)" aria-label="Eliminar" title="Eliminar">
+                  <th>Formato</th>
+                  <th>Tipo</th>
+                  <th>ARL</th>
+                  <th>Orden</th>
+                  <th>Estado</th>
+                  <th class="col-actions">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of pagPlantillas.visibles(); track p.id) {
+                  <tr>
+                    <td>
+                      {{ p.nombre }}
+                      @if (p.descripcion) {
+                        <small class="tpl-desc">{{ p.descripcion }}</small>
+                      }
+                    </td>
+                    <td>{{ tipoLabel(p.tipo) }}</td>
+                    <td>{{ arlLabel(p) }}</td>
+                    <td>{{ p.orden }}</td>
+                    <td>
+                      <span class="pill" [class.pill--success]="p.activo" [class.pill--muted]="!p.activo">
+                        {{ p.activo ? 'Activo' : 'Inactivo' }}
+                      </span>
+                    </td>
+                    <td class="col-actions">
+                      <div class="row-actions">
+                        <button type="button" class="icon-action" (click)="openPlantillaEdit(p)" aria-label="Editar" title="Editar">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M3 6h18" />
-                            <path d="M8 6V4h8v2" />
-                            <path d="M19 6l-1 14H6L5 6" />
-                            <path d="M10 11v6M14 11v6" />
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
                           </svg>
                         </button>
-                      }
-                    </div>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+                        <button
+                          type="button"
+                          class="icon-action"
+                          [class.icon-action--on]="p.activo"
+                          (click)="togglePlantilla(p)"
+                          [attr.aria-label]="p.activo ? 'Desactivar' : 'Activar'"
+                          [title]="p.activo ? 'Desactivar' : 'Activar'"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 3v9" />
+                            <path d="M7.5 6.5a7 7 0 1 0 9 0" />
+                          </svg>
+                        </button>
+                        <!-- Con documentos ya emitidos el backend rechaza la baja;
+                             el botón solo se ofrece cuando no los hay. -->
+                        @if (!p.documentos_generados) {
+                          <button type="button" class="icon-action icon-action--danger" (click)="deletePlantilla(p)" aria-label="Eliminar" title="Eliminar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                              <path d="M3 6h18" />
+                              <path d="M8 6V4h8v2" />
+                              <path d="M19 6l-1 14H6L5 6" />
+                              <path d="M10 11v6M14 11v6" />
+                            </svg>
+                          </button>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
 
-          <app-paginador [pag]="pagPlantillas" etiqueta="plantillas" />
-      }
-    </div>
+            <app-paginador [pag]="pagPlantillas" etiqueta="plantillas" />
+        }
+      </div>
+    }
+
   }
 
   <!-- --- Enunciados de la encuesta (ENC-03) --- -->

@@ -1,6 +1,14 @@
 /** Tipos que reflejan las respuestas del backend sst_ws (en español). */
 
-export type Rol = 'admin' | 'profesional' | 'contador' | 'auditor';
+/**
+ * AUTH-04 · Roles del sistema.
+ *
+ * 'administrativo' se llamaba 'profesional' y se renombró (19-ago-2026): se
+ * confundía con los PROFESIONALES que hacen las visitas, que no tienen cuenta
+ * —son fichas de `profesionales` y trabajan por enlaces públicos—. Este rol es
+ * personal interno cuyo acceso lo define la matriz de permisos, nada más.
+ */
+export type Rol = 'admin' | 'administrativo' | 'contador' | 'auditor';
 
 export interface Usuario {
   id: string;
@@ -13,6 +21,15 @@ export interface Usuario {
   activo?: boolean;
   /** Administrador Maestro (cuenta exclusiva del equipo de desarrollo). */
   es_maestro?: boolean;
+  /**
+   * ASG-08 · Ficha de profesional de campo enlazada a esta cuenta, si la hay.
+   *
+   * Es lo que decide si el panel de inicio enseña una agenda propia: la tiene
+   * quien SALE a las visitas, no un rol concreto. Antes el panel se bifurcaba
+   * por rol y una cuenta administrativa veía "no tiene ficha enlazada" sin
+   * necesitar ninguna.
+   */
+  profesional_id?: string | null;
 }
 
 export interface LoginResponse {
@@ -352,45 +369,18 @@ export interface ReporteHoras {
   por_mes: { mes: string; ordenes: number; horas: string | number }[];
 }
 
-/** RPT-06 · OS ejecutada que sigue sin facturar o sin validar la ARL. */
-export interface OrdenCartera {
-  id: string;
-  codigo: string;
-  empresa_nombre?: string | null;
-  nit_nic?: string | null;
-  arl_id?: string | null;
-  arl_nombre?: string | null;
-  profesional_nombre?: string | null;
-  horas_asignadas?: string | number | null;
-  valor_total?: string | number | null;
-  fecha_ejecucion?: string | null;
-  dias_desde_ejecucion: number;
-  facturado_en?: string | null;
-  validado_arl_en?: string | null;
-  pendiente: 'sin_facturar_ni_validar' | 'sin_facturar' | 'sin_validar_arl';
-}
-
-export interface ReporteCartera {
-  resumen: {
-    total: number; sin_facturar: number; sin_validar: number;
-    monto: string | number; max_dias: number;
-  };
-  por_arl: { arl_nombre: string; total: number; monto: string | number }[];
-  ordenes: OrdenCartera[];
-}
-
 // ---------------------------------------------------------------------------
-// M9 · Pre-cuenta de cobro (PRE-01..09)
+// M9 · Cuenta de cobro (PRE-01..09)
 // ---------------------------------------------------------------------------
 
-/** PRE-01..07 · Estados del ciclo de vida de una pre-cuenta. */
+/** PRE-01..07 · Estados del ciclo de vida de una cuenta de cobro. */
 export type EstadoPrecuenta = 'generada' | 'enviada' | 'aceptada' | 'rechazada';
 
 /**
- * PRE-01 · Una fila de Cuentas de cobro: el trabajo por cobrar de UN profesional
- * en UN mes. Existe desde que se aceptan los soportes de su primera orden del
- * mes, con o sin cuenta generada todavía — de ahí que `precuenta_id` y `estado`
- * puedan venir nulos, que es lo que se lee como "pendiente de generar".
+ * PRE-01 · Una fila de Cuentas de cobro. Puede ser una cuenta ya creada o el
+ * trabajo de UN profesional en UN mes que todavía no está en ninguna: de ahí que
+ * `precuenta_id` y `estado` puedan venir nulos, que es lo que se lee como
+ * "pendiente de generar".
  */
 export interface CuentaDelMes {
   periodo: string;
@@ -406,6 +396,17 @@ export interface CuentaDelMes {
   enviado_en?: string | null;
   respondido_en?: string | null;
   observaciones?: string | null;
+  /**
+   * Cuál es esta cuenta dentro de su mes (1, 2, 3…). null en las filas que
+   * todavía no son cuenta, solo trabajo por cobrar.
+   */
+  numero?: number | null;
+  /**
+   * Cuántas cuentas hay ya de ese profesional y mes. Con `del_mes > 0` en una
+   * fila pendiente, lo que se generaría es una cuenta COMPLEMENTARIA: trabajo
+   * que se finalizó después de cerrar la anterior.
+   */
+  del_mes?: number;
 }
 
 /** Una orden ejecutada dentro de la pre-cuenta, ya valorada. */
@@ -505,7 +506,9 @@ export interface PrecuentaPublica {
 /** NOT-04 · Tipos de evento que alimentan la campanita. */
 export type TipoNotificacion =
   | 'ASIGNACION' | 'REPROGRAMACION' | 'RECHAZO' | 'SOPORTE_CARGADO' | 'ENCUESTA_RESPONDIDA'
-  | 'PRECUENTA_ACEPTADA' | 'PRECUENTA_RECHAZADA';
+  | 'PRECUENTA_ACEPTADA' | 'PRECUENTA_RECHAZADA'
+  /** CFG-05 · Pasado el día de corte, el mes anterior sigue sin cobrarse. */
+  | 'CORTE_COBRO';
 
 /**
  * NOT-04 · Aviso interno de la bandeja (campanita). `datos.orden_id` apunta a la
@@ -517,7 +520,13 @@ export interface Notificacion {
   tipo: TipoNotificacion | (string & {});
   titulo?: string | null;
   mensaje?: string | null;
-  datos?: { orden_id?: string; precuenta_id?: string; profesional_id?: string | null } | null;
+  datos?: {
+    orden_id?: string;
+    precuenta_id?: string;
+    profesional_id?: string | null;
+    /** CFG-05 · Mes sin cobrar del aviso del día de corte ('2026-07'). */
+    periodo?: string;
+  } | null;
   /** null = sin leer. */
   leido_en?: string | null;
   /** NOT-04 · null = en la bandeja; con fecha = en la papelera. */
@@ -540,7 +549,7 @@ export interface ConteosNotificaciones {
  *
  * Una visita se puede partir (mañana y tarde, o varios días).
  * `Orden.fecha_programada` sigue existiendo y vale el INICIO de la primera:
- * de ella cuelgan los reportes, la cartera y el periodo de la pre-cuenta.
+ * de ella cuelgan los reportes y el periodo de la cuenta de cobro.
  */
 export interface FranjaVisita {
   id: string;

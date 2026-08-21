@@ -471,3 +471,17 @@
     width: auto;
   }
 }
+
+/* PRE-01 · Marca de cuenta complementaria: trabajo finalizado después de
+   cerrarse la cuenta del mes. */
+.complemento {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--secondary-color);
+  background: rgba(45, 123, 200, 0.12);
+  border-radius: 999px;
+  cursor: help;
+}

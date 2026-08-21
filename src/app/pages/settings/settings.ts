@@ -4,6 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin, Observable } from 'rxjs';
 import { AuthService } from '../../core/auth.service';
 import { mensajeError } from '../../core/errores';
+import {
+  normalizarTexto, soloDigitos, validarNombre, validarTelefono, validarCorreo,
+  validarDocumento, validarTextoOpcional, primerProblema, normalizarCorreo, normalizarDocumento,
+  tecleoLetras, tecleoDigitos, tecleoDocumento,
+} from '../../core/personas';
 import { AlertService } from '../../core/alert.service';
 import { ApiService } from '../../core/api.service';
 import { Arl, PermisoRol, Plantilla, PreguntasEncuesta, Rol, TipoOrden, Usuario, Vista } from '../../core/models';
@@ -39,7 +44,7 @@ interface UsuarioDraft {
 
 const DRAFT_VACIO: UsuarioDraft = {
   nombre: '', documento: '', correo: '', telefono: '', especialidad: '',
-  rol: 'profesional',
+  rol: 'administrativo',
 };
 
 /**
@@ -233,7 +238,7 @@ export class SettingsComponent implements OnInit {
   /** null = formulario cerrado · 'nuevo' = alta · Usuario = edición */
   protected readonly userForm = signal<'nuevo' | Usuario | null>(null);
   protected draft: UsuarioDraft = { ...DRAFT_VACIO };
-  protected readonly roles: Rol[] = ['admin', 'profesional', 'contador', 'auditor'];
+  protected readonly roles: Rol[] = ['admin', 'administrativo', 'contador', 'auditor'];
 
   // ----- Pestaña: Roles y permisos (exclusiva del Administrador Maestro) -----
   // Se reutiliza `esMaestro` (arriba): quien gestiona los usuarios internos es
@@ -275,6 +280,62 @@ export class SettingsComponent implements OnInit {
       });
       this.cargarTipos();
     }
+  }
+
+  /**
+   * CFG-03 · Interruptor de las plantillas de PDF a medida.
+   *
+   * En false la sección no se pinta. Las tres ARL traen sus formatos oficiales
+   * desde `assets/formatos-arl/`, así que hoy esas plantillas no llegan a
+   * usarse; el generador sigue en el backend para el día que entre una ARL sin
+   * formato propio, y entonces basta con poner esto en true.
+   */
+  protected readonly plantillasVisibles = false;
+
+  // M1 · Filtros de tecleo: lo que no corresponde al campo no llega ni a
+  // escribirse (letras en el teléfono, dígitos o símbolos en el nombre).
+  protected readonly tecleoLetras = tecleoLetras;
+  protected readonly tecleoDigitos = tecleoDigitos;
+  protected readonly tecleoDocumento = tecleoDocumento;
+
+  protected readonly savingProfile = signal(false);
+
+  /**
+   * AUTH-05 · Guarda los datos propios.
+   *
+   * El botón existía desde el principio pero el formulario solo hacía
+   * `preventDefault()`: no había endpoint ni llamada, así que "Guardar cambios"
+   * no guardaba nada y el cambio se perdía al recargar.
+   */
+  protected saveProfile(): void {
+    if (this.savingProfile()) return;
+    const nombre = normalizarTexto(this.fullName);
+    const telefono = soloDigitos(this.phone);
+    const especialidad = normalizarTexto(this.specialty);
+
+    const problema = validarNombre(nombre) ?? validarTelefono(telefono, { obligatorio: false });
+    if (problema) {
+      this.alerts.warning('Revise los datos', problema);
+      return;
+    }
+
+    this.savingProfile.set(true);
+    this.api.actualizarMiPerfil({ nombre, telefono, especialidad }).subscribe({
+      next: (r) => {
+        this.savingProfile.set(false);
+        // El nombre se pinta en el navbar: si no se refresca la sesión, hay que
+        // cerrar y volver a entrar para ver lo que se acaba de guardar.
+        this.auth.actualizarUsuario(r.usuario);
+        this.fullName = r.usuario.nombre;
+        this.phone = r.usuario.telefono || '';
+        this.specialty = r.usuario.especialidad || '';
+        this.alerts.success('Perfil actualizado', 'Sus datos quedaron guardados.');
+      },
+      error: (err) => {
+        this.savingProfile.set(false);
+        this.alerts.error('No se pudo guardar el perfil', mensajeError(err, 'El servidor rechazó los datos.'));
+      },
+    });
   }
 
   protected setTab(tab: Tab): void {
@@ -605,14 +666,30 @@ export class SettingsComponent implements OnInit {
     const editing = this.userForm();
     if (!editing) return;
     const d = this.draft;
-    if (!d.nombre.trim() || !d.correo.trim() || (editing === 'nuevo' && !d.documento.trim())) {
-      this.alerts.warning('Faltan campos obligatorios', 'Nombre, correo y documento de identidad son necesarios para crear el usuario.');
+    // M1 · Se normaliza y se valida ANTES de enviar: nombre y especialidad en
+    // mayúsculas, correo en minúsculas, teléfono y documento solo con lo suyo.
+    // El servidor aplica la misma regla; esto evita el viaje y señala el motivo.
+    d.nombre = normalizarTexto(d.nombre);
+    d.correo = normalizarCorreo(d.correo);
+    d.telefono = soloDigitos(d.telefono);
+    d.especialidad = normalizarTexto(d.especialidad);
+    d.documento = normalizarDocumento(d.documento);
+
+    const problema = primerProblema(
+      validarNombre(d.nombre),
+      validarCorreo(d.correo),
+      validarTelefono(d.telefono),
+      validarTextoOpcional(d.especialidad, 'La especialidad'),
+      editing === 'nuevo' ? validarDocumento(d.documento) : null,
+    );
+    if (problema) {
+      this.alerts.warning('Revise los datos', problema);
       return;
     }
     // Red de seguridad por si se envía con Enter estando el botón deshabilitado.
     const dup = this.documentoDuplicado();
     if (dup) {
-      this.alerts.warning('Documento ya registrado', `El documento ${d.documento.trim()} pertenece a ${dup.nombre}.`);
+      this.alerts.warning('Documento ya registrado', `El documento ${d.documento} pertenece a ${dup.nombre}.`);
       return;
     }
     this.savingUser.set(true);
@@ -628,19 +705,18 @@ export class SettingsComponent implements OnInit {
     };
     if (editing === 'nuevo') {
       this.api.createUsuario({
-        nombre: d.nombre.trim(), documento: d.documento.trim(), correo: d.correo.trim(),
-        rol: d.rol,
-        telefono: d.telefono.trim() || undefined, especialidad: d.especialidad.trim() || undefined,
+        nombre: d.nombre, documento: d.documento, correo: d.correo, rol: d.rol,
+        telefono: d.telefono || undefined, especialidad: d.especialidad || undefined,
       }).subscribe({
-        next: () => done('Usuario creado', `${d.nombre.trim()} ya puede ingresar. Su contraseña inicial es su número de cédula.`),
+        next: () => done('Usuario creado', `${d.nombre} ya puede ingresar. Su contraseña inicial es su número de cédula.`),
         error: fail,
       });
     } else {
       this.api.updateUsuario(editing.id, {
-        nombre: d.nombre.trim(), correo: d.correo.trim(), rol: d.rol,
-        telefono: d.telefono.trim() || undefined, especialidad: d.especialidad.trim() || undefined,
+        nombre: d.nombre, correo: d.correo, rol: d.rol,
+        telefono: d.telefono || undefined, especialidad: d.especialidad || undefined,
       }).subscribe({
-        next: () => done('Usuario actualizado', `Se guardaron los datos de ${d.nombre.trim()}.`),
+        next: () => done('Usuario actualizado', `Se guardaron los datos de ${d.nombre}.`),
         error: fail,
       });
     }
@@ -694,7 +770,12 @@ export class SettingsComponent implements OnInit {
   }
 
   protected rolLabel(rol: Rol): string {
-    return { admin: 'Administrador', profesional: 'Profesional', contador: 'Contador', auditor: 'Auditor' }[rol] || rol;
+    return {
+      admin: 'Administrador',
+      administrativo: 'Administrativo',
+      contador: 'Contador',
+      auditor: 'Auditor',
+    }[rol] || rol;
   }
 
   protected saveThreshold(): void {

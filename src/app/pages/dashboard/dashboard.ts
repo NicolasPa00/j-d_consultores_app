@@ -119,14 +119,19 @@ export class DashboardComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
-  // ----- ASG-08 · Variante del panel para el rol Profesional -----
+  // ----- ASG-08 · Variante del panel para el profesional de campo -----
   /**
-   * El profesional no tiene la vista Órdenes (la matriz de permisos se la niega:
-   * ahí se importa, se valida y se asigna), así que este panel es el único sitio
-   * donde ve su trabajo. Por eso el dashboard se bifurca entero en vez de
-   * añadirle una tarjeta al de administración.
+   * Quien tiene una FICHA de profesional enlazada ve su agenda en vez del panel
+   * de administración: es el único sitio donde ve su trabajo, porque la matriz
+   * de permisos le niega la vista Órdenes (ahí se importa, se valida y se
+   * asigna). Por eso el dashboard se bifurca entero.
+   *
+   * La condición es la ficha y NO el rol. Antes se bifurcaba por rol
+   * 'profesional' y toda cuenta con ese rol —hoy 'administrativo', personal
+   * interno que no sale a visitas— aterrizaba en un panel que le pedía una ficha
+   * que no necesita: "Esta cuenta no tiene una ficha de profesional enlazada".
    */
-  protected readonly esProfesional = computed(() => this.auth.usuario()?.rol === 'profesional');
+  protected readonly esProfesional = computed(() => !!this.auth.usuario()?.profesional_id);
   protected readonly misOrdenes = signal<MiOrden[]>([]);
   protected readonly cargandoMias = signal(false);
   /** Motivo por el que no hay agenda: la cuenta no tiene ficha enlazada. */

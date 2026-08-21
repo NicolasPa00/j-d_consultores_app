@@ -130,6 +130,7 @@
             archivos anteriores para ver qué fue lo que envió.
           } @else {
             Adjunte los formatos firmados en PDF o fotos de la visita realizada.
+            <strong>Los tres documentos se envían juntos</strong>, en un solo envío.
           }
         </p>
 
@@ -224,11 +225,11 @@
           </div>
         }
 
-        <!-- La corrección va completa: mientras falte alguno de los documentos
-             devueltos, el botón dice cuál y no deja enviar. Enterarse después de
-             subir —o peor, no enterarse— dejaba la orden esperando por algo que
-             el profesional creía haber entregado. -->
-        @if (enSubsanacion() && faltantes().length) {
+        <!-- El envío va completo, tanto la entrega inicial como la corrección:
+             mientras falte alguno, el botón dice cuál y no deja enviar.
+             Enterarse después de subir —o peor, no enterarse— dejaba la orden
+             esperando por algo que el profesional creía haber entregado. -->
+        @if (faltantes().length) {
           <p class="portal__falta">Falta adjuntar: <strong>{{ faltantesTexto() }}</strong></p>
         }
         <button type="button" class="btn btn--primary btn--block portal__send" [disabled]="!puedeEnviar() || sending()" (click)="send()">

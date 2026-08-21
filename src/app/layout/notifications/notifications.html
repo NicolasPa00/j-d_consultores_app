@@ -38,16 +38,17 @@
         }
       </header>
 
-      <!-- NOT-04 · Recortes de la bandeja. "Todas" es la bandeja viva; las
-           eliminadas tienen el suyo, como la papelera de un correo. -->
-      <div class="tray__filtros" role="tablist" aria-label="Filtrar notificaciones">
+      <!-- NOT-04 · Recortes de la bandeja. Se alternan: pulsar el que ya está
+           activo lo apaga y vuelven a verse todas. Las eliminadas tienen su
+           propio recorte, como la papelera de un correo. -->
+      <div class="tray__filtros" aria-label="Filtrar notificaciones">
         @for (f of filtros; track f.key) {
           <button
             type="button"
             class="tray__filtro"
             [class.tray__filtro--on]="store.filtro() === f.key"
-            role="tab"
-            [attr.aria-selected]="store.filtro() === f.key"
+            [attr.aria-pressed]="store.filtro() === f.key"
+            [title]="store.filtro() === f.key ? 'Quitar el filtro' : 'Ver solo ' + f.label"
             (click)="verFiltro(f.key)"
           >
             {{ f.label }}

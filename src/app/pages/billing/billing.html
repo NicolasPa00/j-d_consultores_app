@@ -104,7 +104,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (f of pag.visibles(); track f.periodo + f.profesional_id) {
+          @for (f of pag.visibles(); track f.precuenta_id || f.periodo + f.profesional_id) {
             <tr>
               <td>{{ nombreMes(f.periodo) }}</td>
               <td>
@@ -125,6 +125,13 @@
               </td>
               <td>
                 <span class="pill" [class]="estadoClass(f.estado)">{{ estadoLabel(f.estado) }}</span>
+                <!-- PRE-01 · De la segunda cuenta del mes en adelante, o cuando
+                     queda trabajo suelto sobre un mes que ya tiene cuenta: es
+                     trabajo que se finalizó DESPUÉS de cerrar la anterior, y sin
+                     decirlo la fila repetida parecería un error. -->
+                @if (esComplemento(f)) {
+                  <span class="complemento" [title]="avisoComplemento(f)">complementaria</span>
+                }
               </td>
               <td class="col-actions">
                 <div class="row-actions">

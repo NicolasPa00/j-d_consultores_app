@@ -76,20 +76,19 @@ export class PortalComponent implements OnInit {
     () => this.slots().flatMap((s) => s.previos.map((p) => ({ ...p, casilla: s.label }))),
   );
   /**
-   * Casillas devueltas que todavía no tienen archivo elegido.
+   * Casillas abiertas que todavía no tienen archivo elegido.
    *
-   * La corrección se manda de una vez: mandar uno de los dos documentos
-   * devueltos dejaba la orden a medias —ni cerrada ni devuelta— y al
-   * administrador esperando algo que nadie le recordaba al profesional. El
-   * servidor también lo exige; esto es para no descubrirlo después de subir.
+   * El envío va completo SIEMPRE, no solo al corregir: mandar uno de los tres
+   * documentos dejaba la orden en tierra de nadie —el administrador la ve
+   * ejecutada, la abre para revisar y faltan dos, sin nadie a quien
+   * reclamárselos porque el enlace ya se cerró—. El servidor lo exige igual;
+   * esto es para no descubrirlo después de subir.
    */
   protected readonly faltantes = computed(
-    () => (this.enSubsanacion() ? this.slots().filter((s) => !s.bloqueada && !s.file) : []),
+    () => this.slots().filter((s) => !s.bloqueada && !s.file),
   );
 
-  protected readonly puedeEnviar = computed(
-    () => (this.enSubsanacion() ? this.faltantes().length === 0 : this.hasAnyFile()),
-  );
+  protected readonly puedeEnviar = computed(() => this.faltantes().length === 0);
 
   /** 'el acta y la lista de asistencia' — para decir qué falta sin listar claves. */
   protected faltantesTexto(): string {

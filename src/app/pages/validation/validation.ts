@@ -958,7 +958,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
    * ASG-02 · Inicio de la visita en ISO: la primera franja.
    *
    * `fecha_programada` sigue siendo un solo instante en la OS (de él cuelgan
-   * reportes, cartera y el periodo de la pre-cuenta), así que se deriva del
+   * reportes y el periodo de la cuenta de cobro), así que se deriva del
    * comienzo de la primera franja. El servidor hace la misma cuenta.
    */
   private fechaProgramadaIso(): string | null {

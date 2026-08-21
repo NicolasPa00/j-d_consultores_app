@@ -53,14 +53,6 @@
   >
     Horas
   </button>
-  <button
-    type="button" class="tab" role="tab"
-    [class.tab--active]="activeTab() === 'cartera'"
-    [attr.aria-selected]="activeTab() === 'cartera'"
-    (click)="setTab('cartera')"
-  >
-    Cartera
-  </button>
 </div>
 
 <!-- ============ TOOLBAR (filtros + export) ============ -->
@@ -128,18 +120,9 @@
       </label>
     }
 
-    @if (activeTab() === 'cartera') {
-      <select class="form-control toolbar__control" [ngModel]="carteraPendiente()" (ngModelChange)="onCarteraFiltro($event)" aria-label="Filtrar por pendiente">
-        <option value="">Todo lo pendiente</option>
-        <option value="sin_facturar_ni_validar">Sin facturar ni validar</option>
-        <option value="sin_facturar">Solo sin facturar</option>
-        <option value="sin_validar_arl">Solo sin validar ARL</option>
-      </select>
-    }
-
     <!-- La pestaña de Satisfacción filtra por ARL/profesional/estado, no por
          texto libre: el recorte lo resuelve el backend con esos tres criterios.
-         Los reportes RPT-03/05/06 traen sus propios controles de rango. -->
+         Los reportes RPT-03 y RPT-05 traen sus propios controles de rango. -->
     @if (activeTab() === 'ordenes' || activeTab() === 'profesionales') {
       <div class="toolbar__search">
         <input
@@ -677,96 +660,6 @@
   } @else if (loadingReporte()) {
     <div class="card"><p class="vacio">Calculando…</p></div>
   }
-}
-
-<!-- ============ RPT-06 · CARTERA ============ -->
-@if (activeTab() === 'cartera') {
-  @if (cartera(); as rep) {
-    <div class="kpis">
-      <div class="kpi kpi--alerta">
-        <span class="kpi__label">Órdenes en cartera</span>
-        <strong class="kpi__value">{{ rep.resumen.total }}</strong>
-        <span class="kpi__hint">ejecutadas sin cerrar el ciclo</span>
-      </div>
-      <div class="kpi">
-        <span class="kpi__label">Sin facturar</span>
-        <strong class="kpi__value">{{ rep.resumen.sin_facturar }}</strong>
-      </div>
-      <div class="kpi">
-        <span class="kpi__label">Sin validar ARL</span>
-        <strong class="kpi__value">{{ rep.resumen.sin_validar }}</strong>
-      </div>
-      <div class="kpi">
-        <span class="kpi__label">Monto involucrado</span>
-        <strong class="kpi__value kpi__value--money">{{ pesos(rep.resumen.monto) }}</strong>
-        <span class="kpi__hint">según el valor total de las OS</span>
-      </div>
-    </div>
-  }
-
-  <div class="card">
-    <div class="table-wrap">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Días</th>
-            <th>Código</th>
-            <th>Empresa</th>
-            <th>ARL</th>
-            <th>Ejecutada</th>
-            <th>Valor</th>
-            <th>Pendiente</th>
-            @if (puedeMarcarCartera()) { <th class="col-cartera">Marcar</th> }
-          </tr>
-        </thead>
-        <tbody>
-          @for (o of pagCartera.visibles(); track o.id) {
-            <tr>
-              <td>
-                <span class="estado-pill" [class]="tonoDias(o.dias_desde_ejecucion, 30)">{{ o.dias_desde_ejecucion }} d</span>
-              </td>
-              <td class="mono">{{ o.codigo }}</td>
-              <td>{{ o.empresa_nombre || '—' }}</td>
-              <td>{{ o.arl_nombre || '—' }}</td>
-              <td class="mono">{{ fechaCorta(o.fecha_ejecucion) || '—' }}</td>
-              <td class="mono">{{ o.valor_total ? pesos(o.valor_total) : '—' }}</td>
-              <td>
-                <span class="estado-pill" [class]="o.pendiente === 'sin_facturar_ni_validar' ? 'tone-red' : 'tone-amber'">
-                  {{ pendienteLabel(o.pendiente) }}
-                </span>
-              </td>
-              @if (puedeMarcarCartera()) {
-                <td class="col-cartera">
-                  @if (!o.facturado_en) {
-                    <button type="button" class="btn btn--ghost btn--sm" [disabled]="marcandoId() === o.id" (click)="marcarCartera(o, 'facturado')">
-                      Facturada
-                    </button>
-                  }
-                  @if (!o.validado_arl_en) {
-                    <button type="button" class="btn btn--ghost btn--sm" [disabled]="marcandoId() === o.id" (click)="marcarCartera(o, 'validado_arl')">
-                      Validada ARL
-                    </button>
-                  }
-                </td>
-              }
-            </tr>
-          } @empty {
-            <tr>
-              <td [attr.colspan]="puedeMarcarCartera() ? 8 : 7" class="table__empty">
-                @if (loadingReporte()) {
-                  Calculando…
-                } @else {
-                  No hay cartera pendiente: todas las órdenes ejecutadas están facturadas y validadas.
-                }
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-
-    <app-paginador [pag]="pagCartera" etiqueta="órdenes en cartera" />
-  </div>
 }
 
 <!-- ============ MODAL RESUMEN ============ -->

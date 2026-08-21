@@ -164,7 +164,18 @@
     <form class="modal__body" (ngSubmit)="save()">
       <div class="form-field">
         <label class="form-field__label" for="pName">Nombre completo *</label>
-        <input id="pName" class="form-control" type="text" [(ngModel)]="draft.name" name="name" placeholder="Ej. Laura Gómez Restrepo" />
+        <!-- CFG-01 · Solo letras y en mayúsculas mientras se teclea: avisar al
+             guardar llega tarde, para entonces ya se escribió todo. -->
+        <input
+          id="pName"
+          class="form-control"
+          type="text"
+          maxlength="120"
+          [ngModel]="draft.name"
+          (ngModelChange)="draft.name = tecleoLetras($event)"
+          name="name"
+          placeholder="EJ. LAURA GÓMEZ RESTREPO"
+        />
       </div>
 
       <!-- Correo y teléfono son identificadores de contacto: no se pueden
@@ -176,7 +187,9 @@
           class="form-control"
           [class.form-control--error]="duplicadoCorreo()"
           type="email"
-          [(ngModel)]="draft.email"
+          maxlength="150"
+          [ngModel]="draft.email"
+          (ngModelChange)="draft.email = $event.trim().toLowerCase()"
           name="email"
           placeholder="nombre@jddconsultores.co"
         />
@@ -194,9 +207,12 @@
           class="form-control"
           [class.form-control--error]="duplicadoTelefono()"
           type="tel"
-          [(ngModel)]="draft.phone"
+          inputmode="numeric"
+          maxlength="15"
+          [ngModel]="draft.phone"
+          (ngModelChange)="draft.phone = tecleoDigitos($event)"
           name="phone"
-          placeholder="+57 3xx xxx xxxx"
+          placeholder="3xx xxx xxxx"
         />
         @if (duplicadoTelefono(); as dup) {
           <p class="form-field__hint form-field__hint--error">

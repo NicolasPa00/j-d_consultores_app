@@ -469,7 +469,7 @@
   font-size: 0.85rem;
 }
 
-/* KPI que encabeza un reporte de alerta (vencidas, cartera). */
+/* KPI que encabeza un reporte de alerta (vencidas). */
 .kpi--alerta .kpi__value {
   color: var(--danger);
 }
@@ -550,16 +550,6 @@
   font-size: 0.66rem;
   font-weight: 700;
   color: var(--danger);
-}
-
-.col-cartera {
-  width: 210px;
-  text-align: right;
-  white-space: nowrap;
-}
-
-.col-cartera .btn + .btn {
-  margin-left: 0.3rem;
 }
 
 /* ===== Responsive ===== */
