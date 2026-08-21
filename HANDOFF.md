@@ -21,6 +21,17 @@
 > finaliza **después** de cerrarse la cuenta del mes se cobra en una **cuenta
 > complementaria** en vez de desaparecer. Se anularon dos cuentas de agosto
 > aceptadas en $0 que estaban tapando el mes entero. Ver §3, "Tanda 13".
+> **Última actualización:** 19-ago-2026 (tanda 13) — llegó el **export real de
+> SIPAB de Bolívar** (99 órdenes) y se leía mal sin dar un solo error: las 99
+> descripciones decían "Activa", 76 fechas se perdían y la ciudad era un párrafo
+> entero. El Excel de Bolívar ahora se lee **por nombre exacto de columna** y hay
+> un verificador (`sst_ws/scripts/verificar-sipab.mjs`) para pasar cualquier
+> SIPAB nuevo antes de subirlo. Al subirlo desde la app salió "1 archivo(s) no se
+> pudieron procesar", que **era mentira**: el lote entraba entero pero tardaba
+> 25 s y la vista se rendía a los 21 s. El worker pasó de ~260 consultas a 3
+> (**1,6 s**) y la espera del cliente se mide ahora en tiempo, no en intentos.
+> La **fecha de vencimiento se sigue escribiendo a mano**: decisión del cliente.
+> Ver §3, "Tanda 13".
 >
 > **Tanda 12 (18-ago-2026):** **el tipo de orden es
 > obligatorio** y de él sale el valor hora con el que se le paga al profesional.
@@ -241,6 +252,11 @@ Dos repos git independientes (la raíz del monorepo no lo es):
    al SIPAB real y por tanto **no trae fecha de vencimiento** (reproduce el
    problema del punto 1 de "Pendiente"); `…-con-vencimiento.xlsx` añade esa
    columna y entra de una pasada, que es lo que sirve para enseñar el flujo.
+   Desde el 19-ago-2026 los dos imitan también las **rarezas** del SIPAB real, sin
+   las cuales una prueba pasa por casos que el archivo del cliente no tiene: el
+   bloque de `Ubicacion Actividad`, las observaciones con el contacto dentro, el
+   título de la actividad en su columna, las fechas en los **dos** formatos
+   (fecha de Excel y `18/aug/2026`) y una fila medida en UNIDADES.
    Los identificadores salen de un bloque propio (orden `00022001xx`, cronograma
    `13705xx`) para no chocar con el dedup de las órdenes ya cargadas.
 9. Abre Claude Code desde la **raíz del monorepo**, no desde una de las dos carpetas:
@@ -1231,6 +1247,98 @@ los soportes por su enlace (EJECUTADA) → Órdenes → *Verificar soportes → 
 soportes* (**FINALIZADA**; aquí es donde la orden entra a la cuenta de cobro) →
 Cuentas de cobro → año y mes → *Generar* congela la cifra y emite el documento →
 *Enviar* se lo manda al profesional.
+### Tanda 13 (19-ago-2026): el SIPAB de Bolívar se leía mal (y no se veía)
+
+Llegó a `docs/OrdenesEjemplo/Bolivar/ordenes Arl Bolivar desde sipab.xlsx` el
+**export real de SIPAB**: 99 órdenes, 41 columnas. Es el archivo con el que va a
+trabajar el cliente, así que se pasó por el mismo parser del pipeline campo por
+campo. Cuatro cosas salían mal, y ninguna daba error:
+
+- **La descripción de las 99 órdenes era "Activa".** El mapeo buscaba
+  encabezados por parecido y `Descripcion Estado Empresa` —el estado de la
+  empresa— le ganaba el campo `descripcion` a `Descripcion` (el título de la
+  actividad) y a `Observaciones` (el detalle: tema, contacto y requisitos).
+  El daño no se quedaba en la bandeja: el formato oficial **AT-028 imprimía
+  "Activa" como Tema de la sesión** en el correo al profesional.
+- **76 de las 99 fechas se perdían.** "Fecha Programada" trae 23 fechas de Excel
+  y 76 textos `01/aug/2026`; `parseFechaCO` no entendía el mes en inglés y
+  guardaba NULL sin quejarse.
+- **La ciudad era un párrafo.** `Ubicacion Actividad` —`Departamento: … -
+  Ciudad: … - Dirección: … - Teléfono: … - Contacto: …`— entraba entera en
+  `ciudad_ejecucion`, y con ella en la casilla "Ciudad" del formato AT-031,
+  mientras dirección y contacto de la empresa quedaban vacíos.
+- **`Nombre Profesional` no es el contacto SST**: es el profesional que sugiere
+  la ARL (vacío en 97 de 99 filas). Iba a `contacto_sst_nombre` y de ahí al
+  maestro de empresas.
+
+Qué cambió (`sst_ws/src/services/extraction.service.js`):
+
+- El SIPAB se lee por **nombre EXACTO de encabezado** (`SIPAB_HEADERS`, las 41
+  columnas declaradas, incluidas las que NO se extraen). El reconocimiento
+  aproximado queda solo para hojas con columnas añadidas a mano, y ya no puede
+  robarle una columna a la lectura oficial.
+- `tipo_actividad` ← `Descripcion` · `descripcion` ← `Observaciones`.
+- Fechas normalizadas a ISO en la extracción **y** en la vista de la hoja
+  (`readSheetPreview`), para que las dos se lean igual. `parseFechaCO` acepta
+  además `DD/mmm/YYYY` como red de seguridad.
+- `Ubicacion Actividad` se parte en `ciudad_ejecucion`, `direccion`,
+  `contacto_empresa_nombre` y `contacto_empresa_telefono` (confianza 95).
+- Correo y celular del responsable de SST se rescatan del texto de
+  `Observaciones` con **confianza 60** —bajo el umbral de 70— para que salgan
+  marcados: 23 correos y 42 celulares de 99 que antes había que copiar a mano.
+- `Act Programadas` baja a confianza 60 cuando `Unidad Medida` **no** son HORAS
+  (6 de 99: son cantidades de actividad, no horas).
+- Lo que no es campo canónico pero explica la orden (unidad de medida, tipo de
+  servicio, n.º de trabajadores, hora programada, póliza, departamento,
+  profesional sugerido por la ARL) se guarda en `metadatos_extraccion.sipab`.
+- **Tipo de orden preseleccionado: de 5 a 61 de 99.** `tipoOrdenPorTexto` mira
+  primero el título y, si no concluye, las observaciones — que es donde el SIPAB
+  escribe "CAPACITACIÓN EN …".
+
+Verificación (el archivo real no viaja por git, ver §2):
+`node --import tsx scripts/verificar-sipab.mjs "<ruta al .xlsx>"` — 16
+comprobaciones sobre las 99 órdenes, en verde, más las 31 de
+`base_datos_bolivar.xlsx` y los dos Excel de ejemplo. `npm run typecheck`
+limpio. **Nada de esto se ha visto todavía dentro de la app** (sigue sin haber
+credenciales de administrador): se comprobó con el parser real del pipeline,
+sin tocar la BD.
+
+`scripts/generar-ordenes-ejemplo.mjs` se actualizó para que los Excel inventados
+tengan la forma del SIPAB de verdad (bloque de ubicación, observaciones con
+contacto, título en su columna, fechas en los dos formatos y una fila en
+UNIDADES); si no, las pruebas sin datos reales pasaban por casos que el archivo
+del cliente no tiene.
+
+**Decisión del cliente (19-ago-2026):** la fecha de vencimiento **se sigue
+escribiendo a mano**, orden por orden. Se evaluó rellenarla por lote o derivarla
+de la Fecha Programada y se descartó.
+
+#### Y al subirlo de verdad: "1 archivo(s) no se pudieron procesar"
+
+Con la extracción ya corregida, el archivo se subió desde la app y salió
+*"El procesamiento está tardando más de lo esperado"*. **No falló nada**: en la
+base estaban el lote `PROCESADO` y sus **99 borradores** en PENDIENTE_REVISION.
+El lote tardaba **25 s** y la vista se rendía a los **21 s** (30 intentos × 700 ms).
+
+Dos causas, las dos arregladas:
+
+- **El worker preguntaba de a una.** Por cada orden: una consulta de dedup, otra
+  para el id del tipo de orden y un INSERT — ~260 idas y vueltas a Neon para un
+  archivo. Ahora el dedup del lote entero es **una** consulta (`unnest` de las
+  identidades), el catálogo CFG-04 se carga **una vez** en memoria y las 99 filas
+  entran en **un** INSERT. Lo mismo en `dedup.service.js`: la comprobación previa
+  del Excel era una consulta por fila y corre **dos veces** por archivo (al
+  elegirlo y al subirlo). Medido con el SIPAB real: **precheck 276 ms** (antes
+  ~10 s) y **lote completo 1,6 s** (antes 25 s).
+- **La espera del cliente era un número de intentos, no tiempo.** `pollBatch`
+  ahora gasta hasta **3 minutos** con intervalo creciente (700 ms → 1,5 s → 3 s):
+  un PDF sigue apareciendo igual de rápido y un Excel grande ya no se declara
+  fallido por reloj. El mensaje del tope dejó de decir "no se pudo procesar",
+  que era falso.
+
+Comprobado contra la Neon real con un lote **desechable** (creado, medido y
+borrado): 99 borradores, 61 con tipo preseleccionado, confianza media 96, fechas
+en ISO, ciudad limpia y `sipab.unidad_medida` en su sitio.
 
 ### Tanda 12 (18-ago-2026): el tipo de orden manda, y el valor hora se congela
 
@@ -1628,16 +1736,16 @@ por lo que de verdad conviene atacar primero.
 - **`db/seed-demo.js` quedó desactualizado**: siembra estados EN VERIFICACIÓN y
   CANCELADA que la matriz nueva ya no admite. No se arregló porque el propio
   HANDOFF prohíbe ejecutarlo (hace TRUNCATE), pero si alguien lo corre, fallará.
-- 🔴 **El SIPAB de Bolívar no trae fecha de vencimiento y la app la exige.**
-  Comprobado contra `docs/BasesDatosEjemplo/base_datos_bolivar.xlsx`: se extraen
-  **31 órdenes correctas y las 31 llegan sin fecha**, porque la hoja no tiene esa
-  columna (tiene "Fecha Programada", que se mapea a `fecha_orden`). Como sin ella
-  no se puede guardar, importar un SIPAB son hoy **31 fechas escritas a mano**.
-  No es un fallo del código —la regla es deliberada, ver `POST /imports/:id/confirm`—
-  pero deja el flujo de Bolívar inutilizable en la práctica. Hay que decidir con
-  el cliente: o se aplica una fecha a todo el lote de una vez, o se deriva de
-  `fecha_orden` + un plazo, o deja de ser obligatoria para Bolívar. **Es la
-  decisión más urgente de esta lista.**
+- ⚪ **El SIPAB de Bolívar no trae fecha de vencimiento y la app la exige.**
+  Comprobado contra el export real (`ordenes Arl Bolivar desde sipab.xlsx`): se
+  extraen **99 órdenes correctas y las 99 llegan sin fecha**, porque la hoja no
+  tiene esa columna (tiene "Fecha Programada", que se mapea a `fecha_orden`).
+  No es un fallo del código: la regla es deliberada (ver `POST /imports/:id/confirm`).
+  **Decidido el 19-ago-2026: se escribe a mano, orden por orden.** Se ofrecieron
+  y se descartaron las tres alternativas (rellenar todo el lote con una fecha,
+  derivarla de `fecha_orden` + un plazo, o copiar la Fecha Programada). Si el
+  volumen molesta más adelante, la primera es la que menos supone: un campo en la
+  vista previa que rellena el archivo entero y se puede corregir orden por orden.
 
 #### 2. Deuda de pruebas — lo que NO se ha visto funcionar en la app
 
@@ -1654,7 +1762,7 @@ mirar quien retome**.
 | La cadena de errores de Importar (editar tras guardar, reintentar, "Guardar todo" sin pendientes) | Reproducida con los datos reales del incidente, también bajo `ROLLBACK` |
 | `.ics`: un archivo por franja, cancelación de sobrantes, hora de Colombia | Script sobre el servicio real |
 | Correo HTML: sin `<style>`, sin clases, sin recursos externos, escapa el HTML | Script sobre la maqueta real |
-| Camino Excel completo con el SIPAB real | 31 órdenes, ARL Bolívar 99 %, `sourceRow` alineado con la hoja |
+| Camino Excel completo con el SIPAB real (**export de 99 órdenes**, 19-ago-2026) | `scripts/verificar-sipab.mjs`: 99 órdenes, ARL Bolívar 99 %, identidad cronograma+secuencia sin repetidas, las 99 fechas parseables, descripción real (no "Activa"), ciudad/dirección/contacto separados y `source_row` alineado con la hoja. También `base_datos_bolivar.xlsx` (31) y los dos Excel de ejemplo |
 | Órdenes de ejemplo generadas | Leídas con el **mismo extractor del pipeline**: los 8 PDF con sus rótulos, los 2 Excel con sus 10 campos canónicos |
 | Paginación (casos borde) | 20 comprobaciones: lista vacía, filtrar desde la última página, cambiar tamaño, navegar fuera de rango |
 | Asignar con 2+ franjas · **persistencia** | En la Neon: 4 OS con 2 franjas y `fecha_programada` = inicio de la primera, en hora de Colombia |
@@ -1909,9 +2017,10 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
     `Application bundle generation complete/failed`, no el listado. Presupuesto
     subido a 22/28 kB.
 21. **El Excel SIPAB de Bolívar no trae fecha de vencimiento** y la app la exige
-    para guardar. Las 31 órdenes del archivo de ejemplo salen sin ella. Antes de
-    dar por rota la extracción, comprobar si el campo que falta **existe en la
-    hoja**: los encabezados reales están en `HEADER_MAP`
+    para guardar: las 99 órdenes del SIPAB real salen sin ella y **se escriben a
+    mano** (decidido con el cliente el 19-ago-2026). Antes de dar por rota la
+    extracción, comprobar si el campo que falta **existe en la hoja**: los
+    encabezados reales están en `SIPAB_HEADERS`
     (`services/extraction.service.js`) y el archivo tiene "Fecha Programada",
     que va a `fecha_orden`, pero ninguna columna de vencimiento.
 22. **Cualquier Excel que no sea el SIPAB extrae CERO órdenes y se etiqueta
@@ -2164,6 +2273,45 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
     rol sino tener FICHA enlazada; cuando una pantalla depende de "tener algo",
     la condición se escribe sobre ese algo y no sobre la etiqueta que suele
     acompañarlo.
+60. **Leer una columna "por parecido" mapea la columna equivocada, y no se nota
+    porque el campo NO queda vacío: queda con un valor plausible.** El SIPAB de
+    Bolívar tiene `Descripcion Estado Empresa` (el estado de la EMPRESA:
+    "Activa") y, catorce columnas después, `Descripcion` (el título de la
+    actividad). El mapeo buscaba encabezados por subcadena y se quedaba con la
+    primera coincidencia, así que **las 99 órdenes del SIPAB real entraban con
+    descripción "Activa"** y el formato oficial AT-028 imprimía "Activa" como
+    Tema de la sesión. Lo mismo pasaba con `Ubicacion Actividad`, un texto de
+    cinco datos que entraba entero en la casilla "Ciudad". Sobrevivió meses
+    porque las comprobaciones anteriores contaban órdenes extraídas, no
+    contenido. Cuando el formato de origen es fijo, mapear por **nombre exacto**
+    y declarar también las columnas que NO se extraen. Y al verificar una
+    extracción, mirar el VALOR de cada campo, no solo que haya salido algo.
+
+61. **La misma columna de Excel puede traer dos tipos.** En "Fecha Programada"
+    del SIPAB real, 23 de 99 celdas son fechas de Excel y las otras 76 son el
+    texto `01/aug/2026` (mes abreviado **en inglés**). `parseFechaCO` entendía
+    `DD/MM/YYYY` e ISO, así que esas 76 órdenes se guardaban con la fecha en
+    blanco sin un solo error en el log. Un archivo de ejemplo generado por
+    nosotros no lo habría revelado: lo escribíamos siempre con el mismo tipo.
+    Al mirar un Excel nuevo, contar los TIPOS de cada columna, no solo el
+    primer valor.
+
+62. **"Tarda más de lo esperado" no significa que algo fallara.** La vista de
+    Importar daba un archivo por fallido cuando su lote no terminaba en 30
+    intentos de 700 ms (21 s), y el SIPAB real de 99 órdenes tardaba 25 s: el
+    servidor lo procesaba entero, sin un solo error, y el usuario leía "1
+    archivo(s) no se pudieron procesar" mientras sus 99 borradores esperaban en
+    la base. Ante un fallo de importación, **mirar primero `lotes_importacion` y
+    `borradores_extraccion`**: si el lote está PROCESADO, el problema está en la
+    espera del cliente, no en la extracción. Y un presupuesto de espera se mide
+    en tiempo, no en intentos.
+
+63. **Una consulta por fila se nota cuando el archivo crece.** El pipeline
+    preguntaba a la base la identidad duplicada y el tipo de orden **por cada
+    orden extraída**: con un PDF (1 orden) era invisible, con un SIPAB de 99 eran
+    ~260 idas y vueltas a una base remota. Al escribir un bucle que toca la base,
+    pensar en el archivo más grande que va a llegar, no en el que se tiene
+    delante para probar.
 
 ---
 
