@@ -11,14 +11,19 @@ import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { ArchivoSoporte, Borrador, CategoriaSoporte, EstadoOrden, TipoOrden, FranjaVisita, HistorialEstado, Ocupacion, Orden, Plantilla, Profesional } from '../../core/models';
 import { aIsoFecha, fechaLocal } from '../../core/fechas';
+import {
+  ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, problemaCampo, tecleoCampo,
+} from '../../shared/campos-orden';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
 interface FormFieldDescriptor {
   label: string;
   field: ExtractedField;
-  type: 'text' | 'textarea';
+  type: 'text' | 'textarea' | 'date';
   span: 'half' | 'full';
+  /** Qué se puede escribir en él: solo letras, solo dígitos, un correo… */
+  modo: ModoCampo;
 }
 
 /**
@@ -388,38 +393,53 @@ export class ValidationComponent implements OnInit, OnDestroy {
     if (!o) return [];
     const f = o.fields;
     const rows: FormFieldDescriptor[] = [];
+    // El `modo` sale de la clave canónica del campo (la misma que usa Importar),
+    // y es lo que hace que el teléfono no admita letras ni las horas admitan texto.
+    const push = (clave: string, label: string, fld: ExtractedField,
+                  type: FormFieldDescriptor['type'] = 'text',
+                  span: FormFieldDescriptor['span'] = 'half') => {
+      rows.push({ label, field: fld, type, span, modo: modoDeCampo(clave) });
+    };
     // Identidad: numero_orden (AXA/Colmena) o cronograma+secuencia (Bolívar).
     // Se muestra un campo ampliado solo cuando trae valor (varía según la ARL).
-    const opt = (label: string, fld: { value: string; confidence: number } | undefined,
+    const opt = (clave: string, label: string, fld: ExtractedField | undefined,
                  type: FormFieldDescriptor['type'] = 'text', span: FormFieldDescriptor['span'] = 'half') => {
-      if (fld && String(fld.value).trim() !== '') rows.push({ label, field: fld, type, span });
+      if (fld && String(fld.value).trim() !== '') push(clave, label, fld, type, span);
+    };
+    // Una fecha legible se edita con el selector de fechas; si la IA la escribió
+    // en un formato que no se puede leer, se queda como texto para no ocultar
+    // lo que decía el documento.
+    const optFecha = (clave: string, label: string, fld: ExtractedField | undefined) => {
+      if (fld && String(fld.value).trim() !== '') {
+        push(clave, label, fld, aIsoFecha(fld.value) ? 'date' : 'text');
+      }
     };
 
-    opt('Número de Orden', f.numeroOrden);
-    opt('N.º Afiliación', f.nroAfiliacion);
+    opt('numero_orden', 'Número de Orden', f.numeroOrden);
+    opt('nro_afiliacion', 'N.º Afiliación', f.nroAfiliacion);
     if (String(f.codigoCronograma.value).trim() || String(f.secuencia.value).trim()) {
-      rows.push({ label: 'Código Cronograma', field: f.codigoCronograma, type: 'text', span: 'half' });
-      rows.push({ label: 'Secuencia', field: f.secuencia, type: 'text', span: 'half' });
+      push('codigo_cronograma', 'Código Cronograma', f.codigoCronograma);
+      push('secuencia', 'Secuencia', f.secuencia);
     }
-    rows.push({ label: 'NIT', field: f.nit, type: 'text', span: 'half' });
-    rows.push({ label: 'Horas Asignadas', field: f.horas, type: 'text', span: 'half' });
-    rows.push({ label: 'Nombre Empresa', field: f.company, type: 'text', span: 'full' });
-    rows.push({ label: 'Actividad Económica', field: f.actividadEconomica, type: 'text', span: 'full' });
-    opt('Tipo de Actividad', f.tipoActividad);
-    opt('Modalidad', f.modalidad);
-    opt('Valor Unitario', f.valorUnitario);
-    opt('Valor Total', f.valorTotal);
-    opt('Fecha de la Orden', f.fechaOrden);
-    opt('Fecha de Vencimiento', f.fechaVencimiento);
-    opt('Ciudad de Ejecución', f.ciudadEjecucion);
-    opt('Dirección', f.direccion, 'text', 'full');
-    opt('Contacto Empresa · Nombre', f.contactoEmpresaNombre);
-    opt('Contacto Empresa · Cargo', f.contactoEmpresaCargo);
-    opt('Contacto Empresa · Teléfono', f.contactoEmpresaTelefono);
-    rows.push({ label: 'Contacto SST · Nombre', field: f.contactoNombre, type: 'text', span: 'half' });
-    rows.push({ label: 'Contacto SST · Teléfono', field: f.contactoTelefono, type: 'text', span: 'half' });
-    rows.push({ label: 'Contacto SST · Correo', field: f.contactoCorreo, type: 'text', span: 'full' });
-    rows.push({ label: 'Descripción', field: f.descripcion, type: 'textarea', span: 'full' });
+    push('nit_nic', 'NIT', f.nit);
+    push('horas_asignadas', 'Horas Asignadas', f.horas);
+    push('empresa_nombre', 'Nombre Empresa', f.company, 'text', 'full');
+    push('actividad_economica', 'Actividad Económica', f.actividadEconomica, 'text', 'full');
+    opt('tipo_actividad', 'Tipo de Actividad', f.tipoActividad);
+    opt('modalidad', 'Modalidad', f.modalidad);
+    opt('valor_unitario', 'Valor Unitario', f.valorUnitario);
+    opt('valor_total', 'Valor Total', f.valorTotal);
+    optFecha('fecha_orden', 'Fecha de la Orden', f.fechaOrden);
+    optFecha('fecha_vencimiento', 'Fecha de Vencimiento', f.fechaVencimiento);
+    opt('ciudad_ejecucion', 'Ciudad de Ejecución', f.ciudadEjecucion);
+    opt('direccion', 'Dirección', f.direccion, 'text', 'full');
+    opt('contacto_empresa_nombre', 'Contacto Empresa · Nombre', f.contactoEmpresaNombre);
+    opt('contacto_empresa_cargo', 'Contacto Empresa · Cargo', f.contactoEmpresaCargo);
+    opt('contacto_empresa_telefono', 'Contacto Empresa · Teléfono', f.contactoEmpresaTelefono);
+    push('contacto_sst_nombre', 'Contacto SST · Nombre', f.contactoNombre);
+    push('contacto_sst_telefono', 'Contacto SST · Teléfono', f.contactoTelefono);
+    push('contacto_sst_correo', 'Contacto SST · Correo', f.contactoCorreo, 'text', 'full');
+    push('descripcion', 'Descripción', f.descripcion, 'textarea', 'full');
     return rows;
   });
 
@@ -533,8 +553,32 @@ export class ValidationComponent implements OnInit, OnDestroy {
     return 'pill--danger';
   }
 
-  protected isLow(confidence: number): boolean {
-    return confidence < 70;
+  // ---- Reglas por tipo de campo (mismas que el modal de Importar) ----
+  /** Filtra lo que se teclea según el campo: solo letras, solo números, etc. */
+  protected escribir(item: FormFieldDescriptor, valor: string): void {
+    item.field.value = tecleoCampo(item.modo, valor);
+  }
+
+  /** Qué le falta al valor para servir (correo sin arroba, teléfono corto…). */
+  protected problema(item: FormFieldDescriptor): string | null {
+    return problemaCampo(item.modo, item.label, item.field.value);
+  }
+
+  /**
+   * El porcentaje que se enseña: 100 en cuanto el campo se corrige a mano, sin
+   * esperar a guardar. Vaciarlo devuelve la confianza de la IA, y con ella el aviso.
+   */
+  protected confianzaDe(item: FormFieldDescriptor): number {
+    return confianzaMostrada(item.field);
+  }
+
+  /** ¿Sigue mereciendo el subrayado de baja confianza? */
+  protected marcado(item: FormFieldDescriptor): boolean {
+    return bajaConfianza(item.field);
+  }
+
+  protected inputMode(item: FormFieldDescriptor): string {
+    return inputModeDe(item.modo);
   }
 
   /** Buscar reinicia la paginación: el resultado es otra lista. */
@@ -722,6 +766,13 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected guardarDetalle(): void {
     const current = this.detailOrder();
     if (!current || this.saving()) return;
+    // Lo que se pudo escribir pero no sirve (un correo sin arroba, un teléfono
+    // de tres dígitos) se para aquí y no en el servidor.
+    const invalido = this.formFields().map((f) => this.problema(f)).find((m): m is string => !!m);
+    if (invalido) {
+      this.alerts.warning('Revise los datos', invalido);
+      return;
+    }
     if (current.osId) {
       this.guardarEnLaOrden(current.osId, current);
       return;
@@ -784,20 +835,24 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.saving.set(true);
 
     const f = current.fields;
+    // La confianza que se manda es la MOSTRADA: 100 en lo que se corrigió a mano
+    // y la de la IA en lo demás, para que las marcas de revisión sobrevivan al
+    // guardado en vez de quedarse congeladas en lo que leyó el modelo.
+    const campo = (fld: ExtractedField) => ({ value: fld.value, confidence: confianzaMostrada(fld) });
     const fields: Record<string, { value: string; confidence: number }> = {
-      codigo_cronograma: f.codigoCronograma,
-      secuencia: f.secuencia,
-      nit_nic: f.nit,
-      empresa_nombre: f.company,
-      actividad_economica: f.actividadEconomica,
-      horas_asignadas: f.horas,
-      contacto_sst_nombre: f.contactoNombre,
-      contacto_sst_telefono: f.contactoTelefono,
-      contacto_sst_correo: f.contactoCorreo,
-      descripcion: f.descripcion,
+      codigo_cronograma: campo(f.codigoCronograma),
+      secuencia: campo(f.secuencia),
+      nit_nic: campo(f.nit),
+      empresa_nombre: campo(f.company),
+      actividad_economica: campo(f.actividadEconomica),
+      horas_asignadas: campo(f.horas),
+      contacto_sst_nombre: campo(f.contactoNombre),
+      contacto_sst_telefono: campo(f.contactoTelefono),
+      contacto_sst_correo: campo(f.contactoCorreo),
+      descripcion: campo(f.descripcion),
     };
     // Campos ampliados: solo se envían los presentes para esta ARL.
-    const ampliados: [string, { value: string; confidence: number } | undefined][] = [
+    const ampliados: [string, ExtractedField | undefined][] = [
       ['numero_orden', f.numeroOrden], ['nro_afiliacion', f.nroAfiliacion],
       ['tipo_actividad', f.tipoActividad], ['modalidad', f.modalidad],
       ['valor_unitario', f.valorUnitario], ['valor_total', f.valorTotal],
@@ -807,7 +862,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
       ['contacto_empresa_cargo', f.contactoEmpresaCargo],
       ['contacto_empresa_telefono', f.contactoEmpresaTelefono],
     ];
-    for (const [k, v] of ampliados) if (v) fields[k] = v;
+    for (const [k, v] of ampliados) if (v) fields[k] = campo(v);
 
     this.api.updateDraft(current.id, fields).subscribe({
       next: () => {
@@ -2172,6 +2227,7 @@ const ETIQUETAS_SOPORTE: Record<string, string> = {
 const field = (c?: { value: string; confidence: number }): ExtractedField => ({
   value: c?.value ?? '',
   confidence: Math.round(c?.confidence ?? 0),
+  original: c?.value ?? '',
 });
 
 /**
@@ -2236,7 +2292,14 @@ function camposDesdeOS(
     // La confianza es de la extracción, no del dato: se conserva la del
     // borrador para que el aviso de "baja confianza" siga señalando los campos
     // que la IA leyó mal, que son los que hay que mirar contra el documento.
-    fields[clave] = { value: valor, confidence: previo?.confidence ?? 0 };
+    // `original` sigue siendo lo que leyó la IA en el borrador: si el valor
+    // vigente de la OS ya no coincide, es que alguien lo corrigió y el campo no
+    // tiene por qué seguir marcado como de baja confianza.
+    fields[clave] = {
+      value: valor,
+      confidence: previo?.confidence ?? 0,
+      original: previo?.original ?? previo?.value ?? valor,
+    };
   }
   return fields;
 }

@@ -5,7 +5,27 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 19-ago-2026 (tanda 15) — el rol **'profesional' pasó
+> **Última actualización:** 20-ago-2026 (tanda 17) — al guardar una tanda de
+> varios archivos, parte de las órdenes fallaba con *"duplicate key …
+> ordenes_servicio_codigo_key"* y parecía culpa de tener el **NIT repetido**. No
+> lo era: el **código OS-YYYY-NNNN** se repartía con `count(*) + 1` y sin
+> cerrojo, así que dos archivos confirmados a la vez pedían el mismo número. Dos
+> órdenes de la misma empresa siempre se pudieron guardar. Ver §3, "Tanda 17".
+>
+> ⚠️ **La numeración da un salto**: el siguiente código será **OS-2026-1027** y no
+> OS-2026-0048, porque las 26 órdenes de demostración sembradas (OS-2026-1001…)
+> ocupan la parte alta de la serie. Ver §3.
+>
+> **Tanda 16 (20-ago-2026):** cinco correcciones pedidas
+> por el cliente: pulsar una orden reciente del **Inicio** ya no abre un panel
+> lateral, lleva a esa orden **en Órdenes**; la **hora del SIPAB** dejó de leerse
+> como `1899-12-30` y las **horas de una orden que no se mide en horas** las
+> escribe quien revisa; **los archivos a importar se acumulan** entre selecciones;
+> el aviso de **baja confianza se retira al corregir** el campo y vuelve si se
+> borra; y el formulario de revisión **distingue el tipo de cada campo** (el
+> teléfono del contacto ya no admite letras). Ver §3, "Tanda 16".
+>
+> **Tanda 15 (19-ago-2026):** el rol **'profesional' pasó
 > a llamarse 'administrativo'** (se confundía con los profesionales de campo) y
 > ya no le pide una ficha que no necesita; **"Guardar cambios" del perfil por fin
 > guarda**; los formularios de personas **validan y guardan en mayúsculas**; el
@@ -165,6 +185,8 @@
 | **Tanda 8** · rechazo por documento | El administrador marca QUÉ se devuelve; el portal abre solo esa casilla, enseña lo ya enviado y **reemplaza** el archivo anterior | §3 + trampas 51-53 |
 | **Tanda 8** · importar sin gastar IA | Comprobación previa por huella del archivo y por número de orden en su texto: la orden repetida se aparta al elegirla | §3 + trampa 51 |
 | **Tanda 8** · avisos y tamaño | La campanita de soportes abre el visor de archivos (`&vista=soportes`); el máximo por archivo pasó de 25 MB a **4 MB** en importación y soportes | §3 |
+| **Tanda 17** · media tanda sin guardar | El código OS-YYYY-NNNN se repartía con `count(*)+1` sin cerrojo: dos archivos confirmados en paralelo pedían el mismo número y la segunda orden moría con "duplicate key". Ahora va con `pg_advisory_xact_lock` por año y desde el MÁXIMO usado. El motivo del fallo se enseña en cristiano, no con el mensaje crudo del driver | §3 + trampa 67 |
+| **Tanda 16** · las 5 correcciones del 20-ago | Inicio navega a `/ordenes?os=<id>` en vez de abrir el drawer (y el drawer se fue); la hora del SIPAB se lee como hora; las horas que el documento no da son obligatorias y se escriben a mano; importar acumula archivos entre selecciones; el aviso de baja confianza se retira al corregir; cada campo del modal solo admite lo suyo (`shared/campos-orden.ts`) | §3 + trampas 64-66 |
 | **Tanda 15** · rol Administrativo | `profesional` → `administrativo` (rename del enum, sin perder cuentas ni permisos); el panel de inicio se bifurca por FICHA enlazada, no por rol | §3 + trampa 61 |
 | **Tanda 15** · validación de personas | Nombre, correo, teléfono y documento con reglas reales y en MAYÚSCULAS, compartidas por usuarios y profesionales (`utils/personas.js` / `core/personas.ts`) | §3 |
 | **Tanda 15** · perfil y día de corte | "Guardar cambios" del perfil existía sin endpoint; el día de corte ahora avisa por la campanita del mes anterior sin cobrar | §3 |
@@ -1123,6 +1145,139 @@ aunque la respuesta **no dijera nada** del envío. La condición era
 `correo_enviado === false`, así que un servidor que no informa —porque falló o
 porque corre una versión anterior— pasaba por éxito. Ahora es `!== true`: si no
 hay confirmación explícita, se avisa de que hay que avisar por otro medio.
+
+### Tanda 17 (20-ago-2026): media tanda que no se guardaba, y por qué NO era el NIT
+
+**Lo reportado:** cinco órdenes en una tanda (un archivo con dos y otro con
+tres). Al guardar, tres entraron y dos se quedaron con un error *"duplicated
+key"*. Editando el NIT de una de ellas —añadiéndole una letra— el segundo
+intento guardó las dos, de donde salía la conclusión razonable de que el sistema
+no dejaba repetir NIT.
+
+**No era el NIT.** Se comprobó contra la base real con órdenes desechables: dos
+órdenes con el mismo NIT, y una tercera para una empresa que ya estaba en el
+maestro, entran sin problema; el maestro reutiliza la ficha (`resolverEmpresaId`,
+CFG-02). De hecho la base ya tenía diez empresas con dos y tres órdenes cada una.
+Editar el NIT no arregló nada: lo que arregló fue **reintentar**, porque para
+entonces solo quedaba un archivo con órdenes pendientes y la carrera ya no
+ocurría.
+
+**Lo que fallaba de verdad:** el código legible de la OS.
+
+```js
+const cnt = await client.query(`SELECT count(*) … WHERE codigo LIKE 'OS-2026-%'`);
+const codigo = `OS-${year}-${String(cnt.rows[0].c + 1).padStart(4, '0')}`;
+```
+
+Dos fallos en tres líneas, los dos con el mismo síntoma (*duplicate key value
+violates unique constraint "ordenes_servicio_codigo_key"*, media tanda dentro y
+media fuera):
+
+1. **Sin cerrojo.** La vista de Importar manda una petición **por archivo**, así
+   que una tanda de dos archivos confirma en paralelo. Ninguna transacción ve las
+   filas sin confirmar de la otra, las dos cuentan lo mismo y las dos piden el
+   mismo número; la segunda choca contra el índice único de `codigo`.
+2. **Contar no es numerar.** `count(*)` da cuántas filas hay, no cuál fue el
+   último número. Basta con borrar una orden —o con que convivan las 26
+   sembradas de demostración— para que el conteo apunte a un código que ya
+   existe, y entonces el choque deja de ser intermitente y pasa a ser permanente.
+
+Reproducido y corregido (`siguienteCodigoOS` en `imports/drafts.routes.js`): el
+reparto va bajo `pg_advisory_xact_lock(8471, año)` —se libera solo al cerrar la
+transacción— y parte del **MÁXIMO** ya usado. Comprobación contra la Neon real
+con cinco órdenes desechables de la MISMA empresa confirmadas en paralelo: antes
+una fallaba, ahora entran las cinco con cinco códigos distintos. Todo lo creado
+se borró al terminar.
+
+> ⚠️ **La numeración salta a OS-2026-1027.** Las órdenes reales iban por
+> OS-2026-0047, pero la serie de 2026 llega hasta **OS-2026-1026** por las 26
+> órdenes de demostración sembradas (empresas inventadas: "Inversiones Andinas
+> S.A.S", "Construcciones del Valle Ltda."…). Partir del máximo es lo único que
+> garantiza que un código no se repita ni se reutilice, así que el salto es el
+> precio de tener datos de demostración en la base compartida. Si el cliente
+> quiere que la serie siga en 0048, hay que **dar de baja esas 26 órdenes** — es
+> una decisión suya, no del código.
+
+**Y el mensaje que se leía era el del driver.** El bucle que confirma el lote se
+traga los errores para que una orden mala no tumbe a las demás, y con eso se
+salta el manejador de errores de Express: en pantalla salía *duplicate key value
+violates unique constraint "ordenes_servicio_codigo_key"* tal cual. Eso es lo
+que mandó a buscar la causa al sitio equivocado. Ahora `motivoLegible()` traduce
+lo que ve la persona y manda el error completo al log, que es donde sirve.
+
+### Tanda 16 (20-ago-2026): cinco correcciones del cliente sobre Inicio, Importar y el modal de revisión
+
+**1. El Inicio abría un panel lateral; ahora lleva a la orden.** Pulsar una fila
+de "Órdenes recientes" abría un `.drawer` con una copia reducida del detalle y su
+propio formulario de asignación. Eran dos sitios enseñando la misma orden con
+distinta información y había que mantenerlos a la par. Ahora la fila navega a
+**`/ordenes?os=<id de la OS>`**, que es la ruta que ya usaba la campanita: el
+detalle completo, con edición, asignación y soportes. Se retiró el drawer entero
+(template, estado, `assign()`, el catálogo de profesionales que solo alimentaba
+su desplegable y sus ~140 líneas de SCSS). **Con esto ya no queda ningún `.drawer`
+en la aplicación**; conviene actualizar `CLAUDE.md`, que lo daba por vivo.
+
+> Si la OS no nació de un borrador (siembra directa), `/ordenes` avisa de que no
+> está en la bandeja en vez de no hacer nada: ese camino ya existía para la
+> campanita y se reutiliza tal cual.
+
+**2. La "Hora Programada" del SIPAB se leía como una fecha imposible.** En
+`docs/OrdenesEjemplo/Bolivar/orden1.xlsx` —el formato con el que trabaja el
+cliente— las columnas de hora salían en el modal de revisión como
+**`1899-12-30`**. No era un dato corrupto: Excel no tiene tipo "hora" y guarda las
+horas sueltas como una fecha en su día cero (30-dic-1899); la vista previa las
+pintaba con `toISOString().slice(0, 10)`, que se queda justo con la parte que no
+importa. Ahora `esHoraSuelta()` las reconoce y se pintan **`08:00`**.
+
+Y lo de fondo: **esa hora es la de INICIO de la visita, no su duración.** Las
+horas de la orden salen de "Act Programadas", que solo son horas cuando
+`Unidad Medida` dice HORAS. En UNIDADES (una investigación de accidente) ese "1"
+es una cantidad de actividades, y hasta ahora entraba como si fuera una hora,
+marcado al 60 % de confianza. Ahora **el campo llega vacío** y `Horas Asignadas`
+es **obligatorio** en el modal: sin él la orden no se guarda, ni suelta ni en
+lote. Bajo el campo se enseña lo que sí dice el documento ("el documento mide
+esta actividad en unidades, no en horas y empieza a las 08:00"), que sale de
+`metadatos_extraccion.sipab`, para no tener que abrir el Excel a buscarlo.
+Son **6 de las 99** órdenes del SIPAB real.
+
+**3. Importar acumula archivos entre selecciones.** El selector del navegador
+solo deja marcar varios archivos **dentro de una misma carpeta**, y cada
+selección reemplazaba a la anterior: una tanda repartida en dos carpetas obligaba
+a procesar, guardar y empezar de cero. Ahora cada selección **se suma** a la
+tanda ("Añadir más"), lo repetido no entra dos veces —se compara nombre, tamaño y
+fecha, y también lo ya apartado por duplicado—, y cada archivo tiene su aspa para
+quitarlo suelto sin deshacer la selección entera. La comprobación previa (IMP-09)
+corre **solo sobre los recién añadidos**: los anteriores ya se comprobaron.
+
+**4. El aviso de baja confianza no se iba al corregir el campo.** El subrayado y
+el "⚠ Baja confianza" se pintaban contra la confianza que trajo la IA, que no
+cambia hasta guardar: se corregía el dato y el campo seguía marcado, así que no
+había forma de saber qué faltaba por revisar. Ahora se pinta la **confianza
+mostrada** (`shared/campos-orden.ts`): un campo diligenciado a mano vale **100 %**
+en el acto —el porcentaje del pill también cambia— y si se vuelve a vaciar, o se
+deja tal como venía, regresa la confianza original y con ella el aviso. En
+Órdenes vale además para lo ya corregido: si el valor de la OS ya no coincide con
+lo que leyó la IA, el campo deja de estar marcado.
+
+**5. El formulario de revisión distingue el tipo de cada campo.** El "Contacto ·
+Teléfono" admitía letras. Las reglas viven ahora en **`shared/campos-orden.ts`**,
+que usan los DOS modales (Importar y Órdenes) para no volver a divergir: teléfonos
+y cronograma solo dígitos; nombres de persona y ciudad solo letras (y en
+MAYÚSCULAS, como el resto del sistema); horas y valores solo número con un
+separador decimal; el correo sin espacios y en minúsculas; el NIT admite sus
+puntos y su dígito de verificación; las fechas legibles se editan con selector de
+fecha en vez de a mano. Se filtra **al teclear** —igual que en los formularios de
+personas— y se valida antes de mandar nada al servidor (un correo sin arroba, un
+teléfono de tres dígitos).
+
+Verificación: `scripts/verificar-sipab.mjs` (actualizado: comprueba que la hora
+se lea como `HH:mm` y que las órdenes que no se miden en horas lleguen sin horas)
+pasa en verde sobre el SIPAB real de 99 órdenes, `orden1.xlsx`,
+`base_datos_bolivar.xlsx` y los dos Excel de ejemplo. `npm run typecheck` limpio
+en los dos repos y `ng build` sin errores. **Deuda de pruebas: nada de esto se ha
+visto dentro de la app** —sigue sin haber credenciales de administrador para el
+asistente—, así que lo primero que debería mirarse es el modal de revisión con un
+SIPAB de verdad.
 
 ### Tanda 15 (19-ago-2026): rol Administrativo, perfil que guarda y formularios con reglas
 
@@ -2312,6 +2467,44 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
     ~260 idas y vueltas a una base remota. Al escribir un bucle que toca la base,
     pensar en el archivo más grande que va a llegar, no en el que se tiene
     delante para probar.
+
+64. **Excel no tiene tipo "hora".** Una hora suelta se guarda como una fecha en
+    el día cero de Excel (30-dic-1899) con formato `h:mm`, así que llega al
+    código como `1899-12-30T08:00Z`. Formatearla como fecha —lo que hacía la
+    vista previa de la hoja— deja en pantalla `1899-12-30`, que parece un dato
+    corrupto y no lo es. Antes de dar por buena una columna de fecha, mirar
+    también `cell.numFmt`.
+
+65. **Un número no es una hora porque esté en la fila de una orden.** "Act
+    Programadas" del SIPAB solo son horas cuando `Unidad Medida` dice HORAS; en
+    UNIDADES es una cantidad de actividades. Un "1" ahí convertía una
+    investigación de accidente en una orden de una hora. Y "Hora Programada", que
+    parecería la alternativa, es la hora de INICIO de la visita: no hay duración
+    en el archivo. Cuando el dato no está, **no hay que deducirlo**: se deja
+    vacío y se marca obligatorio para que lo escriba quien revisa.
+
+66. **Un aviso que no se apaga deja de ser un aviso.** El "⚠ Baja confianza" se
+    pintaba contra la confianza que trajo la IA, que no cambia hasta guardar: se
+    corregía el campo y seguía marcado, así que en un formulario con cuatro
+    campos rojos no se sabía cuáles quedaban por revisar. Un indicador de "esto
+    hay que mirarlo" tiene que responder a lo que la persona acaba de hacer, no
+    al estado con el que se cargó la pantalla.
+
+67. **`count(*) + 1` no es un número de serie.** El código OS-YYYY-NNNN se
+    repartía contando filas: dos confirmaciones en paralelo —la vista manda una
+    petición por archivo— sacaban el mismo número, y borrar una orden bastaba
+    para que el conteo apuntara a un código ya usado. El síntoma llegaba
+    disfrazado: media tanda guardada, media no, y un "duplicate key" que el
+    usuario atribuyó al NIT repetido de la empresa. Para numerar hay que partir
+    del **máximo usado** y repartir bajo un cerrojo (`pg_advisory_xact_lock`).
+    Y antes de creerse la causa que sugiere el síntoma, reproducirla: aquí la
+    hipótesis del NIT se descartó en diez minutos con dos órdenes desechables.
+
+68. **Un catch que se traga el error también se traga su traducción.** El bucle
+    que confirma el lote captura cada fallo para que una orden no tumbe a las
+    demás, y así se salta el manejador de errores de Express: lo que llegaba a
+    pantalla era el mensaje crudo de Postgres. Donde se atrapa un error para
+    seguir adelante hay que traducirlo a mano y mandar el original al log.
 
 ---
 

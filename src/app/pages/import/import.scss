@@ -76,15 +76,54 @@
 }
 
 .uploader__list-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   max-width: 16rem;
-  padding: 0.1rem 0.5rem;
+  padding: 0.1rem 0.25rem 0.1rem 0.5rem;
   border-radius: 999px;
   background: rgba(45, 123, 200, 0.09);
   font-size: 0.72rem;
   color: var(--secondary-color);
+}
+
+.uploader__list-name {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Quitar UN archivo de la tanda (la selección se arma por partes). */
+.uploader__remove {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.65;
+}
+
+.uploader__remove:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.12);
+  color: var(--danger);
+  opacity: 1;
+}
+
+.uploader__remove:disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
+.uploader__remove svg {
+  width: 0.7rem;
+  height: 0.7rem;
 }
 
 .uploader__actions {
@@ -682,6 +721,15 @@
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--danger);
+}
+
+/* Contexto del documento (unidad de medida, hora de inicio): ayuda a
+   diligenciar un campo que la ARL no trae, sin gritar como un error. */
+.field__hint {
+  margin: 0.3rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--text-muted);
 }
 
 @keyframes fade-in {

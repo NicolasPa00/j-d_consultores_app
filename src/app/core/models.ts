@@ -105,6 +105,21 @@ export interface MetadatosExtraccion {
   arl_confidence?: number;
   /** Solo Excel: fila de la hoja de la que salió la orden (para resaltarla). */
   source_row?: number | null;
+  /**
+   * Solo Excel SIPAB (Bolívar): columnas que no son campos canónicos pero
+   * explican la orden. La unidad de medida y la hora programada son las que
+   * dicen si "Act Programadas" son horas o una cantidad de actividades — y
+   * `hora_programada` es la hora de INICIO de la visita, no su duración.
+   */
+  sipab?: {
+    unidad_medida?: string | null;
+    tipo_servicio?: string | null;
+    nro_trabajadores?: string | null;
+    hora_programada?: string | null;
+    num_poliza?: string | null;
+    departamento?: string | null;
+    profesional_sugerido_arl?: string | null;
+  };
 }
 
 /** Lote de importación + los borradores que se extrajeron de su archivo. */

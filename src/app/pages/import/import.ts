@@ -7,6 +7,9 @@ import { AlertService } from '../../core/alert.service';
 import { mensajeError, revisarArchivo } from '../../core/errores';
 import { Borrador, CampoExtraido, HojaImportada, MetadatosExtraccion, TipoOrden } from '../../core/models';
 import { aIsoFecha } from '../../core/fechas';
+import {
+  ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, problemaCampo, tecleoCampo,
+} from '../../shared/campos-orden';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
@@ -18,8 +21,19 @@ interface PreviewField {
   confidence: number;
   type: 'text' | 'textarea' | 'date';
   span: 'half' | 'full';
-  /** Sin él la orden no puede guardarse (hoy solo la fecha de vencimiento). */
+  /** Qué se puede escribir en él (solo letras, solo números, correo…). */
+  modo: ModoCampo;
+  /**
+   * Valor tal como lo leyó la IA. Es lo que permite saber que quien revisa ya
+   * corrigió el campo y retirarle el aviso de baja confianza en el acto.
+   */
+  original: string;
+  /** Sin él la orden no puede guardarse (fecha de vencimiento y horas). */
   required?: boolean;
+  /** Por qué es obligatorio; se enseña bajo el campo cuando está vacío. */
+  requiredHint?: string;
+  /** Contexto del documento que ayuda a diligenciarlo (hora programada, unidad…). */
+  hint?: string;
 }
 
 /**
@@ -234,14 +248,20 @@ export class ImportComponent implements OnDestroy {
     });
   }
 
+  /**
+   * Añade a la tanda lo que se acaba de elegir, SIN tirar lo anterior.
+   *
+   * El selector del navegador solo deja marcar varios archivos dentro de una
+   * misma carpeta, y las órdenes de una tanda suelen estar repartidas (un Excel
+   * de Bolívar aquí, tres PDF de AXA allá). Antes cada selección reemplazaba a
+   * la anterior, así que había que procesar una carpeta, esperar, guardar y
+   * empezar de cero con la siguiente. Ahora se selecciona por partes y se
+   * procesa una sola vez.
+   */
   protected onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const elegidos = Array.from(input.files ?? []);
     this.error.set(null);
-    // Selección nueva ⇒ los avisos de la anterior ya no aplican.
-    this.duplicadas.set([]);
-    this.fallos.set([]);
-    this.apartados.clear();
     // Se limpia el input (no los File, que ya están capturados): así volver a
     // elegir el MISMO archivo dispara el evento change otra vez, que es justo lo
     // que hace falta para reintentar una tanda que falló.
@@ -250,15 +270,55 @@ export class ImportComponent implements OnDestroy {
     // Lo que el servidor va a rechazar de todas formas se descarta aquí, con el
     // peso real en la frase. Subir 40 MB para que vuelvan con un error es un
     // minuto perdido, y el resto de la tanda no tiene por qué esperarlo.
-    const files: File[] = [];
+    const nuevos: File[] = [];
+    const repetidos: string[] = [];
     for (const file of elegidos) {
       const problema = revisarArchivo(file, { extensiones: EXTENSIONES_IMPORTACION });
-      if (problema) this.anotarFallo(file.name, problema);
-      else files.push(file);
+      if (problema) {
+        this.anotarFallo(file.name, problema);
+        continue;
+      }
+      // Volver a elegir la misma carpeta es lo normal cuando se añade por
+      // partes; lo que ya está en la tanda (o se apartó por duplicado) no se
+      // suma dos veces.
+      if (this.yaEnLaTanda(file)) {
+        repetidos.push(file.name);
+        continue;
+      }
+      nuevos.push(file);
     }
-    this.selectedFiles = files;
-    this.fileNames.set(files.map((f) => f.name));
-    this.revisarSeleccion(files);
+
+    if (repetidos.length) {
+      this.alerts.info(
+        repetidos.length === 1 ? 'Ese archivo ya estaba en la tanda' : `${repetidos.length} archivos ya estaban en la tanda`,
+        `No se añadieron por duplicado: ${repetidos.slice(0, 3).join(', ')}${repetidos.length > 3 ? '…' : ''}.`,
+      );
+    }
+    if (!nuevos.length) return;
+
+    this.selectedFiles = [...this.selectedFiles, ...nuevos];
+    this.fileNames.set(this.selectedFiles.map((f) => f.name));
+    // Solo los recién añadidos: los que ya estaban se comprobaron al elegirlos.
+    this.revisarSeleccion(nuevos);
+  }
+
+  /** ¿Este archivo ya está seleccionado (o apartado por duplicado)? */
+  private yaEnLaTanda(file: File): boolean {
+    if (this.apartados.has(file.name)) return true;
+    return this.selectedFiles.some(
+      (f) => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified,
+    );
+  }
+
+  /** Saca UN archivo de la tanda sin tocar el resto de la selección. */
+  protected quitarArchivo(nombre: string): void {
+    if (this.processing()) return;
+    this.selectedFiles = this.selectedFiles.filter((f) => f.name !== nombre);
+    this.fileNames.set(this.selectedFiles.map((f) => f.name));
+    // Sus avisos se van con él: dejarlos sugeriría que sigue en la tanda.
+    this.fallos.update((list) => list.filter((f) => f.archivo !== nombre));
+    this.duplicadas.update((list) => list.filter((d) => !(d.previa && d.archivo === nombre)));
+    this.apartados.delete(nombre);
   }
 
   /**
@@ -349,11 +409,13 @@ export class ImportComponent implements OnDestroy {
     this.duplicadas.update((list) => list.filter((d) => !(d.previa && d.archivo === archivo)));
   }
 
+  /** Vacía la tanda entera y con ella los avisos que solo hablaban de ella. */
   protected quitarSeleccion(): void {
     if (this.processing()) return;
     this.selectedFiles = [];
     this.fileNames.set([]);
     this.apartados.clear();
+    this.fallos.set([]);
     this.duplicadas.update((list) => list.filter((d) => !d.previa));
   }
 
@@ -689,32 +751,80 @@ export class ImportComponent implements OnDestroy {
     });
   }
 
-  // ---- Fecha de vencimiento obligatoria ----
-  /** ¿A esta orden le falta la fecha de vencimiento? */
-  protected sinVencimiento(row: PreviewOrder): boolean {
-    return !row.fields.find((f) => f.key === 'fecha_vencimiento')?.value.trim();
+  // ---- Campos obligatorios (fecha de vencimiento y horas) ----
+  /**
+   * Lo que el documento no trajo y sin lo cual la orden no puede guardarse.
+   *
+   * Son dos: la fecha de vencimiento —el SIPAB de Bolívar nunca la trae— y las
+   * horas, que solo llegan cuando la ARL mide la actividad en horas. Las dos las
+   * escribe quien revisa, así que se piden en el mismo sitio y de la misma forma.
+   */
+  protected faltantes(row: PreviewOrder): PreviewField[] {
+    return row.fields.filter((f) => f.required && !f.value.trim());
   }
 
-  /** Órdenes a las que les falta la fecha y por eso no se pueden guardar. */
-  protected pendientesVencimiento(): PreviewOrder[] {
-    return this.previewRows().filter((r) => this.sinVencimiento(r));
+  /** "Fecha de Vencimiento, Horas Asignadas" — para los avisos. */
+  protected nombresFaltantes(row: PreviewOrder): string {
+    return this.faltantes(row).map((f) => f.label).join(', ');
+  }
+
+  /** Órdenes a las que les falta algo obligatorio y por eso no se pueden guardar. */
+  protected pendientesObligatorios(): PreviewOrder[] {
+    return this.previewRows().filter((r) => this.faltantes(r).length > 0);
+  }
+
+  // ---- Reglas por tipo de campo (IMP-03) ----
+  /** Filtra lo que se teclea según el campo: solo letras, solo números, etc. */
+  protected escribir(item: PreviewField, valor: string): void {
+    item.value = tecleoCampo(item.modo, valor);
+  }
+
+  /** Qué le falta al valor para servir (correo sin arroba, teléfono corto…). */
+  protected problema(item: PreviewField): string | null {
+    return problemaCampo(item.modo, item.label, item.value);
+  }
+
+  /** El porcentaje que se enseña: 100 en cuanto el campo se corrige a mano. */
+  protected confianzaDe(item: PreviewField): number {
+    return confianzaMostrada(item);
+  }
+
+  /** ¿Sigue mereciendo el subrayado de baja confianza? */
+  protected marcado(item: PreviewField): boolean {
+    return bajaConfianza(item);
+  }
+
+  protected inputMode(item: PreviewField): string {
+    return inputModeDe(item.modo);
   }
 
   /** IMP-03 · Persiste las correcciones manuales del borrador (confianza → 100%). */
   protected saveDetail(): void {
     const order = this.detailOrder();
     if (!order || this.saving()) return;
-    if (this.sinVencimiento(order)) {
+    const faltan = this.faltantes(order);
+    if (faltan.length) {
       this.alerts.warning(
-        'Fecha de vencimiento obligatoria',
-        'El documento no trae una fecha de vencimiento legible. Diligénciela antes de guardar la orden.',
+        'Faltan datos obligatorios',
+        `El documento no trae ${this.nombresFaltantes(order)}. Diligéncielo antes de guardar la orden.`,
       );
+      return;
+    }
+    // Lo que sí se pudo escribir pero no sirve (un correo sin arroba, un
+    // teléfono de tres dígitos) se para aquí y no en el servidor.
+    const invalido = order.fields.map((f) => this.problema(f)).find((p): p is string => !!p);
+    if (invalido) {
+      this.alerts.warning('Revise los datos', invalido);
       return;
     }
     this.saving.set(true);
 
+    // Se manda la confianza CAMPO A CAMPO: 100 en los que se acaban de corregir
+    // y la de la IA en los demás. Sin ella el servidor daba por corregido todo
+    // el formulario (`confidence ?? 100`), así que arreglar un dato borraba de
+    // golpe las marcas de los otros diez que nadie había mirado.
     const fields: Record<string, { value: string; confidence?: number }> = {};
-    for (const f of order.fields) fields[f.key] = { value: f.value };
+    for (const f of order.fields) fields[f.key] = { value: f.value, confidence: this.confianzaDe(f) };
 
     this.api.updateDraft(order.id, fields).subscribe({
       next: (r) => {
@@ -766,10 +876,10 @@ export class ImportComponent implements OnDestroy {
       );
       return;
     }
-    if (this.sinVencimiento(row)) {
+    if (this.faltantes(row).length) {
       this.alerts.warning(
-        'Fecha de vencimiento obligatoria',
-        `${row.company} no tiene fecha de vencimiento. Ábrala con el lápiz y diligéncienla antes de guardarla.`,
+        'Faltan datos obligatorios',
+        `A ${row.company} le falta: ${this.nombresFaltantes(row)}. Ábrala con el lápiz y diligéncielo antes de guardarla.`,
       );
       return;
     }
@@ -828,13 +938,14 @@ export class ImportComponent implements OnDestroy {
       return;
     }
 
-    const faltantes = this.pendientesVencimiento();
+    const faltantes = this.pendientesObligatorios();
     if (faltantes.length) {
       const nombres = faltantes.slice(0, 3).map((r) => r.company).join(', ');
       const resto = faltantes.length > 3 ? ` y ${faltantes.length - 3} más` : '';
       this.alerts.warning(
-        'Fecha de vencimiento obligatoria',
-        `${faltantes.length} orden(es) no tienen fecha de vencimiento: ${nombres}${resto}. Ábralas con el lápiz y diligéncienla antes de guardar.`,
+        'Faltan datos obligatorios',
+        `${faltantes.length} orden(es) están incompletas (fecha de vencimiento u horas): ${nombres}${resto}. ` +
+        'Ábralas con el lápiz y diligéncielo antes de guardar.',
       );
       return;
     }
@@ -931,10 +1042,6 @@ export class ImportComponent implements OnDestroy {
     return 'pill--danger';
   }
 
-  protected isLow(confidence: number): boolean {
-    return confidence < 70;
-  }
-
   /** Con un solo archivo la columna "Archivo" sobra: todas vienen del mismo. */
   protected readonly variosArchivos = computed(() => this.batches().length > 1);
 
@@ -971,12 +1078,17 @@ function buildFields(m: MetadatosExtraccion): PreviewField[] {
     span: PreviewField['span'] = 'half',
     type: PreviewField['type'] = 'text',
   ) => {
-    rows.push({ key, label, value: text(c), confidence: conf(c), span, type });
+    const value = text(c);
+    rows.push({ key, label, value, original: value, confidence: conf(c), span, type, modo: modoDeCampo(key) });
   };
-  const pushFecha = (key: string, label: string, c: CampoExtraido | undefined) => {
+  const pushFecha = (key: string, label: string, c: CampoExtraido | undefined, required = false) => {
+    const value = aIsoFecha(text(c));
     rows.push({
-      key, label, value: aIsoFecha(text(c)), confidence: conf(c),
-      span: 'half', type: 'date', required: true,
+      key, label, value, original: value, confidence: conf(c),
+      span: 'half', type: 'date', modo: 'fecha', required,
+      requiredHint: required
+        ? 'Campo obligatorio — el documento no la trae y sin ella la orden no se puede guardar.'
+        : undefined,
     });
   };
   const opt = (key: string, label: string, c: CampoExtraido | undefined, span: PreviewField['span'] = 'half') => {
@@ -992,19 +1104,32 @@ function buildFields(m: MetadatosExtraccion): PreviewField[] {
   }
 
   push('nit_nic', 'NIT', m.nit_nic);
+  // Las horas son obligatorias: de ellas salen las franjas de la visita y el
+  // valor que se le paga al profesional. El SIPAB de Bolívar solo las trae
+  // cuando mide la actividad en HORAS —"Hora Programada" es la hora de INICIO,
+  // no una duración—, así que en el resto de los casos las escribe quien revisa.
   push('horas_asignadas', 'Horas Asignadas', m.horas_asignadas);
+  const horas = rows[rows.length - 1];
+  horas.required = true;
+  horas.requiredHint = 'Campo obligatorio — sin las horas no se puede programar la visita ni cobrarla.';
+  horas.hint = pistaHoras(m.sipab);
   push('empresa_nombre', 'Nombre Empresa', m.empresa_nombre, 'full');
   push('actividad_economica', 'Actividad Económica', m.actividad_economica, 'full');
   opt('tipo_actividad', 'Tipo de Actividad', m.tipo_actividad);
   opt('modalidad', 'Modalidad', m.modalidad);
   opt('valor_unitario', 'Valor Unitario', m.valor_unitario);
   opt('valor_total', 'Valor Total', m.valor_total);
-  opt('fecha_orden', 'Fecha de la Orden', m.fecha_orden);
+  // Fecha real → selector de fecha; si la IA la escribió en un formato que no se
+  // puede leer, se deja como texto para no perder de vista lo que decía el documento.
+  if (text(m.fecha_orden)) {
+    if (aIsoFecha(text(m.fecha_orden))) pushFecha('fecha_orden', 'Fecha de la Orden', m.fecha_orden);
+    else push('fecha_orden', 'Fecha de la Orden', m.fecha_orden);
+  }
   // Siempre presente y obligatoria, la traiga o no el documento: la vigencia de
   // la orden es lo que permite priorizarla en la bandeja de Órdenes. Si la IA no
   // la encontró (o la escribió en un formato que no es fecha) el campo queda
   // vacío y quien carga el archivo debe diligenciarlo.
-  pushFecha('fecha_vencimiento', 'Fecha de Vencimiento', m.fecha_vencimiento);
+  pushFecha('fecha_vencimiento', 'Fecha de Vencimiento', m.fecha_vencimiento, true);
   opt('ciudad_ejecucion', 'Ciudad de Ejecución', m.ciudad_ejecucion);
   opt('direccion', 'Dirección', m.direccion, 'full');
   opt('contacto_empresa_nombre', 'Contacto Empresa · Nombre', m.contacto_empresa_nombre);
@@ -1016,6 +1141,21 @@ function buildFields(m: MetadatosExtraccion): PreviewField[] {
   push('descripcion', 'Descripción', m.descripcion, 'full', 'textarea');
 
   return rows;
+}
+
+/**
+ * Lo que el SIPAB sí dice sobre el tiempo de la actividad, para que quien revisa
+ * no tenga que abrir el Excel a buscarlo: la unidad en la que está medida y la
+ * hora a la que empieza la visita (que NO es su duración).
+ */
+function pistaHoras(sipab: MetadatosExtraccion['sipab']): string | undefined {
+  if (!sipab) return undefined;
+  const partes: string[] = [];
+  if (sipab.unidad_medida && !/hora/i.test(sipab.unidad_medida)) {
+    partes.push(`el documento mide esta actividad en ${sipab.unidad_medida.toLowerCase()}, no en horas`);
+  }
+  if (sipab.hora_programada) partes.push(`empieza a las ${sipab.hora_programada}`);
+  return partes.length ? `Según el documento: ${partes.join(' y ')}.` : undefined;
 }
 
 /** Identidad legible de la orden según la ARL (número, o cronograma+secuencia). */

@@ -8,6 +8,12 @@
 export interface ExtractedField {
   value: string;
   confidence: number;
+  /**
+   * Valor tal como lo leyó la IA. Es lo que permite distinguir un campo que
+   * alguien ya corrigió —y que por tanto no debe seguir marcado como de baja
+   * confianza— de uno que sigue tal cual salió de la extracción.
+   */
+  original?: string;
 }
 
 export interface ServiceOrder {

@@ -214,7 +214,7 @@
         </tr>
       </thead>
       <tbody>
-        <!-- Al pulsar una fila se abre el drawer de detalle y asignación (M5). -->
+        <!-- Al pulsar una fila se abre esa orden en Órdenes (`/ordenes?os=<id>`). -->
         @for (order of recentOrders(); track order.id; let i = $index) {
           <tr class="row-clickable" (click)="openOrder(order)">
             <td class="col-num mono">{{ i + 1 }}</td>
@@ -269,99 +269,6 @@
   }
 </section>
 
-<!-- ============ DRAWER DE DETALLE Y ASIGNACIÓN (Módulo ASG) ============ -->
-@if (selectedOrder(); as order) {
-  <div class="drawer-backdrop" (click)="closeDrawer()"></div>
-
-  <aside class="drawer" role="dialog" aria-modal="true" aria-label="Detalle de la orden">
-    <header class="drawer__head">
-      <div>
-        <span class="drawer__code">{{ order.code }}</span>
-        <h3 class="drawer__title">{{ order.client }}</h3>
-      </div>
-      <button type="button" class="drawer__close" (click)="closeDrawer()" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 6 6 18M6 6l12 12" />
-        </svg>
-      </button>
-    </header>
-
-    <div class="drawer__body">
-      <!-- Detalle expandido -->
-      <section class="drawer__section">
-        <h4 class="drawer__section-title">Detalle de la orden</h4>
-        <dl class="detail-grid">
-          <div class="detail-item">
-            <dt>NIT</dt>
-            <dd>{{ order.nit }}</dd>
-          </div>
-          <div class="detail-item">
-            <dt>ARL detectada</dt>
-            <dd><span class="badge badge--arl">{{ order.arl }}</span></dd>
-          </div>
-          <div class="detail-item">
-            <dt>Horas</dt>
-            <dd>{{ order.hours }} h</dd>
-          </div>
-          <div class="detail-item">
-            <dt>Confianza</dt>
-            <dd>{{ order.confidence }}%</dd>
-          </div>
-          <div class="detail-item">
-            <dt>Contacto SST</dt>
-            <dd>{{ order.sstContact }}</dd>
-          </div>
-          <div class="detail-item">
-            <dt>Ciudad</dt>
-            <dd>{{ order.city }}</dd>
-          </div>
-          <div class="detail-item">
-            <dt>Estado</dt>
-            <dd><span class="badge badge--status">{{ order.status }}</span></dd>
-          </div>
-        </dl>
-      </section>
-
-      <!-- Asignación de profesional -->
-      <section class="drawer__section">
-        <h4 class="drawer__section-title">Asignación de profesional</h4>
-
-        <label class="form-field drawer__field">
-          <span class="form-field__label">Profesional</span>
-          <select class="form-control" [(ngModel)]="assignProfessional" name="professional">
-            <option value="" disabled>Seleccione un profesional…</option>
-            @for (pro of professionals(); track pro.id) {
-              <option [value]="pro.id">{{ pro.nombre }} · {{ pro.especialidad }}</option>
-            }
-          </select>
-        </label>
-
-        <div class="drawer__row">
-          <label class="form-field drawer__field">
-            <span class="form-field__label">Fecha de ejecución</span>
-            <input class="form-control" type="date" [(ngModel)]="assignDate" name="date" />
-          </label>
-          <label class="form-field drawer__field">
-            <span class="form-field__label">Hora</span>
-            <input class="form-control" type="time" [(ngModel)]="assignTime" name="time" />
-          </label>
-        </div>
-      </section>
-    </div>
-
-    <footer class="drawer__footer">
-      <button type="button" class="btn btn--ghost" (click)="closeDrawer()" [disabled]="saving()">Cancelar</button>
-      <button type="button" class="btn btn--secondary" (click)="assign()" [disabled]="saving() || order.status !== 'SIN PROGRAMAR'">
-        @if (saving()) {
-          <span class="spinner" aria-hidden="true"></span>
-          Asignando…
-        } @else {
-          Generar Formatos y Guardar Asignación
-        }
-      </button>
-    </footer>
-  </aside>
-}
 }
 <!-- fin del panel de administración (@if !esProfesional) -->
 

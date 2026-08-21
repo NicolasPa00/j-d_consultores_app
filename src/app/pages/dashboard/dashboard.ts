@@ -1,12 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser, NgTemplateOutlet } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
-import { DashboardData, Orden, Profesional, SoporteEnviado } from '../../core/models';
+import { DashboardData, Orden, SoporteEnviado } from '../../core/models';
 import { aIsoFecha, fechaLocal } from '../../core/fechas';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
@@ -108,7 +107,7 @@ const ESTADOS_PENDIENTES = ['PROGRAMADA'];
 
 @Component({
   selector: 'app-dashboard',
-  imports: [FormsModule, RouterLink, NgTemplateOutlet, PaginadorComponent],
+  imports: [RouterLink, NgTemplateOutlet, PaginadorComponent],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -117,6 +116,7 @@ export class DashboardComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly alerts = inject(AlertService);
   private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   // ----- ASG-08 · Variante del panel para el profesional de campo -----
@@ -169,7 +169,6 @@ export class DashboardComponent implements OnInit {
   protected readonly ordersOcultas = computed(() =>
     Math.max(0, this.orders().length - RECIENTES_VISIBLES),
   );
-  protected readonly professionals = signal<Profesional[]>([]);
   private readonly dashData = signal<DashboardData | null>(null);
 
   /** Avance por ARL (barras de magnitud; identidad por el nombre). */
@@ -201,15 +200,6 @@ export class DashboardComponent implements OnInit {
 
   protected readonly totalOrdenes = computed(() => num(this.dashData()?.kpis?.total_ordenes));
 
-  // ----- Estado del panel lateral (drawer) de asignación -----
-  protected readonly selectedOrder = signal<WorkOrder | null>(null);
-  protected readonly saving = signal(false);
-
-  // Campos del formulario de asignación (ngModel)
-  protected assignProfessional = '';
-  protected assignDate = '';
-  protected assignTime = '';
-
   ngOnInit(): void {
     if (!this.isBrowser) return;
     // El profesional no carga los KPIs globales ni el catálogo de asesores: no
@@ -220,10 +210,6 @@ export class DashboardComponent implements OnInit {
     }
     this.loadDashboard();
     this.loadOrders();
-    // Alimenta el desplegable de profesionales del drawer de asignación (ASG-01).
-    this.api.listProfessionals().subscribe((r) =>
-      this.professionals.set(r.data.filter((p) => p.estado === 'Activo')),
-    );
   }
 
   /** ASG-08 · Agenda del profesional autenticado. */
@@ -261,43 +247,15 @@ export class DashboardComponent implements OnInit {
     this.api.listOrders().subscribe((r) => this.orders.set(r.data.map(toWorkOrder)));
   }
 
+  /**
+   * Pulsar una fila lleva al detalle de esa orden EN Órdenes (`/ordenes?os=<id>`),
+   * que es donde vive la ficha completa con su edición, asignación y soportes.
+   * Antes se abría aquí un panel lateral con una copia reducida del detalle y un
+   * formulario de asignación propio: dos sitios que enseñaban la misma orden con
+   * distinta información y que había que mantener a la par.
+   */
   protected openOrder(order: WorkOrder): void {
-    this.selectedOrder.set(order);
-    this.assignProfessional = '';
-    this.assignDate = '';
-    this.assignTime = '';
-  }
-
-  protected closeDrawer(): void {
-    if (this.saving()) return;
-    this.selectedOrder.set(null);
-  }
-
-  /** Asigna el profesional (M5): la OS pasa a PROGRAMADA + genera PDFs + correo. */
-  protected assign(): void {
-    const order = this.selectedOrder();
-    if (!order || this.saving()) return;
-    if (!this.assignProfessional) {
-      this.alerts.warning('Seleccione un profesional', 'Debe elegir a quién se le asigna la orden antes de continuar.');
-      return;
-    }
-    const fecha = this.assignDate
-      ? new Date(`${this.assignDate}T${this.assignTime || '09:00'}:00`).toISOString()
-      : undefined;
-    this.saving.set(true);
-    this.api.assignOrder(order.id, { profesional_id: this.assignProfessional, fecha_programada: fecha }).subscribe({
-      next: () => {
-        this.saving.set(false);
-        this.selectedOrder.set(null);
-        this.alerts.success('Orden asignada', 'Se generaron los formatos y se envió el correo al profesional con los adjuntos.');
-        this.loadOrders();
-        this.loadDashboard();
-      },
-      error: (err) => {
-        this.saving.set(false);
-        this.alerts.error('No se pudo asignar la orden', mensajeError(err, 'El servidor rechazó la asignación. Verifique el profesional y la fecha programada.'));
-      },
-    });
+    this.router.navigate(['/ordenes'], { queryParams: { os: order.id } });
   }
 
   // ---- Helpers de presentación ----

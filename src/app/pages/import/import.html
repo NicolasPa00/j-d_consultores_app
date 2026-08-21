@@ -17,16 +17,30 @@
 
   <div class="uploader__meta">
     @if (fileNames().length; as total) {
-      @if (total === 1) {
-        <span class="uploader__file">{{ fileNames()[0] }}</span>
-      } @else {
-        <span class="uploader__file">{{ total }} archivos seleccionados</span>
-        <ul class="uploader__list">
-          @for (n of fileNames(); track n) {
-            <li class="uploader__list-item" [title]="n">{{ n }}</li>
-          }
-        </ul>
-      }
+      <span class="uploader__file">
+        {{ total === 1 ? '1 archivo seleccionado' : total + ' archivos seleccionados' }}
+      </span>
+      <!-- La tanda se arma por partes, así que cada archivo se puede quitar sin
+           deshacer la selección entera. -->
+      <ul class="uploader__list">
+        @for (n of fileNames(); track n) {
+          <li class="uploader__list-item" [title]="n">
+            <span class="uploader__list-name">{{ n }}</span>
+            <button
+              type="button"
+              class="uploader__remove"
+              [disabled]="processing()"
+              (click)="quitarArchivo(n)"
+              [attr.aria-label]="'Quitar ' + n + ' de la tanda'"
+              title="Quitar de la tanda"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </li>
+        }
+      </ul>
     } @else {
       <span class="uploader__file uploader__file--empty">Ningún archivo seleccionado</span>
     }
@@ -37,16 +51,19 @@
         Comprobando si estas órdenes ya están en el sistema…
       </span>
     } @else {
-      <span class="uploader__hint">Excel (.xlsx) o PDF · máx. 4 MB por archivo · puedes elegir varios a la vez</span>
+      <span class="uploader__hint">
+        Excel (.xlsx) o PDF · máx. 4 MB por archivo · puedes añadir archivos de
+        varias carpetas: cada selección se suma a la tanda
+      </span>
     }
   </div>
 
   <div class="uploader__actions">
     @if (fileNames().length && !processing()) {
-      <button type="button" class="btn btn--ghost btn--sm" (click)="quitarSeleccion()">Quitar</button>
+      <button type="button" class="btn btn--ghost btn--sm" (click)="quitarSeleccion()">Quitar todo</button>
     }
     <label class="btn btn--ghost btn--sm uploader__pick">
-      {{ fileNames().length ? 'Cambiar' : 'Seleccionar archivos' }}
+      {{ fileNames().length ? 'Añadir más' : 'Seleccionar archivos' }}
       <input type="file" class="uploader__input" multiple accept=".xlsx,.xls,.pdf" (change)="onFileSelected($event)" />
     </label>
     <button
@@ -212,9 +229,11 @@
               <td>
                 <div class="who__text">
                   <span class="who__name">{{ row.company }}</span>
-                  @if (sinVencimiento(row)) {
-                    <span class="pill pill--danger" title="Diligencie la fecha de vencimiento para poder guardar">
-                      Sin vencimiento
+                  @if (faltantes(row).length) {
+                    <!-- El detalle va en el title: con dos campos ausentes el
+                         texto no cabe en la celda. -->
+                    <span class="pill pill--danger" [title]="'Falta ' + nombresFaltantes(row) + ': diligéncielo con el lápiz para poder guardar'">
+                      Incompleta
                     </span>
                   }
                 </div>
@@ -307,9 +326,9 @@
         @if (pendientesTipo().length; as faltan) {
           <strong>{{ faltan }} orden(es) sin tipo de orden.</strong>
           Elíjalo en cada fila: de él sale el valor hora con el que se cobra.
-        } @else if (pendientesVencimiento().length; as faltan) {
-          <strong>{{ faltan }} orden(es) sin fecha de vencimiento.</strong>
-          Diligénciela en cada una para poder guardar.
+        } @else if (pendientesObligatorios().length; as faltan) {
+          <strong>{{ faltan }} orden(es) incompletas.</strong>
+          Diligencie la fecha de vencimiento y las horas en cada una para poder guardar.
         } @else {
           {{ confirmableCount() }} orden(es) se enviarán a Órdenes.
         }
@@ -461,18 +480,23 @@
           </div>
 
           <form class="fields">
+            <!-- La confianza que se pinta es la MOSTRADA, no la que trajo la IA:
+                 en cuanto alguien corrige el campo vale 100 y el subrayado se
+                 retira sin esperar a guardar; si lo vuelve a vaciar, regresa.
+                 Y cada campo solo deja escribir lo suyo (`item.modo`): letras en
+                 los nombres, dígitos en los teléfonos. -->
             @for (item of order.fields; track item.key) {
               <div class="field" [class.field--full]="item.span === 'full'">
                 <div class="field__labelrow">
                   <label class="form-field__label">{{ item.label }}</label>
-                  <span class="conf-badge pill" [class]="pillClass(item.confidence)">{{ item.confidence }}%</span>
+                  <span class="conf-badge pill" [class]="pillClass(confianzaDe(item))">{{ confianzaDe(item) }}%</span>
                 </div>
 
                 @if (item.type === 'textarea') {
                   <textarea
                     class="form-control"
                     rows="3"
-                    [class.form-control--alert]="isLow(item.confidence)"
+                    [class.form-control--alert]="marcado(item)"
                     [(ngModel)]="item.value"
                     [name]="item.key"
                   ></textarea>
@@ -480,27 +504,33 @@
                   <input
                     class="form-control"
                     type="date"
-                    [class.form-control--error]="!item.value"
-                    [class.form-control--alert]="!!item.value && isLow(item.confidence)"
+                    [class.form-control--error]="item.required && !item.value"
+                    [class.form-control--alert]="!!item.value && marcado(item)"
                     [(ngModel)]="item.value"
                     [name]="item.key"
                   />
                 } @else {
                   <input
                     class="form-control"
-                    type="text"
-                    [class.form-control--alert]="isLow(item.confidence)"
+                    [type]="item.modo === 'correo' ? 'email' : 'text'"
+                    [attr.inputmode]="inputMode(item)"
+                    [class.form-control--error]="(item.required && !item.value) || !!problema(item)"
+                    [class.form-control--alert]="!problema(item) && marcado(item)"
                     [(ngModel)]="item.value"
+                    (ngModelChange)="escribir(item, $event)"
                     [name]="item.key"
                   />
                 }
 
                 @if (item.required && !item.value) {
-                  <p class="field__alert">
-                    Campo obligatorio — el documento no la trae y sin ella la orden no se puede guardar.
-                  </p>
-                } @else if (isLow(item.confidence)) {
+                  <p class="field__alert">{{ item.requiredHint }}</p>
+                } @else if (problema(item); as motivo) {
+                  <p class="field__alert">{{ motivo }}</p>
+                } @else if (marcado(item)) {
                   <p class="field__alert">⚠ Baja confianza — verifica contra el documento original.</p>
+                }
+                @if (item.hint && !item.value) {
+                  <p class="field__hint">{{ item.hint }}</p>
                 }
               </div>
             }

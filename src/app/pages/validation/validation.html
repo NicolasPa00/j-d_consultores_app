@@ -405,12 +405,17 @@
           </div>
 
           <form class="fields">
+            <!-- La confianza que se pinta es la MOSTRADA, no la que trajo la IA:
+                 en cuanto alguien corrige el campo vale 100 y el subrayado se
+                 retira sin esperar a guardar; si lo vuelve a vaciar, regresa.
+                 Y cada campo solo deja escribir lo suyo (`item.modo`): letras en
+                 los nombres, dígitos en los teléfonos. -->
             @for (item of formFields(); track item.label) {
               <div class="field" [class.field--full]="item.span === 'full'">
                 <div class="field__labelrow">
                   <label class="form-field__label">{{ item.label }}</label>
-                  <span class="conf-badge pill" [class]="pillClass(item.field.confidence)">
-                    {{ item.field.confidence }}%
+                  <span class="conf-badge pill" [class]="pillClass(confianzaDe(item))">
+                    {{ confianzaDe(item) }}%
                   </span>
                 </div>
 
@@ -419,22 +424,36 @@
                     class="form-control"
                     rows="3"
                     [readonly]="!editMode()"
-                    [class.form-control--alert]="editMode() && isLow(item.field.confidence)"
+                    [class.form-control--alert]="editMode() && marcado(item)"
                     [(ngModel)]="item.field.value"
                     [name]="item.label"
                   ></textarea>
+                } @else if (item.type === 'date') {
+                  <input
+                    class="form-control"
+                    type="date"
+                    [readonly]="!editMode()"
+                    [class.form-control--alert]="editMode() && marcado(item)"
+                    [(ngModel)]="item.field.value"
+                    [name]="item.label"
+                  />
                 } @else {
                   <input
                     class="form-control"
-                    type="text"
+                    [type]="item.modo === 'correo' ? 'email' : 'text'"
+                    [attr.inputmode]="inputMode(item)"
                     [readonly]="!editMode()"
-                    [class.form-control--alert]="editMode() && isLow(item.field.confidence)"
+                    [class.form-control--error]="editMode() && !!problema(item)"
+                    [class.form-control--alert]="editMode() && !problema(item) && marcado(item)"
                     [(ngModel)]="item.field.value"
+                    (ngModelChange)="escribir(item, $event)"
                     [name]="item.label"
                   />
                 }
 
-                @if (editMode() && isLow(item.field.confidence)) {
+                @if (editMode() && problema(item); as motivo) {
+                  <p class="field__alert">{{ motivo }}</p>
+                } @else if (editMode() && marcado(item)) {
                   <p class="field__alert">⚠ Baja confianza — verifica contra el documento original.</p>
                 }
               </div>
