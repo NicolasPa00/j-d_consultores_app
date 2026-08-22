@@ -31,12 +31,23 @@
 }
 
 .sidebar__logo {
-  max-width: 150px;
-  max-height: 46px;
   width: auto;
   height: auto;
   object-fit: contain;
   display: block;
+}
+
+/* El lockup horizontal es casi 4:1, así que quien manda es el ancho: a 168 px
+   sale en 43 px de alto y cabe de sobra en los 72 px de la banda. */
+.sidebar__logo--completo {
+  max-width: 168px;
+  max-height: 46px;
+}
+
+.sidebar__logo--isotipo {
+  display: none;
+  max-width: 40px;
+  max-height: 40px;
 }
 
 .sidebar__nav {
@@ -292,7 +303,12 @@
     padding: 0 0.5rem;
   }
 
-  .sidebar__logo {
-    max-width: 52px;
+  /* Sidebar estrecho: igual que los enlaces, la marca se queda solo con su icono. */
+  .sidebar__logo--completo {
+    display: none;
+  }
+
+  .sidebar__logo--isotipo {
+    display: block;
   }
 }

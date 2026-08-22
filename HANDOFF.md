@@ -5,7 +5,14 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 20-ago-2026 (tanda 17) — al guardar una tanda de
+> **Última actualización:** 21-ago-2026 (tanda 18) — **la app cambió de logo**.
+> El cliente mandó la marca **ORBITA · Gestión Inteligente** y ahora es la que
+> lleva la plataforma en las nueve pantallas que enseñaban un logo, más el
+> favicon. El logo **JD&D Consultores no se borró**: sigue en
+> `public/logoJDD-Consultores.png` porque ORBITA es el **producto** y JD&D la
+> **empresa** — ver §3, "Tanda 18", que propone dónde va cada uno.
+>
+> **Tanda 17 (20-ago-2026):** al guardar una tanda de
 > varios archivos, parte de las órdenes fallaba con *"duplicate key …
 > ordenes_servicio_codigo_key"* y parecía culpa de tener el **NIT repetido**. No
 > lo era: el **código OS-YYYY-NNNN** se repartía con `count(*) + 1` y sin
@@ -185,6 +192,7 @@
 | **Tanda 8** · rechazo por documento | El administrador marca QUÉ se devuelve; el portal abre solo esa casilla, enseña lo ya enviado y **reemplaza** el archivo anterior | §3 + trampas 51-53 |
 | **Tanda 8** · importar sin gastar IA | Comprobación previa por huella del archivo y por número de orden en su texto: la orden repetida se aparta al elegirla | §3 + trampa 51 |
 | **Tanda 8** · avisos y tamaño | La campanita de soportes abre el visor de archivos (`&vista=soportes`); el máximo por archivo pasó de 25 MB a **4 MB** en importación y soportes | §3 |
+| **Tanda 18** · logo ORBITA | La plataforma pasó a la marca **ORBITA · Gestión Inteligente**: tres piezas en `.webp` con fondo transparente (vertical, horizontal e isotipo) + `favicon.ico` de 16/32/48. El logo de JD&D **sigue en el repo**: es la marca de la empresa, no la del producto | §3 |
 | **Tanda 17** · media tanda sin guardar | El código OS-YYYY-NNNN se repartía con `count(*)+1` sin cerrojo: dos archivos confirmados en paralelo pedían el mismo número y la segunda orden moría con "duplicate key". Ahora va con `pg_advisory_xact_lock` por año y desde el MÁXIMO usado. El motivo del fallo se enseña en cristiano, no con el mensaje crudo del driver | §3 + trampa 67 |
 | **Tanda 16** · las 5 correcciones del 20-ago | Inicio navega a `/ordenes?os=<id>` en vez de abrir el drawer (y el drawer se fue); la hora del SIPAB se lee como hora; las horas que el documento no da son obligatorias y se escriben a mano; importar acumula archivos entre selecciones; el aviso de baja confianza se retira al corregir; cada campo del modal solo admite lo suyo (`shared/campos-orden.ts`) | §3 + trampas 64-66 |
 | **Tanda 15** · rol Administrativo | `profesional` → `administrativo` (rename del enum, sin perder cuentas ni permisos); el panel de inicio se bifurca por FICHA enlazada, no por rol | §3 + trampa 61 |
@@ -1145,6 +1153,91 @@ aunque la respuesta **no dijera nada** del envío. La condición era
 `correo_enviado === false`, así que un servidor que no informa —porque falló o
 porque corre una versión anterior— pasaba por éxito. Ahora es `!== true`: si no
 hay confirmación explícita, se avisa de que hay que avisar por otro medio.
+
+### Tanda 18 (21-ago-2026): la plataforma se llama ORBITA
+
+**Lo pedido:** el cliente mandó un logo nuevo —**ORBITA · Gestión Inteligente**—
+y pidió que fuera el de la aplicación, sin tirar el de JD&D.
+
+#### De dónde salen los archivos
+
+El original es un render PNG de 1408×768 **con fondo blanco**: no servía tal cual
+(se vería un rectángulo blanco sobre el azul del panel de login). Se recortó y se
+le quitó el fondo por programa. Dos detalles que costarían tiempo si hay que
+rehacerlo:
+
+1. **No vale "quita todo lo claro".** El centro de la esfera tiene un destello
+   **blanco** (rgb 251,253,250 — más claro que el propio fondo). Con un umbral de
+   luminosidad la esfera queda con un agujero. Se resolvió con dos reglas: el
+   alpha sale de la distancia al blanco **o de la saturación** (el cian del anillo
+   es clarísimo pero muy saturado, así que sobrevive), y el **disco central**
+   (centro 703,301 · radio 61 en el original) se fuerza opaco porque en el arte es
+   sólido.
+2. **PNG es mal formato para este logo.** La marca es un degradado suave: en PNG
+   pesa 238 KB y no baja. En **WebP con alpha a calidad 92 son 65 KB** y la
+   diferencia no se ve ni a 2×. Por eso las piezas de la app son `.webp`. Se deja
+   además `logo-orbita.png` como **master sin pérdida**, que hará falta el día que
+   haya que meter la marca en un PDF (`pdf-lib` solo acepta PNG y JPG, no WebP).
+
+El guion que genera todo se conservó en el scratchpad de la sesión; si hay que
+repetirlo, lo anterior es lo único que no se deduce mirando la imagen.
+
+#### Qué hay en `public/`
+
+| Archivo | Medidas | Dónde se usa |
+|---|---|---|
+| `logo-orbita.webp` | 465×459 · 65 KB | Lockup vertical: login, recuperar y restablecer contraseña, y las tres públicas (`/soporte`, `/encuesta`, `/precuenta`) |
+| `logo-orbita-horizontal.webp` | 711×182 · 60 KB | Sidebar en pantalla ancha (168×43 dentro de la banda de 72 px) |
+| `logo-orbita-isotipo.webp` | 354×354 · 52 KB | Sidebar colapsado (≤820 px, 40×40) y cualquier hueco estrecho |
+| `logo-orbita.png` | 465×459 · 238 KB | Master sin pérdida. **No lo pide ninguna pantalla**; está para PDF/impresión |
+| `favicon.ico` | 16/32/48 | Pestaña del navegador (payload PNG dentro del ICO) |
+| `logoJDD-Consultores.png` | — | **Se queda.** Marca de la empresa; ver abajo |
+
+El lockup horizontal **no venía en el original**, se compuso a partir de las dos
+piezas (marca a la izquierda, texto a la derecha) porque el vertical es casi
+cuadrado: dentro del `max-height: 46px` del sidebar habría salido en 46 px de
+ancho y el descriptor sería ilegible.
+
+#### Qué se tocó
+
+- `layout/shell` · la banda de marca lleva ahora **dos imágenes**,
+  `.sidebar__logo--completo` y `.sidebar__logo--isotipo`, y las alterna la misma
+  media query de 820 px que ya ocultaba el texto de los enlaces. Es el mismo
+  criterio que el resto del sidebar colapsado: solo iconos.
+- `pages/login`, `pages/forgot-password`, `pages/reset-password`,
+  `pages/portal`, `pages/survey`, `pages/precuenta` · cambia el `src` y el `alt`
+  (que ahora dice ORBITA: un `alt` que anuncia "JD&D Consultores" sobre una
+  imagen que pone ORBITA es un fallo de accesibilidad, no un detalle).
+- `public/favicon.ico` · era el genérico de Angular.
+
+#### Lo que NO se tocó, y es decisión pendiente del cliente
+
+**Solo cambió el logo.** Los textos siguen diciendo JD&D: el `<title>` de la
+pestaña, `app.ts`, el subtítulo del navbar y los pies "© 2026 JD&D Consultores"
+de las seis pantallas con pie. Hay que preguntar si **ORBITA sustituye al nombre
+del producto** en esos textos o si solo es la imagen de marca.
+
+#### Dónde debería vivir el logo de JD&D
+
+ORBITA es el **producto**; JD&D Consultores es la **empresa**. El logo de JD&D
+tiene sitio propio en todo lo que sale de la plataforma y representa a la empresa
+ante un tercero, que hoy no lleva ninguna marca gráfica:
+
+1. **Los PDF y Excel de Informes (RPT-07).** Hoy la cabecera es texto plano
+   (`pages/reports/reports.ts`, "JD&D Consultores · Generado {fecha}"). Es el
+   candidato más claro: son documentos que el cliente imprime y reenvía.
+2. **La cuenta de cobro generada (PRE-04).** Documento contable a nombre de JD&D.
+3. **El correo (`sst_ws/src/services/email-layout.service.js`).** Ojo: hoy el
+   logotipo se dibuja **con texto sobre fondo de color a propósito**, porque
+   muchos clientes bloquean las imágenes remotas. Meter el logo ahí obliga a
+   adjuntarlo como `cid:` y a dejar un `alt` que aguante solo.
+4. **Un "by JD&D Consultores" discreto** bajo el logo de ORBITA en el panel de
+   login y en los pies de las tres pantallas públicas, que es donde hablan
+   profesionales y empresas cliente.
+5. **Los formatos de la ARL (FOR)**: **no**. Son formularios oficiales de
+   Bolívar, Colmena y AXA; meterles marca propia los invalida.
+
+Ninguno está implementado: son propuestas para consultar con el cliente.
 
 ### Tanda 17 (20-ago-2026): media tanda que no se guardaba, y por qué NO era el NIT
 

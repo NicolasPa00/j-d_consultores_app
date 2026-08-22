@@ -179,8 +179,19 @@ directamente por `seed:demo` NO se ven en esa pantalla.
   del que la tabla usa.
 
 ### UI
-- Identidad: azul del logo **`#000b50`** (`--primary-color`), apoyo
+- Identidad: azul **`#000b50`** (`--primary-color`), apoyo
   `--secondary-color: #2d7bc8` y `--accent-color: #88b2e8`.
+- **Marca (21-ago-2026): la plataforma es ORBITA, la empresa es JD&D.** Las
+  pantallas llevan **ORBITA · Gestión Inteligente**: `logo-orbita.webp` (lockup
+  vertical) en login, recuperar, restablecer y las tres públicas;
+  `logo-orbita-horizontal.webp` en el sidebar ancho y
+  `logo-orbita-isotipo.webp` en el colapsado (≤820 px). `logo-orbita.png` es el
+  master sin pérdida, para PDF (`pdf-lib` no lee WebP). **`logoJDD-Consultores.png`
+  no se borró**: es la marca de la empresa y su sitio son los documentos que salen
+  de la plataforma (ver HANDOFF §3, "Tanda 18"). Ojo: los `--primary-color` de
+  arriba salieron del logo VIEJO; el azul de ORBITA es `#103d66` y su apoyo, cian.
+  La paleta **no se migró** — decisión pendiente del cliente, igual que los textos
+  que siguen diciendo "JD&D Consultores".
 - **Reutilizar el design system de `src/styles.scss`** en lugar de estilos ad-hoc:
   `.card` (`__head`/`__title`/`__body`), `.btn` (`--primary`/`--secondary`/`--ghost`/`--block`),
   `.form-field`/`.form-control`, `.pill` (`--info`/`--success`/`--warning`/`--danger`/`--muted`),

@@ -1,8 +1,21 @@
 <div class="layout">
   <!-- ============ SIDEBAR ============ -->
   <aside class="sidebar">
+    <!-- El sidebar se estrecha a 76 px en pantallas pequeñas y ahí el lockup
+         horizontal quedaría en 13 px de alto (el descriptor, ilegible). Por eso
+         hay dos piezas y las alterna la misma media query que oculta el texto de
+         los enlaces: ancho → marca completa, estrecho → isotipo solo. -->
     <div class="sidebar__brand">
-      <img class="sidebar__logo" src="logoJDD-Consultores.png" alt="JD&D Consultores" />
+      <img
+        class="sidebar__logo sidebar__logo--completo"
+        src="logo-orbita-horizontal.webp"
+        alt="ORBITA · Gestión Inteligente"
+      />
+      <img
+        class="sidebar__logo sidebar__logo--isotipo"
+        src="logo-orbita-isotipo.webp"
+        alt="ORBITA"
+      />
     </div>
 
     <nav class="sidebar__nav">
