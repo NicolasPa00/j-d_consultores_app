@@ -17,7 +17,7 @@ export class AuthService {
   private readonly alert = inject(AlertService);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
 
-  private readonly _token = signal<string | null>(this.readStorage(TOKEN_KEY));
+  private readonly _token = signal<string | null>(this.restaurarToken());
   private readonly _usuario = signal<Usuario | null>(this.readJson(USER_KEY));
   private readonly _permisos = signal<Vista[]>(this.readJson<Vista[]>(PERMISOS_KEY) ?? []);
   /** Evita refrescar /me más de una vez por sesión de navegador (guard de rutas). */
@@ -34,7 +34,7 @@ export class AuthService {
   login(documento: string, password: string): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${API_BASE}/auth/login`, { documento, password }).pipe(
       tap((res) => {
-        this._token.set(res.token);
+        this.guardarToken(res.token);
         this.aplicarSesion(res.usuario, res.permisos as Vista[] | undefined);
         this.permisosCargados = true;
       }),
@@ -89,6 +89,18 @@ export class AuthService {
   }
 
   /**
+   * Sustituye el token de la sesión en curso, sin pasar por el login.
+   *
+   * Hace falta al editar el propio perfil: los claims `nombre` y `correo` del
+   * JWT son los que el backend usa como remitente y copia de los correos de
+   * asignación, así que un token viejo seguiría apuntando al correo anterior
+   * hasta caducar.
+   */
+  renovarToken(token: string): void {
+    this.guardarToken(token);
+  }
+
+  /**
    * AUTH-05 · Refresca los datos del usuario en sesión tras editarlos.
    *
    * El nombre se pinta en el navbar y en el avatar: sin esto habría que cerrar
@@ -121,17 +133,59 @@ export class AuthService {
     this._usuario.set(null);
     this._permisos.set([]);
     this.permisosCargados = false;
-    if (this.isBrowser) {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(USER_KEY);
-      localStorage.removeItem(PERMISOS_KEY);
-    }
+    this.limpiarStorage();
   }
 
   /** Iniciales para el avatar (p.ej. "AD"). */
   initials(): string {
     const n = this._usuario()?.nombre || '';
     return n.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('') || 'JD';
+  }
+
+  // ---- sesión persistente ----
+  /**
+   * Guarda el token en memoria y en `localStorage`. La persistencia es lo que
+   * hace que recargar la página o pegar una URL interna conserve la sesión: sin
+   * ella el servicio arranca sin token y el `authGuard` devuelve al login.
+   */
+  private guardarToken(token: string): void {
+    this._token.set(token);
+    this.writeStorage(TOKEN_KEY, token);
+  }
+
+  /**
+   * Restaura el token guardado al arrancar, descartándolo si ya venció. Sin esta
+   * comprobación una sesión caducada se "restauraría" y la app se vería abierta
+   * mientras cada petición responde 401.
+   */
+  private restaurarToken(): string | null {
+    const token = this.readStorage(TOKEN_KEY);
+    if (!token) return null;
+    if (this.tokenVencido(token)) {
+      this.limpiarStorage();
+      return null;
+    }
+    return token;
+  }
+
+  /** Lee el `exp` del JWT (base64url). Un token ilegible se trata como vencido. */
+  private tokenVencido(token: string): boolean {
+    try {
+      const payload = token.split('.')[1];
+      if (!payload) return true;
+      const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+      const exp = (JSON.parse(json) as { exp?: number }).exp;
+      return typeof exp === 'number' ? exp * 1000 <= Date.now() : false;
+    } catch {
+      return true;
+    }
+  }
+
+  private limpiarStorage(): void {
+    if (!this.isBrowser) return;
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(PERMISOS_KEY);
   }
 
   // ---- storage helpers (solo navegador) ----

@@ -345,6 +345,21 @@
   color: var(--text-main);
 }
 
+/* El nombre se edita en la propia fila; conserva el peso del texto para que la
+   columna siga leyéndose como el título de la fila y no como un formulario. */
+.tipos__nombre-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tipos__nombre-input {
+  font-weight: 600;
+  color: var(--text-main);
+  min-width: 0;
+  max-width: 240px;
+}
+
 /* Un tipo desactivado sigue a la vista: sus órdenes viejas lo usan. */
 .tipos__fila--off {
   opacity: 0.6;

@@ -96,6 +96,8 @@ export class SettingsComponent implements OnInit {
   protected tipoNuevo = { nombre: '', valor_hora: 0 };
   /** Valor en edición por fila, para no guardar en cada tecla. */
   protected valorTipo: Record<string, number> = {};
+  /** Nombre en edición por fila; se persiste al salir del campo. */
+  protected nombreTipo: Record<string, string> = {};
 
   private cargarTipos(): void {
     this.cargandoTipos.set(true);
@@ -103,6 +105,7 @@ export class SettingsComponent implements OnInit {
       next: (r) => {
         this.tipos.set(r.data);
         this.valorTipo = Object.fromEntries(r.data.map((t) => [t.id, Number(t.valor_hora)]));
+        this.nombreTipo = Object.fromEntries(r.data.map((t) => [t.id, t.nombre]));
         this.cargandoTipos.set(false);
       },
       error: (err) => {
@@ -137,6 +140,43 @@ export class SettingsComponent implements OnInit {
       error: (err) => {
         this.guardandoTipo.set(null);
         this.alerts.error('No se pudo crear el tipo', mensajeError(err, 'El servidor rechazó los datos.'));
+      },
+    });
+  }
+
+  /**
+   * CFG-04 · Renombra el tipo de orden desde la propia fila.
+   *
+   * A diferencia del valor hora, el nombre SÍ se propaga hacia atrás: las
+   * órdenes apuntan al tipo por id, así que corregir un nombre mal escrito
+   * arregla también el historial en vez de duplicar el catálogo. Un nombre
+   * vacío o repetido se rechaza y el campo vuelve a lo que había.
+   */
+  protected guardarNombreTipo(t: TipoOrden): void {
+    const nombre = (this.nombreTipo[t.id] ?? '').trim();
+    if (!nombre) {
+      this.nombreTipo[t.id] = t.nombre;
+      this.alerts.warning('El nombre no puede quedar vacío', 'Se restauró el nombre anterior.');
+      return;
+    }
+    if (nombre === t.nombre) {
+      this.nombreTipo[t.id] = nombre; // normaliza espacios sin ir al servidor
+      return;
+    }
+    this.guardandoTipo.set(t.id);
+    this.api.actualizarTipoOrden(t.id, { nombre }).subscribe({
+      next: () => {
+        this.guardandoTipo.set(null);
+        this.cargarTipos();
+        this.alerts.success('Tipo de orden renombrado', `"${t.nombre}" ahora se llama "${nombre}".`);
+      },
+      error: (err) => {
+        this.guardandoTipo.set(null);
+        this.nombreTipo[t.id] = t.nombre;
+        this.alerts.error(
+          'No se pudo renombrar el tipo',
+          mensajeError(err, 'El servidor rechazó el cambio; puede que ya exista un tipo con ese nombre.'),
+        );
       },
     });
   }
@@ -310,23 +350,33 @@ export class SettingsComponent implements OnInit {
   protected saveProfile(): void {
     if (this.savingProfile()) return;
     const nombre = normalizarTexto(this.fullName);
+    const correo = normalizarCorreo(this.email);
     const telefono = soloDigitos(this.phone);
     const especialidad = normalizarTexto(this.specialty);
 
-    const problema = validarNombre(nombre) ?? validarTelefono(telefono, { obligatorio: false });
+    const problema = primerProblema(
+      validarNombre(nombre),
+      validarCorreo(correo),
+      validarTelefono(telefono, { obligatorio: false }),
+      validarTextoOpcional(especialidad, 'La especialidad'),
+    );
     if (problema) {
       this.alerts.warning('Revise los datos', problema);
       return;
     }
 
     this.savingProfile.set(true);
-    this.api.actualizarMiPerfil({ nombre, telefono, especialidad }).subscribe({
+    this.api.actualizarMiPerfil({ nombre, correo, telefono, especialidad }).subscribe({
       next: (r) => {
         this.savingProfile.set(false);
+        // El token nuevo lleva el correo y el nombre recién guardados; sin él,
+        // los correos de asignación seguirían copiando a la dirección vieja.
+        if (r.token) this.auth.renovarToken(r.token);
         // El nombre se pinta en el navbar: si no se refresca la sesión, hay que
         // cerrar y volver a entrar para ver lo que se acaba de guardar.
         this.auth.actualizarUsuario(r.usuario);
         this.fullName = r.usuario.nombre;
+        this.email = r.usuario.correo;
         this.phone = r.usuario.telefono || '';
         this.specialty = r.usuario.especialidad || '';
         this.alerts.success('Perfil actualizado', 'Sus datos quedaron guardados.');

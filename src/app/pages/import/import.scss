@@ -20,6 +20,38 @@
   opacity: 0.85;
 }
 
+/* CFG-04 · Sin tipos de orden la zona de carga se ve apagada e inerte; el aviso
+   de arriba dice por qué y a dónde ir. */
+.uploader--bloqueado {
+  opacity: 0.6;
+  border-left-color: var(--border-soft);
+}
+
+.uploader__hint--bloqueo {
+  color: var(--warning-color, var(--secondary-color));
+  font-weight: 600;
+}
+
+/* Aviso bloqueante: el botón queda debajo del texto, no en línea. */
+.sin-tipos {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+
+  p {
+    margin: 0;
+  }
+}
+
+/* Un <label> no responde a :disabled, así que el estado apagado se pinta. */
+.uploader__pick.btn--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .uploader__icon {
   flex-shrink: 0;
   width: 38px;

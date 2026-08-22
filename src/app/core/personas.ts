@@ -13,8 +13,18 @@
  * distingue mayúsculas.
  */
 
-/** Letras (con tildes y Ñ), espacios y los signos que aparecen en un nombre. */
-const SOLO_LETRAS = /^[A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑ\s'’.-]*$/;
+/**
+ * Letras (con tildes y Ñ), espacios y los signos que aparecen de verdad en los
+ * nombres de este sistema.
+ *
+ * El '&' y los paréntesis están porque las cuentas del cliente los usan:
+ * "Administrador Maestro JD&D", "Marcela Rueda (Asistente)". Sin ellos el
+ * propio perfil del maestro era imposible de guardar —el aviso salía sobre el
+ * nombre aunque se estuviera editando el teléfono— y el filtro de tecleo
+ * borraba el '&' según se escribía, así que tampoco había forma de corregirlo.
+ * Los dígitos siguen fuera: una persona no se llama con números.
+ */
+const SOLO_LETRAS = /^[A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑ\s'’.\-&()]*$/;
 const CORREO = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
 
 /** Espacios colapsados, sin bordes y en mayúsculas. */
@@ -38,7 +48,7 @@ export function validarNombre(v: string, campo = 'El nombre'): string | null {
   if (!nombre) return `${campo} es obligatorio.`;
   if (nombre.length < 3) return `${campo} debe tener al menos 3 caracteres.`;
   if (nombre.length > 120) return `${campo} no puede pasar de 120 caracteres.`;
-  if (!SOLO_LETRAS.test(nombre)) return `${campo} solo admite letras y espacios (sin números ni símbolos).`;
+  if (!SOLO_LETRAS.test(nombre)) return `${campo} solo admite letras, espacios y los signos ' . - & ( ) — sin números.`;
   return null;
 }
 
@@ -99,7 +109,7 @@ export function primerProblema(...motivos: (string | null)[]): string | null {
  * entero.
  */
 export function tecleoLetras(v: string): string {
-  return String(v ?? '').replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s'’.-]/g, '').toUpperCase();
+  return String(v ?? '').replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s'’.\-&()]/g, '').toUpperCase();
 }
 
 /** Ídem para un campo numérico: solo dígitos. */

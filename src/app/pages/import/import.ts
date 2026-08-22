@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, computed, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ApiService, DuplicadoImportacion } from '../../core/api.service';
 import { AlertService } from '../../core/alert.service';
 import { mensajeError, revisarArchivo } from '../../core/errores';
@@ -127,12 +127,12 @@ type DocKind = 'pdf' | 'sheet' | 'none';
 
 @Component({
   selector: 'app-import',
-  imports: [FormsModule, PaginadorComponent],
+  imports: [FormsModule, RouterLink, PaginadorComponent],
   templateUrl: './import.html',
   styleUrl: './import.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ImportComponent implements OnDestroy {
+export class ImportComponent implements OnInit, OnDestroy {
   private readonly api = inject(ApiService);
   private readonly alerts = inject(AlertService);
   private readonly router = inject(Router);
@@ -181,6 +181,23 @@ export class ImportComponent implements OnDestroy {
   /** CFG-04 · Catálogo de tipos de orden, para el desplegable de cada fila. */
   protected readonly tiposOrden = signal<TipoOrden[]>([]);
   /**
+   * Estado de la carga del catálogo. Hace falta distinguir "todavía no llegó"
+   * de "llegó vacío": solo lo segundo bloquea la importación.
+   */
+  protected readonly estadoTipos = signal<'cargando' | 'listo' | 'error'>('cargando');
+  /**
+   * CFG-04 · Sin un solo tipo de orden no se puede importar nada.
+   *
+   * Cada orden se categoriza con un tipo obligatorio y de él sale el valor hora;
+   * procesar archivos sin catálogo dejaría una tanda entera imposible de guardar
+   * después de gastar el tiempo y las llamadas de IA. Por eso el bloqueo va
+   * ANTES de subir, no al guardar. Si el catálogo no se pudo consultar no se
+   * bloquea: un fallo de red no debe impedir trabajar.
+   */
+  protected readonly sinTiposOrden = computed(
+    () => this.estadoTipos() === 'listo' && this.tiposOrden().length === 0,
+  );
+  /**
    * Archivos apartados por existir ya. Se conservan para poder devolverlos a la
    * tanda: la detección es buena, no infalible, y una orden legítima que se
    * parezca a otra no puede quedar fuera del sistema sin salida.
@@ -201,16 +218,37 @@ export class ImportComponent implements OnDestroy {
    */
   protected readonly pag = paginar(this.previewRows);
 
+  ngOnInit(): void {
+    // Se pide al entrar para saber de entrada si la vista puede aceptar archivos.
+    this.cargarTipos();
+  }
+
   /** El catálogo se pide una vez: la vista previa lo usa en todas las filas. */
   private cargarTipos(): void {
     if (this.tiposOrden().length) return;
+    this.estadoTipos.set('cargando');
     this.api.listTiposOrden().subscribe({
-      next: (r) => this.tiposOrden.set(r.data),
-      error: () => this.alerts.warning(
-        'No se pudo cargar la lista de tipos de orden',
-        'Sin ella no se puede elegir el tipo, y sin tipo la orden no se guarda. Recargue la página.',
-      ),
+      next: (r) => {
+        this.tiposOrden.set(r.data);
+        this.estadoTipos.set('listo');
+      },
+      error: () => {
+        this.estadoTipos.set('error');
+        this.alerts.warning(
+          'No se pudo cargar la lista de tipos de orden',
+          'Sin ella no se puede elegir el tipo, y sin tipo la orden no se guarda. Recargue la página.',
+        );
+      },
     });
+  }
+
+  /** Explica por qué no se puede importar y dónde se arregla. */
+  private avisarSinTipos(): void {
+    this.alerts.warning(
+      'Todavía no hay tipos de orden',
+      'Cada orden se categoriza con un tipo obligatorio y de él sale el valor hora. ' +
+      'Cree al menos uno en Configuración → Tipos de orden antes de importar archivos.',
+    );
   }
 
   /** ¿Falta la categoría con la que se cobra? */
@@ -260,6 +298,13 @@ export class ImportComponent implements OnDestroy {
    */
   protected onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
+    // Sin tipos de orden no se acepta nada: el control del template ya está
+    // deshabilitado, esto cubre el caso de que el catálogo se vacíe entre medias.
+    if (this.sinTiposOrden()) {
+      input.value = '';
+      this.avisarSinTipos();
+      return;
+    }
     const elegidos = Array.from(input.files ?? []);
     this.error.set(null);
     // Se limpia el input (no los File, que ya están capturados): así volver a
@@ -428,6 +473,10 @@ export class ImportComponent implements OnDestroy {
    */
   protected processWithAi(): void {
     if (this.processing() || !this.selectedFiles.length) return;
+    if (this.sinTiposOrden()) {
+      this.avisarSinTipos();
+      return;
+    }
     this.cargarTipos();
     this.processing.set(true);
     this.showPreview.set(false);

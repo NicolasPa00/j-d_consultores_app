@@ -78,8 +78,19 @@
 
         <label class="form-field">
           <span class="form-field__label">Correo electrónico</span>
-          <input class="form-control" type="email" [(ngModel)]="email" name="email" disabled />
-          <span class="form-field__hint">Deshabilitado por seguridad. Contacte al administrador para cambiarlo.</span>
+          <input
+            class="form-control"
+            type="email"
+            maxlength="150"
+            [ngModel]="email"
+            (ngModelChange)="email = $event.trim().toLowerCase()"
+            name="email"
+            autocomplete="email"
+          />
+          <span class="form-field__hint">
+            Es la dirección con la que recupera su contraseña y a la que llegan las
+            notificaciones del sistema.
+          </span>
         </label>
 
         <div class="profile-form__row">
@@ -186,8 +197,19 @@
             @for (t of tipos(); track t.id) {
               <tr [class.tipos__fila--off]="!t.activo">
                 <td>
-                  <span class="tipos__nombre">{{ t.nombre }}</span>
-                  @if (!t.activo) { <span class="pill pill--muted">Desactivado</span> }
+                  <span class="tipos__nombre-edit">
+                    <input
+                      class="form-control tipos__nombre-input"
+                      type="text"
+                      [(ngModel)]="nombreTipo[t.id]"
+                      [name]="'nombre' + t.id"
+                      [disabled]="guardandoTipo() === t.id"
+                      (blur)="guardarNombreTipo(t)"
+                      [attr.aria-label]="'Nombre del tipo de orden ' + t.nombre"
+                      title="Editar el nombre del tipo de orden"
+                    />
+                    @if (!t.activo) { <span class="pill pill--muted">Desactivado</span> }
+                  </span>
                 </td>
                 <td>
                   <span class="rate-row__input">

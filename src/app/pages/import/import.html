@@ -3,10 +3,26 @@
   <p class="page-head__sub">Carga de Excel (ARL Bolívar) y PDFs (AXA / Colmena) · Módulo IMP</p>
 </section>
 
+<!-- CFG-04 · Sin catálogo de tipos no se importa: cada orden se categoriza con
+     un tipo obligatorio del que sale el valor hora, así que procesar una tanda
+     sin tipos dejaría todo imposible de guardar. Se avisa y se corta antes de
+     subir nada. -->
+@if (sinTiposOrden()) {
+  <div class="alert alert--warning sin-tipos" role="alert">
+    <p class="alert__title">No hay tipos de orden configurados</p>
+    <p>
+      Cada orden se categoriza con un tipo —Capacitación, Inspección, Asesoría…— y de él sale
+      el valor hora con el que se le paga al profesional. Sin al menos uno, las órdenes
+      importadas no se podrían guardar.
+    </p>
+    <a class="btn btn--primary btn--sm" routerLink="/configuracion">Crear un tipo de orden</a>
+  </div>
+}
+
 <!-- ===== Zona de carga (compacta) ===== -->
 <!-- Admite varios archivos a la vez: una tanda de PDFs de la misma ARL era el
      caso normal y obligaba a repetir el ciclo completo archivo por archivo. -->
-<div class="uploader" [class.uploader--busy]="processing()">
+<div class="uploader" [class.uploader--busy]="processing()" [class.uploader--bloqueado]="sinTiposOrden()">
   <span class="uploader__icon" aria-hidden="true">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -51,10 +67,16 @@
         Comprobando si estas órdenes ya están en el sistema…
       </span>
     } @else {
-      <span class="uploader__hint">
-        Excel (.xlsx) o PDF · máx. 4 MB por archivo · puedes añadir archivos de
-        varias carpetas: cada selección se suma a la tanda
-      </span>
+      @if (sinTiposOrden()) {
+        <span class="uploader__hint uploader__hint--bloqueo">
+          Carga deshabilitada: primero cree un tipo de orden en Configuración.
+        </span>
+      } @else {
+        <span class="uploader__hint">
+          Excel (.xlsx) o PDF · máx. 4 MB por archivo · puedes añadir archivos de
+          varias carpetas: cada selección se suma a la tanda
+        </span>
+      }
     }
   </div>
 
@@ -62,14 +84,25 @@
     @if (fileNames().length && !processing()) {
       <button type="button" class="btn btn--ghost btn--sm" (click)="quitarSeleccion()">Quitar todo</button>
     }
-    <label class="btn btn--ghost btn--sm uploader__pick">
+    <label
+      class="btn btn--ghost btn--sm uploader__pick"
+      [class.btn--disabled]="sinTiposOrden()"
+      [title]="sinTiposOrden() ? 'Cree un tipo de orden en Configuración antes de importar' : ''"
+    >
       {{ fileNames().length ? 'Añadir más' : 'Seleccionar archivos' }}
-      <input type="file" class="uploader__input" multiple accept=".xlsx,.xls,.pdf" (change)="onFileSelected($event)" />
+      <input
+        type="file"
+        class="uploader__input"
+        multiple
+        accept=".xlsx,.xls,.pdf"
+        [disabled]="sinTiposOrden()"
+        (change)="onFileSelected($event)"
+      />
     </label>
     <button
       type="button"
       class="btn btn--primary btn--sm"
-      [disabled]="!fileNames().length || processing() || revisando()"
+      [disabled]="!fileNames().length || processing() || revisando() || sinTiposOrden()"
       (click)="processWithAi()"
     >
       @if (processing()) {

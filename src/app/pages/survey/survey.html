@@ -96,9 +96,6 @@
           <legend class="q__title">
             <span class="q__num">2</span>
             {{ info()?.preguntas?.profesional }}
-            @if (info()?.profesional_nombre; as nombre) {
-              <small class="q__opt">({{ nombre }})</small>
-            }
           </legend>
           <div class="scale" role="radiogroup" [attr.aria-label]="info()?.preguntas?.profesional">
             @for (op of escalaProfesional; track op.valor) {

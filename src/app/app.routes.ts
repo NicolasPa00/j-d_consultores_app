@@ -1,10 +1,11 @@
 import { Routes } from '@angular/router';
-import { authGuard, permissionGuard } from './core/auth.guard';
+import { authGuard, guestGuard, permissionGuard } from './core/auth.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   {
     path: 'login',
+    canActivate: [guestGuard],
     loadComponent: () => import('./pages/login/login').then((m) => m.LoginComponent),
   },
   {

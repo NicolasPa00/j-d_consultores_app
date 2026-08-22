@@ -31,6 +31,12 @@
 > el aviso de **baja confianza se retira al corregir** el campo y vuelve si se
 > borra; y el formulario de revisión **distingue el tipo de cada campo** (el
 > teléfono del contacto ya no admite letras). Ver §3, "Tanda 16".
+> **Última actualización:** 20-ago-2026 (tanda 16) — en Cuentas de cobro, el
+> aviso de que un profesional **aceptó o rechazó** su cuenta ya recarga la tabla
+> aunque se esté en esa misma pantalla; el atajo del administrador para **marcar
+> una cuenta como aceptada se retiró** (aceptar es del profesional, y el servidor
+> lo exige); y **"Generar" sobre una cuenta rechazada por fin hace algo**: la
+> rehace. Ver §3, "Tanda 16".
 >
 > **Tanda 15 (19-ago-2026):** el rol **'profesional' pasó
 > a llamarse 'administrativo'** (se confundía con los profesionales de campo) y
@@ -195,6 +201,8 @@
 | **Tanda 18** · logo ORBITA | La plataforma pasó a la marca **ORBITA · Gestión Inteligente**: tres piezas en `.webp` con fondo transparente (vertical, horizontal e isotipo) + `favicon.ico` de 16/32/48. El logo de JD&D **sigue en el repo**: es la marca de la empresa, no la del producto | §3 |
 | **Tanda 17** · media tanda sin guardar | El código OS-YYYY-NNNN se repartía con `count(*)+1` sin cerrojo: dos archivos confirmados en paralelo pedían el mismo número y la segunda orden moría con "duplicate key". Ahora va con `pg_advisory_xact_lock` por año y desde el MÁXIMO usado. El motivo del fallo se enseña en cristiano, no con el mensaje crudo del driver | §3 + trampa 67 |
 | **Tanda 16** · las 5 correcciones del 20-ago | Inicio navega a `/ordenes?os=<id>` en vez de abrir el drawer (y el drawer se fue); la hora del SIPAB se lee como hora; las horas que el documento no da son obligatorias y se escriben a mano; importar acumula archivos entre selecciones; el aviso de baja confianza se retira al corregir; cada campo del modal solo admite lo suyo (`shared/campos-orden.ts`) | §3 + trampas 64-66 |
+| **Tanda 16** · el aviso recarga la vista | Estando ya en Cuentas de cobro, la campanita no navegaba a ninguna parte; ahora el aviso lleva la cuenta en el query param y la tabla se recarga y la señala | §3 + trampa 64 |
+| **Tanda 16** · aceptar es del profesional | Fuera el botón de "marcar como aceptada"; ante un rechazo se **rehace** la cuenta y se reenvía. `PATCH /precuentas/:id/estado` ya no admite aceptada ni rechazada | §3 + trampa 65 |
 | **Tanda 15** · rol Administrativo | `profesional` → `administrativo` (rename del enum, sin perder cuentas ni permisos); el panel de inicio se bifurca por FICHA enlazada, no por rol | §3 + trampa 61 |
 | **Tanda 15** · validación de personas | Nombre, correo, teléfono y documento con reglas reales y en MAYÚSCULAS, compartidas por usuarios y profesionales (`utils/personas.js` / `core/personas.ts`) | §3 |
 | **Tanda 15** · perfil y día de corte | "Guardar cambios" del perfil existía sin endpoint; el día de corte ahora avisa por la campanita del mes anterior sin cobrar | §3 |
@@ -1371,6 +1379,64 @@ en los dos repos y `ng build` sin errores. **Deuda de pruebas: nada de esto se h
 visto dentro de la app** —sigue sin haber credenciales de administrador para el
 asistente—, así que lo primero que debería mirarse es el modal de revisión con un
 SIPAB de verdad.
+### Tanda 16 (20-ago-2026): la campanita que no llevaba a ninguna parte, y el rechazo sin salida
+
+**El aviso no hacía nada si ya estabas en Cuentas de cobro.** El profesional
+aceptaba o rechazaba desde su enlace, llegaba el aviso a la campanita, el
+administrador lo pulsaba… y no pasaba nada: la tabla seguía enseñando el estado
+anterior, que es justo lo que se venía a comprobar. No era un fallo de la
+notificación sino de la navegación: `PRECUENTA_ACEPTADA` y `PRECUENTA_RECHAZADA`
+apuntaban a `/precuentas` **sin parámetros**, y navegar a la URL en la que ya
+estás no es una navegación para el router de Angular — el componente no se
+reconstruye y nadie recarga nada.
+
+Ahora el aviso lleva la cuenta consigo (`/precuentas?cuenta=<id>`) y la vista
+escucha el query param, igual que `/ordenes` con `?os=`:
+
+- recarga el resumen del servidor —la respuesta del profesional es el dato nuevo—;
+- se coloca en el año, el mes y la **pestaña** donde quedó esa cuenta (al
+  aceptarse se mueve a "Aceptadas", así que sin esto la fila desaparecía de la
+  vista); y
+- **resalta la fila** unos segundos, para no tener que buscarla entre las demás.
+
+El parámetro se limpia nada más leerlo: si se queda puesto, pulsar dos veces el
+mismo aviso es navegar a la misma URL otra vez y el router se calla. El aviso del
+**día de corte** (CFG-05) tenía el mismo problema y va por el mismo camino con
+`?periodo=AAAA-MM`: recorta la vista a ese mes.
+
+**Una cuenta rechazada era un callejón sin salida.** Sobre ella el administrador
+solo podía hacer dos cosas, y las dos estaban mal:
+
+- **"Marcar como aceptada"** — se retiró. La aceptación es la respuesta del
+  profesional al documento y es lo que autoriza el pago; que un administrador la
+  ponga por él convierte un acuerdo en un trámite interno. La regla se cierra
+  también en el servidor: `PATCH /precuentas/:id/estado` rechaza `aceptada` y
+  `rechazada` con un 400 que explica qué hacer. Ese endpoint queda solo para
+  reabrir a 'generada' o 'enviada'.
+- **"Generar cuenta de cobro"** — no hacía nada. Las órdenes de una cuenta
+  cerrada (aceptada **o** rechazada) estaban excluidas de cualquier generación
+  nueva, así que la consulta no encontraba trabajo, no se creaba nada y la vista
+  anunciaba "Cuenta de cobro generada" con el mensaje "no hay órdenes sin cobrar"
+  dentro. Un éxito falso sobre un documento que no existe.
+
+La distinción que faltaba: **aceptada y rechazada no son lo mismo**. Una aceptada
+es un acuerdo cerrado y no se toca nunca —lo nuevo va a una cuenta
+complementaria, tanda 13—. Una rechazada es un documento **devuelto para
+corregir**. Ahora el botón de esa fila la **rehace**: `POST /precuentas/generate`
+acepta `precuenta_id`, las órdenes de esa cuenta vuelven a entrar, se revalorizan
+con las tarifas de hoy sobre el mismo registro, y la cuenta vuelve a quedar
+'generada' y lista para reenviar. Se limpian `enviado_en` y `respondido_en`
+—eran de la versión devuelta— y se **conservan las observaciones**: son el motivo
+que había que corregir, y el profesional no las ve hasta volver a responder.
+
+El token no cambia, así que el enlace del correo nuevo sirve y `responderPrecuenta`
+vuelve a admitir respuesta (solo bloquea las que están en aceptada/rechazada).
+
+Comprobado contra la base real con la cuenta rechazada de agosto (`0abbf7a6`,
+Nicolas Prieto): se rehizo sobre el mismo id sin crear una segunda cuenta ni
+duplicar la orden, `enviado_en`/`respondido_en` quedaron en nulo, las
+observaciones ("ME DEBEN HORAS") sobrevivieron, y la generación normal del mes
+—sin `precuenta_id`— sigue sin tocar esa cuenta. La fila se dejó como estaba.
 
 ### Tanda 15 (19-ago-2026): rol Administrativo, perfil que guarda y formularios con reglas
 
@@ -2598,6 +2664,27 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
     demás, y así se salta el manejador de errores de Express: lo que llegaba a
     pantalla era el mensaje crudo de Postgres. Donde se atrapa un error para
     seguir adelante hay que traducirlo a mano y mandar el original al log.
+64. **Navegar a la pantalla en la que ya estás no es navegar.** El aviso de la
+    campanita mandaba a `/precuentas` sin parámetros: desde cualquier otra
+    pantalla funcionaba, y desde Cuentas de cobro el clic no hacía absolutamente
+    nada —misma URL, sin cambios que el router pueda anunciar—. Es el caso que
+    más se prueba mal, porque quien prueba viene de otra pantalla. Cuando un
+    aviso apunta a una vista, lo que abre tiene que viajar en la URL (aquí,
+    `?cuenta=<id>`) y la vista tiene que escuchar el parámetro, no leerlo una vez
+    al construirse. Y conviene limpiarlo después: con el parámetro puesto, el
+    segundo clic sobre el mismo aviso vuelve a ser la misma URL.
+
+65. **"Cerrada" no es un solo estado.** Una cuenta de cobro aceptada y una
+    rechazada se trataban igual —ninguna se regenera— y de ahí salían dos
+    problemas a la vez: sobre la rechazada, "Generar" no encontraba trabajo (sus
+    órdenes seguían atrapadas dentro) y anunciaba éxito sin crear nada; y para
+    salir del atasco quedaba un botón que dejaba al administrador **aceptando la
+    cuenta en nombre del profesional**, que es precisamente la firma que
+    autoriza el pago. Un acuerdo cerrado (aceptada) y un documento devuelto
+    (rechazada) parecen el mismo estado terminal y no lo son: uno es final, el
+    otro es un paso atrás en el flujo. Y cuando la única salida de un estado es
+    un botón que rompe una regla del negocio, el que sobra es el botón: falta el
+    camino de vuelta.
 
 ---
 

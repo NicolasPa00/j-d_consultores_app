@@ -155,9 +155,10 @@ export class NotificationsComponent implements OnInit, OnDestroy {
       };
     }
     // CFG-05 · El aviso del día de corte no apunta a una orden ni a una cuenta:
-    // apunta al mes que quedó sin cobrar, y eso se resuelve en la vista.
+    // apunta al MES que quedó sin cobrar, y eso se resuelve en la vista.
     if (n.tipo === 'CORTE_COBRO' && this.auth.puedeVer('precuentas')) {
-      return { ruta: ['/precuentas'] };
+      const periodo = n.datos?.periodo;
+      return periodo ? { ruta: ['/precuentas'], params: { periodo } } : { ruta: ['/precuentas'] };
     }
     const ordenId = n.datos?.orden_id;
     if (ordenId && this.auth.puedeVer('ordenes')) {
@@ -165,8 +166,12 @@ export class NotificationsComponent implements OnInit, OnDestroy {
       if (NotificationsComponent.DE_ARCHIVOS.includes(n.tipo)) params['vista'] = 'soportes';
       return { ruta: ['/ordenes'], params };
     }
+    // PRE-06 · La cuenta viaja en el parámetro, no solo la ruta. Estando ya en
+    // Cuentas de cobro, navegar a la misma URL sin parámetros no es una
+    // navegación para el router: el clic no hacía nada y la tabla se quedaba con
+    // el estado anterior, que es justo lo que el aviso dice que cambió.
     if (n.datos?.precuenta_id && this.auth.puedeVer('precuentas')) {
-      return { ruta: ['/precuentas'] };
+      return { ruta: ['/precuentas'], params: { cuenta: n.datos.precuenta_id } };
     }
     return null;
   }

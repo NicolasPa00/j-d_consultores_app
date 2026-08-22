@@ -105,7 +105,7 @@
         </thead>
         <tbody>
           @for (f of pag.visibles(); track f.precuenta_id || f.periodo + f.profesional_id) {
-            <tr>
+            <tr [class.fila--destacada]="f.precuenta_id && f.precuenta_id === destacada()">
               <td>{{ nombreMes(f.periodo) }}</td>
               <td>
                 <div class="who">
@@ -156,8 +156,8 @@
                         type="button" class="icon-action"
                         [disabled]="ocupada() === clave(f) || !!f.ordenes_sin_tarifa"
                         (click)="generar(f)"
-                        [attr.aria-label]="f.ordenes_sin_tarifa ? avisoSinTarifa(f) : 'Generar cuenta de cobro'"
-                        [title]="f.ordenes_sin_tarifa ? avisoSinTarifa(f) : 'Generar cuenta de cobro'"
+                        [attr.aria-label]="rotuloGenerar(f)"
+                        [title]="rotuloGenerar(f)"
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                           <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
@@ -177,13 +177,6 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                           <path d="m22 2-7 20-4-9-9-4Z" />
                           <path d="M22 2 11 13" />
-                        </svg>
-                      </button>
-                    }
-                    @if (f.estado === 'rechazada') {
-                      <button type="button" class="icon-action" (click)="marcarAceptada(f)" aria-label="Marcar como aceptada" title="Marcar como aceptada">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                          <path d="M20 6 9 17l-5-5" />
                         </svg>
                       </button>
                     }

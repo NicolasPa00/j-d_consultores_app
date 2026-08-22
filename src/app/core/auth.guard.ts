@@ -20,6 +20,21 @@ export const authGuard: CanActivateFn = () => {
 };
 
 /**
+ * Rutas de entrada (`/login` y, por el redirect de `''`, también la raíz y las
+ * URLs desconocidas). Con una sesión viva no tiene sentido pedir credenciales de
+ * nuevo: se manda al dashboard. Esto es lo que hace que pegar la URL base del
+ * sistema entre a la aplicación en vez de al formulario de acceso.
+ */
+export const guestGuard: CanActivateFn = () => {
+  const platformId = inject(PLATFORM_ID);
+  if (isPlatformServer(platformId)) return true;
+
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  return auth.isAuthenticated() ? router.createUrlTree(['/dashboard']) : true;
+};
+
+/**
  * Roles y permisos: bloquea el acceso a una vista si el rol de la sesión no la
  * tiene habilitada (matriz gestionada desde Configuración → Roles y permisos).
  * Se apoya en `route.data['vista']`; las rutas sin ese dato quedan abiertas.

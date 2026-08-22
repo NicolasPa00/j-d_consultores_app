@@ -249,15 +249,22 @@ export class ApiService {
   getPrecuenta(id: string): Observable<Wrap<Precuenta>> {
     return this.http.get<Wrap<Precuenta>>(`${this.base}/precuentas/${id}`);
   }
-  /** PRE-01 · Cierre de mes. Idempotente: recalcula las que siguen abiertas. */
-  generarPrecuentas(periodo: string, profesionalId?: string): Observable<{
+  /**
+   * PRE-01 · Cierre de mes. Idempotente: recalcula las que siguen abiertas.
+   *
+   * PRE-07 · `precuentaId` rehace una cuenta RECHAZADA: sus órdenes vuelven a
+   * valorarse sobre el mismo registro y queda otra vez lista para enviar.
+   */
+  generarPrecuentas(periodo: string, profesionalId?: string, precuentaId?: string): Observable<{
     message: string;
     data: { periodo: string; generadas: Precuenta[]; omitidas: { profesional_nombre: string; motivo: string }[] };
   }> {
     return this.http.post<{
       message: string;
       data: { periodo: string; generadas: Precuenta[]; omitidas: { profesional_nombre: string; motivo: string }[] };
-    }>(`${this.base}/precuentas/generate`, { periodo, profesional_id: profesionalId });
+    }>(`${this.base}/precuentas/generate`, {
+      periodo, profesional_id: profesionalId, precuenta_id: precuentaId,
+    });
   }
   /** PRE-04 · Envía el PDF y el enlace de aceptación al profesional. */
   enviarPrecuenta(id: string): Observable<{ message: string }> {
@@ -266,10 +273,6 @@ export class ApiService {
   /** PRE-03 · Documento PDF (se abre en pestaña nueva desde un blob). */
   precuentaPdf(id: string): Observable<Blob> {
     return this.http.get(`${this.base}/precuentas/${id}/pdf`, { responseType: 'blob' });
-  }
-  /** PRE-07 · Corrección manual tras revisar un rechazo. */
-  setEstadoPrecuenta(id: string, estado: EstadoPrecuenta, observaciones?: string): Observable<Wrap<Precuenta>> {
-    return this.http.patch<Wrap<Precuenta>>(`${this.base}/precuentas/${id}/estado`, { estado, observaciones });
   }
 
   // ---- Tarifas por actividad (M9 · PRE-02) ----
@@ -338,14 +341,18 @@ export class ApiService {
   }
 
   /**
-   * AUTH-05 · El usuario corrige SUS datos (nombre, teléfono, especialidad).
+   * AUTH-05 · El usuario corrige SUS datos (nombre, correo, teléfono, especialidad).
    *
-   * El correo y el documento no se tocan aquí: identifican la cuenta y son con
-   * lo que se inicia sesión, así que los cambia el Administrador Maestro.
+   * El documento no se toca aquí: es con lo que se inicia sesión y lo cambia el
+   * Administrador Maestro. La respuesta trae un token nuevo, porque los claims
+   * de nombre y correo alimentan los correos de asignación.
    */
-  actualizarMiPerfil(body: { nombre: string; telefono?: string; especialidad?: string }):
-    Observable<{ message: string; usuario: Usuario }> {
-    return this.http.put<{ message: string; usuario: Usuario }>(`${this.base}/auth/me`, body);
+  actualizarMiPerfil(
+    body: { nombre: string; correo?: string; telefono?: string; especialidad?: string },
+  ): Observable<{ message: string; usuario: Usuario; token?: string }> {
+    return this.http.put<{ message: string; usuario: Usuario; token?: string }>(
+      `${this.base}/auth/me`, body,
+    );
   }
 
   // ---- CFG-04 · Tipos de orden y su valor hora ----

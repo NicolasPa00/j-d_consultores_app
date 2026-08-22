@@ -485,3 +485,13 @@
   border-radius: 999px;
   cursor: help;
 }
+
+/* La fila que trajo el aviso de la campanita. Se apaga sola a los pocos
+   segundos: es una señal de "esto es lo que acaba de cambiar", no un estado. */
+.fila--destacada > td {
+  background: color-mix(in srgb, var(--secondary-color, var(--primary-color)) 10%, transparent);
+  transition: background 400ms ease;
+}
+.fila--destacada > td:first-child {
+  box-shadow: inset 3px 0 0 var(--secondary-color, var(--primary-color));
+}
