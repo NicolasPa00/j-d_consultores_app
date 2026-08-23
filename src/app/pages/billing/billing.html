@@ -117,6 +117,14 @@
               <td class="mono">{{ horas(f.total_horas) }}</td>
               <td class="mono money">
                 {{ pesos(f.total_monto) }}
+                <!-- Con viáticos el total deja de ser horas × tarifa: se dice de
+                     qué se compone, o la cifra no cuadra con las horas de al lado. -->
+                @if (f.total_viaticos) {
+                  <span class="detalle-viaticos"
+                        [title]="'Honorarios ' + pesos(f.total_monto - f.total_viaticos) + ' + viáticos ' + pesos(f.total_viaticos)">
+                    incl. {{ pesos(f.total_viaticos) }} de viáticos
+                  </span>
+                }
                 <!-- PRE-02 · Sin tarifa la cuenta saldría en $0 y no se puede
                      generar: se dice aquí, que es donde se mira la cifra. -->
                 @if (f.ordenes_sin_tarifa) {

@@ -14,11 +14,15 @@
  *    un teléfono de tres dígitos) antes de mandarlo al servidor.
  *  - `confianzaMostrada` decide el porcentaje que se enseña mientras el modal
  *    está abierto, que es lo que quita o devuelve el subrayado de baja confianza.
+ *  - `opcionesDeCampo` da la lista de un campo que se ELIGE en vez de escribirse
+ *    (los dos enumerados del formato AT-031 de Bolívar).
  */
+import { MODALIDADES_EJECUCION, OpcionCampo, TIPOS_ACTIVIDAD_BOLIVAR } from '../core/bolivar';
 
 /** Qué clase de dato es el campo, y por tanto qué se puede escribir en él. */
 export type ModoCampo =
   | 'texto'      // libre (razón social, dirección, descripción…)
+  | 'opcion'     // lista cerrada: se elige, no se escribe (ver OPCIONES_POR_CAMPO)
   | 'letras'     // nombres de persona y ciudades: sin números ni símbolos
   | 'digitos'    // identificadores numéricos (cronograma, secuencia)
   | 'nit'        // NIT/NIC: dígitos, con los puntos y el dígito de verificación
@@ -56,6 +60,24 @@ export function confianzaMostrada(campo: CampoRevisable): number {
 /** ¿Hay que marcar el campo como poco fiable? */
 export function bajaConfianza(campo: CampoRevisable): boolean {
   return confianzaMostrada(campo) < UMBRAL_CONFIANZA;
+}
+
+/**
+ * Los campos que NO se escriben: se eligen de una lista cerrada.
+ *
+ * Son los dos enumerados que Bolívar exige en el AT-031. Un desplegable y no un
+ * campo de texto porque la letra acaba marcando una casilla de un formato que se
+ * radica ante la ARL: ahí "capacitacion" escrito a mano no vale, y una letra que
+ * no sea una de las seis el backend la descarta en silencio.
+ */
+export const OPCIONES_POR_CAMPO: Readonly<Record<string, readonly OpcionCampo[]>> = {
+  tipo_servicio_arl: TIPOS_ACTIVIDAD_BOLIVAR,
+  modalidad_ejecucion: MODALIDADES_EJECUCION,
+};
+
+/** Las opciones de un campo de lista cerrada, o vacío si no lo es. */
+export function opcionesDeCampo(key: string): readonly OpcionCampo[] {
+  return OPCIONES_POR_CAMPO[key] ?? [];
 }
 
 /** Letras (con tildes y Ñ), espacios y los signos que aparecen en un nombre. */
@@ -146,6 +168,9 @@ export const MODO_POR_CAMPO: Readonly<Record<string, ModoCampo>> = {
   contacto_sst_nombre: 'letras',
   contacto_sst_telefono: 'telefono',
   contacto_sst_correo: 'correo',
+  tipo_servicio_arl: 'opcion',
+  modalidad_ejecucion: 'opcion',
+  viaticos_valor: 'decimal',
 };
 
 /** El modo de un campo por su clave canónica. */

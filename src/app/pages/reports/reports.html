@@ -596,6 +596,14 @@
         <span class="kpi__label">Profesionales</span>
         <strong class="kpi__value">{{ rep.totales.profesionales }}</strong>
       </div>
+      <!-- Solo cuando hay: en la mayoría de rangos no hay viáticos y un KPI en
+           $0 ocuparía sitio para no decir nada. -->
+      @if (num(rep.totales.viaticos) > 0) {
+        <div class="kpi">
+          <span class="kpi__label">Viáticos</span>
+          <strong class="kpi__value">{{ pesos(rep.totales.viaticos) }}</strong>
+        </div>
+      }
     </div>
 
     <div class="sat-grid">
@@ -609,7 +617,9 @@
                 <span class="barra__fill barra__fill--azul" [style.width]="anchoBarra(num(p.horas), maxHorasProf())"></span>
               </span>
               <span class="barra__valor">{{ num(p.horas) }} h</span>
-              <span class="barra__extra">{{ p.ordenes }} OS</span>
+              <span class="barra__extra">
+                {{ p.ordenes }} OS@if (num(p.viaticos) > 0) { · {{ pesos(p.viaticos) }} viát.}
+              </span>
             </div>
           } @empty {
             <p class="vacio">Sin horas ejecutadas en el rango.</p>

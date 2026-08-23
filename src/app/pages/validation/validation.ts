@@ -9,21 +9,27 @@ import { ExtractedField, ServiceOrder } from '../../data/service-orders';
 import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
-import { ArchivoSoporte, Borrador, CategoriaSoporte, EstadoOrden, TipoOrden, FranjaVisita, HistorialEstado, Ocupacion, Orden, Plantilla, Profesional } from '../../core/models';
+import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, EstadoOrden, TipoOrden, FranjaVisita, HistorialEstado, Ocupacion, Orden, Plantilla, Profesional } from '../../core/models';
 import { aIsoFecha, fechaLocal } from '../../core/fechas';
 import {
-  ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, problemaCampo, tecleoCampo,
+  ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, opcionesDeCampo,
+  problemaCampo, tecleoCampo,
 } from '../../shared/campos-orden';
+import { OpcionCampo, esBolivar } from '../../core/bolivar';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
 interface FormFieldDescriptor {
   label: string;
   field: ExtractedField;
-  type: 'text' | 'textarea' | 'date';
+  type: 'text' | 'textarea' | 'date' | 'select';
   span: 'half' | 'full';
   /** Qué se puede escribir en él: solo letras, solo dígitos, un correo… */
   modo: ModoCampo;
+  /** Solo en `select`: la lista cerrada de la que se elige. */
+  opciones?: readonly OpcionCampo[];
+  /** Sin él la orden no se puede guardar (la modalidad, en Bolívar). */
+  required?: boolean;
 }
 
 /**
@@ -76,6 +82,8 @@ interface ResultadoAsignacion {
   correo: boolean;
   /** CFG-03 · Cuántos formatos se adjuntaron; null si no aplica. */
   formatos: number | null;
+  /** FOR · Lo que hay que revisar de la entrega, si la matriz decidió a ciegas. */
+  avisoEntrega?: string | null;
   /**
    * ASG-02 · false cuando la visita quedó a medio repartir: se guardó el
    * profesional y las franjas marcadas, pero la OS sigue SIN PROGRAMAR y nadie
@@ -221,6 +229,13 @@ export class ValidationComponent implements OnInit, OnDestroy {
   // ---- Modal de verificación de soportes (M7) ----
   protected readonly verifyId = signal<string | null>(null);
   protected readonly supports = signal<ArchivoSoporte[]>([]);
+  /**
+   * SUP · Las casillas que se le pidieron a ESTA orden, tal como las devuelve el
+   * servidor con los soportes. No son siempre las mismas: dependen de la ARL y
+   * del tipo de actividad (una asesoría de Bolívar no lleva registro
+   * fotográfico; una asistencia técnica lleva informe).
+   */
+  protected readonly casillasOrden = signal<CasillaSoporte[]>([]);
   protected readonly loadingSupports = signal(false);
   protected readonly selectedSupportId = signal<string | null>(null);
   /** `blob:` del soporte abierto; solo se incrusta lo que descargó el propio API. */
@@ -406,6 +421,17 @@ export class ValidationComponent implements OnInit, OnDestroy {
                  type: FormFieldDescriptor['type'] = 'text', span: FormFieldDescriptor['span'] = 'half') => {
       if (fld && String(fld.value).trim() !== '') push(clave, label, fld, type, span);
     };
+    /**
+     * Un campo que se ELIGE de una lista cerrada. Se muestra aunque venga vacío:
+     * es justo entonces cuando hay que diligenciarlo.
+     */
+    const opcion = (clave: string, label: string, fld: ExtractedField | undefined, required = false) => {
+      if (!fld) return;
+      rows.push({
+        label, field: fld, type: 'select', span: 'half', modo: 'opcion',
+        opciones: opcionesDeCampo(clave), required,
+      });
+    };
     // Una fecha legible se edita con el selector de fechas; si la IA la escribió
     // en un formato que no se puede leer, se queda como texto para no ocultar
     // lo que decía el documento.
@@ -427,8 +453,22 @@ export class ValidationComponent implements OnInit, OnDestroy {
     push('actividad_economica', 'Actividad Económica', f.actividadEconomica, 'text', 'full');
     opt('tipo_actividad', 'Tipo de Actividad', f.tipoActividad);
     opt('modalidad', 'Modalidad', f.modalidad);
+    // FOR · Los dos enumerados del AT-031, solo en Bolívar. La modalidad es
+    // obligatoria: el AT-028 únicamente vale para actividades presenciales, así
+    // que de ella depende qué formatos recibe el profesional.
+    if (esBolivar(o.arl)) {
+      opcion('tipo_servicio_arl', 'Tipo de Actividad (AT-031)', f.tipoServicioArl);
+      opcion('modalidad_ejecucion', 'Modalidad de ejecución', f.modalidadEjecucion, true);
+    }
     opt('valor_unitario', 'Valor Unitario', f.valorUnitario);
     opt('valor_total', 'Valor Total', f.valorTotal);
+    // Viáticos: siempre visible aunque venga vacío, porque es donde se añaden a
+    // una orden que no los traía. No entra en el valor de cobro por horas: la
+    // cuenta lo cobra como una línea de reembolso aparte.
+    // `toServiceOrder` siempre lo crea, así que en una orden real esto se cumple
+    // y el campo se ve aunque esté vacío; la guarda es por el mock de Informes,
+    // cuyas órdenes no lo traen.
+    if (f.viaticos) push('viaticos_valor', 'Viáticos', f.viaticos);
     optFecha('fecha_orden', 'Fecha de la Orden', f.fechaOrden);
     optFecha('fecha_vencimiento', 'Fecha de Vencimiento', f.fechaVencimiento);
     opt('ciudad_ejecucion', 'Ciudad de Ejecución', f.ciudadEjecucion);
@@ -579,6 +619,11 @@ export class ValidationComponent implements OnInit, OnDestroy {
 
   protected inputMode(item: FormFieldDescriptor): string {
     return inputModeDe(item.modo);
+  }
+
+  /** Un desplegable no se teclea: el valor viene ya limpio de la lista. */
+  protected elegir(item: FormFieldDescriptor, valor: string): void {
+    item.field.value = valor;
   }
 
   /** Buscar reinicia la paginación: el resultado es otra lista. */
@@ -773,6 +818,18 @@ export class ValidationComponent implements OnInit, OnDestroy {
       this.alerts.warning('Revise los datos', invalido);
       return;
     }
+    // FOR · Una orden de Bolívar sin modalidad no se puede guardar: sin ella no
+    // hay forma de saber si le corresponde el AT-028, que la ARL solo admite en
+    // actividades presenciales. El backend también lo exige al materializarla;
+    // aquí se dice antes y con el nombre del campo delante.
+    const faltaObligatorio = this.formFields().find((f) => f.required && !String(f.field.value).trim());
+    if (faltaObligatorio) {
+      this.alerts.warning(
+        'Falta un dato obligatorio',
+        `${faltaObligatorio.label} no puede quedar vacío: de él depende qué formatos de la ARL se le envían al profesional.`,
+      );
+      return;
+    }
     if (current.osId) {
       this.guardarEnLaOrden(current.osId, current);
       return;
@@ -861,6 +918,8 @@ export class ValidationComponent implements OnInit, OnDestroy {
       ['contacto_empresa_nombre', f.contactoEmpresaNombre],
       ['contacto_empresa_cargo', f.contactoEmpresaCargo],
       ['contacto_empresa_telefono', f.contactoEmpresaTelefono],
+      ['tipo_servicio_arl', f.tipoServicioArl], ['modalidad_ejecucion', f.modalidadEjecucion],
+      ['viaticos_valor', f.viaticos],
     ];
     for (const [k, v] of ampliados) if (v) fields[k] = campo(v);
 
@@ -1561,6 +1620,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
               borrador: null,
               correo: r.correo_enviado !== false,
               formatos: r.formatos_generados ?? null,
+              avisoEntrega: r.entrega?.aviso ?? null,
               completa: r.completa !== false,
               faltan: r.faltan_minutos ?? null,
               horasOrden: r.minutos_orden ?? null,
@@ -1639,6 +1699,14 @@ export class ValidationComponent implements OnInit, OnDestroy {
           this.alerts.warning(
             'Orden asignada, pero el correo salió sin formatos',
             `${nombreProf} recibió el correo, aunque la ARL ${order.arl} no tiene formatos configurados y no se adjuntó ningún documento. Créelos en Configuración → Formatos y encuesta y vuelva a enviar la asignación.${franjas}`,
+          );
+        } else if (res.os && res.avisoEntrega) {
+          // FOR · La asignación salió, pero el juego de formatos se decidió con
+          // un dato que falta. Se dice como aviso: el correo ya se envió, así
+          // que corregirlo obliga a reasignar, y eso hay que saberlo ahora.
+          this.alerts.warning(
+            reprograma ? 'Orden reprogramada · revise los formatos' : 'Orden asignada · revise los formatos',
+            `${nombreProf} recibió el correo. ${res.avisoEntrega}${franjas}`,
           );
         } else if (res.os) {
           this.alerts.success(
@@ -1832,6 +1900,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.api.listSupports(order.osId).subscribe({
       next: (r) => {
         this.supports.set(r.data);
+        this.casillasOrden.set(r.casillas ?? []);
         this.loadingSupports.set(false);
         // Abrir el primero ahorra un clic: casi siempre es el acta firmada. Si
         // se entró pulsando un archivo concreto del detalle, manda ese.
@@ -1929,10 +1998,13 @@ export class ValidationComponent implements OnInit, OnDestroy {
   /**
    * Las casillas que se pueden devolver, con el archivo que hay en cada una.
    *
-   * Se listan las tres siempre, tenga archivo o no: "falta la lista de
-   * asistencia" es un motivo de rechazo tan válido como "el acta está sin
-   * firmar", y sin la casilla no habría forma de pedirlo. 'Sin clasificar' solo
-   * aparece si de verdad hay algo ahí.
+   * Se listan TODAS las que esta orden pide, tengan archivo o no: "falta la
+   * lista de asistencia" es un motivo de rechazo tan válido como "el acta está
+   * sin firmar", y sin la casilla no habría forma de pedirlo. Lo que NO se lista
+   * es lo que a esta orden nunca se le pidió — devolverlo dejaría el portal
+   * esperando un documento que el profesional no tiene por qué entregar, y el
+   * servidor lo rechaza igual. 'Sin clasificar' solo aparece si de verdad hay
+   * algo ahí.
    */
   private catalogoRechazo(): CategoriaRechazo[] {
     const conteo = new Map<string, number>();
@@ -1940,14 +2012,27 @@ export class ValidationComponent implements OnInit, OnDestroy {
       const c = s.categoria ?? 'otros';
       conteo.set(c, (conteo.get(c) ?? 0) + 1);
     }
-    const claves: CategoriaSoporte[] = ['acta', 'asistencia', 'evidencias'];
-    if (conteo.get('otros')) claves.push('otros');
-    return claves.map((clave) => ({
-      clave,
-      etiqueta: ETIQUETAS_SOPORTE[clave],
-      archivos: conteo.get(clave) ?? 0,
+    // Sin respuesta del servidor (orden anterior al cambio) se cae a las tres de
+    // siempre, que es justo lo que se le pidió a esa orden en su día.
+    const casillas = this.casillasOrden().length
+      ? this.casillasOrden()
+      : (['acta', 'asistencia', 'evidencias'] as CategoriaSoporte[])
+          .map((clave) => ({ clave, etiqueta: ETIQUETAS_SOPORTE[clave] }));
+    const filas = casillas.map((c) => ({
+      clave: c.clave,
+      etiqueta: c.etiqueta,
+      archivos: conteo.get(c.clave) ?? 0,
       marcada: false,
     }));
+    if (conteo.get('otros')) {
+      filas.push({
+        clave: 'otros' as CategoriaSoporte,
+        etiqueta: ETIQUETAS_SOPORTE['otros'],
+        archivos: conteo.get('otros') ?? 0,
+        marcada: false,
+      });
+    }
+    return filas;
   }
 
   protected toggleRejectCat(clave: string): void {
@@ -2221,6 +2306,7 @@ const ETIQUETAS_SOPORTE: Record<string, string> = {
   acta: 'Acta de visita firmada',
   asistencia: 'Lista de asistencia',
   evidencias: 'Registro fotográfico',
+  informe: 'Informe técnico o de gestión',
   otros: 'Sin clasificar',
 };
 
@@ -2262,6 +2348,9 @@ const CAMPOS_OS: [keyof ServiceOrder['fields'], string][] = [
   ['contactoTelefono', 'contacto_sst_telefono'],
   ['contactoCorreo', 'contacto_sst_correo'],
   ['descripcion', 'descripcion'],
+  ['viaticos', 'viaticos_valor'],
+  ['tipoServicioArl', 'tipo_servicio_arl'],
+  ['modalidadEjecucion', 'modalidad_ejecucion'],
 ];
 
 /**
@@ -2357,6 +2446,9 @@ function toServiceOrder(b: Borrador): ServiceOrder {
       contactoEmpresaNombre: field(m.contacto_empresa_nombre),
       contactoEmpresaCargo: field(m.contacto_empresa_cargo),
       contactoEmpresaTelefono: field(m.contacto_empresa_telefono),
+      viaticos: field(m.viaticos_valor),
+      tipoServicioArl: field(m.tipo_servicio_arl),
+      modalidadEjecucion: field(m.modalidad_ejecucion),
     },
   };
 }

@@ -1,0 +1,882 @@
+# PLAN — Peticiones del cliente · reunión del 22-ago-2026
+
+> **Este archivo es el tablero de esta tanda de trabajo.** `HANDOFF.md` sigue
+> siendo el estado vivo del proyecto entero; aquí vive solo lo que salió de la
+> reunión del 22-ago-2026, fase por fase, para poder aprobar cada una por
+> separado antes de construirla.
+>
+> **Al cerrar una fase:** marcarla en la tabla del §1, anotar en su sección lo
+> que se construyó y las trampas que costaron tiempo, y **volcar el resumen a
+> `HANDOFF.md`** (§3, como una tanda más). Si no llega al HANDOFF, no llega al
+> otro equipo.
+
+---
+
+## 0. Dónde retomar
+
+**Lo siguiente es la FASE 4 (profesional registrado + suplente), §6.** Está
+diseñada y no empezada; la 5 (estado de facturación) va después y es independiente.
+
+Antes de escribir código:
+
+0. 🔴 **Comprobar que están los siete formatos** de
+   `sst_ws/assets/formatos-arl/` que NO se versionaron (`colpatria/ficha-gestion.pdf`,
+   `colpatria/informe-tecnico.docx`, `colmena/prestacion-servicios.pdf`,
+   `colmena/informe-tipo-a.docx`, `colmena/informe-tipo-b.docx`,
+   `colmena/registro-ejecucion.xls`, `colmena/plantilla-presentaciones.pptx`).
+   Sin ellos, asignar una orden de AXA o de Colmena falla con `ENOENT`. Se copian
+   a mano desde `docs/Formatos/`, que tampoco viaja por git.
+1. **Levantar el backend con `npm run dev`** (nunca `npm start`: se queda con el
+   código del momento en que arrancó).
+2. **Las migraciones de las fases 1-3 YA ESTÁN APLICADAS** a la Neon compartida.
+   Están en `sst_ws/db/migraciones/` por si hay que aplicarlas a otra base;
+   `npm run migrate` entero sigue sin poder correrse (reescribe el correo y el
+   celular de la cuenta admin del cliente desde el `.env`).
+3. **Cada `ALTER TABLE … ADD COLUMN` obliga a mirar las VISTAS** que leen esa
+   tabla: Postgres congela su lista de columnas al crearlas. En la fase 3 hubo
+   que rehacer cuatro. Es la trampa 69 del HANDOFF y ya mordió dos veces.
+
+**Lo que hay que llevar al cliente antes de dar por buenas las fases 1-3:**
+
+| # | Qué | Fase |
+|---|---|---|
+| 1 | **La matriz de formatos y soportes, fila a fila** (§4.1). Solo dos filas las dictó él; el resto es propuesta nuestra | F2 |
+| 2 | **El informe de gestión de Bolívar EN BLANCO.** Lo que entregó es un ejemplo con datos reales de otra empresa | F2 |
+| 3 | **Añadir "Asesoría" y "Asistencia Técnica"** al catálogo de tipos de orden, con su valor hora (D-8) | F2 |
+| 4 | **Qué es `Valor Desplazamiento`** en el SIPAB: ¿el total de los otros conceptos, o uno aparte? (D-9) | F3 |
+| 5 | Las decisiones **D-1 a D-5** siguen abiertas | F2 |
+
+**Y lo que nadie ha podido hacer todavía:** ver funcionando las tres fases
+**dentro de la aplicación**. No hay credenciales de administrador para el
+asistente; todo lo verificado lo está por script, contra la BD real y con
+`ROLLBACK`, o mirando los PDF generados.
+
+---
+
+## 1. Las seis peticiones y en qué fase caen
+
+| # | Petición | Fase | Estado | Aprobada por el cliente |
+|---|---|---|---|---|
+| 2 | Tipo de actividad de Bolívar (A/T/C/E/M/O) marcado en el formato | **F1** | ✅ Construida y migrada (22-ago-2026) · falta verla en la app | ⬜ |
+| 4 | Presencial / Virtual obligatorio en las órdenes de Bolívar | **F1** | ✅ Construida y migrada (22-ago-2026) · falta verla en la app | ⬜ |
+| 5 | Qué formatos y qué soportes según ARL, tipo y horas | **F2** | ✅ Construida y migrada (22-ago-2026) · falta verla en la app | ⬜ |
+| 1 | Viáticos opcionales por orden | **F3** | ✅ Construida y migrada (22-ago-2026) · falta verla en la app | ⬜ |
+| 3 | Profesional registrado ante la ARL + suplente | **F4** | ⬜ Sin empezar | ⬜ |
+| 6 | Estado de facturación / cobro de la orden | **F5** | ⬜ Sin empezar | ⬜ |
+
+**Por qué ese orden.** F1 no es una petición pequeña metida delante: la letra del
+tipo de actividad y el presencial/virtual son **los dos datos de los que depende
+la matriz de formatos de Bolívar** (ver §2.2), así que F2 no se puede cerrar sin
+ellos. F3, F4 y F5 son independientes entre sí y de las dos primeras: se pueden
+reordenar o repartir sin coste.
+
+**Tamaño relativo, para negociar el orden con el cliente:**
+
+```
+F1  ██                  pequeña · BD + 2 selects + marcar 2 casillas
+F2  ██████████████████  grande  · toca formatos, correo, soportes y portal
+F3  ████                media   · BD + cuenta de cobro + correo
+F4  ████████            media-grande · afecta a quién le llega TODO
+F5  █████               media   · eje nuevo, independiente del ciclo de la OS
+```
+
+---
+
+## 2. Lo que ya existe y sirve (hallazgos de la revisión)
+
+Antes de diseñar nada se revisaron los formatos nuevos de `docs/Formatos/`, el
+extractor del SIPAB y los assets ya cargados. **Media petición ya está en la
+casa**, y conviene saberlo antes de presupuestar.
+
+### 2.1 El SIPAB de Bolívar ya trae los datos de las peticiones 1 y 2
+
+`services/extraction.service.js` (`SIPAB_HEADERS`, líneas 37-77) **ya lee** estas
+columnas y hoy las tira:
+
+| Columna del SIPAB | Hoy | Valores reales (comprobados en `docs/BasesDatosEjemplo/base_datos_bolivar.xlsx`) |
+|---|---|---|
+| `Tipo Servicio` | va a `metadatos_extraccion.sipab.tipo_servicio` y no se usa | **`"C"`, `"T"`, `"A"`** ← la letra de la petición 2 |
+| `Autoriza Viaticos` | descartada (`null`) | **`"S"` / `"N"`** ← el interruptor de la petición 1 |
+| `Valor Transporte` | descartada | `0`, **`21020`** |
+| `Valor Desplazamiento` | descartada | `0`, **`21020`** |
+| `Valor Alojamiento`, `Valor Alimentacion`, `Valor Tiempo Muerto`, `Valor Material Complementario` | descartadas | `0` en la muestra |
+
+Es decir: en Bolívar **la letra y los viáticos no hay que teclearlos**, hay que
+dejar de tirarlos. Para AXA y Colmena sí se escriben a mano.
+
+### 2.2 El comunicado de Bolívar fija dos reglas que nadie mencionó
+
+`docs/Formatos/Bolivar/CAPACITACIONES/SOLO PARA APLICA COMO GUIA-…COMUNICADO
+ACTUALIZACIÓN AT 031 Y AT 028.pdf` (SNPARL-40035219-2025, obligatorio desde el
+10-sep-2025) dice literalmente:
+
+- **AT-031 → «ACTIVIDADES PRESENCIALES O VIRTUALES»** — va siempre.
+- **AT-028 → «ÚNICAMENTE PARA ACTIVIDADES PRESENCIALES»**.
+
+⚠️ **Esto ata la petición 4 con la 5:** el presencial/virtual no es solo una
+casilla que marcar, **decide si el registro de asistencia AT-028 se adjunta o
+no**. Una capacitación **virtual** de Bolívar no lleva AT-028. Y si no lleva
+AT-028, tampoco tiene sentido pedirle al profesional la lista de asistencia
+firmada como soporte.
+
+El mismo comunicado confirma las seis letras exactamente como las dictó el
+cliente (A Asesoría · T Asistencia Técnica · C Capacitación · E Servicio
+Especializado · M Material · O Otros) y añade, para la tipología "Otros", qué
+radicar según el servicio (salud: AT-031 + AT-028 + informe; medicalizados,
+alimentación y logísticos: solo AT-031).
+
+### 2.3 Casi todos los formatos "nuevos" ya estaban cargados
+
+Se comparó por hash lo que hay en `docs/Formatos/` contra
+`sst_ws/assets/formatos-arl/`:
+
+| Carpeta nueva | Contiene | ¿Está ya en `assets/`? |
+|---|---|---|
+| Bolívar / ASESORÍAS | AT-031 | ✅ es `bolivar/seguimiento.pdf`, byte a byte |
+| Bolívar / ASISTENCIAS TÉCNICAS | AT-031 + `EJEMPLO DE INFORME ARL BOLIVAR_.docx` | AT-031 ✅ · el informe ❌ |
+| Bolívar / CAPACITACIONES | AT-031 + AT-028 + un ejemplo diligenciado + la guía | ✅ los dos (`bolivar/asistencia.pdf` = AT-028) |
+| AXA / ASESORÍAS ≤ 16 | Registro de Asistentes + **Ficha de Gestión técnica** | Asistentes ✅ (`colpatria/asistencia.pdf`) · la ficha ❌ |
+| AXA / ASESORÍAS > 16 | Registro de Asistentes + **Informe Técnico (.docx)** | Asistentes ✅ · el informe ❌ |
+| AXA / CAPACITACIONES | Registro de Asistentes | ✅ |
+| Colmena / ASESORÍA | **Formato de prestación de servicios (PSP-F-007)** + Informe TIPO A o TIPO B (.docx) | ❌ **ninguno** |
+| Colmena / CAPACITACIÓN | PSP-F-007 + **Registro de ejecución (.xls)** + Evaluación + Plantilla de presentaciones (.pptx) | solo la evaluación (otra copia del mismo PSP-F-010) |
+
+**Los tres "Registro de Asistentes" de AXA son el mismo archivo** (md5
+`4fde4f…`) y **los tres AT-031 de Bolívar también** (md5 `e27e9e…`). Lo que
+cambia entre carpetas **no es el formato base, son los documentos que lo
+acompañan**. Eso simplifica mucho F2: no hay que cargar tres versiones de nada.
+
+⚠️ **Colmena cambia de base y hay que hablarlo.** Hoy la app manda para Colmena
+`PSP-F-006 Registro de asistencia` + `PSP-F-010 Evaluación`. Las carpetas nuevas
+**no traen el PSP-F-006** y sí traen el **PSP-F-007 Informe de prestación de
+servicios**, que la plataforma no conoce. Ver decisión D-3 (§8).
+
+### 2.4 Los formatos nuevos, por cómo se rellenan
+
+| Formato | ¿Trae formulario? | Cómo se prediligencia |
+|---|---|---|
+| AXA · Ficha de Gestión técnica | ✅ AcroForm (`nombre`, `nombre 2`… `nombre 23`, `FECHA 2`), 3 páginas | por nombre de campo, mapeando contra el rótulo impreso |
+| Colmena · PSP-F-007 prestación de servicios | ❌ PDF plano, 1 pág. de 887×1148 | por coordenadas (hay que medirlas) |
+| Los `.docx` (informe de Bolívar, informe técnico de AXA, informes A/B de Colmena) | — | **se adjuntan tal cual**; son guiones que el profesional escribe en Word |
+| Colmena · Registro de ejecución `.xls`, plantilla `.pptx` | — | se adjuntan tal cual |
+
+Para medir coordenadas y ver nombres de campo se dejó el script
+**`sst_ws/scripts/inspeccionar-formato.mjs`**:
+
+```bash
+node scripts/inspeccionar-formato.mjs "<formato.pdf>"              # campos + texto
+node scripts/inspeccionar-formato.mjs "<formato.pdf>" --y 700 840  # una franja, con su x
+```
+
+### 2.5 El PSP-F-007 de Colmena tiene una sección de viáticos
+
+Trae un bloque entero **«PARA AUTORIZACIÓN DE GASTOS DE DESPLAZAMIENTO (PERSONA
+QUE VIAJÓ)»**: cédula, nombres, ciudad origen/destino, fecha y hora de viaje,
+horas, alojamiento SÍ/NO y tipo de traslado terrestre/aéreo. La petición 1 no es
+solo una cifra: en Colmena tiene un formato que la respalda. Ver decisión D-9.
+
+---
+
+## 3. FASE 1 · Tipo de actividad de Bolívar + Presencial/Virtual (peticiones 2 y 4)
+
+> ✅ **CONSTRUIDA el 22-ago-2026.** Lo que quedó, archivo por archivo, y lo que
+> falta antes de darla por cerrada, en **§3.1 (al final de esta sección)**.
+
+### Qué pide el cliente
+Que al asignar una orden de Bolívar el formato salga con **la letra del tipo de
+actividad ya marcada** y con **presencial o virtual** también marcado, y que ese
+segundo dato sea **obligatorio en el análisis previo** de la orden.
+
+### Dónde van esas dos marcas
+Las dos están en el **AT-031** (`assets/formatos-arl/bolivar/seguimiento.pdf`),
+como grupos de opción del propio formulario:
+
+| Grupo | Qué es | Widgets (x, y=827 / y=715) | Corresponde a |
+|---|---|---|---|
+| `Group1` | Tipo de Actividad | 165 · 193 · 216 · 243 · 274 · 302 | **A · T · C · E · M · O** (letras impresas en x=159/186/209/237/265/295) |
+| `Group2` | Tipo de Servicio | 489 · 547 | **Presencial · Virtual** (rótulos en x=449 y x=523) |
+| `Group3` | ¿Próxima reunión? | 53 · 97 | SÍ/NO — **se queda en blanco**, es de la sesión |
+
+### 🪤 La trampa que hay que resolver primero
+Los seis botones de `Group1` **comparten el mismo valor de exportación
+(`"Opción1"`)**, y los dos de `Group2` también. Ya estaba documentado en
+`assets/formatos-arl/README.md`, y es la razón por la que hasta hoy estos grupos
+se dejaban sin marcar: `form.getRadioGroup('Group1').select('Opción1')`
+**enciende los seis a la vez**.
+
+**Solución propuesta (A):** no usar la API de grupos. **Dibujar la marca sobre el
+rectángulo del widget elegido** con `pagina.drawText('X', …)`, igual que ya se
+hace en `rellenarPdfPlano()` con los tres formatos planos, y dejar el grupo sin
+valor. Funciona en cualquier visor y no depende de cómo cada lector resuelva un
+grupo ambiguo.
+
+**Alternativa (B):** tocar el `/AS` de cada widget a mano (el elegido a
+`Opción1`, el resto a `Off`) más el `/V` del campo. Es más "correcto" según el
+formato PDF, pero deja el resultado en manos del visor.
+
+→ **Se recomienda A**, y **verificarla imprimiendo un AT-031 real antes de darla
+por buena**: esto se ve o no se ve, no se razona.
+
+### Cambios
+
+**BD** (`sst_ws/db/schema.sql`, idempotente como el resto):
+
+```sql
+ALTER TABLE sst.ordenes_servicio
+  ADD COLUMN IF NOT EXISTS tipo_servicio_arl   CHAR(1),   -- A|T|C|E|M|O
+  ADD COLUMN IF NOT EXISTS modalidad_ejecucion TEXT;      -- PRESENCIAL|VIRTUAL
+ALTER TABLE sst.borradores_extraccion
+  ADD COLUMN IF NOT EXISTS tipo_servicio_arl   CHAR(1),
+  ADD COLUMN IF NOT EXISTS modalidad_ejecucion TEXT;
+```
+
+Con sus `CHECK`. `vw_ordenes_expandidas` es `SELECT o.*`: **añadir** columnas es
+seguro (quitarlas no — ver HANDOFF, tanda 14).
+
+⚠️ **No reutilizar `ordenes_servicio.modalidad`**, que ya existe. Es un campo de
+extracción libre de AXA/Colmena; mezclar ahí un enumerado de dos valores deja el
+histórico sin poder interpretarse. Columna nueva y explícita.
+
+**Backend:**
+- `extraction.service.js`: `'tipo servicio'` pasa de `@tipo_servicio` a campo
+  canónico `tipo_servicio_arl`, con confianza alta. Si la celda trae algo que no
+  es una de las seis letras, el campo se deja **vacío** y el valor crudo se
+  conserva en `metadatos_extraccion` — mismo criterio que las horas cuando la
+  unidad de medida no son HORAS.
+- Confirmación del borrador (`POST /drafts/:id/confirm` y el lote): exigir
+  `modalidad_ejecucion` **cuando la ARL es Bolívar**, igual que hoy se exigen
+  `tipo_orden_id` y la fecha de vencimiento.
+- `orders.routes.js` → `valorEditable()`: admitir los dos campos en `PUT /orders/:id`.
+- `formatos-arl.service.js`: helper `marcarOpcion(pagina, rect)` y los dos mapas
+  letra→índice y modalidad→índice.
+- El catálogo de las seis letras, en **un solo sitio**: `utils/` en el backend con
+  su espejo en `core/` en el frontend, como ya se hace con `personas.js` /
+  `personas.ts`.
+
+**Frontend:**
+- `core/models.ts`: los dos campos en `Orden` y en `Borrador`.
+- `shared/campos-orden.ts`: reglas de los dos campos. Son **selectores**, no
+  texto, y el módulo hoy solo sabe de campos escribibles: hay que ampliarlo.
+- Modal de revisión de `pages/import` y de `pages/validation`: los dos
+  desplegables, el de modalidad obligatorio en Bolívar y bloqueando el guardado
+  si falta.
+
+### Cómo se comprueba
+1. `node scripts/inspeccionar-formato.mjs assets/formatos-arl/bolivar/seguimiento.pdf`
+   → los tres grupos, con el aviso de valores de exportación repetidos.
+2. Generar un AT-031 con cada una de las seis letras y **abrirlo** (Acrobat y un
+   visor de móvil): una sola casilla marcada.
+3. Subir un SIPAB con `Tipo Servicio` en A/T/C y ver la letra ya preseleccionada
+   en la vista previa de Importar.
+
+### 3.1 Lo que quedó construido (22-ago-2026)
+
+**Backend (`sst_ws`):**
+
+| Archivo | Qué cambió |
+|---|---|
+| `src/utils/bolivar.js` | **Nuevo.** Las seis letras y las dos modalidades, en el orden en que están impresas en el AT-031, más sus normalizadores y `esBolivar()`. Espejo de `core/bolivar.ts` |
+| `src/services/gemini.service.js` | `CAMPOS_REVISION` y `CAMPOS_BORRADOR` nuevos. **`CANONICAL_FIELDS` no se tocó** a propósito: es lo que define el esquema de salida de OpenAI, y meter ahí estos dos campos sería pagar tokens por adivinar una letra que el Excel ya trae y que en los PDF de AXA y Colmena ni existe |
+| `src/services/extraction.service.js` | `'tipo servicio'` pasó de `@tipo_servicio` (contexto muerto) a campo canónico. La letra se valida contra las seis: si no encaja, el campo sale **vacío** y el valor crudo se conserva en `sipab.tipo_servicio` |
+| `src/modules/imports/drafts.routes.js` | El borrador acepta corregir los dos campos; `materializarOrden` los escribe en la OS y **rechaza una orden de Bolívar sin modalidad**, con el mismo criterio que el tipo de orden |
+| `src/modules/orders/orders.routes.js` | Los dos campos entran en `CAMPOS_EDITABLES` (`PUT /orders/:id`), normalizados ahí para que una letra inventada no reviente la corrección entera contra el CHECK |
+| `src/services/formatos-arl.service.js` | `marcarOpcion()` y `paginaDelWidget()`; el AT-031 sale con las dos casillas marcadas |
+| `db/schema.sql` + `db/migraciones/2026-08-22-at031-bolivar.sql` | Las dos columnas y sus CHECK |
+| `assets/formatos-arl/README.md` | La nota que decía que los grupos se dejaban sin marcar ya no era verdad |
+
+**Frontend:**
+
+| Archivo | Qué cambió |
+|---|---|
+| `core/bolivar.ts` | **Nuevo.** Espejo del catálogo del backend |
+| `shared/campos-orden.ts` | Modo `'opcion'` y `opcionesDeCampo()`: el módulo solo sabía de campos que se **escriben**, y estos se **eligen** |
+| `core/models.ts`, `data/service-orders.ts` | Los dos campos en `MetadatosExtraccion`, `Orden` y `ServiceOrder['fields']` |
+| `pages/import` (+ `.html`) | Los dos desplegables en el modal de revisión, solo en Bolívar; la modalidad con `required`, que es el mecanismo que ya usaban la fecha de vencimiento y las horas |
+| `pages/validation` (+ `.html`) | Lo mismo en el modal de Órdenes, con el `<select>` deshabilitado fuera del modo edición, y un aviso local antes de guardar |
+
+**Decisiones que se tomaron por el camino:**
+
+1. **El grupo de opción se marca dibujando, no seleccionando.** Era la
+   alternativa (A) del plan y funcionó; ver §3 y el README de `assets/`.
+2. **En el borrador los dos campos van dentro de `metadatos_extraccion`**, no en
+   columnas propias. Es lo que hace la fecha de vencimiento —que tampoco viene en
+   el documento y se escribe a mano— y con ello heredan gratis todo el mecanismo
+   del modal: confianza mostrada, campo obligatorio y aviso. `tipo_orden_id` sí
+   es columna porque no es un campo del formulario, es un id de catálogo.
+3. **`modalidad` (la vieja) no se reutilizó.** Es texto libre extraído de los PDF
+   de AXA y Colmena; el campo nuevo es `modalidad_ejecucion`.
+
+**🪤 La trampa que casi se cuela** (queda anotada como la 69 del HANDOFF):
+`vw_ordenes_expandidas` es `SELECT o.*`, pero **Postgres congela esa lista de
+columnas al CREAR la vista**. Añadir las dos columnas a `ordenes_servicio` no se
+las añadió a la vista, y de esa vista lee `getOrderExpanded()` — que es de donde
+`generateOrderDocuments` saca la orden. El formato habría salido con las casillas
+sin marcar, sin un solo error por ningún lado. La migración rehace la vista.
+
+**Qué se verificó, y cómo:**
+
+| Qué | Cómo |
+|---|---|
+| La equis cae en la casilla correcta en las **seis letras** y en las **dos modalidades** | Se generó un AT-031 por caso y se leyeron las coordenadas del texto con `inspeccionar-formato.mjs`: la marca cae 2 pt a la derecha del borde izquierdo de cada widget (167/195/218/246/276/304 para A-T-C-E-M-O; 491 y 549 para presencial y virtual), y hay **una sola** por grupo |
+| Una orden **sin** los datos, o con basura (`Z`, `HIBRIDA`), no marca nada | Mismo banco de pruebas |
+| El resto del AT-031 sigue saliendo igual | Se releyeron los campos del PDF generado: empresa, NIT, ciudad, horario, aliado y profesional, intactos |
+| La letra se extrae del SIPAB real | `base_datos_bolivar.xlsx` (31 órdenes): `C` 24, `T` 6, `A` 1. Los dos SIPAB de ejemplo: `T` 4, `C` 6 |
+| `modalidad_ejecucion` nace vacía y con confianza 0 | Mismo script |
+| Sin regresiones en la lectura del SIPAB | `scripts/verificar-sipab.mjs` → **todo OK** en las 21 comprobaciones |
+| El camino REAL, contra la Neon | Orden de prueba insertada dentro de una transacción con **ROLLBACK**: leída por `getOrderExpanded()` sale `letra=T modalidad=VIRTUAL`, y el AT-031 generado a partir de ella trae la equis en la casilla de la T (x=195) y en la de Virtual (x=549) |
+| Los CHECK rechazan lo que no es del catálogo | Mismo ROLLBACK: `'Z'` y `'HIBRIDA'` rebotan contra sus dos constraints |
+| Compila | `ng build` y `tsc --noEmit` limpios en los dos repos |
+
+**❌ Lo que falta para cerrar la fase:**
+
+1. ✅ ~~Aplicar `db/migraciones/2026-08-22-at031-bolivar.sql`~~ — **aplicado el
+   22-ago-2026** contra la Neon compartida (solo ese archivo, no
+   `npm run migrate`). Las 13 órdenes existentes quedaron con los dos campos en
+   NULL, que es lo esperado.
+2. ❌ **Verlo dentro de la aplicación** (sigue sin haber credenciales de
+   administrador): importar un SIPAB, ver la letra preseleccionada, que no deje
+   guardar sin modalidad, asignar y **abrir el AT-031 que llega al correo**.
+3. ⚪ **El AT-028 se sigue enviando también en las órdenes virtuales**, que es lo
+   que el comunicado de la ARL prohíbe. Es F2 (la matriz de formatos), no un
+   olvido: aquí solo se construyó el dato del que esa regla depende.
+4. ⚪ Las órdenes de Bolívar **ya existentes** quedan con los dos campos en NULL y
+   su AT-031 sale como salía. Se completan editando cada orden.
+
+---
+
+## 4. FASE 2 · Matriz de formatos y soportes (petición 5)
+
+> ✅ **CONSTRUIDA el 22-ago-2026.** Lo que quedó y lo que falta, en **§4.6**.
+
+Es la fase grande. El cliente lo resumió bien: **lo que se manda depende de la
+ARL, del tipo de actividad y de las horas**, y **de eso depende también lo que el
+profesional tiene que devolver**.
+
+### 4.1 La matriz, tal como queda con lo revisado
+
+Formatos que salen **adjuntos en el correo de asignación**:
+
+| ARL | Tipo | Condición | Formatos a enviar |
+|---|---|---|---|
+| **Bolívar** | Asesoría (A) | — | AT-031 |
+| **Bolívar** | Asistencia técnica (T) | — | AT-031 + **guion de informe de gestión** (.docx) |
+| **Bolívar** | Capacitación (C) | **presencial** | AT-031 + **AT-028** |
+| **Bolívar** | Capacitación (C) | **virtual** | AT-031 *(sin AT-028 — lo prohíbe el comunicado)* |
+| **Bolívar** | E · M · O | — | AT-031 (+ AT-028 e informe en «servicios de salud», ver D-2) |
+| **AXA Colpatria** | Asesoría | **horas ≤ 16** | Registro de Asistentes + **Ficha de Gestión técnica** |
+| **AXA Colpatria** | Asesoría | **horas > 16** | Registro de Asistentes + **Informe Técnico** (.docx) |
+| **AXA Colpatria** | Capacitación | — | Registro de Asistentes *(+ el «formato adicional» de D-1)* |
+| **Colmena** | Asesoría | — | **PSP-F-007** + Informe **TIPO A o TIPO B** (.docx, ver D-3) |
+| **Colmena** | Capacitación | — | **PSP-F-007** + Registro de ejecución (.xls) + Evaluación PSP-F-010 + plantilla .pptx |
+
+Soportes que el profesional **debe devolver** por el portal (M6):
+
+| ARL | Tipo | acta | asistencia | evidencias (foto) | informe |
+|---|---|---|---|---|---|
+| Bolívar | Asesoría | ✅ | ✅ | **❌** | ❌ |
+| Bolívar | Asistencia técnica | ✅ | ✅ | **❌** | ✅ |
+| Bolívar | Capacitación presencial | ✅ | ✅ | ✅ | ❌ |
+| Bolívar | Capacitación virtual | ✅ | ❌ | ✅ | ❌ |
+| AXA | Asesoría ≤ 16 h | ✅ | ✅ | ✅ | ✅ *(ficha)* |
+| AXA | Asesoría > 16 h | ✅ | ✅ | ✅ | ✅ |
+| AXA | Capacitación | ✅ | ✅ | ✅ | ❌ |
+| Colmena | Asesoría | ✅ | ✅ | ✅ | ✅ |
+| Colmena | Capacitación | ✅ | ✅ | ✅ | ❌ |
+
+> Las dos filas de Bolívar sin registro fotográfico salen textualmente de lo que
+> dijo el cliente («en asesoría y asistencia técnica no se necesitan registros
+> fotográficos»). El resto de la tabla de soportes **es una propuesta derivada de
+> los formatos**, no algo que el cliente dictara: hay que validarla fila a fila
+> con él (D-5).
+
+### 4.2 Cómo se construye
+
+**Hoy** `formatos-arl.service.js` tiene una lista plana por ARL:
+
+```js
+const CATALOGO = { bolivar:['asistencia','seguimiento'], colmena:[…], colpatria:['asistencia'] };
+```
+
+Eso no da para la matriz de arriba. **Propuesta: reglas declarativas**, no `if`s
+repartidos por el servicio:
+
+```js
+// Qué documento es cada cosa, y cómo se rellena.
+const FORMATOS = {
+  at031:          { archivo:'bolivar/seguimiento.pdf', modo:'acroform', campos:camposSeguimientoBolivar, alcance:'sesion' },
+  at028:          { archivo:'bolivar/asistencia.pdf',  modo:'acroform', campos:camposAsistenciaBolivar,  alcance:'sesion' },
+  informeBolivar: { archivo:'bolivar/informe-gestion.docx', modo:'adjunto', alcance:'orden' },
+  fichaAxa:       { archivo:'colpatria/ficha-gestion.pdf',  modo:'acroform', campos:camposFichaAxa, alcance:'orden' },
+  // …
+};
+
+// Qué se manda en cada caso. Se evalúa de arriba abajo; la primera que encaja gana.
+const REGLAS = [
+  { arl:'bolivar',   tipo:'CAPACITACION', modalidad:'PRESENCIAL', formatos:['at031','at028'],          soportes:['acta','asistencia','evidencias'] },
+  { arl:'bolivar',   tipo:'CAPACITACION',                          formatos:['at031'],                  soportes:['acta','evidencias'] },
+  { arl:'bolivar',   tipo:'ASISTENCIA_TECNICA',                    formatos:['at031','informeBolivar'], soportes:['acta','asistencia','informe'] },
+  { arl:'colpatria', tipo:'ASESORIA', horasHasta:16,               formatos:['asistentesAxa','fichaAxa'],    soportes:[…] },
+  { arl:'colpatria', tipo:'ASESORIA',                              formatos:['asistentesAxa','informeAxa'],  soportes:[…] },
+  // …
+];
+```
+
+Con un **respaldo explícito por ARL** para el caso que no encaje en ninguna
+regla. Es la lección de Colmena: una ARL sin formatos configurados manda un
+correo **sin un solo PDF** y el profesional se queda sin nada (HANDOFF §3,
+"Pendiente", punto 1).
+
+### 4.3 Dos conceptos nuevos que hay que introducir
+
+**1. `modo: 'adjunto'`** — documentos que se mandan **sin tocar** (`.docx`,
+`.xls`, `.pptx`). No son formatos con casillas: son guiones que el profesional
+escribe. Hoy el servicio solo sabe abrir PDFs y escribirles encima.
+
+→ Recomendación: **adjuntarlos tal cual en la primera entrega.** Prediligenciar
+el encabezado del informe de Bolívar (razón social, cronograma-secuencia, NIT,
+ciudad, mes) es una mejora posterior y de bajo riesgo, porque ahí son párrafos y
+no casillas — muy distinto del `.docx` de Colmena que hubo que abandonar porque
+Word recolocaba el texto dentro de una tabla (README de `assets/`).
+
+**2. `alcance: 'sesion' | 'orden'`** — hoy **todo** se emite **una vez por
+franja**. Un informe de gestión o una ficha técnica es **uno por orden**: una
+asistencia técnica de tres días entrega UN informe, no tres. Sin esta distinción
+una orden larga llega con una pila de guiones repetidos, y además revienta antes
+el tope de `MAXIMO_JUEGOS = 8`.
+
+### 4.4 Los soportes dejan de ser fijos ⚠️ (la parte delicada)
+
+Hoy `services/soportes.service.js` declara **tres casillas fijas para todas las
+órdenes** (`acta`, `asistencia`, `evidencias`) y el portal exige las tres. Con la
+matriz, las casillas pasan a **derivarse de la misma regla**, y "hay que mandarlas
+todas juntas" pasa a significar "todas las de ESTA orden".
+
+Se propone además una casilla **`informe`** (hoy esos PDF caen en `otros`).
+
+Lo que toca, todo junto, porque es una cadena y romper un eslabón se nota tarde:
+
+- `services/soportes.service.js` — `CATEGORIAS_SOPORTE` deja de ser constante.
+- `modules/public/public.routes.js` — qué casillas abre el portal.
+- `pages/portal` — el formulario del profesional y su validación de "todas".
+- `orders.routes.js:894` (`POST /:id/reject`) y la columna `soportes_rechazados`
+  — el rechazo por documento tiene que seguir cuadrando con las casillas de la orden.
+- El visor del administrador en `/ordenes`.
+- **Las órdenes que ya existen:** las que están en curso se emitieron con las tres
+  casillas de siempre. La regla debe aplicarse **al asignar** y guardarse en la
+  orden, no recalcularse cada vez que alguien abre el portal — si no, cambiar una
+  regla mañana rompe un enlace ya enviado.
+  → Propuesta: `ordenes_servicio.soportes_requeridos TEXT[]`, congelado al asignar.
+
+### 4.5 Assets nuevos
+
+Copiar a `sst_ws/assets/formatos-arl/` con nombre plano — sin espacios ni tildes:
+los `.docx` de Colmena tienen el nombre roto en disco (`PRESTACIαN`):
+
+```
+bolivar/informe-gestion.docx          ← EJEMPLO DE INFORME ARL BOLIVAR_.docx
+colpatria/ficha-gestion.pdf           ← E. Formato Ficha de Gestión técnica.pdf
+colpatria/informe-tecnico.docx        ← D. Formato Informe Técnico.docx
+colmena/prestacion-servicios.pdf      ← 01. Formato de prestación de servicios (PSP-F-007)
+colmena/informe-tipo-a.docx
+colmena/informe-tipo-b.docx
+colmena/registro-ejecucion.xls        ← 04. REGISTRO DE EJECUCION…
+colmena/plantilla-presentaciones.pptx ← 07. Plantilla de presentaciones Corporativas
+```
+
+Y **actualizar `assets/formatos-arl/README.md`** con la tabla nueva y con la nota
+de cómo se marcan ahora los grupos de opción de Bolívar — hoy dice que se dejan
+sin marcar a propósito, y a partir de F1 deja de ser verdad.
+
+⚠️ El `EJEMPLO DE INFORME ARL BOLIVAR_.docx` y el
+`EJEMPLO REAL- AT031-ALTERNATIVAS ORTOPEDICAS…pdf` **traen datos reales de
+clientes** (empresa, NIT, nombre y número de licencia del profesional). El
+ejemplo del AT-031 no sube a `assets/`: es material de referencia, no un formato
+en blanco. El informe de Bolívar hay que **vaciarlo** antes de versionarlo, igual
+que se hizo en su día con el `.docx` de Colmena.
+
+### Cómo se comprueba
+Una orden de prueba por cada fila de la matriz (10 filas), asignada con
+`PORT=4010 EMAIL_DRIVER=console SMTP_HOST="" npm run dev`, comprobando **la lista
+de adjuntos del correo** y **las casillas que abre el portal** con el token.
+
+### 4.6 Lo que quedó construido (22-ago-2026)
+
+**La matriz vive en `sst_ws/src/services/entrega-arl.service.js`** (nuevo): las
+REGLAS (qué formatos y qué soportes) separadas del REGISTRO de
+`formatos-arl.service.js` (dónde está cada archivo y cómo se rellena). El portal
+público y la asignación necesitan lo primero sin arrastrar `pdf-lib`.
+
+| Archivo | Qué cambió |
+|---|---|
+| `services/entrega-arl.service.js` | **Nuevo.** `REGLAS`, `RESPALDO` por ARL, `entregaDeLaOrden()` y `avisoDeEntrega()` |
+| `services/formatos-arl.service.js` | El `CATALOGO` plano por ARL pasó a `FORMATOS`, un registro con `modo` y `alcance`; entran los modos `adjunto` y el alcance `orden`; se añaden `camposFichaAxa` y las casillas del PSP-F-007 |
+| `services/soportes.service.js` | Casilla **`informe`** nueva y `casillasDeOrden()`: `CATEGORIAS_SOPORTE` deja de ser lo que se le pide a una orden y pasa a ser el catálogo |
+| `modules/public/public.routes.js` | El portal abre solo las casillas de la orden, y rechaza tanto lo que falta como **lo que sobra** |
+| `modules/orders/orders.routes.js` | La asignación **congela** `soportes_requeridos`; el rechazo por documento no admite una casilla que a esa orden nunca se le pidió; `GET /:id/supports` devuelve las casillas; el correo dice qué hay que devolver y lleva la nota de la regla |
+| `middleware/upload.js` | Campo `informe` |
+| `db/…` + `db/migraciones/2026-08-22-soportes-por-orden.sql` | `soportes_requeridos TEXT[]` |
+| `assets/formatos-arl/` | 7 archivos nuevos + README rehecho |
+| `pages/validation`, `core/models.ts`, `core/api.service.ts` | La casilla `informe`, el rechazo acotado a las casillas de la orden y el aviso de la matriz al asignar |
+
+**Los dos conceptos nuevos**, tal como se diseñaron en §4.3: `modo: 'adjunto'`
+(los `.docx`/`.xls`/`.pptx` se mandan sin tocar) y `alcance: 'sesion' | 'orden'`
+(comprobado: una capacitación de Colmena en 2 franjas emite el `.xls` y el
+`.pptx` **una vez** y los tres PDF de sesión **dos**).
+
+#### Decisiones que hubo que tomar
+
+1. **El informe de gestión de Bolívar NO se versiona.** Lo único que entregó el
+   cliente es un ejemplo **ya diligenciado**: razón social y NIT de una empresa
+   real, y el nombre y el número de licencia del profesional que lo firmó.
+   Distribuirlo a otros profesionales es repartir datos de un tercero. La regla
+   se lo pide igualmente como **soporte** y el correo se lo advierte con una
+   nota. **Hay que pedir el formato en blanco.**
+2. **El tipo de actividad se resuelve por tres fuentes, en este orden:** la letra
+   del SIPAB (Bolívar) → el tipo de orden del catálogo → **el título de la
+   actividad**. La tercera no estaba en el plan y hubo que añadirla: ver el punto
+   siguiente.
+3. **La fecha del PSP-F-007 se deja a mano** (casillas de 33 pt con el rótulo
+   dentro) y la casilla PERSONA NATURAL/JURÍDICA no se marca (es una declaración
+   legal que la plataforma no sabe). Documentado en el README de `assets/`.
+4. **El corte de AXA incluye el 16** (`≤ 16` → ficha de gestión).
+
+#### 🔴 Lo que la matriz destapó: el catálogo de tipos de orden no sirve para clasificar
+
+El catálogo real de CFG-04 en la Neon es **Capacitación · Inducción · Sanidad**.
+No tiene **Asesoría** ni **Asistencia Técnica**, que son justo las dos categorías
+sobre las que el cliente pidió que se decidan los formatos de AXA y de Colmena.
+
+Es lógico: ese catálogo lo edita el cliente para **cobrar**, no para clasificar.
+Pero con él solo, **el corte de 16 horas de AXA no podría dispararse nunca** y
+las asesorías de Colmena no se distinguirían de las capacitaciones.
+
+Solución aplicada: usar el **título de la actividad** como tercera fuente. AXA lo
+abrevia con un prefijo de tres letras (`ASE …`, `CAP …`) y Colmena lo escribe con
+todas sus letras. Comprobado contra las 13 órdenes reales de la base. Cuando el
+tipo sale del título, la respuesta de la asignación **lo advierte** para que quien
+asigna lo compruebe.
+
+Aun así, **la solución de fondo es del cliente** (decisión D-8): añadir "Asesoría"
+y "Asistencia Técnica" al catálogo, con su valor hora. Sin eso se sigue
+dependiendo de cómo la ARL redacte el título.
+
+#### Qué se verificó, y cómo
+
+| Qué | Cómo |
+|---|---|
+| Las **13 combinaciones** de la matriz | Banco de casos sobre `generarFormatosArl`: cada una devuelve los formatos y los soportes de su fila, incluidos los dos respaldos |
+| El AT-028 **no** sale en una capacitación virtual | Mismo banco (es la regla del comunicado de la ARL) |
+| `alcance: 'orden'` no se repite por franja | Colmena capacitación en 2 franjas → 8 adjuntos, no 10 |
+| El **PSP-F-007** y la **ficha de AXA** quedan bien rellenados | **Renderizados a imagen y mirados**, no solo extraído el texto (ver la trampa de abajo). Empresa, NIT, ciudad, horario, nº de orden, actividad, unidades, razón social y profesional, cada uno en su celda; las tres páginas de la ficha en su sitio |
+| El portal pide y exige lo correcto | Contra la Neon con **ROLLBACK**: capacitación virtual pide `[acta, evidencias]`, acepta la entrega completa, rechaza la incompleta, y **rechaza también lo que sobra** (`asistencia`, `informe`) |
+| Una asistencia técnica exige informe | Mismo ROLLBACK |
+| Las órdenes **ya asignadas** no se rompen | Con `soportes_requeridos` NULL el portal sigue pidiendo las tres de siempre |
+| El fallback por título | Con el catálogo real: `ASE …` → asesoría, `CAP …` → capacitación, "Asesoría en…" de Colmena → asesoría |
+| Compila | `ng build` y `tsc --noEmit` limpios en los dos repos |
+
+#### ❌ Lo que falta para cerrar la fase
+
+1. ✅ ~~Aplicar `db/migraciones/2026-08-22-soportes-por-orden.sql`~~ — **aplicado**
+   (columna + la vista `vw_ordenes_expandidas` rehecha).
+2. 🔴 **Conseguir el informe de gestión de Bolívar en blanco** (punto 1 de las
+   decisiones).
+3. 🔴 **Las decisiones D-1 a D-5 siguen abiertas** y la matriz se construyó con
+   los valores por defecto del §8. Validar con el cliente **fila a fila**.
+4. ❌ **Verlo dentro de la aplicación**: asignar una orden por cada ARL y abrir el
+   correo y el portal.
+5. ⚪ El `.pptx` de Colmena pesa 1,6 MB y va en cada capacitación. Si molesta, se
+   quita de la regla en una línea.
+6. 🔴 **Los siete formatos nuevos NO se versionaron** (decisión del equipo,
+   22-ago-2026). El código los abre en ejecución, así que hay que copiarlos a
+   mano en cada máquina y en el despliegue. Ver §0, punto 0.
+
+---
+
+## 5. FASE 3 · Viáticos (petición 1)
+
+> ✅ **CONSTRUIDA el 22-ago-2026.** Lo que quedó y lo que falta, en **§5.1**.
+
+### Qué pide el cliente
+Que una orden pueda llevar, **opcionalmente y aparte de las horas**, un valor de
+viáticos para el profesional cuando la ejecución es fuera de la ciudad.
+
+### De dónde sale el dato
+- **Bolívar:** del propio SIPAB (§2.1). `Autoriza Viaticos = S` enciende el campo
+  y las seis columnas de valor dan el desglose.
+- **AXA y Colmena:** a mano.
+- **Colmena** además tiene dónde justificarlos: la sección de gastos de
+  desplazamiento del PSP-F-007 (§2.5).
+
+### Cambios
+
+**BD:**
+
+```sql
+ALTER TABLE sst.ordenes_servicio
+  ADD COLUMN IF NOT EXISTS viaticos_valor       NUMERIC(14,2),   -- NULL = la orden no lleva
+  ADD COLUMN IF NOT EXISTS viaticos_detalle     JSONB,           -- {transporte, alojamiento, alimentacion, otros}
+  ADD COLUMN IF NOT EXISTS viaticos_observacion TEXT;
+```
+
+⚠️ **No meterlos en `valor_cobro_total`**: es una columna **generada**
+(`horas × valor_hora_cobro`) y es la que hace trazable la tarifa. Los viáticos son
+un reembolso, no honorarios: van en su propia columna y se suman al final.
+
+**Cuenta de cobro (M9):** `precuenta_items` gana `viaticos NUMERIC(14,2)` y
+`precuentas` un `total_viaticos`, de modo que el documento diga
+`honorarios + viáticos = total`. Es lo que permite decirle al profesional qué es
+pago y qué es reembolso, y lo que la contadora necesita para tratarlos distinto.
+
+**Correo de asignación:** una fila más en la tabla de datos cuando la orden lleva
+viáticos, con el valor. El profesional tiene que saberlo **antes** de viajar.
+
+**Informes:** columna en RPT-05 (Horas) y en la exportación a Excel.
+
+**Frontend:** campo opcional en el modal de revisión y en la edición de la orden;
+el valor en el detalle; el desglose en `/precuentas`.
+
+### Cómo se comprueba
+Subir el SIPAB de ejemplo (tiene filas con `S` y con `N`), ver la orden con el
+valor ya puesto, aceptar sus soportes y comprobar que la cuenta de cobro sale con
+las dos líneas separadas.
+
+### 5.1 Lo que quedó construido (22-ago-2026)
+
+| Archivo | Qué cambió |
+|---|---|
+| `services/extraction.service.js` | Las **siete columnas de viáticos** del SIPAB dejan de descartarse; `viaticosDelSipab()` decide el valor y `valorPesos()` lee los importes con formato colombiano |
+| `services/gemini.service.js` | `viaticos_valor` entra en `CAMPOS_REVISION` (corregible en la vista previa, no se le pide a la IA) |
+| `modules/imports/drafts.routes.js` | La OS nace con `viaticos_valor` y con el **desglose** (`viaticos_detalle`) |
+| `modules/orders/orders.routes.js` | Editable en `PUT /orders/:id`; el correo de asignación anuncia los viáticos |
+| `modules/billing/billing.service.js` | Honorarios y viáticos por separado hasta el total; el correo de la cuenta los desglosa y las líneas por orden dicen cuál los lleva |
+| `services/pdf.service.js` | El PDF de la cuenta desglosa Honorarios / Viáticos / Total **solo cuando los hay** |
+| `modules/reports/reports.routes.js` | RPT-05 devuelve viáticos por profesional, por ARL y en el total |
+| `modules/public/public.routes.js` | El enlace del profesional lleva el desglose: es la cifra que va a aceptar |
+| `utils/formato.js` | `enPesosCO()` sube aquí desde el módulo de facturación — ahora lo usa también el correo de asignación |
+| `db/…` + `db/migraciones/2026-08-22-viaticos.sql` | 3 columnas en la orden, 2 en la cuenta, y **4 vistas rehechas** |
+| Frontend | Campo en los dos modales de revisión (con la pista de dónde salió la cifra), desglose en `/precuentas`, en `/precuenta` (público) y KPI en Informes → Horas |
+
+#### Decisiones que hubo que tomar
+
+1. **Los viáticos NO entran en `valor_cobro_total`.** Es una columna GENERADA
+   (`horas × valor_hora_cobro`) y es lo que hace trazable la tarifa; meter ahí un
+   reembolso dejaría un "valor hora" implícito que nadie pactó. Van en su propia
+   columna y se suman al final. Comprobado en la prueba: con 4 h a $15.000 y
+   $21.020 de viáticos, `valor_cobro_total` sigue siendo $60.000.
+2. **`precuentas.total_monto` SÍ los incluye** — es lo que se le paga y lo que el
+   profesional acepta— y `total_viaticos` guarda el reparto. Las cuentas ya
+   emitidas quedan en 0 y su total no cambia.
+3. **La guarda de "cuenta en cero" mira los HONORARIOS**, no el total. Lo que
+   protege es que no se emita una cuenta por un trabajo sin tarifa; una cuenta
+   que solo reembolsara gastos tiene el mismo problema de fondo.
+4. **No se suman las siete columnas del SIPAB** — ver el punto siguiente.
+
+#### 🔴 Lo que destapó el dato real: dos columnas traen el mismo dinero
+
+En el export real solo **una de las 31 órdenes** tiene `Autoriza Viaticos = S`, y
+en esa fila `Valor Transporte` y `Valor Desplazamiento` traen **el mismo valor**
+(21.020 los dos). Sumar las columnas habría **duplicado el reembolso** a 42.040.
+
+Lo implementado: se suman los cuatro conceptos de gasto (transporte, alojamiento,
+alimentación, tiempo muerto) y `desplazamiento` se guarda en el desglose como
+dato; si esos cuatro vienen en cero, se toma el desplazamiento como total.
+`Valor Material Complementario` no entra: es material de la actividad, no un
+gasto de desplazamiento.
+
+Con un solo caso real no se puede confirmar la semántica. **Hay que preguntarle a
+la ARL o al cliente si `Valor Desplazamiento` es el total de los otros o un
+concepto aparte** (se suma a la decisión D-9). Mientras tanto: el desglose queda
+guardado, la cifra es editable a mano, y la vista previa enseña de dónde salió.
+
+#### Qué se verificó, y cómo
+
+| Qué | Cómo |
+|---|---|
+| El parser de moneda | 8 casos: `21.020`, `21020`, `21020,00`, `1.234.567`, `21.02` (→ 21,02, no 2102), vacío, `0`, `$ 21.020,50` |
+| La extracción del SIPAB real | 31 órdenes: 1 autorizada → $21.020 **(no 42.040)**; las 30 con `N` salen con el campo **vacío**, no en cero |
+| Sin regresiones en el SIPAB | `scripts/verificar-sipab.mjs` → todo OK |
+| Que no contaminen la tarifa | Contra la Neon con **ROLLBACK**: `valor_cobro_total` = $60.000 con $21.020 de viáticos encima |
+| La cadena entera | Mismo ROLLBACK, del Excel al PDF: SIPAB → orden → cuenta ($60.000 + $21.020 = $81.020) → PDF |
+| El PDF | **Renderizado y mirado.** Se corrigió por el camino: la etiqueta "Viáticos (reembolso):" medía más que el hueco hasta la columna de cifras y **se comía el valor** |
+| Una cuenta SIN viáticos no cambia | El PDF sigue con solo "Total de horas" y "Total a pagar" |
+| Las 4 vistas ven las columnas | `vw_ordenes_expandidas`, `vw_horas_ejecutadas`, `vw_horas_por_cobrar` y `vw_precuentas`, comprobadas una a una tras migrar |
+| Compila | `ng build` y `tsc --noEmit` limpios en los dos repos |
+
+#### ❌ Lo que falta para cerrar la fase
+
+1. ✅ ~~Aplicar `db/migraciones/2026-08-22-viaticos.sql`~~ — **aplicado**.
+2. 🔴 **D-9 sigue abierta y ahora tiene dos partes**: si los viáticos se le cobran
+   también a la ARL (eso es F5), y qué significa exactamente `Valor
+   Desplazamiento` en el SIPAB.
+3. ❌ **Verlo dentro de la aplicación.**
+4. ⚪ Las órdenes **ya cargadas** de Bolívar no se rellenan solas: habría que
+   reprocesar su SIPAB. Se escriben a mano desde el detalle.
+
+---
+
+## 6. FASE 4 · Profesional registrado ante la ARL y suplente (petición 3)
+
+### Qué pide el cliente
+Bolívar solo acepta profesionales **registrados y aprobados** en su base. No todos
+los de JD&D lo están, así que se hace un puente: **los formatos salen a nombre de
+uno registrado, pero va otro**, y toda la información (correo, enlace de soportes)
+debe llegarle **al que va**.
+
+### 6.1 Distinguir a los registrados
+
+Tabla nueva, porque el registro es **por ARL**, caduca y tiene un código que
+asigna la propia ARL:
+
+```sql
+CREATE TABLE IF NOT EXISTS sst.profesionales_arl (
+  profesional_id  UUID NOT NULL REFERENCES sst.profesionales(id) ON DELETE CASCADE,
+  arl_id          UUID NOT NULL REFERENCES sst.arls(id),
+  registrado      BOOLEAN NOT NULL DEFAULT TRUE,
+  codigo_registro TEXT,
+  vigente_hasta   DATE,
+  observacion     TEXT,
+  PRIMARY KEY (profesional_id, arl_id)
+);
+```
+
+En `/profesionales`: sección "Registro ante las ARL" en la ficha, y una columna de
+pills en el listado.
+
+### 6.2 El suplente — cómo hacerlo con el menor riesgo
+
+La tentación es que `profesional_asignado_id` pase a ser el registrado y añadir un
+"ejecutor" al lado. **No hay que hacerlo así.** Sobre `profesional_asignado_id`
+están construidas la agenda y las ocupaciones, `vw_horas_ejecutadas`,
+`vw_profesionales_desempeno`, la cuenta de cobro, la encuesta, `/orders/mias`, el
+panel del profesional y la campanita. Invertir su significado obliga a repasarlo
+todo, y a equivocarse en algún sitio.
+
+**Propuesta: dejar `profesional_asignado_id` como está — es QUIEN EJECUTA — y
+añadir un campo para el papel:**
+
+```sql
+ALTER TABLE sst.ordenes_servicio
+  ADD COLUMN IF NOT EXISTS profesional_formatos_id UUID REFERENCES sst.profesionales(id);
+  -- NULL = los formatos salen a nombre de quien ejecuta (el caso normal)
+```
+
+Con eso **el cambio se concentra en dos sitios**: `formatos-arl.service.js`, que
+recibe otro profesional para el nombre impreso, y el modal de asignación. Todo lo
+demás — agenda, correo, `.ics`, portal, cobro, encuesta, desempeño — sigue
+apuntando a quien de verdad hace el trabajo, **que es exactamente lo que el
+cliente pidió**.
+
+| Cosa | A nombre de |
+|---|---|
+| Nombre impreso en los formatos (AT-031 "Participantes ARL", asistencia…) | el **registrado** |
+| Correo de asignación, `.ics`, enlace de soportes, campanita | el **suplente / ejecutor** |
+| Agenda, choques de franjas y disponibilidad | el **ejecutor** (es quien no puede estar en dos sitios) |
+| Cuenta de cobro y desempeño | el **ejecutor** (ver D-6) |
+
+**En la asignación:** el selector principal (quien ejecuta) sigue listando a todos
+los activos, y un **"Los formatos salen a nombre de otro profesional"** abre un
+segundo selector que **solo lista registrados ante esa ARL**. Si el ejecutor ya
+está registrado, el segundo no hace falta.
+
+**El correo tiene que decirlo**, o el profesional abre un AT-031 con otro nombre y
+llama por teléfono: *«Los formatos salen a nombre de X porque es quien está
+registrado ante Bolívar; la visita la ejecutas tú.»*
+
+### Cómo se comprueba
+Asignar una orden de Bolívar a un no registrado, con un registrado en los
+formatos: el correo llega al ejecutor, el AT-031 sale con el nombre del
+registrado, la franja ocupa la agenda del ejecutor y la cuenta de cobro es suya.
+
+---
+
+## 7. FASE 5 · Estado de facturación / cobro (petición 6)
+
+### 🔁 Contexto que hay que llevar a la reunión
+Esto **es la pestaña Cartera (RPT-06)**, que se retiró entera el **19-ago-2026 a
+petición del propio cliente** porque "no la usaban": se dieron de baja
+`GET /reports/cartera`, `PATCH /orders/:id/cartera`, la vista `vw_cartera` y las
+columnas `facturado_en`, `validado_arl_en` y `cartera_marcada_por` (HANDOFF §3,
+tanda 14). Entonces se comprobó que **estaban vacías en las 40 órdenes**, así que
+no se perdió nada.
+
+No es "deshacer" aquello: **lo de antes era un reporte, lo que ahora se pide es un
+estado de la orden**, con su historial y su marcado. Conviene decirlo, para que el
+cliente sepa por qué se quitó y por qué vuelve distinto.
+
+### El diseño
+**No tocar el enum `sst.estado_orden`.** El ciclo operativo
+(SIN PROGRAMAR → PROGRAMADA → EJECUTADA → FINALIZADA) está protegido por una
+matriz de transiciones y por el trigger de EST-06, y la facturación es un **eje
+independiente**: una orden FINALIZADA puede estar sin facturar, radicada o pagada.
+Meterlo en el mismo enum obliga a un producto cartesiano de estados y a rehacer la
+matriz entera.
+
+```sql
+CREATE TYPE sst.estado_cobro AS ENUM ('NO FACTURADA','RADICADA','APROBADA','FACTURADA','PAGADA');
+ALTER TABLE sst.ordenes_servicio
+  ADD COLUMN IF NOT EXISTS estado_cobro sst.estado_cobro NOT NULL DEFAULT 'NO FACTURADA',
+  ADD COLUMN IF NOT EXISTS cobro_numero_factura  TEXT,
+  ADD COLUMN IF NOT EXISTS cobro_observacion     TEXT,
+  ADD COLUMN IF NOT EXISTS cobro_actualizado_en  TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS cobro_actualizado_por UUID REFERENCES sst.usuarios(id) ON DELETE SET NULL;
+```
+
+Más `sst.historial_cobro_orden`, espejo de `historial_estados_orden`: el cliente
+va a preguntar quién marcó qué y cuándo, y una fecha suelta no lo responde.
+
+Los estados concretos son **decisión del cliente** (D-7). El eje solo se mueve a
+partir de FINALIZADA.
+
+**Dónde se ve y se toca:**
+- `/ordenes`: pill y columna nuevas, filtro por estado de cobro, cambio desde el
+  detalle.
+- **Marcado en lote** (`PATCH /orders/cobro` con una lista de ids): la facturación
+  se radica por paquetes; marcar cuarenta órdenes de una en una no lo va a usar
+  nadie, y la funcionalidad se muere igual que se murió la Cartera.
+- `/informes`: pestaña **Cobro**, con el pendiente por ARL y su exportación.
+- **Permisos:** el `contador` tiene que poder moverlo. Hoy casi todo en
+  `orders.routes.js` es `requireRole('admin')`.
+
+---
+
+## 8. Decisiones pendientes ⚠️
+
+Ninguna bloquea empezar; todas cambian el resultado.
+
+| # | Fase | Decisión | Quién | Propuesta por defecto |
+|---|---|---|---|---|
+| **D-1** | F2 | **AXA · capacitaciones:** el cliente dijo «únicamente se manda asistencia **y un formato adicional**», pero la carpeta trae **un solo archivo**. ¿Cuál es el adicional? | cliente | mandar solo el Registro de Asistentes hasta que llegue el otro |
+| **D-2** | F2 | **Bolívar · letras E, M, O:** el comunicado da reglas por tipo de servicio (salud → AT-031 + AT-028 + informe; medicalizados / alimentación / logísticos → solo AT-031), pero la letra no distingue entre ellos. ¿Se pregunta, o van todas con AT-031 a secas? | cliente | AT-031 solo, y avisar en la asignación |
+| **D-3** | F2 | **Colmena:** las carpetas nuevas no traen el **PSP-F-006 (registro de asistencia)** que la app manda hoy, y sí un **PSP-F-007** que no conocemos. ¿El PSP-F-006 se retira o convive? Y en asesoría, ¿informe **TIPO A o TIPO B**, y qué los distingue? | cliente | mantener el PSP-F-006 y **añadir** el PSP-F-007; preguntar por A/B antes de construir |
+| **D-4** | F2 | **AXA · corte de 16:** la carpeta dice «16 **unidades**», no horas. En órdenes que no se miden en horas, ¿contra qué se compara? | cliente | `horas_asignadas ≤ 16`, y avisar si la orden no está medida en horas |
+| **D-5** | F2 | **La tabla de soportes de §4.1** solo está dictada por el cliente en las dos filas de Bolívar; el resto es propuesta nuestra | cliente | validarla fila a fila antes de construir |
+| **D-6** | F4 | **Con suplente, ¿a quién se le paga y a quién califica la encuesta?** | cliente | al **ejecutor**: hizo el trabajo, y es a quien vio el cliente final |
+| **D-7** | F5 | **Qué estados de cobro** quiere exactamente, y si el eje arranca en EJECUTADA o en FINALIZADA | cliente | NO FACTURADA → RADICADA → APROBADA → FACTURADA → PAGADA, desde FINALIZADA |
+| **D-8** | F1 | **La letra de Bolívar y el catálogo `tipos_orden` (CFG-04)** son hoy dos cosas: la letra tiene 6 valores y el catálogo tiene 3 (Capacitación, Asesoría, Inspección). ¿Se cruzan? | equipo + cliente | conviven; la letra **preselecciona** el tipo, y `tipos_orden` gana **"Asistencia Técnica"** para que `T` tenga destino y F2 pueda enrutar |
+| **D-9** | F3 | Los viáticos, ¿los paga JD&D al profesional, los cobra a la ARL, o ambas? De ahí sale si van solo en la cuenta de cobro, solo en la facturación (F5) o en las dos | cliente | ambas: la ARL los autoriza y JD&D los traslada |
+
+---
+
+## 9. Riesgos y trampas a tener presentes
+
+1. **El `--watch`.** `npm start` en `sst_ws` sirve el código del momento en que
+   arrancó. Para desarrollar, **siempre `npm run dev`**. Y matar la instancia
+   temporal de `:4010` deja a `:4000`/`:4001` sirviendo código viejo.
+2. **`vw_ordenes_expandidas` es `SELECT o.*`.** Añadir columnas es seguro; para
+   quitar alguna hay que soltar la vista **antes** y recrearla después, en el
+   mismo `schema.sql`.
+3. **Nunca `npm run seed:demo`** (hace TRUNCATE), y `npm run migrate` entero
+   **reescribe el correo y el celular de la cuenta admin del cliente** con lo que
+   haya en el `.env`. Aplicar solo el DDL que toca.
+4. **Datos reales.** El `.env` apunta a una Neon y a un Gmail reales. Probar sobre
+   órdenes desechables propias y borrarlas al terminar.
+5. **Los ejemplos diligenciados llevan nombres, cédulas y firmas de personas
+   reales.** No se versionan (`docs/OrdenesEjemplo/` y `docs/BasesDatosEjemplo/`
+   ya están fuera de git a propósito). El informe de Bolívar hay que vaciarlo
+   antes de meterlo en `assets/`.
+6. **F2 toca el portal público**, que es lo único que ve un profesional en campo
+   desde el móvil. Un fallo ahí no lo reporta nadie hasta que la orden se cae.
+7. **Deuda de pruebas heredada:** el asistente no tiene credenciales de
+   administrador, así que buena parte de las últimas tandas no se ha visto
+   funcionar dentro de la app (HANDOFF §3, "Deuda de pruebas"). Todo lo de este
+   plan **hay que verlo en la aplicación**, no solo compilar.

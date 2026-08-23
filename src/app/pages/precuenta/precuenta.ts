@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, PLATFORM_ID, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -96,6 +96,18 @@ export class PrecuentaComponent implements OnInit {
   }
 
   // ---- Presentación ----
+  /**
+   * Parte del total que es reembolso de viáticos. 0 en la mayoría de cuentas.
+   *
+   * Se calcula aquí y no en la plantilla porque el backend manda `total_monto`
+   * ya sumado: los honorarios son la resta, y hacerla en el HTML repartiría la
+   * misma regla por dos sitios.
+   */
+  protected readonly viaticos = computed(() => Number(this.info()?.total_viaticos) || 0);
+  protected readonly honorarios = computed(
+    () => (Number(this.info()?.total_monto) || 0) - this.viaticos(),
+  );
+
   protected pesos(v: string | number | null | undefined): string {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency', currency: 'COP', maximumFractionDigits: 0,

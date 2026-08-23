@@ -437,6 +437,26 @@
                     [(ngModel)]="item.field.value"
                     [name]="item.label"
                   />
+                } @else if (item.type === 'select') {
+                  <!-- Lista cerrada (los dos enumerados del AT-031 de Bolívar):
+                       se elige, no se teclea. Fuera del modo edición se
+                       deshabilita, que es como un <select> queda de solo lectura
+                       (no admite `readonly`). -->
+                  <select
+                    class="form-control"
+                    [disabled]="!editMode()"
+                    [class.form-control--error]="editMode() && item.required && !item.field.value"
+                    [value]="item.field.value"
+                    (change)="elegir(item, $any($event.target).value)"
+                    [name]="item.label"
+                  >
+                    <option value="">Elegir…</option>
+                    @for (op of item.opciones; track op.valor) {
+                      <option [value]="op.valor" [selected]="op.valor === item.field.value">
+                        {{ op.etiqueta }}
+                      </option>
+                    }
+                  </select>
                 } @else {
                   <input
                     class="form-control"

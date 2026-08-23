@@ -48,3 +48,13 @@ Thumbs.db
 # estas dos carpetas se copian a mano entre equipos. Ver HANDOFF.md §2.
 /docs/OrdenesEjemplo/
 /docs/BasesDatosEjemplo/
+
+# docs/Formatos: lo que entregó el cliente el 22-ago-2026 con los formatos de
+# cada ARL. NO viaja por git — es material de referencia (y dos de sus archivos
+# son ejemplos diligenciados con datos reales de una empresa y la licencia de un
+# profesional). Se pasa a mano entre equipos, igual que las otras dos carpetas.
+#
+# Ojo: los formatos que la aplicación NECESITA para funcionar son otros y sí
+# están versionados, en `sst_ws/assets/formatos-arl/` — ahí van solo los que
+# están EN BLANCO, que son formularios públicos de la ARL.
+/docs/Formatos/

@@ -8,8 +8,10 @@ import { mensajeError, revisarArchivo } from '../../core/errores';
 import { Borrador, CampoExtraido, HojaImportada, MetadatosExtraccion, TipoOrden } from '../../core/models';
 import { aIsoFecha } from '../../core/fechas';
 import {
-  ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, problemaCampo, tecleoCampo,
+  ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, opcionesDeCampo,
+  problemaCampo, tecleoCampo,
 } from '../../shared/campos-orden';
+import { OpcionCampo, esBolivar } from '../../core/bolivar';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
@@ -19,10 +21,12 @@ interface PreviewField {
   label: string;
   value: string;
   confidence: number;
-  type: 'text' | 'textarea' | 'date';
+  type: 'text' | 'textarea' | 'date' | 'select';
   span: 'half' | 'full';
   /** Qué se puede escribir en él (solo letras, solo números, correo…). */
   modo: ModoCampo;
+  /** Solo en `select`: la lista cerrada de la que se elige. */
+  opciones?: readonly OpcionCampo[];
   /**
    * Valor tal como lo leyó la IA. Es lo que permite saber que quien revisa ya
    * corrigió el campo y retirarle el aviso de baja confianza en el acto.
@@ -847,6 +851,11 @@ export class ImportComponent implements OnInit, OnDestroy {
     return inputModeDe(item.modo);
   }
 
+  /** Un desplegable no se teclea: el valor viene ya limpio de la lista. */
+  protected elegir(item: PreviewField, valor: string): void {
+    item.value = valor;
+  }
+
   /** IMP-03 · Persiste las correcciones manuales del borrador (confianza → 100%). */
   protected saveDetail(): void {
     const order = this.detailOrder();
@@ -993,8 +1002,8 @@ export class ImportComponent implements OnInit, OnDestroy {
       const resto = faltantes.length > 3 ? ` y ${faltantes.length - 3} más` : '';
       this.alerts.warning(
         'Faltan datos obligatorios',
-        `${faltantes.length} orden(es) están incompletas (fecha de vencimiento u horas): ${nombres}${resto}. ` +
-        'Ábralas con el lápiz y diligéncielo antes de guardar.',
+        `${faltantes.length} orden(es) están incompletas (${this.nombresFaltantes(faltantes[0])}…): ` +
+        `${nombres}${resto}. Ábralas con el lápiz y diligéncielo antes de guardar.`,
       );
       return;
     }
@@ -1117,7 +1126,7 @@ const conf = (c?: CampoExtraido): number => Math.round(Number(c?.confidence ?? 0
  * Los campos que ninguna ARL comparte (`opt`) solo aparecen si traen valor:
  * ninguna orden llega con el set completo (ver cobertura por ARL en 04-pipeline-ia.md).
  */
-function buildFields(m: MetadatosExtraccion): PreviewField[] {
+function buildFields(m: MetadatosExtraccion, arl: string | null): PreviewField[] {
   const rows: PreviewField[] = [];
 
   const push = (
@@ -1143,6 +1152,19 @@ function buildFields(m: MetadatosExtraccion): PreviewField[] {
   const opt = (key: string, label: string, c: CampoExtraido | undefined, span: PreviewField['span'] = 'half') => {
     if (text(c)) push(key, label, c, span);
   };
+  /**
+   * Un campo que se ELIGE de una lista cerrada. Se muestra siempre, tenga valor
+   * o no: es justamente cuando está vacío cuando hay que diligenciarlo.
+   */
+  const pushOpcion = (key: string, label: string, c: CampoExtraido | undefined): PreviewField => {
+    const value = text(c);
+    const fila: PreviewField = {
+      key, label, value, original: value, confidence: conf(c),
+      span: 'half', type: 'select', modo: 'opcion', opciones: opcionesDeCampo(key),
+    };
+    rows.push(fila);
+    return fila;
+  };
 
   // Identidad: numero_orden (AXA/Colmena) o cronograma+secuencia (Bolívar). Son excluyentes.
   opt('numero_orden', 'Número de Orden', m.numero_orden);
@@ -1166,8 +1188,26 @@ function buildFields(m: MetadatosExtraccion): PreviewField[] {
   push('actividad_economica', 'Actividad Económica', m.actividad_economica, 'full');
   opt('tipo_actividad', 'Tipo de Actividad', m.tipo_actividad);
   opt('modalidad', 'Modalidad', m.modalidad);
+  // FOR · Los dos enumerados del AT-031, solo en Bolívar: en AXA y Colmena no
+  // existen y un desplegable vacío en cada orden sería ruido.
+  if (esBolivar(arl)) {
+    pushOpcion('tipo_servicio_arl', 'Tipo de Actividad (AT-031)', m.tipo_servicio_arl);
+    const modalidad = pushOpcion('modalidad_ejecucion', 'Modalidad de ejecución', m.modalidad_ejecucion);
+    // Obligatoria: de ella depende qué formatos recibe el profesional. El AT-028
+    // solo vale para actividades presenciales, así que no se puede adivinar.
+    modalidad.required = true;
+    modalidad.requiredHint =
+      'Campo obligatorio — el documento no lo dice y de él depende qué formatos de Bolívar se envían ' +
+      '(el AT-028 solo vale para actividades presenciales).';
+  }
   opt('valor_unitario', 'Valor Unitario', m.valor_unitario);
   opt('valor_total', 'Valor Total', m.valor_total);
+  // Viáticos: SIEMPRE visible, tenga valor o no. Es opcional, pero si solo
+  // apareciera cuando el documento lo trae no habría forma de añadirlo a una
+  // orden de AXA o Colmena, donde nunca viene.
+  push('viaticos_valor', 'Viáticos', m.viaticos_valor);
+  const viat = rows[rows.length - 1];
+  viat.hint = pistaViaticos(m.sipab);
   // Fecha real → selector de fecha; si la IA la escribió en un formato que no se
   // puede leer, se deja como texto para no perder de vista lo que decía el documento.
   if (text(m.fecha_orden)) {
@@ -1190,6 +1230,25 @@ function buildFields(m: MetadatosExtraccion): PreviewField[] {
   push('descripcion', 'Descripción', m.descripcion, 'full', 'textarea');
 
   return rows;
+}
+
+/**
+ * De dónde salió la cifra de viáticos, o por qué está vacía.
+ *
+ * Sin esto, quien revisa ve un número y no sabe si lo puso el sistema o alguien
+ * a mano — y en Bolívar la ARL puede haberlos denegado expresamente, que es un
+ * dato distinto de "no se sabe".
+ */
+function pistaViaticos(sipab: MetadatosExtraccion['sipab']): string | undefined {
+  const v = sipab?.viaticos;
+  if (!v) return 'Opcional. Se diligencia cuando la orden se ejecuta fuera de la ciudad.';
+  if (!v.autoriza) return 'El documento dice que la ARL NO autoriza viáticos para esta orden.';
+  const partes = Object.entries(v.detalle || {})
+    .filter(([, monto]) => Number(monto) > 0)
+    .map(([concepto, monto]) => `${concepto.replace(/_/g, ' ')} ${Number(monto).toLocaleString('es-CO')}`);
+  return partes.length
+    ? `Según el documento: ${partes.join(' · ')}.`
+    : 'La ARL autoriza viáticos pero el documento no trae los valores.';
 }
 
 /**
@@ -1228,7 +1287,7 @@ function toPreview(b: Borrador, lote: LoteCargado): PreviewOrder {
     sourceRow: m.source_row != null ? Number(m.source_row) : null,
     tipoOrdenId: b.tipo_orden_id ?? null,
     lote,
-    fields: buildFields(m),
+    fields: buildFields(m, b.arl_nombre ?? null),
   };
 }
 

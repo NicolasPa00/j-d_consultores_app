@@ -76,6 +76,12 @@ export interface ServiceOrder {
     contactoEmpresaNombre?: ExtractedField;
     contactoEmpresaCargo?: ExtractedField;
     contactoEmpresaTelefono?: ExtractedField;
+    // FOR · Los dos enumerados del AT-031 de Bolívar (ver `core/bolivar.ts`).
+    // Solo se enseñan en esa ARL: en AXA y Colmena no existen.
+    tipoServicioArl?: ExtractedField;
+    modalidadEjecucion?: ExtractedField;
+    /** Viáticos de la orden, en pesos. Opcional: la mayoría no los lleva. */
+    viaticos?: ExtractedField;
   };
 }
 

@@ -70,6 +70,18 @@
           <span class="totales__label">Total de horas</span>
           <strong class="totales__value">{{ horas(info()?.total_horas) }}</strong>
         </div>
+        <!-- Con viáticos el total no es horas × tarifa. El profesional tiene que
+             poder cuadrar la cifra ANTES de aceptarla: es lo que firma. -->
+        @if (viaticos() > 0) {
+          <div class="totales__item">
+            <span class="totales__label">Honorarios</span>
+            <strong class="totales__value">{{ pesos(honorarios()) }}</strong>
+          </div>
+          <div class="totales__item">
+            <span class="totales__label">Viáticos (reembolso)</span>
+            <strong class="totales__value">{{ pesos(viaticos()) }}</strong>
+          </div>
+        }
         <div class="totales__item totales__item--money">
           <span class="totales__label">Total a pagar</span>
           <strong class="totales__value">{{ pesos(info()?.total_monto) }}</strong>

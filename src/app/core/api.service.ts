@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from './config';
-import { ArchivoSoporte, Arl, Borrador, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, Usuario, Vista } from './models';
+import { ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, Usuario, Vista } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -72,6 +72,21 @@ type RespuestaAsignacion = Wrap<Orden> & {
   /** Minutos que faltan por repartir; solo viene cuando `completa` es false. */
   faltan_minutos?: number;
   minutos_orden?: number;
+  /**
+   * FOR/SUP · Qué decidió la matriz de la ARL para esta orden: con qué tipo de
+   * actividad la clasificó, qué formatos salieron y qué soportes se le pedirán
+   * de vuelta al profesional.
+   *
+   * `aviso` solo llega cuando la regla tuvo que decidir con un dato incompleto
+   * (sin tipo de actividad, sin la letra del AT-031, sin horas). Es el único
+   * momento en que alguien puede corregirlo antes de que el profesional ejecute.
+   */
+  entrega?: {
+    tipo_actividad: string | null;
+    formatos: string[];
+    soportes: string[];
+    aviso: string | null;
+  };
 };
 
 /**
@@ -175,8 +190,12 @@ export class ApiService {
 
   // ---- Verificación y cierre (M7) ----
   /** VER-01 · Soportes firmados que subió el profesional para una OS. */
-  listSupports(orderId: string): Observable<Wrap<ArchivoSoporte[]>> {
-    return this.http.get<Wrap<ArchivoSoporte[]>>(`${this.base}/orders/${orderId}/supports`);
+  listSupports(orderId: string): Observable<Wrap<ArchivoSoporte[]> & { casillas: CasillaSoporte[] }> {
+    // `casillas` son las que se le pidieron a ESTA orden (dependen de la ARL y
+    // del tipo de actividad), no el catálogo completo.
+    return this.http.get<Wrap<ArchivoSoporte[]> & { casillas: CasillaSoporte[] }>(
+      `${this.base}/orders/${orderId}/supports`,
+    );
   }
   /**
    * VER-01 · Contenido de un soporte para verlo EN LÍNEA. El endpoint exige

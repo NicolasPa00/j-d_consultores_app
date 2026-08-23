@@ -99,6 +99,21 @@ export interface MetadatosExtraccion {
   contacto_sst_telefono?: CampoExtraido;
   contacto_sst_correo?: CampoExtraido;
   descripcion?: CampoExtraido;
+  /**
+   * FOR · Los dos enumerados del AT-031 de Bolívar (ver `core/bolivar.ts`).
+   *
+   * No se le piden a la IA: la letra la trae el SIPAB en su propia columna y la
+   * modalidad no está en ningún documento —la escribe quien revisa, y es
+   * obligatoria en Bolívar porque de ella depende qué formatos se envían—. Por
+   * eso no cuentan para `overall_confidence`.
+   */
+  tipo_servicio_arl?: CampoExtraido;
+  modalidad_ejecucion?: CampoExtraido;
+  /**
+   * Viáticos de la orden. Opcional: la mayoría no los lleva. En Bolívar sale de
+   * las columnas del SIPAB; en AXA y Colmena se escribe a mano.
+   */
+  viaticos_valor?: CampoExtraido;
   overall_confidence?: number;
   engine?: string;
   /** IA-03: confianza (0-100) de la clasificación de ARL por contenido. */
@@ -113,6 +128,12 @@ export interface MetadatosExtraccion {
    */
   sipab?: {
     unidad_medida?: string | null;
+    /** Desglose de viáticos del SIPAB y si la ARL los autorizó. */
+    viaticos?: {
+      autoriza: boolean;
+      valor: number;
+      detalle: Record<string, number>;
+    };
     tipo_servicio?: string | null;
     nro_trabajadores?: string | null;
     hora_programada?: string | null;
@@ -206,8 +227,20 @@ export type EstadoOrden =
   | 'EN VERIFICACIÓN' | 'CANCELADA';
 
 /** M6 · Soporte firmado subido por el profesional desde el enlace público. */
-/** Casilla del portal en la que el profesional subió el soporte (SUP-02). */
-export type CategoriaSoporte = 'acta' | 'asistencia' | 'evidencias' | 'otros';
+/**
+ * Casilla del portal en la que el profesional subió el soporte (SUP-02).
+ *
+ * `informe` se añadió en ago-2026: lo piden las asistencias técnicas de Bolívar
+ * y las asesorías de AXA y Colmena. **No todas las órdenes piden todas**: cuáles
+ * lleva cada una lo decide la regla de su ARL y viaja con la orden.
+ */
+export type CategoriaSoporte = 'acta' | 'asistencia' | 'evidencias' | 'informe' | 'otros';
+
+/** Una casilla de soportes tal como la nombra el servidor. */
+export interface CasillaSoporte {
+  clave: CategoriaSoporte;
+  etiqueta: string;
+}
 
 export interface ArchivoSoporte {
   id: string;
@@ -378,9 +411,10 @@ export interface ReporteVencidas {
 export interface ReporteHoras {
   desde: string;
   hasta: string;
-  totales: { ordenes: number; horas: string | number; profesionales: number };
-  por_profesional: { profesional_id?: string | null; profesional_nombre: string; ordenes: number; horas: string | number }[];
-  por_arl: { arl_nombre: string; ordenes: number; horas: string | number }[];
+  /** `viaticos` es dinero de REEMBOLSO, no horas: va aparte, nunca sumado. */
+  totales: { ordenes: number; horas: string | number; viaticos?: string | number; profesionales: number };
+  por_profesional: { profesional_id?: string | null; profesional_nombre: string; ordenes: number; horas: string | number; viaticos?: string | number }[];
+  por_arl: { arl_nombre: string; ordenes: number; horas: string | number; viaticos?: string | number }[];
   por_mes: { mes: string; ordenes: number; horas: string | number }[];
 }
 
@@ -403,6 +437,11 @@ export interface CuentaDelMes {
   profesional_nombre: string;
   total_horas: number;
   total_monto: number;
+  /**
+   * Cuánto del total son VIÁTICOS (reembolso), no honorarios. 0 en la inmensa
+   * mayoría de meses. `total_monto - total_viaticos` son los honorarios.
+   */
+  total_viaticos?: number;
   total_ordenes: number;
   /** Órdenes que quedarían valoradas en $0: bloquean la generación. */
   ordenes_sin_tarifa: number;
@@ -449,6 +488,8 @@ export interface Precuenta {
   periodo: string;
   total_horas: string | number;
   total_monto: string | number;
+  /** Parte del total que es reembolso de viáticos; 0 si la cuenta no lleva. */
+  total_viaticos?: string | number;
   total_ordenes?: number;
   estado: EstadoPrecuenta;
   observaciones?: string | null;
@@ -502,6 +543,8 @@ export interface PrecuentaPublica {
   profesional_nombre: string;
   total_horas: string | number;
   total_monto: string | number;
+  /** Parte del total que es reembolso de viáticos; 0 si la cuenta no lleva. */
+  total_viaticos?: string | number;
   total_ordenes: number;
   estado: EstadoPrecuenta;
   observaciones?: string | null;
@@ -630,6 +673,23 @@ export interface Orden {
   /** horas × valor hora, calculado por la BD. */
   valor_cobro_total?: string | number | null;
   modalidad?: string | null;
+  // ---- FOR · Los dos enumerados del AT-031 de Bolívar (`core/bolivar.ts`) ----
+  /** Letra del tipo de actividad: A, T, C, E, M u O. La trae el SIPAB. */
+  tipo_servicio_arl?: string | null;
+  /** PRESENCIAL o VIRTUAL. Obligatorio en Bolívar: decide qué formatos se envían. */
+  modalidad_ejecucion?: string | null;
+  // ---- Viáticos (ago-2026) ----
+  /**
+   * Valor aparte de las horas, para las órdenes que se ejecutan fuera de la
+   * ciudad. NULL = la orden no lleva viáticos, que es el caso normal.
+   *
+   * NO está dentro de `valor_cobro_total` (que es horas × valor hora): es un
+   * reembolso, no honorarios, y la cuenta de cobro los cobra en líneas separadas.
+   */
+  viaticos_valor?: string | number | null;
+  /** Desglose tal como venía del documento (transporte, alojamiento…). */
+  viaticos_detalle?: Record<string, number> | null;
+  viaticos_observacion?: string | null;
   horas_asignadas?: number;
   valor_unitario?: number | null;
   valor_total?: number | null;

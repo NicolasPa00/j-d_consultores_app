@@ -133,6 +133,17 @@
   color: var(--success);
 }
 
+/* Parte del total que es reembolso de viáticos, no honorarios. Informativo, no
+   una alerta: se distingue de `.sin-tarifa` en el color por eso mismo. */
+.detalle-viaticos {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: help;
+}
+
 /* PRE-02 · Marca la fila que no se puede cobrar todavía. */
 .sin-tarifa {
   display: inline-block;

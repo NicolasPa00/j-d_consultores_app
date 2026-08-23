@@ -5,7 +5,72 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 21-ago-2026 (tanda 18) — **la app cambió de logo**.
+> **Última actualización:** 22-ago-2026 — **tanda nueva: fases 1, 2 y 3
+> construidas.**
+>
+> 🔴 **ANTES DE DESPLEGAR O DE PROBAR EN OTRA MÁQUINA: faltan siete formatos.**
+> Se decidió no versionarlos, y **el código de la fase 2 los abre en ejecución**,
+> así que asignar una orden de **AXA Colpatria** o de **Colmena** falla con
+> `ENOENT` hasta que estén. Bolívar funciona: sus dos formatos sí están en git.
+> Se copian a mano desde `docs/Formatos/` (que tampoco viaja) a
+> `sst_ws/assets/formatos-arl/`; los nombres exactos y de dónde sale cada uno
+> están en la nota del principio de `sst_ws/assets/formatos-arl/README.md`.
+> No están en `.gitignore` a propósito: aparecen como archivos sin rastrear para
+> que se vea que faltan.
+>
+> **Fase 3 · las órdenes pueden llevar viáticos.** Opcional, aparte de las horas,
+> para lo que se ejecuta fuera de la ciudad. En Bolívar **no hay que teclearlos**:
+> el SIPAB los trae en siete columnas que se descartaban. Van a la cuenta de
+> cobro como línea SEPARADA de los honorarios —el correo, el PDF y el enlace del
+> profesional desglosan `honorarios + viáticos = total`— y **no entran en
+> `valor_cobro_total`**, que es la columna generada que hace trazable la tarifa.
+> ⚠️ En el export real, `Valor Transporte` y `Valor Desplazamiento` traen **el
+> mismo dinero**, así que NO se suman las columnas: ver
+> `docs/plan-peticiones-22-ago-2026.md` §5.1. Migración
+> `2026-08-22-viaticos.sql` aplicada (**rehace cuatro vistas**).
+>
+> **Fase 2 · lo que se manda y lo que se pide dependen ahora de la ARL.** Una
+> asesoría de Bolívar ya no lleva registro de asistencia; una capacitación
+> **virtual** no lleva AT-028 (lo prohíbe el comunicado de la ARL); una asesoría
+> de AXA de más de 16 horas lleva informe técnico y la de menos, ficha de
+> gestión; una asistencia técnica exige informe. Y **de la misma regla salen las
+> casillas del portal**: `sst.ordenes_servicio.soportes_requeridos` se congela al
+> asignar y el portal deja de pedir siempre las mismas tres. La matriz vive en
+> `sst_ws/src/services/entrega-arl.service.js`; los 7 assets nuevos, en
+> `assets/formatos-arl/` con su README rehecho. Migración
+> `2026-08-22-soportes-por-orden.sql` **ya aplicada**.
+>
+> 🔴 **Dos cosas de la fase 2 necesitan al cliente:** falta el **informe de
+> gestión de Bolívar en blanco** (lo único que entregó es un ejemplo con datos
+> reales de otra empresa, así que no se versiona), y el **catálogo de tipos de
+> orden no tiene "Asesoría"** — sin ella el corte de 16 h de AXA solo funciona
+> porque se dedujo del título de la orden. Detalle en
+> `docs/plan-peticiones-22-ago-2026.md` §4.6.
+>
+> **Fase 1 · el AT-031 sale marcado.** El AT-031 de Bolívar sale con **el tipo de actividad
+> (A/T/C/E/M/O) y el presencial/virtual ya marcados**: la letra la trae el propio
+> SIPAB —se leía y se tiraba— y la modalidad es ahora obligatoria al revisar la
+> orden. La trampa era que **los seis botones del grupo comparten el mismo valor
+> de exportación**, así que seleccionarlos por valor los encendía todos; se
+> marcan dibujando sobre el widget (trampa 70). La migración
+> `sst_ws/db/migraciones/2026-08-22-at031-bolivar.sql` **ya está aplicada** a la
+> Neon compartida: dos columnas nulables, sus CHECK y —esto era lo que faltaba—
+> **rehacer `vw_ordenes_expandidas`**, que congela su `SELECT o.*` al crearse y
+> sin lo cual el formato habría salido sin marcar y sin un solo error (trampa
+>   69). Falta **verlo dentro de la aplicación**. Detalle en
+>   `docs/plan-peticiones-22-ago-2026.md` §3.1.
+>
+> De la reunión con el cliente del 22-ago-2026 salieron **seis
+> peticiones** (viáticos, tipo de actividad de Bolívar, profesional registrado y
+> suplente, presencial/virtual, matriz de formatos por ARL y estado de
+> facturación). Están mapeadas y repartidas en cinco fases en
+> **`docs/plan-peticiones-22-ago-2026.md`**, que es el tablero de esa tanda:
+> ahí van el estado de cada petición, las nueve decisiones pendientes con el
+> cliente y los hallazgos de la revisión. **Al cerrar cada fase hay que volcar
+> su resumen aquí, en §3, como una tanda más.** Nada de eso está construido
+> todavía.
+>
+> **Tanda 18 (21-ago-2026) — la app cambió de logo.**
 > El cliente mandó la marca **ORBITA · Gestión Inteligente** y ahora es la que
 > lleva la plataforma en las nueve pantallas que enseñaban un logo, más el
 > favicon. El logo **JD&D Consultores no se borró**: sigue en
@@ -240,6 +305,8 @@ Para arrancar una sesión nueva basta con: *"Proyecto JD&D IA-Core: lee
 | `jdd_consultores_app/docs/req_fase_1.txt` | ✅ sí | **No** — era el recorte de la primera entrega. Se conserva solo como registro histórico. |
 | `jdd_consultores_app/docs/02-frs-detallado.md` | ✅ sí | Mismo sistema, pero con **otra numeración de módulos**. Ante duda mandan los `.txt`. |
 | `jdd_consultores_app/docs/{Ordenes,BasesDatos}Ejemplo/` | ❌ no (`.gitignore`) | Documentos **reales** de clientes; se pasan a mano entre equipos (ver §2). Los que empiezan por `ejemplo-` son **generados y con datos inventados** (ver §2, punto 8). |
+| `jdd_consultores_app/docs/Formatos/` | ❌ no (`.gitignore`) | Los formatos que entregó el cliente el 22-ago-2026, por ARL y por tipo de actividad. Material de **referencia**: dos de ellos son ejemplos diligenciados con datos reales. Los que la app necesita están **en blanco y versionados** en `sst_ws/assets/formatos-arl/`. Se pasa a mano. |
+| `jdd_consultores_app/docs/plan-peticiones-22-ago-2026.md` | ✅ sí | **Sí — el tablero de la tanda en curso**: qué se construyó, qué falta y las decisiones pendientes con el cliente. |
 
 **Desde el 13-ago-2026 ya no hay documentación de proyecto fuera de git.** `docs/` y
 `.claude/skills/` colgaban de la raíz del monorepo, que no es un repo, así que cada
@@ -2685,6 +2752,59 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
     otro es un paso atrás en el flujo. Y cuando la única salida de un estado es
     un botón que rompe una regla del negocio, el que sobra es el botón: falta el
     camino de vuelta.
+
+69. **`SELECT *` en una vista se congela al CREARLA, no al consultarla.**
+    `vw_ordenes_expandidas` es `SELECT o.*`, así que parece que hereda sola
+    cualquier columna nueva de `ordenes_servicio`. No: Postgres expande esa lista
+    en el momento de crear la vista. Se añadieron `tipo_servicio_arl` y
+    `modalidad_ejecucion` a la tabla, se comprobó con
+    `information_schema.columns`… y la vista seguía sin ellas.
+    El fallo habría sido **silencioso y del peor tipo**: todo compila, la orden se
+    guarda con sus datos, y el AT-031 sale con las casillas sin marcar porque
+    `getOrderExpanded()` —que lee de la vista— entrega los dos campos en
+    `undefined`. `db/schema.sql` ya hace `DROP VIEW` + `CREATE VIEW` por este
+    motivo, pero **quien aplique solo un trozo del esquema tiene que arrastrar la
+    vista también**. Y antes de soltarla, mirar quién depende de ella
+    (`pg_depend` + `pg_rewrite`): un `DROP` sin `CASCADE` falla si hay
+    dependientes, y con `CASCADE` se lleva por delante lo que no debía.
+    Regla: **tras un `ALTER TABLE … ADD COLUMN`, comprobar que la columna
+    aparece en la VISTA de la que lee el código, no solo en la tabla.**
+
+70. **Los grupos de opción de un PDF pueden compartir valor de exportación.**
+    Los seis botones de "Tipo de Actividad" del AT-031 de Bolívar —y los dos de
+    "Tipo de Servicio"— exportan todos `"Opción1"`, así que
+    `form.getRadioGroup('Group1').select('Opción1')` **enciende los seis**. Es la
+    razón por la que la casilla se rellenaba a bolígrafo. La salida es no usar la
+    API de formulario: dibujar la marca sobre el rectángulo del widget elegido,
+    como ya se hacía con los PDF planos. Y **verificarlo mirando dónde cae el
+    texto**, no dando por buena la llamada: `scripts/inspeccionar-formato.mjs`
+    saca las coordenadas de cada widget y de cada rótulo impreso, que es lo que
+    permite decir "la equis está en la casilla de la T" sin abrir el PDF.
+
+71. **`useSystemFonts: true` hace que pdf.js NO DIBUJE el texto de las fuentes
+    estándar, y sin dar un error.** Costó media hora de la fase 2. Al rellenar el
+    PSP-F-007 de Colmena, el formato salía **en blanco** al renderizarlo a
+    imagen… pero extrayendo el texto del mismo PDF los valores estaban ahí, en
+    las coordenadas correctas. Se descartaron por el camino un recorte sin
+    cerrar (se dibujó un rectángulo rojo: se veía) y la falta de
+    `standardFontDataUrl`. El culpable era `useSystemFonts: true`, que trae medio
+    ejemplo de internet: pdf.js prefiere una fuente del sistema, en Node no hay
+    ninguna, y se salta el texto en silencio. Fuera del navegador van **los dos**:
+    `standardFontDataUrl` con una RUTA DE FICHERO acabada en separador (no un
+    `file://`) y `useSystemFonts: false`. `services/compress.service.js` ya lo
+    tenía bien; el script de inspección no.
+    Dos lecciones: **un renderizador puede mentir**, así que antes de creerse que
+    un PDF salió mal hay que comprobar si el fallo es de quien lo mira; y la
+    prueba decisiva es dibujar algo que no dependa de la parte sospechosa (un
+    rectángulo, no más texto).
+
+72. **Un valor está en el PDF y aun así está mal puesto.** En un formato sin
+    formulario, las etiquetas del texto NO dicen dónde va cada dato: en una tabla
+    el rótulo puede estar encima de su celda, a la izquierda o dentro. Deducir las
+    coordenadas del texto produce un PDF impecable con los datos en la columna de
+    al lado, que nadie detecta hasta que la ARL devuelve el soporte. Hay que
+    **mirar la hoja** (`inspeccionar-formato.mjs --png … --zona x0 y0 x1 y1`)
+    antes de medir, y **volver a mirarla ya rellenada** después.
 
 ---
 
