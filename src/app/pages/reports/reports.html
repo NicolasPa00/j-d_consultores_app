@@ -53,6 +53,17 @@
   >
     Horas
   </button>
+  <!-- Eje de facturación (ago-2026, petición 6). No es la Cartera (RPT-06) que
+       se retiró: aquello eran tres fechas sueltas que nadie llenaba; esto es un
+       estado de la orden, con historial y marcado en lote desde Órdenes. -->
+  <button
+    type="button" class="tab" role="tab"
+    [class.tab--active]="activeTab() === 'cobro'"
+    [attr.aria-selected]="activeTab() === 'cobro'"
+    (click)="setTab('cobro')"
+  >
+    Cobro
+  </button>
 </div>
 
 <!-- ============ TOOLBAR (filtros + export) ============ -->
@@ -118,6 +129,20 @@
         <input class="form-control rango__fecha" type="date" [(ngModel)]="hasta" />
         <button type="button" class="btn btn--secondary btn--sm" (click)="cargarHoras()">Aplicar</button>
       </label>
+    }
+
+    @if (activeTab() === 'cobro') {
+      <select
+        class="form-control toolbar__control"
+        [ngModel]="cobroEstadoFiltro()"
+        (ngModelChange)="onCobroFiltroChange($event)"
+        aria-label="Filtrar por estado de cobro"
+      >
+        <option value="">Todos los estados de cobro</option>
+        @for (e of estadosCobro; track e) {
+          <option [value]="e">{{ e }}</option>
+        }
+      </select>
     }
 
     <!-- La pestaña de Satisfacción filtra por ARL/profesional/estado, no por
@@ -666,6 +691,130 @@
       </div>
 
       <app-paginador [pag]="pagHorasMes" etiqueta="meses" />
+    </div>
+  } @else if (loadingReporte()) {
+    <div class="card"><p class="vacio">Calculando…</p></div>
+  }
+}
+
+<!-- ============ COBRO · ESTADO DE FACTURACIÓN ============
+     Responde la pregunta que hizo el cliente en la reunión del 22-ago-2026: «de
+     lo que ya ejecutamos, ¿qué falta por radicar, por facturar y por cobrar?».
+
+     ⚠️ Las cifras son el valor de la orden SEGÚN LA ARL (lo que se le cobra a
+     ella), no lo que JD&D le paga al profesional — eso vive en Cuentas de cobro.
+     Son dos números distintos y por eso las columnas lo dicen. -->
+@if (activeTab() === 'cobro') {
+  @if (cobroRep(); as rep) {
+    <div class="kpis">
+      <div class="kpi">
+        <span class="kpi__label">Órdenes finalizadas</span>
+        <strong class="kpi__value">{{ rep.totales.ordenes }}</strong>
+        <span class="kpi__hint">el eje de cobro arranca en el cierre</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label">Pendiente de cobro</span>
+        <strong class="kpi__value">{{ pesos(rep.totales.pendiente) }}</strong>
+        <span class="kpi__hint">todo lo que aún no está PAGADA</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label">Sin facturar</span>
+        <strong class="kpi__value">{{ pesos(rep.totales.sin_facturar) }}</strong>
+        <span class="kpi__hint">ni siquiera radicado</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label">Cobrado</span>
+        <strong class="kpi__value">{{ pesos(rep.totales.pagado) }}</strong>
+      </div>
+    </div>
+
+    <div class="sat-grid">
+      <div class="card barras">
+        <div class="card__head"><h3 class="card__title">Por estado de cobro</h3></div>
+        <div class="card__body">
+          <!-- Los cinco estados SIEMPRE, aunque estén en cero: un estado vacío
+               también informa (nadie ha radicado nada todavía). -->
+          @for (e of estadosCobro; track e) {
+            <div class="barra">
+              <span class="barra__label" [title]="e">{{ e }}</span>
+              <span class="barra__track">
+                <span
+                  class="barra__fill barra__fill--azul"
+                  [style.width]="anchoBarra(cobroDelEstado(e).ordenes, maxCobroEstado())"
+                ></span>
+              </span>
+              <span class="barra__valor">{{ cobroDelEstado(e).ordenes }} OS</span>
+              <span class="barra__extra">{{ pesos(cobroDelEstado(e).valor) }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="card barras">
+        <div class="card__head"><h3 class="card__title">Pendiente por ARL</h3></div>
+        <div class="card__body">
+          @for (a of rep.por_arl; track a.arl_nombre) {
+            <div class="barra">
+              <span class="barra__label" [title]="a.arl_nombre">{{ a.arl_nombre }}</span>
+              <span class="barra__track">
+                <span
+                  class="barra__fill barra__fill--azul"
+                  [style.width]="anchoBarra(num(a.pendiente), num(rep.totales.pendiente))"
+                ></span>
+              </span>
+              <span class="barra__valor">{{ pesos(a.pendiente) }}</span>
+              <span class="barra__extra">{{ a.ordenes }} OS · {{ pesos(a.valor) }} total</span>
+            </div>
+          } @empty {
+            <p class="vacio">No hay órdenes finalizadas todavía.</p>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__head">
+        <h3 class="card__title">Detalle por orden</h3>
+        <span class="card__hint">El estado se cambia desde Órdenes, en lote o desde el detalle.</span>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Cobro</th>
+              <th>N.º factura</th>
+              <th>ARL</th>
+              <th>Empresa</th>
+              <th>Profesional</th>
+              <th>Valor ARL</th>
+              <th>Ejecutada</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (o of pagCobro.visibles(); track o.id) {
+              <tr>
+                <td class="mono">{{ o.codigo || '—' }}</td>
+                <td><span class="pill" [class]="pillCobro(o.estado_cobro)">{{ o.estado_cobro }}</span></td>
+                <td class="mono">{{ o.cobro_numero_factura || '—' }}</td>
+                <td>{{ o.arl_nombre || '—' }}</td>
+                <td>{{ o.empresa_nombre || '—' }}</td>
+                <td>{{ o.profesional_nombre || '—' }}</td>
+                <td class="mono">{{ pesos(o.valor_total) }}</td>
+                <td class="mono">{{ fechaCorta(o.fecha_ejecucion) }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="table__empty">
+                  No hay órdenes finalizadas con ese estado de cobro.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <app-paginador [pag]="pagCobro" etiqueta="órdenes" />
     </div>
   } @else if (loadingReporte()) {
     <div class="card"><p class="vacio">Calculando…</p></div>

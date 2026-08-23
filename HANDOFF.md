@@ -5,8 +5,34 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 22-ago-2026 — **tanda nueva: fases 1, 2 y 3
-> construidas.**
+> **Última actualización:** 23-ago-2026 — **la tanda del 22-ago está COMPLETA:
+> las cinco fases construidas y migradas.** Lo que queda no es código, son las
+> nueve decisiones con el cliente (`docs/plan-peticiones-22-ago-2026.md` §8) y
+> ver la tanda funcionando dentro de la aplicación.
+>
+> **Fase 5 · la orden tiene un eje de FACTURACIÓN aparte del ciclo de vida.**
+> `sst.estado_cobro` (NO FACTURADA → RADICADA → APROBADA → FACTURADA → PAGADA)
+> con su propia columna, su historial (`sst.historial_cobro_orden`) y su marcado
+> **en lote** desde `/ordenes` (`PATCH /orders/cobro`, admin y **contador**). No
+> toca `sst.estado_orden`: una OS FINALIZADA puede estar en cualquier punto del
+> eje, y meterlo en el mismo enum sería un producto cartesiano de estados. El
+> eje **solo se mueve sobre FINALIZADAS** y **nada lo mueve solo**: radicar ante
+> la ARL es un acto de la contadora. Informes gana la pestaña **Cobro**. ⚠️ Su
+> cifra es `valor_total` —lo que se le cobra a la ARL—, **no** lo que se le paga
+> al profesional (eso es Cuentas de cobro). No es la Cartera (RPT-06) que se
+> retiró: aquello eran tres fechas sueltas que nadie llenaba.
+>
+> **Fase 4 · los formatos pueden salir a nombre de OTRO profesional.** Bolívar
+> solo acepta radicados a nombre de quien tiene registrado, y no todo el equipo
+> lo está: ahora `sst.profesionales_arl` guarda quién lo está ante cada ARL (con
+> código y vigencia) y `ordenes_servicio.profesional_formatos_id` dice a nombre
+> de quién se imprime. ⚠️ **`profesional_asignado_id` NO cambió de significado**:
+> sigue siendo QUIEN EJECUTA, y de él siguen colgando el correo, el `.ics`, el
+> enlace de soportes, la agenda, la cuenta de cobro y la encuesta. El único sitio
+> donde los dos papeles se separan es `generateOrderDocuments`. La tabla **nace
+> vacía**: hasta que alguien marque los registros, la suplencia no ofrece a nadie.
+> Migración `2026-08-23-registrado-arl-y-cobro.sql` aplicada (**rehace
+> `vw_ordenes_expandidas`**).
 >
 > **Fase 3 · las órdenes pueden llevar viáticos.** Opcional, aparte de las horas,
 > para lo que se ejecuta fuera de la ciudad. En Bolívar **no hay que teclearlos**:
@@ -398,7 +424,7 @@ backend real. No queda nada mockeado ni ninguna costura de BD sin implementar.
 | M7 Verificación y cierre (VER-01..05) | ✅ · la revisión se hace **sobre la OS ya EJECUTADA**: aceptar deja constancia y manda la encuesta, rechazar la devuelve a PROGRAMADA y **avisa al profesional por correo** |
 | M8 Encuesta de satisfacción (ENC-01..07) | ✅ · ENC-03 editable desde Configuración → Formatos y encuesta |
 | M9 Pre-cuenta de cobro (PRE-01..09) | ✅ · el cierre de mes se dispara **a mano** (no hay cron); CFG-05 avisa de los meses vencidos |
-| M10 Reportes (RPT-01..05, 07) | ✅ · dashboard, buscador NL, vencidas, satisfacción, horas, exportación · **RPT-06 (Cartera) retirado** |
+| M10 Reportes (RPT-01..05, 07) | ✅ · dashboard, buscador NL, vencidas, satisfacción, horas, **cobro** y exportación · **RPT-06 (Cartera) retirado** el 19-ago-2026; la pestaña **Cobro** de ago-2026 NO es su vuelta: aquello era un reporte con tres fechas sueltas, esto es un **estado de la orden** con historial y marcado en lote |
 | M11 Notificaciones (NOT-01..04) | ✅ correos + campanita interna |
 | M12 Configuración | ✅ completo · CFG-01, CFG-02, CFG-03, CFG-04 (tarifas de M9) y CFG-05 |
 
@@ -1240,6 +1266,96 @@ aunque la respuesta **no dijera nada** del envío. La condición era
 `correo_enviado === false`, así que un servidor que no informa —porque falló o
 porque corre una versión anterior— pasaba por éxito. Ahora es `!== true`: si no
 hay confirmación explícita, se avisa de que hay que avisar por otro medio.
+
+### Tanda 20 (23-ago-2026): fases 4 y 5 — el suplente y el eje de facturación
+
+Cierra la tanda de peticiones del 22-ago-2026. El tablero completo, con lo que
+se construyó archivo por archivo y lo que se verificó, está en
+**`docs/plan-peticiones-22-ago-2026.md` §6.3 y §7.1**. Aquí va lo que hay que
+saber sin abrirlo.
+
+#### F4 · Los formatos pueden salir a nombre de otro profesional
+
+Bolívar solo acepta radicados a nombre de profesionales que ella tiene
+registrados y aprobados, y no todo el equipo de JD&D lo está. El puente: **la
+visita la ejecuta quien puede ejecutarla y el formato sale a nombre de un
+registrado.**
+
+- **`sst.profesionales_arl`** (PK profesional+ARL) guarda el registro con su
+  `codigo_registro`, su `vigente_hasta` y una observación. Es tabla y no un
+  booleano en la ficha porque el registro **es por ARL, caduca y tiene un código
+  que asigna la propia ARL**.
+- **`ordenes_servicio.profesional_formatos_id`** dice a nombre de quién se
+  imprime. NULL = el caso normal.
+
+⚠️ **`profesional_asignado_id` NO cambió de significado.** Sigue siendo QUIEN
+EJECUTA. Era la tentación obvia —convertirlo en "el registrado" y añadir un
+ejecutor al lado— y habría obligado a repasar la agenda, las ocupaciones,
+`vw_horas_ejecutadas`, `vw_profesionales_desempeno`, la cuenta de cobro, la
+encuesta, `/orders/mias`, el panel del profesional y la campanita. **El único
+sitio donde los dos papeles se separan es `generateOrderDocuments`**, que
+resuelve el firmante como `profesional_formatos_id || profesional_asignado_id`.
+
+El servidor **exige que el suplente esté registrado ante la ARL DE ESA ORDEN**:
+poner a un registrado de Colmena en un AT-031 de Bolívar deja el mismo formato
+que la ARL va a devolver, y encima con apariencia de estar bien. Una **vigencia
+vencida avisa pero no bloquea**: la fecha la teclea un administrador y puede
+estar sin actualizar, mientras que la orden hay que asignarla hoy.
+
+El correo del profesional **lo dice** (fila «Formatos a nombre de» + bloque de
+aviso). Sin eso abre el AT-031, ve un nombre que no es el suyo y llama por
+teléfono creyendo que la plataforma se equivocó.
+
+En pantalla: **`/profesionales`** gana la columna "Registro ARL" con pastillas y
+un modal propio de registro; **`/ordenes`**, bajo la lista de asesores, avisa si
+el ejecutor ya está registrado o abre un segundo selector que **solo lista
+registrados ante esa ARL**.
+
+🔴 **La tabla nace VACÍA.** Hasta que alguien marque quién está registrado ante
+quién, el interruptor de suplencia no ofrece a nadie. Es dato del cliente.
+
+#### F5 · La orden tiene un eje de facturación, aparte de su ciclo de vida
+
+`sst.estado_cobro`: **NO FACTURADA → RADICADA → APROBADA → FACTURADA → PAGADA**,
+más `cobro_numero_factura`, `cobro_observacion` y quién/cuándo, con historial
+propio en **`sst.historial_cobro_orden`**.
+
+**No toca `sst.estado_orden`** y eso es lo importante: una OS FINALIZADA puede
+estar en cualquier punto del eje de cobro. Meterlo en el mismo enum obligaría a
+un producto cartesiano de estados y a rehacer la matriz de transiciones y el
+trigger de EST-06. Por lo mismo, en `/ordenes` es un **filtro** y no una pestaña
+más.
+
+- **`PATCH /orders/cobro`** marca **en lote** (admin y **contador**). En lote
+  porque así se factura: se radica un paquete y se marcan todas. Un endpoint de
+  a una acabaría sin usarse, que es exactamente lo que le pasó a la Cartera.
+- **Solo se mueve sobre FINALIZADAS.** Un lote mixto no se rechaza entero: se
+  mueve lo que se puede y se devuelven **enumeradas** las que quedaron fuera.
+- **`FACTURADA` exige número de factura**: es el dato por el que se busca una
+  orden cuando la ARL pregunta.
+- **Nada mueve el eje solo.** Ni generar la cuenta de cobro ni cerrar la orden.
+  Radicar ante la ARL es un acto de la contadora, no un efecto de la plataforma.
+
+Informes gana la pestaña **Cobro** (`GET /reports/cobro`) con el pendiente por
+ARL y su exportación. ⚠️ **Su cifra es `valor_total`** —el valor de la orden
+según el documento de la ARL, que es lo que se le cobra a ella— y **no**
+`valor_cobro_total`, que es lo que JD&D le paga al profesional y vive en Cuentas
+de cobro. Son dos números distintos.
+
+#### Deuda de pruebas de esta tanda
+
+No hay credenciales de administrador para el asistente, así que **nada de esto
+se ha visto funcionar dentro de la aplicación**. Lo verificado lo está:
+
+- contra la Neon **con `ROLLBACK`** (el AT-031 sale con el nombre del registrado
+  y no con el del ejecutor; los tres saltos del eje de cobro y su historial), y
+- llamando a los endpoints con un **JWT firmado a mano** contra una instancia
+  temporal en `:4010` (registro ante las ARL, validaciones, lote mixto,
+  permisos por rol, el informe).
+
+Las pruebas que tocaron datos reales **se revirtieron**: las 13 órdenes volvieron
+a `NO FACTURADA`, el historial de cobro quedó vacío y el registro de prueba se
+borró.
 
 ### Tanda 18 (21-ago-2026): la plataforma se llama ORBITA
 
@@ -2817,6 +2933,46 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
     al lado, que nadie detecta hasta que la ARL devuelve el soporte. Hay que
     **mirar la hoja** (`inspeccionar-formato.mjs --png … --zona x0 y0 x1 y1`)
     antes de medir, y **volver a mirarla ya rellenada** después.
+
+73. **Invertir el significado de una columna cuesta mucho más que añadir otra.**
+    La petición del suplente pedía, leída literalmente, que
+    `profesional_asignado_id` pasara a ser "el registrado ante la ARL" y que el
+    ejecutor fuera un campo nuevo. Sobre esa columna están construidas la agenda,
+    las ocupaciones, `vw_horas_ejecutadas`, `vw_profesionales_desempeno`, la
+    cuenta de cobro, la encuesta, `/orders/mias`, el panel del profesional y la
+    campanita: darle otro sentido obliga a repasarlo todo y a equivocarse en
+    algún sitio, y el fallo aparecería como "le pagamos a quien no fue" semanas
+    después. Se añadió `profesional_formatos_id` y **el cambio se concentró en
+    una línea de `generateOrderDocuments`**. Regla: cuando una petición parece
+    redefinir un campo central, mirar primero cuántas cosas leen ese campo — casi
+    siempre lo barato es un campo nuevo para el papel nuevo.
+
+74. **Un eje de estado nuevo no va dentro del enum de estados que ya existe.**
+    El estado de facturación (NO FACTURADA → … → PAGADA) es ortogonal al ciclo de
+    la OS: una orden FINALIZADA puede estar en cualquiera de los cinco. Meterlo
+    en `sst.estado_orden` habría dado un producto cartesiano (`FINALIZADA
+    RADICADA`, `FINALIZADA PAGADA`…) y habría que rehacer la matriz de
+    transiciones y el trigger de EST-06. La señal de que son dos ejes y no uno:
+    **las transiciones de uno no dicen nada de las del otro**. Lo mismo en
+    pantalla — el eje nuevo es un **filtro** junto a las pestañas, no una pestaña
+    más, porque como pestañas serían el producto de los dos.
+
+75. **En una operación por lotes, fallar entero es peor que fallar en parte.**
+    `PATCH /orders/cobro` recibe cuarenta ids y algunos pueden no estar
+    FINALIZADOS. Rechazar el lote completo obligaría a quien marca a encontrar
+    cuál sobra sin que nadie se lo diga. Se mueve lo que se puede y se devuelven
+    **enumeradas por código** las que quedaron fuera, con el motivo. Y repetir el
+    mismo estado no es un error, pero **no se escribe historial**: una fila
+    idéntica más tapa el cambio de verdad.
+
+76. **Dos cifras que se parecen y no son la misma: lo que se le cobra a la ARL y
+    lo que se le paga al profesional.** `valor_total` es el valor de la orden
+    según el documento de la ARL; `valor_cobro_total` es horas × valor hora del
+    profesional. El informe de facturación usa el PRIMERO —es lo que hay por
+    cobrar— y Cuentas de cobro el segundo. Cambiarlos de sitio no rompe nada, no
+    da ningún error, y produce un pendiente de cartera que no existe. Cuando dos
+    columnas de dinero conviven en la misma tabla, la columna del informe hay que
+    elegirla explícitamente y **decir en la pantalla cuál es** ("Valor ARL").
 
 ---
 

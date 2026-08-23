@@ -201,6 +201,16 @@ export interface Borrador {
    * los formatos y los correos.
    */
   os_empresa_nombre?: string | null;
+  /**
+   * ASG · A nombre de quién salen los formatos de la OS, cuando no es quien
+   * ejecuta. Viaja con el listado para que la suplencia se vea en la fila sin
+   * tener que abrir la orden.
+   */
+  os_profesional_formatos_id?: string | null;
+  os_profesional_formatos_nombre?: string | null;
+  /** Eje de facturación de la OS (ago-2026): columna, pastilla y filtro. */
+  os_estado_cobro?: EstadoCobro | null;
+  os_cobro_numero_factura?: string | null;
 
   /**
    * IMP-07/09 · Solo en los borradores DUPLICADA: la OS que ya existía y por la
@@ -270,6 +280,33 @@ export interface HistorialEstado {
   estado_nuevo: EstadoOrden;
   cambiado_por_nombre?: string | null;
   motivo?: string | null;
+  cambiado_en: string;
+}
+
+/**
+ * Estado de FACTURACIÓN de la orden (ago-2026, petición 6 del cliente).
+ *
+ * Es un EJE INDEPENDIENTE del ciclo operativo (`EstadoOrden`): una OS FINALIZADA
+ * puede estar sin facturar, radicada ante la ARL, aprobada, facturada o pagada.
+ * Solo se mueve a partir de FINALIZADA — antes del cierre no hay nada que
+ * facturar.
+ */
+export type EstadoCobro = 'NO FACTURADA' | 'RADICADA' | 'APROBADA' | 'FACTURADA' | 'PAGADA';
+
+/** El eje en orden, para pintarlo y para ofrecerlo en los selectores. */
+export const ESTADOS_COBRO: EstadoCobro[] = [
+  'NO FACTURADA', 'RADICADA', 'APROBADA', 'FACTURADA', 'PAGADA',
+];
+
+/** Entrada del historial del eje de cobro: quién lo movió, cuándo y por qué. */
+export interface HistorialCobro {
+  id: string;
+  orden_id: string;
+  estado_anterior?: EstadoCobro | null;
+  estado_nuevo: EstadoCobro;
+  numero_factura?: string | null;
+  observacion?: string | null;
+  cambiado_por_nombre?: string | null;
   cambiado_en: string;
 }
 
@@ -416,6 +453,46 @@ export interface ReporteHoras {
   por_profesional: { profesional_id?: string | null; profesional_nombre: string; ordenes: number; horas: string | number; viaticos?: string | number }[];
   por_arl: { arl_nombre: string; ordenes: number; horas: string | number; viaticos?: string | number }[];
   por_mes: { mes: string; ordenes: number; horas: string | number }[];
+}
+
+/**
+ * Estado de facturación de lo ya cerrado (ago-2026, petición 6).
+ *
+ * ⚠️ Las cifras son `valor_total`, el valor de la orden SEGÚN EL DOCUMENTO DE LA
+ * ARL —lo que se le cobra a ella—, no lo que JD&D le paga al profesional (eso es
+ * `valor_cobro_total` y vive en Cuentas de cobro). Son dos números distintos.
+ */
+export interface ReporteCobro {
+  totales: {
+    ordenes: number;
+    valor: string | number;
+    sin_facturar: string | number;
+    pendiente: string | number;
+    pagado: string | number;
+    viaticos: string | number;
+  };
+  por_estado: { estado_cobro: EstadoCobro; ordenes: number; valor: string | number }[];
+  por_arl: { arl_nombre: string; ordenes: number; valor: string | number; pendiente: string | number }[];
+  ordenes: OrdenCobro[];
+}
+
+/** Una orden en el reporte de facturación. */
+export interface OrdenCobro {
+  id: string;
+  codigo: string | null;
+  arl_nombre?: string | null;
+  empresa_nombre?: string | null;
+  nit_nic?: string | null;
+  tipo_actividad?: string | null;
+  horas_asignadas?: string | number | null;
+  valor_total?: string | number | null;
+  viaticos_valor?: string | number | null;
+  estado_cobro: EstadoCobro;
+  cobro_numero_factura?: string | null;
+  cobro_observacion?: string | null;
+  cobro_actualizado_en?: string | null;
+  fecha_ejecucion?: string | null;
+  profesional_nombre?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -708,6 +785,19 @@ export interface Orden {
   estado: string;
   profesional_asignado_id?: string | null;
   profesional_nombre?: string | null;
+  // ---- ASG · Profesional registrado ante la ARL y suplente (ago-2026) ----
+  /**
+   * A nombre de quién salen los FORMATOS, cuando no es quien ejecuta. NULL es el
+   * caso normal. Todo lo demás —correo, enlace de soportes, agenda, cuenta de
+   * cobro y encuesta— sigue siendo de `profesional_asignado_id`.
+   */
+  profesional_formatos_id?: string | null;
+  profesional_formatos_nombre?: string | null;
+  // ---- Eje de facturación (ago-2026) ----
+  estado_cobro?: EstadoCobro | null;
+  cobro_numero_factura?: string | null;
+  cobro_observacion?: string | null;
+  cobro_actualizado_en?: string | null;
   fecha_programada?: string | null;
   /** ASG-02 · Franjas de la visita. Vacío = OS programada en un solo bloque. */
   franjas?: FranjaVisita[];
@@ -786,6 +876,24 @@ export interface OrdenDeEmpresa {
   arl_nombre?: string | null;
 }
 
+/**
+ * ASG · Registro del profesional ante UNA ARL.
+ *
+ * Bolívar solo acepta que ejecuten sus órdenes profesionales que ella tiene
+ * registrados y aprobados. El registro es por ARL, caduca y lo identifica un
+ * código que asigna la propia ARL, así que no cabe como un campo de la ficha.
+ */
+export interface RegistroArl {
+  arl_id: string;
+  arl_nombre: string;
+  registrado: boolean;
+  codigo_registro?: string | null;
+  vigente_hasta?: string | null;
+  /** El registro existe pero su vigencia ya pasó: avisa, no bloquea. */
+  vencido?: boolean;
+  observacion?: string | null;
+}
+
 export interface Profesional {
   id: string;
   nombre: string;
@@ -794,6 +902,13 @@ export interface Profesional {
   especialidad?: string;
   valor_hora?: number;
   estado: 'Activo' | 'Inactivo';
+  /**
+   * ASG · Ante qué ARL está registrado. Viene con el listado porque lo leen dos
+   * pantallas: la columna de pastillas de /profesionales y el segundo selector
+   * del modal de asignación, que solo puede ofrecer a los registrados ante la
+   * ARL de esa orden.
+   */
+  registros_arl?: RegistroArl[];
   // --- Desempeño (vista `vw_profesionales_desempeno`) ---
   /** Órdenes suyas con el trabajo hecho (EJECUTADA o FINALIZADA). */
   ordenes_ejecutadas?: number;

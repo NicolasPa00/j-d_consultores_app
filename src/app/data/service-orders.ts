@@ -4,6 +4,8 @@
  * En Fase 2 esto se reemplaza por un servicio HTTP real.
  */
 
+import { EstadoCobro } from '../core/models';
+
 /** Un campo extraído por el "modelo": su valor (editable) y la confianza asociada. */
 export interface ExtractedField {
   value: string;
@@ -49,6 +51,18 @@ export interface ServiceOrder {
   valorHoraCobro?: number | null;
   /** De dónde salió ese valor: 'tarifa', 'tipo' o 'profesional'. */
   valorHoraOrigen?: string | null;
+  // ---- ASG · Profesional registrado ante la ARL y suplente (ago-2026) ----
+  /**
+   * A nombre de quién salen los FORMATOS cuando no es quien ejecuta. Null es el
+   * caso normal; el correo, la agenda y la cuenta de cobro siguen siendo de
+   * `assignedProfId`, que es quien hace el trabajo.
+   */
+  formatosProfId?: string | null;
+  formatosProf?: string | null;
+  // ---- Eje de facturación (ago-2026) ----
+  /** Estado de cobro. Es un eje independiente del ciclo operativo de la OS. */
+  estadoCobro?: EstadoCobro | null;
+  cobroNumeroFactura?: string | null;
   fields: {
     codigoCronograma: ExtractedField;
     secuencia: ExtractedField;

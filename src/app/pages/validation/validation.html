@@ -20,6 +20,23 @@
         (ngModelChange)="buscar($event)"
       />
     </div>
+
+    <!-- Eje de facturación · Va aquí y no como una pestaña más porque es un eje
+         INDEPENDIENTE del ciclo de vida: una OS FINALIZADA puede estar sin
+         facturar, radicada, aprobada, facturada o pagada. Como pestañas serían
+         el producto de los dos ejes; como filtro se combinan. -->
+    <select
+      class="form-control ord-head__filtro"
+      [ngModel]="filtroCobro()"
+      (ngModelChange)="filtrarCobro($event)"
+      name="filtroCobro"
+      aria-label="Filtrar por estado de cobro"
+    >
+      <option value="">Cobro · todos</option>
+      @for (e of estadosCobro; track e) {
+        <option [value]="e">{{ e }}</option>
+      }
+    </select>
   </div>
 </section>
 
@@ -41,10 +58,38 @@
 
 <!-- ============ TABLA ============ -->
 <div class="card">
+  <!-- Marcado en LOTE del estado de cobro. La facturación se radica por
+       paquetes: marcar cuarenta órdenes de una en una no lo iba a usar nadie, y
+       la funcionalidad se moriría igual que se murió la pestaña Cartera. La
+       barra solo aparece con algo marcado, para no ocupar sitio el resto del
+       tiempo. -->
+  @if (cobroSeleccionadas()) {
+    <div class="cobro-bar">
+      <span class="cobro-bar__texto">
+        {{ cobroSeleccionadas() }}
+        {{ cobroSeleccionadas() === 1 ? 'orden finalizada marcada' : 'órdenes finalizadas marcadas' }}
+      </span>
+      <button type="button" class="btn btn--primary" (click)="openCobro()">
+        Cambiar estado de cobro
+      </button>
+    </div>
+  }
+
   <div class="table-wrap">
     <table class="table">
       <thead>
         <tr>
+          <!-- Solo marca las FINALIZADAS de ESTA página: el atajo tiene que
+               aplicar a lo que se está viendo, o marcaría órdenes que quien
+               pulsa no ha mirado. -->
+          <th class="col-check">
+            <input
+              type="checkbox"
+              [checked]="todasDeLaPaginaMarcadas()"
+              (change)="alternarCobroPagina($any($event.target).checked)"
+              aria-label="Marcar las órdenes finalizadas de esta página"
+            />
+          </th>
           <th class="col-num">#</th>
           <th>NIT</th>
           <th>Razón social</th>
@@ -53,12 +98,25 @@
           <th>Fecha de vencimiento</th>
           <th>Confianza</th>
           <th>Estado</th>
+          <th>Cobro</th>
           <th class="col-actions">Opciones</th>
         </tr>
       </thead>
       <tbody>
         @for (order of pag.visibles(); track order.id; let i = $index) {
           <tr>
+            <td class="col-check">
+              <!-- Solo las FINALIZADAS: el eje de cobro arranca en el cierre, y
+                   ofrecer la casilla en las demás sería prometer algo que el
+                   servidor va a rechazar. -->
+              <input
+                type="checkbox"
+                [checked]="cobroMarcado(order.osId || '')"
+                [disabled]="!puedeCobrar(order)"
+                (change)="alternarCobro(order, $any($event.target).checked)"
+                [attr.aria-label]="'Marcar ' + (order.osCode || order.company) + ' para el cambio de estado de cobro'"
+              />
+            </td>
             <td class="col-num mono">{{ pag.desde() + i }}</td>
             <td class="mono">{{ order.fields.nit.value || '—' }}</td>
             <td>
@@ -97,6 +155,22 @@
             </td>
             <td>
               <span class="pill" [class]="estadoClass(order)">{{ estadoLabel(order) }}</span>
+            </td>
+            <!-- El eje de facturación. Un borrador sin OS no lo tiene todavía:
+                 no hay nada que facturar hasta que la orden existe. -->
+            <td>
+              @if (order.osId) {
+                <span class="pill" [class]="pillCobro(order.estadoCobro)">
+                  {{ order.estadoCobro || 'NO FACTURADA' }}
+                </span>
+                @if (order.cobroNumeroFactura) {
+                  <span class="cobro__factura mono" title="Número de factura">
+                    {{ order.cobroNumeroFactura }}
+                  </span>
+                }
+              } @else {
+                <span class="venc__none">—</span>
+              }
             </td>
             <td class="col-actions">
               <div class="row-actions">
@@ -177,7 +251,7 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="9" class="table__empty">
+            <td colspan="11" class="table__empty">
               @if (loading()) {
                 Cargando órdenes…
               } @else if (query()) {
@@ -482,6 +556,64 @@
         </div>
       </div>
 
+      <!-- ---- Eje de facturación · estado, factura e historial ----
+           Va aparte del historial de estados a propósito: son DOS líneas de
+           tiempo distintas sobre la misma orden (el ciclo operativo y el cobro a
+           la ARL), y mezclarlas haría ilegible cualquiera de las dos. -->
+      @if (order.osId) {
+        <div class="card cobro-card">
+          <div class="card__head">
+            <span class="card__title">Facturación a la ARL</span>
+            <span class="pill" [class]="pillCobro(order.estadoCobro)">
+              {{ order.estadoCobro || 'NO FACTURADA' }}
+            </span>
+          </div>
+          <div class="card__body">
+            @if (order.cobroNumeroFactura) {
+              <p class="cobro-card__dato">Factura <strong class="mono">{{ order.cobroNumeroFactura }}</strong></p>
+            }
+
+            @if (puedeCobrar(order)) {
+              <button type="button" class="btn btn--secondary" (click)="openCobro(order)">
+                Cambiar estado de cobro
+              </button>
+            } @else {
+              <!-- El eje arranca en FINALIZADA: antes del cierre no hay nada que
+                   facturarle a la ARL, y el servidor rechaza el cambio. -->
+              <p class="card__hint">
+                El estado de cobro solo se mueve cuando la orden está FINALIZADA.
+              </p>
+            }
+
+            @if (historialCobro().length) {
+              <ol class="timeline">
+                @for (h of historialCobro(); track h.id) {
+                  <li class="timeline__item">
+                    <span class="timeline__dot" aria-hidden="true"></span>
+                    <div class="timeline__body">
+                      <p class="timeline__head">
+                        @if (h.estado_anterior) {
+                          <span class="timeline__from">{{ h.estado_anterior }}</span>
+                          <span class="timeline__arrow" aria-hidden="true">→</span>
+                        }
+                        <span class="pill" [class]="pillCobro(h.estado_nuevo)">{{ h.estado_nuevo }}</span>
+                      </p>
+                      <p class="timeline__meta">
+                        {{ fechaHistorial(h) }} · {{ h.cambiado_por_nombre || 'Sistema' }}
+                        @if (h.numero_factura) { · factura {{ h.numero_factura }} }
+                      </p>
+                      @if (h.observacion) {
+                        <p class="timeline__motivo">{{ h.observacion }}</p>
+                      }
+                    </div>
+                  </li>
+                }
+              </ol>
+            }
+          </div>
+        </div>
+      }
+
       <!-- ---- EST-03 · Auditoría: quién cambió qué y por qué ---- -->
       @if (order.validated && order.osId) {
         <div class="card acordeon">
@@ -622,6 +754,67 @@
           <p class="assign__empty">No hay profesionales activos disponibles.</p>
         }
         </div>
+
+        <!-- ASG · El suplente: los formatos salen a nombre de OTRO.
+             Bolívar solo acepta radicados a nombre de profesionales que ella
+             tiene registrados, y no todo el equipo lo está. Cuando el que puede
+             ir no lo está, la visita la ejecuta él y el formato lleva el nombre
+             de un registrado. Todo lo demás —correo, enlace de soportes, agenda,
+             cuenta de cobro y encuesta— sigue siendo del que ejecuta. -->
+        @if (selectedProfId()) {
+          <div class="suplente">
+            @if (ejecutorRegistrado()) {
+              <p class="suplente__ok">
+                Registrado ante {{ order.arl }}: los formatos salen a su nombre.
+              </p>
+            } @else {
+              <label class="check suplente__toggle">
+                <input
+                  type="checkbox"
+                  [checked]="usarSuplente()"
+                  (change)="alternarSuplente($any($event.target).checked)"
+                />
+                <span>Los formatos salen a nombre de otro profesional</span>
+              </label>
+
+              @if (usarSuplente()) {
+                <!-- Solo los registrados ante ESTA ARL: poner a un registrado de
+                     otra deja el mismo formato que la ARL va a devolver, y encima
+                     con apariencia de estar bien. -->
+                <select
+                  class="form-control form-control--sm"
+                  [ngModel]="formatosProfId()"
+                  (ngModelChange)="formatosProfId.set($event)"
+                  name="formatosProf"
+                >
+                  <option [ngValue]="null">— Elija un profesional registrado —</option>
+                  @for (reg of registradosDeLaArl(); track reg.id) {
+                    <option [ngValue]="reg.id">{{ reg.nombre }}</option>
+                  }
+                </select>
+
+                @if (!registradosDeLaArl().length) {
+                  <p class="suplente__aviso">
+                    Ningún otro profesional figura registrado ante {{ order.arl }}. Márquelo en
+                    Profesionales → Registro ante las ARL.
+                  </p>
+                } @else if (registroDelSuplente(); as reg) {
+                  @if (reg.vencido) {
+                    <!-- Vencido no bloquea: la fecha la teclea un administrador y
+                         puede estar sin actualizar. Pero si de verdad venció, la
+                         ARL devolverá el radicado. -->
+                    <p class="suplente__aviso">
+                      Su registro figura vencido el {{ reg.vigente_hasta }}. Confirme la vigencia
+                      con la ARL antes de radicar.
+                    </p>
+                  } @else if (reg.codigo_registro) {
+                    <p class="suplente__ok">Registro {{ reg.codigo_registro }}.</p>
+                  }
+                }
+              }
+            }
+          </div>
+        }
        </div>
       </div>
 
@@ -847,6 +1040,11 @@
       <span class="modal__status">
         @if (!selectedProfId()) {
           Marque las franjas en la agenda y elija un profesional para poder asignar.
+        } @else if (usarSuplente() && !formatosProfId()) {
+          <!-- ASG · El interruptor está puesto pero no se eligió a nadie. Guardar
+               así dejaría los formatos a nombre del ejecutor sin decirlo, que es
+               justo lo contrario de lo que se pidió. -->
+          Elija a nombre de qué profesional registrado salen los formatos, o quite la marca.
         } @else if (!visitaCompleta()) {
           <!-- ASG-02 · No es un bloqueo: se puede guardar el avance (o solo el
                cambio de profesional) y volver luego a repartir el resto. -->
@@ -870,7 +1068,12 @@
              completa dejaba sin salida el caso de cambiar de asesor en una orden
              de muchas horas: había que repartirlas todas antes de poder guardar
              nada, y el backend sí sabe guardar el avance. -->
-        <button type="button" class="btn btn--primary" [disabled]="!selectedProfId() || assigning()" (click)="confirmAssign()">
+        <button
+          type="button"
+          class="btn btn--primary"
+          [disabled]="!selectedProfId() || assigning() || (usarSuplente() && !formatosProfId())"
+          (click)="confirmAssign()"
+        >
           @if (assigning()) {
             <span class="spinner" aria-hidden="true"></span>
             {{ !visitaCompleta() ? 'Guardando…' : (esReprogramacion(order) ? 'Reprogramando…' : 'Asignando…') }}
@@ -1081,6 +1284,100 @@
         } @else {
           <button type="button" class="btn btn--ghost" (click)="closeVerify()">Cerrar</button>
         }
+      </div>
+    </footer>
+  </div>
+}
+
+<!-- ============ MODAL: ESTADO DE FACTURACIÓN / COBRO ============
+     Un eje INDEPENDIENTE del ciclo de vida de la OS: una orden FINALIZADA puede
+     estar sin facturar, radicada ante la ARL, aprobada, facturada o pagada. Se
+     marca en LOTE porque así es como se factura —se radica un paquete y se
+     marcan todas—, y el mismo diálogo sirve para una sola orden desde su
+     detalle. -->
+@if (cobroOpen()) {
+  <div class="modal-backdrop" (click)="closeCobro()"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cobroTitle">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="cobroTitle">Estado de facturación</h3>
+        <p class="modal__sub">
+          {{ cobroSeleccionadas() }}
+          {{ cobroSeleccionadas() === 1 ? 'orden seleccionada' : 'órdenes seleccionadas' }}
+        </p>
+      </div>
+      <button type="button" class="icon-action" (click)="closeCobro()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="modal__body">
+      <div class="form-field">
+        <label class="form-field__label" for="cobroEstado">Nuevo estado *</label>
+        <select
+          id="cobroEstado"
+          class="form-control"
+          [ngModel]="cobroEstado()"
+          (ngModelChange)="cobroEstado.set($event)"
+          name="cobroEstado"
+        >
+          @for (e of estadosCobro; track e) {
+            <option [value]="e">{{ e }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label class="form-field__label" for="cobroFactura">
+          Número de factura {{ cobroEstado() === 'FACTURADA' ? '*' : '(opcional)' }}
+        </label>
+        <!-- Es el dato por el que se busca una orden cuando la ARL pregunta, así
+             que se exige justo en el estado que lo produce: sin él quedaría una
+             tabla llena de "FACTURADA" sin decir con qué factura. -->
+        <input
+          id="cobroFactura"
+          class="form-control"
+          type="text"
+          maxlength="60"
+          placeholder="Ej. FV-2026-0451"
+          [(ngModel)]="cobroFactura"
+          name="cobroFactura"
+        />
+      </div>
+
+      <div class="form-field">
+        <label class="form-field__label" for="cobroObs">Observación (opcional)</label>
+        <textarea
+          id="cobroObs"
+          class="form-control"
+          rows="3"
+          maxlength="300"
+          placeholder="Qué se radicó, ante quién, con qué radicado…"
+          [(ngModel)]="cobroObservacion"
+          name="cobroObs"
+        ></textarea>
+      </div>
+    </div>
+
+    <footer class="modal__footer">
+      <span class="modal__status">
+        Solo se mueven las órdenes FINALIZADAS; las demás se informan y quedan como estaban.
+        Cada cambio queda en el historial de la orden con su autor.
+      </span>
+      <div class="modal__footer-actions">
+        <button type="button" class="btn btn--ghost" (click)="closeCobro()" [disabled]="cobroSaving()">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn--primary" [disabled]="cobroSaving()" (click)="guardarCobro()">
+          @if (cobroSaving()) {
+            <span class="spinner" aria-hidden="true"></span>
+            Guardando…
+          } @else {
+            Marcar como {{ cobroEstado() }}
+          }
+        </button>
       </div>
     </footer>
   </div>

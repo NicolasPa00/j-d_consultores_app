@@ -38,6 +38,7 @@
           <th>Profesional</th>
           <th>Teléfono</th>
           <th>Especialidad</th>
+          <th>Registro ARL</th>
           <th>Órdenes y calificación</th>
           <th>Estado</th>
           <th class="col-actions">Acciones</th>
@@ -57,6 +58,22 @@
             </td>
             <td class="mono">{{ pro.phone }}</td>
             <td>{{ pro.specialty }}</td>
+            <!-- ASG · Ante qué ARL está registrado. Se ve en el listado porque
+                 es lo que decide quién puede figurar en los formatos de una
+                 orden: sin la columna habría que abrir ficha por ficha. -->
+            <td class="registros">
+              @for (reg of pro.registros; track reg.arl_id) {
+                <span
+                  class="pill"
+                  [class]="reg.vencido ? 'pill--warning' : 'pill--info'"
+                  [title]="tituloRegistro(reg)"
+                >
+                  {{ reg.arl_nombre }}{{ reg.vencido ? ' ⚠' : '' }}
+                </span>
+              } @empty {
+                <span class="registros__sin">Sin registro</span>
+              }
+            </td>
             <!-- ENC-05 · Las dos cifras juntas: el trabajo cerrado arriba y cómo
                  lo califican debajo. Separarlas invitaba a leer un 5,0 de una
                  sola encuesta como si valiera lo mismo que un 4,6 de cuarenta. -->
@@ -116,6 +133,21 @@
                     <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
                   </svg>
                 </button>
+                <!-- ASG · El registro ante las ARL abre modal propio: solo existe
+                     para un profesional ya creado y se guarda contra otro
+                     endpoint, así que no cabe dentro del formulario de la ficha. -->
+                <button
+                  type="button"
+                  class="icon-action"
+                  (click)="openRegistros(pro)"
+                  aria-label="Registro ante las ARL"
+                  title="Registro ante las ARL"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 3 4 6v6c0 4.4 3.4 8.2 8 9 4.6-.8 8-4.6 8-9V6Z" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                </button>
                 <button
                   type="button"
                   class="icon-action"
@@ -134,7 +166,7 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="6" class="table__empty">
+            <td colspan="7" class="table__empty">
               No hay profesionales que coincidan con “{{ query() }}”.
             </td>
           </tr>
@@ -336,6 +368,137 @@
         se calcula solo sobre las {{ ratings().length }} recibidas.
       </span>
       <button type="button" class="btn btn--ghost" (click)="closeRatings()">Cerrar</button>
+    </footer>
+  </div>
+}
+
+<!-- ============ ASG · REGISTRO ANTE LAS ARL ============
+     Bolívar solo acepta que ejecuten sus órdenes profesionales que ella tiene
+     registrados y aprobados, y no todo el equipo lo está. Lo que se marca aquí
+     decide quién puede aparecer en el segundo selector del modal de asignación,
+     el que pone el nombre impreso en el AT-031 cuando el ejecutor no está
+     registrado. El registro es POR ARL, caduca y lo identifica un código que
+     asigna la propia ARL: por eso es una tabla y no una casilla en la ficha. -->
+@if (registrosOpen() && registrosProf(); as pro) {
+  <div class="modal-backdrop" (click)="closeRegistros()"></div>
+  <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="registrosTitle">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="registrosTitle">Registro ante las ARL · {{ pro.name }}</h3>
+        <p class="modal__sub">
+          Marque las ARL en las que este profesional está registrado y aprobado. Solo los
+          registrados pueden figurar como firmantes en los formatos de esa ARL.
+        </p>
+      </div>
+      <button type="button" class="icon-action" (click)="closeRegistros()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="modal__body">
+      @if (registrosLoading()) {
+        <p class="ratings__estado">Cargando el catálogo de ARL…</p>
+      } @else {
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ARL</th>
+                <th>¿Registrado?</th>
+                <th>Código de registro</th>
+                <th>Vigente hasta</th>
+                <th>Observación</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (reg of registros(); track reg.arl_id) {
+                <tr>
+                  <td><strong>{{ reg.arl_nombre }}</strong></td>
+                  <td>
+                    <label class="check">
+                      <input
+                        type="checkbox"
+                        [checked]="reg.registrado"
+                        (change)="editarRegistro(reg.arl_id, { registrado: $any($event.target).checked })"
+                      />
+                      <span>{{ reg.registrado ? 'Sí' : 'No' }}</span>
+                    </label>
+                  </td>
+                  <!-- Los tres campos solo tienen sentido con el registro
+                       marcado: sin él la fila se borra al guardar. -->
+                  <td>
+                    <input
+                      class="form-control form-control--sm"
+                      type="text"
+                      maxlength="60"
+                      placeholder="El que asignó la ARL"
+                      [disabled]="!reg.registrado"
+                      [value]="reg.codigo_registro || ''"
+                      (input)="editarRegistro(reg.arl_id, { codigo_registro: $any($event.target).value })"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      class="form-control form-control--sm"
+                      type="date"
+                      [disabled]="!reg.registrado"
+                      [value]="reg.vigente_hasta || ''"
+                      (input)="editarRegistro(reg.arl_id, { vigente_hasta: $any($event.target).value })"
+                    />
+                    @if (reg.vencido) {
+                      <!-- Vencido no bloquea la asignación: la fecha la teclea un
+                           administrador y puede estar sin actualizar. Se avisa. -->
+                      <span class="pill pill--warning">Vencido</span>
+                    }
+                  </td>
+                  <td>
+                    <input
+                      class="form-control form-control--sm"
+                      type="text"
+                      maxlength="300"
+                      placeholder="Opcional"
+                      [disabled]="!reg.registrado"
+                      [value]="reg.observacion || ''"
+                      (input)="editarRegistro(reg.arl_id, { observacion: $any($event.target).value })"
+                    />
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5" class="table__empty">No hay ARL en el catálogo.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+
+    <footer class="modal__footer">
+      <span class="modal__status">
+        Quitar la marca borra el registro de esa ARL: “no registrado” es la ausencia de
+        registro, no una fila vacía.
+      </span>
+      <div class="modal__footer-actions">
+        <button type="button" class="btn btn--ghost" (click)="closeRegistros()" [disabled]="registrosSaving()">
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn btn--primary"
+          [disabled]="registrosSaving() || registrosLoading()"
+          (click)="guardarRegistros()"
+        >
+          @if (registrosSaving()) {
+            <span class="spinner" aria-hidden="true"></span>
+            Guardando…
+          } @else {
+            Guardar registro
+          }
+        </button>
+      </div>
     </footer>
   </div>
 }

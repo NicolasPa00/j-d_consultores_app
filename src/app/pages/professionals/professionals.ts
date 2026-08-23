@@ -10,7 +10,7 @@ import {
   validarTelefono, validarTextoOpcional, primerProblema, tecleoLetras, tecleoDigitos,
 } from '../../core/personas';
 import { AlertService } from '../../core/alert.service';
-import { Encuesta, Profesional } from '../../core/models';
+import { Encuesta, Profesional, RegistroArl } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
@@ -28,6 +28,12 @@ interface Professional {
   encuestas: number;
   /** null = todavía nadie lo ha calificado (la encuesta es opcional). */
   nota: number | null;
+  /**
+   * ASG · Ante qué ARL está registrado. Se enseña en el listado porque decide
+   * quién puede figurar en los formatos de una orden: sin la columna habría que
+   * abrir ficha por ficha para saber a quién poner de suplente.
+   */
+  registros: RegistroArl[];
 }
 
 interface ProfessionalDraft {
@@ -349,6 +355,101 @@ export class ProfessionalsComponent implements OnInit {
     });
   }
 
+  // ================= ASG · Registro ante las ARL =================
+  /**
+   * Bolívar solo acepta que ejecuten sus órdenes profesionales que ella tiene
+   * registrados y aprobados, y no todo el equipo lo está. Aquí se marca quién lo
+   * está ante cada ARL; de esa lista sale el segundo selector del modal de
+   * asignación, el que decide a nombre de quién salen los formatos.
+   *
+   * Es un modal propio y no una sección del formulario de la ficha porque el
+   * registro solo existe para un profesional YA creado (necesita su id), y
+   * porque se guarda en bloque contra otro endpoint.
+   */
+  protected readonly registrosOpen = signal(false);
+  protected readonly registrosProf = signal<Professional | null>(null);
+  protected readonly registrosLoading = signal(false);
+  protected readonly registrosSaving = signal(false);
+  protected readonly registros = signal<RegistroArl[]>([]);
+
+  protected openRegistros(pro: Professional): void {
+    this.registrosProf.set(pro);
+    this.registros.set([]);
+    this.registrosOpen.set(true);
+    this.registrosLoading.set(true);
+    this.api.listRegistrosArl(pro.id).subscribe({
+      next: (r) => {
+        this.registros.set(r.data);
+        this.registrosLoading.set(false);
+      },
+      error: (err) => {
+        this.registrosLoading.set(false);
+        this.alerts.error(
+          'No se pudo cargar el registro ante las ARL',
+          mensajeError(err, 'El servidor no devolvió el catálogo de ARL de este profesional.'),
+        );
+      },
+    });
+  }
+
+  protected closeRegistros(): void {
+    if (this.registrosSaving()) return;
+    this.registrosOpen.set(false);
+    this.registrosProf.set(null);
+    this.registros.set([]);
+  }
+
+  /**
+   * Cambia un campo de una fila. Se reemplaza la lista entera (inmutable) en vez
+   * de mutar el objeto: es lo que hace que la señal avise del cambio.
+   */
+  protected editarRegistro(arlId: string, cambio: Partial<RegistroArl>): void {
+    this.registros.update((lista) =>
+      lista.map((r) => (r.arl_id === arlId ? { ...r, ...cambio } : r)),
+    );
+  }
+
+  protected guardarRegistros(): void {
+    const pro = this.registrosProf();
+    if (!pro || this.registrosSaving()) return;
+    this.registrosSaving.set(true);
+    this.api.guardarRegistrosArl(pro.id, this.registros()).subscribe({
+      next: (r) => {
+        this.registrosSaving.set(false);
+        this.registros.set(r.data);
+        const activos = r.data.filter((x) => x.registrado);
+        // La tabla se actualiza en el acto y no con un `load()` entero: la lista
+        // puede ser larga y lo único que cambió son las pastillas de esta fila.
+        this.professionals.update((lista) =>
+          lista.map((p) => (p.id === pro.id ? { ...p, registros: activos } : p)),
+        );
+        this.registrosProf.update((p) => (p ? { ...p, registros: activos } : p));
+        this.alerts.success(
+          'Registro actualizado',
+          activos.length
+            ? `${pro.name} figura registrado ante ${activos.map((x) => x.arl_nombre).join(', ')}.`
+            : `${pro.name} no queda registrado ante ninguna ARL. Sus órdenes de Bolívar tendrán ` +
+              'que salir a nombre de otro profesional.',
+        );
+      },
+      error: (err) => {
+        this.registrosSaving.set(false);
+        this.alerts.error(
+          'No se pudo guardar el registro',
+          mensajeError(err, 'Revise el código y la fecha de vigencia de cada ARL.'),
+        );
+      },
+    });
+  }
+
+  /** 'BOLÍVAR · vence 2027-03-01' — lo que se lee al pasar por la pastilla. */
+  protected tituloRegistro(r: RegistroArl): string {
+    const partes = [`Registrado ante ${r.arl_nombre}`];
+    if (r.codigo_registro) partes.push(`código ${r.codigo_registro}`);
+    if (r.vigente_hasta) partes.push(r.vencido ? `VENCIDO el ${r.vigente_hasta}` : `vigente hasta ${r.vigente_hasta}`);
+    return partes.join(' · ');
+  }
+
   // ---- Acciones: tabla ----
   protected toggleStatus(professional: Professional): void {
     this.api.toggleProfessional(professional.id).subscribe({
@@ -386,5 +487,8 @@ function toView(p: Profesional): Professional {
     ordenesEjecutadas: Number(p.ordenes_ejecutadas ?? 0),
     encuestas: Number(p.encuestas_respondidas ?? 0),
     nota: Number.isFinite(nota) && nota > 0 ? nota : null,
+    // Solo los que de verdad tienen registro: la lista viene del backend con las
+    // ARL en las que hay fila, y una ARL sin fila es "no registrado".
+    registros: (p.registros_arl ?? []).filter((r) => r.registrado),
   };
 }

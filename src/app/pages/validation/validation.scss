@@ -1774,3 +1774,115 @@
   line-height: 1.5;
   color: var(--text-muted);
 }
+
+/* ===== ASG · Suplente: los formatos a nombre de otro profesional =====
+   Va debajo de la lista de asesores, dentro de la misma columna: es una decisión
+   sobre el profesional que se acaba de elegir, no un paso aparte. */
+.suplente {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.suplente__toggle {
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.suplente__ok {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+/* El aviso de vigencia vencida o de "no hay registrados": no bloquea, avisa. */
+.suplente__aviso {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--warning);
+}
+
+.check {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  cursor: pointer;
+
+  input {
+    width: 15px;
+    height: 15px;
+    margin-top: 2px;
+    accent-color: var(--primary-color);
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+}
+
+.form-control--sm {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.82rem;
+}
+
+/* ===== Eje de facturación / cobro ===== */
+/* Filtro del encabezado: se combina con la pestaña de estado, no la sustituye. */
+.ord-head__filtro {
+  width: auto;
+  min-width: 170px;
+}
+
+/* Barra de marcado en lote: solo aparece con algo seleccionado. */
+.cobro-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 1rem;
+  background: color-mix(in srgb, var(--primary-color) 7%, transparent);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.cobro-bar__texto {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.col-check {
+  width: 34px;
+  text-align: center;
+
+  input {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--primary-color);
+    cursor: pointer;
+  }
+
+  input:disabled {
+    cursor: not-allowed;
+    opacity: 0.35;
+  }
+}
+
+/* El número de factura, bajo la pastilla: es por lo que se busca una orden
+   cuando la ARL pregunta. */
+.cobro__factura {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.cobro-card {
+  margin-top: 1rem;
+}
+
+.cobro-card__dato {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-main);
+}

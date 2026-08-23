@@ -351,3 +351,53 @@
   color: var(--text-muted);
   cursor: help;
 }
+
+/* ===== ASG · Registro ante las ARL ===== */
+/* Las pastillas de la columna se envuelven: un profesional puede estar
+   registrado ante las tres ARL y la columna no puede crecer a lo ancho. */
+.registros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  max-width: 200px;
+}
+
+.registros__sin {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* Subtítulo del modal (mismo tamaño que en Cuentas de cobro e Informes). */
+.modal__sub {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.modal__footer-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* Campos dentro de la tabla del registro: la fila tiene cinco columnas y con el
+   alto normal del formulario el modal se iría de pantalla. */
+.form-control--sm {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.82rem;
+  min-width: 120px;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+
+  input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary-color);
+    cursor: pointer;
+  }
+}

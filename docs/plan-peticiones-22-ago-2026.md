@@ -14,22 +14,24 @@
 
 ## 0. Dónde retomar
 
-**Lo siguiente es la FASE 4 (profesional registrado + suplente), §6.** Está
-diseñada y no empezada; la 5 (estado de facturación) va después y es independiente.
+**Las CINCO fases están construidas** (F1-F3 el 22-ago-2026; **F4 y F5 el
+23-ago-2026**) y sus migraciones, aplicadas a la Neon compartida. Lo que queda
+NO es código: son **las nueve decisiones del §8**, que hay que cerrar con el
+cliente, y ver la tanda entera funcionando dentro de la aplicación.
 
 Antes de escribir código:
 
 1. **Levantar el backend con `npm run dev`** (nunca `npm start`: se queda con el
    código del momento en que arrancó).
-2. **Las migraciones de las fases 1-3 YA ESTÁN APLICADAS** a la Neon compartida.
-   Están en `sst_ws/db/migraciones/` por si hay que aplicarlas a otra base;
-   `npm run migrate` entero sigue sin poder correrse (reescribe el correo y el
-   celular de la cuenta admin del cliente desde el `.env`).
+2. **Las migraciones de las cinco fases YA ESTÁN APLICADAS** a la Neon
+   compartida. Están en `sst_ws/db/migraciones/` por si hay que aplicarlas a otra
+   base; `npm run migrate` entero sigue sin poder correrse (reescribe el correo y
+   el celular de la cuenta admin del cliente desde el `.env`).
 3. **Cada `ALTER TABLE … ADD COLUMN` obliga a mirar las VISTAS** que leen esa
    tabla: Postgres congela su lista de columnas al crearlas. En la fase 3 hubo
-   que rehacer cuatro. Es la trampa 69 del HANDOFF y ya mordió dos veces.
+   que rehacer cuatro. Es la trampa 69 del HANDOFF y ya mordió tres veces.
 
-**Lo que hay que llevar al cliente antes de dar por buenas las fases 1-3:**
+**Lo que hay que llevar al cliente antes de dar la tanda por buena:**
 
 | # | Qué | Fase |
 |---|---|---|
@@ -38,11 +40,15 @@ Antes de escribir código:
 | 3 | **Añadir "Asesoría" y "Asistencia Técnica"** al catálogo de tipos de orden, con su valor hora (D-8) | F2 |
 | 4 | **Qué es `Valor Desplazamiento`** en el SIPAB: ¿el total de los otros conceptos, o uno aparte? (D-9) | F3 |
 | 5 | Las decisiones **D-1 a D-5** siguen abiertas | F2 |
+| 6 | **Ante qué ARL está registrado cada profesional**, con su código y su vigencia: la tabla nace vacía y sin ella la suplencia no se puede usar | F4 |
+| 7 | **Con suplente, ¿a quién se le paga y a quién califica la encuesta?** (D-6) | F4 |
+| 8 | **Qué estados de cobro quiere exactamente** y desde dónde arranca el eje (D-7). Se construyó con los cinco por defecto | F5 |
 
-**Y lo que nadie ha podido hacer todavía:** ver funcionando las tres fases
-**dentro de la aplicación**. No hay credenciales de administrador para el
-asistente; todo lo verificado lo está por script, contra la BD real y con
-`ROLLBACK`, o mirando los PDF generados.
+**Y lo que nadie ha podido hacer todavía:** ver funcionando la tanda **dentro de
+la aplicación**. Todo lo verificado lo está por script —contra la BD real y con
+`ROLLBACK`— o llamando a los endpoints con un JWT firmado a mano contra una
+instancia temporal en el puerto 4010. Sigue sin haber credenciales de
+administrador para el asistente.
 
 ---
 
@@ -54,8 +60,8 @@ asistente; todo lo verificado lo está por script, contra la BD real y con
 | 4 | Presencial / Virtual obligatorio en las órdenes de Bolívar | **F1** | ✅ Construida y migrada (22-ago-2026) · falta verla en la app | ⬜ |
 | 5 | Qué formatos y qué soportes según ARL, tipo y horas | **F2** | ✅ Construida y migrada (22-ago-2026) · falta verla en la app | ⬜ |
 | 1 | Viáticos opcionales por orden | **F3** | ✅ Construida y migrada (22-ago-2026) · falta verla en la app | ⬜ |
-| 3 | Profesional registrado ante la ARL + suplente | **F4** | ⬜ Sin empezar | ⬜ |
-| 6 | Estado de facturación / cobro de la orden | **F5** | ⬜ Sin empezar | ⬜ |
+| 3 | Profesional registrado ante la ARL + suplente | **F4** | ✅ Construida y migrada (23-ago-2026) · falta verla en la app | ⬜ |
+| 6 | Estado de facturación / cobro de la orden | **F5** | ✅ Construida y migrada (23-ago-2026) · falta verla en la app | ⬜ |
 
 **Por qué ese orden.** F1 no es una petición pequeña metida delante: la letra del
 tipo de actividad y el presencial/virtual son **los dos datos de los que depende
@@ -707,6 +713,8 @@ guardado, la cifra es editable a mano, y la vista previa enseña de dónde sali�
 
 ## 6. FASE 4 · Profesional registrado ante la ARL y suplente (petición 3)
 
+> ✅ **CONSTRUIDA el 23-ago-2026.** Lo que quedó y lo que falta, en **§6.3**.
+
 ### Qué pide el cliente
 Bolívar solo acepta profesionales **registrados y aprobados** en su base. No todos
 los de JD&D lo están, así que se hace un puente: **los formatos salen a nombre de
@@ -778,9 +786,76 @@ Asignar una orden de Bolívar a un no registrado, con un registrado en los
 formatos: el correo llega al ejecutor, el AT-031 sale con el nombre del
 registrado, la franja ocupa la agenda del ejecutor y la cuenta de cobro es suya.
 
+### 6.3 Lo que quedó construido (23-ago-2026)
+
+**Se siguió el diseño de §6.2 al pie de la letra:** `profesional_asignado_id`
+**no cambió de significado** —sigue siendo QUIEN EJECUTA— y la suplencia entra
+por una columna nueva. El cambio se concentró en dos sitios, como estaba
+previsto: quién firma el formato y el modal de asignación.
+
+**Backend (`sst_ws`):**
+
+| Archivo | Qué cambió |
+|---|---|
+| `db/schema.sql` + `db/migraciones/2026-08-23-registrado-arl-y-cobro.sql` | Tabla `sst.profesionales_arl` (PK compuesta profesional+ARL, con `codigo_registro`, `vigente_hasta` y `observacion`) y `ordenes_servicio.profesional_formatos_id`. La migración **rehace `vw_ordenes_expandidas`** y le añade `profesional_formatos_nombre` |
+| `modules/professionals/professionals.routes.js` | `GET /:id/arls` devuelve **una fila por ARL del catálogo**, tenga registro o no; `PUT /:id/arls` guarda las tres de una vez. El listado gana `registros_arl` como `json_agg` (subconsulta, no JOIN: un JOIN multiplicaría la ficha y repetiría el desempeño) |
+| `modules/orders/orders.routes.js` | `resolverProfesionalDeFormatos()`: el elegido tiene que estar **registrado ante la ARL de ESTA orden**, o la asignación rebota. La suplencia se guarda en el mismo UPDATE que el profesional, el correo la anuncia (fila en la tabla de datos + bloque de aviso) y la respuesta la devuelve en `profesional_formatos` |
+| `modules/orders/orders.service.js` | `generateOrderDocuments` resuelve el firmante como `profesional_formatos_id || profesional_asignado_id`. **Es el único sitio donde los dos papeles se separan** |
+| `modules/imports/drafts.routes.js` | El listado de Órdenes trae `os_profesional_formatos_id`/`_nombre` para que la suplencia se vea sin abrir la orden |
+
+**Frontend:**
+
+| Archivo | Qué cambió |
+|---|---|
+| `core/models.ts`, `core/api.service.ts` | `RegistroArl`, `Profesional.registros_arl`, `listRegistrosArl` / `guardarRegistrosArl`, y `profesional_formatos_id` en el cuerpo de `assignOrder` |
+| `pages/professionals` | Columna **"Registro ARL"** con pastillas (naranja si está vencido) y un modal propio "Registro ante las ARL" con una fila por ARL |
+| `pages/validation` | Bajo la lista de asesores: si el ejecutor **ya está registrado** se dice y no se ofrece nada; si no, un interruptor abre un segundo selector que **solo lista registrados ante esa ARL**. El botón de asignar se bloquea con el interruptor puesto y nadie elegido |
+
+#### Decisiones que hubo que tomar
+
+1. **El registro ante las ARL es un modal propio, no una sección de la ficha.**
+   El registro solo existe para un profesional YA creado (necesita su id) y se
+   guarda contra otro endpoint; meterlo dentro del formulario de alta habría
+   dejado un "Guardar" que escribe en dos sitios distintos.
+2. **Guardar es un REEMPLAZO EN BLOQUE** (`PUT /:id/arls` con las tres ARL). La
+   pantalla es una tabla con un solo botón, y mandar el estado completo evita el
+   caso de una fila guardada y otra no. Quitar la marca **borra** la fila: "no
+   registrado" es la ausencia de registro, no una fila con `registrado = false`.
+3. **La vigencia vencida AVISA, no bloquea.** La fecha la teclea un
+   administrador y puede estar sin actualizar, mientras que la orden hay que
+   asignarla hoy. Se avisa en el selector y en la respuesta de la asignación.
+4. **El cruce ARL↔profesional va por NOMBRE en el frontend**, no por id: el
+   listado de Órdenes solo trae el nombre de la ARL, igual que ya hacía el aviso
+   de "esta ARL no tiene formatos".
+
+#### Qué se verificó, y cómo
+
+| Qué | Cómo |
+|---|---|
+| El AT-031 sale con el nombre del **registrado** y no con el del ejecutor | Contra la Neon con **ROLLBACK**: orden de prueba con ejecutor JOSE ZAMUDIO y firmante JUAN FAJARDO → se generó el AT-031 y se leyeron sus campos de formulario: aparece JUAN FAJARDO y **no** aparece JOSE ZAMUDIO |
+| Sin suplencia el firmante vuelve a ser el ejecutor | Mismo ROLLBACK, poniendo la columna en NULL |
+| La vista trae las columnas nuevas (trampa 69) | `information_schema.columns` sobre **`vw_ordenes_expandidas`**, no sobre la tabla |
+| `GET`/`PUT /professionals/:id/arls` | Contra la instancia temporal de `:4010` con un JWT firmado a mano: el GET devuelve las tres ARL con registro o sin él; el PUT registra en Bolívar con código y vigencia |
+| Una fecha que no es fecha y una ARL inventada rebotan | Mismo camino: `"mañana"` → «debe ser una fecha (AAAA-MM-DD)»; uuid inexistente → «no existe en el catálogo» |
+| Un suplente **no registrado** ante esa ARL rebota **sin tocar la orden** | `POST /orders/:id/assign` sobre una OS real de Bolívar: 400 con el nombre del profesional, y la orden siguió en SIN PROGRAMAR sin profesional |
+| Compila | `ng build` y `tsc --noEmit` limpios en los dos repos |
+
+#### ❌ Lo que falta para cerrar la fase
+
+1. ✅ ~~Aplicar la migración~~ — **aplicada el 23-ago-2026** (solo ese archivo).
+2. 🔴 **La tabla `profesionales_arl` nace VACÍA.** Hasta que alguien marque quién
+   está registrado ante quién, el interruptor de suplencia no ofrece a nadie. Es
+   dato del cliente, no del código.
+3. 🔴 **D-6 sigue abierta**: con suplente, a quién se le paga y a quién califica
+   la encuesta. Se construyó con el valor por defecto (**al ejecutor**).
+4. ❌ **Verlo dentro de la aplicación**: asignar de verdad una orden de Bolívar
+   con suplente y abrir el correo y el AT-031 que llegan.
+
 ---
 
 ## 7. FASE 5 · Estado de facturación / cobro (petición 6)
+
+> ✅ **CONSTRUIDA el 23-ago-2026.** Lo que quedó y lo que falta, en **§7.1**.
 
 ### 🔁 Contexto que hay que llevar a la reunión
 Esto **es la pestaña Cartera (RPT-06)**, que se retiró entera el **19-ago-2026 a
@@ -828,6 +903,75 @@ partir de FINALIZADA.
 - **Permisos:** el `contador` tiene que poder moverlo. Hoy casi todo en
   `orders.routes.js` es `requireRole('admin')`.
 
+### 7.1 Lo que quedó construido (23-ago-2026)
+
+**Backend (`sst_ws`):**
+
+| Archivo | Qué cambió |
+|---|---|
+| `db/schema.sql` + `db/migraciones/2026-08-23-registrado-arl-y-cobro.sql` | `sst.estado_cobro` (enum de 5), cinco columnas en la orden y la tabla `sst.historial_cobro_orden`. `vw_ordenes_expandidas` rehecha |
+| `modules/orders/orders.routes.js` | `PATCH /orders/cobro` (**lote**, admin y **contador**), `GET /orders/:id/cobro` (historial), `historial_cobro` dentro del detalle y filtro `?estado_cobro=` en el listado |
+| `modules/reports/reports.routes.js` | `GET /reports/cobro`: totales, desglose por estado, pendiente por ARL y el detalle orden a orden |
+| `modules/imports/drafts.routes.js` | El listado de Órdenes trae `os_estado_cobro` y `os_cobro_numero_factura` |
+
+**Frontend:**
+
+| Archivo | Qué cambió |
+|---|---|
+| `core/models.ts` | `EstadoCobro`, `ESTADOS_COBRO`, `HistorialCobro`, `ReporteCobro`, `OrdenCobro` y los campos en `Orden` y `Borrador` |
+| `core/api.service.ts` | `marcarCobro`, `orderCobroHistory`, `reporteCobro` |
+| `pages/validation` | Columna **Cobro** con pastilla y número de factura, filtro en el encabezado, **casilla por fila** (solo en las FINALIZADAS) con barra de lote, modal de marcado y bloque **"Facturación a la ARL"** en el detalle con su historial |
+| `pages/reports` | Pestaña **Cobro**: cuatro KPI, barras por estado y pendiente por ARL, detalle paginado y exportación a Excel y PDF |
+
+#### Decisiones que hubo que tomar
+
+1. **El eje arranca en FINALIZADA** (el valor por defecto de D-7). Antes del
+   cierre no hay nada que facturarle a la ARL. Un lote mixto **no se rechaza
+   entero**: se mueven las que se puede y se devuelven enumeradas las que
+   quedaron fuera —tirar treinta marcas por una sería peor.
+2. **`FACTURADA` exige número de factura.** Es el dato por el que se busca una
+   orden cuando la ARL pregunta, y sin exigirlo justo en el estado que lo produce
+   quedaría una tabla llena de "FACTURADA" sin decir con cuál.
+3. **Volver a marcar el mismo estado no escribe historial.** No es un error, pero
+   una fila idéntica más taparía el cambio de verdad.
+4. **La cifra del informe es `valor_total`** —lo que se le cobra a la ARL—, **no
+   `valor_cobro_total`**, que es lo que JD&D le paga al profesional. Son dos
+   números distintos y confundirlos daría un pendiente que no existe. Los
+   viáticos van en columna aparte, porque si se le cobran a la ARL o no sigue
+   siendo la decisión D-9.
+5. **El eje NO es una pestaña más de Órdenes**, es un filtro aparte: como
+   pestañas serían el producto cartesiano de los dos ejes.
+6. **`vw_horas_ejecutadas` no se tocó.** El cobro a la ARL no es lo que se le
+   paga al profesional, así que la cuenta de cobro (M9) no necesita ver estas
+   columnas — y con ella se quedó quieta `vw_horas_por_cobrar`, que cuelga de la
+   anterior con CASCADE.
+
+#### Qué se verificó, y cómo
+
+| Qué | Cómo |
+|---|---|
+| Los tres saltos del eje y su historial | Contra la Neon con **ROLLBACK**: `NO FACTURADA → RADICADA → FACTURADA (FV-TEST-1) → PAGADA`, tres filas de historial y la factura conservada |
+| Un estado que no existe rebota | Mismo ROLLBACK contra el enum, y por HTTP con el mensaje en cristiano |
+| `FACTURADA` sin número rebota | `PATCH /orders/cobro` contra `:4010` |
+| Un **lote mixto** mueve lo que puede y enumera lo demás | Una FINALIZADA + una PROGRAMADA → «1 orden marcada como RADICADA. Quedaron fuera OS-2026-0002: …» |
+| Repetir el mismo estado no duplica historial | Segundo PATCH idéntico → «0 órdenes marcadas. 1 ya estaba en ese estado» |
+| Permisos | **auditor → 403**; **contador → pasa** (400 por lista vacía, no 403) |
+| El informe cuadra | `GET /reports/cobro` sobre las 4 finalizadas reales: totales, `por_estado` y `por_arl` con el pendiente separado |
+| Los datos reales quedaron como estaban | La prueba sobre OS-2026-0003 se revirtió: las 13 órdenes vuelven a estar en `NO FACTURADA` y el historial de cobro, vacío |
+| Compila | `ng build` y `tsc --noEmit` limpios en los dos repos |
+
+#### ❌ Lo que falta para cerrar la fase
+
+1. ✅ ~~Aplicar la migración~~ — **aplicada el 23-ago-2026**.
+2. 🔴 **D-7 sigue abierta**: qué estados quiere exactamente el cliente y desde
+   dónde arranca el eje. Se construyó con los cinco por defecto y desde
+   FINALIZADA. Cambiar los estados es tocar el enum (`ALTER TYPE … ADD VALUE`
+   añade; **quitar uno obliga a recrear el tipo**).
+3. ⚪ El eje **no se mueve solo**: nadie marca nada automáticamente al generar la
+   cuenta de cobro ni al cerrar la orden. Es deliberado —radicar ante la ARL es
+   un acto de la contadora, no un efecto de la plataforma— pero conviene decirlo.
+4. ❌ **Verlo dentro de la aplicación.**
+
 ---
 
 ## 8. Decisiones pendientes ⚠️
@@ -841,8 +985,8 @@ Ninguna bloquea empezar; todas cambian el resultado.
 | **D-3** | F2 | **Colmena:** las carpetas nuevas no traen el **PSP-F-006 (registro de asistencia)** que la app manda hoy, y sí un **PSP-F-007** que no conocemos. ¿El PSP-F-006 se retira o convive? Y en asesoría, ¿informe **TIPO A o TIPO B**, y qué los distingue? | cliente | mantener el PSP-F-006 y **añadir** el PSP-F-007; preguntar por A/B antes de construir |
 | **D-4** | F2 | **AXA · corte de 16:** la carpeta dice «16 **unidades**», no horas. En órdenes que no se miden en horas, ¿contra qué se compara? | cliente | `horas_asignadas ≤ 16`, y avisar si la orden no está medida en horas |
 | **D-5** | F2 | **La tabla de soportes de §4.1** solo está dictada por el cliente en las dos filas de Bolívar; el resto es propuesta nuestra | cliente | validarla fila a fila antes de construir |
-| **D-6** | F4 | **Con suplente, ¿a quién se le paga y a quién califica la encuesta?** | cliente | al **ejecutor**: hizo el trabajo, y es a quien vio el cliente final |
-| **D-7** | F5 | **Qué estados de cobro** quiere exactamente, y si el eje arranca en EJECUTADA o en FINALIZADA | cliente | NO FACTURADA → RADICADA → APROBADA → FACTURADA → PAGADA, desde FINALIZADA |
+| **D-6** | F4 | **Con suplente, ¿a quién se le paga y a quién califica la encuesta?** | cliente | al **ejecutor**: hizo el trabajo, y es a quien vio el cliente final · **construido así** |
+| **D-7** | F5 | **Qué estados de cobro** quiere exactamente, y si el eje arranca en EJECUTADA o en FINALIZADA | cliente | NO FACTURADA → RADICADA → APROBADA → FACTURADA → PAGADA, desde FINALIZADA · **construido así** |
 | **D-8** | F1 | **La letra de Bolívar y el catálogo `tipos_orden` (CFG-04)** son hoy dos cosas: la letra tiene 6 valores y el catálogo tiene 3 (Capacitación, Asesoría, Inspección). ¿Se cruzan? | equipo + cliente | conviven; la letra **preselecciona** el tipo, y `tipos_orden` gana **"Asistencia Técnica"** para que `T` tenga destino y F2 pueda enrutar |
 | **D-9** | F3 | Los viáticos, ¿los paga JD&D al profesional, los cobra a la ARL, o ambas? De ahí sale si van solo en la cuenta de cobro, solo en la facturación (F5) o en las dos | cliente | ambas: la ARL los autoriza y JD&D los traslada |
 

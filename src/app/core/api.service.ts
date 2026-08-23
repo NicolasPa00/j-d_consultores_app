@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from './config';
-import { ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, Usuario, Vista } from './models';
+import { ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, Usuario, Vista } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -87,6 +87,11 @@ type RespuestaAsignacion = Wrap<Orden> & {
     soportes: string[];
     aviso: string | null;
   };
+  /**
+   * ASG · A nombre de quién salieron los formatos, cuando NO es el ejecutor
+   * (profesional registrado ante la ARL). `null` en el caso normal.
+   */
+  profesional_formatos?: { id: string; nombre: string } | null;
 };
 
 /**
@@ -178,6 +183,12 @@ export class ApiService {
       fecha_programada?: string;
       /** ASG-02 · Franjas de la visita. El servidor deriva de ellas la fecha. */
       franjas?: { fecha: string; hora_inicio: string; hora_fin: string }[];
+      /**
+       * ASG · A nombre de quién salen los FORMATOS cuando el ejecutor no está
+       * registrado ante la ARL. Se omite en el caso normal; el servidor exige
+       * que el elegido esté registrado ante la ARL de esta orden.
+       */
+      profesional_formatos_id?: string;
     },
   ): Observable<RespuestaAsignacion> {
     return this.http.post<RespuestaAsignacion>(`${this.base}/orders/${id}/assign`, body);
@@ -242,6 +253,38 @@ export class ApiService {
   /** EST-03 · Log de auditoría de cambios de estado de la OS. */
   orderHistory(orderId: string): Observable<Wrap<HistorialEstado[]>> {
     return this.http.get<Wrap<HistorialEstado[]>>(`${this.base}/orders/${orderId}/history`);
+  }
+
+  // ---- Estado de facturación / cobro (ago-2026, petición 6) ----
+  /**
+   * Marca el estado de cobro de VARIAS órdenes de una vez.
+   *
+   * En lote porque así se factura: se radica un paquete ante la ARL y se marcan
+   * todas juntas. El servidor solo mueve las FINALIZADAS y devuelve enumeradas
+   * las que quedaron fuera, así que la respuesta hay que enseñarla, no
+   * descartarla.
+   */
+  marcarCobro(
+    ids: string[], estado: EstadoCobro,
+    extra: { numero_factura?: string; observacion?: string } = {},
+  ): Observable<{
+    message: string; estado: EstadoCobro; actualizadas: string[];
+    sin_cambio: string[]; no_finalizadas: string[]; inexistentes: string[];
+  }> {
+    return this.http.patch<{
+      message: string; estado: EstadoCobro; actualizadas: string[];
+      sin_cambio: string[]; no_finalizadas: string[]; inexistentes: string[];
+    }>(`${this.base}/orders/cobro`, { ids, estado, ...extra });
+  }
+
+  /** Historial del eje de cobro de una orden (quién la movió y cuándo). */
+  orderCobroHistory(orderId: string): Observable<Wrap<HistorialCobro[]>> {
+    return this.http.get<Wrap<HistorialCobro[]>>(`${this.base}/orders/${orderId}/cobro`);
+  }
+
+  /** Informes → Cobro: lo cerrado y qué falta por radicar, facturar y cobrar. */
+  reporteCobro(filtros: { arl_id?: string; estado_cobro?: string } = {}): Observable<Wrap<ReporteCobro>> {
+    return this.http.get<Wrap<ReporteCobro>>(`${this.base}/reports/cobro${queryString(filtros)}`);
   }
 
   // ---- Cuentas de cobro (M9) ----
@@ -439,6 +482,24 @@ export class ApiService {
   }
   updateProfessional(id: string, body: Partial<Profesional>): Observable<Wrap<Profesional>> {
     return this.http.put<Wrap<Profesional>>(`${this.base}/professionals/${id}`, body);
+  }
+  /**
+   * ASG · Registro del profesional ante cada ARL. Devuelve UNA FILA POR ARL del
+   * catálogo, tenga registro o no: así la pantalla no tiene que cruzar el
+   * catálogo por su cuenta.
+   */
+  listRegistrosArl(profId: string): Observable<Wrap<RegistroArl[]>> {
+    return this.http.get<Wrap<RegistroArl[]>>(`${this.base}/professionals/${profId}/arls`);
+  }
+  /**
+   * Guarda el registro ante TODAS las ARL de una vez. Es un reemplazo en bloque
+   * a propósito: la pantalla es una tabla con un solo botón de guardar, y mandar
+   * el estado completo evita el caso de una fila guardada y otra no.
+   */
+  guardarRegistrosArl(profId: string, registros: RegistroArl[]): Observable<Wrap<RegistroArl[]>> {
+    return this.http.put<Wrap<RegistroArl[]>>(
+      `${this.base}/professionals/${profId}/arls`, { registros },
+    );
   }
   toggleProfessional(id: string): Observable<Wrap<Profesional>> {
     return this.http.patch<Wrap<Profesional>>(`${this.base}/professionals/${id}/estado`, {});

@@ -9,7 +9,7 @@ import { ExtractedField, ServiceOrder } from '../../data/service-orders';
 import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
-import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, EstadoOrden, TipoOrden, FranjaVisita, HistorialEstado, Ocupacion, Orden, Plantilla, Profesional } from '../../core/models';
+import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, FranjaVisita, HistorialCobro, HistorialEstado, Ocupacion, Orden, Plantilla, Profesional, RegistroArl } from '../../core/models';
 import { aIsoFecha, fechaLocal } from '../../core/fechas';
 import {
   ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, opcionesDeCampo,
@@ -84,6 +84,8 @@ interface ResultadoAsignacion {
   formatos: number | null;
   /** FOR · Lo que hay que revisar de la entrega, si la matriz decidió a ciegas. */
   avisoEntrega?: string | null;
+  /** ASG · A nombre de quién salieron los formatos, si no fue el ejecutor. */
+  formatosProf?: { id: string; nombre: string } | null;
   /**
    * ASG-02 · false cuando la visita quedó a medio repartir: se guardó el
    * profesional y las franjas marcadas, pero la OS sigue SIN PROGRAMAR y nadie
@@ -205,6 +207,29 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
 
+  // ---- Eje de facturación / cobro (ago-2026, petición 6) ----
+  /**
+   * Es un eje INDEPENDIENTE del ciclo operativo: una OS FINALIZADA puede estar
+   * sin facturar, radicada ante la ARL, aprobada, facturada o pagada. Por eso no
+   * es una pestaña más —serían el producto de dos ejes— sino un filtro aparte
+   * que se combina con la pestaña de estado.
+   */
+  protected readonly estadosCobro = ESTADOS_COBRO;
+  protected readonly filtroCobro = signal<EstadoCobro | ''>('');
+  /**
+   * Órdenes marcadas para el cambio en lote. La facturación se radica por
+   * paquetes: marcar cuarenta órdenes de una en una no lo iba a usar nadie, y la
+   * funcionalidad se moriría igual que se murió la Cartera (RPT-06).
+   */
+  protected readonly seleccionCobro = signal<Set<string>>(new Set());
+  protected readonly cobroOpen = signal(false);
+  protected readonly cobroEstado = signal<EstadoCobro>('RADICADA');
+  protected cobroFactura = '';
+  protected cobroObservacion = '';
+  protected readonly cobroSaving = signal(false);
+  /** Historial del eje de cobro de la orden abierta en el detalle. */
+  protected readonly historialCobro = signal<HistorialCobro[]>([]);
+
   // ---- Modal de detalle / edición ----
   protected readonly detailId = signal<string | null>(null);
   protected readonly editMode = signal(false);
@@ -265,6 +290,16 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected readonly selectedProfId = signal<string | null>(null);
   protected readonly selectedProfSlots = signal<FranjaVista[]>([]);
   protected readonly assigning = signal(false);
+  /**
+   * ASG · Suplencia: los formatos salen a nombre de OTRO profesional.
+   *
+   * Bolívar solo acepta radicados a nombre de profesionales que ella tiene
+   * registrados. Cuando el que puede ir no lo está, la visita la ejecuta él y el
+   * formato lleva el nombre de un registrado. `usarSuplente` es el interruptor
+   * que abre el segundo selector; `formatosProfId`, a quién se eligió.
+   */
+  protected readonly usarSuplente = signal(false);
+  protected readonly formatosProfId = signal<string | null>(null);
   /**
    * ASG-02 · Franjas en que se ejecuta la visita.
    *
@@ -353,8 +388,14 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected readonly filtered = computed(() => {
     const q = this.query().trim().toLowerCase();
     const view = this.view();
+    const cobro = this.filtroCobro();
     return this.orders().filter((o) => {
       if (!this.enVista(o, view)) return false;
+      // El eje de facturación filtra APARTE del ciclo operativo: la pregunta que
+      // se hace desde aquí es "qué está finalizado y sin radicar", que son los
+      // dos ejes a la vez. Las órdenes sin OS todavía no tienen estado de cobro,
+      // así que quedan fuera en cuanto se filtra por él.
+      if (cobro && (o.estadoCobro ?? null) !== cobro) return false;
       if (!q) return true;
       return (
         o.company.toLowerCase().includes(q) ||
@@ -637,6 +678,162 @@ export class ValidationComponent implements OnInit, OnDestroy {
     // Cambiar de pestaña es empezar a mirar otra cosa: seguir en la página 4
     // dejaría la tabla en un tramo que el usuario no eligió.
     this.pag.reiniciar();
+    // Y lo marcado deja de estar a la vista: aplicar un cambio en lote a filas
+    // que ya no se ven es la forma más fácil de facturar la orden equivocada.
+    this.seleccionCobro.set(new Set());
+  }
+
+  // ================= Eje de facturación / cobro =================
+  /**
+   * El eje solo se mueve sobre órdenes FINALIZADAS (decisión D-7): antes del
+   * cierre no hay nada que facturarle a la ARL. El servidor aplica la misma
+   * regla; esto solo evita que se marquen filas que iban a rebotar.
+   */
+  protected puedeCobrar(o: ServiceOrder): boolean {
+    return !o.disabled && !!o.osId && o.osEstado === 'FINALIZADA';
+  }
+
+  protected filtrarCobro(valor: string): void {
+    this.filtroCobro.set((valor || '') as EstadoCobro | '');
+    this.pag.reiniciar();
+    this.seleccionCobro.set(new Set());
+  }
+
+  protected cobroMarcado(id: string): boolean {
+    return this.seleccionCobro().has(id);
+  }
+
+  protected alternarCobro(o: ServiceOrder, marcado: boolean): void {
+    if (!this.puedeCobrar(o)) return;
+    this.seleccionCobro.update((set) => {
+      const copia = new Set(set);
+      if (marcado) copia.add(o.osId!);
+      else copia.delete(o.osId!);
+      return copia;
+    });
+  }
+
+  /**
+   * Marca (o desmarca) todas las FINALIZADAS de la página visible.
+   *
+   * De la página, no de la bandeja entera: el atajo tiene que aplicar a lo que
+   * se está viendo, o marcaría órdenes que quien pulsa no ha mirado.
+   */
+  protected alternarCobroPagina(marcado: boolean): void {
+    const dePagina = this.pag.visibles().filter((o) => this.puedeCobrar(o));
+    this.seleccionCobro.update((set) => {
+      const copia = new Set(set);
+      for (const o of dePagina) {
+        if (marcado) copia.add(o.osId!);
+        else copia.delete(o.osId!);
+      }
+      return copia;
+    });
+  }
+
+  protected readonly todasDeLaPaginaMarcadas = computed(() => {
+    const dePagina = this.pag.visibles().filter((o) => this.puedeCobrar(o));
+    const set = this.seleccionCobro();
+    return dePagina.length > 0 && dePagina.every((o) => set.has(o.osId!));
+  });
+
+  /** Abre el diálogo de marcado. Sin `soloEsta` actúa sobre lo seleccionado. */
+  protected openCobro(soloEsta?: ServiceOrder): void {
+    if (soloEsta) {
+      if (!this.puedeCobrar(soloEsta)) return;
+      this.seleccionCobro.set(new Set([soloEsta.osId!]));
+      this.cobroEstado.set((soloEsta.estadoCobro as EstadoCobro) || 'RADICADA');
+      this.cobroFactura = soloEsta.cobroNumeroFactura ?? '';
+    } else {
+      if (!this.seleccionCobro().size) return;
+      this.cobroEstado.set('RADICADA');
+      this.cobroFactura = '';
+    }
+    this.cobroObservacion = '';
+    this.cobroOpen.set(true);
+  }
+
+  protected closeCobro(): void {
+    if (this.cobroSaving()) return;
+    this.cobroOpen.set(false);
+  }
+
+  /** Cuántas órdenes va a tocar el cambio; se dice en el propio diálogo. */
+  protected readonly cobroSeleccionadas = computed(() => this.seleccionCobro().size);
+
+  protected guardarCobro(): void {
+    const ids = [...this.seleccionCobro()];
+    if (!ids.length || this.cobroSaving()) return;
+    const estado = this.cobroEstado();
+    // El número de factura es el dato por el que se busca una orden cuando la
+    // ARL pregunta. El backend lo exige también: esto solo adelanta el aviso.
+    if (estado === 'FACTURADA' && !this.cobroFactura.trim()) {
+      this.alerts.warning(
+        'Falta el número de factura',
+        'Para marcar como FACTURADA hay que indicar con qué factura se hizo.',
+      );
+      return;
+    }
+    this.cobroSaving.set(true);
+    this.api.marcarCobro(ids, estado, {
+      numero_factura: this.cobroFactura.trim() || undefined,
+      observacion: this.cobroObservacion.trim() || undefined,
+    }).subscribe({
+      next: (r) => {
+        this.cobroSaving.set(false);
+        this.cobroOpen.set(false);
+        this.seleccionCobro.set(new Set());
+        // La tabla se actualiza en el acto y solo en lo que cambió: el servidor
+        // dice cuáles movió, y las que rechazó tienen que seguir viéndose como
+        // estaban o el aviso de "quedaron fuera" no cuadraría con la pantalla.
+        const movidas = new Set(r.actualizadas);
+        this.orders.update((list) =>
+          list.map((o) =>
+            o.osId && movidas.has(o.osId)
+              ? {
+                  ...o,
+                  estadoCobro: estado,
+                  cobroNumeroFactura: this.cobroFactura.trim() || o.cobroNumeroFactura,
+                }
+              : o,
+          ),
+        );
+        // Se enseña el mensaje del servidor tal cual: es el que enumera las que
+        // quedaron fuera por no estar FINALIZADAS.
+        const parcial = r.no_finalizadas.length || r.sin_cambio.length;
+        if (parcial) this.alerts.warning('Estado de cobro actualizado en parte', r.message);
+        else this.alerts.success('Estado de cobro actualizado', r.message);
+        // El detalle abierto se refresca para que su historial incluya el cambio.
+        const abierta = this.detailOrder();
+        if (abierta?.osId && movidas.has(abierta.osId)) this.cargarHistorialCobro(abierta.osId);
+      },
+      error: (err) => {
+        this.cobroSaving.set(false);
+        this.alerts.error(
+          'No se pudo cambiar el estado de cobro',
+          mensajeError(err, 'El servidor rechazó el cambio. Solo se mueve sobre órdenes FINALIZADAS.'),
+        );
+      },
+    });
+  }
+
+  private cargarHistorialCobro(osId: string): void {
+    this.api.orderCobroHistory(osId).subscribe({
+      next: (r) => this.historialCobro.set(r.data),
+      // Es auditoría de apoyo: si falla, el detalle sigue siendo usable.
+      error: () => this.historialCobro.set([]),
+    });
+  }
+
+  /** Color de la pastilla del eje de cobro. Verde solo cuando ya está pagada. */
+  protected pillCobro(estado?: EstadoCobro | null): string {
+    switch (estado) {
+      case 'RADICADA': return 'pill--info';
+      case 'APROBADA': return 'pill--info';
+      case 'FACTURADA': return 'pill--warning';
+      case 'PAGADA': return 'pill--success';
+      default: return 'pill--muted'; // NO FACTURADA
+    }
   }
 
   /**
@@ -739,8 +936,12 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.historialAbierto.set(false);
     const order = this.orders().find((o) => o.id === id);
     this.tipoOrdenEdit = order?.tipoOrdenId ?? '';
+    this.historialCobro.set([]);
     if (order?.osId) {
       this.cargarCamposDeLaOS(order.id, order.osId);
+      // El eje de cobro tiene su propio historial, aparte del de estados: son dos
+      // líneas de tiempo distintas sobre la misma orden.
+      this.cargarHistorialCobro(order.osId);
     }
   }
 
@@ -977,6 +1178,11 @@ export class ValidationComponent implements OnInit, OnDestroy {
     // Al reprogramar se parte de lo que ya está pactado, no de un formulario en
     // blanco: normalmente solo cambia la fecha o el profesional.
     this.selectedProfId.set(order?.assignedProfId ?? null);
+    // ASG · La suplencia también se hereda: reprogramar una orden que ya salía a
+    // nombre de otro y que el segundo selector apareciera vacío la borraría sin
+    // que nadie lo pidiera.
+    this.formatosProfId.set(order?.formatosProfId ?? null);
+    this.usarSuplente.set(!!order?.formatosProfId);
     const programada = order?.scheduledAt ? new Date(order.scheduledAt) : null;
     // La agenda abre en la semana de la visita; si aún no hay, en la de hoy.
     this.agendaAncla.set(lunesDe(programada ? isoFecha(programada) : isoFecha(new Date())));
@@ -1059,6 +1265,57 @@ export class ValidationComponent implements OnInit, OnDestroy {
     const plantillas = this.plantillasActivas();
     if (!plantillas.length) return false;
     return !plantillas.some((p) => !p.arl_id || p.arl_nombre === arl);
+  }
+
+  // ---- ASG · Profesional registrado ante la ARL y suplente ----
+  /**
+   * ¿Está este profesional registrado ante la ARL de la orden que se asigna?
+   *
+   * El cruce va por NOMBRE de ARL, como el resto del modal: el borrador solo
+   * trae el nombre y no su id.
+   */
+  private registradoEn(prof: Profesional | undefined, arl: string | undefined): boolean {
+    if (!prof || !arl) return false;
+    return (prof.registros_arl ?? []).some((r) => r.registrado && r.arl_nombre === arl);
+  }
+
+  /**
+   * ¿Quien va a ejecutar está registrado ante esta ARL? Si lo está, la suplencia
+   * sobra y el interruptor se explica solo: los formatos ya pueden salir a su
+   * nombre.
+   */
+  protected ejecutorRegistrado(): boolean {
+    const prof = this.professionals().find((p) => p.id === this.selectedProfId());
+    return this.registradoEn(prof, this.assignOrder()?.arl);
+  }
+
+  /**
+   * Los que SÍ pueden firmar los formatos de esta ARL. El ejecutor se excluye:
+   * si estuviera registrado no haría falta suplente, y ofrecérselo a sí mismo
+   * solo confunde.
+   */
+  protected readonly registradosDeLaArl = computed(() => {
+    const arl = this.assignOrder()?.arl;
+    const ejecutor = this.selectedProfId();
+    return this.professionals().filter(
+      (p) => p.id !== ejecutor && this.registradoEn(p, arl),
+    );
+  });
+
+  /** El registro concreto del suplente elegido, para avisar si está vencido. */
+  protected registroDelSuplente(): RegistroArl | undefined {
+    const arl = this.assignOrder()?.arl;
+    const prof = this.professionals().find((p) => p.id === this.formatosProfId());
+    return (prof?.registros_arl ?? []).find((r) => r.registrado && r.arl_nombre === arl);
+  }
+
+  /**
+   * Al apagar el interruptor se limpia la elección: dejarla puesta mandaría al
+   * servidor un suplente que la pantalla ya no está enseñando.
+   */
+  protected alternarSuplente(activo: boolean): void {
+    this.usarSuplente.set(activo);
+    if (!activo) this.formatosProfId.set(null);
   }
 
   /** Franjas ordenadas por fecha y hora: así se leen y así se mandan. */
@@ -1280,11 +1537,20 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.selectedProfSlots.set([]);
     this.otrasVisitas.set([]);
     this.franjasVisita.set([]);
+    this.usarSuplente.set(false);
+    this.formatosProfId.set(null);
   }
 
   protected async selectProf(id: string): Promise<void> {
     if (id === this.selectedProfId()) return;
     this.selectedProfId.set(id);
+    // ASG · Cambiar de ejecutor puede dejar como suplente al mismo que acaba de
+    // elegirse (o hacer innecesaria la suplencia): se limpia para no mandar al
+    // servidor un firmante que la pantalla ya no ofrece.
+    if (this.formatosProfId() === id) {
+      this.formatosProfId.set(null);
+      this.usarSuplente.set(false);
+    }
     this.loadSlots(id);
   }
 
@@ -1613,6 +1879,10 @@ export class ValidationComponent implements OnInit, OnDestroy {
               hora_inicio: f.hora_inicio,
               hora_fin: f.hora_fin,
             })),
+            // ASG · Solo viaja si el interruptor está puesto. `undefined` (y no
+            // null ni '') es lo que hace que el servidor lo lea como "sin
+            // suplencia": el campo se omite del cuerpo entero.
+            profesional_formatos_id: this.usarSuplente() ? (this.formatosProfId() ?? undefined) : undefined,
           })
           .pipe(
             map((r) => ({
@@ -1621,6 +1891,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
               correo: r.correo_enviado !== false,
               formatos: r.formatos_generados ?? null,
               avisoEntrega: r.entrega?.aviso ?? null,
+              formatosProf: r.profesional_formatos ?? null,
               completa: r.completa !== false,
               faltan: r.faltan_minutos ?? null,
               horasOrden: r.minutos_orden ?? null,
@@ -1651,6 +1922,12 @@ export class ValidationComponent implements OnInit, OnDestroy {
                     osEstado: os.estado,
                     assignedProf: os.profesional_nombre ?? nombreProf,
                     assignedProfId: profId,
+                    // ASG · La suplencia sale de la respuesta y no del formulario:
+                    // el servidor es quien decide si el elegido cuenta (tiene que
+                    // estar registrado ante la ARL), y quien la anula cuando
+                    // coincide con el ejecutor.
+                    formatosProfId: res.formatosProf?.id ?? null,
+                    formatosProf: res.formatosProf?.nombre ?? null,
                     scheduledAt: os.fecha_programada ?? fechaProgramada,
                   }
                 : o,
@@ -1666,6 +1943,8 @@ export class ValidationComponent implements OnInit, OnDestroy {
         this.selectedProfId.set(null);
         this.selectedProfSlots.set([]);
         this.franjasVisita.set([]);
+        this.usarSuplente.set(false);
+        this.formatosProfId.set(null);
 
         const franjas = res.os && visita > 1
           ? ` La visita quedó repartida en ${visita} franjas.`
@@ -1709,9 +1988,16 @@ export class ValidationComponent implements OnInit, OnDestroy {
             `${nombreProf} recibió el correo. ${res.avisoEntrega}${franjas}`,
           );
         } else if (res.os) {
+          // ASG · Con suplencia hay dos nombres en juego y confundirlos es caro:
+          // se dice explícitamente quién ejecuta y a nombre de quién se imprimió.
+          const suplente = res.formatosProf
+            ? ` Los formatos salieron a nombre de ${res.formatosProf.nombre}, que es quien está ` +
+              `registrado ante ${order.arl}.`
+            : '';
           this.alerts.success(
             reprograma ? 'Orden reprogramada' : 'Orden asignada',
-            `${nombreProf} recibió por correo los formatos diligenciados y el enlace para subir los soportes.${franjas}`,
+            `${nombreProf} recibió por correo los formatos diligenciados y el enlace para subir ` +
+            `los soportes.${suplente}${franjas}`,
           );
         } else {
           this.alerts.success(
@@ -1863,7 +2149,11 @@ export class ValidationComponent implements OnInit, OnDestroy {
     });
   }
 
-  protected fechaHistorial(h: HistorialEstado): string {
+  /**
+   * Sirve para las DOS líneas de tiempo del detalle (estados y cobro): las dos
+   * fechan igual, y duplicar el formateador dejaría que una se quedara atrás.
+   */
+  protected fechaHistorial(h: HistorialEstado | HistorialCobro): string {
     return h.cambiado_en ? new Date(h.cambiado_en).toLocaleString('es-CO') : '—';
   }
 
@@ -2422,6 +2712,12 @@ function toServiceOrder(b: Borrador): ServiceOrder {
     tipoOrden: b.tipo_orden ?? null,
     valorHoraCobro: b.valor_hora_cobro != null ? Number(b.valor_hora_cobro) : null,
     valorHoraOrigen: b.valor_hora_origen ?? null,
+    formatosProfId: b.os_profesional_formatos_id ?? null,
+    formatosProf: b.os_profesional_formatos_nombre ?? null,
+    // El eje de facturación solo existe sobre la OS: un borrador sin validar no
+    // tiene nada que facturarse, y por eso puede llegar null.
+    estadoCobro: b.os_estado_cobro ?? null,
+    cobroNumeroFactura: b.os_cobro_numero_factura ?? null,
     fields: {
       codigoCronograma: field(m.codigo_cronograma),
       secuencia: field(m.secuencia),

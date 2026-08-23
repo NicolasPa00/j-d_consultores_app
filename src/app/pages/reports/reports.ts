@@ -6,13 +6,13 @@ import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import {
-  Encuesta, EncuestaStats, FiltroEncuestas, Orden, Profesional,
-  ReporteHoras, ReporteVencidas,
+  Encuesta, EncuestaStats, EstadoCobro, ESTADOS_COBRO, FiltroEncuestas, Orden, Profesional,
+  ReporteCobro, ReporteHoras, ReporteVencidas,
 } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
-type ReportTab = 'ordenes' | 'profesionales' | 'satisfaccion' | 'vencidas' | 'horas';
+type ReportTab = 'ordenes' | 'profesionales' | 'satisfaccion' | 'vencidas' | 'horas' | 'cobro';
 
 /** Estados de OS del backend, en orden de ciclo de vida. */
 // El ciclo vigente son tres estados; los dos últimos se conservan en la lista
@@ -68,6 +68,20 @@ export class ReportsComponent implements OnInit {
   protected umbralDias = 60;
   protected desde = primerDiaDelAnio();
   protected hasta = hoyIso();
+  // ---- Estado de facturación (ago-2026, petición 6) ----
+  /**
+   * Responde a la pregunta que el cliente hizo en la reunión: «de lo que ya
+   * ejecutamos, ¿qué falta por radicar, por facturar y por cobrar?».
+   *
+   * ⚠️ Las cifras son el valor de la orden SEGÚN LA ARL (`valor_total`), que es
+   * lo que se le cobra a ella. NO es lo que JD&D le paga al profesional — eso
+   * vive en Cuentas de cobro. Son dos números distintos y confundirlos daría un
+   * pendiente que no existe.
+   */
+  protected readonly cobroRep = signal<ReporteCobro | null>(null);
+  protected readonly estadosCobro = ESTADOS_COBRO;
+  protected readonly cobroEstadoFiltro = signal<EstadoCobro | ''>('');
+
   // ---- Modal de resumen ----
   protected readonly summaryOrder = signal<Orden | null>(null);
   protected readonly summaryLoading = signal(false);
@@ -86,6 +100,7 @@ export class ReportsComponent implements OnInit {
     if (this.activeTab() === 'satisfaccion') {
       return !!this.encArl() || !!this.encProf() || !!this.encRespondida();
     }
+    if (this.activeTab() === 'cobro') return !!this.cobroEstadoFiltro();
     return !!this.profEstadoFilter() || !!this.query().trim();
   });
 
@@ -130,6 +145,10 @@ export class ReportsComponent implements OnInit {
   protected readonly pagSatProf = paginar(computed(() => this.surveyStats()?.por_profesional ?? []));
   protected readonly pagSatMes = paginar(computed(() => this.surveyStats()?.por_mes ?? []));
   protected readonly pagHorasMes = paginar(computed(() => this.horasRep()?.por_mes ?? []));
+  // El listado de cobro crece con TODO lo finalizado del histórico, así que se
+  // pagina como las demás tablas de detalle. Los desgloses por estado (cinco) y
+  // por ARL (tres) tienen tamaño estructural y no.
+  protected readonly pagCobro = paginar(computed(() => this.cobroRep()?.ordenes ?? []));
 
   ngOnInit(): void {
     if (!this.isBrowser) return;
@@ -234,6 +253,56 @@ export class ReportsComponent implements OnInit {
     });
   }
 
+  /**
+   * Estado de facturación de lo ya cerrado. Se recarga entero al cambiar el
+   * filtro: el desglose por estado lo calcula el servidor SIN ese recorte —si no,
+   * al filtrar por RADICADA quedaría una sola barra y no habría contra qué
+   * comparar—, así que no se puede filtrar en el cliente.
+   */
+  protected cargarCobro(): void {
+    this.loadingReporte.set(true);
+    const filtros: { estado_cobro?: string } = {};
+    if (this.cobroEstadoFiltro()) filtros.estado_cobro = this.cobroEstadoFiltro();
+    this.api.reporteCobro(filtros).subscribe({
+      next: (r) => { this.cobroRep.set(r.data); this.pagCobro.reiniciar(); this.loadingReporte.set(false); },
+      error: (err) => {
+        this.cobroRep.set(null);
+        this.loadingReporte.set(false);
+        this.alerts.error(
+          'No se pudo cargar el estado de facturación',
+          mensajeError(err, 'El servidor no devolvió las órdenes finalizadas.'),
+        );
+      },
+    });
+  }
+
+  protected onCobroFiltroChange(valor: string): void {
+    this.cobroEstadoFiltro.set((valor || '') as EstadoCobro | '');
+    this.cargarCobro();
+  }
+
+  /** Color de la pastilla del eje de cobro. Verde solo cuando ya está pagada. */
+  protected pillCobro(estado?: EstadoCobro | null): string {
+    switch (estado) {
+      case 'RADICADA':
+      case 'APROBADA': return 'pill--info';
+      case 'FACTURADA': return 'pill--warning';
+      case 'PAGADA': return 'pill--success';
+      default: return 'pill--muted'; // NO FACTURADA
+    }
+  }
+
+  /** Cuántas órdenes hay en un estado del eje; 0 cuando el estado no aparece. */
+  protected cobroDelEstado(estado: EstadoCobro): { ordenes: number; valor: number } {
+    const fila = (this.cobroRep()?.por_estado ?? []).find((x) => x.estado_cobro === estado);
+    return { ordenes: fila?.ordenes ?? 0, valor: this.num(fila?.valor) };
+  }
+
+  /** Máximo del desglose por estado, para el ancho de las barras. */
+  protected readonly maxCobroEstado = computed(() =>
+    Math.max(...(this.cobroRep()?.por_estado ?? []).map((e) => Number(e.ordenes) || 0), 0),
+  );
+
   /** Tono de la fila según la antigüedad (RPT-03). */
   protected tonoDias(dias: number, umbral: number): string {
     if (dias > umbral * 2) return 'tone-red';
@@ -290,10 +359,12 @@ export class ReportsComponent implements OnInit {
     this.pagSatProf.reiniciar();
     this.pagSatMes.reiniciar();
     this.pagHorasMes.reiniciar();
+    this.pagCobro.reiniciar();
     if (tab === 'ordenes') this.loadOrders();
     else if (tab === 'satisfaccion') this.loadSurveys();
     else if (tab === 'vencidas') this.cargarVencidas();
     else if (tab === 'horas') this.cargarHoras();
+    else if (tab === 'cobro') this.cargarCobro();
     else this.loadProfessionals();
   }
 
@@ -387,6 +458,9 @@ export class ReportsComponent implements OnInit {
       this.encProf.set('');
       this.encRespondida.set('');
       this.loadSurveys();
+    } else if (this.activeTab() === 'cobro') {
+      this.cobroEstadoFiltro.set('');
+      this.cargarCobro();
     } else {
       this.profEstadoFilter.set('');
       this.loadProfessionals();
@@ -507,6 +581,23 @@ export class ReportsComponent implements OnInit {
         ...(rep?.por_mes ?? []).map((m) => ['Mes', m.mes, m.ordenes, this.num(m.horas)]),
       ];
       this.downloadXlsx('horas_ejecutadas', 'Horas', ['Agrupación', 'Detalle', 'Órdenes', 'Horas'], rows);
+    } else if (this.activeTab() === 'cobro') {
+      // El detalle orden a orden, que es lo que la contadora cruza contra la
+      // facturación real. Los importes van como NÚMERO, no como texto con "$":
+      // así se pueden sumar en Excel, que es lo primero que se hace con esta hoja.
+      const rows = (this.cobroRep()?.ordenes ?? []).map((o) => [
+        o.codigo || '', o.estado_cobro, o.cobro_numero_factura || '',
+        o.arl_nombre || '', o.empresa_nombre || '', o.nit_nic || '',
+        o.profesional_nombre || '', this.num(o.horas_asignadas),
+        this.num(o.valor_total), this.num(o.viaticos_valor),
+        fechaCorta(o.fecha_ejecucion), fechaCorta(o.cobro_actualizado_en),
+        o.cobro_observacion || '',
+      ]);
+      this.downloadXlsx('estado_facturacion', 'Facturación', [
+        'Código', 'Estado de cobro', 'N.º factura', 'ARL', 'Empresa', 'NIT',
+        'Profesional', 'Horas', 'Valor ARL', 'Viáticos', 'Ejecutada', 'Último cambio',
+        'Observación',
+      ], rows);
     } else if (this.activeTab() === 'satisfaccion') {
       // ENC-07 · Respuestas exportables. Se incluyen también las enviadas sin
       // responder: saber a quién falta encuestar es parte del seguimiento.
@@ -572,6 +663,21 @@ export class ReportsComponent implements OnInit {
       filtro =
         `Rango: ${fechaCorta(rep?.desde)} a ${fechaCorta(rep?.hasta)}` +
         ` · Total: ${this.num(rep?.totales?.horas)} horas en ${rep?.totales?.ordenes ?? 0} órdenes`;
+    } else if (this.activeTab() === 'cobro') {
+      const rep = this.cobroRep();
+      title = 'Estado de facturación de las órdenes finalizadas';
+      headers = ['Código', 'Estado de cobro', 'N.º factura', 'ARL', 'Empresa', 'Valor ARL', 'Ejecutada'];
+      rows = (rep?.ordenes ?? []).map((o) => [
+        o.codigo || '', o.estado_cobro, o.cobro_numero_factura || '',
+        o.arl_nombre || '', o.empresa_nombre || '', this.pesos(o.valor_total),
+        fechaCorta(o.fecha_ejecucion),
+      ]);
+      // El pie deja constancia de lo que la cifra SIGNIFICA: es lo que se le
+      // cobra a la ARL, no lo que se le paga al profesional.
+      filtro =
+        `Estado: ${this.cobroEstadoFiltro() || 'Todos'}` +
+        ` · Pendiente de cobro: ${this.pesos(rep?.totales?.pendiente)}` +
+        ` de ${this.pesos(rep?.totales?.valor)} facturables a la ARL`;
     } else if (this.activeTab() === 'satisfaccion') {
       const t = this.surveyStats()?.totales;
       title = 'Informe de satisfacción del cliente';
