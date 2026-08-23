@@ -9,6 +9,31 @@ humana → asignación → soportes → verificación → cierre → satisfacci�
 > Reescrito el **28-jul-2026**: la demo se presentó y se aprobó el 27-jul-2026, y el
 > proyecto está en **Fase 2**. Ya no hay mocks: la app habla con un backend real.
 
+## 🚩 Si te dicen *"continúa con el trabajo pendiente que nos pidió el cliente"*
+
+Es **la tanda del 22-ago-2026**: seis peticiones en cinco fases. Haz esto, en
+este orden, antes de tocar nada:
+
+1. Abre **`docs/plan-peticiones-22-ago-2026.md`** y lee su **§0 "Dónde
+   retomar"**. Dice qué fase toca, qué comprobar antes de escribir código y las
+   cinco cosas que hay que preguntarle al cliente.
+2. Abre **`HANDOFF.md`** para el estado del proyecto y, sobre todo, su **§6 de
+   trampas conocidas** — son fallos silenciosos que ya costaron tiempo.
+
+**Al 22-ago-2026 van construidas las fases 1, 2 y 3** (los enumerados del AT-031
+de Bolívar; la matriz de formatos y soportes por ARL; los viáticos). **Lo
+siguiente es la fase 4**: profesional registrado ante la ARL y suplente.
+
+⚠️ **Ese trabajo está en la rama `tanda-22-ago-formatos-y-viaticos`**, con el
+mismo nombre en los dos repos. Si acabas de clonar, `git checkout` a esa rama en
+`sst_ws/` y en `jdd_consultores_app/` — en `main`/`master` no está.
+
+Nada de las tres fases se ha visto funcionar **dentro de la aplicación**: todo lo
+verificado lo está por script, contra la BD real y con `ROLLBACK`, o mirando los
+PDF generados.
+
+---
+
 ## 📌 Regla permanente: mantener el HANDOFF
 
 **`HANDOFF.md` (junto a este archivo) es el estado vivo del proyecto** y es lo

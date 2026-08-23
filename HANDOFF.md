@@ -8,16 +8,6 @@
 > **Última actualización:** 22-ago-2026 — **tanda nueva: fases 1, 2 y 3
 > construidas.**
 >
-> 🔴 **ANTES DE DESPLEGAR O DE PROBAR EN OTRA MÁQUINA: faltan siete formatos.**
-> Se decidió no versionarlos, y **el código de la fase 2 los abre en ejecución**,
-> así que asignar una orden de **AXA Colpatria** o de **Colmena** falla con
-> `ENOENT` hasta que estén. Bolívar funciona: sus dos formatos sí están en git.
-> Se copian a mano desde `docs/Formatos/` (que tampoco viaja) a
-> `sst_ws/assets/formatos-arl/`; los nombres exactos y de dónde sale cada uno
-> están en la nota del principio de `sst_ws/assets/formatos-arl/README.md`.
-> No están en `.gitignore` a propósito: aparecen como archivos sin rastrear para
-> que se vea que faltan.
->
 > **Fase 3 · las órdenes pueden llevar viáticos.** Opcional, aparte de las horas,
 > para lo que se ejecuta fuera de la ciudad. En Bolívar **no hay que teclearlos**:
 > el SIPAB los trae en siete columnas que se descartaban. Van a la cuenta de
@@ -285,8 +275,19 @@
 
 ---
 
-Para arrancar una sesión nueva basta con: *"Proyecto JD&D IA-Core: lee
-`jdd_consultores_app/HANDOFF.md` y continúa con lo pendiente."*
+**Para arrancar una sesión nueva basta con decir:**
+
+> *"Continúa con el trabajo pendiente que nos pidió el cliente."*
+
+Eso significa **la tanda del 22-ago-2026**, y lo que hay que hacer es:
+
+1. Leer **`docs/plan-peticiones-22-ago-2026.md`**, empezando por su **§0 Dónde
+   retomar** — ahí está qué toca ahora, qué comprobar antes de escribir código y
+   qué hay que preguntarle al cliente.
+2. Volver aquí para el estado general del proyecto y las trampas conocidas (§6).
+
+Si en el futuro esa tanda se cierra entera, lo pendiente vuelve a ser §3
+"Pendiente" de este archivo.
 
 > 🔴 **Si vas a enseñar el producto hoy, lee primero el punto 1 de "Pendiente":**
 > las OS de **Colmena** salen por correo sin ningún formato adjunto porque esa ARL
@@ -328,6 +329,12 @@ Dos repos git independientes (la raíz del monorepo no lo es):
 | `sst_ws/` | `github.com/Juanskpc/sst_ws.git` | `master` |
 | `jdd_consultores_app/` | `github.com/NicolasPa00/j-d_consultores_app.git` | `main` |
 
+> ⚠️ **22-ago-2026: lo último NO está en la rama por defecto.** Las fases 1-3 de
+> la tanda del cliente viven en la rama **`tanda-22-ago-formatos-y-viaticos`**,
+> que existe con ese mismo nombre en los DOS repos. En un equipo nuevo:
+> `git fetch origin && git checkout tanda-22-ago-formatos-y-viaticos` en cada uno.
+> Si se mezcla a `main`/`master`, borrar este aviso.
+
 1. `git pull` en ambos. Verifica que existan `sst_ws/src/modules/billing/`,
    `sst_ws/src/modules/surveys/`, `jdd_consultores_app/src/app/pages/billing/` y
    `jdd_consultores_app/docs/`; si no están, el pull no trajo lo último.
@@ -346,6 +353,11 @@ Dos repos git independientes (la raíz del monorepo no lo es):
    NIT y hasta la seguridad social de una persona. No sirven para desarrollar, solo
    para probar la extracción con archivos de verdad. Si los necesitas, cópialos a
    mano desde otro equipo a `jdd_consultores_app/docs/`; **no los commitees**.
+7. **`docs/Formatos/` tampoco viaja** (`.gitignore`, desde el 22-ago-2026): son
+   los formatos que entregó el cliente por ARL y tipo de actividad, material de
+   REFERENCIA, y dos de ellos son ejemplos diligenciados con datos reales. **No
+   hace falta para trabajar**: los formatos que la aplicación usa están en blanco
+   y sí versionados, en `sst_ws/assets/formatos-arl/`.
 8. **Órdenes de ejemplo con datos inventados:**
    `cd sst_ws && node --import tsx scripts/generar-ordenes-ejemplo.mjs`.
    Escribe 8 PDF con el formato de AXA Colpatria en `docs/OrdenesEjemplo/Colpatria/`

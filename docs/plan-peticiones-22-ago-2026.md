@@ -19,13 +19,6 @@ diseñada y no empezada; la 5 (estado de facturación) va después y es independ
 
 Antes de escribir código:
 
-0. 🔴 **Comprobar que están los siete formatos** de
-   `sst_ws/assets/formatos-arl/` que NO se versionaron (`colpatria/ficha-gestion.pdf`,
-   `colpatria/informe-tecnico.docx`, `colmena/prestacion-servicios.pdf`,
-   `colmena/informe-tipo-a.docx`, `colmena/informe-tipo-b.docx`,
-   `colmena/registro-ejecucion.xls`, `colmena/plantilla-presentaciones.pptx`).
-   Sin ellos, asignar una orden de AXA o de Colmena falla con `ENOENT`. Se copian
-   a mano desde `docs/Formatos/`, que tampoco viaja por git.
 1. **Levantar el backend con `npm run dev`** (nunca `npm start`: se queda con el
    código del momento en que arrancó).
 2. **Las migraciones de las fases 1-3 YA ESTÁN APLICADAS** a la Neon compartida.
@@ -586,9 +579,7 @@ dependiendo de cómo la ARL redacte el título.
    correo y el portal.
 5. ⚪ El `.pptx` de Colmena pesa 1,6 MB y va en cada capacitación. Si molesta, se
    quita de la regla en una línea.
-6. 🔴 **Los siete formatos nuevos NO se versionaron** (decisión del equipo,
-   22-ago-2026). El código los abre en ejecución, así que hay que copiarlos a
-   mano en cada máquina y en el despliegue. Ver §0, punto 0.
+
 
 ---
 
