@@ -17,7 +17,7 @@
  *  - `opcionesDeCampo` da la lista de un campo que se ELIGE en vez de escribirse
  *    (los dos enumerados del formato AT-031 de Bolívar).
  */
-import { MODALIDADES_EJECUCION, OpcionCampo, TIPOS_ACTIVIDAD_BOLIVAR } from '../core/bolivar';
+import { MODALIDADES_EJECUCION, OpcionCampo, tiposActividadDeArl } from '../core/bolivar';
 
 /** Qué clase de dato es el campo, y por tanto qué se puede escribir en él. */
 export type ModoCampo =
@@ -65,18 +65,27 @@ export function bajaConfianza(campo: CampoRevisable): boolean {
 /**
  * Los campos que NO se escriben: se eligen de una lista cerrada.
  *
- * Son los dos enumerados que Bolívar exige en el AT-031. Un desplegable y no un
- * campo de texto porque la letra acaba marcando una casilla de un formato que se
- * radica ante la ARL: ahí "capacitacion" escrito a mano no vale, y una letra que
- * no sea una de las seis el backend la descarta en silencio.
+ * Un desplegable y no un campo de texto porque de estos dos valores sale el
+ * juego de formatos que se le manda al profesional: ahí "capacitacion" escrito a
+ * mano no vale, y un valor que no esté en la lista el backend lo descarta en
+ * silencio.
+ *
+ * `tipo_servicio_arl` **depende de la ARL** —Bolívar ofrece las seis letras del
+ * AT-031; AXA y Colmena, asesoría o capacitación— así que no está en este mapa:
+ * lo resuelve `tiposActividadDeArl()` con el nombre de la ARL delante.
  */
 export const OPCIONES_POR_CAMPO: Readonly<Record<string, readonly OpcionCampo[]>> = {
-  tipo_servicio_arl: TIPOS_ACTIVIDAD_BOLIVAR,
   modalidad_ejecucion: MODALIDADES_EJECUCION,
 };
 
-/** Las opciones de un campo de lista cerrada, o vacío si no lo es. */
-export function opcionesDeCampo(key: string): readonly OpcionCampo[] {
+/**
+ * Las opciones de un campo de lista cerrada, o vacío si no lo es.
+ *
+ * @param arl Nombre de la ARL de la orden. Solo hace falta para
+ *            `tipo_servicio_arl`, que es el único campo cuya lista cambia.
+ */
+export function opcionesDeCampo(key: string, arl?: string | null): readonly OpcionCampo[] {
+  if (key === 'tipo_servicio_arl') return tiposActividadDeArl(arl);
   return OPCIONES_POR_CAMPO[key] ?? [];
 }
 

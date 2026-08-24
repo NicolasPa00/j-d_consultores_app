@@ -15,7 +15,7 @@ import {
   ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, opcionesDeCampo,
   problemaCampo, tecleoCampo,
 } from '../../shared/campos-orden';
-import { OpcionCampo, esBolivar } from '../../core/bolivar';
+import { OpcionCampo, esBolivar, etiquetaTipoActividadArl, pistaTipoActividadArl } from '../../core/bolivar';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
@@ -30,6 +30,8 @@ interface FormFieldDescriptor {
   opciones?: readonly OpcionCampo[];
   /** Sin él la orden no se puede guardar (la modalidad, en Bolívar). */
   required?: boolean;
+  /** Contexto que se lee bajo el campo, tenga valor o no. */
+  hint?: string;
 }
 
 /**
@@ -473,11 +475,12 @@ export class ValidationComponent implements OnInit, OnDestroy {
      * Un campo que se ELIGE de una lista cerrada. Se muestra aunque venga vacío:
      * es justo entonces cuando hay que diligenciarlo.
      */
-    const opcion = (clave: string, label: string, fld: ExtractedField | undefined, required = false) => {
+    const opcion = (clave: string, label: string, fld: ExtractedField | undefined,
+                    required = false, hint?: string) => {
       if (!fld) return;
       rows.push({
         label, field: fld, type: 'select', span: 'half', modo: 'opcion',
-        opciones: opcionesDeCampo(clave), required,
+        opciones: opcionesDeCampo(clave, o.arl), required, hint,
       });
     };
     // Una fecha legible se edita con el selector de fechas; si la IA la escribió
@@ -501,11 +504,15 @@ export class ValidationComponent implements OnInit, OnDestroy {
     push('actividad_economica', 'Actividad Económica', f.actividadEconomica, 'text', 'full');
     opt('tipo_actividad', 'Tipo de Actividad', f.tipoActividad);
     opt('modalidad', 'Modalidad', f.modalidad);
-    // FOR · Los dos enumerados del AT-031, solo en Bolívar. La modalidad es
-    // obligatoria: el AT-028 únicamente vale para actividades presenciales, así
-    // que de ella depende qué formatos recibe el profesional.
+    // FOR · El tipo de actividad ANTE LA ARL, en las tres, y obligatorio: es lo
+    // único que decide qué formatos recibe el profesional. Ojo con no
+    // confundirlo con `tipo_actividad` (el título que escribió la ARL) ni con el
+    // tipo de orden del catálogo, que solo fija el valor de la hora.
+    opcion('tipo_servicio_arl', etiquetaTipoActividadArl(o.arl), f.tipoServicioArl, true,
+           pistaTipoActividadArl(o.arl));
+    // La modalidad es cosa de Bolívar: es su casilla del AT-031 y lo que decide
+    // si sale el AT-028, que la ARL solo admite en actividades presenciales.
     if (esBolivar(o.arl)) {
-      opcion('tipo_servicio_arl', 'Tipo de Actividad (AT-031)', f.tipoServicioArl);
       opcion('modalidad_ejecucion', 'Modalidad de ejecución', f.modalidadEjecucion, true);
     }
     opt('valor_unitario', 'Valor Unitario', f.valorUnitario);

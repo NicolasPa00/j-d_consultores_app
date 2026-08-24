@@ -39,7 +39,7 @@ Antes de escribir código:
 |---|---|---|
 | 1 | **La matriz de formatos y soportes, fila a fila** (§4.1). Solo dos filas las dictó él; el resto es propuesta nuestra | F2 |
 | 2 | **El informe de gestión de Bolívar EN BLANCO.** Lo que entregó es un ejemplo con datos reales de otra empresa | F2 |
-| 3 | **Añadir "Asesoría" y "Asistencia Técnica"** al catálogo de tipos de orden, con su valor hora (D-8) | F2 |
+| 3 | ~~Añadir "Asesoría" y "Asistencia Técnica" al catálogo de tipos de orden (D-8)~~ — **ya no hace falta para los formatos** (§10.12); solo si se quiere cobrarlas a tarifa propia | — |
 | 4 | **Qué es `Valor Desplazamiento`** en el SIPAB: ¿el total de los otros conceptos, o uno aparte? (D-9) | F3 |
 | 5 | Las decisiones **D-1 a D-5** siguen abiertas | F2 |
 | 6 | **Ante qué ARL está registrado cada profesional**, con su código y su vigencia: la tabla nace vacía y sin ella la suplencia no se puede usar | F4 |
@@ -558,9 +558,9 @@ todas sus letras. Comprobado contra las 13 órdenes reales de la base. Cuando el
 tipo sale del título, la respuesta de la asignación **lo advierte** para que quien
 asigna lo compruebe.
 
-Aun así, **la solución de fondo es del cliente** (decisión D-8): añadir "Asesoría"
-y "Asistencia Técnica" al catálogo, con su valor hora. Sin eso se sigue
-dependiendo de cómo la ARL redacte el título.
+⚠️ **Superado el 24-ago-2026** (§10.12): el catálogo de tarifas ya no clasifica
+formatos, así que da igual qué categorías tenga. El tipo de actividad se elige
+en su propio desplegable, y el título de la orden quedó solo como respaldo.
 
 #### Qué se verificó, y cómo
 
@@ -996,7 +996,7 @@ Ninguna bloquea empezar; todas cambian el resultado.
 | **D-5** | F2 | **La tabla de soportes de §4.1** solo está dictada por el cliente en las dos filas de Bolívar; el resto es propuesta nuestra | cliente | validarla fila a fila antes de construir |
 | **D-6** | F4 | **Con suplente, ¿a quién se le paga y a quién califica la encuesta?** | cliente | al **ejecutor**: hizo el trabajo, y es a quien vio el cliente final · **construido así** |
 | **D-7** | F5 | **Qué estados de cobro** quiere exactamente, y si el eje arranca en EJECUTADA o en FINALIZADA | cliente | ✅ **CERRADA el 23-ago-2026**: son **dos**, NO FACTURADA y FACTURADA, desde FINALIZADA. Los otros tres (RADICADA, APROBADA, PAGADA) se retiraron del enum, del backend y de la interfaz |
-| **D-8** | F1 | **La letra de Bolívar y el catálogo `tipos_orden` (CFG-04)** son hoy dos cosas: la letra tiene 6 valores y el catálogo tiene 3 (Capacitación, Asesoría, Inspección). ¿Se cruzan? | equipo + cliente | conviven; la letra **preselecciona** el tipo, y `tipos_orden` gana **"Asistencia Técnica"** para que `T` tenga destino y F2 pueda enrutar |
+| **D-8** ✅ | F1 | **La letra de Bolívar y el catálogo `tipos_orden` (CFG-04)** son hoy dos cosas. ¿Se cruzan? | cliente, 24-ago | **NO se cruzan.** Son dos conceptos distintos y así quedan (§10.12): el tipo de actividad ARL manda los formatos, el tipo de orden paga la hora. El catálogo dejó de intervenir en los formatos |
 | **D-9** | F3 | Los viáticos, ¿los paga JD&D al profesional, los cobra a la ARL, o ambas? De ahí sale si van solo en la cuenta de cobro, solo en la facturación (F5) o en las dos | cliente | ambas: la ARL los autoriza y JD&D los traslada |
 | **D-10** | F3 | **Qué categorías de viático hay y cuánto vale cada una.** El catálogo (`sst.tipos_viatico`) nace VACÍO: mientras no tenga filas, al cargar una orden la única opción es "No aplica" | cliente | las crea JD&D en Configuración → Preferencias del sistema |
 | **D-11** | F3 | Con categoría elegida, el importe sale del CATÁLOGO y **pisa la cifra que traía el SIPAB** de Bolívar. El desglose del documento se conserva en `viaticos_detalle` | equipo | manda el catálogo: es lo que hace que dos órdenes del mismo desplazamiento valgan lo mismo |
@@ -1334,3 +1334,80 @@ Comprobado sobre los formatos reales, con una visita de dos franjas:
 Las plantillas genéricas de CFG-03 —la vía que se usa cuando una ARL no tiene
 formatos propios— entran por el mismo camino: su etiqueta es el nombre de la
 plantilla.
+
+### 10.12 Dos conceptos que se llamaban igual, y el tipo de actividad en las tres ARL (24-ago-2026)
+
+**Lo que pidió el cliente:** que una orden de Colmena deje elegir su tipo
+—asesoría o capacitación— como ya se hacía en Bolívar. Y de paso dejó dicho algo
+más importante que el desplegable:
+
+> El tipo de orden para enviar distintos formatos es un caso. El tipo de orden
+> que lista las opciones según la configuración del administrador es para saber
+> el valor por la hora que se le pagará al profesional. Puedes separar estos dos
+> conceptos para que no haya confusión.
+
+Tenía razón, y no era solo un problema de nombres: el código **usaba el catálogo
+de tarifas para decidir formatos**.
+
+#### Los dos conceptos, separados
+
+| | Tipo de actividad ARL | Tipo de orden |
+|---|---|---|
+| Campo | `tipo_servicio_arl` | `tipo_orden_id` (CFG-04) |
+| Lo elige | quien carga la orden, por ARL | quien carga la orden, del catálogo |
+| Lo administra | nadie: la lista la fija la ARL | el administrador, en Configuración |
+| **Decide** | **qué formatos se envían y qué soportes se piden** | **el valor de la hora que se le paga al profesional** |
+| Dónde vive la regla | `entrega-arl.service.js` | `valor_hora_cobro`, copiado a la orden |
+
+Una asistencia técnica se puede estar **cobrando** a tarifa de asesoría —es una
+decisión de precios— y eso no puede cambiarle los papeles que se radican ante la
+ARL. Por eso `tipoActividadDeOrden()` **ya no consulta el catálogo**. Su orden de
+autoridad queda en dos escalones:
+
+1. `tipo_servicio_arl`, lo que se eligió al cargar la orden.
+2. El título que escribió la ARL, como respaldo de las órdenes sin diligenciar.
+
+Con esto **la decisión D-8 deja de tener sentido**: daba igual que el catálogo no
+tuviera una entrada «Asesoría», porque el catálogo ya no clasifica formatos.
+
+#### El desplegable, ahora en las tres ARL
+
+Sale en Importar y en la ficha de Órdenes, con las opciones de cada ARL:
+
+| ARL | Opciones | Etiqueta |
+|---|---|---|
+| Bolívar | A · Asesoría · T · Asistencia Técnica · C · Capacitación · E · M · O | «Tipo de actividad ARL (AT-031)», con la letra |
+| AXA Colpatria | Asesoría · Capacitación | sin letra: ahí no significa nada |
+| Colmena | Asesoría · Capacitación | sin letra |
+| Otra ARL | Asesoría · Asistencia Técnica · Capacitación | sin letra |
+
+Es **obligatorio**: sin él no se sabe qué mandarle al profesional, igual que la
+modalidad en Bolívar. ⚠️ Eso cambia el comportamiento de las órdenes ya
+cargadas: un borrador de AXA o Colmena **no se podrá validar** hasta que alguien
+le elija el tipo. Es intencionado —hasta hoy el juego de formatos se adivinaba
+del título—, pero conviene saberlo antes de abrir la bandeja.
+
+La modalidad sigue siendo **solo de Bolívar**: es su casilla del AT-031 y lo que
+decide si sale el AT-028.
+
+#### Los tres casos de AXA
+
+El cliente los enumeró como tres tipos: asesoría >16 h, asesoría ≤16 h y
+capacitación. En la interfaz son **dos opciones**, porque el corte de 16 no se
+elige — sale de las horas, que la orden ya tiene, y elegirlo a mano permitiría
+contradecirlas. Bajo el desplegable se lee qué va a salir:
+
+> En las asesorías, además, las horas parten el juego: más de 16 h salen con
+> informe técnico y 16 h o menos con ficha de gestión.
+
+Comprobado en el borde: **16 h → ficha de gestión; 17 h → informe técnico**; sin
+horas sale el informe y se avisa a quien asigna.
+
+#### Lo que NO se tocó
+
+La columna sigue siendo `tipo_servicio_arl CHAR(1)` con las seis letras de
+Bolívar, y el `CHECK` no cambia: **no hay migración**. Las letras pasan a ser el
+código interno de las tres ARL —A y C son asesoría y capacitación en cualquiera—
+y solo Bolívar las enseña. El backend acepta cualquiera de las seis para
+cualquier ARL: si llegara una que esa ARL no usa, no encaja ninguna regla, sale
+el juego base y el aviso de la asignación lo dice.

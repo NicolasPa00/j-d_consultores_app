@@ -11,7 +11,7 @@ import {
   ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, opcionesDeCampo,
   problemaCampo, tecleoCampo,
 } from '../../shared/campos-orden';
-import { OpcionCampo, esBolivar } from '../../core/bolivar';
+import { OpcionCampo, esBolivar, etiquetaTipoActividadArl, pistaTipoActividadArl } from '../../core/bolivar';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
@@ -1228,7 +1228,7 @@ function buildFields(m: MetadatosExtraccion, arl: string | null): PreviewField[]
     const value = text(c);
     const fila: PreviewField = {
       key, label, value, original: value, confidence: conf(c),
-      span: 'half', type: 'select', modo: 'opcion', opciones: opcionesDeCampo(key),
+      span: 'half', type: 'select', modo: 'opcion', opciones: opcionesDeCampo(key, arl),
     };
     rows.push(fila);
     return fila;
@@ -1256,10 +1256,18 @@ function buildFields(m: MetadatosExtraccion, arl: string | null): PreviewField[]
   push('actividad_economica', 'Actividad Económica', m.actividad_economica, 'full');
   opt('tipo_actividad', 'Tipo de Actividad', m.tipo_actividad);
   opt('modalidad', 'Modalidad', m.modalidad);
-  // FOR · Los dos enumerados del AT-031, solo en Bolívar: en AXA y Colmena no
-  // existen y un desplegable vacío en cada orden sería ruido.
+  // FOR · El tipo de actividad ANTE LA ARL, en las tres. Es lo único que decide
+  // qué formatos recibe el profesional, y no tiene nada que ver con el "tipo de
+  // orden" del catálogo, que es la tarifa por hora. Hasta el 24-ago-2026 solo
+  // salía en Bolívar —porque el SIPAB lo trae— y en AXA y Colmena el juego de
+  // formatos se adivinaba del título de la orden.
+  const tipoArl = pushOpcion('tipo_servicio_arl', etiquetaTipoActividadArl(arl), m.tipo_servicio_arl);
+  tipoArl.required = true;
+  tipoArl.requiredHint = 'Campo obligatorio — sin él no se sabe qué formatos mandarle al profesional.';
+  tipoArl.hint = pistaTipoActividadArl(arl);
+  // La modalidad sigue siendo cosa de Bolívar: es la casilla del AT-031 y lo que
+  // decide si sale el AT-028. Ni AXA ni Colmena la usan.
   if (esBolivar(arl)) {
-    pushOpcion('tipo_servicio_arl', 'Tipo de Actividad (AT-031)', m.tipo_servicio_arl);
     const modalidad = pushOpcion('modalidad_ejecucion', 'Modalidad de ejecución', m.modalidad_ejecucion);
     // Obligatoria: de ella depende qué formatos recibe el profesional. El AT-028
     // solo vale para actividades presenciales, así que no se puede adivinar.

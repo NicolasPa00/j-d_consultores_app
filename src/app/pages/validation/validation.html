@@ -556,6 +556,11 @@
                 } @else if (editMode() && marcado(item)) {
                   <p class="field__alert">⚠ Baja confianza — verifica contra el documento original.</p>
                 }
+                <!-- Contexto del campo. Solo en edición: leyendo la ficha no
+                     aporta, y en el detalle se ven veinte campos de una vez. -->
+                @if (editMode() && item.hint) {
+                  <p class="field__hint">{{ item.hint }}</p>
+                }
               </div>
             }
           </form>
