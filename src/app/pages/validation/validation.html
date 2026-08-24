@@ -69,7 +69,6 @@
           <th>ARL</th>
           <th>Horas</th>
           <th>Fecha de vencimiento</th>
-          <th>Confianza</th>
           <th>Estado</th>
           <th>Cobro</th>
           <th class="col-actions">Opciones</th>
@@ -94,12 +93,10 @@
                 }
               </div>
             </td>
-            <td>
-              {{ order.arl }}
-              @if (order.arlConfidence) {
-                <span class="pill" [class]="pillClass(order.arlConfidence)" title="Confianza de la clasificación de ARL">{{ order.arlConfidence }}%</span>
-              }
-            </td>
+            <!-- Solo el nombre. El porcentaje de confianza de la clasificación
+                 sigue estando en el detalle de la orden, que es donde se revisa;
+                 en la bandeja solo hacía ruido sobre el dato que se busca. -->
+            <td>{{ order.arl }}</td>
             <td class="mono">{{ order.fields.horas.value || '—' }}</td>
             <td>
               @if (vencimiento(order); as v) {
@@ -112,23 +109,17 @@
               }
             </td>
             <td>
-              <span class="pill" [class]="pillClass(order.confidence)">{{ order.confidence }}%</span>
-            </td>
-            <td>
               <span class="pill" [class]="estadoClass(order)">{{ estadoLabel(order) }}</span>
             </td>
             <!-- El eje de facturación. Un borrador sin OS no lo tiene todavía:
                  no hay nada que facturar hasta que la orden existe. -->
             <td>
               @if (order.osId) {
+                <!-- Solo el estado. El número de factura se consulta en el
+                     detalle de la orden y en el modal de facturación. -->
                 <span class="pill" [class]="pillCobro(order.estadoCobro)">
                   {{ order.estadoCobro || 'NO FACTURADA' }}
                 </span>
-                @if (order.cobroNumeroFactura) {
-                  <span class="cobro__factura mono" title="Número de factura">
-                    {{ order.cobroNumeroFactura }}
-                  </span>
-                }
               } @else {
                 <span class="venc__none">—</span>
               }
@@ -232,7 +223,7 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="10" class="table__empty">
+            <td colspan="9" class="table__empty">
               @if (loading()) {
                 Cargando órdenes…
               } @else if (query()) {
@@ -1381,9 +1372,6 @@
     </div>
 
     <footer class="modal__footer">
-      <span class="modal__status">
-        El cambio queda en el historial de la orden, con su autor y la fecha.
-      </span>
       <div class="modal__footer-actions">
         <button type="button" class="btn btn--ghost" (click)="closeCobro()" [disabled]="cobroSaving()">
           Cancelar
@@ -1393,7 +1381,7 @@
             <span class="spinner" aria-hidden="true"></span>
             Guardando…
           } @else {
-            Marcar como {{ cobroEstado() }}
+            Guardar
           }
         </button>
       </div>

@@ -1141,3 +1141,24 @@ no se hizo en esta tanda.
 
 **Lo que sigue faltando:** verlo dentro de la aplicación. Sin credenciales de
 administrador, todo lo de arriba está verificado por script o por HTTP.
+
+### 10.7 Limpieza de la bandeja de Órdenes (24-ago-2026)
+
+Tres recortes de ruido visual, todos en `/ordenes`. Ninguno toca el backend ni la
+base de datos: solo la plantilla y sus estilos.
+
+| Qué se quitó | Dónde | Por qué |
+|---|---|---|
+| La columna **Confianza** | Encabezado y fila de la tabla | El porcentaje sigue estando **en el detalle**, que es donde se revisa campo a campo. En la bandeja competía con el dato que se busca de un vistazo |
+| El **porcentaje junto a la ARL** | Columna «ARL» | Igual: la confianza de la clasificación se lee en el detalle. La columna queda con el nombre y nada más |
+| El **número de factura** bajo la pastilla | Columna «Cobro» | La columna informa del estado. La factura se consulta en el detalle y en el propio diálogo de facturación |
+
+En el diálogo de facturación, el botón pasa de «Marcar como FACTURADA» a un
+**«Guardar»** fijo, y desaparece la leyenda «El cambio queda en el historial…».
+El historial se sigue registrando igual — solo se dejó de anunciar.
+
+Consecuencias mecánicas: la tabla pasa de 10 a **9** columnas (el `colspan` de la
+fila vacía se ajustó), se borró `.cobro__factura` de `validation.scss` porque se
+quedó sin usar, y `.modal--slim .modal__footer` necesita `justify-content:
+flex-end` — el pie usa `space-between`, que con un solo hijo habría dejado los
+botones pegados al borde izquierdo.

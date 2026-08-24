@@ -317,6 +317,12 @@
   width: min(460px, calc(100vw - 2rem));
 }
 
+/* Su pie no lleva la leyenda de la izquierda, y `space-between` con un solo
+   hijo dejaría los botones pegados al borde izquierdo. */
+.modal--slim .modal__footer {
+  justify-content: flex-end;
+}
+
 /* La agenda necesita ancho: siete días por debajo de ~90 px por columna dejan
    de ser legibles y la rejilla se pondría a scrollear en horizontal. */
 .modal--agenda {
@@ -1841,15 +1847,6 @@
 .ord-head__filtro {
   width: auto;
   min-width: 170px;
-}
-
-/* El número de factura, bajo la pastilla: es por lo que se busca una orden
-   cuando la ARL pregunta. */
-.cobro__factura {
-  display: block;
-  margin-top: 0.2rem;
-  font-size: 0.72rem;
-  color: var(--text-muted);
 }
 
 .cobro-card {
