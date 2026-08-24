@@ -436,7 +436,7 @@ export class ProfessionalsComponent implements OnInit {
         this.registrosSaving.set(false);
         this.alerts.error(
           'No se pudo guardar el registro',
-          mensajeError(err, 'Revise el código y la fecha de vigencia de cada ARL.'),
+          mensajeError(err, 'El servidor rechazó el cambio de registro ante las ARL.'),
         );
       },
     });

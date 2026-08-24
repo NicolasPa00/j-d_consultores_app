@@ -377,11 +377,12 @@
      registrados y aprobados, y no todo el equipo lo está. Lo que se marca aquí
      decide quién puede aparecer en el segundo selector del modal de asignación,
      el que pone el nombre impreso en el AT-031 cuando el ejecutor no está
-     registrado. El registro es POR ARL, caduca y lo identifica un código que
-     asigna la propia ARL: por eso es una tabla y no una casilla en la ficha. -->
+     registrado. El registro es POR ARL: por eso es una tabla y no una casilla
+     en la ficha.
+     Sin `modal--wide`: son tres columnas y el ancho de la ficha les sobra. -->
 @if (registrosOpen() && registrosProf(); as pro) {
   <div class="modal-backdrop" (click)="closeRegistros()"></div>
-  <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="registrosTitle">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="registrosTitle">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="registrosTitle">Registro ante las ARL · {{ pro.name }}</h3>
@@ -407,8 +408,6 @@
               <tr>
                 <th>ARL</th>
                 <th>¿Registrado?</th>
-                <th>Código de registro</th>
-                <th>Vigente hasta</th>
                 <th>Observación</th>
               </tr>
             </thead>
@@ -426,33 +425,10 @@
                       <span>{{ reg.registrado ? 'Sí' : 'No' }}</span>
                     </label>
                   </td>
-                  <!-- Los tres campos solo tienen sentido con el registro
-                       marcado: sin él la fila se borra al guardar. -->
-                  <td>
-                    <input
-                      class="form-control form-control--sm"
-                      type="text"
-                      maxlength="60"
-                      placeholder="El que asignó la ARL"
-                      [disabled]="!reg.registrado"
-                      [value]="reg.codigo_registro || ''"
-                      (input)="editarRegistro(reg.arl_id, { codigo_registro: $any($event.target).value })"
-                    />
-                  </td>
-                  <td>
-                    <input
-                      class="form-control form-control--sm"
-                      type="date"
-                      [disabled]="!reg.registrado"
-                      [value]="reg.vigente_hasta || ''"
-                      (input)="editarRegistro(reg.arl_id, { vigente_hasta: $any($event.target).value })"
-                    />
-                    @if (reg.vencido) {
-                      <!-- Vencido no bloquea la asignación: la fecha la teclea un
-                           administrador y puede estar sin actualizar. Se avisa. -->
-                      <span class="pill pill--warning">Vencido</span>
-                    }
-                  </td>
+                  <!-- El registro es una marca de sí o no, y nada más. El código
+                       que asigna la ARL y la fecha de vigencia se retiraron el
+                       24-ago-2026: no se llevan. Las columnas siguen en la BD y
+                       el servidor las sigue aceptando, por si vuelven. -->
                   <td>
                     <input
                       class="form-control form-control--sm"
@@ -467,7 +443,7 @@
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="5" class="table__empty">No hay ARL en el catálogo.</td>
+                  <td colspan="3" class="table__empty">No hay ARL en el catálogo.</td>
                 </tr>
               }
             </tbody>

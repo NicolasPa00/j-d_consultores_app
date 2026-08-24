@@ -1162,3 +1162,31 @@ fila vacía se ajustó), se borró `.cobro__factura` de `validation.scss` porque
 quedó sin usar, y `.modal--slim .modal__footer` necesita `justify-content:
 flex-end` — el pie usa `space-between`, que con un solo hijo habría dejado los
 botones pegados al borde izquierdo.
+
+### 10.8 El registro ante la ARL es solo una marca (24-ago-2026)
+
+El diálogo «Registro ante las ARL» de Profesionales pedía cuatro datos por ARL.
+Se quedan **tres columnas**: ARL · ¿Registrado? · Observación. Fuera **Código de
+registro** y **Vigente hasta**.
+
+Esto reabre —en la práctica, cierra por la vía de los hechos— parte de §6.1: el
+registro deja de caducar en la interfaz, porque nadie puede teclear ya la fecha.
+
+**Lo que NO se tocó, a propósito:**
+
+* Las columnas `codigo_registro` y `vigente_hasta` **siguen en
+  `sst.profesionales_arl`**, y `PUT /professionals/:id/registros-arl` las sigue
+  aceptando y validando. Borrarlas sería irreversible y devolverlas es un cambio
+  de plantilla; dejarlas no cuesta nada.
+* El formulario **reenvía los valores que ya tuviera** la fila (se mandan los
+  registros completos, no solo lo editable), así que marcar o desmarcar una ARL
+  **no borra** un código o una vigencia que ya estuvieran cargados.
+
+**Consecuencia a la vista:** el ⚠ de «vencido» en la pastilla de la lista de
+profesionales, y el aviso de vigencia del selector de suplente en `/ordenes`,
+**ya no pueden dispararse** con datos nuevos — `vigente_hasta` nace en NULL
+siempre. Se dejaron en pie porque siguen siendo correctos si algún día aparece un
+dato antiguo, pero conviene saber que hoy son ramas muertas.
+
+El diálogo perdió además `modal--wide` (940 px): con tres columnas sobraba, el
+mismo problema que se corrigió en §10.3.
