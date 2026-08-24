@@ -211,6 +211,16 @@ export interface Borrador {
   /** Eje de facturación de la OS (ago-2026): columna, pastilla y filtro. */
   os_estado_cobro?: EstadoCobro | null;
   os_cobro_numero_factura?: string | null;
+  /**
+   * Viáticos (ago-2026): la categoría elegida y su valor vigente en el catálogo.
+   * `os_viaticos_valor` es el importe CONGELADO en la orden, que es el que vale:
+   * si el catálogo sube después, la orden ya cargada no cambia. NULL en las tres
+   * = "No aplica", que es el caso de casi toda orden.
+   */
+  tipo_viatico_id?: string | null;
+  tipo_viatico?: string | null;
+  tipo_viatico_valor?: string | number | null;
+  os_viaticos_valor?: string | number | null;
 
   /**
    * IMP-07/09 · Solo en los borradores DUPLICADA: la OS que ya existía y por la
@@ -287,16 +297,19 @@ export interface HistorialEstado {
  * Estado de FACTURACIÓN de la orden (ago-2026, petición 6 del cliente).
  *
  * Es un EJE INDEPENDIENTE del ciclo operativo (`EstadoOrden`): una OS FINALIZADA
- * puede estar sin facturar, radicada ante la ARL, aprobada, facturada o pagada.
- * Solo se mueve a partir de FINALIZADA — antes del cierre no hay nada que
- * facturar.
+ * puede estar sin facturar o facturada. Solo se mueve a partir de FINALIZADA —
+ * antes del cierre no hay nada que facturar.
+ *
+ * SON DOS, no cinco. Nació con RADICADA, APROBADA y PAGADA por medio y el
+ * cliente las retiró el 23-ago-2026: de esos tres no lleva registro, y un estado
+ * que nadie mueve es un estado que miente. La lista está copiada en otros dos
+ * sitios —el enum `sst.estado_cobro` y `ESTADOS_COBRO` de `orders.routes.js`—:
+ * si vuelve alguno hay que tocar los tres.
  */
-export type EstadoCobro = 'NO FACTURADA' | 'RADICADA' | 'APROBADA' | 'FACTURADA' | 'PAGADA';
+export type EstadoCobro = 'NO FACTURADA' | 'FACTURADA';
 
 /** El eje en orden, para pintarlo y para ofrecerlo en los selectores. */
-export const ESTADOS_COBRO: EstadoCobro[] = [
-  'NO FACTURADA', 'RADICADA', 'APROBADA', 'FACTURADA', 'PAGADA',
-];
+export const ESTADOS_COBRO: EstadoCobro[] = ['NO FACTURADA', 'FACTURADA'];
 
 /** Entrada del historial del eje de cobro: quién lo movió, cuándo y por qué. */
 export interface HistorialCobro {
@@ -467,12 +480,11 @@ export interface ReporteCobro {
     ordenes: number;
     valor: string | number;
     sin_facturar: string | number;
-    pendiente: string | number;
-    pagado: string | number;
+    facturado: string | number;
     viaticos: string | number;
   };
   por_estado: { estado_cobro: EstadoCobro; ordenes: number; valor: string | number }[];
-  por_arl: { arl_nombre: string; ordenes: number; valor: string | number; pendiente: string | number }[];
+  por_arl: { arl_nombre: string; ordenes: number; valor: string | number; sin_facturar: string | number }[];
   ordenes: OrdenCobro[];
 }
 
@@ -487,6 +499,8 @@ export interface OrdenCobro {
   horas_asignadas?: string | number | null;
   valor_total?: string | number | null;
   viaticos_valor?: string | number | null;
+  /** La categoría del viático; sin ella el importe suelto no dice de qué es. */
+  viaticos_tipo?: string | null;
   estado_cobro: EstadoCobro;
   cobro_numero_factura?: string | null;
   cobro_observacion?: string | null;
@@ -586,6 +600,25 @@ export interface TipoOrden {
   id: string;
   nombre: string;
   valor_hora: string | number;
+  activo: boolean;
+  /** Cuántas OS lo usan; es lo que impide borrarlo sin dejar historial huérfano. */
+  ordenes?: number;
+  creado_en?: string;
+  actualizado_en?: string;
+}
+
+/**
+ * Tipo de viático con su valor (ago-2026).
+ *
+ * Mismo papel que `TipoOrden` y por el mismo motivo: los viáticos se escribían a
+ * mano orden por orden, así que dos órdenes del mismo desplazamiento acababan
+ * con cifras distintas. Ahora se elige la categoría y el valor sale de ella.
+ * "No aplica" no es una fila del catálogo: es no elegir ninguna.
+ */
+export interface TipoViatico {
+  id: string;
+  nombre: string;
+  valor: string | number;
   activo: boolean;
   /** Cuántas OS lo usan; es lo que impide borrarlo sin dejar historial huérfano. */
   ordenes?: number;
@@ -764,6 +797,12 @@ export interface Orden {
    * reembolso, no honorarios, y la cuenta de cobro los cobra en líneas separadas.
    */
   viaticos_valor?: string | number | null;
+  /**
+   * La categoría del catálogo de la que salió esa cifra, y su nombre resuelto.
+   * Desde ago-2026 el importe no se escribe: se elige la categoría.
+   */
+  viaticos_tipo_id?: string | null;
+  viaticos_tipo?: string | null;
   /** Desglose tal como venía del documento (transporte, alojamiento…). */
   viaticos_detalle?: Record<string, number> | null;
   viaticos_observacion?: string | null;

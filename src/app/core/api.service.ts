@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from './config';
-import { ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, Usuario, Vista } from './models';
+import { ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -439,6 +439,28 @@ export class ApiService {
     return this.http.delete<{ message: string }>(`${this.base}/tipos-orden/${id}`);
   }
 
+  // ---- Tipos de viático y su valor (ago-2026) ----
+  /** Los que se pueden elegir hoy; con `todos` vienen también los retirados. */
+  listTiposViatico(todos = false): Observable<Wrap<TipoViatico[]>> {
+    return this.http.get<Wrap<TipoViatico[]>>(`${this.base}/tipos-viatico${todos ? '?todos=true' : ''}`);
+  }
+  crearTipoViatico(body: { nombre: string; valor: number }): Observable<Wrap<TipoViatico>> {
+    return this.http.post<Wrap<TipoViatico>>(`${this.base}/tipos-viatico`, body);
+  }
+  /**
+   * Cambiar el valor NO reescribe las órdenes ya cargadas: cada una se quedó con
+   * su copia al elegir la categoría. Manda sobre las que se carguen después.
+   */
+  actualizarTipoViatico(
+    id: string, body: { nombre?: string; valor?: number; activo?: boolean },
+  ): Observable<Wrap<TipoViatico>> {
+    return this.http.put<Wrap<TipoViatico>>(`${this.base}/tipos-viatico/${id}`, body);
+  }
+  /** "Eliminar" es desactivar, por lo mismo que en los tipos de orden. */
+  desactivarTipoViatico(id: string): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.base}/tipos-viatico/${id}`);
+  }
+
   // ---- Notificaciones (M11 · NOT-04) ----
   /**
     * Bandeja del usuario autenticado (últimas 50, más recientes primero).
@@ -607,13 +629,17 @@ export class ApiService {
     id: string,
     fields?: Record<string, { value: string; confidence?: number }>,
     tipoOrdenId?: string | null,
+    tipoViaticoId?: string | null,
   ): Observable<Wrap<Borrador>> {
     // CFG-04 · El tipo de orden viaja aparte de `fields`: no lo dice el documento
     // de la ARL, lo elige quien revisa. Se puede mandar solo (cambiar el tipo
-    // desde la tabla, sin abrir la orden).
+    // desde la tabla, sin abrir la orden). El tipo de viático, igual: `null` es
+    // "No aplica" y es un valor legítimo, así que se distingue de `undefined`
+    // ("no lo toques") comprobando la presencia y no la verdad del argumento.
     const body: Record<string, unknown> = {};
     if (fields) body['fields'] = fields;
     if (tipoOrdenId !== undefined) body['tipo_orden_id'] = tipoOrdenId;
+    if (tipoViaticoId !== undefined) body['tipo_viatico_id'] = tipoViaticoId;
     return this.http.put<Wrap<Borrador>>(`${this.base}/drafts/${id}`, body);
   }
   /**

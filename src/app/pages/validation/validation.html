@@ -23,8 +23,9 @@
 
     <!-- Eje de facturación · Va aquí y no como una pestaña más porque es un eje
          INDEPENDIENTE del ciclo de vida: una OS FINALIZADA puede estar sin
-         facturar, radicada, aprobada, facturada o pagada. Como pestañas serían
-         el producto de los dos ejes; como filtro se combinan. -->
+         facturar o facturada. Como pestañas serían el producto de los dos ejes;
+         como filtro se combinan. Esto FILTRA, no cambia nada: el estado se
+         cambia desde el icono de la fila y solo desde ahí. -->
     <select
       class="form-control ord-head__filtro"
       [ngModel]="filtroCobro()"
@@ -58,38 +59,10 @@
 
 <!-- ============ TABLA ============ -->
 <div class="card">
-  <!-- Marcado en LOTE del estado de cobro. La facturación se radica por
-       paquetes: marcar cuarenta órdenes de una en una no lo iba a usar nadie, y
-       la funcionalidad se moriría igual que se murió la pestaña Cartera. La
-       barra solo aparece con algo marcado, para no ocupar sitio el resto del
-       tiempo. -->
-  @if (cobroSeleccionadas()) {
-    <div class="cobro-bar">
-      <span class="cobro-bar__texto">
-        {{ cobroSeleccionadas() }}
-        {{ cobroSeleccionadas() === 1 ? 'orden finalizada marcada' : 'órdenes finalizadas marcadas' }}
-      </span>
-      <button type="button" class="btn btn--primary" (click)="openCobro()">
-        Cambiar estado de cobro
-      </button>
-    </div>
-  }
-
   <div class="table-wrap">
     <table class="table">
       <thead>
         <tr>
-          <!-- Solo marca las FINALIZADAS de ESTA página: el atajo tiene que
-               aplicar a lo que se está viendo, o marcaría órdenes que quien
-               pulsa no ha mirado. -->
-          <th class="col-check">
-            <input
-              type="checkbox"
-              [checked]="todasDeLaPaginaMarcadas()"
-              (change)="alternarCobroPagina($any($event.target).checked)"
-              aria-label="Marcar las órdenes finalizadas de esta página"
-            />
-          </th>
           <th class="col-num">#</th>
           <th>NIT</th>
           <th>Razón social</th>
@@ -105,18 +78,6 @@
       <tbody>
         @for (order of pag.visibles(); track order.id; let i = $index) {
           <tr>
-            <td class="col-check">
-              <!-- Solo las FINALIZADAS: el eje de cobro arranca en el cierre, y
-                   ofrecer la casilla en las demás sería prometer algo que el
-                   servidor va a rechazar. -->
-              <input
-                type="checkbox"
-                [checked]="cobroMarcado(order.osId || '')"
-                [disabled]="!puedeCobrar(order)"
-                (change)="alternarCobro(order, $any($event.target).checked)"
-                [attr.aria-label]="'Marcar ' + (order.osCode || order.company) + ' para el cambio de estado de cobro'"
-              />
-            </td>
             <td class="col-num mono">{{ pag.desde() + i }}</td>
             <td class="mono">{{ order.fields.nit.value || '—' }}</td>
             <td>
@@ -212,6 +173,26 @@
                       </svg>
                     </button>
                   }
+                  <!-- Estado de facturación. Es el ÚNICO sitio desde el que se
+                       cambia (23-ago-2026): ni el detalle ni la edición lo
+                       ofrecen. Solo aparece en las FINALIZADAS, que es donde
+                       arranca el eje — antes del cierre no hay nada que
+                       facturarle a la ARL y el servidor lo rechazaría. -->
+                  @if (puedeCobrar(order)) {
+                    <button
+                      type="button"
+                      class="icon-action"
+                      (click)="openCobro(order)"
+                      aria-label="Cambiar estado de facturación"
+                      [title]="'Facturación · ' + (order.estadoCobro || 'NO FACTURADA')"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="2" y="6" width="20" height="12" rx="2" />
+                        <circle cx="12" cy="12" r="2.6" />
+                        <path d="M6 12h.01M18 12h.01" />
+                      </svg>
+                    </button>
+                  }
                   <!-- ASG-01/02/07 · Asignar o reprogramar. No se ofrece cuando
                        la orden ya salió a campo: el backend lo rechazaría. -->
                   @if (puedeAsignar(order)) {
@@ -251,7 +232,7 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="11" class="table__empty">
+            <td colspan="10" class="table__empty">
               @if (loading()) {
                 Cargando órdenes…
               } @else if (query()) {
@@ -478,6 +459,40 @@
             }
           </div>
 
+          <!-- Viáticos (ago-2026) · La cifra NO se escribe: se elige la
+               categoría y el importe sale de ella. Escribiéndola a mano, dos
+               órdenes del mismo desplazamiento acababan con valores distintos.
+               "No aplica" es lo que corresponde a casi todas. -->
+          <div class="field field--full tipo-orden">
+            <div class="field__labelrow">
+              <label class="form-field__label" for="tipoViaticoOS">Viáticos</label>
+              @if (order.viaticosValor) {
+                <span class="tipo-orden__valor">{{ pesos(order.viaticosValor) }}</span>
+              }
+            </div>
+
+            @if (editMode()) {
+              <select id="tipoViaticoOS" class="form-control" [(ngModel)]="tipoViaticoEdit" name="tipoViaticoOS">
+                <option value="">No aplica</option>
+                @for (t of tiposViatico(); track t.id) {
+                  <option [value]="t.id">{{ t.nombre }} · {{ pesos(+t.valor) }}</option>
+                }
+              </select>
+              <p class="field__hint">
+                El importe sale de la categoría. Cambiarla aquí reescribe el de esta orden;
+                las demás no se tocan. Los tipos se administran en Configuración.
+                <!-- Lo que decía el documento se conserva a la vista: en Bolívar
+                     el SIPAB trae su propia cifra, y es contra ella contra la
+                     que se elige la categoría. -->
+                @if (order.fields.viaticos?.value; as delDocumento) {
+                  Según el documento: {{ pesos(+delDocumento) }}.
+                }
+              </p>
+            } @else {
+              <input class="form-control" type="text" [value]="order.tipoViatico || 'No aplica'" readonly />
+            }
+          </div>
+
           <form class="fields">
             <!-- La confianza que se pinta es la MOSTRADA, no la que trajo la IA:
                  en cuanto alguien corrige el campo vale 100 y el subrayado se
@@ -573,10 +588,14 @@
               <p class="cobro-card__dato">Factura <strong class="mono">{{ order.cobroNumeroFactura }}</strong></p>
             }
 
+            <!-- Aquí SOLO se consulta. El estado se cambia desde el icono de
+                 facturación de la fila, en la bandeja, y desde ningún otro
+                 sitio (23-ago-2026): un único camino evita que la orden se
+                 marque sin querer mientras se está corrigiendo otra cosa. -->
             @if (puedeCobrar(order)) {
-              <button type="button" class="btn btn--secondary" (click)="openCobro(order)">
-                Cambiar estado de cobro
-              </button>
+              <p class="card__hint">
+                El estado se cambia desde el icono de facturación de la fila, en el listado.
+              </p>
             } @else {
               <!-- El eje arranca en FINALIZADA: antes del cierre no hay nada que
                    facturarle a la ARL, y el servidor rechaza el cambio. -->
@@ -1291,19 +1310,19 @@
 
 <!-- ============ MODAL: ESTADO DE FACTURACIÓN / COBRO ============
      Un eje INDEPENDIENTE del ciclo de vida de la OS: una orden FINALIZADA puede
-     estar sin facturar, radicada ante la ARL, aprobada, facturada o pagada. Se
-     marca en LOTE porque así es como se factura —se radica un paquete y se
-     marcan todas—, y el mismo diálogo sirve para una sola orden desde su
-     detalle. -->
-@if (cobroOpen()) {
+     estar sin facturar o facturada. Se cambia de UNA en una, desde el icono de
+     la fila: es el único camino.
+
+     Va con `modal--slim`: son tres campos, y el ancho normal (que crece con la
+     pantalla) los dejaba estirados de lado a lado en un monitor grande. -->
+@if (cobroOrden(); as ordenCobro) {
   <div class="modal-backdrop" (click)="closeCobro()"></div>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cobroTitle">
+  <div class="modal modal--slim" role="dialog" aria-modal="true" aria-labelledby="cobroTitle">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="cobroTitle">Estado de facturación</h3>
         <p class="modal__sub">
-          {{ cobroSeleccionadas() }}
-          {{ cobroSeleccionadas() === 1 ? 'orden seleccionada' : 'órdenes seleccionadas' }}
+          {{ ordenCobro.osCode || ordenCobro.company }}
         </p>
       </div>
       <button type="button" class="icon-action" (click)="closeCobro()" aria-label="Cerrar">
@@ -1363,8 +1382,7 @@
 
     <footer class="modal__footer">
       <span class="modal__status">
-        Solo se mueven las órdenes FINALIZADAS; las demás se informan y quedan como estaban.
-        Cada cambio queda en el historial de la orden con su autor.
+        El cambio queda en el historial de la orden, con su autor y la fecha.
       </span>
       <div class="modal__footer-actions">
         <button type="button" class="btn btn--ghost" (click)="closeCobro()" [disabled]="cobroSaving()">

@@ -9,7 +9,7 @@ import { ExtractedField, ServiceOrder } from '../../data/service-orders';
 import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
-import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, FranjaVisita, HistorialCobro, HistorialEstado, Ocupacion, Orden, Plantilla, Profesional, RegistroArl } from '../../core/models';
+import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, TipoViatico, FranjaVisita, HistorialCobro, HistorialEstado, Ocupacion, Orden, Plantilla, Profesional, RegistroArl } from '../../core/models';
 import { aIsoFecha, fechaLocal } from '../../core/fechas';
 import {
   ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, opcionesDeCampo,
@@ -193,6 +193,13 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected readonly tiposOrden = signal<TipoOrden[]>([]);
   /** Tipo elegido mientras se edita; se manda con el resto de la corrección. */
   protected tipoOrdenEdit = '';
+  /**
+   * Catálogo de tipos de viático (ago-2026) y la categoría elegida mientras se
+   * edita. El importe no se escribe: sale de la categoría. Vacío = "No aplica",
+   * que es lo que corresponde a casi toda orden.
+   */
+  protected readonly tiposViatico = signal<TipoViatico[]>([]);
+  protected tipoViaticoEdit = '';
   protected readonly query = signal('');
   protected readonly view = signal<OrdersView>('todas');
   /** Pestañas de filtro por estado (el orden es el del ciclo de vida). */
@@ -210,20 +217,20 @@ export class ValidationComponent implements OnInit, OnDestroy {
   // ---- Eje de facturación / cobro (ago-2026, petición 6) ----
   /**
    * Es un eje INDEPENDIENTE del ciclo operativo: una OS FINALIZADA puede estar
-   * sin facturar, radicada ante la ARL, aprobada, facturada o pagada. Por eso no
-   * es una pestaña más —serían el producto de dos ejes— sino un filtro aparte
-   * que se combina con la pestaña de estado.
+   * sin facturar o facturada. Por eso no es una pestaña más —serían el producto
+   * de dos ejes— sino un filtro aparte que se combina con la pestaña de estado.
+   *
+   * Se cambia de UNA EN UNA, desde el icono de la fila (23-ago-2026). Nació con
+   * marcado en lote —casillas por fila y una barra de acciones— y el cliente lo
+   * retiró: factura orden por orden, y una casilla en cada fila era una invitación
+   * permanente a marcar la equivocada. Tampoco se cambia desde el detalle ni
+   * desde la edición: hay un solo camino, y es el icono.
    */
   protected readonly estadosCobro = ESTADOS_COBRO;
   protected readonly filtroCobro = signal<EstadoCobro | ''>('');
-  /**
-   * Órdenes marcadas para el cambio en lote. La facturación se radica por
-   * paquetes: marcar cuarenta órdenes de una en una no lo iba a usar nadie, y la
-   * funcionalidad se moriría igual que se murió la Cartera (RPT-06).
-   */
-  protected readonly seleccionCobro = signal<Set<string>>(new Set());
-  protected readonly cobroOpen = signal(false);
-  protected readonly cobroEstado = signal<EstadoCobro>('RADICADA');
+  /** La orden que se está marcando; null = el diálogo está cerrado. */
+  protected readonly cobroOrden = signal<ServiceOrder | null>(null);
+  protected readonly cobroEstado = signal<EstadoCobro>('FACTURADA');
   protected cobroFactura = '';
   protected cobroObservacion = '';
   protected readonly cobroSaving = signal(false);
@@ -503,13 +510,10 @@ export class ValidationComponent implements OnInit, OnDestroy {
     }
     opt('valor_unitario', 'Valor Unitario', f.valorUnitario);
     opt('valor_total', 'Valor Total', f.valorTotal);
-    // Viáticos: siempre visible aunque venga vacío, porque es donde se añaden a
-    // una orden que no los traía. No entra en el valor de cobro por horas: la
-    // cuenta lo cobra como una línea de reembolso aparte.
-    // `toServiceOrder` siempre lo crea, así que en una orden real esto se cumple
-    // y el campo se ve aunque esté vacío; la guarda es por el mock de Informes,
-    // cuyas órdenes no lo traen.
-    if (f.viaticos) push('viaticos_valor', 'Viáticos', f.viaticos);
+    // Los viáticos ya NO son un campo de esta rejilla (ago-2026): se eligen de
+    // un catálogo, así que tienen su propio desplegable arriba, junto al tipo de
+    // orden. `f.viaticos` sigue existiendo con lo que decía el documento, que es
+    // la pista contra la que se elige la categoría.
     optFecha('fecha_orden', 'Fecha de la Orden', f.fechaOrden);
     optFecha('fecha_vencimiento', 'Fecha de Vencimiento', f.fechaVencimiento);
     opt('ciudad_ejecucion', 'Ciudad de Ejecución', f.ciudadEjecucion);
@@ -564,6 +568,14 @@ export class ValidationComponent implements OnInit, OnDestroy {
     if (!this.tiposOrden().length) {
       this.api.listTiposOrden().subscribe({
         next: (r) => this.tiposOrden.set(r.data),
+        error: () => {},
+      });
+    }
+    // Los viáticos, igual. Que el catálogo llegue vacío es normal —el viático es
+    // la excepción—: entonces la única opción es "No aplica".
+    if (!this.tiposViatico().length) {
+      this.api.listTiposViatico().subscribe({
+        next: (r) => this.tiposViatico.set(r.data),
         error: () => {},
       });
     }
@@ -678,9 +690,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
     // Cambiar de pestaña es empezar a mirar otra cosa: seguir en la página 4
     // dejaría la tabla en un tramo que el usuario no eligió.
     this.pag.reiniciar();
-    // Y lo marcado deja de estar a la vista: aplicar un cambio en lote a filas
-    // que ya no se ven es la forma más fácil de facturar la orden equivocada.
-    this.seleccionCobro.set(new Set());
   }
 
   // ================= Eje de facturación / cobro =================
@@ -696,74 +705,33 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected filtrarCobro(valor: string): void {
     this.filtroCobro.set((valor || '') as EstadoCobro | '');
     this.pag.reiniciar();
-    this.seleccionCobro.set(new Set());
-  }
-
-  protected cobroMarcado(id: string): boolean {
-    return this.seleccionCobro().has(id);
-  }
-
-  protected alternarCobro(o: ServiceOrder, marcado: boolean): void {
-    if (!this.puedeCobrar(o)) return;
-    this.seleccionCobro.update((set) => {
-      const copia = new Set(set);
-      if (marcado) copia.add(o.osId!);
-      else copia.delete(o.osId!);
-      return copia;
-    });
   }
 
   /**
-   * Marca (o desmarca) todas las FINALIZADAS de la página visible.
+   * Abre el diálogo de marcado para UNA orden.
    *
-   * De la página, no de la bandeja entera: el atajo tiene que aplicar a lo que
-   * se está viendo, o marcaría órdenes que quien pulsa no ha mirado.
+   * El estado que propone es el CONTRARIO al que tiene: con dos estados, abrir
+   * sobre el actual dejaría el botón diciendo "Marcar como NO FACTURADA" sobre
+   * una orden sin facturar, que no es lo que nadie viene a hacer. El desplegable
+   * sigue ofreciendo los dos, para poder deshacer.
    */
-  protected alternarCobroPagina(marcado: boolean): void {
-    const dePagina = this.pag.visibles().filter((o) => this.puedeCobrar(o));
-    this.seleccionCobro.update((set) => {
-      const copia = new Set(set);
-      for (const o of dePagina) {
-        if (marcado) copia.add(o.osId!);
-        else copia.delete(o.osId!);
-      }
-      return copia;
-    });
-  }
-
-  protected readonly todasDeLaPaginaMarcadas = computed(() => {
-    const dePagina = this.pag.visibles().filter((o) => this.puedeCobrar(o));
-    const set = this.seleccionCobro();
-    return dePagina.length > 0 && dePagina.every((o) => set.has(o.osId!));
-  });
-
-  /** Abre el diálogo de marcado. Sin `soloEsta` actúa sobre lo seleccionado. */
-  protected openCobro(soloEsta?: ServiceOrder): void {
-    if (soloEsta) {
-      if (!this.puedeCobrar(soloEsta)) return;
-      this.seleccionCobro.set(new Set([soloEsta.osId!]));
-      this.cobroEstado.set((soloEsta.estadoCobro as EstadoCobro) || 'RADICADA');
-      this.cobroFactura = soloEsta.cobroNumeroFactura ?? '';
-    } else {
-      if (!this.seleccionCobro().size) return;
-      this.cobroEstado.set('RADICADA');
-      this.cobroFactura = '';
-    }
+  protected openCobro(o: ServiceOrder): void {
+    if (!this.puedeCobrar(o)) return;
+    this.cobroEstado.set(o.estadoCobro === 'FACTURADA' ? 'NO FACTURADA' : 'FACTURADA');
+    this.cobroFactura = o.cobroNumeroFactura ?? '';
     this.cobroObservacion = '';
-    this.cobroOpen.set(true);
+    this.cobroOrden.set(o);
   }
 
   protected closeCobro(): void {
     if (this.cobroSaving()) return;
-    this.cobroOpen.set(false);
+    this.cobroOrden.set(null);
   }
 
-  /** Cuántas órdenes va a tocar el cambio; se dice en el propio diálogo. */
-  protected readonly cobroSeleccionadas = computed(() => this.seleccionCobro().size);
-
   protected guardarCobro(): void {
-    const ids = [...this.seleccionCobro()];
-    if (!ids.length || this.cobroSaving()) return;
+    const orden = this.cobroOrden();
+    if (!orden?.osId || this.cobroSaving()) return;
+    const ids = [orden.osId];
     const estado = this.cobroEstado();
     // El número de factura es el dato por el que se busca una orden cuando la
     // ARL pregunta. El backend lo exige también: esto solo adelanta el aviso.
@@ -781,11 +749,10 @@ export class ValidationComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (r) => {
         this.cobroSaving.set(false);
-        this.cobroOpen.set(false);
-        this.seleccionCobro.set(new Set());
+        this.cobroOrden.set(null);
         // La tabla se actualiza en el acto y solo en lo que cambió: el servidor
-        // dice cuáles movió, y las que rechazó tienen que seguir viéndose como
-        // estaban o el aviso de "quedaron fuera" no cuadraría con la pantalla.
+        // dice cuál movió, y una que rechace tiene que seguir viéndose como
+        // estaba o el aviso de "quedó fuera" no cuadraría con la pantalla.
         const movidas = new Set(r.actualizadas);
         this.orders.update((list) =>
           list.map((o) =>
@@ -798,10 +765,10 @@ export class ValidationComponent implements OnInit, OnDestroy {
               : o,
           ),
         );
-        // Se enseña el mensaje del servidor tal cual: es el que enumera las que
-        // quedaron fuera por no estar FINALIZADAS.
+        // Se enseña el mensaje del servidor tal cual: es el que explica cuándo
+        // la orden quedó fuera por no estar FINALIZADA o ya estar en ese estado.
         const parcial = r.no_finalizadas.length || r.sin_cambio.length;
-        if (parcial) this.alerts.warning('Estado de cobro actualizado en parte', r.message);
+        if (parcial) this.alerts.warning('La orden no cambió de estado', r.message);
         else this.alerts.success('Estado de cobro actualizado', r.message);
         // El detalle abierto se refresca para que su historial incluya el cambio.
         const abierta = this.detailOrder();
@@ -825,13 +792,10 @@ export class ValidationComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Color de la pastilla del eje de cobro. Verde solo cuando ya está pagada. */
+  /** Color de la pastilla del eje de cobro. Verde cuando ya está facturada. */
   protected pillCobro(estado?: EstadoCobro | null): string {
     switch (estado) {
-      case 'RADICADA': return 'pill--info';
-      case 'APROBADA': return 'pill--info';
-      case 'FACTURADA': return 'pill--warning';
-      case 'PAGADA': return 'pill--success';
+      case 'FACTURADA': return 'pill--success';
       default: return 'pill--muted'; // NO FACTURADA
     }
   }
@@ -936,6 +900,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.historialAbierto.set(false);
     const order = this.orders().find((o) => o.id === id);
     this.tipoOrdenEdit = order?.tipoOrdenId ?? '';
+    this.tipoViaticoEdit = order?.tipoViaticoId ?? '';
     this.historialCobro.set([]);
     if (order?.osId) {
       this.cargarCamposDeLaOS(order.id, order.osId);
@@ -1056,6 +1021,12 @@ export class ValidationComponent implements OnInit, OnDestroy {
     if (this.tipoOrdenEdit && this.tipoOrdenEdit !== (current.tipoOrdenId ?? '')) {
       campos['tipo_orden_id'] = this.tipoOrdenEdit;
     }
+    // La categoría del viático, igual — pero aquí el vacío SÍ se manda: es el
+    // "No aplica", y sin él no habría forma de quitarle los viáticos a una orden
+    // que los llevaba por error. El backend arrastra el importe con ella.
+    if (this.tipoViaticoEdit !== (current.tipoViaticoId ?? '')) {
+      campos['viaticos_tipo_id'] = this.tipoViaticoEdit;
+    }
     this.api.updateOrder(osId, campos).subscribe({
       next: (r) => {
         this.saving.set(false);
@@ -1069,6 +1040,12 @@ export class ValidationComponent implements OnInit, OnDestroy {
                 company: empresa,
                 tipoOrdenId: (r.data as Record<string, unknown>)['tipo_orden_id'] as string ?? o.tipoOrdenId,
                 tipoOrden: (r.data as Record<string, unknown>)['tipo_orden'] as string ?? o.tipoOrden,
+                // Los tres viajan juntos: la categoría, su nombre y el importe
+                // que el servidor acaba de congelar. `?? null` y no `?? o.…`
+                // porque "No aplica" los deja en null y hay que poder verlo.
+                tipoViaticoId: ((r.data as Record<string, unknown>)['viaticos_tipo_id'] as string) ?? null,
+                tipoViatico: ((r.data as Record<string, unknown>)['viaticos_tipo'] as string) ?? null,
+                viaticosValor: numeroONulo((r.data as Record<string, unknown>)['viaticos_valor']),
                 fields: camposDesdeOS(o.fields, r.data as Record<string, unknown>),
               }
             : o)),
@@ -1120,11 +1097,13 @@ export class ValidationComponent implements OnInit, OnDestroy {
       ['contacto_empresa_cargo', f.contactoEmpresaCargo],
       ['contacto_empresa_telefono', f.contactoEmpresaTelefono],
       ['tipo_servicio_arl', f.tipoServicioArl], ['modalidad_ejecucion', f.modalidadEjecucion],
-      ['viaticos_valor', f.viaticos],
     ];
     for (const [k, v] of ampliados) if (v) fields[k] = campo(v);
 
-    this.api.updateDraft(current.id, fields).subscribe({
+    // La categoría del viático va aparte de `fields` (vive en su columna, no en
+    // el JSON de la extracción) y se manda SIEMPRE, también vacía: es el "No
+    // aplica", y el backend saca de ella el importe al materializar la OS.
+    this.api.updateDraft(current.id, fields, undefined, this.tipoViaticoEdit || null).subscribe({
       next: () => {
         this.api.validateDraft(current.id).subscribe({
           next: () => {
@@ -2638,7 +2617,9 @@ const CAMPOS_OS: [keyof ServiceOrder['fields'], string][] = [
   ['contactoTelefono', 'contacto_sst_telefono'],
   ['contactoCorreo', 'contacto_sst_correo'],
   ['descripcion', 'descripcion'],
-  ['viaticos', 'viaticos_valor'],
+  // `viaticos` NO está: el importe dejó de ser un campo del formulario en
+  // ago-2026 —sale de la categoría elegida— y mandarlo desde aquí volvería a
+  // permitir dos cifras distintas para el mismo desplazamiento.
   ['tipoServicioArl', 'tipo_servicio_arl'],
   ['modalidadEjecucion', 'modalidad_ejecucion'],
 ];
@@ -2683,6 +2664,18 @@ function camposDesdeOS(
   return fields;
 }
 
+/**
+ * Un NUMERIC de Postgres ('45000.00') como número, conservando el null.
+ *
+ * `Number(null)` es 0, y un cero en los viáticos no es lo mismo que "esta orden
+ * no lleva": el primero se enseña, el segundo no.
+ */
+function numeroONulo(v: unknown): number | null {
+  if (v == null || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
 /** Mapea un borrador del backend al modelo ServiceOrder que consume la vista. */
 function toServiceOrder(b: Borrador): ServiceOrder {
   const m = b.metadatos_extraccion || {};
@@ -2718,6 +2711,12 @@ function toServiceOrder(b: Borrador): ServiceOrder {
     // tiene nada que facturarse, y por eso puede llegar null.
     estadoCobro: b.os_estado_cobro ?? null,
     cobroNumeroFactura: b.os_cobro_numero_factura ?? null,
+    tipoViaticoId: b.tipo_viatico_id ?? null,
+    tipoViatico: b.tipo_viatico ?? null,
+    // El importe de la ORDEN, no el vigente del catálogo: mientras el borrador
+    // no se ha validado todavía no hay orden, y entonces vale el del catálogo,
+    // que es exactamente lo que se le va a congelar al materializarla.
+    viaticosValor: numeroONulo(b.os_viaticos_valor ?? b.tipo_viatico_valor),
     fields: {
       codigoCronograma: field(m.codigo_cronograma),
       secuencia: field(m.secuencia),

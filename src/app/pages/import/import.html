@@ -512,6 +512,41 @@
             }
           </div>
 
+          <!-- Viáticos (ago-2026). Se ELIGEN de un catálogo y el importe sale de
+               la categoría: escribiéndolos a mano, dos órdenes del mismo
+               desplazamiento acababan con cifras distintas. "No aplica" es lo
+               que corresponde a casi todas, así que va primero y por defecto. -->
+          <div class="field field--full tipo-orden">
+            <div class="field__labelrow">
+              <label class="form-field__label" for="tipoViatico">Viáticos</label>
+              @if (valorViatico(order); as v) {
+                <span class="tipo-orden__valor">{{ pesos(v) }}</span>
+              }
+            </div>
+            <select
+              id="tipoViatico"
+              class="form-control"
+              [value]="order.tipoViaticoId || ''"
+              (change)="cambiarViatico(order, $any($event.target).value)"
+            >
+              <option value="">No aplica</option>
+              @for (t of tiposViatico(); track t.id) {
+                <option [value]="t.id" [selected]="t.id === order.tipoViaticoId">
+                  {{ t.nombre }} · {{ pesos(+t.valor) }}
+                </option>
+              }
+            </select>
+            @if (order.viaticosHint) {
+              <p class="field__hint">{{ order.viaticosHint }}</p>
+            }
+            @if (!tiposViatico().length) {
+              <p class="field__hint">
+                No hay tipos de viático configurados. Se crean en Configuración → Preferencias del
+                sistema; mientras tanto la orden se carga sin viáticos.
+              </p>
+            }
+          </div>
+
           <form class="fields">
             <!-- La confianza que se pinta es la MOSTRADA, no la que trajo la IA:
                  en cuanto alguien corrige el campo vale 100 y el subrayado se

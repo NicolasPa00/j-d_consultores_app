@@ -11,7 +11,7 @@ import {
 } from '../../core/personas';
 import { AlertService } from '../../core/alert.service';
 import { ApiService } from '../../core/api.service';
-import { Arl, PermisoRol, Plantilla, PreguntasEncuesta, Rol, TipoOrden, Usuario, Vista } from '../../core/models';
+import { Arl, PermisoRol, Plantilla, PreguntasEncuesta, Rol, TipoOrden, TipoViatico, Usuario, Vista } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
@@ -240,6 +240,152 @@ export class SettingsComponent implements OnInit {
     });
   }
 
+  // ----- Tipos de viático y su valor (ago-2026) -----
+  //
+  // Mismo catálogo y mismo motivo que los tipos de orden: los viáticos se
+  // escribían a mano orden por orden, así que dos órdenes del mismo
+  // desplazamiento acababan con cifras distintas y nadie sabía cuál valía.
+  // Ahora quien carga la orden ELIGE la categoría y el valor sale de aquí.
+  protected readonly tiposViatico = signal<TipoViatico[]>([]);
+  protected readonly cargandoViaticos = signal(false);
+  protected readonly guardandoViatico = signal<string | null>(null);
+  protected viaticoNuevo = { nombre: '', valor: 0 };
+  /** Valor y nombre en edición por fila, para no guardar en cada tecla. */
+  protected valorViatico: Record<string, number> = {};
+  protected nombreViatico: Record<string, string> = {};
+
+  private cargarTiposViatico(): void {
+    this.cargandoViaticos.set(true);
+    this.api.listTiposViatico(true).subscribe({
+      next: (r) => {
+        this.tiposViatico.set(r.data);
+        this.valorViatico = Object.fromEntries(r.data.map((t) => [t.id, Number(t.valor)]));
+        this.nombreViatico = Object.fromEntries(r.data.map((t) => [t.id, t.nombre]));
+        this.cargandoViaticos.set(false);
+      },
+      error: (err) => {
+        this.cargandoViaticos.set(false);
+        this.alerts.error(
+          'No se pudieron cargar los tipos de viático',
+          mensajeError(err, 'El servidor no devolvió el catálogo de viáticos.'),
+        );
+      },
+    });
+  }
+
+  protected crearTipoViatico(): void {
+    const nombre = this.viaticoNuevo.nombre.trim();
+    const valor = Number(this.viaticoNuevo.valor);
+    if (!nombre) {
+      this.alerts.warning('Falta el nombre', 'Escriba cómo se llama el tipo de viático.');
+      return;
+    }
+    if (!Number.isFinite(valor) || valor < 0) {
+      this.alerts.warning('Valor inválido', 'Debe ser un número mayor o igual que cero.');
+      return;
+    }
+    this.guardandoViatico.set('nuevo');
+    this.api.crearTipoViatico({ nombre, valor }).subscribe({
+      next: () => {
+        this.guardandoViatico.set(null);
+        this.viaticoNuevo = { nombre: '', valor: 0 };
+        this.cargarTiposViatico();
+        this.alerts.success('Tipo de viático creado', `Ya se puede elegir "${nombre}" al cargar una orden.`);
+      },
+      error: (err) => {
+        this.guardandoViatico.set(null);
+        this.alerts.error('No se pudo crear el tipo', mensajeError(err, 'El servidor rechazó los datos.'));
+      },
+    });
+  }
+
+  /** Renombrar SÍ se propaga hacia atrás: las órdenes apuntan por id. */
+  protected guardarNombreViatico(t: TipoViatico): void {
+    const nombre = (this.nombreViatico[t.id] ?? '').trim();
+    if (!nombre) {
+      this.nombreViatico[t.id] = t.nombre;
+      this.alerts.warning('El nombre no puede quedar vacío', 'Se restauró el nombre anterior.');
+      return;
+    }
+    if (nombre === t.nombre) {
+      this.nombreViatico[t.id] = nombre;
+      return;
+    }
+    this.guardandoViatico.set(t.id);
+    this.api.actualizarTipoViatico(t.id, { nombre }).subscribe({
+      next: () => {
+        this.guardandoViatico.set(null);
+        this.cargarTiposViatico();
+        this.alerts.success('Tipo de viático renombrado', `"${t.nombre}" ahora se llama "${nombre}".`);
+      },
+      error: (err) => {
+        this.guardandoViatico.set(null);
+        this.nombreViatico[t.id] = t.nombre;
+        this.alerts.error(
+          'No se pudo renombrar el tipo',
+          mensajeError(err, 'El servidor rechazó el cambio; puede que ya exista un tipo con ese nombre.'),
+        );
+      },
+    });
+  }
+
+  /**
+   * Igual que el valor hora: se avisa de lo que NO hace. Las órdenes ya cargadas
+   * conservan el importe con el que se cargaron, y eso hay que decirlo o
+   * parecerá que el cambio no tuvo efecto.
+   */
+  protected guardarValorViatico(t: TipoViatico): void {
+    const valor = Number(this.valorViatico[t.id]);
+    if (!Number.isFinite(valor) || valor < 0) {
+      this.alerts.warning('Valor inválido', 'Debe ser un número mayor o igual que cero.');
+      return;
+    }
+    if (valor === Number(t.valor)) return;
+    this.guardandoViatico.set(t.id);
+    this.api.actualizarTipoViatico(t.id, { valor }).subscribe({
+      next: () => {
+        this.guardandoViatico.set(null);
+        this.cargarTiposViatico();
+        this.alerts.success(
+          'Valor actualizado',
+          `"${t.nombre}" se reconocerá por este valor en las órdenes que se carguen de ahora en ` +
+          'adelante; las ya cargadas conservan el suyo.',
+        );
+      },
+      error: (err) => {
+        this.guardandoViatico.set(null);
+        this.alerts.error('No se pudo guardar el valor', mensajeError(err, 'El servidor rechazó el cambio.'));
+      },
+    });
+  }
+
+  protected async alternarViatico(t: TipoViatico): Promise<void> {
+    if (t.activo) {
+      const ok = await this.alerts.confirm({
+        title: 'Desactivar tipo de viático',
+        message: `"${t.nombre}" dejará de aparecer al cargar órdenes nuevas. Las ${t.ordenes ?? 0} ` +
+                 'que ya lo usan lo conservan, con el importe con el que se cargaron.',
+        confirmText: 'Desactivar',
+        tone: 'danger',
+      });
+      if (!ok) return;
+    }
+    this.guardandoViatico.set(t.id);
+    const peticion: Observable<unknown> = t.activo
+      ? this.api.desactivarTipoViatico(t.id)
+      : this.api.actualizarTipoViatico(t.id, { activo: true });
+    peticion.subscribe({
+      next: () => {
+        this.guardandoViatico.set(null);
+        this.cargarTiposViatico();
+      },
+      error: (err: unknown) => {
+        this.guardandoViatico.set(null);
+        this.alerts.error('No se pudo cambiar el tipo', mensajeError(err, 'El servidor rechazó el cambio.'));
+      },
+    });
+  }
+
   // ----- Pestaña: Formatos y encuesta (CFG-03 / ENC-03) -----
   // Es configuración del NEGOCIO (qué dice el acta que firma el cliente, cómo
   // está redactada la encuesta), no mantenimiento de la plataforma: por eso la
@@ -319,6 +465,7 @@ export class SettingsComponent implements OnInit {
         if (Number.isFinite(c)) this.diaCorte = c;
       });
       this.cargarTipos();
+      this.cargarTiposViatico();
     }
   }
 

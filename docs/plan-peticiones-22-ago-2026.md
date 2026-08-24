@@ -15,9 +15,11 @@
 ## 0. Dónde retomar
 
 **Las CINCO fases están construidas** (F1-F3 el 22-ago-2026; **F4 y F5 el
-23-ago-2026**) y sus migraciones, aplicadas a la Neon compartida. Lo que queda
-NO es código: son **las nueve decisiones del §8**, que hay que cerrar con el
-cliente, y ver la tanda entera funcionando dentro de la aplicación.
+23-ago-2026**) y sus migraciones, aplicadas a la Neon compartida. El **§10**
+recoge los cuatro ajustes que el cliente pidió sobre lo entregado, también
+construidos y migrados. Lo que queda NO es código: son **las decisiones del §8**,
+que hay que cerrar con el cliente, y ver la tanda entera funcionando dentro de la
+aplicación.
 
 Antes de escribir código:
 
@@ -42,7 +44,8 @@ Antes de escribir código:
 | 5 | Las decisiones **D-1 a D-5** siguen abiertas | F2 |
 | 6 | **Ante qué ARL está registrado cada profesional**, con su código y su vigencia: la tabla nace vacía y sin ella la suplencia no se puede usar | F4 |
 | 7 | **Con suplente, ¿a quién se le paga y a quién califica la encuesta?** (D-6) | F4 |
-| 8 | **Qué estados de cobro quiere exactamente** y desde dónde arranca el eje (D-7). Se construyó con los cinco por defecto | F5 |
+| 8 | ✅ ~~Qué estados de cobro quiere (D-7)~~ — **cerrada el 23-ago**: son dos, NO FACTURADA y FACTURADA (§10.2) | F5 |
+| 9 | **Qué categorías de viático hay y cuánto vale cada una** (D-10). El catálogo nace vacío y sin él solo se puede elegir "No aplica" | F3 |
 
 **Y lo que nadie ha podido hacer todavía:** ver funcionando la tanda **dentro de
 la aplicación**. Todo lo verificado lo está por script —contra la BD real y con
@@ -59,9 +62,9 @@ administrador para el asistente.
 | 2 | Tipo de actividad de Bolívar (A/T/C/E/M/O) marcado en el formato | **F1** | ✅ Construida y migrada (22-ago-2026) · falta verla en la app | ⬜ |
 | 4 | Presencial / Virtual obligatorio en las órdenes de Bolívar | **F1** | ✅ Construida y migrada (22-ago-2026) · falta verla en la app | ⬜ |
 | 5 | Qué formatos y qué soportes según ARL, tipo y horas | **F2** | ✅ Construida y migrada (22-ago-2026) · falta verla en la app | ⬜ |
-| 1 | Viáticos opcionales por orden | **F3** | ✅ Construida y migrada (22-ago-2026) · falta verla en la app | ⬜ |
+| 1 | Viáticos opcionales por orden | **F3** | ✅ Construida y migrada (22-ago) · **ajustada el 23-ago**: se eligen de un catálogo, no se escriben (§10.4) | ⬜ |
 | 3 | Profesional registrado ante la ARL + suplente | **F4** | ✅ Construida y migrada (23-ago-2026) · falta verla en la app | ⬜ |
-| 6 | Estado de facturación / cobro de la orden | **F5** | ✅ Construida y migrada (23-ago-2026) · falta verla en la app | ⬜ |
+| 6 | Estado de facturación / cobro de la orden | **F5** | ✅ Construida y migrada (23-ago) · **ajustada el 23-ago**: dos estados y sin marcado en lote (§10.1-10.3) | ⬜ |
 
 **Por qué ese orden.** F1 no es una petición pequeña metida delante: la letra del
 tipo de actividad y el presencial/virtual son **los dos datos de los que depende
@@ -905,6 +908,12 @@ partir de FINALIZADA.
 
 ### 7.1 Lo que quedó construido (23-ago-2026)
 
+> ⚠️ **Esta sección describe la fase COMO SE CONSTRUYÓ, y el cliente la recortó
+> ese mismo día.** Lo vigente está en el **§10**: los estados son **dos** (no
+> cinco) y el marcado **en lote se retiró de la interfaz** (se cambia de una en
+> una, desde el icono de la fila). Se deja el detalle original porque explica por
+> qué está construido como está.
+
 **Backend (`sst_ws`):**
 
 | Archivo | Qué cambió |
@@ -986,9 +995,11 @@ Ninguna bloquea empezar; todas cambian el resultado.
 | **D-4** | F2 | **AXA · corte de 16:** la carpeta dice «16 **unidades**», no horas. En órdenes que no se miden en horas, ¿contra qué se compara? | cliente | `horas_asignadas ≤ 16`, y avisar si la orden no está medida en horas |
 | **D-5** | F2 | **La tabla de soportes de §4.1** solo está dictada por el cliente en las dos filas de Bolívar; el resto es propuesta nuestra | cliente | validarla fila a fila antes de construir |
 | **D-6** | F4 | **Con suplente, ¿a quién se le paga y a quién califica la encuesta?** | cliente | al **ejecutor**: hizo el trabajo, y es a quien vio el cliente final · **construido así** |
-| **D-7** | F5 | **Qué estados de cobro** quiere exactamente, y si el eje arranca en EJECUTADA o en FINALIZADA | cliente | NO FACTURADA → RADICADA → APROBADA → FACTURADA → PAGADA, desde FINALIZADA · **construido así** |
+| **D-7** | F5 | **Qué estados de cobro** quiere exactamente, y si el eje arranca en EJECUTADA o en FINALIZADA | cliente | ✅ **CERRADA el 23-ago-2026**: son **dos**, NO FACTURADA y FACTURADA, desde FINALIZADA. Los otros tres (RADICADA, APROBADA, PAGADA) se retiraron del enum, del backend y de la interfaz |
 | **D-8** | F1 | **La letra de Bolívar y el catálogo `tipos_orden` (CFG-04)** son hoy dos cosas: la letra tiene 6 valores y el catálogo tiene 3 (Capacitación, Asesoría, Inspección). ¿Se cruzan? | equipo + cliente | conviven; la letra **preselecciona** el tipo, y `tipos_orden` gana **"Asistencia Técnica"** para que `T` tenga destino y F2 pueda enrutar |
 | **D-9** | F3 | Los viáticos, ¿los paga JD&D al profesional, los cobra a la ARL, o ambas? De ahí sale si van solo en la cuenta de cobro, solo en la facturación (F5) o en las dos | cliente | ambas: la ARL los autoriza y JD&D los traslada |
+| **D-10** | F3 | **Qué categorías de viático hay y cuánto vale cada una.** El catálogo (`sst.tipos_viatico`) nace VACÍO: mientras no tenga filas, al cargar una orden la única opción es "No aplica" | cliente | las crea JD&D en Configuración → Preferencias del sistema |
+| **D-11** | F3 | Con categoría elegida, el importe sale del CATÁLOGO y **pisa la cifra que traía el SIPAB** de Bolívar. El desglose del documento se conserva en `viaticos_detalle` | equipo | manda el catálogo: es lo que hace que dos órdenes del mismo desplazamiento valgan lo mismo |
 
 ---
 
@@ -1015,3 +1026,118 @@ Ninguna bloquea empezar; todas cambian el resultado.
    administrador, así que buena parte de las últimas tandas no se ha visto
    funcionar dentro de la app (HANDOFF §3, "Deuda de pruebas"). Todo lo de este
    plan **hay que verlo en la aplicación**, no solo compilar.
+
+---
+
+## 10. Ajustes del 23-ago-2026 (posteriores a la tanda)
+
+Cuatro correcciones del cliente sobre lo entregado. Ninguna es una fase nueva:
+recortan o reencauzan lo que ya estaba construido.
+
+### 10.1 El estado de cobro se cambia SOLO desde el icono de la fila
+
+Se retiró el **marcado en lote** de `/ordenes`: la casilla por fila, la barra de
+acciones y el botón del detalle. En su lugar, las órdenes **FINALIZADAS** llevan
+un icono de facturación en la columna de opciones, y ese es el único camino.
+
+**Por qué**: el cliente factura orden por orden. Una casilla en cada fila era una
+invitación permanente a marcar la equivocada, y el botón dentro del detalle
+dejaba cambiar el estado mientras se estaba corrigiendo otra cosa.
+
+El bloque "Facturación a la ARL" del detalle **se queda**, pero solo como
+consulta: pastilla, número de factura e historial, y una línea que dice dónde se
+cambia.
+
+`PATCH /orders/cobro` **conserva la forma de lote** (recibe una lista de ids)
+aunque la vista mande siempre uno solo: es la que deja mover un paquete sin
+cuarenta viajes al servidor si algún día vuelve a hacer falta.
+
+### 10.2 El eje de cobro son DOS estados
+
+`NO FACTURADA` y `FACTURADA`. **RADICADA, APROBADA y PAGADA se retiraron** — con
+esto **D-7 queda cerrada**.
+
+Un enum de Postgres no admite quitar valores, así que hubo que recrear el tipo:
+`DROP VIEW vw_ordenes_expandidas` → tipo nuevo → convertir las tres columnas
+(`ordenes_servicio.estado_cobro` y las dos de `historial_cobro_orden`) →
+`DROP TYPE` → `RENAME` → recrear la vista. La conversión mapea
+`RADICADA`/`APROBADA` → `NO FACTURADA` y `PAGADA` → `FACTURADA`, aunque en esta
+base no hiciera falta (las 13 órdenes estaban en `NO FACTURADA` y el historial,
+vacío).
+
+Consecuencia en Informes: ya no existe "pendiente de cobro" como cifra aparte
+—era "todo lo que no está PAGADA"— y los KPI pasan a ser **sin facturar**,
+**facturado** y **total finalizado**. Enseñar "pendiente" y "sin facturar" con el
+mismo número habría sido enseñar dos veces lo mismo.
+
+**La lista vive en tres sitios** y hay que tocarlos juntos: el enum de
+`schema.sql`, `ESTADOS_COBRO` de `orders.routes.js` y `ESTADOS_COBRO` de
+`core/models.ts`.
+
+### 10.3 El diálogo de facturación es estrecho
+
+Clase nueva `.modal--slim` (`min(460px, 100vw - 2rem)`). El ancho de `.modal` es
+**fluido** —`min(420px + 38vw, 1400px, …)`, pensado para lo que tiene dos
+columnas o una tabla—, así que en un monitor de 27" ese diálogo de tres campos
+salía de casi 1400 px. No era una impresión de pantalla grande: en un portátil de
+1366 px también salía de ~940 px para un desplegable con dos opciones.
+
+### 10.4 Los viáticos se ELIGEN de un catálogo, no se escriben
+
+Nueva tabla **`sst.tipos_viatico`** (nombre + valor + activo), calcada de
+`tipos_orden` (CFG-04) y administrada en **Configuración → Preferencias del
+sistema**. Al cargar una orden, "Viáticos" deja de ser un campo de texto y pasa a
+ser un desplegable con **"No aplica"** por defecto.
+
+**Por qué**: escribiéndolo a mano, dos órdenes del mismo desplazamiento acababan
+con cifras distintas y nadie sabía cuál era la buena.
+
+Cómo queda el dato:
+
+| Columna | Qué guarda |
+|---|---|
+| `ordenes_servicio.viaticos_tipo_id` | la categoría elegida · NULL = "No aplica" |
+| `ordenes_servicio.viaticos_valor` | el importe **congelado** al elegirla (igual que `valor_hora_cobro` con el tipo de orden: si el catálogo sube, la orden ya cargada no cambia) |
+| `ordenes_servicio.viaticos_detalle` | intacto: el desglose que traía el SIPAB, que es con lo que se justifica la cifra ante la ARL |
+| `borradores_extraccion.tipo_viatico_id` | la categoría elegida en la vista previa; de ella sale el importe al materializar la OS |
+
+`viaticos_valor` **dejó de ser editable a mano** (salió de `CAMPOS_EDITABLES` en
+`orders.routes.js` y de `CAMPOS_OS` en el frontend): dejarlo habría vuelto a
+permitir las dos cifras. Al cambiar la categoría desde el detalle de la orden, el
+backend arrastra el importe.
+
+⚠️ **El catálogo nace vacío** (D-10): mientras JD&D no cree ninguna categoría, la
+única opción al cargar una orden es "No aplica". No bloquea la importación —a
+diferencia del tipo de orden—, porque el viático es la excepción, no la norma.
+
+⚠️ **Con categoría elegida, el catálogo pisa la cifra del SIPAB** (D-11).
+
+### 10.5 De paso: un `$$` roto en `schema.sql`
+
+El bloque `DO $ BEGIN … END $;` que creaba `sst.estado_cobro` se escribió con un
+solo `$` (se lo comió un heredoc del shell el 23-ago). Postgres no acepta `$ ` como
+comilla de dólar, así que `npm run migrate` sobre una base nueva habría muerto
+ahí. Corregido a `$$`.
+
+⚠️ **Sigue habiendo un desorden anterior en `schema.sql`**, no introducido aquí:
+`ALTER TABLE sst.borradores_extraccion …` aparece sobre la línea 498 y la tabla
+se crea en la 678. Sobre la base existente no molesta (las tablas ya están); sobre
+una base vacía, `npm run migrate` fallaría. Arreglarlo es reordenar el archivo y
+no se hizo en esta tanda.
+
+### 10.6 Qué se verificó, y cómo
+
+| Qué | Cómo |
+|---|---|
+| La migración | Aplicada a la Neon compartida. El enum queda con **2** etiquetas; `viaticos_tipo_id`, `viaticos_tipo` y `estado_cobro` se comprueban **en la VISTA** (trampa 69), no en la tabla |
+| CRUD del catálogo | Contra `:4010` con un JWT firmado: alta, duplicado por nombre en minúsculas → 409, valor negativo → 400 |
+| Elegir categoría en una orden | `PUT /orders/:id` con `viaticos_tipo_id` → la orden queda con el importe del catálogo; con `""` → categoría e importe a NULL; con un id inexistente → 400 |
+| Materializar con y sin categoría | Script con **ROLLBACK**: con categoría la OS nace con el valor del catálogo **pisando** los 999.999 que traía el documento; sin categoría, nace sin viáticos |
+| Los estados retirados rebotan | `PATCH /orders/cobro` con `RADICADA` → «debe ser uno de: NO FACTURADA, FACTURADA» |
+| `FACTURADA` sigue exigiendo factura, y repetir no duplica historial | Dos PATCH contra `:4010` |
+| El informe cuadra | `GET /reports/cobro`: `sin_facturar` + `facturado` = `valor`, y `por_arl` con `sin_facturar` |
+| Los datos reales quedaron como estaban | Revertido: las 13 órdenes en `NO FACTURADA`, sin facturas, historial vacío, catálogo de viáticos vacío |
+| Compila | `ng build` y `tsc --noEmit` limpios; en el backend siguen los 10 errores **preexistentes** de la capa Prisma (`src/infrastructure/**`), que nada de esto toca |
+
+**Lo que sigue faltando:** verlo dentro de la aplicación. Sin credenciales de
+administrador, todo lo de arriba está verificado por script o por HTTP.

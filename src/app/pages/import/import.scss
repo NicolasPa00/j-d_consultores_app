@@ -871,3 +871,12 @@
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--border-soft);
 }
+
+/* El importe de la categoría de viático elegida, junto a su etiqueta. Mismo
+   tratamiento que el valor hora del tipo de orden en la vista de Órdenes: es la
+   consecuencia de la elección, así que se ve sin abrir nada. */
+.tipo-orden__valor {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}

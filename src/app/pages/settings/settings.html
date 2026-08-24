@@ -264,6 +264,108 @@
       </form>
     </div>
   </div>
+
+  <!-- Tipos de viático y su valor (ago-2026).
+       Los viáticos se escribían a mano en cada orden, así que dos órdenes del
+       mismo desplazamiento acababan con cifras distintas. Ahora quien carga la
+       orden elige de esta lista y el valor sale de aquí. -->
+  <div class="card">
+    <div class="card__head">
+      <h3 class="card__title">Tipos de viático</h3>
+      <span class="card__hint">Valor por categoría</span>
+    </div>
+    <div class="card__body">
+      <p class="form-note tipos__intro">
+        Al cargar una orden se elige uno de estos tipos y el sistema le pone su valor. El viático
+        es la excepción, así que la opción <strong>“No aplica”</strong> está siempre disponible y es
+        la que traen casi todas las órdenes. Cambiar un valor afecta a las órdenes que se
+        <strong>carguen de ahora en adelante</strong>: las ya cargadas conservan el importe con el
+        que quedaron.
+      </p>
+
+      <div class="table-wrap">
+        <table class="table tipos">
+          <thead>
+            <tr>
+              <th>Tipo de viático</th>
+              <th>Valor</th>
+              <th>Órdenes</th>
+              <th class="col-actions">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (t of tiposViatico(); track t.id) {
+              <tr [class.tipos__fila--off]="!t.activo">
+                <td>
+                  <span class="tipos__nombre-edit">
+                    <input
+                      class="form-control tipos__nombre-input"
+                      type="text"
+                      [(ngModel)]="nombreViatico[t.id]"
+                      [name]="'nombreViat' + t.id"
+                      [disabled]="guardandoViatico() === t.id"
+                      (blur)="guardarNombreViatico(t)"
+                      [attr.aria-label]="'Nombre del tipo de viático ' + t.nombre"
+                      title="Editar el nombre del tipo de viático"
+                    />
+                    @if (!t.activo) { <span class="pill pill--muted">Desactivado</span> }
+                  </span>
+                </td>
+                <td>
+                  <span class="rate-row__input">
+                    <span class="rate-row__currency">$</span>
+                    <input
+                      class="form-control"
+                      type="number"
+                      min="0"
+                      step="1000"
+                      [(ngModel)]="valorViatico[t.id]"
+                      [name]="'valorViat' + t.id"
+                      [disabled]="guardandoViatico() === t.id"
+                      (blur)="guardarValorViatico(t)"
+                    />
+                  </span>
+                </td>
+                <td class="mono">{{ t.ordenes ?? 0 }}</td>
+                <td class="col-actions">
+                  <button
+                    type="button"
+                    class="btn btn--ghost btn--sm"
+                    [disabled]="guardandoViatico() === t.id"
+                    (click)="alternarViatico(t)"
+                  >
+                    {{ t.activo ? 'Desactivar' : 'Reactivar' }}
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="table__empty">
+                  {{ cargandoViaticos()
+                      ? 'Cargando…'
+                      : 'Todavía no hay tipos de viático. Mientras no haya ninguno, al cargar una orden solo se podrá elegir “No aplica”.' }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <form class="tipo-nuevo" (ngSubmit)="crearTipoViatico()">
+        <label class="form-field">
+          <span class="form-field__label">Nuevo tipo</span>
+          <input class="form-control" type="text" placeholder="Ej. Transporte intermunicipal" [(ngModel)]="viaticoNuevo.nombre" name="viatNombre" />
+        </label>
+        <label class="form-field">
+          <span class="form-field__label">Valor</span>
+          <input class="form-control" type="number" min="0" step="1000" [(ngModel)]="viaticoNuevo.valor" name="viatValor" />
+        </label>
+        <button type="submit" class="btn btn--primary" [disabled]="guardandoViatico() === 'nuevo'">
+          {{ guardandoViatico() === 'nuevo' ? 'Creando…' : 'Agregar tipo' }}
+        </button>
+      </form>
+    </div>
+  </div>
 }
 
 <!-- ===== Pestaña 3: Usuarios del Sistema (solo Administrador Maestro) ===== -->

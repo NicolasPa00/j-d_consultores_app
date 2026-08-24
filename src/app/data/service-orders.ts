@@ -63,6 +63,15 @@ export interface ServiceOrder {
   /** Estado de cobro. Es un eje independiente del ciclo operativo de la OS. */
   estadoCobro?: EstadoCobro | null;
   cobroNumeroFactura?: string | null;
+  // ---- Viáticos (ago-2026) ----
+  /**
+   * La categoría elegida y su nombre; null en las dos = "No aplica", que es el
+   * caso de casi toda orden. `viaticosValor` es el importe CONGELADO en la
+   * orden: si el catálogo sube después, la orden ya cargada no cambia.
+   */
+  tipoViaticoId?: string | null;
+  tipoViatico?: string | null;
+  viaticosValor?: number | null;
   fields: {
     codigoCronograma: ExtractedField;
     secuencia: ExtractedField;

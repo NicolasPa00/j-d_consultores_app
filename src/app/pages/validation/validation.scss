@@ -308,6 +308,15 @@
   width: min(calc(460px + 46vw), 1700px, calc(100vw - 2rem));
 }
 
+/* Un formulario CORTO no debe crecer con la pantalla.
+   El ancho fluido de `.modal` es el correcto para lo que tiene dos columnas o
+   una tabla, pero el diálogo de facturación son tres campos: en un monitor de
+   27" quedaba un desplegable de mil trescientos píxeles con "FACTURADA" dentro.
+   Ancho fijo y modesto, con el tope de siempre para que quepa en un móvil. */
+.modal--slim {
+  width: min(460px, calc(100vw - 2rem));
+}
+
 /* La agenda necesita ancho: siete días por debajo de ~90 px por columna dejan
    de ser legibles y la rejilla se pondría a scrollear en horizontal. */
 .modal--agenda {
@@ -1832,40 +1841,6 @@
 .ord-head__filtro {
   width: auto;
   min-width: 170px;
-}
-
-/* Barra de marcado en lote: solo aparece con algo seleccionado. */
-.cobro-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.65rem 1rem;
-  background: color-mix(in srgb, var(--primary-color) 7%, transparent);
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.cobro-bar__texto {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-main);
-}
-
-.col-check {
-  width: 34px;
-  text-align: center;
-
-  input {
-    width: 15px;
-    height: 15px;
-    accent-color: var(--primary-color);
-    cursor: pointer;
-  }
-
-  input:disabled {
-    cursor: not-allowed;
-    opacity: 0.35;
-  }
 }
 
 /* El número de factura, bajo la pastilla: es por lo que se busca una orden

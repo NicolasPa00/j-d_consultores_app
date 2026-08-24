@@ -5,7 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { ApiService, DuplicadoImportacion } from '../../core/api.service';
 import { AlertService } from '../../core/alert.service';
 import { mensajeError, revisarArchivo } from '../../core/errores';
-import { Borrador, CampoExtraido, HojaImportada, MetadatosExtraccion, TipoOrden } from '../../core/models';
+import { Borrador, CampoExtraido, HojaImportada, MetadatosExtraccion, TipoOrden, TipoViatico } from '../../core/models';
 import { aIsoFecha } from '../../core/fechas';
 import {
   ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, opcionesDeCampo,
@@ -75,6 +75,17 @@ interface PreviewOrder {
    * elegirlo, porque de aquí sale el valor hora del profesional.
    */
   tipoOrdenId: string | null;
+  /**
+   * Categoría del viático con la que se carga la orden. null = "No aplica",
+   * que es lo que trae casi toda orden: el viático es la excepción.
+   */
+  tipoViaticoId: string | null;
+  /**
+   * Lo que el documento decía de los viáticos (o por qué no decía nada). Se
+   * enseña bajo el desplegable: la ARL puede haberlos DENEGADO expresamente, y
+   * eso es un dato distinto de "no se sabe".
+   */
+  viaticosHint?: string;
   /** Se está enviando a Órdenes ella sola (botón de guardar de la fila). */
   guardando?: boolean;
   fields: PreviewField[];
@@ -185,6 +196,15 @@ export class ImportComponent implements OnInit, OnDestroy {
   /** CFG-04 · Catálogo de tipos de orden, para el desplegable de cada fila. */
   protected readonly tiposOrden = signal<TipoOrden[]>([]);
   /**
+   * Catálogo de tipos de viático (ago-2026), para el desplegable del detalle.
+   *
+   * Vacío es un estado legítimo: mientras JD&D no cree ninguna categoría en
+   * Configuración, la única opción es "No aplica" — que es justo lo que
+   * corresponde a casi todas las órdenes. Por eso, a diferencia de los tipos de
+   * orden, no bloquea la importación.
+   */
+  protected readonly tiposViatico = signal<TipoViatico[]>([]);
+  /**
    * Estado de la carga del catálogo. Hace falta distinguir "todavía no llegó"
    * de "llegó vacío": solo lo segundo bloquea la importación.
    */
@@ -231,6 +251,13 @@ export class ImportComponent implements OnInit, OnDestroy {
   private cargarTipos(): void {
     if (this.tiposOrden().length) return;
     this.estadoTipos.set('cargando');
+    // Los viáticos van en el mismo momento y NO bloquean nada: el catálogo puede
+    // estar vacío —lo normal al principio— y entonces la orden simplemente se
+    // carga sin viáticos, que es el caso de casi todas.
+    this.api.listTiposViatico().subscribe({
+      next: (r) => this.tiposViatico.set(r.data),
+      error: () => this.tiposViatico.set([]),
+    });
     this.api.listTiposOrden().subscribe({
       next: (r) => {
         this.tiposOrden.set(r.data);
@@ -288,6 +315,47 @@ export class ImportComponent implements OnInit, OnDestroy {
         );
       },
     });
+  }
+
+  /**
+   * Cambia la categoría del viático desde el detalle y la guarda en el acto.
+   *
+   * Se persiste sin esperar a "Guardar todo" por el mismo motivo que el tipo de
+   * orden: el backend lee la categoría del BORRADOR al materializar la OS y de
+   * ella saca el importe, así que dejarla solo en memoria haría nacer la orden
+   * sin viáticos aunque en pantalla se viera elegida.
+   */
+  protected cambiarViatico(row: PreviewOrder, tipoViaticoId: string): void {
+    const valor = tipoViaticoId || null;
+    const previo = row.tipoViaticoId;
+    if (valor === previo) return;
+    this.previewRows.update((list) =>
+      list.map((r) => (r.id === row.id ? { ...r, tipoViaticoId: valor } : r)),
+    );
+    this.api.updateDraft(row.id, undefined, undefined, valor).subscribe({
+      error: (err) => {
+        this.previewRows.update((list) =>
+          list.map((r) => (r.id === row.id ? { ...r, tipoViaticoId: previo } : r)),
+        );
+        this.alerts.error(
+          'No se pudo guardar el viático',
+          mensajeError(err, 'El servidor rechazó el cambio; vuelva a intentarlo.'),
+        );
+      },
+    });
+  }
+
+  /** El importe de la categoría elegida, para enseñarlo junto al desplegable. */
+  protected valorViatico(row: PreviewOrder): number | null {
+    const t = this.tiposViatico().find((x) => x.id === row.tipoViaticoId);
+    return t ? Number(t.valor) : null;
+  }
+
+  /** '85.000' — en pesos, sin decimales, como en el resto del producto. */
+  protected pesos(v?: number | null): string {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency', currency: 'COP', maximumFractionDigits: 0,
+    }).format(Number(v) || 0);
   }
 
   /**
@@ -1202,12 +1270,10 @@ function buildFields(m: MetadatosExtraccion, arl: string | null): PreviewField[]
   }
   opt('valor_unitario', 'Valor Unitario', m.valor_unitario);
   opt('valor_total', 'Valor Total', m.valor_total);
-  // Viáticos: SIEMPRE visible, tenga valor o no. Es opcional, pero si solo
-  // apareciera cuando el documento lo trae no habría forma de añadirlo a una
-  // orden de AXA o Colmena, donde nunca viene.
-  push('viaticos_valor', 'Viáticos', m.viaticos_valor);
-  const viat = rows[rows.length - 1];
-  viat.hint = pistaViaticos(m.sipab);
+  // Los viáticos YA NO son un campo de esta rejilla (ago-2026): se eligen de un
+  // catálogo, no se escriben, así que viven en su propio desplegable —junto al
+  // tipo de orden— igual que el resto de lo que decide quien revisa y no dice el
+  // documento. Lo que el documento sí decía sigue a la vista ahí, como pista.
   // Fecha real → selector de fecha; si la IA la escribió en un formato que no se
   // puede leer, se deja como texto para no perder de vista lo que decía el documento.
   if (text(m.fecha_orden)) {
@@ -1286,6 +1352,8 @@ function toPreview(b: Borrador, lote: LoteCargado): PreviewOrder {
     confidence: Math.round(Number(b.confianza_general ?? m.overall_confidence ?? 0)),
     sourceRow: m.source_row != null ? Number(m.source_row) : null,
     tipoOrdenId: b.tipo_orden_id ?? null,
+    tipoViaticoId: b.tipo_viatico_id ?? null,
+    viaticosHint: pistaViaticos(m.sipab),
     lote,
     fields: buildFields(m, b.arl_nombre ?? null),
   };

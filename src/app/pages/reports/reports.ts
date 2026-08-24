@@ -281,15 +281,9 @@ export class ReportsComponent implements OnInit {
     this.cargarCobro();
   }
 
-  /** Color de la pastilla del eje de cobro. Verde solo cuando ya está pagada. */
+  /** Color de la pastilla del eje de cobro. Verde cuando ya está facturada. */
   protected pillCobro(estado?: EstadoCobro | null): string {
-    switch (estado) {
-      case 'RADICADA':
-      case 'APROBADA': return 'pill--info';
-      case 'FACTURADA': return 'pill--warning';
-      case 'PAGADA': return 'pill--success';
-      default: return 'pill--muted'; // NO FACTURADA
-    }
+    return estado === 'FACTURADA' ? 'pill--success' : 'pill--muted';
   }
 
   /** Cuántas órdenes hay en un estado del eje; 0 cuando el estado no aparece. */
@@ -589,14 +583,14 @@ export class ReportsComponent implements OnInit {
         o.codigo || '', o.estado_cobro, o.cobro_numero_factura || '',
         o.arl_nombre || '', o.empresa_nombre || '', o.nit_nic || '',
         o.profesional_nombre || '', this.num(o.horas_asignadas),
-        this.num(o.valor_total), this.num(o.viaticos_valor),
+        this.num(o.valor_total), o.viaticos_tipo || '', this.num(o.viaticos_valor),
         fechaCorta(o.fecha_ejecucion), fechaCorta(o.cobro_actualizado_en),
         o.cobro_observacion || '',
       ]);
       this.downloadXlsx('estado_facturacion', 'Facturación', [
         'Código', 'Estado de cobro', 'N.º factura', 'ARL', 'Empresa', 'NIT',
-        'Profesional', 'Horas', 'Valor ARL', 'Viáticos', 'Ejecutada', 'Último cambio',
-        'Observación',
+        'Profesional', 'Horas', 'Valor ARL', 'Tipo de viático', 'Viáticos',
+        'Ejecutada', 'Último cambio', 'Observación',
       ], rows);
     } else if (this.activeTab() === 'satisfaccion') {
       // ENC-07 · Respuestas exportables. Se incluyen también las enviadas sin
@@ -676,7 +670,7 @@ export class ReportsComponent implements OnInit {
       // cobra a la ARL, no lo que se le paga al profesional.
       filtro =
         `Estado: ${this.cobroEstadoFiltro() || 'Todos'}` +
-        ` · Pendiente de cobro: ${this.pesos(rep?.totales?.pendiente)}` +
+        ` · Sin facturar: ${this.pesos(rep?.totales?.sin_facturar)}` +
         ` de ${this.pesos(rep?.totales?.valor)} facturables a la ARL`;
     } else if (this.activeTab() === 'satisfaccion') {
       const t = this.surveyStats()?.totales;

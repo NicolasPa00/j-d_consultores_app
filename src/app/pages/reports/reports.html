@@ -713,18 +713,18 @@
         <span class="kpi__hint">el eje de cobro arranca en el cierre</span>
       </div>
       <div class="kpi">
-        <span class="kpi__label">Pendiente de cobro</span>
-        <strong class="kpi__value">{{ pesos(rep.totales.pendiente) }}</strong>
-        <span class="kpi__hint">todo lo que aún no está PAGADA</span>
-      </div>
-      <div class="kpi">
         <span class="kpi__label">Sin facturar</span>
         <strong class="kpi__value">{{ pesos(rep.totales.sin_facturar) }}</strong>
-        <span class="kpi__hint">ni siquiera radicado</span>
+        <span class="kpi__hint">lo que falta por facturarle a la ARL</span>
       </div>
       <div class="kpi">
-        <span class="kpi__label">Cobrado</span>
-        <strong class="kpi__value">{{ pesos(rep.totales.pagado) }}</strong>
+        <span class="kpi__label">Facturado</span>
+        <strong class="kpi__value">{{ pesos(rep.totales.facturado) }}</strong>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label">Total finalizado</span>
+        <strong class="kpi__value">{{ pesos(rep.totales.valor) }}</strong>
+        <span class="kpi__hint">valor según la ARL, sin viáticos</span>
       </div>
     </div>
 
@@ -732,8 +732,8 @@
       <div class="card barras">
         <div class="card__head"><h3 class="card__title">Por estado de cobro</h3></div>
         <div class="card__body">
-          <!-- Los cinco estados SIEMPRE, aunque estén en cero: un estado vacío
-               también informa (nadie ha radicado nada todavía). -->
+          <!-- Los dos estados SIEMPRE, aunque estén en cero: un estado vacío
+               también informa (no se ha facturado nada todavía). -->
           @for (e of estadosCobro; track e) {
             <div class="barra">
               <span class="barra__label" [title]="e">{{ e }}</span>
@@ -751,7 +751,7 @@
       </div>
 
       <div class="card barras">
-        <div class="card__head"><h3 class="card__title">Pendiente por ARL</h3></div>
+        <div class="card__head"><h3 class="card__title">Sin facturar por ARL</h3></div>
         <div class="card__body">
           @for (a of rep.por_arl; track a.arl_nombre) {
             <div class="barra">
@@ -759,10 +759,10 @@
               <span class="barra__track">
                 <span
                   class="barra__fill barra__fill--azul"
-                  [style.width]="anchoBarra(num(a.pendiente), num(rep.totales.pendiente))"
+                  [style.width]="anchoBarra(num(a.sin_facturar), num(rep.totales.sin_facturar))"
                 ></span>
               </span>
-              <span class="barra__valor">{{ pesos(a.pendiente) }}</span>
+              <span class="barra__valor">{{ pesos(a.sin_facturar) }}</span>
               <span class="barra__extra">{{ a.ordenes }} OS · {{ pesos(a.valor) }} total</span>
             </div>
           } @empty {
@@ -775,7 +775,7 @@
     <div class="card">
       <div class="card__head">
         <h3 class="card__title">Detalle por orden</h3>
-        <span class="card__hint">El estado se cambia desde Órdenes, en lote o desde el detalle.</span>
+        <span class="card__hint">El estado se cambia en Órdenes, con el icono de facturación de la fila.</span>
       </div>
       <div class="table-wrap">
         <table class="table">

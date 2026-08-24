@@ -6,14 +6,20 @@
 > que todo lo que debe viajar se guarda aquí dentro.
 >
 > **Última actualización:** 23-ago-2026 — **la tanda del 22-ago está COMPLETA:
-> las cinco fases construidas y migradas.** Lo que queda no es código, son las
-> nueve decisiones con el cliente (`docs/plan-peticiones-22-ago-2026.md` §8) y
-> ver la tanda funcionando dentro de la aplicación.
+> las cinco fases construidas y migradas**, más los **cuatro ajustes** que el
+> cliente pidió sobre lo entregado (§10 del plan): el estado de cobro se cambia
+> solo desde el icono de la fila, el eje se queda en **dos** estados, su diálogo
+> es estrecho y los **viáticos se eligen de un catálogo** en vez de escribirse.
+> Lo que queda no es código: son las decisiones con el cliente
+> (`docs/plan-peticiones-22-ago-2026.md` §8) y ver la tanda funcionando dentro de
+> la aplicación.
 >
 > **Fase 5 · la orden tiene un eje de FACTURACIÓN aparte del ciclo de vida.**
-> `sst.estado_cobro` (NO FACTURADA → RADICADA → APROBADA → FACTURADA → PAGADA)
-> con su propia columna, su historial (`sst.historial_cobro_orden`) y su marcado
-> **en lote** desde `/ordenes` (`PATCH /orders/cobro`, admin y **contador**). No
+> `sst.estado_cobro` —**NO FACTURADA → FACTURADA, y nada más**: nació con cinco
+> valores y el cliente retiró RADICADA, APROBADA y PAGADA el 23-ago— con su
+> propia columna, su historial (`sst.historial_cobro_orden`) y su marcado desde
+> `/ordenes`, **de una orden en una y solo desde el icono de facturación de la
+> fila** (`PATCH /orders/cobro`, admin y **contador**). No
 > toca `sst.estado_orden`: una OS FINALIZADA puede estar en cualquier punto del
 > eje, y meterlo en el mismo enum sería un producto cartesiano de estados. El
 > eje **solo se mueve sobre FINALIZADAS** y **nada lo mueve solo**: radicar ante
@@ -35,9 +41,14 @@
 > `vw_ordenes_expandidas`**).
 >
 > **Fase 3 · las órdenes pueden llevar viáticos.** Opcional, aparte de las horas,
-> para lo que se ejecuta fuera de la ciudad. En Bolívar **no hay que teclearlos**:
-> el SIPAB los trae en siete columnas que se descartaban. Van a la cuenta de
-> cobro como línea SEPARADA de los honorarios —el correo, el PDF y el enlace del
+> para lo que se ejecuta fuera de la ciudad. ⚠️ **No se escriben: se ELIGEN** de
+> `sst.tipos_viatico` (catálogo con valor por categoría, administrado en
+> Configuración → Preferencias del sistema, calcado de los tipos de orden), y
+> "No aplica" es no elegir ninguna. El importe se **congela** en la orden al
+> elegirla. **El catálogo nace vacío**, así que hasta que JD&D cree categorías la
+> única opción es "No aplica". Lo que el SIPAB de Bolívar traía sigue guardado en
+> `viaticos_detalle` como justificación, pero **la cifra la manda el catálogo**.
+> Van a la cuenta de cobro como línea SEPARADA de los honorarios —el correo, el PDF y el enlace del
 > profesional desglosan `honorarios + viáticos = total`— y **no entran en
 > `valor_cobro_total`**, que es la columna generada que hace trazable la tarifa.
 > ⚠️ En el export real, `Valor Transporte` y `Valor Desplazamiento` traen **el
@@ -1266,6 +1277,42 @@ aunque la respuesta **no dijera nada** del envío. La condición era
 `correo_enviado === false`, así que un servidor que no informa —porque falló o
 porque corre una versión anterior— pasaba por éxito. Ahora es `!== true`: si no
 hay confirmación explícita, se avisa de que hay que avisar por otro medio.
+
+### Tanda 21 (23-ago-2026): el cliente recorta la tanda anterior
+
+Cuatro correcciones sobre lo que se acababa de entregar. El detalle está en
+**`docs/plan-peticiones-22-ago-2026.md` §10**; lo que hay que saber sin abrirlo:
+
+1. **El estado de cobro se cambia SOLO desde el icono de facturación de la
+   fila**, en `/ordenes`, y solo en las FINALIZADAS. Se retiraron la casilla por
+   fila, la barra de marcado en lote y el botón del detalle. El bloque
+   "Facturación a la ARL" del detalle se queda como **consulta**: pastilla,
+   factura e historial. `PATCH /orders/cobro` conserva la forma de lote (una
+   lista de ids) aunque la vista mande siempre uno.
+2. **El eje son DOS estados: NO FACTURADA y FACTURADA.** Con esto se cierra la
+   decisión D-7. Quitar valores de un enum obliga a recrear el tipo: se tumbó
+   `vw_ordenes_expandidas`, se convirtieron las tres columnas
+   (`RADICADA`/`APROBADA` → `NO FACTURADA`, `PAGADA` → `FACTURADA`), se hizo
+   `DROP TYPE` + `RENAME` y se recreó la vista. En Informes desaparece el KPI
+   "pendiente de cobro" —era "todo lo que no está PAGADA"— y quedan **sin
+   facturar / facturado / total finalizado**.
+3. **`.modal--slim`** para el diálogo de facturación: `min(460px, 100vw - 2rem)`.
+   El ancho de `.modal` es fluido y crece con la pantalla, que está bien para una
+   tabla y muy mal para tres campos.
+4. **Los viáticos se ELIGEN, no se escriben.** Catálogo `sst.tipos_viatico`
+   (nombre + valor) administrado en Configuración → Preferencias del sistema, y
+   un desplegable con **"No aplica"** en Importar y en el detalle de la orden.
+   `viaticos_valor` **salió de los campos editables** en los dos lados: dejarlo
+   habría vuelto a permitir dos cifras para el mismo desplazamiento. El importe
+   se congela en la orden al elegir la categoría, como el valor hora con el tipo
+   de orden.
+
+De paso: el bloque `DO $ BEGIN … END $;` que creaba `sst.estado_cobro` en
+`schema.sql` tenía **un solo `$`** (se lo comió un heredoc del shell el día
+anterior) y habría matado un `npm run migrate` sobre base nueva. Corregido.
+
+Migración: `db/migraciones/2026-08-23-tipos-viatico-y-cobro-binario.sql`,
+**aplicada** a la Neon compartida.
 
 ### Tanda 20 (23-ago-2026): fases 4 y 5 — el suplente y el eje de facturación
 
@@ -2973,6 +3020,39 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
     da ningún error, y produce un pendiente de cartera que no existe. Cuando dos
     columnas de dinero conviven en la misma tabla, la columna del informe hay que
     elegirla explícitamente y **decir en la pantalla cuál es** ("Valor ARL").
+
+77. **Quitar un valor de un enum de Postgres obliga a recrear el tipo, y con él
+    todas las vistas que lo tocan.** `ALTER TYPE … ADD VALUE` añade; para quitar
+    hay que crear el tipo nuevo, convertir CADA columna con un `USING`, hacer
+    `DROP TYPE` y renombrar. Y como `vw_ordenes_expandidas` es `SELECT o.*`,
+    depende de la columna: hay que tumbarla ANTES (trampa 69 otra vez) y
+    recrearla después. Se descubre porque el ALTER falla con «cannot alter type
+    of a column used by a view». El `DEFAULT` de la columna también hay que
+    soltarlo y reponerlo, o el ALTER se queja del literal.
+
+78. **Un catálogo leído por JOIN no es lo mismo que un valor congelado.** Los
+    viáticos guardan `viaticos_tipo_id` (la categoría) **y** `viaticos_valor` (el
+    importe de ese momento), igual que `tipo_orden_id` y `valor_hora_cobro`.
+    Tentador es leer el importe por el JOIN y ahorrarse la columna: entonces
+    subir un viático en Configuración reescribe hacia atrás todas las órdenes ya
+    cargadas, incluidas las de cuentas de cobro ya enviadas. Cuando un catálogo
+    alimenta un importe, la fila que lo usa se queda con una copia.
+
+79. **Un ancho de modal "fluido" no sirve para todos los modales.**
+    `width: min(420px + 38vw, 1400px, …)` está pensado para los que llevan dos
+    columnas o una tabla; aplicado a un formulario de tres campos deja un
+    desplegable de 1400 px en un monitor de 27" —y de 940 px en un portátil, así
+    que no es "cosa de pantallas grandes"—. Los diálogos cortos llevan
+    `.modal--slim`, con ancho fijo.
+
+80. **Un heredoc del shell sin comillas se come los `$` dobles.**
+    `DO $$ BEGIN … END $$;` escrito con `cat > archivo <<EOF` llega al archivo
+    como `DO $ BEGIN … END $;`, que **no** es una comilla de dólar válida. No se
+    nota hasta que alguien corre el SQL entero sobre una base nueva, porque sobre
+    la existente nadie vuelve a ejecutar `schema.sql`. Para SQL con `$$`:
+    delimitador entre comillas (`<<'EOF'`) o escribir el archivo con la
+    herramienta de edición, no por el shell. Lo mismo vale para los backticks y
+    los `${…}` de un `node -e` multilínea.
 
 ---
 
