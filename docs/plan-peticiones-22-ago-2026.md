@@ -527,12 +527,12 @@ público y la asignación necesitan lo primero sin arrastrar `pdf-lib`.
 
 #### Decisiones que hubo que tomar
 
-1. **El informe de gestión de Bolívar NO se versiona.** Lo único que entregó el
-   cliente es un ejemplo **ya diligenciado**: razón social y NIT de una empresa
-   real, y el nombre y el número de licencia del profesional que lo firmó.
-   Distribuirlo a otros profesionales es repartir datos de un tercero. La regla
-   se lo pide igualmente como **soporte** y el correo se lo advierte con una
-   nota. **Hay que pedir el formato en blanco.**
+1. ~~**El informe de gestión de Bolívar NO se versiona.**~~ **Revertida el
+   24-ago-2026 por el cliente** — ver §10.10. Lo único que entregó es un ejemplo
+   ya diligenciado, con la razón social y el NIT de una empresa real y el nombre
+   y la licencia del profesional que lo firmó; se decidió mandarlo igual, como
+   modelo, porque sin él el profesional escribía el informe a ciegas. Sigue
+   haciendo falta **el formato en blanco**.
 2. **El tipo de actividad se resuelve por tres fuentes, en este orden:** la letra
    del SIPAB (Bolívar) → el tipo de orden del catálogo → **el título de la
    actividad**. La tercera no estaba en el plan y hubo que añadirla: ver el punto
@@ -1215,7 +1215,7 @@ una casilla real.
 | ARL · actividad | Se envía | Se pide de vuelta | Cambio |
 |---|---|---|---|
 | Bolívar · asesoría | AT-031 | Acta | **−Lista de asistencia** |
-| Bolívar · asistencia técnica | AT-031 | Acta · Informe | **−Lista de asistencia** |
+| Bolívar · asistencia técnica | AT-031 + informe de gestión (§10.10) | Acta · Informe | **−Lista de asistencia** |
 | Bolívar · capacitación presencial | AT-031 + AT-028 | Acta · Lista · Evidencias | — |
 | Bolívar · capacitación virtual | AT-031 | Acta · Evidencias | — |
 | Bolívar · respaldo (E/M/O) | AT-031 | Acta | **−Lista de asistencia** |
@@ -1233,13 +1233,9 @@ el registro de la visita, así que pedir un «acta» aparte obligaba a inventars
 documento. En Colmena la prestación de servicios hace de acta y por eso su
 columna no cambia.
 
-**Lo que se deja pedido a propósito aunque no vaya adjunto:**
-
-* El **registro fotográfico**, que por naturaleza no tiene formulario.
-* El **informe de gestión de una asistencia técnica de Bolívar**: la ARL lo exige
-  y no nos ha entregado el formato en blanco. El correo lo dice en un aviso
-  aparte. Si el cliente prefiere no pedirlo hasta tener el formato, se quita
-  borrando un `extras`.
+**Lo que se deja pedido a propósito aunque no vaya adjunto:** el **registro
+fotográfico**, que por naturaleza no tiene formulario. (El informe de gestión de
+Bolívar también estaba en esta lista; desde §10.10 va adjunto.)
 
 **Hueco conocido:** la **evaluación** y el **registro de ejecución** de Colmena se
 mandan y se devuelven a la ARL, pero el portal solo tiene cuatro casillas (acta,
@@ -1258,3 +1254,83 @@ abstracto. Ahora los lista también.
 una regla no puede alterar lo que ya viajó en un correo. Las órdenes de prueba
 asignadas antes de este arreglo siguen pidiendo la lista de asistencia en su
 portal. **Reasignar (o reprogramar) la orden la actualiza** y reenvía el correo.
+
+### 10.10 El informe de gestión de Bolívar ya va adjunto (24-ago-2026)
+
+Una asistencia técnica de Bolívar salía con **un solo** documento, el AT-031, y
+el informe de gestión se le pedía de vuelta al profesional sin darle nada con qué
+escribirlo. El cliente entregó el archivo que faltaba, y desde hoy va adjunto:
+`assets/formatos-arl/bolivar/informe-gestion.docx`, alcance **orden** (uno por
+OS, aunque la visita tenga varias franjas).
+
+Con eso, el `extras: ['informe']` de esa regla desaparece: la casilla ya sale
+sola de `DEVUELVE`, que es el punto del arreglo de §10.9.
+
+#### ⚠️ No es un formato en blanco
+
+Es un informe **real y completo de otra visita** —razón social y NIT de una
+empresa (ORGANIZACIÓN LA MERCED, NIT 900793330), el nombre y el número de
+licencia del profesional que lo firmó, el responsable de SST de la empresa, la
+dirección de la sede y el registro fotográfico de aquel día—. Se revisó entero
+antes de moverlo. Una tanda anterior había decidido **no versionarlo** justo por
+esto (§7 de la tanda del 22-ago); el cliente revirtió esa decisión el 24-ago
+sabiendo lo que contiene, porque sin un modelo el profesional escribe el informe
+a ciegas.
+
+Las cautelas que se pusieron, y por qué hay que dejarlas:
+
+* El adjunto se llama **`informe de gestion (EJEMPLO diligenciado).docx`**: se lee
+  antes de abrirlo.
+* El correo lleva un **aviso destacado** diciendo que reescriba TODO el contenido
+  con los datos de su orden y que **no lo devuelva con los datos del ejemplo**.
+  Sin ese aviso, alguien acabará radicándole a Bolívar el informe de otra empresa.
+* Va versionado en `sst_ws` (2 MB). Es la **única excepción** a la regla de que en
+  `assets/formatos-arl/` solo hay formularios vacíos, y está anotada en el README
+  de esa carpeta.
+
+**Lo que sigue pendiente:** el formato **en blanco**. Cuando la ARL o el cliente
+lo entregue, se reemplaza el archivo y no hay que tocar nada más — la clave del
+registro (`informeBolivar`) y el nombre del adjunto son los mismos; conviene
+quitarle entonces la palabra EJEMPLO al nombre y suavizar la nota del correo.
+
+Peso del correo de una asistencia técnica de dos franjas: **2,27 MB** (el informe
+una vez, 1,9 MB; el AT-031 dos veces, 184 KB cada uno).
+
+### 10.11 El correo enumera los adjuntos de ESA orden (24-ago-2026)
+
+El cuerpo del correo hablaba de «los formatos de {ARL}» en abstracto y describía
+lo que había que hacer con ellos —imprimirlos y completar asistentes, temas
+desarrollados, observaciones y firmas— **como si todas las órdenes llevaran lo
+mismo**. Una asistencia técnica de Bolívar lleva un PDF y un informe en Word, y
+del segundo no se imprime nada.
+
+Ahora cada formato del registro declara una **etiqueta** legible, que viaja con el
+documento generado hasta el correo, y el cuerpo lista **exactamente lo que ese
+correo trae**:
+
+```
+Documentos adjuntos de Bolívar
+  · Informe de gestión · EJEMPLO de otra visita, para reescribirlo entero
+  · Seguimiento de reuniones y actividades (AT-031) · 2 juegos, uno por franja
+```
+
+Los de alcance «sesión» salen repetidos —uno por franja— y se **cuentan** en vez
+de repetir la línea. Y la frase de qué hacer con ellos es condicional: la de
+«imprímelos, van prediligenciados» solo aparece si va algún PDF, y la de «los de
+Word o Excel los redactas tú» solo si va alguno de esos. Ninguna orden menciona
+un documento que no lleva.
+
+Comprobado sobre los formatos reales, con una visita de dos franjas:
+
+| Caso | Enumera | Frases |
+|---|---|---|
+| Bolívar · asistencia técnica | Informe (ejemplo) + AT-031 ×2 | PDF + Word |
+| Bolívar · asesoría | AT-031 ×2 | PDF |
+| Bolívar · capacitación presencial | AT-031 ×2 + AT-028 ×2 | PDF |
+| AXA · asesoría 8 h | Ficha de gestión + asistencia ×2 | PDF |
+| AXA · asesoría 20 h | Informe técnico (Word) + asistencia ×2 | PDF + Word |
+| Colmena · capacitación | Registro (Excel) + plantilla (PPT) + PSP-F-007 ×2 + PSP-F-006 ×2 + PSP-F-010 ×2 | PDF + Word |
+
+Las plantillas genéricas de CFG-03 —la vía que se usa cuando una ARL no tiene
+formatos propios— entran por el mismo camino: su etiqueta es el nombre de la
+plantilla.
