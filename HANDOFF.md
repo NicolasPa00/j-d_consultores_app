@@ -3054,6 +3054,24 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
     herramienta de edición, no por el shell. Lo mismo vale para los backticks y
     los `${…}` de un `node -e` multilínea.
 
+81. **Dos listas paralelas que describen lo mismo SIEMPRE se separan.** En
+    `entrega-arl.service.js` cada regla declaraba `formatos` (lo que se manda) y
+    `soportes` (lo que se pide de vuelta), escritos a mano uno al lado del otro.
+    Bastó tocar los formatos una vez para que el correo de una asistencia técnica
+    de Bolívar mandara **un** documento y pidiera **dos**, y el desajuste no lo ve
+    nadie: no revienta nada, solo le pide al profesional un papel que no existe.
+    Hoy `soportes` se **deriva** de `formatos` (mapa `DEVUELVE`) y a mano solo se
+    declara `extras` — lo que vuelve sin haber ido adjunto. La comprobación de
+    coherencia va **al importar el módulo** y lanza: un formato sin casilla
+    asignada solo se notaría revisando los soportes de una visita que ya ocurrió.
+
+82. **Una variable calculada y nunca usada es media función a medio cablear.**
+    `queDevolver` llevaba semanas calculándose en el correo de asignación y no se
+    imprimía en ninguna parte: la versión HTML sí listaba los soportes, la de
+    texto plano seguía diciendo «los soportes firmados» en abstracto, que es
+    justo lo que ese bloque vino a quitar. El comentario de encima describía la
+    versión terminada, así que leyéndolo parecía hecho.
+
 ---
 
 ## 7. Cómo mantener este archivo

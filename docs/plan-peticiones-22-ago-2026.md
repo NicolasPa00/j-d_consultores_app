@@ -1190,3 +1190,71 @@ dato antiguo, pero conviene saber que hoy son ramas muertas.
 
 El diálogo perdió además `modal--wide` (940 px): con tres columnas sobraba, el
 mismo problema que se corrigió en §10.3.
+
+### 10.9 El correo pedía documentos que no mandaba (24-ago-2026)
+
+**Lo que reportó el cliente:** una OS de Bolívar clasificada como asistencia
+técnica sale —bien— con un solo formato, el AT-031 de seguimiento. El correo, en
+cambio, le pedía al profesional el acta **y una lista de asistencia** que no iba
+adjunta y que la ARL no exige: en el AT-031 los asistentes firman **dentro del
+propio formato**.
+
+**La causa** no era la maqueta del correo: era la regla que lo alimenta. Cada
+entrada de `REGLAS` declaraba dos listas escritas a mano, `formatos` (lo que se
+manda) y `soportes` (lo que se pide de vuelta). Nada las ataba, y al afinar los
+formatos por ARL y tipo de actividad se quedaron descolgadas.
+
+**El arreglo:** `soportes` ya no se escribe — se **deriva**. Cada formato dice en
+qué casilla del portal vuelve (mapa `DEVUELVE`), y la regla solo declara
+`extras`: lo que se pide **sin** mandar formato. Una comprobación al importar el
+módulo lanza si un formato no dice en qué casilla vuelve o si un `extra` no es
+una casilla real.
+
+#### La matriz que queda
+
+| ARL · actividad | Se envía | Se pide de vuelta | Cambio |
+|---|---|---|---|
+| Bolívar · asesoría | AT-031 | Acta | **−Lista de asistencia** |
+| Bolívar · asistencia técnica | AT-031 | Acta · Informe | **−Lista de asistencia** |
+| Bolívar · capacitación presencial | AT-031 + AT-028 | Acta · Lista · Evidencias | — |
+| Bolívar · capacitación virtual | AT-031 | Acta · Evidencias | — |
+| Bolívar · respaldo (E/M/O) | AT-031 | Acta | **−Lista de asistencia** |
+| AXA · asesoría ≤16 h | Asistencia + ficha de gestión | Lista · Evidencias · Informe | **−Acta** |
+| AXA · asesoría >16 h | Asistencia + informe técnico | Lista · Evidencias · Informe | **−Acta** |
+| AXA · capacitación | Asistencia | Lista · Evidencias | **−Acta** |
+| AXA · respaldo | Asistencia | Lista · Evidencias | **−Acta** |
+| Colmena · capacitación | Prestación + asistencia + registro + evaluación + plantilla | Acta · Lista · Evidencias | — |
+| Colmena · asesoría | Prestación + asistencia + informes A y B | Acta · Lista · Evidencias · Informe | — |
+| Colmena · respaldo | Prestación + asistencia | Acta · Lista · Evidencias | — |
+| ARL desconocida | (nada) | Acta · Lista · Evidencias | — |
+
+AXA no entrega formato de acta: su ficha de gestión (o el informe técnico) **es**
+el registro de la visita, así que pedir un «acta» aparte obligaba a inventarse un
+documento. En Colmena la prestación de servicios hace de acta y por eso su
+columna no cambia.
+
+**Lo que se deja pedido a propósito aunque no vaya adjunto:**
+
+* El **registro fotográfico**, que por naturaleza no tiene formulario.
+* El **informe de gestión de una asistencia técnica de Bolívar**: la ARL lo exige
+  y no nos ha entregado el formato en blanco. El correo lo dice en un aviso
+  aparte. Si el cliente prefiere no pedirlo hasta tener el formato, se quita
+  borrando un `extras`.
+
+**Hueco conocido:** la **evaluación** y el **registro de ejecución** de Colmena se
+mandan y se devuelven a la ARL, pero el portal solo tiene cuatro casillas (acta,
+lista, evidencias, informe) y ninguna es la suya, así que no se piden. Estaba así
+antes y sigue igual; se resolvería añadiendo las casillas.
+
+#### De paso: la versión en texto plano del correo
+
+`queDevolver` se calculaba y **no se imprimía**. El correo en HTML listaba los
+soportes; el de texto plano seguía hablando de «los soportes firmados» en
+abstracto. Ahora los lista también.
+
+#### ⚠️ Las órdenes ya asignadas conservan lo que se les pidió
+
+`soportes_requeridos` se **congela** en la orden al asignar, a propósito: cambiar
+una regla no puede alterar lo que ya viajó en un correo. Las órdenes de prueba
+asignadas antes de este arreglo siguen pidiendo la lista de asistencia en su
+portal. **Reasignar (o reprogramar) la orden la actualiza** y reenvía el correo.
