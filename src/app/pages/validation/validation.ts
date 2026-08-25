@@ -39,7 +39,8 @@ interface FormFieldDescriptor {
  * orden dentro de la bandeja; "todas" agrupa las que siguen activas.
  */
 type OrdersView =
-  | 'todas' | 'sin-programar' | 'programadas' | 'ejecutadas' | 'finalizadas' | 'deshabilitadas';
+  | 'todas' | 'sin-programar' | 'programadas' | 'ejecutadas' | 'finalizadas'
+  | 'cobradas' | 'deshabilitadas';
 
 /**
  * Estados en los que el trabajo de campo ya se hizo.
@@ -211,6 +212,11 @@ export class ValidationComponent implements OnInit, OnDestroy {
     { key: 'programadas', label: 'Programadas' },
     { key: 'ejecutadas', label: 'Ejecutadas' },
     { key: 'finalizadas', label: 'Finalizadas' },
+    // La única pestaña que no es un estado del ciclo operativo: mira el OTRO
+    // eje. Se pidió el 24-ago-2026 y es un atajo a la pregunta que más se hace
+    // sobre el archivo —"qué ya se le facturó a la ARL"—, que con el
+    // desplegable eran dos gestos.
+    { key: 'cobradas', label: 'Cobradas' },
     { key: 'deshabilitadas', label: 'Deshabilitadas' },
   ];
   protected readonly loading = signal(false);
@@ -219,8 +225,11 @@ export class ValidationComponent implements OnInit, OnDestroy {
   // ---- Eje de facturación / cobro (ago-2026, petición 6) ----
   /**
    * Es un eje INDEPENDIENTE del ciclo operativo: una OS FINALIZADA puede estar
-   * sin facturar o facturada. Por eso no es una pestaña más —serían el producto
-   * de dos ejes— sino un filtro aparte que se combina con la pestaña de estado.
+   * sin facturar o facturada. Por eso es un filtro aparte que se COMBINA con la
+   * pestaña de estado en vez de sustituirla: convertir los dos ejes en pestañas
+   * daría su producto. La pestaña "Cobradas" es la única excepción, y es un
+   * atajo declarado: fija este mismo filtro en FACTURADA y esconde el
+   * desplegable mientras está activa.
    *
    * Se cambia de UNA EN UNA, desde el icono de la fila (23-ago-2026). Nació con
    * marcado en lote —casillas por fila y una barra de acciones— y el cliente lo
@@ -441,6 +450,12 @@ export class ValidationComponent implements OnInit, OnDestroy {
     if (view === 'programadas') return o.validated && o.osEstado === 'PROGRAMADA';
     if (view === 'ejecutadas') return o.validated && o.osEstado === 'EJECUTADA';
     if (view === 'finalizadas') return o.validated && o.osEstado === 'FINALIZADA';
+    // "Cobradas" es el otro eje: no pregunta en qué punto del ciclo está la
+    // orden, sino si ya se le facturó a la ARL. En la práctica son un
+    // subconjunto de las finalizadas —el estado de cobro solo se mueve sobre
+    // una OS FINALIZADA— pero se comprueba el estado de cobro y no el
+    // operativo, que es lo que la pestaña dice.
+    if (view === 'cobradas') return o.estadoCobro === 'FACTURADA';
     return true;
   }
 
@@ -694,6 +709,11 @@ export class ValidationComponent implements OnInit, OnDestroy {
 
   protected setView(v: OrdersView): void {
     this.view.set(v);
+    // "Cobradas" ya filtra por el eje de cobro. Si además quedara puesto el
+    // desplegable en "NO FACTURADA", la tabla saldría vacía y nada explicaría
+    // por qué: se limpia al entrar, y mientras la pestaña esté activa el
+    // desplegable no se enseña.
+    if (v === 'cobradas') this.filtroCobro.set('');
     // Cambiar de pestaña es empezar a mirar otra cosa: seguir en la página 4
     // dejaría la tabla en un tramo que el usuario no eligió.
     this.pag.reiniciar();

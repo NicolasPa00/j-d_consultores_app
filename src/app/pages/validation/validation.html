@@ -21,23 +21,28 @@
       />
     </div>
 
-    <!-- Eje de facturación · Va aquí y no como una pestaña más porque es un eje
-         INDEPENDIENTE del ciclo de vida: una OS FINALIZADA puede estar sin
-         facturar o facturada. Como pestañas serían el producto de los dos ejes;
-         como filtro se combinan. Esto FILTRA, no cambia nada: el estado se
-         cambia desde el icono de la fila y solo desde ahí. -->
-    <select
-      class="form-control ord-head__filtro"
-      [ngModel]="filtroCobro()"
-      (ngModelChange)="filtrarCobro($event)"
-      name="filtroCobro"
-      aria-label="Filtrar por estado de cobro"
-    >
-      <option value="">Cobro · todos</option>
-      @for (e of estadosCobro; track e) {
-        <option [value]="e">{{ e }}</option>
-      }
-    </select>
+    <!-- Eje de facturación · Es un eje INDEPENDIENTE del ciclo de vida (una OS
+         FINALIZADA puede estar sin facturar o facturada), así que se combina
+         con la pestaña de estado en vez de sustituirla: "qué está finalizado y
+         sin facturar" son los dos ejes a la vez.
+         En la pestaña "Cobradas" no se enseña: esa pestaña ya ES este filtro, y
+         dejarlo puesto en "NO FACTURADA" daría una tabla vacía sin explicación.
+         Esto FILTRA, no cambia nada: el estado se cambia desde el icono de la
+         fila y solo desde ahí. -->
+    @if (view() !== 'cobradas') {
+      <select
+        class="form-control ord-head__filtro"
+        [ngModel]="filtroCobro()"
+        (ngModelChange)="filtrarCobro($event)"
+        name="filtroCobro"
+        aria-label="Filtrar por estado de cobro"
+      >
+        <option value="">Cobro · todos</option>
+        @for (e of estadosCobro; track e) {
+          <option [value]="e">{{ e }}</option>
+        }
+      </select>
+    }
   </div>
 </section>
 

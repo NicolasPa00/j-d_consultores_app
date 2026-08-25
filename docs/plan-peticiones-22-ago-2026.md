@@ -1411,3 +1411,24 @@ código interno de las tres ARL —A y C son asesoría y capacitación en cualqu
 y solo Bolívar las enseña. El backend acepta cualquiera de las seis para
 cualquier ARL: si llegara una que esa ARL no usa, no encaja ninguna regla, sale
 el juego base y el aviso de la asignación lo dice.
+
+### 10.13 Pestaña «Cobradas» en Órdenes (24-ago-2026)
+
+Nueva pestaña entre «Finalizadas» y «Deshabilitadas», con las órdenes cuyo estado
+de cobro es **FACTURADA**. Lleva su contador como las demás.
+
+Es la **única pestaña que no es un estado del ciclo operativo**: mira el otro eje.
+La decisión de §7 —el cobro es un filtro aparte, no una pestaña, porque
+convertir los dos ejes en pestañas daría su producto— **sigue en pie**; esta es
+un atajo declarado a la pregunta que más se hace sobre el archivo («qué ya se le
+facturó a la ARL»), que con el desplegable eran dos gestos.
+
+Detalles que no se ven pero evitan una tabla vacía sin explicación:
+
+* Al entrar en la pestaña **se limpia el desplegable de cobro**, y mientras esté
+  activa **no se enseña**: la pestaña ya ES ese filtro, y dejarlo puesto en «NO
+  FACTURADA» habría dado cero filas sin decir por qué.
+* Las **deshabilitadas quedan fuera**, como en todas las pestañas menos la suya.
+* En la práctica son un subconjunto de las finalizadas —el estado de cobro solo
+  se mueve sobre una OS FINALIZADA— pero la pestaña comprueba el **estado de
+  cobro**, no el operativo, que es lo que su nombre dice.
