@@ -385,19 +385,53 @@
                       <small class="origen" title="No había tarifa para el tipo de actividad: se aplicó el valor hora base del profesional">base</small>
                     }
                   </td>
-                  <td class="mono money">{{ pesos(i.monto) }}</td>
+                  <td class="mono money">
+                    {{ pesos(i.monto) }}
+                    <!-- El subtotal son HONORARIOS. El viático de esa orden se
+                         paga aparte, así que se anota debajo en vez de sumarlo:
+                         sumado, la columna dejaría de ser horas × valor hora. -->
+                    @if (i.viaticos) {
+                      <small class="viatico-linea" title="Viáticos de esta orden, aparte de los honorarios">
+                        + {{ pesos(i.viaticos) }} viáticos
+                      </small>
+                    }
+                  </td>
                 </tr>
               } @empty {
                 <tr><td colspan="7" class="table__empty">Sin órdenes en el periodo.</td></tr>
               }
             </tbody>
+            <!-- Con viáticos, el total NO es la suma de la columna de
+                 subtotales: hay que enseñar de qué se compone o la cifra que se
+                 le manda al profesional no cuadra con lo que tiene delante. -->
             <tfoot>
-              <tr>
-                <td colspan="4" class="totales__label">Totales</td>
-                <td class="mono">{{ horas(pc.total_horas) }}</td>
-                <td></td>
-                <td class="mono money">{{ pesos(pc.total_monto) }}</td>
-              </tr>
+              @if (viaticosDe(pc) > 0) {
+                <tr>
+                  <td colspan="4" class="totales__label">Honorarios</td>
+                  <td class="mono">{{ horas(pc.total_horas) }}</td>
+                  <td></td>
+                  <td class="mono money">{{ pesos(honorariosDe(pc)) }}</td>
+                </tr>
+                <tr>
+                  <td colspan="4" class="totales__label">Viáticos</td>
+                  <td></td>
+                  <td></td>
+                  <td class="mono money">{{ pesos(viaticosDe(pc)) }}</td>
+                </tr>
+                <tr>
+                  <td colspan="4" class="totales__label">Total a pagar</td>
+                  <td></td>
+                  <td></td>
+                  <td class="mono money">{{ pesos(pc.total_monto) }}</td>
+                </tr>
+              } @else {
+                <tr>
+                  <td colspan="4" class="totales__label">Totales</td>
+                  <td class="mono">{{ horas(pc.total_horas) }}</td>
+                  <td></td>
+                  <td class="mono money">{{ pesos(pc.total_monto) }}</td>
+                </tr>
+              }
             </tfoot>
           </table>
         </div>

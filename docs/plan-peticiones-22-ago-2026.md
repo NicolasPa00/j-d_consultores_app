@@ -1432,3 +1432,33 @@ Detalles que no se ven pero evitan una tabla vacía sin explicación:
 * En la práctica son un subconjunto de las finalizadas —el estado de cobro solo
   se mueve sobre una OS FINALIZADA— pero la pestaña comprueba el **estado de
   cobro**, no el operativo, que es lo que su nombre dice.
+
+### 10.14 Viáticos en el detalle de la cuenta, y fuera «(reembolso)» (24-ago-2026)
+
+**El modal no los enseñaba.** En Cuentas de cobro → ver el detalle de lo que se
+va a enviar, la tabla tenía un pie con «Totales» que ponía `total_monto`, y ese
+total **incluye los viáticos** mientras que la columna «Subtotal» son solo
+honorarios (`horas × valor hora`). Con viáticos, la suma de la columna no daba el
+total y no había nada que lo explicara: la cifra que se le manda al profesional
+no cuadraba con lo que el administrador tenía delante.
+
+Ahora, **solo cuando la cuenta lleva viáticos**, el pie se abre en tres líneas
+—Honorarios · Viáticos · Total a pagar— igual que la pantalla del profesional y
+que el PDF. Y cada orden que lleve viático lo dice bajo su subtotal
+(`+ $45.000 viáticos`), que es lo que permite saber **cuál** de las órdenes lo
+trae. Sin viáticos el pie se queda como estaba, en una línea.
+
+El dato ya venía del servidor (`precuenta_items.viaticos`, y el detalle hace
+`SELECT *`); lo que faltaba era declararlo en `PrecuentaItem` y pintarlo.
+
+**Fuera la coletiIla «(reembolso)».** Se quitó de los dos sitios donde salía:
+
+| Dónde | Antes | Ahora |
+|---|---|---|
+| Correo de la cuenta al profesional | «Viáticos (reembolso)» | «Viáticos» |
+| Enlace público donde acepta o rechaza | «Viáticos (reembolso)» | «Viáticos» |
+
+El PDF ya decía «Viáticos» a secas —la etiqueta larga no cabía—, así que ahora
+los tres coinciden. En el código se conservan los comentarios que explican que no
+son honorarios: eso sigue siendo cierto y es lo que justifica que vayan en su
+propia línea.

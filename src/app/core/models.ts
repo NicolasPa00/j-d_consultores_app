@@ -565,7 +565,10 @@ export interface PrecuentaItem {
   fecha_ejecucion?: string | null;
   horas: string | number;
   valor_hora_snapshot: string | number;
+  /** SOLO honorarios: horas × valor hora. Los viáticos van aparte, nunca sumados. */
   monto: string | number;
+  /** Viáticos de ESTA orden. 0 en casi todas; se paga aparte del trabajo. */
+  viaticos?: string | number;
   /** 'tarifa' (PRE-02) o 'profesional' (valor hora base): explica la cifra. */
   origen_tarifa?: 'tarifa' | 'profesional' | null;
 }

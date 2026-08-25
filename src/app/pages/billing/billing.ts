@@ -471,6 +471,22 @@ export class BillingComponent implements OnInit {
   }
 
   // ================= Helpers de presentación =================
+  /**
+   * Cuánto de la cuenta son viáticos, como número.
+   *
+   * `total_viaticos` llega como cadena desde `pg` (los NUMERIC vienen así), y
+   * comparar `'0' > 0` o restar cadenas en la plantilla es justo el tipo de
+   * cuenta que sale mal sin avisar.
+   */
+  protected viaticosDe(pc: Precuenta): number {
+    return Number(pc.total_viaticos) || 0;
+  }
+
+  /** El total SIN viáticos: lo que se le paga por el trabajo. */
+  protected honorariosDe(pc: Precuenta): number {
+    return (Number(pc.total_monto) || 0) - this.viaticosDe(pc);
+  }
+
   protected pesos(v: string | number | null | undefined): string {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency', currency: 'COP', maximumFractionDigits: 0,

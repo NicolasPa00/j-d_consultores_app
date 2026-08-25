@@ -318,6 +318,16 @@
   color: var(--text-muted);
 }
 
+/* El viático de una orden, bajo su subtotal: no es un distintivo como `.origen`
+   sino una cifra más, así que va en su renglón y sin fondo. */
+.viatico-linea {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
 /* ===== Tarifas ===== */
 .tarifas__intro {
   margin: 0 0 1.1rem;
