@@ -21,6 +21,18 @@ construidos y migrados. Lo que queda NO es código: son **las decisiones del §8
 que hay que cerrar con el cliente, y ver la tanda entera funcionando dentro de la
 aplicación.
 
+**Para enseñárselo al cliente hay un juego de órdenes listo** (26-ago-2026):
+`sst_ws/scripts/generar-ordenes-demo-peticiones.mjs` produce **6 órdenes de
+Bolívar en un Excel SIPAB + 3 PDF de AXA + 2 de Colmena**, una por cada rama de
+las seis peticiones —las seis letras, presencial/virtual, las tres formas de
+viáticos, el corte de 16 horas de AXA, el suplente y el lote de facturación— y
+un `README.md` con el guion de la presentación y las **dos cosas que hay que
+dejar creadas antes** (el catálogo de viáticos, que nace vacío, y los registros
+ante Bolívar). Salen en `docs/OrdenesDemo/`, que está en `.gitignore`; el
+generador sí viaja. Los datos son inventados. Las columnas de "qué formatos" y
+"qué soportes" del README **se las pregunta a `entrega-arl.service.js`**, así que
+no se desfasan si mañana cambia una regla.
+
 Antes de escribir código:
 
 1. **Levantar el backend con `npm run dev`** (nunca `npm start`: se queda con el

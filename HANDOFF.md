@@ -326,9 +326,23 @@ Eso significa **la tanda del 22-ago-2026**, y lo que hay que hacer es:
 Si en el futuro esa tanda se cierra entera, lo pendiente vuelve a ser §3
 "Pendiente" de este archivo.
 
-> 🔴 **Si vas a enseñar el producto hoy, lee primero el punto 1 de "Pendiente":**
-> las OS de **Colmena** salen por correo sin ningún formato adjunto porque esa ARL
-> no tiene plantillas cargadas. Se arregla desde la app, sin tocar código.
+---
+
+### 🎯 Las TRES tareas abiertas al cerrar el 26-ago-2026
+
+**Las seis peticiones del cliente están CONSTRUIDAS y migradas** (fases F1-F5 +
+los cuatro ajustes del §10 del plan). No queda funcionalidad pendiente de esa
+tanda. Lo que queda son estas tres, independientes entre sí — **hay que elegir
+por cuál arrancar**:
+
+| # | Tarea | Tipo | Qué la bloquea |
+|---|---|---|---|
+| **1** | **Ver la tanda funcionando dentro de la app**, con las órdenes de demostración de la tanda 22 (`docs/OrdenesDemo/`, con su README) | operación | **no hay credenciales de administrador** para el asistente. Además hay que crear antes el **catálogo de viáticos** (nace vacío) y marcar los **registros ante Bolívar** |
+| **2** | **Cerrar las decisiones abiertas con el cliente**: D-1 a D-5, D-9, D-10 y D-11, más las filas de "lo que hay que llevar al cliente" del §0 del plan | reunión | necesita al cliente. Ninguna bloquea el código, todas cambian el resultado |
+| **3** | **Arreglar el desorden de `db/schema.sql`**: `ALTER TABLE sst.borradores_extraccion …` aparece **sobre la línea 498** y la tabla se crea en la **678**, así que `npm run migrate` **sobre una base vacía moriría ahí**. Sobre la base existente no molesta | código | nada — es reordenar el archivo. Es el único trabajo de código pendiente de la tanda |
+
+La 1 es la que más valor da y la que más tiempo lleva sin ayuda del equipo; la 3
+es la única que se puede hacer entera sin depender de nadie.
 
 ---
 
@@ -1277,6 +1291,59 @@ aunque la respuesta **no dijera nada** del envío. La condición era
 `correo_enviado === false`, así que un servidor que no informa —porque falló o
 porque corre una versión anterior— pasaba por éxito. Ahora es `!== true`: si no
 hay confirmación explícita, se avisa de que hay que avisar por otro medio.
+
+### Tanda 22 (26-ago-2026): órdenes de demostración de las seis peticiones
+
+**No cambió el producto.** Lo que se hizo fue construir el material para
+**enseñarle al cliente** la tanda del 22-ago ya terminada: un juego de órdenes
+donde cada una dispara UNA rama concreta de las seis peticiones.
+
+**Qué hay y dónde.** `sst_ws/scripts/generar-ordenes-demo-peticiones.mjs`
+(nuevo, sí viaja por git) genera en `docs/OrdenesDemo/` —carpeta **ignorada**,
+como las otras tres de ejemplo— :
+
+| Archivo | Qué demuestra |
+|---|---|
+| `Bolivar/demo-bolivar-sipab.xlsx` · **6 órdenes** | las seis letras `C`/`C`/`T`/`A`/`E`/`O`, presencial vs. virtual, y las **tres formas de viáticos** del SIPAB |
+| `Colpatria/` · **3 PDF** | el **corte de 16 h**: la misma asesoría a 12 h (ficha de gestión) y a 24 h (informe técnico), más una capacitación |
+| `Colmena/` · **2 PDF** | tercera ARL, y el bloque de gastos de desplazamiento del SPM-F 38V2 diligenciado |
+| `README.md` | el guion de la presentación, paso a paso |
+
+Los datos son **inventados** (empresas, NIT, personas, correos). Los números de
+orden salen de bloques propios (`00022003xx`, `224xxxx`, cronogramas `13809xx`)
+para que el dedup de IMP-08/09 no los confunda con lo ya cargado ni con los del
+otro generador.
+
+**Lo que hace que este README no envejezca:** sus columnas de "qué formatos se
+envían" y "qué soportes se piden" **se las pregunta el generador a
+`entrega-arl.service.js`**, que es la misma matriz que corre al asignar. Si
+mañana cambia una regla, se regenera y el guion sigue diciendo la verdad.
+
+**Verificado por script** (no dentro de la app, que sigue sin credenciales):
+
+- Las 6 filas pasan por `parseExcelSipab`: letra, horas, vencimiento, ciudad y
+  cronograma-secuencia correctos.
+- Los viáticos salen **$ 21.020 y no $ 42.040** en la fila que repite
+  `Valor Transporte` y `Valor Desplazamiento`; **$ 220.000** en la del desglose
+  completo; **$ 32.500** en la que solo trae desplazamiento.
+- Las 11 órdenes pasan por `entregaDeLaOrden()`: los cinco juegos de formatos y
+  las casillas del portal salen como se pretendía, y las letras `E` y `O` caen
+  en el respaldo **con su aviso**, que es justo lo que hay que enseñar.
+- Los dos PDF nuevos, **renderizados a PNG y mirados** (el de Colmena es un
+  layout nuevo: réplica del SPM-F 38V2, que en esa ARL hace de orden).
+
+🪤 **Dos cosas hay que dejar creadas ANTES de la demo**, o se enseñan dos
+peticiones a medias y no por culpa de las órdenes:
+
+1. **El catálogo de viáticos** (`sst.tipos_viatico`, Configuración →
+   Preferencias del sistema). **Nace vacío** (D-10) y desde la tanda 21 el
+   importe se ELIGE: sin categorías la única opción es "No aplica" y la OS se
+   guarda **sin viáticos aunque el Excel traiga la cifra** —
+   `drafts.routes.js` hace `viaticos = tipoViatico ? valor : null`. El README
+   trae las cinco categorías con sus importes ya cuadrados con estas órdenes.
+2. **Marcar registros ante Bolívar** en Profesionales: uno **sin** marcar (quien
+   ejecuta) y otro marcado (a nombre de quien salen los formatos). La tabla nace
+   vacía y sin ella la suplencia no se puede enseñar.
 
 ### Tanda 21 (23-ago-2026): el cliente recorta la tanda anterior
 
@@ -2274,13 +2341,14 @@ por lo que de verdad conviene atacar primero.
 
 #### 1. Antes de volver a enseñar el producto (operación, no código)
 
-- 🔴 **Colmena no tiene formatos configurados.** Es lo único que hoy se ve roto
-  desde fuera: al asignar una OS de Colmena el profesional recibe un correo
-  **sin un solo PDF**. Al 15-ago-2026: Bolívar 2 plantillas, AXA Colpatria 1,
-  **Colmena 0**. Se arregla **sin tocar código**, en Configuración → Formatos y
-  encuesta; una plantilla **sin ARL** vale para todas y tapa el hueco de una vez.
-  El código ya avisa por los dos lados (antes de asignar y después, con
-  `formatos_generados`), pero avisar no es tener el formato. Ver trampa 17.
+- ✅ ~~**Colmena no tiene formatos configurados**~~ — **RESUELTO** en la tanda
+  del 22-ago-2026 (fase 2, §10.9-10.10 del plan). Las tres ARL tienen hoy sus
+  formatos en `sst_ws/assets/formatos-arl/`: **Bolívar 3** (AT-031, AT-028,
+  informe de gestión), **AXA Colpatria 3** (asistentes, ficha de gestión,
+  informe técnico) y **Colmena 7** (PSP-F-007, PSP-F-006, evaluación, registro
+  de ejecución, plantilla y los dos informes A/B), y cuál sale en cada caso lo
+  decide la matriz de `entrega-arl.service.js`. Comprobado en disco el
+  26-ago-2026. La trampa 17 se queda como historia, no como aviso.
 - 🔴 **Correr `npm run migrate` — esta vez SÍ toca datos.** Además de la tabla
   `sst.franjas_visita` (ya aplicada), esta tanda trae la matriz de transiciones
   nueva, el trigger de EST-06 relajado y una **migración de filas**: las OS que

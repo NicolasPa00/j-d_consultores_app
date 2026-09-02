@@ -58,3 +58,10 @@ Thumbs.db
 # están versionados, en `sst_ws/assets/formatos-arl/` — ahí van solo los que
 # están EN BLANCO, que son formularios públicos de la ARL.
 /docs/Formatos/
+
+# docs/OrdenesDemo: las órdenes de EJEMPLO que se proyectan en la demo de las
+# peticiones del 22-ago-2026. Sus datos son INVENTADOS —no hay nada real que
+# proteger—, pero son material de presentación y no de la aplicación, y se
+# regeneran en un segundo con `sst_ws/scripts/generar-ordenes-demo-peticiones.mjs`,
+# que sí viaja por git. Ver docs/OrdenesDemo/README.md.
+/docs/OrdenesDemo/
