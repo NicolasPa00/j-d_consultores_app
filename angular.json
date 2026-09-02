@@ -36,7 +36,15 @@
             "server": "src/main.server.ts",
             "outputMode": "server",
             "security": {
-              "allowedHosts": []
+              // Lista VACÍA = no se permite ningún host, y el SSR rechaza todas
+              // las peticiones cayendo a renderizado de cliente sin decir nada
+              // en la respuesta (solo en el log del servicio). Angular avisa de
+              // que en una versión futura pasará a ser un 400.
+              "allowedHosts": [
+                "orbita.jddconsultores.com",
+                "localhost",
+                "127.0.0.1"
+              ]
             },
             "ssr": {
               "entry": "src/server.ts"

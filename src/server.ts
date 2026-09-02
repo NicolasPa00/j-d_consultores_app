@@ -10,7 +10,13 @@ import { join } from 'node:path';
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
-const angularApp = new AngularNodeAppEngine();
+// Detrás de nginx: sin esto, Angular ignora las cabeceras X-Forwarded-* y avisa
+// en cada petición. Se declaran SOLO las dos que pone el proxy; `x-forwarded-host`
+// se deja fuera a propósito, porque el cliente podría enviarla y nginx no la
+// filtra (el Host real ya llega correcto en la cabecera `Host`).
+const angularApp = new AngularNodeAppEngine({
+  trustProxyHeaders: ['x-forwarded-proto', 'x-forwarded-for'],
+});
 
 /**
  * Example Express Rest API endpoints can be defined here.
