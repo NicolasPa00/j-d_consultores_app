@@ -633,7 +633,7 @@ Esto hay que decírselo al cliente de forma explícita: no es lo mismo declinar
 los backups de Vultr con la base en la nube que declinarlos con la base en el
 servidor.
 
-### 7.2 · ¿Se traen los datos actuales de Neon?
+### 7.2 · ✅ Resuelto · no se trajo nada de Neon
 
 `npm run migrate` levanta la base vacía, con los catálogos del `seed.sql` y las
 cuentas. Si el cliente quiere arrancar con lo que ya hay en Neon, es un
@@ -642,10 +642,12 @@ también viajan las **26 órdenes de demostración** (OS-2026-1001…) que se
 sembraron para las pruebas. Recomendación: **arrancar limpio** y volver a
 importar los archivos reales del SIPAB.
 
-### 7.3 · Las ramas sin fusionar
+### 7.3 · ✅ Resuelto · las ramas se fusionaron
 
-Ambos repos están en `tanda-22-ago-formatos-y-viaticos`. Además hay cambios sin
-confirmar: en el frontend `.gitignore`, `HANDOFF.md` y
+El 2-sep-2026 se confirmó lo pendiente y la tanda del 22-ago se fusionó a
+`main`/`master` en los dos repos (avance rápido, sin conflictos). Producción
+clona la rama principal. *Lo que decía este apartado antes:* ambos repos estaban
+en `tanda-22-ago-formatos-y-viaticos`, con cambios sin confirmar: en el frontend `.gitignore`, `HANDOFF.md` y
 `docs/plan-peticiones-22-ago-2026.md`; en el backend, el script
 `scripts/generar-ordenes-demo-peticiones.mjs` sin agregar. Hay que confirmarlos
 y fusionar antes de clonar en el servidor, o el despliegue sale con menos de lo
@@ -724,6 +726,13 @@ En el panel de Hostinger la **renovación automática está desactivada** y el
 dominio caduca el **2027-02-10**. Si vence, se cae la landing *y* ORBITA.
 Es del cliente la decisión, pero hay que dejarla dicha por escrito.
 
+### 7.6 · Sin cron, sigue sin haber cierre mensual automático
+
+Nada cambia con el despliegue: el cierre mensual de cuentas de cobro y los
+avisos del día de corte se materializan al abrir la aplicación. Ahora que hay
+una máquina propia, **sí se podría** poner el cron — pero es trabajo aparte, no
+parte de esta subida.
+
 ### 7.7 · 🔴 El resumen ejecutivo de una orden se INVENTA el texto
 
 No hay `GEMINI_API_KEY`, y las tres funciones auxiliares caen a un respaldo. Dos
@@ -800,13 +809,6 @@ deja de cargar. Arreglado en el commit `fix(ssr)`, junto con `trustProxyHeaders`
 (el motor va detrás de nginx). Tras el arreglo: **14.824 bytes con el formulario
 ya renderizado**.
 
-### 7.6 · Sin cron, sigue sin haber cierre mensual automático
-
-Nada cambia con el despliegue: el cierre mensual de cuentas de cobro y los
-avisos del día de corte se materializan al abrir la aplicación. Ahora que hay
-una máquina propia, **sí se podría** poner el cron — pero es trabajo aparte, no
-parte de esta subida.
-
 ## 8 · Cambios de código previos — ✅ HECHOS el 2-sep-2026
 
 ### 8.1 · ✅ `API_BASE` del frontend estaba clavado en localhost
@@ -851,16 +853,14 @@ export const pool = new Pool({
 cambio *probablemente* conecte igual; pero deja al `pg` y al Prisma
 contradiciéndose sobre el mismo `sslmode`, y eso se paga después.)
 
-## 9 · Orden de ejecución
+## 9 · Orden de ejecución — ✅ completado el 2-sep-2026
 
-0. **Pedirle al cliente la contraseña de aplicación** de
-   `redes.jddconsultores@gmail.com` (§7.4). Es lo único que depende de un
-   tercero, así que conviene pedirlo hoy aunque se use al final.
-1. Crear la instancia con la tabla de §2. → **estás aquí**
-2. Registro A en Hostinger (§3) y esperar la propagación.
-3. Usuario, swap, ufw, paquetes, Postgres (§4).
-4. Cambios de código de §8, confirmar y fusionar ramas (§7.3).
-5. Clonar, `npm ci`, migrar, compilar (§5).
-6. systemd + nginx + certbot (§5.3, §5.4).
-7. Backups (§7.1) — antes de meter un solo dato real.
-8. Probar de punta a punta: login, importar un PDF, generar formatos, correo.
+Los nueve pasos de este apartado se ejecutaron en una sola sesión, del alta de la
+instancia al certificado. **Lo que queda está en el §0, "Dónde retomar"**, que es
+el único sitio que hay que mirar para continuar.
+
+Como referencia de lo que costó cada bloque en esta máquina (1 vCPU): los
+paquetes base unos 4 minutos, `npm ci` de los dos proyectos poco más de 1, el
+build del frontend 33 segundos y el certificado, inmediato. El grueso del tiempo
+no se fue en instalar, sino en los dos fallos que solo aparecen contra un
+servidor de verdad (§7.9).
