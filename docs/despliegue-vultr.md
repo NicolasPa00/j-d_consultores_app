@@ -1,9 +1,65 @@
 # Despliegue en Vultr — ORBITA (JD&D Consultores)
 
 > **Tablero de la subida a producción.** Empezado el 2-sep-2026.
-> Estado: **instancia creada y con el acceso asegurado** (§4.1-4.3). Falta el
-> registro DNS, los paquetes, Postgres y subir el código.
+> Estado: **EN LÍNEA** desde el 2-sep-2026 en https://orbita.jddconsultores.com
+> (HTTPS, servicios activos y arranque automático). Lo que queda son los
+> respaldos (§7.1) y los riesgos abiertos del §7.
 > Al terminar cada bloque, marcarlo aquí y volcar el resumen en `HANDOFF.md` §3.
+
+## 0 · Dónde retomar
+
+**El sistema está en línea.** Lo hecho está marcado ✅ a lo largo del documento;
+esto es lo que queda, por orden de urgencia:
+
+| | Qué | Dónde |
+|---|---|---|
+| 🔴 1 | **Respaldos.** No hay ninguno y la base del cliente vive solo en ese disco | §7.1 |
+| 🔴 2 | **Empujar dos commits** que el servidor tiene aplicados a mano como parche | abajo |
+| 🟠 3 | **Ensayo funcional completo** en producción: nada de la aplicación se ha ejecutado nunca ahí | §5.5 |
+| 🟠 4 | **El resumen ejecutivo se inventa el texto** | §7.7 |
+| 🟡 5 | `pdf.service.js` depende de la zona horaria del proceso | §7.9a |
+| 🟡 6 | `npm run migrate` resiembra lo que se borró | §5.1 |
+| 🟡 7 | Grupo de cortafuegos de Vultr, como segunda barrera | §4.3 |
+| 🟡 8 | Verificar el correo de recuperación de la cuenta de Google | §7.4 |
+
+**Los dos commits sin empujar** (el servidor los tiene como parche local, así que
+tras el push hay que reconciliar):
+
+```bash
+# desde el equipo de desarrollo
+git -C sst_ws push origin master                 # fix(schema)
+git -C jdd_consultores_app push origin main      # fix(ssr)
+
+# y luego, en el servidor
+ssh orbita@45.77.118.62 -i ~/.ssh/id_orbita
+cd /opt/orbita/sst_ws   && git checkout -- db/schema.sql && git pull
+cd /opt/orbita/frontend && git checkout -- angular.json src/server.ts && git pull && npm run build
+sudo systemctl restart orbita-api orbita-web
+```
+
+**Cómo entrar y mirar cómo va:**
+
+```bash
+ssh orbita@45.77.118.62 -i ~/.ssh/id_orbita      # root y contraseñas están cerrados
+
+systemctl status orbita-api orbita-web           # los dos procesos Node
+sudo journalctl -u orbita-api  -f                # log de la API
+sudo journalctl -u orbita-web  -f                # log del SSR
+curl -s localhost:4000/api/health                # ¿responde la API?
+
+# psql: la contraseña está dentro del .env, no en ningún otro sitio
+export PGPASSWORD=$(grep -oP 'postgresql://orbita:\K[^@]+' /opt/orbita/sst_ws/.env)
+psql -h 127.0.0.1 -U orbita -d orbita
+```
+
+**Qué NO hacer:**
+
+- No correr `npm run migrate` sin volver a borrar después lo que siembra (§5.1).
+- No tocar el apex ni `www` en el DNS de Hostinger: ahí vive la landing.
+- No poner `EMAIL_DRIVER=smtp` en pruebas locales sin pensarlo: los correos
+  salen ahora **a nombre del cliente**.
+
+---
 
 ## 1 · Qué corre dónde
 
@@ -270,15 +326,49 @@ autenticación en pg_hba para 127.0.0.1     → scram-sha-256
 
 La base queda **vacía**: el esquema lo crea `npm run migrate` en §5.1.
 
-## 5 · Subir el código
+## 5 · Subir el código — ✅ hecho el 2-sep-2026
 
 Los dos repositorios son privados, así que el servidor necesita una **deploy
-key de solo lectura** por repo:
+key de solo lectura** por repo.
+
+⚠️ **Hacen falta DOS llaves, no una.** GitHub exige que cada deploy key sirva a
+**un solo repositorio**: al pegar la misma en el segundo responde *"Key is
+already in use"*. Como las dos apuntan a `github.com`, se distinguen con alias
+de host en `~/.ssh/config`.
 
 ```bash
-ssh-keygen -t ed25519 -f ~/.ssh/id_deploy -N '' -C 'orbita-prod'
-cat ~/.ssh/id_deploy.pub   # pegar en GitHub → repo → Settings → Deploy keys
+ssh-keygen -t ed25519 -f ~/.ssh/id_deploy_front -N '' -C 'orbita-prod · frontend'
+ssh-keygen -t ed25519 -f ~/.ssh/id_deploy_ws    -N '' -C 'orbita-prod · sst_ws'
+
+cat > ~/.ssh/config <<'EOF'
+Host github-front
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_deploy_front
+    IdentitiesOnly yes
+
+Host github-ws
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_deploy_ws
+    IdentitiesOnly yes
+EOF
+chmod 600 ~/.ssh/config
 ```
+
+Cada `.pub` se pega en **su** repo (Settings → Deploy keys → Add deploy key),
+**sin** marcar *Allow write access*: el servidor solo tiene que leer, y si
+pudiera escribir, quien entrara a la máquina podría empujar código a los repos.
+
+Comprobar antes de clonar, que falla mucho más barato:
+
+```bash
+git ls-remote git@github-front:NicolasPa00/j-d_consultores_app.git HEAD
+git ls-remote git@github-ws:Juanskpc/sst_ws.git HEAD
+```
+
+📌 `sst_ws` está bajo la cuenta **Juanskpc**: es lo único del despliegue que
+depende de otra persona.
 
 Estructura en el servidor:
 
@@ -292,17 +382,16 @@ Estructura en el servidor:
 ```bash
 sudo mkdir -p /opt/orbita/storage && sudo chown -R orbita:orbita /opt/orbita
 cd /opt/orbita
-git clone git@github.com:Juanskpc/sst_ws.git
-git clone git@github.com:NicolasPa00/j-d_consultores_app.git frontend
+git clone git@github-ws:Juanskpc/sst_ws.git
+git clone git@github-front:NicolasPa00/j-d_consultores_app.git frontend
 ```
 
-⚠️ **Los dos repos están hoy en la rama `tanda-22-ago-formatos-y-viaticos`, no
-en `main`/`master`.** Todo lo de la tanda del 22-ago (viáticos, AT-031,
-suplencia, matriz de formatos, estado de cobro) está ahí. Antes de desplegar
-hay que decidir: fusionar a `main`/`master` —lo sano, producción debería seguir
-la rama principal— o clonar la rama. Ver §7.3.
+✅ **Ya no hay que elegir rama.** El 2-sep-2026 se confirmó lo pendiente en los
+dos repos y la tanda del 22-ago se fusionó a `main`/`master` (avance rápido, sin
+conflictos: las ramas principales eran ancestros directos). El servidor clona la
+principal, como debe ser.
 
-### 5.1 · Backend
+### 5.1 · Backend — ✅
 
 ```bash
 cd /opt/orbita/sst_ws
@@ -319,7 +408,42 @@ agosto (se comprobó columna por columna: `modalidad_ejecucion`,
 `soportes_requeridos`). Es decir: **la base de producción se levanta desde cero
 con `npm run migrate`, sin necesidad de traerse nada de Neon.**
 
-### 5.2 · Frontend
+
+> 🔴 **`schema.sql` no se podía aplicar sobre una base vacía.** Dos
+> `ALTER TABLE sst.borradores_extraccion ADD COLUMN` (`tipo_orden_id`,
+> `tipo_viatico_id`) vivían en la línea 498, pero la tabla se crea en la 678.
+> Contra la Neon compartida nunca dio la cara —la tabla ya existía de antes—, y
+> aquí la migración murió en el primer intento con
+> *relation "sst.borradores_extraccion" does not exist*. Arreglado en el commit
+> `fix(schema): schema.sql no se podía aplicar sobre una base vacía`. **Esta fue
+> la primera vez que ese archivo corrió contra una base vacía de verdad**, y por
+> eso conviene levantar una base desechable de vez en cuando.
+
+> ⚠️ **`npm run migrate` siembra cosas que en producción no se quieren.** Crea
+> la cuenta CLIENTE (siempre, aunque no se use), tres **profesionales
+> inventados** (Carlos Mendoza, Diana Patiño, Jorge Salazar `@jdd.com`) y —desde
+> `schema.sql`— tres **tipos de orden con valor hora inventado** (Asesoría
+> 120.000, Capacitación 85.000, Inspección 95.000), que es de donde sale lo que
+> se le paga al profesional en la cuenta de cobro. El 2-sep-2026 se borraron los
+> tres grupos a mano tras migrar. **Un `npm run migrate` futuro los vuelve a
+> crear**: hay que volver a borrarlos, o gatear la siembra por variable de
+> entorno (tarea pendiente).
+
+Estado real de la base tras la limpieza:
+
+```
+usuarios       1   (solo el Administrador Maestro)
+profesionales  0     ordenes 0     borradores 0     empresas 0
+tipos_orden    0   (los crea el cliente con SUS tarifas)
+--- catalogos que SÍ deben estar ---
+arls 3 · permisos_rol 32 · plantillas 3 · configuracion 5
+```
+
+⚠️ Con `tipos_orden` vacío **no se pueden importar órdenes**: el tipo es
+obligatorio al confirmar. Es lo primero que el cliente tiene que crear, en
+Configuración → Preferencias del sistema.
+
+### 5.2 · Frontend — ✅
 
 ```bash
 cd /opt/orbita/frontend
@@ -327,7 +451,7 @@ npm ci
 npm run build                # ~3-5 min en esta máquina; por eso el swap
 ```
 
-### 5.3 · Servicios systemd
+### 5.3 · Servicios systemd — ✅
 
 `/etc/systemd/system/orbita-api.service`
 
@@ -381,7 +505,7 @@ sudo systemctl enable --now orbita-api orbita-web
 sudo systemctl status orbita-api orbita-web
 ```
 
-### 5.4 · nginx
+### 5.4 · nginx y TLS — ✅
 
 `/etc/nginx/sites-available/orbita`
 
@@ -424,6 +548,40 @@ sudo nginx -t && sudo systemctl reload nginx
 # con el registro A ya propagado:
 sudo certbot --nginx -d orbita.jddconsultores.com
 ```
+
+### 5.5 · Comprobado de punta a punta (2-sep-2026)
+
+```
+https://orbita.jddconsultores.com            HTTP 200 · TLS válido
+http://…                                     301 → https
+/api/health                                  {"status":"ok"}
+login maestro (documento 9999999999)         token de 331 caracteres
+/api/auth/me con ese token                   usuario + 8 permisos
+/api/orders                                  {"data":[]}
+credenciales falsas                          {"error":"Credenciales inválidas"}
+https://jddconsultores.com (landing)         HTTP 200 — intacta
+certbot renew --dry-run                      success · timer a las 11:02 UTC
+orbita-api · orbita-web · nginx · postgresql  todos `enabled`
+```
+
+**Comprobaciones de resistencia (2-sep-2026, con la base vacía):**
+
+```
+reinicio completo de la máquina    todo vuelve solo en ~40 s
+  orbita-api · orbita-web · nginx · postgresql   activos
+  zona horaria · swap · ufw                      conservados
+salida SMTP desde el VPS           587 y 465 abiertos · 25 bloqueado por Vultr
+correo real enviado DESDE el VPS   entregado
+api.openai.com desde el VPS        alcanzable
+/opt/orbita/storage                escribible por el usuario del servicio
+activos estáticos (logos, favicon) 200
+log del SSR tras el arreglo        0 errores
+```
+
+⚠️ Los dos Node escuchan en `*:4000` y `*:4001`, no en `127.0.0.1`. No son
+alcanzables desde fuera porque `ufw` solo abre 22/80/443, pero el cierre depende
+del cortafuegos y no del propio proceso. Si algún día se toca `ufw`, tenerlo
+presente.
 
 ## 6 · Variables de producción (`/opt/orbita/sst_ws/.env`)
 
@@ -565,6 +723,82 @@ dominio en Hostinger.
 En el panel de Hostinger la **renovación automática está desactivada** y el
 dominio caduca el **2027-02-10**. Si vence, se cae la landing *y* ORBITA.
 Es del cliente la decisión, pero hay que dejarla dicha por escrito.
+
+### 7.7 · 🔴 El resumen ejecutivo de una orden se INVENTA el texto
+
+No hay `GEMINI_API_KEY`, y las tres funciones auxiliares caen a un respaldo. Dos
+degradan de forma honesta: la extracción de PDF ya no usa Gemini (es OpenAI) y
+la búsqueda en lenguaje natural cae a `keywordInterpret()`, un intérprete de
+palabras clave real —menos listo, pero verdadero—.
+
+**El resumen ejecutivo no.** `mockSummary()` devuelve un párrafo con toda la
+pinta de un análisis: cita la Resolución 0312 de 2019, la 4272 de 2021 y afirma
+cosas como *"no se detectaron requisitos especiales de alto riesgo; se recomienda
+validar los soportes al cierre de la visita"* — sin haber leído nada. En
+producción, quien lo lea lo tomará por el análisis de su orden.
+
+Tres salidas, de menos a más trabajo: conseguir una clave de Gemini; migrar esa
+función a OpenAI, que ya está configurado y pagado (es lo que el propio código
+marca como *PENDIENTE DE MIGRACIÓN*); u ocultar el resumen hasta que haya motor.
+**Lo que no se puede es dejarlo como está.**
+
+### 7.8 · La cuenta que se le entrega al cliente
+
+```
+URL        https://orbita.jddconsultores.com
+documento  9999999999          ← con esto se inicia sesión, no con el correo
+correo     redes.jddconsultores@gmail.com
+contraseña Orbita2026          ← deliberadamente simple, PARA CAMBIARLA
+```
+
+Es el **Administrador Maestro**: la única cuenta que existe, y la única que
+puede dar de alta usuarios internos. Desde ahí el cliente crea su equipo. Lo
+primero que debería hacer, en este orden: **cambiar la contraseña**
+(Configuración → Perfil), crear sus **tipos de orden con sus tarifas reales**
+(sin eso no se puede importar nada) y dar de alta a sus profesionales.
+
+### 7.9 · Dos fallos que solo aparecen en un servidor de verdad
+
+Los dos se encontraron el 2-sep-2026 probando el despliegue, no en desarrollo, y
+los dos **fallaban en silencio**: la aplicación respondía 200 y nadie se enteraba.
+
+**a · El servidor estaba en UTC y Colombia es UTC-5.** La máquina de desarrollo
+está en UTC-5, así que esto no se podía ver ahí. `src/utils/formato.js` ya fija
+`America/Bogota` a propósito —y `pdf.service.js:56` tiene el comentario de
+cuando esto mordió: *"un servidor en UTC imprimía en el acta una hora corrida
+cinco horas"*—, pero el PDF de la **cuenta de cobro** (líneas 170 y 189) sigue
+usando `toLocaleDateString('es-CO')` a secas, que toma la zona del proceso.
+
+Lo grave no era la hora, era el **mes**: una orden del 30 de septiembre a las
+8 de la noche en Bogotá es el 1 de octubre en UTC, así que se habría cobrado en
+el periodo equivocado sin dar un solo error. Arreglado en la raíz:
+
+```bash
+sudo timedatectl set-timezone America/Bogota
+echo "timezone = 'America/Bogota'" >> /etc/postgresql/16/main/conf.d/10-orbita.conf
+```
+
+Comprobado: `to_char(timestamptz '2026-09-30 20:00-05', 'YYYY-MM')` → `2026-09`.
+
+📌 Queda pendiente arreglar `pdf.service.js` para que no dependa de la zona del
+proceso, como ya hace `formato.js`.
+
+**b · El renderizado en servidor estaba desactivado.** `angular.json` traía
+`security.allowedHosts: []`. Una lista vacía **no** significa "sin restricción":
+significa que ningún host vale, así que Angular rechazaba todas las peticiones y
+caía a renderizado de cliente. La respuesta era un 200 con `<app-root></app-root>`
+**vacío** (1.568 bytes) y el motivo solo estaba en el log del servicio:
+
+```
+Header "host" with value "orbita.jddconsultores.com" is not allowed.
+Falling back to client side rendering.
+This will become a 400 Bad Request in a future major version.
+```
+
+O sea: hoy degrada sin avisar, y en una versión futura de Angular la aplicación
+deja de cargar. Arreglado en el commit `fix(ssr)`, junto con `trustProxyHeaders`
+(el motor va detrás de nginx). Tras el arreglo: **14.824 bytes con el formulario
+ya renderizado**.
 
 ### 7.6 · Sin cron, sigue sin haber cierre mensual automático
 

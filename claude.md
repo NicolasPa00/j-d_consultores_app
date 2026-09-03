@@ -9,6 +9,21 @@ humana → asignación → soportes → verificación → cierre → satisfacci�
 > Reescrito el **28-jul-2026**: la demo se presentó y se aprobó el 27-jul-2026, y el
 > proyecto está en **Fase 2**. Ya no hay mocks: la app habla con un backend real.
 
+## 🚀 Si la tarea toca el SERVIDOR o el despliegue
+
+El sistema está **en producción** desde el 2-sep-2026 en
+**https://orbita.jddconsultores.com**. Antes de tocar nada, lee
+**`docs/despliegue-vultr.md`**: ahí está qué corre dónde, cómo entrar, qué se
+comprobó y —sobre todo— los riesgos abiertos. Tres avisos que ahorran tiempo:
+
+- La base de producción **no es Neon**, es un PostgreSQL local del VPS, y nace
+  **vacía a propósito** (solo el Administrador Maestro). Sin tipos de orden no
+  se puede importar nada: es lo primero que el cliente debe crear.
+- **No hay respaldos todavía.** Es la tarea número uno pendiente.
+- `npm run migrate` **vuelve a sembrar** la cuenta cliente, tres profesionales
+  inventados y tres tipos de orden con tarifas inventadas. Hay que volver a
+  borrarlos. Ver HANDOFF, trampa 86.
+
 ## 🚩 Si te dicen *"continúa con el trabajo pendiente que nos pidió el cliente"*
 
 Es **la tanda del 22-ago-2026**: seis peticiones en cinco fases. Haz esto, en
@@ -132,7 +147,7 @@ jdd_consultores_app/          ← raíz del monorepo (NO es un repo git)
   en TODOS los componentes. SSR habilitado (`app.config.server.ts`), así que todo
   acceso a `localStorage`, `document` o `setInterval` va detrás de
   `isPlatformBrowser(inject(PLATFORM_ID))`. Dev: `npm start` → **:4001**.
-- **Backend:** Express 5 (ESM, `type: module`) + PostgreSQL (Neon) + JWT + nodemailer
+- **Backend:** Express 5 (ESM, `type: module`) + PostgreSQL + JWT + nodemailer
   + almacenamiento local/S3. Dev: **`npm run dev`** → **:4000** (`--watch`).
   ⚠️ `npm start` es el mismo servidor **sin `--watch`**: se queda con el código
   del momento en que arrancó, así que un arreglo recién guardado no se aplica y
@@ -260,6 +275,13 @@ trampa que se evita), no qué hace la línea. Es el estilo de todo el repo.
 ---
 
 ## 5. Reglas de trabajo (entorno compartido, datos reales)
+
+> 🚀 **En producción esto ya no es Neon.** Desde el 2-sep-2026 el sistema vive en
+> **https://orbita.jddconsultores.com** (VPS de Vultr, `45.77.118.62`) con un
+> **PostgreSQL 16 dentro de la propia máquina**. Neon se queda para desarrollo:
+> son bases **distintas**, y lo que se toca en local no se ve en producción ni al
+> revés. El mapa del servidor, el runbook y los riesgos abiertos están en
+> **`docs/despliegue-vultr.md`** — leerlo antes de tocar nada del despliegue.
 
 - **`.env` de `sst_ws` apunta a una BD Neon real y a un Gmail real.** Para probar
   flujos que mandan correo, levantar una instancia temporal:

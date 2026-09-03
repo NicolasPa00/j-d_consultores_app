@@ -5,7 +5,32 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 23-ago-2026 — **la tanda del 22-ago está COMPLETA:
+> **Última actualización:** 2-sep-2026 — **🚀 EL SISTEMA ESTÁ EN PRODUCCIÓN.**
+> ORBITA vive en **https://orbita.jddconsultores.com**, sobre un VPS de Vultr en
+> Miami (`45.77.118.62`, Ubuntu 24.04, 1 vCPU / 2 GB). El tablero completo de la
+> subida —qué corre dónde, el runbook paso a paso y los riesgos abiertos— es
+> **`docs/despliegue-vultr.md`**, y es lo primero que hay que leer para tocar el
+> servidor.
+>
+> **Cinco cosas que cambian respecto a todo lo anterior:**
+>
+> 1. **La base de datos ya no es Neon.** En producción es un **PostgreSQL 16
+>    dentro del propio VPS** (decisión del cliente: "todo debe quedar en el VPS").
+>    Desarrollo sigue contra la Neon compartida. Son bases **distintas**.
+> 2. **La base de producción está VACÍA a propósito.** Un solo usuario —el
+>    Administrador Maestro— y cero profesionales, órdenes, empresas y **tipos de
+>    orden**. El cliente lo crea todo desde cero para familiarizarse. ⚠️ **Sin
+>    tipos de orden NO se puede importar nada**: es lo primero que tiene que hacer.
+> 3. **Los correos salen ya de `redes.jddconsultores@gmail.com`**, la cuenta del
+>    cliente, con contraseña de aplicación. Probado desde el propio VPS.
+> 4. **Aparecieron dos fallos que solo se ven en un servidor de verdad**, los dos
+>    silenciosos: `schema.sql` no se podía aplicar sobre una base vacía, y el
+>    renderizado en servidor estaba desactivado por un `allowedHosts: []`.
+>    Arreglados. Ver trampas 83-87.
+> 5. **No hay respaldos.** La base del cliente vive solo en ese disco. Es la
+>    tarea número uno de la próxima sesión.
+>
+> **Lo anterior sigue vigente:** la tanda del 22-ago está COMPLETA:
 > las cinco fases construidas y migradas**, más los **cuatro ajustes** que el
 > cliente pidió sobre lo entregado (§10 del plan): el estado de cobro se cambia
 > solo desde el icono de la fila, el eje se queda en **dos** estados, su diálogo
@@ -242,6 +267,45 @@
 
 ## 0. Si retomas en frío, lee esto primero
 
+### 🚀 Dónde retomar (sesión del 2-sep-2026)
+
+**El sistema está desplegado.** Abre **`docs/despliegue-vultr.md`** antes que
+nada: ahí está el mapa del servidor, el runbook y los riesgos. Resumen del
+estado y de lo que sigue:
+
+| | |
+|---|---|
+| URL | https://orbita.jddconsultores.com (HTTPS, certificado hasta el 1-dic-2026) |
+| Servidor | Vultr Miami · `45.77.118.62` · Ubuntu 24.04 · 1 vCPU / 2 GB |
+| Entrar | `ssh orbita@45.77.118.62 -i ~/.ssh/id_orbita` (root y contraseñas cerrados) |
+| Código | `/opt/orbita/sst_ws` y `/opt/orbita/frontend` · `/opt/orbita/storage` |
+| Servicios | `orbita-api` (:4000) · `orbita-web` (:4001) · nginx · postgresql |
+| Base | PostgreSQL 16 **local**, solo `localhost`. Neon queda para desarrollo |
+| Cuenta | Administrador Maestro · documento `9999999999` · `Orbita2026` |
+
+**Lo siguiente, por orden de urgencia:**
+
+1. 🔴 **Respaldos.** No hay ninguno. `pg_dump` diario + `tar` de `storage/`, con
+   copia **fuera de la máquina**. Antes de que entre el primer dato real.
+   (`docs/despliegue-vultr.md` §7.1.)
+2. 🔴 **Empujar dos commits** que el servidor tiene aplicados a mano como parche:
+   `fix(schema)` en `sst_ws` y `fix(ssr)` en el frontend. Después, en el
+   servidor: `git checkout -- <archivo> && git pull`.
+3. 🟠 **Ensayo funcional completo en producción**, con un archivo real del SIPAB:
+   importar → revisar → asignar → correo → portal de soportes → aceptar →
+   cuenta de cobro. **Nada de eso se ha ejecutado nunca en el servidor.**
+4. 🟠 **El resumen ejecutivo se inventa el texto** (sin `GEMINI_API_KEY`,
+   `mockSummary()` devuelve un párrafo con pinta de análisis). Conseguir clave,
+   migrarlo a OpenAI —que ya está pagado— u ocultarlo. §7.7.
+5. 🟡 **`pdf.service.js` (líneas 170 y 189)** usa `toLocaleDateString('es-CO')`
+   sin zona explícita, como ya hace bien `utils/formato.js`. Hoy no muerde
+   porque el servidor está en `America/Bogota`, pero es frágil.
+6. 🟡 **`npm run migrate` vuelve a sembrar lo que borramos**: la cuenta cliente,
+   tres profesionales inventados y tres tipos de orden con tarifas inventadas.
+   Gatearlo por variable de entorno.
+
+---
+
 **Tres cosas antes de tocar nada:**
 
 1. ✅ **La migración de estados YA SE APLICÓ** contra la Neon compartida
@@ -290,6 +354,7 @@
 | **Tanda 8** · rechazo por documento | El administrador marca QUÉ se devuelve; el portal abre solo esa casilla, enseña lo ya enviado y **reemplaza** el archivo anterior | §3 + trampas 51-53 |
 | **Tanda 8** · importar sin gastar IA | Comprobación previa por huella del archivo y por número de orden en su texto: la orden repetida se aparta al elegirla | §3 + trampa 51 |
 | **Tanda 8** · avisos y tamaño | La campanita de soportes abre el visor de archivos (`&vista=soportes`); el máximo por archivo pasó de 25 MB a **4 MB** en importación y soportes | §3 |
+| **Despliegue** · producción (2-sep-2026) | ORBITA sale a **https://orbita.jddconsultores.com** sobre un VPS de Vultr en Miami. La base pasa de Neon a un **PostgreSQL local en el propio VPS**; la base de producción nace **vacía** (solo el Administrador Maestro) porque el cliente lo crea todo desde cero; los correos salen de la cuenta del cliente; la landing de Hostinger se queda intacta en el apex y `www`. Dos fallos silenciosos encontrados y corregidos | `docs/despliegue-vultr.md` + trampas 83-87 |
 | **Tanda 18** · logo ORBITA | La plataforma pasó a la marca **ORBITA · Gestión Inteligente**: tres piezas en `.webp` con fondo transparente (vertical, horizontal e isotipo) + `favicon.ico` de 16/32/48. El logo de JD&D **sigue en el repo**: es la marca de la empresa, no la del producto | §3 |
 | **Tanda 17** · media tanda sin guardar | El código OS-YYYY-NNNN se repartía con `count(*)+1` sin cerrojo: dos archivos confirmados en paralelo pedían el mismo número y la segunda orden moría con "duplicate key". Ahora va con `pg_advisory_xact_lock` por año y desde el MÁXIMO usado. El motivo del fallo se enseña en cristiano, no con el mensaje crudo del driver | §3 + trampa 67 |
 | **Tanda 16** · las 5 correcciones del 20-ago | Inicio navega a `/ordenes?os=<id>` en vez de abrir el drawer (y el drawer se fue); la hora del SIPAB se lee como hora; las horas que el documento no da son obligatorias y se escriben a mano; importar acumula archivos entre selecciones; el aviso de baja confianza se retira al corregir; cada campo del modal solo admite lo suyo (`shared/campos-orden.ts`) | §3 + trampas 64-66 |
@@ -3141,6 +3206,51 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
     versión terminada, así que leyéndolo parecía hecho.
 
 ---
+
+83. **Un `schema.sql` que solo se ha aplicado sobre una base que ya existía no
+    está probado.** Dos `ALTER TABLE sst.borradores_extraccion ADD COLUMN`
+    (`tipo_orden_id`, `tipo_viatico_id`) vivían en la línea 498 y la tabla se
+    crea en la 678. Contra la Neon compartida nunca dio la cara —la tabla ya
+    estaba de antes—; al levantar la base del VPS desde cero, la migración murió
+    en el primer intento con *relation "sst.borradores_extraccion" does not
+    exist*. **El archivo llevaba meses siendo incorrecto y nadie podía saberlo.**
+    Conviene levantar una base desechable de vez en cuando y correr `migrate`
+    entero contra ella.
+
+84. **`allowedHosts: []` no significa "sin restricción": significa "ningún host".**
+    `angular.json` lo traía vacío, así que el motor SSR de Angular rechazaba
+    TODAS las peticiones y caía a renderizado de cliente. Lo peligroso es cómo
+    fallaba: **HTTP 200** con `<app-root></app-root>` vacío (1.568 bytes en vez
+    de 14.824). Ni un error en pantalla, ni en la respuesta — solo en
+    `journalctl -u orbita-web`, y con el aviso de que *"esto será un 400 Bad
+    Request en una versión mayor futura"*. Es decir: hoy degrada callado y
+    mañana la aplicación no carga. **Ante cualquier duda con el SSR, mirar el
+    tamaño de lo que hay DENTRO de `<app-root>`, no el código HTTP.**
+
+85. **La zona horaria del servidor cambia de MES, no solo de hora.** El VPS nació
+    en UTC; Colombia es UTC-5 y la máquina de desarrollo también, así que esto
+    era invisible en local. Una orden del **30 de septiembre a las 8 de la noche**
+    en Bogotá es el **1 de octubre** en UTC: se habría cobrado en el periodo
+    equivocado sin dar un solo error. `utils/formato.js` ya fijaba
+    `America/Bogota` a propósito, y `pdf.service.js:56` guarda el comentario de
+    cuando esto mordió la vez anterior, pero el PDF de la cuenta de cobro seguía
+    dependiendo de la zona del proceso. Se arregló en la raíz
+    (`timedatectl set-timezone America/Bogota` + `timezone` en Postgres).
+    **En un despliegue nuevo, comprobarlo antes que nada.**
+
+86. **`npm run migrate` siembra datos que en producción no se quieren, y los
+    vuelve a sembrar cada vez.** Crea la cuenta CLIENTE aunque no se use, tres
+    **profesionales inventados** (`cmendoza@jdd.com` y compañía) y —desde
+    `schema.sql`— tres **tipos de orden con valor hora inventado** (120.000,
+    85.000, 95.000), que es de donde sale lo que se le paga al profesional. En
+    el VPS se borraron a mano tras migrar; **un `migrate` futuro los recrea**.
+
+87. **Una deploy key de GitHub sirve a UN solo repositorio.** Al pegar la misma
+    llave en el segundo repo, GitHub responde *"Key is already in use"*. Con dos
+    repos hacen falta **dos llaves** y alias de host en el `~/.ssh/config` del
+    servidor (`github-front`, `github-ws`), porque las dos apuntan a
+    `github.com`. Comprobar con `git ls-remote` antes de clonar: falla mucho
+    más barato.
 
 ## 7. Cómo mantener este archivo
 
