@@ -14,7 +14,7 @@ esto es lo que queda, por orden de urgencia:
 | | Qué | Dónde |
 |---|---|---|
 | 🔴 1 | **Respaldos.** No hay ninguno y la base del cliente vive solo en ese disco | §7.1 |
-| 🔴 2 | **Empujar dos commits** que el servidor tiene aplicados a mano como parche | abajo |
+| 🔴 2 | **Empujar el frontend** y reconciliar los parches que el servidor tiene a mano | abajo |
 | 🟠 3 | **Ensayo funcional completo** en producción: nada de la aplicación se ha ejecutado nunca ahí | §5.5 |
 | 🟠 4 | **El resumen ejecutivo se inventa el texto** | §7.7 |
 | 🟡 5 | `pdf.service.js` depende de la zona horaria del proceso | §7.9a |
@@ -22,19 +22,23 @@ esto es lo que queda, por orden de urgencia:
 | 🟡 7 | Grupo de cortafuegos de Vultr, como segunda barrera | §4.3 |
 | 🟡 8 | Verificar el correo de recuperación de la cuenta de Google | §7.4 |
 
-**Los dos commits sin empujar** (el servidor los tiene como parche local, así que
-tras el push hay que reconciliar):
+**Empujar y reconciliar.** El arreglo del backend (`fix(schema)`) ya está en
+`origin/master`; el del frontend (`fix(ssr)`) no. En los dos casos **el servidor
+tiene el cambio aplicado como parche local**, así que hay que descartar el parche
+antes del `pull` o el `git pull` chocará:
 
 ```bash
-# desde el equipo de desarrollo
-git -C sst_ws push origin master                 # fix(schema)
-git -C jdd_consultores_app push origin main      # fix(ssr)
+# desde el equipo de desarrollo — solo falta el frontend
+git -C jdd_consultores_app push origin main
 
-# y luego, en el servidor
+# y luego, en el servidor, en los DOS repos
 ssh orbita@45.77.118.62 -i ~/.ssh/id_orbita
 cd /opt/orbita/sst_ws   && git checkout -- db/schema.sql && git pull
 cd /opt/orbita/frontend && git checkout -- angular.json src/server.ts && git pull && npm run build
 sudo systemctl restart orbita-api orbita-web
+
+# comprobar que el SSR sigue renderizando (debe pasar de 14 kB, no de 1,5 kB)
+curl -s https://orbita.jddconsultores.com/login | wc -c
 ```
 
 **Cómo entrar y mirar cómo va:**
