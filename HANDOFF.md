@@ -5,12 +5,14 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 2-sep-2026 — **🚀 EL SISTEMA ESTÁ EN PRODUCCIÓN.**
-> ORBITA vive en **https://orbita.jddconsultores.com**, sobre un VPS de Vultr en
-> Miami (`45.77.118.62`, Ubuntu 24.04, 1 vCPU / 2 GB). El tablero completo de la
+> **Última actualización:** 16-sep-2026 — **🚀 EL SISTEMA ESTÁ EN PRODUCCIÓN**
+> (desde el 2-sep-2026) y ya lo están usando clientes reales. ORBITA vive en
+> **https://orbita.jddconsultores.com**, sobre un VPS de Vultr en Miami
+> (`45.77.118.62`, Ubuntu 24.04, 1 vCPU / 2 GB). El tablero completo de la
 > subida —qué corre dónde, el runbook paso a paso y los riesgos abiertos— es
 > **`docs/despliegue-vultr.md`**, y es lo primero que hay que leer para tocar el
-> servidor.
+> servidor. **Lo último desplegado:** el Excel SIPAB de Bolívar dejó de leerse
+> cuando llegaba como `.xls` binario (ver §0 punto 2 y la Tanda 23 en §3).
 >
 > **Cinco cosas que cambian respecto a todo lo anterior:**
 >
@@ -288,9 +290,12 @@ estado y de lo que sigue:
 1. 🔴 **Respaldos.** No hay ninguno. `pg_dump` diario + `tar` de `storage/`, con
    copia **fuera de la máquina**. Antes de que entre el primer dato real.
    (`docs/despliegue-vultr.md` §7.1.)
-2. 🔴 **Empujar dos commits** que el servidor tiene aplicados a mano como parche:
-   `fix(schema)` en `sst_ws` y `fix(ssr)` en el frontend. Después, en el
-   servidor: `git checkout -- <archivo> && git pull`.
+2. 🔴 **Empujar el commit que el servidor tiene aplicado a mano como parche:**
+   `fix(ssr)` en el **frontend** (`angular.json`, `src/server.ts`). En el
+   servidor: `git checkout -- angular.json src/server.ts && git pull && npm run build`.
+   ✅ El lado de `sst_ws` (`fix(schema)`) ya se reconcilió y desplegó el
+   16-sep-2026, junto con el fix de importación de Excel `.xls` (trampa 88):
+   el servidor está al día con `origin/master` en ese repo.
 3. 🟠 **Ensayo funcional completo en producción**, con un archivo real del SIPAB:
    importar → revisar → asignar → correo → portal de soportes → aceptar →
    cuenta de cobro. **Nada de eso se ha ejecutado nunca en el servidor.**
@@ -2028,6 +2033,46 @@ Comprobado contra la Neon real con un lote **desechable** (creado, medido y
 borrado): 99 borradores, 61 con tipo preseleccionado, confianza media 96, fechas
 en ISO, ciudad limpia y `sipab.unidad_medida` en su sitio.
 
+### Tanda 23 (16-sep-2026): el SIPAB de Bolívar volvió a fallar — ahora en `.xls`, no en `.xlsx`
+
+Un cliente real subió `ordenes bolivar desde junio.xls` en producción y la app
+respondió *"Se procesó pero no se extrajo ninguna orden"*. No era el problema de
+columnas de la tanda 13 (ver arriba): el archivo es un `.xls` **binario de
+verdad** (BIFF/OLE2, exportado por el Excel del cliente), y `exceljs`
+—`workbook.xlsx.load()`— **solo entiende OOXML (.xlsx)**. Ante el binario viejo
+no lanza error: arma en silencio un workbook de **0 hojas**, así que el lote
+quedaba `PROCESADO` con 0 órdenes en vez de fallar con un mensaje claro. Ver
+trampa 88.
+
+Verificado en local contra el archivo real (331 filas, 41 columnas) con
+`node --import tsx scripts/verificar-sipab.mjs "<ruta al .xls>"`: pasó de 0 a
+**331/331 órdenes extraídas**, y los dos Excel sintéticos de
+`docs/BasesDatosEjemplo/` siguen en 100 % (cero regresión en el camino
+`.xlsx`, que no se tocó). `npm run typecheck` limpio.
+
+Qué cambió (`sst_ws`): nueva dependencia `xlsx` (SheetJS, la única de las dos
+que lee BIFF/OLE2) + `src/utils/excel-grid.js`, que detecta el formato por la
+**firma de bytes** del archivo (no por extensión ni `mimetype`, que no dicen
+nada del contenedor real) y da una rejilla uniforme para que
+`parseExcelSipab`/`readSheetPreview` no sepan qué librería leyó el archivo.
+
+**Desplegado el mismo día:** commit `e79eded` empujado a `origin/master` y
+llevado al VPS (`git pull` en `/opt/orbita/sst_ws`, `npm install`, `systemctl
+restart orbita-api`; `orbita-web` no se tocó porque el frontend no cambió).
+De paso se reconcilió el parche local de `db/schema.sql` que el servidor tenía
+aplicado a mano desde el despliegue del 2-sep (era **idéntico, byte a byte**,
+al commit `fix(schema)` que ya estaba en `origin/master` — se comprobó antes de
+descartarlo). El servidor quedó al día con `origin/master` en `sst_ws`; el
+`fix(ssr)` del **frontend** sigue pendiente de empujar (ver §0, punto 2).
+
+Dos cosas que salieron al probar con el archivo real, **ninguna es un bug**:
+4 de las 331 filas traen el contacto de la empresa vacío en el propio Excel de
+Bolívar (`"...Contacto:"` sin nada detrás — dato incompleto de la ARL), y el
+panel de vista previa de la hoja (`readSheetPreview`) trunca en 300 filas / 40
+columnas por defecto — un límite preexistente, no relacionado con `.xls` vs
+`.xlsx`, que este archivo es el primero en tocar (331 filas, 41 columnas: el
+SIPAB completo). Pendiente si el cliente lo pide.
+
 ### Tanda 12 (18-ago-2026): el tipo de orden manda, y el valor hora se congela
 
 **"Valores por hora según actividad" no guardaba nada.** Eran tres filas escritas
@@ -3251,6 +3296,22 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
     servidor (`github-front`, `github-ws`), porque las dos apuntan a
     `github.com`. Comprobar con `git ls-remote` antes de clonar: falla mucho
     más barato.
+
+88. **`exceljs` solo entiende `.xlsx` (OOXML/zip); ante un `.xls` binario
+    (BIFF/OLE2, el formato viejo de verdad, no solo la extensión) no lanza
+    error: `workbook.xlsx.load()` arma en silencio un workbook de **0 hojas**.**
+    Así llegó un SIPAB real de Bolívar el 16-sep-2026 —exportado por el propio
+    Excel del cliente, no un archivo raro— y el pipeline lo reportó como
+    "procesado, 0 órdenes" en vez de fallar con un error legible. La extensión
+    `.xls` no dice nada del contenedor real: hay que mirar los bytes (firma
+    OLE2 `D0 CF 11 E0 A1 B1 1A E1`). `parseExcelSipab` y `readSheetPreview`
+    (`sst_ws/src/services/extraction.service.js`) ahora pasan por
+    `src/utils/excel-grid.js`, que detecta el formato por la firma y usa
+    SheetJS (`xlsx`, dependencia nueva) para el binario viejo sin tocar el
+    camino `exceljs` que ya funcionaba para `.xlsx`. Ojo aparte con las fechas
+    "hora suelta" (Excel las guarda en su día cero, 30-dic-1899): SheetJS no
+    resuelve ese día cero de forma estable entre zonas horarias, así que la
+    hora se lee del **texto renderizado** ("8:00"), no del objeto `Date`.
 
 ## 7. Cómo mantener este archivo
 
