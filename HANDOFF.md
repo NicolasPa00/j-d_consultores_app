@@ -27,8 +27,10 @@
 > a propósito (ver schema.sql): si la orden ya tiene una cuenta de cobro
 > generada, el borrado se rechaza con un mensaje claro en vez de perder ese
 > rastro de pago. Verificado con una prueba desechable contra la Neon de
-> desarrollo (tres casos, dentro de una transacción con `ROLLBACK`); falta
-> verlo dentro de la aplicación en producción.
+> desarrollo (tres casos, dentro de una transacción con `ROLLBACK`) y **ya
+> desplegado en producción** (`orbita-api`/`orbita-web` reiniciados, ruta
+> confirmada montada con un `DELETE` sin token → 401). Falta probarlo con un
+> clic real desde la pestaña Deshabilitadas.
 >
 > **Cinco cosas que cambian respecto a todo lo anterior:**
 >
