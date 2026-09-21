@@ -14,6 +14,22 @@
 > servidor. **Lo último desplegado:** el Excel SIPAB de Bolívar dejó de leerse
 > cuando llegaba como `.xls` binario (ver §0 punto 2 y la Tanda 23 en §3).
 >
+> 🆕 **21-sep-2026: eliminar definitivamente una orden deshabilitada.** El
+> soft-delete (Deshabilitar) no liberaba el hueco: `dedup.service.js` compara
+> contra `ordenes_servicio`, no contra el borrador, así que una orden
+> deshabilitada por un error de importación seguía bloqueando para siempre el
+> reintento con "esta orden ya existe" — y la fila ya no aparecía en ninguna
+> pestaña activa, así que el usuario no tenía dónde mirar. Ahora, en
+> **Órdenes → Deshabilitadas**, junto al icono de restaurar hay uno nuevo de
+> eliminar definitivamente (`DELETE /drafts/:id`, solo admin, solo sobre un
+> borrador ya deshabilitado) que borra el borrador **y** la OS que haya
+> materializado. `sst.precuenta_items.orden_id` sigue sin `ON DELETE CASCADE`
+> a propósito (ver schema.sql): si la orden ya tiene una cuenta de cobro
+> generada, el borrado se rechaza con un mensaje claro en vez de perder ese
+> rastro de pago. Verificado con una prueba desechable contra la Neon de
+> desarrollo (tres casos, dentro de una transacción con `ROLLBACK`); falta
+> verlo dentro de la aplicación en producción.
+>
 > **Cinco cosas que cambian respecto a todo lo anterior:**
 >
 > 1. **La base de datos ya no es Neon.** En producción es un **PostgreSQL 16

@@ -666,6 +666,10 @@ export class ApiService {
   enableDraft(id: string): Observable<Wrap<Borrador>> {
     return this.http.patch<Wrap<Borrador>>(`${this.base}/drafts/${id}/enable`, {});
   }
+  /** Elimina definitivamente una orden ya deshabilitada (borrador y OS, si llegó a existir). */
+  deleteDraft(id: string): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.base}/drafts/${id}`);
+  }
 
   // ---- Usuarios internos (M1) — exclusivo del Administrador Maestro ----
   listUsuarios(): Observable<{ usuarios: Usuario[] }> {

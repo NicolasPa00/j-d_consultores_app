@@ -2498,6 +2498,31 @@ export class ValidationComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Eliminar definitivamente una orden deshabilitada. Distinto de deshabilitar:
+   * el soft-delete no libera el número de orden ante la ARL, así que
+   * reimportar el mismo archivo seguía chocando con "esta orden ya existe" sin
+   * decir dónde mirar. Esto borra el borrador y, si llegó a materializarse, la
+   * OS también — no se puede deshacer.
+   */
+  protected async deleteOrderPermanently(order: ServiceOrder): Promise<void> {
+    const ok = await this.alerts.confirm({
+      title: 'Eliminar definitivamente',
+      message: `¿Deseas eliminar PARA SIEMPRE la orden de "${order.company}"? No podrás restaurarla y, si vuelves a importar el mismo archivo, se tratará como una orden nueva. Esta acción no se puede deshacer.`,
+      confirmText: 'Sí, eliminar definitivamente',
+      cancelText: 'Cancelar',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    this.api.deleteDraft(order.id).subscribe({
+      next: () => {
+        this.orders.update((list) => list.filter((o) => o.id !== order.id));
+        this.alerts.success('Orden eliminada', `${order.company} se borró definitivamente del sistema.`);
+      },
+      error: (err) => this.alerts.error('No se pudo eliminar la orden', mensajeError(err, 'El servidor rechazó la operación.')),
+    });
+  }
+
 }
 
 /** Fecha local en el formato que espera <input type="date"> (YYYY-MM-DD). */

@@ -138,6 +138,17 @@
                       <path d="M3 3v5h5" />
                     </svg>
                   </button>
+                  <!-- Distinto del soft-delete de arriba: borra el borrador (y la
+                       OS, si llegó a existir) para que reimportar el mismo
+                       archivo deje de chocar con "esta orden ya existe". -->
+                  <button type="button" class="icon-action icon-action--danger" (click)="deleteOrderPermanently(order)" aria-label="Eliminar definitivamente" title="Eliminar definitivamente">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M3 6h18" />
+                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                      <path d="M10 11v6M14 11v6" />
+                    </svg>
+                  </button>
                 } @else {
                   <button type="button" class="icon-action" (click)="openDetail(order.id)" aria-label="Ver detalle" title="Ver detalle">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
