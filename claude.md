@@ -278,13 +278,25 @@ trampa que se evita), no qué hace la línea. Es el estilo de todo el repo.
 
 > 🚀 **En producción esto ya no es Neon.** Desde el 2-sep-2026 el sistema vive en
 > **https://orbita.jddconsultores.com** (VPS de Vultr, `45.77.118.62`) con un
-> **PostgreSQL 16 dentro de la propia máquina**. Neon se queda para desarrollo:
-> son bases **distintas**, y lo que se toca en local no se ve en producción ni al
-> revés. El mapa del servidor, el runbook y los riesgos abiertos están en
+> **PostgreSQL 16 dentro de la propia máquina**. Desde el 22-sep-2026 desarrollo
+> **tampoco** usa Neon: apunta a `jdd_dev` en un VPS de desarrollo compartido
+> (`45.77.161.164`, distinto del de producción, requiere túnel SSH — ver §5 más
+> abajo). Las tres bases (producción, desarrollo, la vieja Neon) son
+> **distintas**, y lo que se toca en local no se ve en producción ni al revés.
+> El mapa del servidor, el runbook y los riesgos abiertos están en
 > **`docs/despliegue-vultr.md`** — leerlo antes de tocar nada del despliegue.
 
-- **`.env` de `sst_ws` apunta a una BD Neon real y a un Gmail real.** Para probar
-  flujos que mandan correo, levantar una instancia temporal:
+- 🆕 **22-sep-2026: el desarrollo local ya NO usa Neon.** `.env` de `sst_ws`
+  apunta ahora a `jdd_dev`, una base en un VPS de desarrollo compartido con
+  ADMIN_APP (`45.77.161.164`, distinto del VPS de producción). **Hace falta un
+  túnel SSH abierto para poder desarrollar**:
+  `ssh -i ~/.ssh/id_ed25519 -N -L 5433:localhost:5432 escalapp@45.77.161.164`
+  (contraseña: leerla por SSH con `cat ~/.dbpass_jdd_dev` en ese VPS, no está en
+  el repo). Sin el túnel, `:4000` no arranca (`DATABASE_URL` no conecta). La
+  línea vieja de Neon queda comentada en `.env` por si hay que volver atrás.
+  Detalle completo en la memoria `vps-desarrollo-compartido.md`. **`.env` sigue
+  apuntando también a un Gmail real.** Para probar flujos que mandan correo,
+  levantar una instancia temporal:
   `PORT=4010 EMAIL_DRIVER=console SMTP_HOST="" npm run dev`.
 - **Nunca correr `npm run seed:demo`**: hace TRUNCATE de órdenes, borradores y lotes.
 - Probar sobre OS desechables propias y borrarlas al terminar. No mutar datos

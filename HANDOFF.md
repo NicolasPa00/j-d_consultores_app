@@ -5,7 +5,9 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 16-sep-2026 — **🚀 EL SISTEMA ESTÁ EN PRODUCCIÓN**
+> **Última actualización:** 20-sep-2026 (ver el bloque de facturación electrónica más abajo
+> para lo último; el resto de esta cabecera es del 16-sep) — **🚀 EL SISTEMA ESTÁ EN
+> PRODUCCIÓN**
 > (desde el 2-sep-2026) y ya lo están usando clientes reales. ORBITA vive en
 > **https://orbita.jddconsultores.com**, sobre un VPS de Vultr en Miami
 > (`45.77.118.62`, Ubuntu 24.04, 1 vCPU / 2 GB). El tablero completo de la
@@ -13,6 +15,26 @@
 > **`docs/despliegue-vultr.md`**, y es lo primero que hay que leer para tocar el
 > servidor. **Lo último desplegado:** el Excel SIPAB de Bolívar dejó de leerse
 > cuando llegaba como `.xls` binario (ver §0 punto 2 y la Tanda 23 en §3).
+>
+> 🆕 **22-sep-2026: el desarrollo local dejó de usar Neon.** A pedido de
+> centralizar el desarrollo (mismo motivo que llevó a ADMIN_APP a montar
+> `escalapp_dev`), `sst_ws/.env` ahora apunta a **`jdd_dev`**, una base nueva en
+> un **VPS de desarrollo compartido** con ADMIN_APP (`escalapp-dev`, Vultr
+> Miami, `45.77.161.164` — **distinto** del VPS de producción de Orbita,
+> `45.77.118.62`). Se aplicó `db/schema.sql` + `seed.sql` contra ella (37 tablas
+> en `sst`, cuenta cliente y Administrador Maestro sembrados) y se probó un
+> login real end-to-end con `:4000` apuntando ahí — funciona. **Se dejó vacía a
+> propósito**: no se copiaron datos de Neon (mismo criterio que la base de
+> producción: arranca limpia y se repuebla con fixtures/seed si hace falta).
+> Neon **no se tocó ni se borró**, solo se dejó de usar para desarrollo local; su
+> `DATABASE_URL` queda comentada en `.env` por si hay que volver atrás rápido.
+> ⚠️ **Para desarrollar hace falta el túnel SSH abierto**, o `:4000` no conecta:
+> `ssh -i ~/.ssh/id_ed25519 -N -L 5433:localhost:5432 escalapp@45.77.161.164`
+> (contraseña: `ssh escalapp@45.77.161.164 "cat ~/.dbpass_jdd_dev"`, no vive en
+> el repo). El `.ssh/config` local tiene un alias `escalapp` que apunta a OTRA
+> IP (`45.63.105.95`, de otro proyecto/servidor) — no usarlo para esto, hay que
+> conectar explícito a `45.77.161.164`. Detalle completo, incluido qué falta
+> revisar, en la memoria `vps-desarrollo-compartido.md`.
 >
 > 🆕 **21-sep-2026: eliminar definitivamente una orden deshabilitada.** El
 > soft-delete (Deshabilitar) no liberaba el hueco: `dedup.service.js` compara
@@ -49,6 +71,77 @@
 >    Arreglados. Ver trampas 83-87.
 > 5. **No hay respaldos.** La base del cliente vive solo en ese disco. Es la
 >    tarea número uno de la próxima sesión.
+>
+> 🆕 **Iniciativa nueva (18-sep-2026), fuera del FRS original: facturación electrónica
+> DIAN.** JD&D paga hoy ~$3.000.000 COP/año a Siigo; la idea es que **Orbita/EscalApp se
+> convierta en su proveedor de facturación electrónica de forma indefinida** (no un
+> proyecto puntual: ingreso anual recurrente, la integración en sí no se cobra), y de
+> paso JD&D sea el primer cliente real de la bolsa de documentos que EscalApp compre en
+> Factus. Todo el análisis —modelo comercial, gap del modelo de datos de Orbita,
+> decisiones pendientes y qué se puede adelantar ya— está en
+> **`docs/facturacion-electronica.md`**.
+>
+> **19-sep-2026: reunión con JD&D y su contadora, respuestas volcadas en el propio
+> `docs/facturacion-electronica.md` §8.** Dos hallazgos que cambian el alcance:
+> (1) el pagador **no siempre es una ARL** — hay facturas a empresas privadas
+> contratadas directo (ej. Alkosto), lo que rompe el supuesto de §3/§4 de que
+> `sst.arls` es la única fuente del receptor; (2) **CONFIRMADO (D-7): JD&D quiere
+> dejar Siigo por completo**, no solo su parte DIAN — hace falta además un módulo
+> contable (comprobantes de egreso, recibos de caja, provisiones, conciliación
+> bancaria) que **Factus no cubre**, sin diseñar todavía. Sigue faltando el
+> desglose fino del volumen (D-1/D-3: 15 facturas/mes, AXA Colpatria agrupa
+> ~3 actividades por factura, criterio exacto de agrupación sin confirmar).
+>
+> **Primer código de esta iniciativa, en la rama `facturacion-electronica-fe` de
+> `sst_ws`** (aún no mezclada a `master`), siguiendo exactamente lo que §7 marca
+> como no bloqueado — nada de esto toca `db/schema.sql` ni producción:
+> - `src/utils/nit.js` — algoritmo módulo 11 del DV del NIT, **reimplementado
+>   desde el algoritmo público de la DIAN, NO copiado del adaptador ya
+>   verificado de ADMIN_APP/EscalApp** (en esa sesión no se había abierto ese
+>   repo; el 20-sep sí se accedió a él para otra cosa — ver más abajo — pero el
+>   algoritmo de `nit.js` sigue sin contrastarse línea a línea contra
+>   `admin_ws/app_core/helpers/nit.js`, que es el ya verificado). Verificado
+>   contra un NIT público real (Bancolombia, 890903938-8) con
+>   `node --import tsx scripts/verificar-nit.mjs`, pero sigue pendiente
+>   contrastarlo contra el RUT real de JD&D y las 3 ARL antes de emitir nada.
+> - `src/modules/facturacion/puerto.js` + `adaptadores/factus.adaptador.js` —
+>   solo el contrato (patrón puerto+adaptador); todos los métodos lanzan "no
+>   implementado" (factura, documento soporte y nómina electrónica). El puerto
+>   modela el receptor de forma genérica (no asume ARL) por el hallazgo (1) de
+>   arriba.
+> - 🆕 **20-sep-2026: primer borrador de requerimientos de contabilidad completa**
+>   (`docs/requerimientos-facturacion-contabilidad.md`), armado leyendo capturas
+>   reales del Siigo de JD&D — plan de cuentas, comprobantes contables (una
+>   docena de tipos), compras y gastos, documento soporte, nómina, un módulo de
+>   activos/inventario con QR mencionado sin detalle, y dos reportes fiscales.
+>   Sigue siendo un borrador de trabajo: **el documento formal de JD&D no ha
+>   llegado todavía**, y varias filas quedan marcadas PENDIENTE (D-10 a D-14) a
+>   propósito en vez de asumidas.
+> - 🆕 **Hallazgo de código, sin depender de datos que falten:**
+>   `sst.ordenes_servicio.arl_id` es **`NOT NULL`** (`db/schema.sql:321`) — hoy
+>   es literalmente imposible representar en Orbita una orden sin ARL, así que
+>   el caso Alkosto no cabe en el modelo actual. Nueva decisión **D-9** en
+>   `docs/facturacion-electronica.md` §5: ¿esas órdenes entran a Orbita (con
+>   `arl_id` nullable) o quedan fuera del ciclo de vida de la OS y solo tocan el
+>   módulo de FE como documento suelto?
+> - 🆕 **20-sep-2026, cierre de sesión — cuatro cosas nuevas:**
+>   1. **PDF de requerimientos generado para el cliente**:
+>      `C:\Users\nicol\Desktop\Requerimientos-Facturacion-Contabilidad-JDD.pdf`
+>      (4 páginas, script fuente en el scratchpad de esa sesión, no en el repo).
+>      Es la versión LIMPIA de `docs/requerimientos-facturacion-contabilidad.md`
+>      — sin capturas, preguntas ni menciones a Factus o Siigo.
+>   2. **Precio propuesto para la fase de facturación+contabilidad: $2.300.000
+>      COP** (rango $2.000.000–$2.600.000), a la espera de que el usuario lo
+>      confirme. Razonamiento completo solo en el chat de esa sesión.
+>   3. **Se accedió por primera vez al repo hermano `ADMIN_APP` en disco**
+>      (`C:\Users\nicol\Desktop\ADMIN_APP`, memoria de Claude Code en
+>      `C--Users-nicol-Desktop-ADMIN-APP`) para resolver D-8 con la fuente
+>      primaria (`admin_ws/docs/facturacion-electronica.md`) en vez de solo la
+>      memoria resumida. **Es un repo real y accesible desde esta máquina** —
+>      dejar de decir que "no está disponible en esta sesión" en futuras notas.
+>   4. **DECIDIDO: JD&D necesita comprar un paquete de nómina electrónica
+>      aparte** de la bolsa de facturación (no viene incluido). Ver
+>      `docs/facturacion-electronica.md` §0 y D-8.
 >
 > **Lo anterior sigue vigente:** la tanda del 22-ago está COMPLETA:
 > las cinco fases construidas y migradas**, más los **cuatro ajustes** que el

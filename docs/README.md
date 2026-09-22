@@ -14,6 +14,10 @@ Este directorio es la **fuente de verdad** del proyecto de la plataforma interna
 | [`04-pipeline-ia.md`](04-pipeline-ia.md) | Pipeline de importación y validación con IA (Módulos 2 y 3). Motor principal de extracción = **OpenAI**; Gemini queda solo en componentes auxiliares (PENDIENTE DE MIGRACIÓN) |
 | [`05-frontend.md`](05-frontend.md) | Estado del frontend Angular (mock Fase 1), design system y convenciones |
 | [`06-auth-y-seguridad.md`](06-auth-y-seguridad.md) | Modelo de cuentas (Administrador Maestro vs. operativos), recuperación de contraseña, auditoría y costuras de auth robusta |
+| [`despliegue-vultr.md`](despliegue-vultr.md) | Producción: VPS de Vultr, runbook, riesgos abiertos |
+| [`plan-peticiones-22-ago-2026.md`](plan-peticiones-22-ago-2026.md) | Tablero de la tanda de peticiones del cliente del 22-ago-2026 |
+| [`facturacion-electronica.md`](facturacion-electronica.md) | 🆕 Orbita como proveedor de facturación electrónica DIAN de JD&D. Alcance creció el 19-sep-2026: JD&D confirmó que quiere reemplazar Siigo por completo (contabilidad incluida, no solo DIAN) |
+| [`requerimientos-facturacion-contabilidad.md`](requerimientos-facturacion-contabilidad.md) | 🆕 Borrador de requerimientos de esa fase (facturación + contabilidad completa), con PDF entregable ya generado para el cliente |
 
 ## ⚠️ Regla de Oro (leer siempre)
 
