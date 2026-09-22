@@ -36,6 +36,36 @@
 > conectar explícito a `45.77.161.164`. Detalle completo, incluido qué falta
 > revisar, en la memoria `vps-desarrollo-compartido.md`.
 >
+> **Verificado el mismo día con carga real, no solo con el esquema:** se subió
+> un PDF de ejemplo por el flujo completo de importación (extracción con
+> OpenAI, revisión, confirmación) y quedó materializado como **OS-2026-0001**
+> contra `jdd_dev`. La documentación de este cambio (este bloque, `claude.md`,
+> `docs/README.md` y los dos documentos de facturación electrónica que llevaban
+> días sin subirse) ya está en `origin/main` (commit `8e9ce0c`). La contraseña
+> de `jdd_dev` se le pasó al compañero por fuera de git, en chat — nunca quedó
+> en ningún archivo del repo.
+>
+> ⚠️ **Cierre de esta sesión (22-sep-2026), qué queda pendiente para la
+> próxima:**
+> 1. **El túnel SSH y los servidores locales quedaron apagados** (Claude Code
+>    los mató por presión de memoria del sistema, no por un error de la app —
+>    ver `servidores-dev-y-watch.md`). Para retomar: reabrir el túnel y volver a
+>    correr `npm run dev` en `sst_ws` y `npm start` en el frontend.
+> 2. **El acceso SSH del compañero de equipo no se confirmó.** Solo la llave de
+>    esta máquina está autorizada en el VPS; si la suya es distinta, alguien con
+>    acceso (EscalApp/ADMIN_APP) tiene que agregar su clave pública antes de que
+>    el túnel le funcione a él.
+> 3. **`sst_ws` tiene archivos sin comitear y sin rama, sueltos en `master`**:
+>    `src/utils/nit.js`, `src/modules/facturacion/` y
+>    `scripts/verificar-nit.mjs` — el primer código exploratorio de la
+>    iniciativa de facturación electrónica (ver más abajo), que quedó como
+>    untracked en vez de en la rama `facturacion-electronica-fe`. No se tocó ni
+>    se commiteó en esta sesión por no ser parte de la tarea pedida; falta
+>    decidir si se mueven a esa rama o se descartan.
+> 4. **La orden de prueba `OS-2026-0001`** (creada solo para verificar la
+>    migración) sigue en `jdd_dev` — no hace falta limpiarla exprofeso, pero es
+>    dato sintético, no confundirlo con carga real de un profesional.
+>
 > 🆕 **21-sep-2026: eliminar definitivamente una orden deshabilitada.** El
 > soft-delete (Deshabilitar) no liberaba el hueco: `dedup.service.js` compara
 > contra `ordenes_servicio`, no contra el borrador, así que una orden
