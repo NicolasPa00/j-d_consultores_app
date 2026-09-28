@@ -16,6 +16,69 @@
 > servidor. **Lo último desplegado:** el Excel SIPAB de Bolívar dejó de leerse
 > cuando llegaba como `.xls` binario (ver §0 punto 2 y la Tanda 23 en §3).
 >
+> 🆕🆕 **27-sep-2026: EMPIEZA LA IMPLEMENTACIÓN — el tablero es
+> `docs/plan-facturacion-contabilidad.md`.** El usuario decidió construir ya, aunque la
+> cotización no está firmada (falta definir si se constituye una sociedad o se paga;
+> por eso el emisor/NIT va 100 % configurable). Orden: **Tanda 0** (17 correcciones de
+> Orbita que pidió el cliente: AGR y tema en el AT-031, estado ARL + n.º de prefactura,
+> carga de prefacturas con IA, sidebar plegable, estado con Guardar, valor al cambiar el
+> tipo…) → **Fase A** facturar → **B** contabilidad → **C** informes → **S** salida.
+> Hallazgos clave de los ejemplos reales (`DocFacturacion/` en la raíz, fuera de git) en
+> su §3: la **resolución FE vence el 11-oct-2026** (JD&D ya lo sabe), AXA lleva
+> **descuento del 2 %** (FE-811/812 se anularon por eso), los pagadores **sí retienen
+> ReteICA al pagar**, hay un **cuarto pagador (La Equidad)**, y el auxiliar de Siigo
+> muestra el asiento exacto de cada documento. Esta sesión dirige y verifica; otras
+> sesiones ejecutan las fichas.
+>
+> 🆕 **26-sep-2026 (cerrado 27-sep): reunión con JD&D/contadora y primera cotización —
+> CIERRE DE SESIÓN, LEER ESTO PRIMERO.** Se transcribió el audio de la reunión (72 min,
+> Whisper `small` local, calidad irregular; la transcripción **no** se guardó en el repo:
+> son conversaciones con el cliente) y se cruzó con la v2 de requerimientos. Esto es lo
+> **decidido**, no un borrador:
+>
+> - **Precio de la integración: $5.700.000 COP, pago único.**
+> - **Anualidad: $1.200.000 COP/año**, decidida en dos pasos el mismo día (empezó en
+>   $1.000.000 y el usuario la subió). **Incluye el certificado digital y los paquetes del
+>   proveedor tecnológico** — en la reunión se había hablado de cobrarlos aparte, y el
+>   usuario decidió meterlos dentro.
+> - **Tope de la anualidad: 1.000 documentos electrónicos al año** (facturación y RADIAN).
+>   Lo que pase de ahí se cotiza aparte. El volumen real estimado son ~600/año (15 facturas
+>   + 35 documentos soporte al mes), así que hay margen.
+> - **Selección del paquete de Factus: pendiente a propósito.** El usuario decidió
+>   posponerla hasta después del desarrollo — no es algo que se nos haya olvidado
+>   preguntar. Cuando llegue el momento, `docs/factus-precios-paquetes.md` tiene las tres
+>   listas completas (facturación, RADIAN, nómina) y la comparación paquete individual vs.
+>   bolsa; con el volumen real de ~600-1.000 documentos, la recomendación de esa sesión es
+>   **paquete individual de facturación (tramo 1.600, $220.000) + nómina (tramo 24,
+>   $60.000)**, y RADIAN solo si JD&D confirma que quiere gestionar ahí la aceptación de
+>   facturas de proveedores.
+> - Cotización entregable: **`docs/cotizacion-facturacion-contabilidad-jdd.html`**
+>   (imprimible a PDF; no nombra a Factus ni a Siigo, igual que el PDF de requerimientos).
+> - **Nuevo en el alcance, viene de la reunión y no estaba en la v2:** órdenes manuales sin
+>   documento para clientes privados (cierra D-9), carga masiva por Excel de documentos
+>   soporte/cuentas de cobro, tabla de retenciones editable (cambia con la UVT),
+>   autorretención y descuento comercial en la factura, comprobantes de gasto internos y
+>   paquete de radicación en un solo paso.
+> - **Supuestos míos en la cotización, sin confirmar por el cliente:** pago 50/50, vigencia
+>   30 días, anualidad desde la puesta en producción, fases A/B/C (de
+>   `guia-reunion-jdd.md` §6.2), criterio de aceptación = balance de comprobación igual al
+>   del sistema actual tras un mes en paralelo, y respaldos previos a cargar saldos.
+> - El precio final ($5,7M + $1,2M) quedó **por debajo** de la reestimación interna previa
+>   ($6,8M + $1,2M de `docs/precio-fase-facturacion-contabilidad.md`), que ahora es solo
+>   historial de cómo se llegó al número.
+> - **Costo de Factus para JD&D, con el paquete individual: $355.000 a $600.000 al año**
+>   (lo probable $370.000 a $430.000) — deja entre $600.000 y $845.000 de la anualidad de
+>   $1,2M para soporte. Detalle completo, con las cuatro listas de precios (facturación,
+>   RADIAN, nómina y la bolsa multifacturador que llegó después) en
+>   **`docs/factus-precios-paquetes.md`** (interno). Esa sesión también encontró que
+>   **ADMIN_APP tiene las cuentas de la bolsa repartida subestimadas** (suponía que costaba
+>   igual que la lista pública de facturación, y no es así): se dejó un prompt listo en
+>   `docs/prompt-escalapp-precios-bolsa-factus.md` para pasarlo a una sesión de ADMIN_APP,
+>   sin usar todavía.
+> - **Sin código ni migraciones.** Lo próximo de esta iniciativa es que JD&D confirme la
+>   cotización; solo entonces entra el plan maestro de desarrollo, y al final de ese
+>   desarrollo se retoma la selección del paquete de Factus.
+>
 > 🆕 **22-sep-2026: el desarrollo local dejó de usar Neon.** A pedido de
 > centralizar el desarrollo (mismo motivo que llevó a ADMIN_APP a montar
 > `escalapp_dev`), `sst_ws/.env` ahora apunta a **`jdd_dev`**, una base nueva en
@@ -172,6 +235,53 @@
 >   4. **DECIDIDO: JD&D necesita comprar un paquete de nómina electrónica
 >      aparte** de la bolsa de facturación (no viene incluido). Ver
 >      `docs/facturacion-electronica.md` §0 y D-8.
+>
+> 🆕 **23-sep-2026: llegó el documento de la contadora de JD&D** (lista resumida de lo
+>   que necesitan) y se volcó en **`docs/requerimientos-facturacion-contabilidad-v2.md`**,
+>   que pasa a ser el alcance vigente de la iniciativa de facturación + contabilidad.
+>   Cambios: **10 módulos en vez de 7** (suma CXC, CXP y PAR), informes financieros
+>   (situación, resultados, balance de comprobación, libros auxiliares, movimiento por
+>   cuenta y por tercero), saldos iniciales, cierre de año, **eventos de la factura**
+>   y **aceptación de facturas de proveedores**. De 33 ítems: 9 sin cambio, 7
+>   ajustados, 17 nuevos. **Pendiente:** (1) la propuesta formal y el PDF del
+>   escritorio son de la v1 y, con su cláusula de cierre de alcance, dejarían fuera lo
+>   nuevo — actualizarlos antes de que JD&D confirme; (2) el precio de $2.3M se calibró
+>   sobre 7 módulos y sigue sin confirmar; (3) verificar si el proveedor tecnológico
+>   expone eventos por API (D-15). Sigue sin código ni migraciones. Nada de esto tocó
+>   `db/schema.sql` ni producción.
+>   **Mismo día, tres documentos más:** `docs/preguntas-jdd-cierre-alcance.md` (para
+>   la contadora, enviable; **versión corta de 10 preguntas** — la primera de ~45 se
+>   recortó porque muchas ya estaban respondidas y otras las decidimos nosotros; ver
+>   v2 §5 para el rastro. **`docs/jdd.html` es una copia HTML de la versión larga y
+>   quedó desactualizada**), `docs/preguntas-factus-cumplimiento.md` (**recortada a 10 preguntas tras revisar
+>   toda la documentación de Factus en ADMIN_APP/EscalApp**: el contrato de alianza
+>   firmado el 22-sep, la reunión y los WhatsApp del 14/15/22-sep y las pruebas de
+>   sandbox; dejan resuelto que el paquete individual trae su certificado, que la
+>   asociación de rangos la hace el aliado, que hay `send_email` y descarga de XML/PDF)
+>   y
+>   `docs/precio-fase-facturacion-contabilidad.md` (**interno**). **D-15 quedó resuelta
+>   en lo esencial:** la doc pública de Factus API v2 SÍ tiene emitir eventos RADIAN
+>   (`PATCH /v2/receptions/bills/:id/radian/events/:tipo`), consultar los de nuestras
+>   facturas y cargar facturas de proveedores por CUFE — pero RADIAN es **bolsa aparte**
+>   y la doc dice que **tras una aceptación ya no se pueden crear notas crédito** (afecta
+>   FEL-11). Lectura de páginas, **sin probar en sandbox**. **Precio:** el plan real
+>   planteado era **$4,5M pago único + $1M/año** (FE) o **$1,8M/año** todo incluido;
+>   el "$2,3M" de arriba era una propuesta interna del 20-sep y queda superado.
+>   Reestimado con el alcance nuevo: **$6,8M + $1,2M/año** o **$2,4M/año**, con supuestos
+>   míos (pesos de esfuerzo y costo de RADIAN) — **sin confirmar por el usuario**.
+>
+> 🆕 **25-sep-2026, víspera de la reunión con JD&D:** se revisó si las 10 preguntas
+>   alcanzan y se escribió **`docs/guia-reunion-jdd.md`** (**interno**): veredicto,
+>   agenda, hoja de trampa por pregunta, 8 preguntas adicionales (A1-A5 alcance/precio:
+>   declaraciones y exógena, mínimo del día 1, bancos, cierres, lo que queda fuera;
+>   B1-B3 proceso: quién valida y cuánto tiempo tiene la contadora, paralelo con
+>   Siigo, acceso a la DIAN), 21 preguntas que nos harán con respuesta sugerida, lo que
+>   no prometer, ocho decisiones internas previas (precio, fases, condiciones de
+>   servicio, respaldos), glosario y hoja de captura. **Hallazgos a vigilar:** el
+>   default "no se reabre un año cerrado" probablemente sea demasiado rígido; las
+>   cuentas de cobro ya llevan viáticos, y ese caso choca con "legalización de viáticos
+>   descartada" (CNT-02). **No se ha comunicado ninguna cifra nueva al cliente.** Tras
+>   la reunión: pasar las respuestas a la v2 §5 y recalcular el precio.
 >
 > **Lo anterior sigue vigente:** la tanda del 22-ago está COMPLETA:
 > las cinco fases construidas y migradas**, más los **cuatro ajustes** que el

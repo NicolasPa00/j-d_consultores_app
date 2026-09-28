@@ -16,8 +16,13 @@ Este directorio es la **fuente de verdad** del proyecto de la plataforma interna
 | [`06-auth-y-seguridad.md`](06-auth-y-seguridad.md) | Modelo de cuentas (Administrador Maestro vs. operativos), recuperación de contraseña, auditoría y costuras de auth robusta |
 | [`despliegue-vultr.md`](despliegue-vultr.md) | Producción: VPS de Vultr, runbook, riesgos abiertos |
 | [`plan-peticiones-22-ago-2026.md`](plan-peticiones-22-ago-2026.md) | Tablero de la tanda de peticiones del cliente del 22-ago-2026 |
+| [`plan-facturacion-contabilidad.md`](plan-facturacion-contabilidad.md) | 🆕 **Tablero de ejecución (27-sep-2026).** Tanda 0 de correcciones de Orbita + fases A/B/C/S de facturación y contabilidad, con fichas por tarea para el modelo ejecutor, hallazgos de los ejemplos reales de JD&D y preguntas abiertas con su supuesto por defecto |
 | [`facturacion-electronica.md`](facturacion-electronica.md) | 🆕 Orbita como proveedor de facturación electrónica DIAN de JD&D. Alcance creció el 19-sep-2026: JD&D confirmó que quiere reemplazar Siigo por completo (contabilidad incluida, no solo DIAN) |
-| [`requerimientos-facturacion-contabilidad.md`](requerimientos-facturacion-contabilidad.md) | 🆕 Borrador de requerimientos de esa fase (facturación + contabilidad completa), con PDF entregable ya generado para el cliente |
+| [`requerimientos-facturacion-contabilidad.md`](requerimientos-facturacion-contabilidad.md) | Borrador v1 (19/20-sep-2026) de esa fase, armado con capturas de Siigo — 7 módulos. Conserva el flujo real y las fuentes; el alcance vigente es la v2. El PDF del escritorio sale de esta versión |
+| [`requerimientos-facturacion-contabilidad-v2.md`](requerimientos-facturacion-contabilidad-v2.md) | 🆕 **Vigente (23-sep-2026).** Incorpora la lista de la contadora: 10 módulos (suma cuentas por cobrar, por pagar y parametrización), informes financieros, eventos de la factura y aceptación de facturas de proveedores. Trazabilidad ítem por ítem y preguntas D-15 a D-28 |
+| [`preguntas-jdd-cierre-alcance.md`](preguntas-jdd-cierre-alcance.md) | 🆕 **Versión corta**: 10 preguntas indispensables para JD&D y su contadora, más la lista de documentos a pedir. Se puede enviar tal cual. El rastro de las demás está en la v2 §5 |
+| [`preguntas-factus-cumplimiento.md`](preguntas-factus-cumplimiento.md) | 🆕 **Versión corta**: 10 preguntas para Factus. Trae lo que Factus ya respondió (por escrito, en contrato y en reunión) y lo que documenta su API, para no repreguntar. La sección 3 se puede enviar |
+| [`precio-fase-facturacion-contabilidad.md`](precio-fase-facturacion-contabilidad.md) | 🆕 **Interno.** Reestimación de precio con la lista de la contadora, sobre el plan de $4,5M + $1M/año o $1,8M/año |
 
 ## ⚠️ Regla de Oro (leer siempre)
 
