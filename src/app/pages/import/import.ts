@@ -1276,6 +1276,9 @@ function buildFields(m: MetadatosExtraccion, arl: string | null): PreviewField[]
       'Campo obligatorio — el documento no lo dice y de él depende qué formatos de Bolívar se envían ' +
       '(el AT-028 solo vale para actividades presenciales).';
   }
+  // El AGR solo lo trae el SIPAB de Bolívar; se enseña para poder corregirlo (el
+  // .xls suele llegar con la Ñ dañada) y sale en la casilla 16 del AT-031.
+  opt('asesor_gestion_riesgo', 'Asesor Gestión del Riesgo (AGR)', m.asesor_gestion_riesgo);
   opt('valor_unitario', 'Valor Unitario', m.valor_unitario);
   opt('valor_total', 'Valor Total', m.valor_total);
   // Los viáticos YA NO son un campo de esta rejilla (ago-2026): se eligen de un

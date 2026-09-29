@@ -43,6 +43,55 @@
         }
       </select>
     }
+
+    <!-- T0-07 · La aprobación de la ARL, el otro requisito para facturar. Igual
+         que el de cobro: FILTRA; se cambia desde el modo edición de la orden. -->
+    <select
+      class="form-control ord-head__filtro"
+      [ngModel]="filtroArl()"
+      (ngModelChange)="filtrarArl($event)"
+      name="filtroArl"
+      aria-label="Filtrar por estado ARL"
+    >
+      <option value="">Estado ARL · todos</option>
+      @for (e of estadosArl; track e) {
+        <option [value]="e">{{ e === 'PENDIENTE' ? 'Pendiente' : 'Aprobado' }}</option>
+      }
+    </select>
+
+    <!-- Atajo al cruce de los tres ejes: FINALIZADA + APROBADA por la ARL + sin
+         facturar. Es la lista sobre la que se emite la factura. -->
+    <button
+      type="button"
+      class="btn btn--sm"
+      [class.btn--primary]="atajoPendienteActivo()"
+      [class.btn--secondary]="!atajoPendienteActivo()"
+      [attr.aria-pressed]="atajoPendienteActivo()"
+      (click)="alternarPendientePorFacturar()"
+      title="Finalizadas, aprobadas por la ARL y sin facturar"
+    >
+      Pendiente por facturar
+      <span class="tab__count">{{ pendientePorFacturar() }}</span>
+    </button>
+
+    <!-- T0-09 · Cargar la prefactura de Bolívar (PDF) con IA: extrae, cruza
+         contra Orbita y abre el modal de previsualización. No escribe nada
+         hasta que se pulsa "Aplicar" dentro del modal. -->
+    <input
+      #prefacturaInput type="file" accept="application/pdf" style="display: none"
+      (change)="onPrefacturaFile($event)"
+    />
+    <button
+      type="button" class="btn btn--secondary btn--sm"
+      (click)="prefacturaInput.click()" [disabled]="prefacturaCargando()"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+        <path d="M14 3v5h5" />
+        <path d="M12 11v6M9 14l3-3 3 3" />
+      </svg>
+      {{ prefacturaCargando() ? 'Leyendo con IA…' : 'Cargar prefactura' }}
+    </button>
   </div>
 </section>
 
@@ -65,16 +114,16 @@
 <!-- ============ TABLA ============ -->
 <div class="card">
   <div class="table-wrap">
-    <table class="table">
+    <table class="table ord-table">
       <thead>
         <tr>
           <th class="col-num">#</th>
-          <th>NIT</th>
           <th>Razón social</th>
           <th>ARL</th>
           <th>Horas</th>
-          <th>Fecha de vencimiento</th>
+          <th>Vencimiento</th>
           <th>Estado</th>
+          <th>Estado ARL</th>
           <th>Cobro</th>
           <th class="col-actions">Opciones</th>
         </tr>
@@ -83,10 +132,14 @@
         @for (order of pag.visibles(); track order.id; let i = $index) {
           <tr>
             <td class="col-num mono">{{ pag.desde() + i }}</td>
-            <td class="mono">{{ order.fields.nit.value || '—' }}</td>
+            <!-- T0-06 · El NIT bajaba en su propia columna; a 1366-1440 px no
+                 dejaba sitio para Opciones sin scroll. Va como subtítulo de la
+                 razón social: se sigue viendo entero, solo que en una línea
+                 propia y más pequeño. -->
             <td>
               <div class="who__text">
-                <span class="who__name">{{ order.company }}</span>
+                <span class="who__name">{{ nombreOrden(order) }}</span>
+                <span class="who__nit mono">{{ order.fields.nit.value || '—' }}</span>
                 @if (order.assignedProf) {
                   <span class="who__assigned">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -103,18 +156,32 @@
                  en la bandeja solo hacía ruido sobre el dato que se busca. -->
             <td>{{ order.arl }}</td>
             <td class="mono">{{ order.fields.horas.value || '—' }}</td>
+            <!-- T0-06 · Antes fecha y días en dos líneas; en una sola, con los
+                 días en el `title` (se ven al pasar el cursor, sin ocupar ancho). -->
             <td>
               @if (vencimiento(order); as v) {
-                <div class="venc" [class]="'venc--' + v.tone">
-                  <span class="venc__date mono">{{ v.fecha }}</span>
-                  <span class="venc__left">{{ v.detalle }}</span>
-                </div>
+                <span class="venc mono" [class]="'venc--' + v.tone" [title]="v.detalle">{{ v.fecha }}</span>
               } @else {
                 <span class="venc__none">—</span>
               }
             </td>
             <td>
               <span class="pill" [class]="estadoClass(order)">{{ estadoLabel(order) }}</span>
+            </td>
+            <!-- T0-07 · Aprobación de la ARL. Sin OS no hay nada que aprobar. En
+                 Bolívar, el n.º de prefactura se ve al pasar el cursor. -->
+            <td>
+              @if (order.osId) {
+                <span
+                  class="pill"
+                  [class]="pillArl(order.estadoArl)"
+                  [attr.title]="order.numeroPrefactura ? 'Prefactura ' + order.numeroPrefactura : null"
+                >
+                  {{ order.estadoArl === 'APROBADO' ? 'Aprobado' : 'Pendiente' }}
+                </span>
+              } @else {
+                <span class="venc__none">—</span>
+              }
             </td>
             <!-- El eje de facturación. Un borrador sin OS no lo tiene todavía:
                  no hay nada que facturar hasta que la orden existe. -->
@@ -274,7 +341,7 @@
         <h3 class="modal__title" id="detailTitle">
           {{ editMode() ? 'Editar orden' : 'Detalle de la orden' }}
         </h3>
-        <p class="modal__sub">{{ order.company }} · {{ order.arl }}@if (order.arlConfidence) {<span class="modal__sub-conf"> ({{ order.arlConfidence }}% confianza ARL)</span>}</p>
+        <p class="modal__sub">{{ nombreOrden(order) }} · {{ order.arl }}@if (order.arlConfidence) {<span class="modal__sub-conf"> ({{ order.arlConfidence }}% confianza ARL)</span>}</p>
       </div>
       <div class="modal__head-actions">
         @if (!editMode()) {
@@ -346,6 +413,7 @@
                   <span class="form-field__label">Cambiar a</span>
                   <select
                     class="form-control"
+                    [class.form-control--error]="estadoError()"
                     [ngModel]="estadoDestino()"
                     (ngModelChange)="setEstadoDestino($event)"
                     name="estadoDestino"
@@ -356,20 +424,6 @@
                     }
                   </select>
                 </label>
-
-                <button
-                  type="button"
-                  class="btn btn--primary"
-                  [disabled]="!estadoDestino() || cambiandoEstado()"
-                  (click)="cambiarEstado()"
-                >
-                  @if (cambiandoEstado()) {
-                    <span class="spinner" aria-hidden="true"></span>
-                    Aplicando…
-                  } @else {
-                    Aplicar cambio
-                  }
-                </button>
               </div>
 
               @if (requiereMotivo()) {
@@ -391,8 +445,9 @@
               }
 
               <p class="form-note estado-form__note">
-                Asignar un profesional también programa la orden y le envía los formatos;
-                este cambio manual es para excepciones.
+                El cambio de estado se aplica al pulsar <strong>Guardar cambios</strong>, junto con
+                los datos de la orden. Asignar un profesional también programa la orden y le envía
+                los formatos; este cambio manual es para excepciones.
               </p>
             } @else {
               <p class="estado-cerrado">
@@ -436,7 +491,19 @@
           <div class="field field--full tipo-orden">
             <div class="field__labelrow">
               <label class="form-field__label" for="tipoOrdenOS">Tipo de orden</label>
-              @if (order.valorHoraCobro) {
+              @if (vistaValorHora(order); as v) {
+                <!-- T0-16 · Vista previa mientras se elige otro tipo: el valor
+                     que tendría al guardar. Con tarifa pactada del profesional lo
+                     decide el servidor, así que se marca como estimación (~). -->
+                @if (!v.sinProfesional && v.valor) {
+                  <span
+                    class="tipo-orden__valor"
+                    title="Estimado con el valor del tipo. Si el profesional tiene una tarifa pactada para este tipo, se aplica esa al guardar."
+                  >
+                    {{ pesos(order.valorHoraCobro || 0) }} → ~{{ pesos(v.valor) }}/hora
+                  </span>
+                }
+              } @else if (order.valorHoraCobro) {
                 <span class="tipo-orden__valor" [title]="origenValorHora(order)">
                   {{ pesos(order.valorHoraCobro) }}/hora
                 </span>
@@ -450,11 +517,24 @@
                   <option [value]="t.id">{{ t.nombre }}</option>
                 }
               </select>
-              <p class="field__hint">
-                De aquí sale el valor hora con el que se le paga al profesional. Cambiarlo
-                afecta a la próxima asignación; si la orden ya está asignada, conserva el
-                valor con el que se asignó.
-              </p>
+              @if (vistaValorHora(order); as v) {
+                <p class="field__hint">
+                  @if (v.sinProfesional) {
+                    Aún no hay profesional asignado: el valor hora se calcula al asignarlo.
+                  } @else {
+                    Al guardar se <strong>recalcula el valor hora</strong> de la orden: el del tipo
+                    ({{ v.valor ? pesos(v.valor) : 'sin valor' }}/hora) o, si el profesional tiene una
+                    tarifa pactada para este tipo, esa. Si la orden ya está en una cuenta de cobro
+                    generada, no cambia.
+                  }
+                </p>
+              } @else {
+                <p class="field__hint">
+                  De aquí sale el valor hora con el que se le paga al profesional. Al cambiarlo, si
+                  la orden ya tiene profesional, el valor se recalcula al guardar (salvo que ya esté
+                  en una cuenta de cobro generada).
+                </p>
+              }
             } @else {
               <input class="form-control" type="text" [value]="order.tipoOrden || 'Sin tipo'" readonly />
               @if (order.valorHoraCobro && order.fields.horas.value) {
@@ -510,15 +590,18 @@
               <div class="field" [class.field--full]="item.span === 'full'">
                 <div class="field__labelrow">
                   <label class="form-field__label">{{ item.label }}</label>
-                  <span class="conf-badge pill" [class]="pillClass(confianzaDe(item))">
-                    {{ confianzaDe(item) }}%
-                  </span>
+                  @if (!item.manual) {
+                    <span class="conf-badge pill" [class]="pillClass(confianzaDe(item))">
+                      {{ confianzaDe(item) }}%
+                    </span>
+                  }
                 </div>
 
                 @if (item.type === 'textarea') {
                   <textarea
                     class="form-control"
                     rows="3"
+                    [attr.maxlength]="item.maxLength ?? null"
                     [readonly]="!editMode()"
                     [class.form-control--alert]="editMode() && marcado(item)"
                     [(ngModel)]="item.field.value"
@@ -588,6 +671,101 @@
            tiempo distintas sobre la misma orden (el ciclo operativo y el cobro a
            la ARL), y mezclarlas haría ilegible cualquiera de las dos. -->
       @if (order.osId) {
+        <!-- ---- T0-07 · Aprobación de la ARL ----
+             ¿Aprobó la ARL en su plataforma los documentos de la orden? Es la
+             condición para facturar. Leyendo la ficha solo se CONSULTA; en modo
+             edición se elige aquí y se guarda con el mismo "Guardar cambios". -->
+        <div class="card cobro-card">
+          <div class="card__head">
+            <span class="card__title">Aprobación de la ARL</span>
+            <span class="pill" [class]="pillArl(order.estadoArl)">
+              {{ order.estadoArl === 'APROBADO' ? 'Aprobado' : 'Pendiente' }}
+            </span>
+          </div>
+          <div class="card__body">
+            @if (!editMode()) {
+              @if (esBolivarArl(order) && order.numeroPrefactura) {
+                <p class="cobro-card__dato">Prefactura (código SIPAB) <strong class="mono">{{ order.numeroPrefactura }}</strong></p>
+              }
+              @if (order.estadoArl !== 'APROBADO') {
+                <p class="card__hint">
+                  {{ order.osEstado === 'FINALIZADA'
+                    ? 'La ARL todavía no aprueba esta orden: hasta entonces no se puede facturar. Se cambia en modo edición.'
+                    : 'La ARL solo aprueba órdenes FINALIZADAS.' }}
+                </p>
+              }
+            } @else {
+              <div class="estado-form">
+                <label class="form-field estado-form__field">
+                  <span class="form-field__label">Estado ARL</span>
+                  <select
+                    class="form-control"
+                    [class.form-control--error]="estadoArlError()"
+                    [disabled]="!puedeAprobarArl(order) && estadoArlEdit !== 'APROBADO'"
+                    [(ngModel)]="estadoArlEdit"
+                    (ngModelChange)="estadoArlError.set(false)"
+                    name="estadoArlEdit"
+                  >
+                    <option value="PENDIENTE">Pendiente</option>
+                    <option value="APROBADO" [disabled]="!puedeAprobarArl(order)">Aprobado</option>
+                  </select>
+                </label>
+                @if (esBolivarArl(order)) {
+                  <label class="form-field estado-form__field">
+                    <span class="form-field__label">
+                      N.º de prefactura (código SIPAB){{ estadoArlEdit === 'APROBADO' ? ' *' : '' }}
+                    </span>
+                    <input
+                      class="form-control mono"
+                      type="text"
+                      inputmode="numeric"
+                      maxlength="12"
+                      placeholder="Ej. 160441"
+                      [class.form-control--error]="estadoArlError() && !prefacturaEdit"
+                      [(ngModel)]="prefacturaEdit"
+                      (ngModelChange)="prefacturaEdit = soloDigitos($event); estadoArlError.set(false)"
+                      name="prefacturaEdit"
+                    />
+                  </label>
+                }
+              </div>
+              <p class="form-note estado-form__note">
+                @if (!puedeAprobarArl(order)) {
+                  La ARL solo aprueba órdenes FINALIZADAS: antes no hay soportes aceptados que aprobar.
+                } @else if (esBolivarArl(order)) {
+                  En Bolívar, aprobar exige el n.º de prefactura. Se guarda con
+                  <strong>Guardar cambios</strong>.
+                } @else {
+                  Se guarda con <strong>Guardar cambios</strong>.
+                }
+              </p>
+            }
+
+            @if (historialArl().length) {
+              <ol class="timeline">
+                @for (h of historialArl(); track h.id) {
+                  <li class="timeline__item">
+                    <span class="timeline__dot" aria-hidden="true"></span>
+                    <div class="timeline__body">
+                      <p class="timeline__head">
+                        @if (h.estado_anterior) {
+                          <span class="timeline__from">{{ h.estado_anterior }}</span>
+                          <span class="timeline__arrow" aria-hidden="true">→</span>
+                        }
+                        <span class="pill" [class]="pillArl(h.estado_nuevo)">{{ h.estado_nuevo }}</span>
+                      </p>
+                      <p class="timeline__meta">
+                        {{ fechaArl(h) }} · {{ h.usuario_nombre || 'Sistema' }}
+                        @if (h.numero_prefactura) { · prefactura {{ h.numero_prefactura }} }
+                      </p>
+                    </div>
+                  </li>
+                }
+              </ol>
+            }
+          </div>
+        </div>
+
         <div class="card cobro-card">
           <div class="card__head">
             <span class="card__title">Facturación a la ARL</span>
@@ -1403,6 +1581,127 @@
             Guardando…
           } @else {
             Guardar
+          }
+        </button>
+      </div>
+    </footer>
+  </div>
+}
+
+<!-- ============ MODAL: PREVISUALIZACIÓN DE PREFACTURA (T0-09) ============
+     Nada se guarda hasta pulsar "Aplicar". El control determinista de la suma
+     (¿cuadra la suma de las filas con el total del encabezado?) se ve arriba de
+     la tabla; el resultado del cruce, una pill por fila. Solo las "Encontrada"
+     quedan marcadas al abrir: son las únicas que se pueden aprobar sin dudar. -->
+@if (prefacturaPreview(); as pf) {
+  <div class="modal-backdrop" (click)="cerrarPrefactura()"></div>
+  <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="prefacturaTitle">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="prefacturaTitle">Prefactura {{ pf.numero_prefactura }}</h3>
+        <p class="modal__sub">
+          {{ pf.plan_descripcion || 'Plan sin descripción' }}
+          @if (pf.fecha_corte) { · Corte {{ pf.fecha_corte }} }
+        </p>
+      </div>
+      <button type="button" class="icon-action" (click)="cerrarPrefactura()" aria-label="Cerrar" [disabled]="prefacturaAplicando()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="modal__body">
+      @if (pf.ya_cargada) {
+        <div class="alert alert--warning" role="alert">
+          Esta prefactura ya se había cargado
+          {{ pf.ya_cargada.cargada_por ? ' por ' + pf.ya_cargada.cargada_por : '' }}
+          el {{ fechaPrefactura(pf.ya_cargada.cargada_en) }}. No se duplica: puede volver a
+          aplicarla, por ejemplo si la primera vez faltaban órdenes por cruzar.
+        </div>
+      }
+
+      <!-- Control determinista: la suma de "Valor a facturar" contra el total
+           del encabezado del PDF. No bloquea aplicar — la fila torcida puede
+           seguir siendo útil— pero avisa en rojo si no cuadra. -->
+      <div class="alert" [class.alert--success]="pf.cuadra" [class.alert--danger]="!pf.cuadra" role="alert">
+        Total de la prefactura: <strong>{{ pesos(pf.valor_total) }}</strong> · Suma de las filas:
+        <strong>{{ pesos(pf.suma_filas) }}</strong>
+        @if (!pf.cuadra) {
+          — <strong>no cuadra</strong>, revise las filas antes de aplicar.
+        } @else {
+          — cuadra.
+        }
+      </div>
+
+      <p class="form-note">
+        {{ prefacturaMarcadasCount() }} de {{ pf.filas.length }} filas marcadas. Solo las
+        <strong>Encontradas</strong> quedan marcadas por defecto; el resto se elige a mano.
+      </p>
+
+      <div class="table-wrap">
+        <table class="table ord-table">
+          <thead>
+            <tr>
+              <th class="col-num"></th>
+              <th>Cronograma-Secuencia</th>
+              <th>Empresa</th>
+              <th>Valor a facturar</th>
+              <th>Orden</th>
+              <th>Resultado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of pf.filas; track f.codigo_cronograma + '-' + f.secuencia) {
+              <tr>
+                <td class="col-num">
+                  <input
+                    type="checkbox"
+                    [checked]="prefacturaFilaMarcada(f)"
+                    [disabled]="!prefacturaFilaMarcable(f)"
+                    (change)="alternarFilaPrefactura(f, $any($event.target).checked)"
+                    [attr.aria-label]="'Marcar ' + f.codigo_cronograma + '-' + f.secuencia"
+                  />
+                </td>
+                <td class="mono">{{ f.codigo_cronograma }}-{{ f.secuencia }}</td>
+                <td>{{ f.razon_social || '—' }}</td>
+                <td class="mono">{{ pesos(f.valor_a_facturar) }}</td>
+                <td>
+                  @if (f.orden) {
+                    <span class="mono">{{ f.orden.codigo }}</span>
+                    <span class="pill" [class]="pillEstado(f.orden.estado)">{{ f.orden.estado }}</span>
+                  } @else {
+                    <span class="venc__none">—</span>
+                  }
+                </td>
+                <td>
+                  <span class="pill" [class]="pillResultadoPrefactura(f.resultado)">
+                    {{ etiquetaResultadoPrefactura(f.resultado) }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <footer class="modal__footer">
+      <span class="modal__status">{{ pf.nombre_archivo }}</span>
+      <div class="modal__footer-actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrarPrefactura()" [disabled]="prefacturaAplicando()">
+          Cerrar
+        </button>
+        <button
+          type="button" class="btn btn--primary"
+          [disabled]="prefacturaAplicando() || !prefacturaMarcadasCount()"
+          (click)="aplicarPrefactura()"
+        >
+          @if (prefacturaAplicando()) {
+            <span class="spinner" aria-hidden="true"></span>
+            Aplicando…
+          } @else {
+            Aplicar ({{ prefacturaMarcadasCount() }})
           }
         </button>
       </div>

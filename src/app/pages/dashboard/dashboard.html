@@ -221,7 +221,7 @@
             <td class="mono">{{ order.nit }}</td>
             <td>
               <div class="who__text">
-                <span class="who__name">{{ order.client }}</span>
+                <span class="who__name">{{ nombreOrden(order) }}</span>
                 @if (order.assignedProf) {
                   <span class="who__assigned">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

@@ -235,7 +235,7 @@
     </div>
     <div class="card__body">
       <p class="tarifas__intro">
-        El cálculo busca la tarifa del profesional para el <strong>tipo de actividad</strong> de la orden,
+        El cálculo busca la tarifa del profesional para el <strong>tipo de orden</strong> de la orden,
         vigente al cierre del periodo. Si la orden no trae tipo de actividad o no hay tarifa, se usa el
         <strong>valor hora base</strong> del profesional (ficha de Profesionales). Sin ninguno de los dos
         la cuenta saldría en $0 y no se puede generar.
@@ -255,8 +255,13 @@
         @if (puedeGestionar()) {
           <div class="tarifa-form">
             <label class="form-field">
-              <span class="form-field__label">Actividad</span>
-              <input class="form-control" type="text" placeholder="Capacitación, Inspección…" [(ngModel)]="nuevaActividad" />
+              <span class="form-field__label">Tipo de orden</span>
+              <select class="form-control" [(ngModel)]="nuevoTipoId" name="nuevoTipoId">
+                <option value="">Elegir del catálogo…</option>
+                @for (t of tiposOrden(); track t.id) {
+                  <option [value]="t.id">{{ t.nombre }}</option>
+                }
+              </select>
             </label>
             <label class="form-field">
               <span class="form-field__label">Valor hora (COP)</span>
@@ -272,11 +277,23 @@
           </div>
         }
 
+        <!-- T0-10 · Las tarifas cuyo texto no casó con ningún tipo del catálogo. Siguen
+             funcionando por nombre normalizado, pero conviene enlazarlas: se
+             elimina y se vuelve a crear eligiendo el tipo. -->
+        @if (tarifasHuerfanas()) {
+          <div class="alert alert--warning" role="alert">
+            <span>
+              {{ tarifasHuerfanas() }} tarifa{{ tarifasHuerfanas() === 1 ? '' : 's' }} sin tipo del catálogo
+              (marcada{{ tarifasHuerfanas() === 1 ? '' : 's' }} abajo). Vuelva a crearla eligiendo el tipo.
+            </span>
+          </div>
+        }
+
         <div class="table-wrap">
           <table class="table">
             <thead>
               <tr>
-                <th>Actividad</th>
+                <th>Tipo de orden</th>
                 <th>Valor hora</th>
                 <th>Vigente desde</th>
                 @if (puedeGestionar()) { <th class="col-actions">Opciones</th> }
@@ -285,7 +302,14 @@
             <tbody>
               @for (t of tarifas(); track t.id) {
                 <tr>
-                  <td>{{ t.actividad }}</td>
+                  <td>
+                    @if (t.tipo_orden_id) {
+                      {{ t.tipo_orden }}
+                    } @else {
+                      {{ t.actividad }}
+                      <span class="pill pill--warning" title="Su texto no coincide con ningún tipo del catálogo">Sin tipo del catálogo</span>
+                    }
+                  </td>
                   <td class="mono money">{{ pesos(t.valor_hora) }}</td>
                   <td class="mono">{{ fecha(t.vigente_desde) }}</td>
                   @if (puedeGestionar()) {

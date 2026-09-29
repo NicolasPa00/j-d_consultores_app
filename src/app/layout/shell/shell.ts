@@ -1,8 +1,14 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, PLATFORM_ID, computed, inject, signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { RouterLink, RouterLinkActive, RouterOutlet, Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { Vista } from '../../core/models';
 import { NotificationsComponent } from '../notifications/notifications';
+
+/** T0-14 · Preferencia de sidebar plegado, y el ancho ≤820 px bajo el que el
+ * botón deja de alternar el ancho y pasa a abrir el menú encima, como un panel. */
+const SIDEBAR_KEY = 'sst_sidebar_colapsado';
+const ANCHO_MOVIL = 820;
 
 interface NavItem {
   icon: string;
@@ -43,14 +49,65 @@ const NAV_ITEMS: NavItem[] = [
 export class ShellComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   protected readonly usuario = this.auth.usuario;
+
+  /**
+   * T0-14 · Ancho ↔ colapsado, en cualquier ancho de pantalla (antes solo se
+   * estrechaba por media query, sin que nadie pudiera elegirlo). Se lee de
+   * `localStorage` en el CONSTRUCTOR —antes del primer render— para que en una
+   * carga normal del navegador (sin SSR previo) no haya parpadeo: si se leyera
+   * en `ngOnInit`, el sidebar se pintaría ancho un instante y luego saltaría a
+   * colapsado.
+   */
+  protected readonly colapsado = signal(this.leerPreferencia());
+  /** En móvil el botón no encoge nada: abre el menú completo encima, como un panel. */
+  protected readonly menuMovilAbierto = signal(false);
+
+  private leerPreferencia(): boolean {
+    if (!this.isBrowser) return false;
+    try {
+      return localStorage.getItem(SIDEBAR_KEY) === '1';
+    } catch {
+      return false;
+    }
+  }
 
   ngOnInit(): void {
     // Fuente de verdad del rol al entrar al shell: cubre sesiones abiertas antes
     // de este cambio (sin `permisos` cacheados) y refleja ediciones recientes
     // de Roles y permisos sin pedir un nuevo login.
     this.auth.ensurePermisos().subscribe();
+  }
+
+  /**
+   * El mismo botón hace dos cosas distintas según el ancho, porque a ≤820 px el
+   * sidebar YA está estrecho por la media query: alternar su ancho ahí no
+   * cambiaría nada visible. En su lugar abre el menú completo encima.
+   */
+  protected alternarSidebar(): void {
+    if (this.isBrowser && window.innerWidth <= ANCHO_MOVIL) {
+      this.menuMovilAbierto.update((v) => !v);
+      return;
+    }
+    this.colapsado.update((v) => {
+      const nuevo = !v;
+      if (this.isBrowser) {
+        try {
+          localStorage.setItem(SIDEBAR_KEY, nuevo ? '1' : '0');
+        } catch {
+          // Sin localStorage (privado, cuota…) la preferencia no persiste, pero
+          // el botón sigue funcionando durante la sesión.
+        }
+      }
+      return nuevo;
+    });
+  }
+
+  /** Al navegar desde el panel móvil, se cierra: es un menú, no una segunda barra. */
+  protected cerrarMenuMovil(): void {
+    if (this.menuMovilAbierto()) this.menuMovilAbierto.set(false);
   }
 
   protected initials(): string {

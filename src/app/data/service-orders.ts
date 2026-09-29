@@ -4,7 +4,7 @@
  * En Fase 2 esto se reemplaza por un servicio HTTP real.
  */
 
-import { EstadoCobro } from '../core/models';
+import { EstadoArl, EstadoCobro } from '../core/models';
 
 /** Un campo extraído por el "modelo": su valor (editable) y la confianza asociada. */
 export interface ExtractedField {
@@ -62,6 +62,9 @@ export interface ServiceOrder {
   // ---- Eje de facturación (ago-2026) ----
   /** Estado de cobro. Es un eje independiente del ciclo operativo de la OS. */
   estadoCobro?: EstadoCobro | null;
+  /** T0-07 · Aprobación de la ARL y n.º de prefactura (código SIPAB, Bolívar). */
+  estadoArl?: EstadoArl | null;
+  numeroPrefactura?: string | null;
   cobroNumeroFactura?: string | null;
   // ---- Viáticos (ago-2026) ----
   /**
@@ -105,6 +108,13 @@ export interface ServiceOrder {
     modalidadEjecucion?: ExtractedField;
     /** Viáticos de la orden, en pesos. Opcional: la mayoría no los lleva. */
     viaticos?: ExtractedField;
+    /** AGR de Bolívar (casilla 16 del AT-031). Solo se enseña en esa ARL. */
+    asesorGestionRiesgo?: ExtractedField;
+    /**
+     * Tema/actividad propio de la orden (T0-05). No viene de ningún documento:
+     * lo escribe quien administra la orden y solo existe con la OS creada.
+     */
+    temaActividad?: ExtractedField;
   };
 }
 
