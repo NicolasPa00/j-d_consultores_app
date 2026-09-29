@@ -1079,3 +1079,27 @@ export interface DashboardData {
   por_arl: { arl_id: string; arl_nombre: string; total: string | number; ejecutadas: string | number }[];
   estados_mes: { mes: string; estado: string; total: string | number }[];
 }
+
+// ---- Vista previa de formatos antes de asignar (pedido de JD&D, 29-sep-2026) ----
+/** Un archivo de los que saldrán en el correo de asignación. */
+export interface FormatoPrevio {
+  /** Clave del formato (at031, asistenciaColmena…); con ella se guardan sus observaciones. */
+  clave: string | null;
+  etiqueta: string;
+  /** Nombre del adjunto ("asistencia-2.pdf"). */
+  nombre: string;
+  prediligenciado: boolean;
+  /** ¿Este archivo tiene casilla donde imprimir las observaciones? */
+  admite_observaciones: boolean;
+  /** El PDF en base64; `null` para los Word/Excel que se adjuntan tal cual. */
+  pdf: string | null;
+}
+
+/** Lo que devuelve `POST /orders/:id/assign/preview` (no guarda nada). */
+export interface VistaPreviaAsignacion {
+  formatos: FormatoPrevio[];
+  /** Observaciones vigentes por clave de formato (las guardadas + las enviadas). */
+  observaciones_formatos: Record<string, string>;
+  /** Casillas de soporte que se le pedirán al profesional. */
+  soportes: string[];
+}

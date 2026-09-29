@@ -9,7 +9,7 @@ import { ExtractedField, ServiceOrder } from '../../data/service-orders';
 import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
-import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, EstadoArl, ESTADOS_ARL, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, TipoViatico, FilaPrefactura, FranjaVisita, HistorialCobro, HistorialEstado, HistorialEstadoArl, Ocupacion, Orden, Plantilla, PrevisualizacionPrefactura, Profesional, RegistroArl, ResultadoCrucePrefactura } from '../../core/models';
+import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, EstadoArl, ESTADOS_ARL, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, TipoViatico, FilaPrefactura, FormatoPrevio, FranjaVisita, HistorialCobro, HistorialEstado, HistorialEstadoArl, Ocupacion, Orden, Plantilla, PrevisualizacionPrefactura, Profesional, RegistroArl, ResultadoCrucePrefactura } from '../../core/models';
 import { aIsoFecha, fechaLocal } from '../../core/fechas';
 import {
   ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, opcionesDeCampo,
@@ -332,6 +332,35 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected readonly selectedProfId = signal<string | null>(null);
   protected readonly selectedProfSlots = signal<FranjaVista[]>([]);
   protected readonly assigning = signal(false);
+
+  // ---- Vista previa de formatos antes de enviar (pedido de JD&D, 29-sep-2026) ----
+  // Con la visita completa, "Continuar" no envía: lleva a un segundo paso del
+  // modal donde se ven los PDF tal como saldrán y se escriben observaciones en
+  // ellos. Solo "Confirmar y enviar" guarda y manda el correo.
+  protected readonly pasoAsignacion = signal<'agenda' | 'formatos'>('agenda');
+  protected readonly formatosPrevios = signal<FormatoPrevio[]>([]);
+  protected readonly formatoVisto = signal(0);
+  protected readonly urlFormatoVisto = signal<SafeResourceUrl | null>(null);
+  private urlFormatoObjeto: string | null = null;
+  protected readonly observacionesFormatos = signal<Record<string, string>>({});
+  protected readonly previsualizando = signal(false);
+  /** Hay observaciones escritas que la vista previa todavía no muestra. */
+  protected readonly observacionesSinAplicar = signal(false);
+  /**
+   * Un cuadro de observaciones por FORMATO, no por archivo: las N asistencias de
+   * una visita de N días comparten la misma nota, y pedirla N veces invita a
+   * que difieran sin querer.
+   */
+  protected readonly clavesConObservaciones = computed(() => {
+    const vistas = new Map<string, { clave: string; etiqueta: string; copias: number }>();
+    for (const f of this.formatosPrevios()) {
+      if (!f.clave || !f.admite_observaciones) continue;
+      const ya = vistas.get(f.clave);
+      if (ya) ya.copias += 1;
+      else vistas.set(f.clave, { clave: f.clave, etiqueta: f.etiqueta, copias: 1 });
+    }
+    return [...vistas.values()];
+  });
   /**
    * ASG · Suplencia: los formatos salen a nombre de OTRO profesional.
    *
@@ -1880,7 +1909,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
   }
 
   protected async closeAssign(): Promise<void> {
-    if (this.assigning()) return;
+    if (this.assigning() || this.previsualizando()) return;
     // Lo marcado en la agenda vive solo en pantalla hasta pulsar "Asignar":
     // cerrar sin guardar lo descarta, y conviene avisarlo.
     if (this.franjasVisita().length) {
@@ -1899,6 +1928,101 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.franjasVisita.set([]);
     this.usarSuplente.set(false);
     this.formatosProfId.set(null);
+    this.limpiarVistaPrevia();
+  }
+
+  /** Lo que viaja en la asignación, igual para la vista previa y para el envío. */
+  private cuerpoAsignacion(profId: string, fechaProgramada: string | null) {
+    return {
+      profesional_id: profId,
+      fecha_programada: fechaProgramada ?? undefined,
+      // ASG-02 · La visita entera, franja a franja. El servidor las
+      // reemplaza en bloque y deriva `fecha_programada` de la primera.
+      franjas: this.franjasOrdenadas().map((f) => ({
+        fecha: f.fecha,
+        hora_inicio: f.hora_inicio,
+        hora_fin: f.hora_fin,
+      })),
+      // ASG · Solo viaja si el interruptor está puesto. `undefined` (y no
+      // null ni '') es lo que hace que el servidor lo lea como "sin
+      // suplencia": el campo se omite del cuerpo entero.
+      profesional_formatos_id: this.usarSuplente() ? (this.formatosProfId() ?? undefined) : undefined,
+      // Solo desde el paso de formatos: antes de verlos no hay nada que decir, y
+      // omitirlo hace que el servidor conserve las observaciones ya guardadas.
+      observaciones_formatos: this.pasoAsignacion() === 'formatos' ? this.observacionesFormatos() : undefined,
+    };
+  }
+
+  /**
+   * "Continuar" / "Actualizar vista previa": pide los formatos tal como saldrían.
+   * El servidor ejecuta la asignación entera y la deshace, así que lo que se ve
+   * aquí es exactamente lo que se enviará.
+   */
+  protected previsualizarFormatos(): void {
+    const order = this.assignOrder();
+    const profId = this.selectedProfId();
+    if (!order?.osId || !profId || this.previsualizando()) return;
+    const fechaProgramada = this.fechaProgramadaIso();
+    if (!fechaProgramada) {
+      this.alerts.warning('Falta programar la visita', 'Marque en la agenda al menos una franja con el día y las horas en que se ejecuta la visita.');
+      return;
+    }
+    const primeraVez = this.pasoAsignacion() === 'agenda';
+    this.previsualizando.set(true);
+    this.api.previsualizarAsignacion(order.osId, this.cuerpoAsignacion(profId, fechaProgramada)).subscribe({
+      next: (r) => {
+        this.previsualizando.set(false);
+        this.formatosPrevios.set(r.data.formatos);
+        // Al entrar se parte de lo que la orden ya tenía guardado (una
+        // reprogramación conserva sus notas); al actualizar, manda lo escrito.
+        if (primeraVez) this.observacionesFormatos.set({ ...r.data.observaciones_formatos });
+        this.observacionesSinAplicar.set(false);
+        this.pasoAsignacion.set('formatos');
+        const actual = this.formatoVisto();
+        const indice = !primeraVez && r.data.formatos[actual]?.pdf ? actual : r.data.formatos.findIndex((f) => !!f.pdf);
+        this.verFormato(Math.max(indice, 0));
+      },
+      error: (err) => {
+        this.previsualizando.set(false);
+        this.alerts.error('No se pudo preparar la vista previa', mensajeError(err, 'Intente de nuevo en unos segundos.'));
+      },
+    });
+  }
+
+  /** Muestra en el visor el PDF `i` de la vista previa. */
+  protected verFormato(i: number): void {
+    const f = this.formatosPrevios()[i];
+    this.formatoVisto.set(i);
+    if (this.urlFormatoObjeto) URL.revokeObjectURL(this.urlFormatoObjeto);
+    this.urlFormatoObjeto = null;
+    if (!f?.pdf || !this.isBrowser) {
+      this.urlFormatoVisto.set(null);
+      return;
+    }
+    const bytes = Uint8Array.from(atob(f.pdf), (c) => c.charCodeAt(0));
+    this.urlFormatoObjeto = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+    this.urlFormatoVisto.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.urlFormatoObjeto));
+  }
+
+  protected editarObservacion(clave: string, texto: string): void {
+    this.observacionesFormatos.update((o) => ({ ...o, [clave]: texto }));
+    this.observacionesSinAplicar.set(true);
+  }
+
+  /** Vuelve a la agenda sin perder lo marcado ni las observaciones escritas. */
+  protected volverAAgenda(): void {
+    this.pasoAsignacion.set('agenda');
+  }
+
+  private limpiarVistaPrevia(): void {
+    if (this.urlFormatoObjeto) URL.revokeObjectURL(this.urlFormatoObjeto);
+    this.urlFormatoObjeto = null;
+    this.urlFormatoVisto.set(null);
+    this.formatosPrevios.set([]);
+    this.formatoVisto.set(0);
+    this.observacionesFormatos.set({});
+    this.observacionesSinAplicar.set(false);
+    this.pasoAsignacion.set('agenda');
   }
 
   protected async selectProf(id: string): Promise<void> {
@@ -2229,21 +2353,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
     // suscribir. Antes lo unificaba el `switchMap` que envolvía la llamada.
     const asignacion: Observable<ResultadoAsignacion> = order.osId
       ? this.api
-          .assignOrder(order.osId, {
-            profesional_id: profId,
-            fecha_programada: fechaProgramada ?? undefined,
-            // ASG-02 · La visita entera, franja a franja. El servidor las
-            // reemplaza en bloque y deriva `fecha_programada` de la primera.
-            franjas: this.franjasOrdenadas().map((f) => ({
-              fecha: f.fecha,
-              hora_inicio: f.hora_inicio,
-              hora_fin: f.hora_fin,
-            })),
-            // ASG · Solo viaja si el interruptor está puesto. `undefined` (y no
-            // null ni '') es lo que hace que el servidor lo lea como "sin
-            // suplencia": el campo se omite del cuerpo entero.
-            profesional_formatos_id: this.usarSuplente() ? (this.formatosProfId() ?? undefined) : undefined,
-          })
+          .assignOrder(order.osId, this.cuerpoAsignacion(profId, fechaProgramada))
           .pipe(
             map((r) => ({
               os: r.data,
@@ -2305,6 +2415,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
         this.franjasVisita.set([]);
         this.usarSuplente.set(false);
         this.formatosProfId.set(null);
+        this.limpiarVistaPrevia();
 
         const franjas = res.os && visita > 1
           ? ` La visita quedó repartida en ${visita} franjas.`
