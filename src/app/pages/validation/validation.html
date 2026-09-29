@@ -59,21 +59,6 @@
       }
     </select>
 
-    <!-- Atajo al cruce de los tres ejes: FINALIZADA + APROBADA por la ARL + sin
-         facturar. Es la lista sobre la que se emite la factura. -->
-    <button
-      type="button"
-      class="btn btn--sm"
-      [class.btn--primary]="atajoPendienteActivo()"
-      [class.btn--secondary]="!atajoPendienteActivo()"
-      [attr.aria-pressed]="atajoPendienteActivo()"
-      (click)="alternarPendientePorFacturar()"
-      title="Finalizadas, aprobadas por la ARL y sin facturar"
-    >
-      Pendiente por facturar
-      <span class="tab__count">{{ pendientePorFacturar() }}</span>
-    </button>
-
     <!-- T0-09 · Cargar la prefactura de Bolívar (PDF) con IA: extrae, cruza
          contra Orbita y abre el modal de previsualización. No escribe nada
          hasta que se pulsa "Aplicar" dentro del modal. -->
