@@ -204,6 +204,8 @@ export class ApiService {
        * Omitido = se conservan las que ya tenía.
        */
       observaciones_formatos?: Record<string, string>;
+      /** Casillas abiertas llenadas en la vista previa: `{ fichaAxa: { 'nombre 4': '…' } }`. */
+      campos_formatos?: Record<string, Record<string, string>>;
     },
   ): Observable<RespuestaAsignacion> {
     return this.http.post<RespuestaAsignacion>(`${this.base}/orders/${id}/assign`, body);

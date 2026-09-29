@@ -950,6 +950,39 @@
             }
           </div>
 
+          @if (formatoEnVisor(); as fv) {
+            @if (fv.editables.length) {
+              <!-- Casillas que el formato deja abiertas. Se llenan AQUÍ y no en el
+                   PDF: el visor del navegador no devuelve lo que se escribe en él. -->
+              <p class="assign__section-title">Casillas de «{{ fv.etiqueta }}»</p>
+              <p class="vista-formatos__ayuda">
+                Se imprimen en el formato que se envía. Lo que viene de la orden se corrige en la orden.
+              </p>
+              @for (e of fv.editables; track e.campo) {
+                <label class="form-field vista-formatos__obs">
+                  <span class="form-label">{{ e.etiqueta }}</span>
+                  @if (e.multilinea) {
+                    <textarea
+                      class="form-control"
+                      rows="3"
+                      maxlength="1000"
+                      [ngModel]="valorCampo(fv.clave, e.campo)"
+                      (ngModelChange)="editarCampo(fv.clave, e.campo, $event)"
+                    ></textarea>
+                  } @else {
+                    <input
+                      class="form-control"
+                      type="text"
+                      maxlength="200"
+                      [ngModel]="valorCampo(fv.clave, e.campo)"
+                      (ngModelChange)="editarCampo(fv.clave, e.campo, $event)"
+                    />
+                  }
+                </label>
+              }
+            }
+          }
+
           @if (clavesConObservaciones().length) {
             <p class="assign__section-title">Observaciones</p>
             <p class="vista-formatos__ayuda">
@@ -973,7 +1006,7 @@
             }
             @if (observacionesSinAplicar()) {
               <p class="alert alert--info vista-formatos__aviso">
-                Pulse «Actualizar vista previa» para ver cómo quedan. Si confirma sin actualizar, igual se envían con estas observaciones.
+                Pulse «Actualizar vista previa» para ver cómo quedan. Si confirma sin actualizar, igual se envían con estos cambios.
               </p>
             }
           } @else {

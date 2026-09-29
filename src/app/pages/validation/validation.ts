@@ -343,8 +343,12 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected readonly urlFormatoVisto = signal<SafeResourceUrl | null>(null);
   private urlFormatoObjeto: string | null = null;
   protected readonly observacionesFormatos = signal<Record<string, string>>({});
+  /** Casillas abiertas llenadas desde el panel, por formato y campo del PDF. */
+  protected readonly camposFormatos = signal<Record<string, Record<string, string>>>({});
+  /** Las casillas abiertas del formato que se está viendo en el visor. */
+  protected readonly formatoEnVisor = computed(() => this.formatosPrevios()[this.formatoVisto()] ?? null);
   protected readonly previsualizando = signal(false);
-  /** Hay observaciones escritas que la vista previa todavía no muestra. */
+  /** Hay observaciones o casillas escritas que la vista previa todavía no muestra. */
   protected readonly observacionesSinAplicar = signal(false);
   /**
    * Un cuadro de observaciones por FORMATO, no por archivo: las N asistencias de
@@ -1973,6 +1977,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
       // Solo desde el paso de formatos: antes de verlos no hay nada que decir, y
       // omitirlo hace que el servidor conserve las observaciones ya guardadas.
       observaciones_formatos: this.pasoAsignacion() === 'formatos' ? this.observacionesFormatos() : undefined,
+      campos_formatos: this.pasoAsignacion() === 'formatos' ? this.camposFormatos() : undefined,
     };
   }
 
@@ -1998,7 +2003,10 @@ export class ValidationComponent implements OnInit, OnDestroy {
         this.formatosPrevios.set(r.data.formatos);
         // Al entrar se parte de lo que la orden ya tenía guardado (una
         // reprogramación conserva sus notas); al actualizar, manda lo escrito.
-        if (primeraVez) this.observacionesFormatos.set({ ...r.data.observaciones_formatos });
+        if (primeraVez) {
+          this.observacionesFormatos.set({ ...r.data.observaciones_formatos });
+          this.camposFormatos.set(structuredClone(r.data.campos_formatos ?? {}));
+        }
         this.observacionesSinAplicar.set(false);
         this.pasoAsignacion.set('formatos');
         const actual = this.formatoVisto();
@@ -2032,6 +2040,21 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.observacionesSinAplicar.set(true);
   }
 
+  protected valorCampo(clave: string | null, campo: string): string {
+    return clave ? (this.camposFormatos()[clave]?.[campo] ?? '') : '';
+  }
+
+  /**
+   * Una casilla abierta del formato. Vive en esta señal, no en el PDF: cambiar
+   * de documento en el visor o actualizar la vista previa ya no la borra, y viaja
+   * con la asignación para imprimirse en lo que se envía.
+   */
+  protected editarCampo(clave: string | null, campo: string, texto: string): void {
+    if (!clave) return;
+    this.camposFormatos.update((c) => ({ ...c, [clave]: { ...(c[clave] ?? {}), [campo]: texto } }));
+    this.observacionesSinAplicar.set(true);
+  }
+
   /** Vuelve a la agenda sin perder lo marcado ni las observaciones escritas. */
   protected volverAAgenda(): void {
     this.pasoAsignacion.set('agenda');
@@ -2044,6 +2067,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.formatosPrevios.set([]);
     this.formatoVisto.set(0);
     this.observacionesFormatos.set({});
+    this.camposFormatos.set({});
     this.observacionesSinAplicar.set(false);
     this.pasoAsignacion.set('agenda');
   }

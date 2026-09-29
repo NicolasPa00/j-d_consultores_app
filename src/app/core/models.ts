@@ -1093,6 +1093,19 @@ export interface FormatoPrevio {
   admite_observaciones: boolean;
   /** El PDF en base64; `null` para los Word/Excel que se adjuntan tal cual. */
   pdf: string | null;
+  /**
+   * Casillas que el formato deja abiertas y se pueden llenar desde la pantalla
+   * (el PDF de la vista previa llega aplanado: escribir dentro del visor no
+   * volvería nunca al servidor).
+   */
+  editables: CasillaEditable[];
+}
+
+/** Una casilla abierta de un formato: nombre del campo en el PDF + su rótulo impreso. */
+export interface CasillaEditable {
+  campo: string;
+  etiqueta: string;
+  multilinea?: boolean;
 }
 
 /** Lo que devuelve `POST /orders/:id/assign/preview` (no guarda nada). */
@@ -1100,6 +1113,8 @@ export interface VistaPreviaAsignacion {
   formatos: FormatoPrevio[];
   /** Observaciones vigentes por clave de formato (las guardadas + las enviadas). */
   observaciones_formatos: Record<string, string>;
+  /** Casillas abiertas ya llenadas, por formato y por campo del PDF. */
+  campos_formatos: Record<string, Record<string, string>>;
   /** Casillas de soporte que se le pedirán al profesional. */
   soportes: string[];
 }
