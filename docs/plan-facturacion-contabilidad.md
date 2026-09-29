@@ -22,7 +22,25 @@
 
 ## 0. Dónde retomar (leer SIEMPRE primero)
 
-### ▶ 29-sep-2026 — JD&D ACEPTÓ LA COTIZACIÓN; todo quedó commiteado — leer esto primero
+### ▶ 29-sep-2026 (noche) — PRIMER LOTE EN PRODUCCIÓN Y CARPETAS UNIFICADAS — leer esto primero
+
+- **Producción:** el primer lote (Tanda 0 + vista previa de formatos) se desplegó el 29-sep a
+  las 15:36. Detalle y método en `docs/despliegue-correcciones-26-sep.md`. El icono de
+  «Estado de facturación» quedó oculto (`cobroHabilitado = false`) hasta el segundo lote.
+- **Ya no hay worktrees.** Una sola copia de cada repo (`sst_ws/`, `jdd_consultores_app/`),
+  las dos en la rama **`fase-a-facturacion`**, que contiene TODO lo desplegado (`master`/`main`
+  mezclados el 29-sep) más la Fase A. Las variables `FACTUS_*` del sandbox pasaron al `.env`
+  de `sst_ws/`, y los PDF/XML de las facturas de prueba a `sst_ws/storage/facturacion/`.
+  `iniciar-local.bat facturacion` (o sin argumento) arranca esta rama.
+- **Verificado tras unificar:** `ng build` limpio; `node --check` de 97 archivos; los scripts
+  `verificar-dinero`, `verificar-calculo` (FE-775/FE-781 al centavo), `verificar-nit`,
+  `verificar-relacion-facturar` y `verificar-borrador-factura` en verde sin residuos en
+  `jdd_dev`; `factus-humo` autentica contra el sandbox (siguiente FE: SETP 990021780); los
+  endpoints de terceros, resoluciones, relación y borradores responden en local.
+- **Siguiente ficha: A1-08 (pantalla de Facturación)**, con el encabezado «Finanzas» del menú.
+- ⚠️ **R-01: la resolución de facturación de JD&D vence el 11-oct-2026.**
+
+### ▶ 29-sep-2026 — JD&D ACEPTÓ LA COTIZACIÓN; todo quedó commiteado
 
 Los bloques de abajo (27/28-sep) dicen "NADA ESTÁ COMMITEADO": **ya no es cierto.**
 El usuario levantó la orden de no commitear y se ordenó el trabajo así:
@@ -337,7 +355,7 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecha y verificada · ❓ espera 
 | ID | Tarea | Depende | Tam. | Estado |
 |---|---|---|---|---|
 | A0-01 | Rama, código exploratorio y utilidad del DV del NIT | — | S | ✅ 27-sep (local; back + `core/nit.ts`) |
-| A0-02 | Respaldos de producción (prerrequisito de datos contables) | — | M | ⬜ (usuario) |
+| A0-02 | Respaldos de producción (prerrequisito de datos contables) | — | M | 🟨 29-sep primer respaldo manual (`~/respaldos/` del servidor); falta el automático |
 | A0-03 | Cliente HTTP de Factus + humo contra sandbox | A0-01 | M | ✅ 27-sep (local) |
 | A0-04 | Utilidad de dinero + catálogos DIAN (países, municipios, pagos, documentos, unidades) | A0-03 | M | ✅ 27-sep (local; el endpoint de lectura pasa a A0-09) |
 | A0-05 | Terceros (PAR-03) | A0-04 | L | ✅ 27-sep (local; API + navegador headless) |
