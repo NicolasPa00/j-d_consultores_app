@@ -16,6 +16,18 @@
 > servidor. **Lo último desplegado:** el Excel SIPAB de Bolívar dejó de leerse
 > cuando llegaba como `.xls` binario (ver §0 punto 2 y la Tanda 23 en §3).
 >
+> 🚀🆕 **29-sep-2026 · CORRECCIONES DEL 26-SEP LISTAS PARA DESPLEGAR (aún NO desplegadas).**
+> Rama `correcciones-26-sep` en los dos repos, subida a GitHub y **sin mezclar** a
+> `main`/`master`. Qué entra, los 4 cambios de comportamiento que JD&D debe conocer
+> antes (el estado ARL pasa a exigirse para facturar), las migraciones en orden y los
+> pasos exactos: **`docs/despliegue-correcciones-26-sep.md`**. El usuario avisa cuándo
+> se despliega. La facturación electrónica sigue aparte, en `fase-a-facturacion`
+> (worktrees `*-fase-a`, solo local). Arranque local para probar: `iniciar-local.bat`
+> en la raíz del monorepo (correo en consola; con `facturacion` usa los worktrees).
+> **Trampa nueva:** Excel exporta a PDF con el papel de la impresora PREDETERMINADA; en
+> el PC de desarrollo es una térmica de tiquetes (SAT 37TUSE) y la hoja sale de
+> 842 × 204 pt (ver `sst_ws/assets/formatos-arl/README.md`).
+>
 > 🆕🆕 **27-sep-2026: EMPIEZA LA IMPLEMENTACIÓN — el tablero es
 > `docs/plan-facturacion-contabilidad.md`.** El usuario decidió construir ya, aunque la
 > cotización no está firmada (falta definir si se constituye una sociedad o se paga;
