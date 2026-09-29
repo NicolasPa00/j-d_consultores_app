@@ -9,7 +9,7 @@ import { ExtractedField, ServiceOrder } from '../../data/service-orders';
 import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
-import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, EstadoArl, ESTADOS_ARL, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, TipoViatico, FilaPrefactura, FormatoPrevio, FranjaVisita, HistorialCobro, HistorialEstado, HistorialEstadoArl, Ocupacion, Orden, Plantilla, PrevisualizacionPrefactura, Profesional, RegistroArl, ResultadoCrucePrefactura } from '../../core/models';
+import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, EstadoArl, ESTADOS_ARL, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, TipoViatico, CasillaEditable, FilaPrefactura, FormatoPrevio, FranjaVisita, HistorialCobro, HistorialEstado, HistorialEstadoArl, Ocupacion, Orden, Plantilla, PrevisualizacionPrefactura, Profesional, RegistroArl, ResultadoCrucePrefactura } from '../../core/models';
 import { aIsoFecha, fechaLocal } from '../../core/fechas';
 import {
   ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, opcionesDeCampo,
@@ -2006,6 +2006,13 @@ export class ValidationComponent implements OnInit, OnDestroy {
         if (primeraVez) {
           this.observacionesFormatos.set({ ...r.data.observaciones_formatos });
           this.camposFormatos.set(structuredClone(r.data.campos_formatos ?? {}));
+        } else {
+          // Una casilla vaciada no borra el dato: el servidor vuelve a imprimir
+          // lo del sistema. Se suelta la corrección vacía para que la pantalla
+          // muestre lo mismo que el PDF en vez de una casilla en blanco.
+          this.camposFormatos.update((c) => Object.fromEntries(
+            Object.entries(c).map(([k, v]) => [k, Object.fromEntries(Object.entries(v).filter(([, t]) => t.trim()))]),
+          ));
         }
         this.observacionesSinAplicar.set(false);
         this.pasoAsignacion.set('formatos');
@@ -2040,9 +2047,17 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.observacionesSinAplicar.set(true);
   }
 
-  protected valorCampo(clave: string | null, campo: string): string {
-    return clave ? (this.camposFormatos()[clave]?.[campo] ?? '') : '';
+  /** Lo que muestra la casilla: la corrección pendiente o lo que ya se imprime. */
+  protected valorCampo(clave: string | null, e: CasillaEditable): string {
+    return (clave ? this.camposFormatos()[clave]?.[e.campo] : undefined) ?? e.valor ?? '';
   }
+
+  /** Casillas del formato en el visor que siguen vacías: lo que falta completar. */
+  protected readonly casillasVacias = computed(() => {
+    const f = this.formatoEnVisor();
+    if (!f) return 0;
+    return f.editables.filter((e) => !this.valorCampo(f.clave, e).trim()).length;
+  });
 
   /**
    * Una casilla abierta del formato. Vive en esta señal, no en el PDF: cambiar

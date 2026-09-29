@@ -1979,3 +1979,7 @@
 .prefactura-carga__spinner { width: 32px; height: 32px; }
 .prefactura-carga__texto { margin: 0; color: var(--text-main); }
 .prefactura-carga__nota { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
+
+// Casilla de la vista previa que sigue vacía: lo que falta completar.
+.vista-formatos__obs--vacia .form-control { border-color: var(--warning); background: #fffaf0; }
+.vista-formatos__pendientes { color: var(--warning); font-weight: 600; }

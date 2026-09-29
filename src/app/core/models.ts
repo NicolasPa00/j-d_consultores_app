@@ -1094,18 +1094,25 @@ export interface FormatoPrevio {
   /** El PDF en base64; `null` para los Word/Excel que se adjuntan tal cual. */
   pdf: string | null;
   /**
-   * Casillas que el formato deja abiertas y se pueden llenar desde la pantalla
-   * (el PDF de la vista previa llega aplanado: escribir dentro del visor no
-   * volvería nunca al servidor).
+   * Casillas del formato que se pueden revisar y corregir desde la pantalla, ya
+   * con lo que el sistema llenó (el PDF de la vista previa llega aplanado:
+   * escribir dentro del visor no volvería nunca al servidor).
    */
   editables: CasillaEditable[];
 }
 
-/** Una casilla abierta de un formato: nombre del campo en el PDF + su rótulo impreso. */
+/** Una casilla de un formato, con su rótulo impreso y lo que lleva ahora. */
 export interface CasillaEditable {
+  /** Campo del PDF o clave del formato plano; con él viaja la corrección. */
   campo: string;
   etiqueta: string;
   multilinea?: boolean;
+  /** 'fecha' se edita con selector; su valor va en ISO (AAAA-MM-DD). */
+  tipo: 'texto' | 'fecha';
+  /** Lo que se imprime ahora (la corrección del usuario, o lo del sistema). */
+  valor: string;
+  /** Lo que pondría el sistema sin correcciones. */
+  sistema: string;
 }
 
 /** Lo que devuelve `POST /orders/:id/assign/preview` (no guarda nada). */

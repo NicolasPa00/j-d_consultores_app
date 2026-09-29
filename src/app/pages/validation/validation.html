@@ -952,21 +952,37 @@
 
           @if (formatoEnVisor(); as fv) {
             @if (fv.editables.length) {
-              <!-- Casillas que el formato deja abiertas. Se llenan AQUÍ y no en el
-                   PDF: el visor del navegador no devuelve lo que se escribe en él. -->
-              <p class="assign__section-title">Casillas de «{{ fv.etiqueta }}»</p>
+              <!-- Las casillas llegan llenas con lo mismo que muestra el PDF: se
+                   corrige lo que no convenza y se completa lo vacío (resaltado).
+                   Se editan AQUÍ y no en el PDF: el visor del navegador no
+                   devuelve lo que se escribe en él. -->
+              <p class="assign__section-title">
+                Datos de «{{ fv.etiqueta }}»
+                @if (casillasVacias()) { · <span class="vista-formatos__pendientes">{{ casillasVacias() }} por completar</span> }
+              </p>
               <p class="vista-formatos__ayuda">
-                Se imprimen en el formato que se envía. Lo que viene de la orden se corrige en la orden.
+                Vienen llenos como en el PDF: corrija lo necesario y complete lo vacío.
+                La fecha y el horario de la visita se cambian en la agenda.
               </p>
               @for (e of fv.editables; track e.campo) {
-                <label class="form-field vista-formatos__obs">
+                <label
+                  class="form-field vista-formatos__obs"
+                  [class.vista-formatos__obs--vacia]="!valorCampo(fv.clave, e).trim()"
+                >
                   <span class="form-label">{{ e.etiqueta }}</span>
-                  @if (e.multilinea) {
+                  @if (e.tipo === 'fecha') {
+                    <input
+                      class="form-control"
+                      type="date"
+                      [ngModel]="valorCampo(fv.clave, e)"
+                      (ngModelChange)="editarCampo(fv.clave, e.campo, $event)"
+                    />
+                  } @else if (e.multilinea) {
                     <textarea
                       class="form-control"
                       rows="3"
                       maxlength="1000"
-                      [ngModel]="valorCampo(fv.clave, e.campo)"
+                      [ngModel]="valorCampo(fv.clave, e)"
                       (ngModelChange)="editarCampo(fv.clave, e.campo, $event)"
                     ></textarea>
                   } @else {
@@ -974,7 +990,7 @@
                       class="form-control"
                       type="text"
                       maxlength="200"
-                      [ngModel]="valorCampo(fv.clave, e.campo)"
+                      [ngModel]="valorCampo(fv.clave, e)"
                       (ngModelChange)="editarCampo(fv.clave, e.campo, $event)"
                     />
                   }
