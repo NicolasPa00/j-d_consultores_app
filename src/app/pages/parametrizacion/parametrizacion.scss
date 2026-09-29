@@ -1,0 +1,118 @@
+/* A0-10 · Parametrización. Reutiliza el segmentado de Cuentas de cobro
+   (billing.scss) porque la encapsulación de Angular no cruza componentes. */
+
+:host {
+  display: block;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.55rem 1.1rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.tab:hover {
+  color: var(--text-main);
+  background: #f1f5f9;
+}
+
+.tab--active {
+  color: var(--primary-color);
+  background: rgba(45, 123, 200, 0.1);
+  border-color: var(--accent-color);
+}
+
+.card {
+  margin-bottom: 1.25rem;
+}
+
+.par-aviso {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning) 45%, transparent);
+  font-size: 0.85rem;
+}
+
+.par-ok {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 45%, transparent);
+  font-size: 0.85rem;
+}
+
+.par-dv {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: -0.5rem 0 0.75rem;
+}
+
+.par-dv strong {
+  color: var(--primary-color);
+  font-size: 1rem;
+}
+
+.par-form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.par-form__footer {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.par-uvt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.par-uvt-form {
+  max-width: 20rem;
+  margin-bottom: 0.5rem;
+}
+
+.par-vence {
+  color: var(--warning);
+  font-weight: 600;
+}
+
+.par-cat-controls {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 720px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,467 @@
+<section class="page-head">
+  <h2 class="page-head__title">Parametrización</h2>
+  <p class="page-head__sub">Fase A · lo que alimenta la facturación electrónica: emisor, productos, tarifas, retenciones y numeración.</p>
+</section>
+
+<div class="tabs" role="tablist">
+  @for (t of tabs; track t.key) {
+    <button type="button" class="tab" role="tab" [class.tab--active]="tab() === t.key" [attr.aria-selected]="tab() === t.key" (click)="setTab(t.key)">
+      {{ t.label }}
+    </button>
+  }
+</div>
+
+<!-- ============ EMISOR (A0-09) ============ -->
+@if (tab() === 'emisor') {
+  <div class="card">
+    <div class="card__body">
+      @if (loadingEmisor()) {
+        <p class="ficha-vacio">Cargando…</p>
+      } @else {
+        @if (proveedor(); as p) {
+          @if (p.aviso) {
+            <p class="par-aviso">{{ p.aviso }}</p>
+          } @else if (!p.configurado) {
+            <p class="par-aviso">El proveedor de facturación no está configurado en el servidor.</p>
+          } @else {
+            <p class="par-ok">Proveedor conectado en {{ p.sandbox ? 'SANDBOX' : 'PRODUCCIÓN' }}.</p>
+          }
+        }
+
+        <form class="par-form" (ngSubmit)="guardarEmisor()">
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-field__label" for="eTipoPersona">Tipo de persona</label>
+              <select id="eTipoPersona" class="form-control" [(ngModel)]="emisorForm.tipo_persona" name="eTipoPersona" [disabled]="!puedeEditar()">
+                <option value="JURIDICA">Jurídica</option>
+                <option value="NATURAL">Natural</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label class="form-field__label" for="eNit">NIT *</label>
+              <input id="eNit" class="form-control" type="text" [(ngModel)]="emisorForm.nit" name="eNit" [disabled]="!puedeEditar()" placeholder="901.203.812" />
+            </div>
+          </div>
+          @if (dvEmisor().numero) {
+            <p class="par-dv">
+              Dígito de verificación: <strong>{{ dvEmisor().dv ?? '—' }}</strong>
+              @if (dvEmisor().incoherente) {
+                <span class="form-field__hint form-field__hint--error">· no coincide con lo escrito</span>
+              }
+            </p>
+          }
+
+          <div class="form-field">
+            <label class="form-field__label" for="eRazon">Razón social *</label>
+            <input id="eRazon" class="form-control" type="text" [(ngModel)]="emisorForm.razon_social" name="eRazon" [disabled]="!puedeEditar()" />
+          </div>
+          <div class="form-field">
+            <label class="form-field__label" for="eComercial">Nombre comercial</label>
+            <input id="eComercial" class="form-control" type="text" [(ngModel)]="emisorForm.nombre_comercial" name="eComercial" [disabled]="!puedeEditar()" />
+          </div>
+          <div class="form-field">
+            <label class="form-field__label" for="eDireccion">Dirección *</label>
+            <input id="eDireccion" class="form-control" type="text" [(ngModel)]="emisorForm.direccion" name="eDireccion" [disabled]="!puedeEditar()" />
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-field__label" for="eDepto">Departamento</label>
+              <select id="eDepto" class="form-control" [ngModel]="departamentoId" (ngModelChange)="cambiarDepartamentoEmisor($event)" name="eDepto" [disabled]="!puedeEditar()">
+                <option value="">Seleccione…</option>
+                @for (d of departamentos(); track d.id) { <option [value]="d.id">{{ d.nombre }}</option> }
+              </select>
+            </div>
+            <div class="form-field">
+              <label class="form-field__label" for="eMuni">Municipio *</label>
+              <select id="eMuni" class="form-control" [(ngModel)]="emisorForm.municipio_id" name="eMuni" [disabled]="!puedeEditar() || !departamentoId">
+                <option value="">Seleccione…</option>
+                @for (m of municipios(); track m.id) { <option [value]="m.id">{{ m.nombre }}</option> }
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-field__label" for="eCorreo">Correo *</label>
+              <input id="eCorreo" class="form-control" type="email" [(ngModel)]="emisorForm.correo" name="eCorreo" [disabled]="!puedeEditar()" />
+            </div>
+            <div class="form-field">
+              <label class="form-field__label" for="eTel">Teléfono</label>
+              <input id="eTel" class="form-control" type="tel" [(ngModel)]="emisorForm.telefono" name="eTel" [disabled]="!puedeEditar()" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-field__label" for="eCiiu">CIIU principal</label>
+              <input id="eCiiu" class="form-control" type="text" [(ngModel)]="emisorForm.ciiu_principal" name="eCiiu" [disabled]="!puedeEditar()" placeholder="7020" />
+            </div>
+            <div class="form-field">
+              <label class="form-field__label" for="eAmbiente">Ambiente declarado</label>
+              <select id="eAmbiente" class="form-control" [(ngModel)]="emisorForm.ambiente" name="eAmbiente" [disabled]="!puedeEditar()">
+                <option value="PRUEBAS">Pruebas (sandbox)</option>
+                <option value="PRODUCCION">Producción</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-field__label" for="eVencePaquete">Vence el paquete del proveedor</label>
+              <input id="eVencePaquete" class="form-control" type="date" [(ngModel)]="emisorForm.paquete_proveedor_vence" name="eVencePaquete" [disabled]="!puedeEditar()" />
+            </div>
+            <div class="form-field">
+              <label class="form-field__label" for="eCertEnviados">Documentos de certificado enviados</label>
+              <input id="eCertEnviados" class="form-control" type="date" [(ngModel)]="emisorForm.documentos_certificado_enviados_en" name="eCertEnviados" [disabled]="!puedeEditar()" />
+            </div>
+          </div>
+        </form>
+
+        @if (puedeEditar()) {
+          <div class="par-form__footer">
+            <button type="button" class="btn btn--primary" [disabled]="savingEmisor() || !isValidEmisor()" (click)="guardarEmisor()">
+              {{ savingEmisor() ? 'Guardando…' : (emisor() ? 'Actualizar' : 'Guardar') }}
+            </button>
+          </div>
+        }
+      }
+    </div>
+  </div>
+}
+
+<!-- ============ PRODUCTOS (A0-06) ============ -->
+@if (tab() === 'productos') {
+  <div class="card">
+    <div class="card__head">
+      <h3 class="card__title">Productos</h3>
+      @if (puedeEditar()) {
+        <button type="button" class="btn btn--primary btn--sm" (click)="openNuevoProducto()">Nuevo producto</button>
+      }
+    </div>
+    <div class="card__body table-wrap">
+      <table class="table">
+        <thead><tr><th>Código</th><th>Nombre</th><th>IVA</th><th>Unidad</th><th>Tributo</th><th>Estado</th><th class="col-actions">Acciones</th></tr></thead>
+        <tbody>
+          @for (p of productos(); track p.id) {
+            <tr>
+              <td class="mono">{{ p.codigo }}</td>
+              <td>{{ p.nombre }}</td>
+              <td>{{ p.tratamiento_iva }}@if (p.tratamiento_iva === 'GRAVADO') { ({{ porcentaje(p.tarifa_iva) }}) }</td>
+              <td>{{ p.unidad_medida_nombre || '—' }}</td>
+              <td>{{ p.tributo_nombre || '—' }}</td>
+              <td><span class="pill" [class]="p.activo ? 'pill--success' : 'pill--muted'">{{ p.activo ? 'Activo' : 'Inactivo' }}</span></td>
+              <td class="col-actions">
+                @if (puedeEditar()) {
+                  <button type="button" class="icon-action" (click)="openEditarProducto(p)" aria-label="Editar">✎</button>
+                  <button type="button" class="icon-action" (click)="toggleProducto(p)" [attr.aria-label]="p.activo ? 'Desactivar' : 'Activar'">⏻</button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="table__empty">{{ loadingProductos() ? 'Cargando…' : 'Sin productos todavía.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+<!-- ============ TARIFAS DE VENTA (A0-06) ============ -->
+@if (tab() === 'tarifas') {
+  <div class="card">
+    <div class="card__head">
+      <h3 class="card__title">Tarifas de venta por pagador</h3>
+      @if (puedeEditar()) {
+        <button type="button" class="btn btn--primary btn--sm" (click)="openNuevaTarifa()">Nueva tarifa</button>
+      }
+    </div>
+    <div class="card__body table-wrap">
+      <table class="table">
+        <thead><tr><th>Pagador</th><th>Tipo de orden</th><th>Unidad</th><th class="col-num">Valor</th><th>Vigente desde</th><th>Estado</th><th class="col-actions">Acciones</th></tr></thead>
+        <tbody>
+          @for (t of tarifas(); track t.id) {
+            <tr>
+              <td>{{ t.pagador_nombre }}</td>
+              <td>{{ t.tipo_orden_nombre || 'Cualquiera' }}</td>
+              <td>{{ t.unidad }}</td>
+              <td class="col-num mono">{{ pesos(t.valor) }}</td>
+              <td>{{ t.vigente_desde }}</td>
+              <td><span class="pill" [class]="t.activo ? 'pill--success' : 'pill--muted'">{{ t.activo ? 'Activa' : 'Inactiva' }}</span></td>
+              <td class="col-actions">
+                @if (puedeEditar()) {
+                  <button type="button" class="icon-action" (click)="toggleTarifa(t)" [attr.aria-label]="t.activo ? 'Desactivar' : 'Activar'">⏻</button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="table__empty">{{ loadingTarifas() ? 'Cargando…' : 'Sin tarifas todavía.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+<!-- ============ IMPUESTOS Y RETENCIONES (A0-07) ============ -->
+@if (tab() === 'impuestos') {
+  <div class="card">
+    <div class="card__head"><h3 class="card__title">UVT</h3></div>
+    <div class="card__body">
+      <div class="par-uvt">
+        @for (u of uvt(); track u.anio) { <span class="pill pill--info">{{ u.anio }}: {{ pesos(u.valor) }}</span> }
+      </div>
+      @if (puedeEditar()) {
+        <div class="form-row par-uvt-form">
+          <div class="form-field"><label class="form-field__label">Año</label><input class="form-control" type="number" [(ngModel)]="uvtAnio" name="uvtAnio" /></div>
+          <div class="form-field"><label class="form-field__label">Valor</label><input class="form-control" type="number" [(ngModel)]="uvtValor" name="uvtValor" /></div>
+        </div>
+        <button type="button" class="btn btn--ghost btn--sm" (click)="guardarUvtFila()">Guardar UVT</button>
+      }
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card__head">
+      <h3 class="card__title">Retenciones</h3>
+      @if (puedeEditar()) {
+        <button type="button" class="btn btn--primary btn--sm" (click)="openNuevaRetencion()">Nueva retención</button>
+      }
+    </div>
+    <div class="card__body table-wrap">
+      <table class="table">
+        <thead><tr><th>Código</th><th>Nombre</th><th>Tipo</th><th class="col-num">Tarifa</th><th>Aplica a</th><th>Código Factus</th><th>Estado</th><th class="col-actions">Acciones</th></tr></thead>
+        <tbody>
+          @for (r of retenciones(); track r.id) {
+            <tr>
+              <td class="mono">{{ r.codigo }}</td>
+              <td>{{ r.nombre }}</td>
+              <td>{{ r.tipo }}</td>
+              <td class="col-num mono">{{ tarifaRetencion(r) }}</td>
+              <td>{{ r.aplica_a }}</td>
+              <td class="mono">{{ r.factus_tributo_id || 'ninguno (al pagar)' }}</td>
+              <td><span class="pill" [class]="r.activa ? 'pill--success' : 'pill--muted'">{{ r.activa ? 'Activa' : 'Inactiva' }}</span></td>
+              <td class="col-actions">
+                @if (puedeEditar()) {
+                  <button type="button" class="icon-action" (click)="toggleRetencion(r)" [attr.aria-label]="r.activa ? 'Desactivar' : 'Activar'">⏻</button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8" class="table__empty">{{ loadingImpuestos() ? 'Cargando…' : 'Sin retenciones todavía.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card__head"><h3 class="card__title">Condiciones por pagador</h3></div>
+    <div class="card__body table-wrap">
+      <table class="table">
+        <thead><tr><th>Pagador</th><th class="col-num">Descuento comercial</th><th class="col-num">Plazo (días)</th><th>ReteICA al pagar</th></tr></thead>
+        <tbody>
+          @for (c of condiciones(); track c.tercero_id) {
+            <tr>
+              <td>{{ c.pagador_nombre }}</td>
+              <td class="col-num mono">{{ porcentaje(c.descuento_comercial_pct) }}</td>
+              <td class="col-num mono">{{ c.plazo_dias }}</td>
+              <td>{{ c.reteica_pago_nombre || '—' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="4" class="table__empty">Sin condiciones configuradas. Se editan desde la ficha del pagador en /terceros.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+<!-- ============ NUMERACIÓN (A0-08) ============ -->
+@if (tab() === 'numeracion') {
+  <div class="card">
+    <div class="card__head">
+      <h3 class="card__title">Resoluciones de numeración</h3>
+      @if (puedeEditar()) {
+        <button type="button" class="btn btn--primary btn--sm" [disabled]="sincronizando()" (click)="sincronizarResoluciones()">
+          {{ sincronizando() ? 'Sincronizando…' : 'Sincronizar con el proveedor' }}
+        </button>
+      }
+    </div>
+    <div class="card__body table-wrap">
+      <table class="table">
+        <thead><tr><th>Documento</th><th>Prefijo</th><th>Rango</th><th class="col-num">Actual</th><th>Vence</th><th class="col-num">% restante</th><th>Estado</th><th class="col-actions">Acciones</th></tr></thead>
+        <tbody>
+          @for (r of resoluciones(); track r.id) {
+            <tr>
+              <td>{{ nombreTipoDoc(r.tipo_documento) }}</td>
+              <td class="mono">{{ r.prefijo || '—' }}</td>
+              <td class="mono">{{ r.desde ?? '—' }}–{{ r.hasta ?? '—' }}</td>
+              <td class="col-num mono">{{ r.consecutivo_actual }}</td>
+              <td [class.par-vence]="r.dias_para_vencer !== null && r.dias_para_vencer <= 30">
+                {{ r.fecha_hasta || '—' }}
+                @if (r.dias_para_vencer !== null) { <small>({{ r.dias_para_vencer }} d)</small> }
+              </td>
+              <td class="col-num mono">{{ r.porcentaje_restante ?? '—' }}</td>
+              <td><span class="pill" [class]="r.activa ? 'pill--success' : 'pill--muted'">{{ r.activa ? 'Activa' : 'Inactiva' }}</span></td>
+              <td class="col-actions">
+                @if (puedeEditar()) {
+                  <button type="button" class="icon-action" (click)="toggleResolucion(r)" [attr.aria-label]="r.activa ? 'Desactivar' : 'Activar'">⏻</button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8" class="table__empty">{{ loadingResoluciones() ? 'Cargando…' : 'Sin resoluciones sincronizadas todavía.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+<!-- ============ CATÁLOGOS (solo lectura) ============ -->
+@if (tab() === 'catalogos') {
+  <div class="card">
+    <div class="card__head">
+      <h3 class="card__title">Catálogos DIAN</h3>
+      <div class="par-cat-controls">
+        <select class="form-control" [ngModel]="catalogoSeleccionado()" (ngModelChange)="cambiarCatalogo($event)" name="catSel">
+          @for (c of catalogosDisponibles; track c.clave) { <option [value]="c.clave">{{ c.label }}</option> }
+        </select>
+        <input class="form-control" type="text" placeholder="Buscar…" [ngModel]="catalogoQuery" (ngModelChange)="buscarCatalogo($event)" name="catQuery" />
+      </div>
+    </div>
+    <div class="card__body table-wrap">
+      <table class="table">
+        <thead><tr><th>Código DIAN</th><th>Nombre</th><th>Id en Factus</th></tr></thead>
+        <tbody>
+          @for (i of catalogoActual(); track i.id) {
+            <tr>
+              <td class="mono">{{ i.codigo_dian }}</td>
+              <td>{{ i.nombre }}@if (i.departamento_nombre) { <small> · {{ i.departamento_nombre }}</small> }</td>
+              <td class="mono">{{ i.factus_id || '—' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="3" class="table__empty">{{ loadingCatalogo() ? 'Cargando…' : 'Sin resultados.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+<!-- ============ MODAL · PRODUCTO ============ -->
+@if (formProductoOpen()) {
+  <div class="modal-backdrop" (click)="closeFormProducto()"></div>
+  <div class="modal" role="dialog" aria-modal="true">
+    <header class="modal__head"><h3 class="modal__title">{{ editandoProducto() ? 'Editar producto' : 'Nuevo producto' }}</h3></header>
+    <div class="modal__body">
+      <div class="form-field"><label class="form-field__label">Código *</label><input class="form-control" type="text" [(ngModel)]="productoDraft.codigo" name="pCodigo" /></div>
+      <div class="form-field"><label class="form-field__label">Nombre *</label><input class="form-control" type="text" [(ngModel)]="productoDraft.nombre" name="pNombre" /></div>
+      <div class="form-field">
+        <label class="form-field__label">Tratamiento de IVA</label>
+        <select class="form-control" [(ngModel)]="productoDraft.tratamiento_iva" name="pTratamiento">
+          <option value="EXENTO">Exento</option>
+          <option value="EXCLUIDO">Excluido</option>
+          <option value="GRAVADO">Gravado</option>
+        </select>
+      </div>
+      @if (productoDraft.tratamiento_iva === 'GRAVADO') {
+        <div class="form-field"><label class="form-field__label">Tarifa de IVA (%)</label><input class="form-control" type="number" [(ngModel)]="productoDraft.tarifa_iva" name="pTarifa" /></div>
+      }
+      <div class="form-field">
+        <label class="form-field__label">Unidad de medida</label>
+        <select class="form-control" [(ngModel)]="productoDraft.unidad_medida_id" name="pUnidad">
+          <option value="">Sin definir</option>
+          @for (u of unidadesMedida(); track u.id) { <option [value]="u.id">{{ u.nombre }}</option> }
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-field__label">Tributo</label>
+        <select class="form-control" [(ngModel)]="productoDraft.tributo_id" name="pTributo">
+          <option value="">Sin definir</option>
+          @for (t of tributos(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
+        </select>
+      </div>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--ghost" (click)="closeFormProducto()">Cancelar</button>
+      <button type="button" class="btn btn--primary" [disabled]="savingProducto()" (click)="guardarProducto()">{{ savingProducto() ? 'Guardando…' : 'Guardar' }}</button>
+    </footer>
+  </div>
+}
+
+<!-- ============ MODAL · TARIFA ============ -->
+@if (formTarifaOpen()) {
+  <div class="modal-backdrop" (click)="closeFormTarifa()"></div>
+  <div class="modal" role="dialog" aria-modal="true">
+    <header class="modal__head"><h3 class="modal__title">Nueva tarifa de venta</h3></header>
+    <div class="modal__body">
+      <div class="form-field">
+        <label class="form-field__label">Pagador *</label>
+        <select class="form-control" [(ngModel)]="tarifaDraft.pagador_tercero_id" name="tPagador">
+          <option value="">Seleccione…</option>
+          @for (t of terceros(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-field__label">Tipo de orden</label>
+        <select class="form-control" [(ngModel)]="tarifaDraft.tipo_orden_id" name="tTipoOrden">
+          <option value="">Cualquiera</option>
+          @for (t of tiposOrdenCatalogo(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-field__label">Unidad</label>
+          <select class="form-control" [(ngModel)]="tarifaDraft.unidad" name="tUnidad">
+            <option value="HORA">Hora</option>
+            <option value="UNIDAD">Unidad</option>
+          </select>
+        </div>
+        <div class="form-field"><label class="form-field__label">Valor *</label><input class="form-control" type="number" [(ngModel)]="tarifaDraft.valor" name="tValor" /></div>
+      </div>
+      <div class="form-field"><label class="form-field__label">Vigente desde</label><input class="form-control" type="date" [(ngModel)]="tarifaDraft.vigente_desde" name="tVigente" /></div>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--ghost" (click)="closeFormTarifa()">Cancelar</button>
+      <button type="button" class="btn btn--primary" [disabled]="savingTarifa()" (click)="guardarTarifa()">{{ savingTarifa() ? 'Guardando…' : 'Guardar' }}</button>
+    </footer>
+  </div>
+}
+
+<!-- ============ MODAL · RETENCIÓN ============ -->
+@if (formRetencionOpen()) {
+  <div class="modal-backdrop" (click)="closeFormRetencion()"></div>
+  <div class="modal" role="dialog" aria-modal="true">
+    <header class="modal__head"><h3 class="modal__title">Nueva retención</h3></header>
+    <div class="modal__body">
+      <div class="form-field"><label class="form-field__label">Código *</label><input class="form-control" type="text" [(ngModel)]="retencionDraft.codigo" name="rCodigo" /></div>
+      <div class="form-field"><label class="form-field__label">Nombre *</label><input class="form-control" type="text" [(ngModel)]="retencionDraft.nombre" name="rNombre" /></div>
+      <div class="form-field">
+        <label class="form-field__label">Tipo</label>
+        <select class="form-control" [(ngModel)]="retencionDraft.tipo" name="rTipo">
+          <option value="RETEFUENTE">Retefuente</option>
+          <option value="AUTORRETENCION">Autorretención</option>
+          <option value="RETEICA">ReteICA</option>
+          <option value="RETEIVA">ReteIVA</option>
+        </select>
+      </div>
+      <p class="form-field__hint">Código de tributo en Factus: {{ codigoFactusDe(retencionDraft.tipo) }}.</p>
+      <div class="form-field">
+        <label class="form-field__label">Tarifa (%)</label>
+        <input class="form-control" type="number" step="0.1" [(ngModel)]="retencionDraft.tarifa" name="rTarifa" />
+        @if (retencionDraft.tipo === 'RETEICA') {
+          <p class="form-field__hint">El ReteICA se pacta en ‰: escriba el equivalente en % (5 ‰ = 0,5; 6 ‰ = 0,6).</p>
+        }
+      </div>
+      <div class="form-field">
+        <label class="form-field__label">Aplica a</label>
+        <select class="form-control" [(ngModel)]="retencionDraft.aplica_a" name="rAplica">
+          <option value="VENTA">Venta</option>
+          <option value="COMPRA">Compra</option>
+        </select>
+      </div>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--ghost" (click)="closeFormRetencion()">Cancelar</button>
+      <button type="button" class="btn btn--primary" [disabled]="savingRetencion()" (click)="guardarRetencion()">{{ savingRetencion() ? 'Guardando…' : 'Guardar' }}</button>
+    </footer>
+  </div>
+}

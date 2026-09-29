@@ -1,0 +1,449 @@
+:host {
+  display: block;
+}
+
+/* ===== Cabecera ===== */
+.ter-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.ter-head__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.ter-head__actions .btn svg {
+  width: 17px;
+  height: 17px;
+}
+
+.ter-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ter-search__icon {
+  position: absolute;
+  left: 0.85rem;
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.ter-search__input {
+  width: 300px;
+  max-width: 100%;
+  padding: 0.65rem 0.9rem 0.65rem 2.5rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--text-main);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.ter-search__input:focus {
+  outline: none;
+  border-color: var(--secondary-color);
+  box-shadow: 0 0 0 3px rgba(45, 123, 200, 0.15);
+}
+
+.ter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ===== Tabla =====
+   Estructura y columna de acciones vienen del design system (`styles.scss`). */
+.mono {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Toda la fila abre la ficha, así que el puntero lo anuncia. */
+.ter-row {
+  cursor: pointer;
+}
+
+.col-num {
+  width: 92px;
+  text-align: right;
+}
+
+.ter-num-hint {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* La actividad económica de las ARL viene con textos largos (incluye el CIIU):
+   se deja partir en varias líneas en vez de estirar la tabla. */
+.ter-cell-wrap {
+  max-width: 260px;
+  white-space: normal;
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.who__avatar {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--primary-color);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.who__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.35;
+}
+
+.who__name {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.who__nit {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* ===== Modal =====
+   Mismo diálogo centrado que el resto de la aplicación (pre-cuentas, órdenes,
+   importación): la ficha y el formulario NO se abren como panel lateral. */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(15, 23, 42, 0.45);
+  animation: fade-in 0.2s ease;
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 51;
+  display: flex;
+  flex-direction: column;
+  width: 720px;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 2rem);
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 60px rgba(0, 11, 80, 0.28);
+  overflow: hidden;
+  animation: modal-in 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* El alta/edición lleva campos en dos columnas: necesita algo más de ancho. */
+.modal--form {
+  width: 800px;
+}
+
+.modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.modal__title {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.modal__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1.1rem 1.5rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+/* Baja definitiva: se distingue del resto de acciones del pie. */
+.btn--danger {
+  color: var(--danger);
+  border-color: rgba(239, 68, 68, 0.35);
+  margin-right: auto;
+}
+
+.btn--danger:hover {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* ===== Ficha ===== */
+.ficha-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ficha-nit {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* En el diálogo centrado hay ancho de sobra: los datos van en dos columnas para
+   que la ficha se lea de una sola vez, sin desplazarse. */
+.ficha-datos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem 1.5rem;
+  margin: 0;
+}
+
+.ficha-datos dt {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  margin-bottom: 0.15rem;
+}
+
+.ficha-datos dd {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--text-main);
+  line-height: 1.5;
+}
+
+.ficha-sub {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.ficha-hint,
+.ficha-vacio {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.ficha-ordenes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ficha-orden {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+}
+
+.ficha-orden__main,
+.ficha-orden__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.85rem;
+}
+
+.ficha-orden__meta {
+  align-items: flex-end;
+  color: var(--text-muted);
+}
+
+.ficha-orden__act {
+  color: var(--text-muted);
+}
+
+.ficha-fusion {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.ficha-fusion .form-control {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ===== Formulario ===== */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Condiciones de facturación, dentro de la ficha del tercero. */
+.par-form {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 0.75rem;
+}
+
+.par-form__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.form-section {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ===== Animaciones ===== */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.98); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 720px) {
+  .ter-head {
+    align-items: stretch;
+  }
+
+  .ter-head__actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ter-search__input {
+    width: 100%;
+  }
+
+  .form-row,
+  .ficha-datos {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Terceros: roles, avisos y controles propios del formulario ===== */
+.ter-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.ter-filtro {
+  min-width: 11rem;
+}
+
+.ter-aviso {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning) 45%, transparent);
+  font-size: 0.85rem;
+}
+
+.ter-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+}
+
+.ter-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.ter-dv {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 0.3rem;
+}
+
+.ter-dv strong {
+  color: var(--primary-color);
+  font-size: 1rem;
+}
+
+.ter-lista-prof {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+  max-height: 20rem;
+  overflow: auto;
+}
+
+.ter-lista-prof button {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+
+.ter-lista-prof button:hover {
+  background: color-mix(in srgb, var(--accent-color) 14%, transparent);
+}

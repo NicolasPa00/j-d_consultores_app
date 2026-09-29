@@ -88,6 +88,20 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/companies/companies').then((m) => m.CompaniesComponent),
       },
       {
+        // Fase A · A0-05 · Terceros: a quién se factura o se paga
+        path: 'terceros',
+        canActivate: [permissionGuard],
+        data: { vista: 'terceros' },
+        loadComponent: () => import('./pages/terceros/terceros').then((m) => m.TercerosComponent),
+      },
+      {
+        // Fase A · A0-10 · Parametrización: emisor, productos, tarifas, retenciones, numeración
+        path: 'parametrizacion',
+        canActivate: [permissionGuard],
+        data: { vista: 'parametrizacion' },
+        loadComponent: () => import('./pages/parametrizacion/parametrizacion').then((m) => m.ParametrizacionComponent),
+      },
+      {
         path: 'profesionales',
         canActivate: [permissionGuard],
         data: { vista: 'profesionales' },

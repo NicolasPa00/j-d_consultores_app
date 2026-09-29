@@ -201,6 +201,9 @@ export class NotificationsComponent implements OnInit, OnDestroy {
       case 'PRECUENTA_ACEPTADA': return 'Cuenta de cobro aceptada';
       case 'PRECUENTA_RECHAZADA': return 'Cuenta de cobro rechazada';
       case 'CORTE_COBRO': return 'Día de corte';
+      case 'RESOLUCION_VENCE':
+      case 'RESOLUCION_AGOTA': return 'Resolución de numeración';
+      case 'PAQUETE_FE_VENCE': return 'Paquete de facturación';
       default: return 'Aviso';
     }
   }

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from './config';
-import { ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista } from './models';
+import { CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -525,6 +525,103 @@ export class ApiService {
   }
   toggleProfessional(id: string): Observable<Wrap<Profesional>> {
     return this.http.patch<Wrap<Profesional>>(`${this.base}/professionals/${id}/estado`, {});
+  }
+
+  // ---- Fase A · Catálogos DIAN (A0-04) y terceros (A0-05) ----
+  /** Catálogo de referencia. Los municipios se piden de a departamento (`departamento_id`). */
+  listCatalogo(nombre: string, filtros: { q?: string; departamento_id?: string; limit?: number } = {}): Observable<{ data: ItemCatalogo[]; total: number }> {
+    return this.http.get<{ data: ItemCatalogo[]; total: number }>(`${this.base}/parametros/catalogos/${nombre}${queryString(filtros)}`);
+  }
+
+  /** Todos los terceros (la pantalla filtra y pagina en memoria). */
+  listTerceros(): Observable<{ data: Tercero[]; total: number }> {
+    return this.http.get<{ data: Tercero[]; total: number }>(`${this.base}/terceros`);
+  }
+  createTercero(body: TerceroForm): Observable<Wrap<Tercero>> {
+    return this.http.post<Wrap<Tercero>>(`${this.base}/terceros`, body);
+  }
+  /** PUT sustituye la ficha completa: hay que mandar todos los campos. */
+  updateTercero(id: string, body: TerceroForm): Observable<Wrap<Tercero>> {
+    return this.http.put<Wrap<Tercero>>(`${this.base}/terceros/${id}`, body);
+  }
+  setTerceroActivo(id: string, activo: boolean): Observable<Wrap<Tercero>> {
+    return this.http.patch<Wrap<Tercero>>(`${this.base}/terceros/${id}/estado`, { activo });
+  }
+  sugerenciaTerceroDeProfesional(profesionalId: string): Observable<Wrap<SugerenciaTerceroProfesional>> {
+    return this.http.get<Wrap<SugerenciaTerceroProfesional>>(`${this.base}/terceros/desde-profesional/${profesionalId}`);
+  }
+  /** Crea (o enlaza, si el documento ya era un tercero) el tercero de un profesional. */
+  crearTerceroDeProfesional(profesionalId: string, body: Partial<TerceroForm>): Observable<Wrap<Tercero> & { enlazado: boolean }> {
+    return this.http.post<Wrap<Tercero> & { enlazado: boolean }>(`${this.base}/terceros/desde-profesional/${profesionalId}`, body);
+  }
+
+  // ---- A0-09 · Emisor y A0-08 · Resoluciones de numeración ----
+  getEmisor(): Observable<{ data: Emisor | null; proveedor: EstadoProveedor }> {
+    return this.http.get<{ data: Emisor | null; proveedor: EstadoProveedor }>(`${this.base}/parametros/emisor`);
+  }
+  guardarEmisor(body: EmisorForm): Observable<{ data: Emisor; proveedor: EstadoProveedor }> {
+    return this.http.put<{ data: Emisor; proveedor: EstadoProveedor }>(`${this.base}/parametros/emisor`, body);
+  }
+  listResoluciones(): Observable<Wrap<ResolucionNumeracion[]>> {
+    return this.http.get<Wrap<ResolucionNumeracion[]>>(`${this.base}/parametros/resoluciones`);
+  }
+  sincronizarResoluciones(): Observable<Wrap<ResolucionNumeracion[]> & { resumen: SincronizacionResoluciones }> {
+    return this.http.post<Wrap<ResolucionNumeracion[]> & { resumen: SincronizacionResoluciones }>(`${this.base}/parametros/resoluciones/sincronizar`, {});
+  }
+  setResolucionActiva(id: string, activa: boolean): Observable<Wrap<ResolucionNumeracion[]>> {
+    return this.http.patch<Wrap<ResolucionNumeracion[]>>(`${this.base}/parametros/resoluciones/${id}/activa`, { activa });
+  }
+
+  // ---- A0-06 · Productos y tarifas de venta ----
+  listProductos(soloActivos = false): Observable<Wrap<Producto[]>> {
+    return this.http.get<Wrap<Producto[]>>(`${this.base}/parametros/productos${queryString({ activo: soloActivos ? 'true' : undefined })}`);
+  }
+  createProducto(body: Partial<Producto>): Observable<Wrap<Producto>> {
+    return this.http.post<Wrap<Producto>>(`${this.base}/parametros/productos`, body);
+  }
+  updateProducto(id: string, body: Partial<Producto>): Observable<Wrap<Producto>> {
+    return this.http.put<Wrap<Producto>>(`${this.base}/parametros/productos/${id}`, body);
+  }
+  setProductoActivo(id: string, activo: boolean): Observable<Wrap<Producto>> {
+    return this.http.patch<Wrap<Producto>>(`${this.base}/parametros/productos/${id}/estado`, { activo });
+  }
+  listTarifasVenta(pagadorId?: string): Observable<Wrap<TarifaVenta[]>> {
+    return this.http.get<Wrap<TarifaVenta[]>>(`${this.base}/parametros/tarifas-venta${queryString({ pagador_id: pagadorId })}`);
+  }
+  createTarifaVenta(body: Partial<TarifaVenta> & { pagador_tercero_id: string }): Observable<Wrap<TarifaVenta>> {
+    return this.http.post<Wrap<TarifaVenta>>(`${this.base}/parametros/tarifas-venta`, body);
+  }
+  setTarifaVentaActiva(id: string, activo: boolean): Observable<Wrap<TarifaVenta>> {
+    return this.http.patch<Wrap<TarifaVenta>>(`${this.base}/parametros/tarifas-venta/${id}/estado`, { activo });
+  }
+
+  // ---- A0-07 · UVT, retenciones y condiciones por pagador ----
+  listUvt(): Observable<Wrap<FilaUvt[]>> {
+    return this.http.get<Wrap<FilaUvt[]>>(`${this.base}/parametros/uvt`);
+  }
+  guardarUvt(body: FilaUvt): Observable<Wrap<FilaUvt[]>> {
+    return this.http.put<Wrap<FilaUvt[]>>(`${this.base}/parametros/uvt`, body);
+  }
+  listRetenciones(soloActivas = false): Observable<Wrap<Retencion[]>> {
+    return this.http.get<Wrap<Retencion[]>>(`${this.base}/parametros/retenciones${queryString({ activo: soloActivas ? 'true' : undefined })}`);
+  }
+  createRetencion(body: Partial<Retencion>): Observable<Wrap<Retencion>> {
+    return this.http.post<Wrap<Retencion>>(`${this.base}/parametros/retenciones`, body);
+  }
+  updateRetencion(id: string, body: Partial<Retencion>): Observable<Wrap<Retencion>> {
+    return this.http.put<Wrap<Retencion>>(`${this.base}/parametros/retenciones/${id}`, body);
+  }
+  setRetencionActiva(id: string, activa: boolean): Observable<Wrap<Retencion>> {
+    return this.http.patch<Wrap<Retencion>>(`${this.base}/parametros/retenciones/${id}/estado`, { activa });
+  }
+  listCondicionesPagador(): Observable<Wrap<CondicionPagador[]>> {
+    return this.http.get<Wrap<CondicionPagador[]>>(`${this.base}/parametros/condiciones-pagador`);
+  }
+  getCondicionPagador(terceroId: string): Observable<Wrap<CondicionPagador | null>> {
+    return this.http.get<Wrap<CondicionPagador | null>>(`${this.base}/parametros/condiciones-pagador/${terceroId}`);
+  }
+  guardarCondicionPagador(terceroId: string, body: Partial<CondicionPagador>): Observable<Wrap<CondicionPagador>> {
+    return this.http.put<Wrap<CondicionPagador>>(`${this.base}/parametros/condiciones-pagador/${terceroId}`, body);
   }
 
   // ---- Empresas clientes (CFG-02) ----

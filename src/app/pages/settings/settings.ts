@@ -443,6 +443,8 @@ export class SettingsComponent implements OnInit {
     { clave: 'informes', label: 'Informes y Resúmenes', hint: 'Módulo 5 · resúmenes y buscador' },
     { clave: 'precuentas', label: 'Cuentas de cobro', hint: 'Cobro a profesionales' },
     { clave: 'empresas', label: 'Empresas', hint: 'Módulo 12 · CFG-02 · clientes' },
+    { clave: 'terceros', label: 'Terceros', hint: 'Fase A · PAR-03 · a quién se factura o se paga' },
+    { clave: 'parametrizacion', label: 'Parametrización', hint: 'Fase A · emisor, productos, tarifas, retenciones y numeración' },
     { clave: 'profesionales', label: 'Profesionales', hint: 'Módulo 12 · asesores de campo' },
     { clave: 'configuracion', label: 'Configuración', hint: 'Perfil propio y ajustes' },
   ];

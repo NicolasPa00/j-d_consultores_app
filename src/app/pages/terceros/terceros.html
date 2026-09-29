@@ -1,0 +1,507 @@
+<section class="page-head ter-head">
+  <div>
+    <h2 class="page-head__title">Terceros</h2>
+    <p class="page-head__sub">
+      A quién se factura o se paga · PAR-03 · {{ activos() }} de {{ terceros().length }} activos
+    </p>
+  </div>
+
+  <div class="ter-head__actions">
+    <div class="ter-search">
+      <svg class="ter-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-3.5-3.5" />
+      </svg>
+      <input
+        class="ter-search__input"
+        type="text"
+        placeholder="Buscar por nombre o documento…"
+        [ngModel]="query()"
+        (ngModelChange)="buscar($event)"
+      />
+    </div>
+
+    <select class="form-control ter-filtro" [ngModel]="filtroRol()" (ngModelChange)="cambiarRol($event)" name="filtroRol" aria-label="Filtrar por rol">
+      <option value="todos">Todos los roles</option>
+      <option value="cliente">Clientes</option>
+      <option value="proveedor">Proveedores</option>
+      <option value="empleado">Empleados</option>
+      <option value="arl">ARL</option>
+    </select>
+
+    <label class="ter-toggle">
+      <input type="checkbox" [checked]="soloActivos()" (change)="alternarActivos(!soloActivos())" />
+      Solo activos
+    </label>
+
+    @if (puedeEditar()) {
+      <button type="button" class="btn btn--ghost" (click)="openElegirProfesional()">Desde un profesional</button>
+      <button type="button" class="btn btn--primary" (click)="openNew()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        Nuevo tercero
+      </button>
+    }
+  </div>
+</section>
+
+<!-- ============ TABLA ============ -->
+<div class="card">
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Tercero</th>
+          <th>Roles</th>
+          <th>Municipio</th>
+          <th>Correo de facturación</th>
+          <th>Estado</th>
+          <th class="col-actions">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (t of pag.visibles(); track t.id) {
+          <tr class="ter-row" (click)="openDetalle(t)">
+            <td>
+              <div class="who">
+                <span class="who__avatar" aria-hidden="true">{{ t.nombre.charAt(0) }}</span>
+                <div class="who__text">
+                  <span class="who__name">{{ t.nombre }}</span>
+                  <span class="who__nit mono">{{ documentoVisible(t) }}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="ter-roles">
+                @for (r of rolesDe(t); track r) {
+                  <span class="pill pill--info">{{ r }}</span>
+                }
+              </div>
+            </td>
+            <td>{{ t.municipio_nombre || '—' }}</td>
+            <td class="ter-cell-wrap">{{ t.correo_facturacion || '—' }}</td>
+            <td>
+              <span class="pill" [class]="t.activo ? 'pill--success' : 'pill--muted'">
+                {{ t.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+              <!-- Le falta algo que la factura exige: se ve desde la lista, no al emitir. -->
+              @if (t.faltantes.length && t.es_cliente) {
+                <span class="pill pill--warning" [title]="'Falta: ' + t.faltantes.join(', ')">Incompleto</span>
+              }
+            </td>
+            <td class="col-actions" (click)="$event.stopPropagation()">
+              <div class="row-actions">
+                <button type="button" class="icon-action" (click)="openDetalle(t)" aria-label="Ver ficha" title="Ver ficha">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
+                    <circle cx="12" cy="12" r="2.5" />
+                  </svg>
+                </button>
+
+                @if (puedeEditar()) {
+                  <button type="button" class="icon-action" (click)="openEdit(t)" aria-label="Editar" title="Editar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                    </svg>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="icon-action"
+                    [class.icon-action--on]="t.activo"
+                    (click)="toggleActivo(t)"
+                    [attr.aria-label]="t.activo ? 'Desactivar' : 'Activar'"
+                    [title]="t.activo ? 'Desactivar' : 'Activar'"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M12 3v9" />
+                      <path d="M7.5 6.5a7 7 0 1 0 9 0" />
+                    </svg>
+                  </button>
+                }
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="table__empty">
+              @if (loading()) {
+                Cargando terceros…
+              } @else if (query()) {
+                No hay terceros que coincidan con “{{ query() }}”.
+              } @else {
+                Todavía no hay terceros registrados.
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <app-paginador [pag]="pag" etiqueta="terceros" />
+</div>
+
+<!-- ============ MODAL · FICHA ============ -->
+@if (detalle(); as t) {
+  <div class="modal-backdrop" (click)="closeDetalle()"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="fichaTitle">
+    <header class="modal__head">
+      <h3 class="modal__title" id="fichaTitle">{{ t.nombre }}</h3>
+      <button type="button" class="icon-action" (click)="closeDetalle()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="modal__body">
+      <div class="ficha-top">
+        <span class="pill" [class]="t.activo ? 'pill--success' : 'pill--muted'">
+          {{ t.activo ? 'Activo' : 'Inactivo' }}
+        </span>
+        <span class="mono ficha-nit">{{ documentoVisible(t) }}</span>
+      </div>
+
+      @if (t.faltantes.length && t.es_cliente) {
+        <p class="ter-aviso">
+          Para poder facturarle le falta: <strong>{{ t.faltantes.join(', ') }}</strong>.
+        </p>
+      }
+
+      <dl class="ficha-datos">
+        <div><dt>Tipo de persona</dt><dd>{{ t.tipo_persona === 'JURIDICA' ? 'Jurídica' : 'Natural' }}</dd></div>
+        <div>
+          <dt>Roles</dt>
+          <dd>
+            <div class="ter-roles">
+              @for (r of rolesDe(t); track r) {
+                <span class="pill pill--info">{{ r }}</span>
+              }
+            </div>
+          </dd>
+        </div>
+        @if (t.nombre_comercial) {
+          <div><dt>Nombre comercial</dt><dd>{{ t.nombre_comercial }}</dd></div>
+        }
+        <div><dt>Dirección</dt><dd>{{ t.direccion || '—' }}</dd></div>
+        <div>
+          <dt>Municipio</dt>
+          <dd>
+            {{ t.municipio_nombre || '—' }}
+            @if (t.departamento_nombre) { <small>· {{ t.departamento_nombre }}</small> }
+          </dd>
+        </div>
+        <div><dt>Teléfono</dt><dd class="mono">{{ t.telefono || '—' }}</dd></div>
+        <div><dt>Correo de facturación</dt><dd>{{ t.correo_facturacion || '—' }}</dd></div>
+        <div>
+          <dt>Régimen</dt>
+          <dd>{{ t.regimen === 'RESPONSABLE_IVA' ? 'Responsable de IVA' : 'No responsable de IVA' }}</dd>
+        </div>
+        <div>
+          <dt>Responsabilidades fiscales</dt>
+          <dd>{{ t.responsabilidades_fiscales.length ? t.responsabilidades_fiscales.join(', ') : 'Sin indicar (Factus asume R-99-PN)' }}</dd>
+        </div>
+        <!-- Enlaces: el tercero es a quién se factura; la empresa, dónde se ejecuta. -->
+        @if (t.arls_enlazadas.length) {
+          <div><dt>ARL en Orbita</dt><dd>{{ t.arls_enlazadas.join(', ') }}</dd></div>
+        }
+        @if (t.empresas_enlazadas) {
+          <div><dt>Empresas enlazadas</dt><dd>{{ t.empresas_enlazadas }}</dd></div>
+        }
+        @if (t.profesional_enlazado) {
+          <div><dt>Profesional</dt><dd>{{ t.profesional_enlazado }}</dd></div>
+        }
+      </dl>
+
+      <!-- A0-07 · Condiciones de facturación: solo tiene sentido para un pagador
+           (cliente o ARL). El proveedor/empleado no factura, se le paga. -->
+      @if (esPagador(t)) {
+        <h4 class="ficha-sub">Condiciones de facturación</h4>
+        @if (loadingCondicion()) {
+          <p class="ficha-vacio">Cargando…</p>
+        } @else if (!editandoCondicion()) {
+          @if (condicion(); as c) {
+            <dl class="ficha-datos">
+              <div><dt>Retenciones en la factura</dt><dd>{{ retencionesEnTexto(c) }}</dd></div>
+              <div><dt>ReteICA al pagar</dt><dd>{{ c.reteica_pago_nombre || '—' }}</dd></div>
+              <div><dt>Descuento comercial</dt><dd>{{ porcentaje(c.descuento_comercial_pct) }}</dd></div>
+              <div><dt>Plazo</dt><dd>{{ c.plazo_dias }} día(s)</dd></div>
+              @if (c.formato_descripcion) {
+                <div><dt>Plantilla de descripción</dt><dd class="mono">{{ c.formato_descripcion }}</dd></div>
+              }
+            </dl>
+          } @else {
+            <p class="ficha-vacio">Sin condiciones configuradas todavía. Sin ellas, {{ t.nombre }} se factura sin descuento, sin retenciones y de contado.</p>
+          }
+          @if (puedeEditar()) {
+            <button type="button" class="btn btn--ghost btn--sm" (click)="openEditarCondicion()">
+              {{ condicion() ? 'Editar condiciones' : 'Configurar condiciones' }}
+            </button>
+          }
+        } @else {
+          <form class="par-form">
+            <div class="form-field">
+              <span class="form-field__label">Retenciones que van en la factura</span>
+              <div class="ter-checks">
+                @for (r of retencionesFactura(); track r.id) {
+                  <label class="ter-check">
+                    <input type="checkbox" [checked]="condicionDraft.retenciones_ids.includes(r.id)" (change)="alternarRetencionFactura(r.id, $any($event.target).checked)" />
+                    {{ r.nombre }} ({{ porcentaje(r.tarifa) }})
+                  </label>
+                }
+              </div>
+            </div>
+            <div class="form-field">
+              <label class="form-field__label" for="cReteica">ReteICA que retiene al pagar</label>
+              <select id="cReteica" class="form-control" [(ngModel)]="condicionDraft.reteica_pago_id" name="cReteica">
+                <option value="">Ninguno</option>
+                @for (r of reteicasDisponibles(); track r.id) { <option [value]="r.id">{{ r.nombre }} ({{ pormil(r.tarifa) }})</option> }
+              </select>
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-field__label" for="cDescuento">Descuento comercial (%)</label>
+                <input id="cDescuento" class="form-control" type="number" step="0.1" [(ngModel)]="condicionDraft.descuento_comercial_pct" name="cDescuento" />
+              </div>
+              <div class="form-field">
+                <label class="form-field__label" for="cPlazo">Plazo (días)</label>
+                <input id="cPlazo" class="form-control" type="number" [(ngModel)]="condicionDraft.plazo_dias" name="cPlazo" />
+              </div>
+            </div>
+            <div class="form-field">
+              <label class="form-field__label" for="cPlantilla">Plantilla de descripción de la línea</label>
+              <input id="cPlantilla" class="form-control mono" type="text" [(ngModel)]="condicionDraft.formato_descripcion" name="cPlantilla" placeholder="{{ '{numero_orden} {tipo_abreviado} {tema} PROF' }}" />
+              <p class="form-field__hint">Variables disponibles (A1-04): {{ variablesDescripcion.join(' ') }}</p>
+            </div>
+            <div class="par-form__footer">
+              <button type="button" class="btn btn--ghost" [disabled]="savingCondicion()" (click)="closeEditarCondicion()">Cancelar</button>
+              <button type="button" class="btn btn--primary" [disabled]="savingCondicion()" (click)="guardarCondicion()">
+                {{ savingCondicion() ? 'Guardando…' : 'Guardar condiciones' }}
+              </button>
+            </div>
+          </form>
+        }
+      }
+    </div>
+
+    @if (puedeEditar()) {
+      <footer class="modal__footer">
+        <button type="button" class="btn btn--ghost" (click)="toggleActivo(t)">
+          {{ t.activo ? 'Desactivar' : 'Activar' }}
+        </button>
+        <button type="button" class="btn btn--primary" (click)="openEdit(t)">Editar</button>
+      </footer>
+    }
+  </div>
+}
+
+<!-- ============ MODAL · ELEGIR PROFESIONAL ============ -->
+@if (elegirProfesional()) {
+  <div class="modal-backdrop" (click)="closeElegirProfesional()"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="profTitle">
+    <header class="modal__head">
+      <h3 class="modal__title" id="profTitle">Crear tercero desde un profesional</h3>
+      <button type="button" class="icon-action" (click)="closeElegirProfesional()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      <p class="ficha-hint">
+        El documento soporte le compra servicios a cada asesor y exige su documento, dirección y municipio,
+        que la ficha del profesional no tiene. Elija a quién crearle el tercero.
+      </p>
+      @if (loadingProfesionales()) {
+        <p class="ficha-vacio">Cargando profesionales…</p>
+      } @else if (!profesionales().length) {
+        <p class="ficha-vacio">Todos los profesionales ya tienen su tercero.</p>
+      } @else {
+        <ul class="ter-lista-prof">
+          @for (p of profesionales(); track p.id) {
+            <li>
+              <button type="button" (click)="elegirProfesionalPara(p)">
+                <strong>{{ p.nombre }}</strong>
+                <small>{{ p.correo }}</small>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </div>
+}
+
+<!-- ============ MODAL · FORMULARIO ============ -->
+@if (formOpen()) {
+  <div class="modal-backdrop" (click)="closeForm()"></div>
+  <div class="modal modal--form" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+    <header class="modal__head">
+      <h3 class="modal__title" id="formTitle">
+        {{ editingId() ? 'Editar tercero' : profesionalId() ? 'Nuevo tercero · profesional' : 'Nuevo tercero' }}
+      </h3>
+      <button type="button" class="icon-action" (click)="closeForm()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </header>
+
+    <form class="modal__body" (ngSubmit)="save()">
+      @if (!profesionalId()) {
+        <div class="form-field">
+          <label class="form-field__label" for="tPersona">Tipo de persona *</label>
+          <select id="tPersona" class="form-control" [ngModel]="draft.tipo_persona" (ngModelChange)="cambiarPersona($event)" name="persona">
+            <option value="JURIDICA">Jurídica (empresa)</option>
+            <option value="NATURAL">Natural</option>
+          </select>
+        </div>
+      }
+
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-field__label" for="tTipoDoc">Tipo de documento *</label>
+          <select id="tTipoDoc" class="form-control" [(ngModel)]="draft.tipo_documento_id" name="tipoDoc">
+            <option value="">Seleccione…</option>
+            @for (d of tiposDocumento(); track d.id) {
+              <option [value]="d.id">{{ d.nombre }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="tNumero">Número *</label>
+          <input
+            id="tNumero"
+            class="form-control"
+            [class.form-control--error]="duplicado() || (esNit() && nitVista().incoherente)"
+            type="text"
+            [(ngModel)]="draft.numero_documento"
+            name="numero"
+            [placeholder]="esNit() ? '860.002.183 (sin el dígito de verificación)' : 'Solo números'"
+          />
+        </div>
+      </div>
+
+      <!-- El DV no lo teclea nadie: se calcula. Si alguien pegó el NIT con su DV
+           ("860.002.183-9") se comprueba y se avisa antes de mandarlo. -->
+      @if (esNit() && nitVista().numero) {
+        <p class="ter-dv">
+          Dígito de verificación: <strong>{{ nitVista().dv ?? '—' }}</strong>
+          @if (nitVista().incoherente) {
+            <span class="form-field__hint form-field__hint--error">
+              · el {{ nitVista().dvEscrito }} que escribió no corresponde: el correcto es {{ nitVista().dv }}
+            </span>
+          }
+        </p>
+      }
+      @if (duplicado(); as dup) {
+        <p class="form-field__hint form-field__hint--error">
+          Este documento ya está registrado a nombre de {{ dup.nombre }}.
+        </p>
+      }
+
+      @if (draft.tipo_persona === 'JURIDICA') {
+        <div class="form-field">
+          <label class="form-field__label" for="tRazon">Razón social *</label>
+          <input id="tRazon" class="form-control" type="text" [(ngModel)]="draft.razon_social" name="razon" />
+        </div>
+      } @else {
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-field__label" for="tNombres">Nombres *</label>
+            <input id="tNombres" class="form-control" type="text" [(ngModel)]="draft.nombres" name="nombres" />
+          </div>
+          <div class="form-field">
+            <label class="form-field__label" for="tApellidos">Apellidos</label>
+            <input id="tApellidos" class="form-control" type="text" [(ngModel)]="draft.apellidos" name="apellidos" />
+          </div>
+        </div>
+      }
+
+      <div class="form-field">
+        <label class="form-field__label" for="tComercial">Nombre comercial</label>
+        <input id="tComercial" class="form-control" type="text" [(ngModel)]="draft.nombre_comercial" name="comercial" />
+      </div>
+
+      <h4 class="form-section">Ubicación y contacto</h4>
+      <div class="form-field">
+        <label class="form-field__label" for="tDireccion">Dirección</label>
+        <input id="tDireccion" class="form-control" type="text" [(ngModel)]="draft.direccion" name="direccion" />
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-field__label" for="tDepto">Departamento</label>
+          <select id="tDepto" class="form-control" [ngModel]="departamentoId" (ngModelChange)="cambiarDepartamento($event)" name="depto">
+            <option value="">Seleccione…</option>
+            @for (d of departamentos(); track d.id) {
+              <option [value]="d.id">{{ d.nombre }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="tMuni">Municipio</label>
+          <select id="tMuni" class="form-control" [(ngModel)]="draft.municipio_id" name="muni" [disabled]="!departamentoId">
+            <option value="">{{ departamentoId ? 'Seleccione…' : 'Elija primero el departamento' }}</option>
+            @for (m of municipios(); track m.id) {
+              <option [value]="m.id">{{ m.nombre }}</option>
+            }
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-field__label" for="tTel">Teléfono</label>
+          <input id="tTel" class="form-control" type="tel" [(ngModel)]="draft.telefono" name="telefono" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="tCorreo">Correo de facturación</label>
+          <input id="tCorreo" class="form-control" type="email" [(ngModel)]="draft.correo_facturacion" name="correo" />
+        </div>
+      </div>
+
+      <h4 class="form-section">Datos fiscales</h4>
+      <div class="form-field">
+        <label class="form-field__label" for="tRegimen">Régimen</label>
+        <select id="tRegimen" class="form-control" [(ngModel)]="draft.regimen" name="regimen">
+          <option value="RESPONSABLE_IVA">Responsable de IVA</option>
+          <option value="NO_RESPONSABLE">No responsable de IVA</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <span class="form-field__label">Responsabilidades fiscales</span>
+        <div class="ter-checks">
+          @for (r of responsabilidades(); track r.id) {
+            <label class="ter-check">
+              <input type="checkbox" [checked]="draft.responsabilidades_fiscales.includes(r.codigo_dian)" (change)="alternarResponsabilidad(r.codigo_dian, $any($event.target).checked)" />
+              {{ r.codigo_dian }} · {{ r.nombre }}
+            </label>
+          }
+        </div>
+        <p class="form-field__hint">Sin ninguna marcada, Factus asume R-99-PN (no responsable).</p>
+      </div>
+
+      <h4 class="form-section">Roles *</h4>
+      <div class="ter-checks">
+        <label class="ter-check"><input type="checkbox" [(ngModel)]="draft.es_cliente" name="esCliente" /> Cliente</label>
+        <label class="ter-check"><input type="checkbox" [(ngModel)]="draft.es_proveedor" name="esProveedor" /> Proveedor</label>
+        <label class="ter-check"><input type="checkbox" [(ngModel)]="draft.es_empleado" name="esEmpleado" /> Empleado</label>
+        <label class="ter-check"><input type="checkbox" [(ngModel)]="draft.es_arl" name="esArl" /> ARL</label>
+      </div>
+    </form>
+
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--ghost" (click)="closeForm()" [disabled]="saving()">Cancelar</button>
+      <button type="button" class="btn btn--primary" [disabled]="saving() || !isValid()" (click)="save()">
+        @if (saving()) {
+          <span class="spinner" aria-hidden="true"></span>
+          Guardando…
+        } @else {
+          {{ editingId() ? 'Actualizar' : 'Guardar' }}
+        }
+      </button>
+    </footer>
+  </div>
+}

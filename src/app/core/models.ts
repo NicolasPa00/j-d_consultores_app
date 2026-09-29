@@ -48,13 +48,13 @@ export interface MeResponse {
 
 /** Vistas gestionables desde Configuración → Roles y permisos (= ítems del sidebar). */
 export type Vista =
-  | 'dashboard' | 'importar' | 'ordenes' | 'informes' | 'precuentas' | 'empresas'
-  | 'profesionales' | 'configuracion';
+  | 'dashboard' | 'importar' | 'ordenes' | 'informes' | 'precuentas' | 'empresas' | 'terceros'
+  | 'parametrizacion' | 'profesionales' | 'configuracion';
 
 /** Catálogo completo de vistas. Es también el fallback cuando no hay permisos conocidos. */
 export const VISTAS: Vista[] = [
-  'dashboard', 'importar', 'ordenes', 'informes', 'precuentas', 'empresas',
-  'profesionales', 'configuracion',
+  'dashboard', 'importar', 'ordenes', 'informes', 'precuentas', 'empresas', 'terceros',
+  'parametrizacion', 'profesionales', 'configuracion',
 ];
 
 export interface PermisoRol {
@@ -679,7 +679,11 @@ export type TipoNotificacion =
   | 'ASIGNACION' | 'REPROGRAMACION' | 'RECHAZO' | 'SOPORTE_CARGADO' | 'ENCUESTA_RESPONDIDA'
   | 'PRECUENTA_ACEPTADA' | 'PRECUENTA_RECHAZADA'
   /** CFG-05 · Pasado el día de corte, el mes anterior sigue sin cobrarse. */
-  | 'CORTE_COBRO';
+  | 'CORTE_COBRO'
+  /** A0-08 · Resolución de numeración a 30/7 días de vencer, ya vencida, o con menos del 10 % de números. */
+  | 'RESOLUCION_VENCE' | 'RESOLUCION_AGOTA'
+  /** A0-09 · El paquete del proveedor de facturación está por vencer o venció. */
+  | 'PAQUETE_FE_VENCE';
 
 /**
  * NOT-04 · Aviso interno de la bandeja (campanita). `datos.orden_id` apunta a la
@@ -951,6 +955,8 @@ export interface Profesional {
    * ARL de esa orden.
    */
   registros_arl?: RegistroArl[];
+  /** A0-05 · Su tercero (identidad fiscal para el documento soporte), si ya se creó. */
+  tercero_id?: string | null;
   // --- Desempeño (vista `vw_profesionales_desempeno`) ---
   /** Órdenes suyas con el trabajo hecho (EJECUTADA o FINALIZADA). */
   ordenes_ejecutadas?: number;
@@ -978,4 +984,255 @@ export interface DashboardData {
   };
   por_arl: { arl_id: string; arl_nombre: string; total: string | number; ejecutadas: string | number }[];
   estados_mes: { mes: string; estado: string; total: string | number }[];
+}
+
+// ─── Fase A · facturación ───────────────────────────────────────────────────────────────────
+
+/** A0-04 · Fila de un catálogo DIAN (`GET /parametros/catalogos/:nombre`). */
+export interface ItemCatalogo {
+  id: string;
+  codigo_dian: string;
+  nombre: string;
+  /** Lo que Factus v2 espera recibir (el código; la v2 no tiene ids propios). */
+  factus_id: string | null;
+  activo: boolean;
+  /** Solo en los municipios. */
+  departamento_id?: string;
+  departamento_nombre?: string;
+  departamento_codigo?: string;
+}
+
+export type TipoPersona = 'NATURAL' | 'JURIDICA';
+export type RegimenTercero = 'RESPONSABLE_IVA' | 'NO_RESPONSABLE';
+
+/**
+ * A0-05 · Tercero (PAR-03): a quién se factura o se paga. Espejo de
+ * `sst.terceros` más lo que el listado resuelve con joins.
+ */
+export interface Tercero {
+  id: string;
+  tipo_persona: TipoPersona;
+  tipo_documento_id: string;
+  tipo_documento_codigo: string;
+  tipo_documento_nombre: string;
+  numero_documento: string;
+  /** Solo NIT: lo calcula el servidor. */
+  dv: number | null;
+  razon_social: string | null;
+  nombres: string | null;
+  apellidos: string | null;
+  nombre_comercial: string | null;
+  /** Razón social o nombres + apellidos, según el tipo de persona. */
+  nombre: string;
+  direccion: string | null;
+  municipio_id: string | null;
+  municipio_nombre: string | null;
+  municipio_codigo: string | null;
+  departamento_nombre: string | null;
+  telefono: string | null;
+  correo_facturacion: string | null;
+  responsabilidades_fiscales: string[];
+  regimen: RegimenTercero;
+  es_cliente: boolean;
+  es_proveedor: boolean;
+  es_empleado: boolean;
+  es_arl: boolean;
+  activo: boolean;
+  creado_en?: string;
+  actualizado_en?: string;
+  /** Con qué de Orbita está enlazado (lo que se factura vs. donde se ejecuta). */
+  arls_enlazadas: string[];
+  empresas_enlazadas: number;
+  profesional_enlazado: string | null;
+  /** Qué le falta para poder facturarle: dirección, municipio, correo de facturación. */
+  faltantes: string[];
+}
+
+/** Cuerpo de alta/edición de un tercero (PUT sustituye la ficha completa). */
+export interface TerceroForm {
+  tipo_persona: TipoPersona;
+  tipo_documento_id: string;
+  numero_documento: string;
+  razon_social: string;
+  nombres: string;
+  apellidos: string;
+  nombre_comercial: string;
+  direccion: string;
+  municipio_id: string;
+  telefono: string;
+  correo_facturacion: string;
+  responsabilidades_fiscales: string[];
+  regimen: RegimenTercero;
+  es_cliente: boolean;
+  es_proveedor: boolean;
+  es_empleado: boolean;
+  es_arl: boolean;
+}
+
+/** Datos que la ficha del profesional aporta para proponer su tercero. */
+export interface SugerenciaTerceroProfesional {
+  profesional_id: string;
+  tercero_id: string | null;
+  nombres: string;
+  apellidos: string;
+  numero_documento: string;
+  correo_facturacion: string | null;
+  telefono: string | null;
+}
+
+// ─── A0-06 · Productos y tarifas de venta ───────────────────────────────────────────────────
+
+export type TratamientoIva = 'GRAVADO' | 'EXENTO' | 'EXCLUIDO';
+
+/** Espejo de `sst.productos`. */
+export interface Producto {
+  id: string;
+  codigo: string;
+  nombre: string;
+  tratamiento_iva: TratamientoIva;
+  tarifa_iva: string | number;
+  unidad_medida_id: string | null;
+  unidad_medida_nombre: string | null;
+  unidad_medida_codigo: string | null;
+  tributo_id: string | null;
+  tributo_nombre: string | null;
+  tributo_codigo: string | null;
+  activo: boolean;
+  creado_en?: string;
+  actualizado_en?: string;
+}
+
+export type UnidadTarifa = 'HORA' | 'UNIDAD';
+
+/** Espejo de `sst.tarifas_venta`, con el nombre del pagador y del tipo de orden resueltos. */
+export interface TarifaVenta {
+  id: string;
+  pagador_tercero_id: string;
+  pagador_nombre: string;
+  tipo_orden_id: string | null;
+  tipo_orden_nombre: string | null;
+  unidad: UnidadTarifa;
+  valor: string | number;
+  vigente_desde: string;
+  activo: boolean;
+  creado_en?: string;
+}
+
+// ─── A0-07 · Retenciones, UVT y condiciones por pagador ─────────────────────────────────────
+
+export interface FilaUvt {
+  anio: number;
+  valor: string | number;
+}
+
+export type TipoRetencion = 'RETEFUENTE' | 'RETEICA' | 'RETEIVA' | 'AUTORRETENCION';
+
+/**
+ * Espejo de `sst.retenciones`. `factus_tributo_id` es el código de
+ * `items.*.withholding_taxes[].code` que Factus v2 espera (05 IVA, 06 renta);
+ * el ReteICA lo trae en `null` a propósito, porque Factus no lo modela en el
+ * XML (se practica al pagar, no en la factura).
+ */
+export interface Retencion {
+  id: string;
+  codigo: string;
+  nombre: string;
+  tipo: TipoRetencion;
+  tarifa: string | number;
+  base_minima_uvt: string | number;
+  aplica_a: 'VENTA' | 'COMPRA';
+  factus_tributo_id: string | null;
+  activa: boolean;
+}
+
+/** Espejo de `sst.condiciones_pagador`, con los nombres resueltos. */
+export interface CondicionPagador {
+  tercero_id: string;
+  pagador_nombre: string;
+  retenciones_ids: string[];
+  reteica_pago_id: string | null;
+  reteica_pago_nombre: string | null;
+  descuento_comercial_pct: string | number;
+  plazo_dias: number;
+  formato_descripcion: string | null;
+  actualizado_en?: string;
+}
+
+// ─── A0-09 · Ficha del emisor ────────────────────────────────────────────────────────────────
+
+/** Espejo de `sst.emisor` (una sola fila). */
+export interface Emisor {
+  tipo_persona: TipoPersona;
+  nit: string;
+  dv: number;
+  razon_social: string;
+  nombre_comercial: string | null;
+  direccion: string;
+  municipio_id: string;
+  municipio_nombre: string;
+  municipio_codigo: string;
+  departamento_nombre: string;
+  correo: string;
+  telefono: string | null;
+  ciiu_principal: string | null;
+  ciiu_secundarias: string[];
+  responsabilidades_rut: string[];
+  ambiente: 'PRUEBAS' | 'PRODUCCION';
+  paquete_proveedor_vence: string | null;
+  documentos_certificado_enviados_en: string | null;
+  dias_para_vencer_paquete: number | null;
+  actualizado_en?: string;
+}
+
+export interface EmisorForm {
+  tipo_persona: TipoPersona;
+  nit: string;
+  razon_social: string;
+  nombre_comercial: string;
+  direccion: string;
+  municipio_id: string;
+  correo: string;
+  telefono: string;
+  ciiu_principal: string;
+  ciiu_secundarias: string[];
+  responsabilidades_rut: string[];
+  ambiente: 'PRUEBAS' | 'PRODUCCION';
+  paquete_proveedor_vence: string;
+  documentos_certificado_enviados_en: string;
+}
+
+/** Lo que la ficha declara contra lo que el servidor realmente usa (§A0-09). */
+export interface EstadoProveedor {
+  configurado: boolean;
+  sandbox: boolean | null;
+  aviso: string | null;
+}
+
+// ─── A0-08 · Resoluciones de numeración ─────────────────────────────────────────────────────
+
+export type TipoDocumentoFE = 'FACTURA' | 'NOTA_CREDITO' | 'DOC_SOPORTE' | 'NOTA_AJUSTE_DS' | 'NOMINA';
+
+/** Espejo de `sst.resoluciones_numeracion`, con los cálculos de vigencia y consumo ya resueltos. */
+export interface ResolucionNumeracion {
+  id: string;
+  tipo_documento: TipoDocumentoFE;
+  prefijo: string | null;
+  desde: string | number | null;
+  hasta: string | number | null;
+  consecutivo_actual: string | number;
+  numero_resolucion: string | null;
+  fecha_desde: string | null;
+  fecha_hasta: string | null;
+  dias_para_vencer: number | null;
+  factus_rango_id: string | number;
+  activa: boolean;
+  sincronizada_en: string | null;
+  numeros_restantes: string | number | null;
+  porcentaje_restante: string | number | null;
+}
+
+export interface SincronizacionResoluciones {
+  creadas: number;
+  actualizadas: number;
+  omitidas: { documento: string; prefijo: string | null; motivo: string }[];
 }
