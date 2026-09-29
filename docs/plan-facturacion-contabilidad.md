@@ -37,8 +37,34 @@
   `verificar-relacion-facturar` y `verificar-borrador-factura` en verde sin residuos en
   `jdd_dev`; `factus-humo` autentica contra el sandbox (siguiente FE: SETP 990021780); los
   endpoints de terceros, resoluciones, relación y borradores responden en local.
-- **A1-08 hecha** (29-sep, con los subsistemas Operación/Finanzas en vez del encabezado «Finanzas»). **Siguiente: A2-01 (nota crédito).**
+- **A1-08 y A2-01 hechas** (29-sep; A1-08 con los subsistemas Operación/Finanzas). **Siguiente: A3-01 (órdenes para privados).**
 - ⚠️ **R-01: la resolución de facturación de JD&D vence el 11-oct-2026.**
+
+#### ▶ A3-01 — dónde quedó (29-sep, noche; SOLO investigación, 0 líneas de código)
+
+Inventario hecho (la ficha pide anotarlo):
+- **`JOIN sst.arls` internos que pasan a `LEFT JOIN`** (9): `facturacion/borrador.service.js:506`,
+  `facturacion/relacion.service.js:54`, `orders/orders.routes.js:103` y `:565`,
+  `prefacturas/prefacturas.service.js:52` y `:121`, `reports/reports.routes.js:282`,
+  `imports/dedup.service.js:72`. (`professionals.routes.js:122` no: es `profesionales_arl`.)
+- **Vistas de `schema.sql` que cruzan con arls:** `vw_ordenes_expandidas` (~l. 1327),
+  `vw_horas_ejecutadas`/`vw_precuentas` (~l. 1582-1665) y `vw_ordenes_vencidas` (~l. 1639).
+  Recrearlas tras el cambio (trampa 69). `arl_id NOT NULL` está en la l. ~321.
+- **Hallazgo de diseño:** `/ordenes` lista `borradores_extraccion`, no `ordenes_servicio`
+  (`DRAFT_SELECT` en `imports/drafts.routes.js`, ya con `LEFT JOIN arls`). El borrador exige
+  `lote_importacion_id` NOT NULL y `materializarOrden` (l. 355) rechaza sin `arl_id`, exige
+  `numero_orden` o cronograma+secuencia y aplica el dedup por ARL.
+- **Diseño propuesto:** `POST /drafts/manual` crea en una transacción un lote sintético
+  (`origen MANUAL`) + borrador con `metadatos_extraccion` escritos a mano + `pagador_tercero_id`,
+  y lo materializa en el acto. `materializarOrden` se relaja solo cuando hay pagador: sin ARL,
+  `numero_orden` = el propio código OS (o uno libre), sin dedup de ARL, sin regla de Bolívar.
+  Migración: `arl_id` nullable, `pagador_tercero_id` en borradores y órdenes, `CHECK`, vistas.
+  `entrega-arl.service.js` → ningún formato y casillas por defecto sin ARL. A1-03 (relación)
+  las trata como aprobadas; el borrador de factura usa `productoPrivado` (IVA 19 %), ya existe.
+- **Preguntas para JD&D (no bloquean construir):** ¿las órdenes privadas llevan formatos o
+  soportes propios de JD&D? ¿IVA 19 % siempre (Q-14)?
+- **Aceptación:** una manual recorre SIN PROGRAMAR → FINALIZADA y se factura con IVA; volver a
+  importar un PDF de AXA y un SIPAB tras el cambio.
 
 ### ▶ 29-sep-2026 — JD&D ACEPTÓ LA COTIZACIÓN; todo quedó commiteado
 
@@ -372,7 +398,7 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecha y verificada · ❓ espera 
 | A1-06 | Envío al cliente (FEL-16) | A1-05 | S | ✅ 28-sep (local; ver bitácora) |
 | A1-07 | Rechazos, reenvíos y eventos DIAN (FEL-12, FEL-19) | A1-05 | M | ✅ 28-sep, probado en el sandbox real (ver bitácora) |
 | A1-08 | Pantalla de Facturación | A1-03..07 | L | ✅ 29-sep con los subsistemas Operación/Finanzas (selección al entrar, «Cambiar de sistema»); probado en navegador: crear y eliminar el borrador de la prefactura 170501. Emisión desde la pantalla sin probar (marcaría como facturadas las órdenes de prueba) |
-| A2-01 | Nota crédito (FEL-11) | A1-05 | M | ⬜ |
+| A2-01 | Nota crédito (FEL-11) | A1-05 | M | ✅ 29-sep, probada en el SANDBOX real: SETP990021791 anulada con NC979; órdenes de vuelta a «Por facturar» (`scripts/verificar-nota-credito.mjs`). Hallado y corregido de paso: el número de Factus trae el prefijo y A1-05 lo duplicaba |
 | A3-01 | Órdenes manuales para privados (pagador sin ARL) | A0-05 | L | ⬜ |
 | A4-01 | Documento soporte desde la cuenta de cobro (DSP-01, CXP-05) | A1-02, A0-05 | L | ❓ Q-17 |
 | A4-02 | Documento soporte manual y carga masiva por Excel | A4-01 | M | ⬜ |
