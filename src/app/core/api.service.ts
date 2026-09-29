@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, DetalleFactura, DocumentoFactura, PagadorPorFacturar } from './models';
+import { CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -1019,6 +1019,26 @@ export class ApiService {
   /** Apunte interno de aceptación tácita (no llama a Factus: Q-26). */
   aceptacionTacitaFactura(id: string): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.base}/facturacion/documentos/${id}/aceptacion-tacita`, {});
+  }
+  // ---- A2-01 · Nota crédito ----
+  causalesNotaCredito(): Observable<Wrap<CausalNotaCredito[]>> {
+    return this.http.get<Wrap<CausalNotaCredito[]>>(`${this.base}/facturacion/notas/causales`);
+  }
+  /** Notas crédito por estado (varios separados por coma). */
+  listarNotasCredito(estado?: string): Observable<Wrap<DocumentoFactura[]>> {
+    return this.http.get<Wrap<DocumentoFactura[]>>(`${this.base}/facturacion/notas${queryString({ estado })}`);
+  }
+  /**
+   * FEL-11 · Nota crédito en BORRADOR sobre una factura validada. Sin `lineas` (o
+   * con la causal 2, anulación) acredita la factura completa. Se emite después
+   * con `emitirFactura` (el servidor distingue el tipo).
+   */
+  crearNotaCredito(facturaId: string, body: {
+    causal: string; lineas?: { item_id: string; cantidad: number }[]; observaciones?: string;
+  }): Observable<Wrap<DetalleFactura & { advertencia?: string | null }> & { message: string }> {
+    return this.http.post<Wrap<DetalleFactura & { advertencia?: string | null }> & { message: string }>(
+      `${this.base}/facturacion/documentos/${facturaId}/nota-credito`, body,
+    );
   }
   /** PDF o XML de una factura validada (exige sesión: se descarga como blob). */
   archivoFactura(id: string, tipo: 'pdf' | 'xml'): Observable<Blob> {

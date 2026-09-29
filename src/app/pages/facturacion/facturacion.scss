@@ -84,3 +84,10 @@
 .fac-eventos__fecha { color: var(--text-muted); margin-right: 0.4rem; }
 .fac-errores { margin: 0.3rem 0; padding-left: 1.1rem; font-size: 0.85rem; }
 .fac-reenvio { display: flex; align-items: flex-end; gap: 0.6rem; .form-field { flex: 1; margin: 0; } }
+
+/* A2-01 · formulario de nota crédito dentro del detalle */
+.fac-nota { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem; border: 1px solid var(--border-soft); border-radius: var(--radius-md, 10px); background: #fafbfd; }
+.fac-nota__aviso { margin: 0; font-size: 0.85rem; }
+.fac-nota__acciones { display: flex; justify-content: flex-end; gap: 0.6rem; }
+.fac-cant { width: 90px; text-align: right; display: inline-block; }
+.vista-ayuda { margin: 0; font-size: 0.8rem; color: var(--text-muted); }

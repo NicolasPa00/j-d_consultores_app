@@ -1461,7 +1461,18 @@ export interface DocumentoFactura {
   pdf_path: string | null;
   xml_path: string | null;
   errores: unknown;
+  /** A2-01 · en una nota crédito: causal DIAN (1..6) y la factura que corrige. */
+  causal?: string | null;
+  documento_referencia_id?: string | null;
+  referencia_prefijo?: string | null;
+  referencia_numero?: string | null;
   creado_en: string;
+}
+
+/** Causal DIAN de una nota crédito (tabla oficial de Factus). */
+export interface CausalNotaCredito {
+  codigo: string;
+  nombre: string;
 }
 
 export interface ItemFactura {

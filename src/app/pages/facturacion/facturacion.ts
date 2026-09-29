@@ -8,12 +8,13 @@ import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
 import { mensajeError } from '../../core/errores';
 import {
-  DetalleFactura, DocumentoFactura, EstadoDocumento, GrupoPorFacturar, LineaPorFacturar, PagadorPorFacturar,
+  CausalNotaCredito, DetalleFactura, DocumentoFactura, EstadoDocumento, GrupoPorFacturar, LineaPorFacturar,
+  PagadorPorFacturar,
 } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
-type Pestana = 'por-facturar' | 'borradores' | 'emitidas';
+type Pestana = 'por-facturar' | 'borradores' | 'emitidas' | 'notas';
 
 /** Estados que caben en «Emitidas»: todo lo que ya salió (o intentó salir) a la DIAN. */
 const ESTADOS_EMITIDAS = 'VALIDADO,RECHAZADO,ENVIANDO,ANULADO';
@@ -77,8 +78,20 @@ export class FacturacionComponent implements OnInit {
     const f = this.filtroEstado();
     return f ? this.emitidas().filter((d) => d.estado === f) : this.emitidas();
   });
+  protected readonly notas = signal<DocumentoFactura[]>([]);
   protected readonly pagBorradores = paginar(this.borradores);
   protected readonly pagEmitidas = paginar(this.emitidasFiltradas);
+  protected readonly pagNotas = paginar(this.notas);
+
+  // ---------------- A2-01 · Nota crédito ----------------
+  protected readonly causales = signal<CausalNotaCredito[]>([]);
+  /** Formulario de nota crédito abierto dentro del detalle de una factura validada. */
+  protected readonly formNota = signal(false);
+  protected readonly causalNota = signal('');
+  protected readonly obsNota = signal('');
+  /** Cantidad a acreditar por ítem (id → cantidad), para las notas parciales. */
+  protected readonly cantidadesNota = signal<Record<string, number>>({});
+  protected readonly esAnulacion = computed(() => this.causalNota() === '2');
   protected readonly actualizandoEventos = signal(false);
 
   // ---------------- Detalle ----------------
@@ -91,12 +104,14 @@ export class FacturacionComponent implements OnInit {
   ngOnInit(): void {
     this.cargarRelacion();
     this.cargarListas();
+    this.api.causalesNotaCredito().subscribe({ next: (r) => this.causales.set(r.data), error: () => {} });
   }
 
   protected cambiarPestana(p: Pestana): void {
     this.pestana.set(p);
     this.pagBorradores.reiniciar();
     this.pagEmitidas.reiniciar();
+    this.pagNotas.reiniciar();
   }
 
   // ================= Por facturar =================
@@ -202,7 +217,7 @@ export class FacturacionComponent implements OnInit {
   // ================= Borradores y emitidas =================
   protected cargarListas(): void {
     this.cargandoListas.set(true);
-    let pendientes = 2;
+    let pendientes = 3;
     const listo = () => { if (--pendientes === 0) this.cargandoListas.set(false); };
     this.api.listarFacturas('BORRADOR').subscribe({
       next: (r) => { this.borradores.set(r.data); listo(); },
@@ -210,6 +225,10 @@ export class FacturacionComponent implements OnInit {
     });
     this.api.listarFacturas(ESTADOS_EMITIDAS).subscribe({
       next: (r) => { this.emitidas.set(r.data); listo(); },
+      error: () => listo(),
+    });
+    this.api.listarNotasCredito().subscribe({
+      next: (r) => { this.notas.set(r.data); listo(); },
       error: () => listo(),
     });
   }
@@ -234,6 +253,7 @@ export class FacturacionComponent implements OnInit {
   protected abrir(id: string): void {
     this.cargandoDetalle.set(true);
     this.correoReenvio.set('');
+    this.formNota.set(false);
     this.api.obtenerFactura(id).subscribe({
       next: (r) => { this.cargandoDetalle.set(false); this.detalle.set(r.data); },
       error: (err) => {
@@ -307,6 +327,66 @@ export class FacturacionComponent implements OnInit {
         this.alerts.error('No se pudo eliminar', mensajeError(err, 'Intente de nuevo.'));
       },
     });
+  }
+
+  // ================= A2-01 · Nota crédito =================
+  protected abrirFormNota(): void {
+    const d = this.detalle();
+    if (!d) return;
+    this.causalNota.set('');
+    this.obsNota.set('');
+    this.cantidadesNota.set(Object.fromEntries(d.items.map((it) => [it.id, 0])));
+    this.formNota.set(true);
+  }
+
+  protected cambiarCantidadNota(itemId: string, valor: number, maximo: number): void {
+    const n = Math.max(0, Math.min(Number(valor) || 0, maximo));
+    this.cantidadesNota.update((c) => ({ ...c, [itemId]: n }));
+  }
+
+  /** Líneas a acreditar en una nota parcial (las que tienen cantidad > 0). */
+  protected lineasNota(): { item_id: string; cantidad: number }[] {
+    return Object.entries(this.cantidadesNota()).filter(([, c]) => c > 0).map(([item_id, cantidad]) => ({ item_id, cantidad }));
+  }
+
+  protected crearNota(): void {
+    const d = this.detalle();
+    if (!d || !this.causalNota()) return;
+    const lineas = this.esAnulacion() ? undefined : this.lineasNota();
+    if (!this.esAnulacion() && !lineas?.length) {
+      this.alerts.warning('Elija qué acreditar', 'Indique la cantidad a acreditar de al menos un ítem, o elija la causal de anulación.');
+      return;
+    }
+    this.accion.set('nota');
+    this.api.crearNotaCredito(d.id, { causal: this.causalNota(), lineas, observaciones: this.obsNota() || undefined }).subscribe({
+      next: (r) => {
+        this.accion.set(null);
+        this.formNota.set(false);
+        if (r.data.advertencia) this.alerts.warning('Atención', r.data.advertencia);
+        else this.alerts.success('Nota crédito creada', 'Revísela y emítala ante la DIAN.');
+        this.cargarListas();
+        this.pestana.set('notas');
+        this.abrir(r.data.id);
+      },
+      error: (err) => {
+        this.accion.set(null);
+        this.alerts.error('No se pudo crear la nota crédito', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  protected esNota(d: DocumentoFactura): boolean {
+    return d.tipo === 'NOTA_CREDITO';
+  }
+
+  protected nombreCausal(codigo: string | null | undefined): string {
+    return this.causales().find((c) => c.codigo === codigo)?.nombre ?? (codigo ? `Causal ${codigo}` : '—');
+  }
+
+  protected referenciaDe(d: DocumentoFactura): string {
+    if (!d.referencia_numero) return '—';
+    const n = String(d.referencia_numero);
+    return d.referencia_prefijo && !n.startsWith(d.referencia_prefijo) ? `${d.referencia_prefijo}${n}` : n;
   }
 
   protected consultarEstado(): void {
