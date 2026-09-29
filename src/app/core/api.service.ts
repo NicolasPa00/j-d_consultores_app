@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista } from './models';
+import { ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoArl, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HistorialEstadoArl, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, PrevisualizacionPrefactura, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, VistaPreviaAsignacion } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -139,6 +139,15 @@ export class ApiService {
   exportXlsx(hoja: string, headers: string[], rows: (string | number)[][]): Observable<Blob> {
     return this.http.post(`${this.base}/reports/xlsx`, { hoja, headers, rows }, { responseType: 'blob' });
   }
+  /**
+   * T0-08 · "Bolívar: qué debo facturar": la relación en el mismo formato que ya
+   * arma JD&D a mano. El backend la construye entera (filtra, calcula el total);
+   * aquí solo se pide el archivo. Sin `desde`/`hasta` usa el corte por defecto
+   * (16 del mes anterior al 15 del actual).
+   */
+  relacionBolivar(desde?: string, hasta?: string): Observable<Blob> {
+    return this.http.get(`${this.base}/reports/relacion-bolivar${queryString({ desde, hasta })}`, { responseType: 'blob' });
+  }
 
   // ---- Órdenes (M3) ----
   listOrders(params?: Record<string, string>): Observable<Wrap<Orden[]>> {
@@ -155,8 +164,8 @@ export class ApiService {
    * 409). Editar tampoco mueve el estado ni la asignación, que tienen sus
    * propios endpoints.
    */
-  updateOrder(id: string, campos: Record<string, string>): Observable<Wrap<Orden & Record<string, unknown>>> {
-    return this.http.put<Wrap<Orden & Record<string, unknown>>>(`${this.base}/orders/${id}`, campos);
+  updateOrder(id: string, campos: Record<string, string>): Observable<Wrap<Orden & Record<string, unknown>> & { avisos?: string[] }> {
+    return this.http.put<Wrap<Orden & Record<string, unknown>> & { avisos?: string[] }>(`${this.base}/orders/${id}`, campos);
   }
   /**
    * ASG-08 · Las órdenes del profesional que tiene la sesión abierta.
@@ -189,9 +198,30 @@ export class ApiService {
        * que el elegido esté registrado ante la ARL de esta orden.
        */
       profesional_formatos_id?: string;
+      /**
+       * Observaciones por formato escritas en la vista previa (`{ at031: '…' }`).
+       * Se imprimen en la casilla de observaciones y se guardan en la orden.
+       * Omitido = se conservan las que ya tenía.
+       */
+      observaciones_formatos?: Record<string, string>;
+      /** Casillas abiertas llenadas en la vista previa: `{ fichaAxa: { 'nombre 4': '…' } }`. */
+      campos_formatos?: Record<string, Record<string, string>>;
     },
   ): Observable<RespuestaAsignacion> {
     return this.http.post<RespuestaAsignacion>(`${this.base}/orders/${id}/assign`, body);
+  }
+
+  /**
+   * Vista previa de los formatos que saldrán con esta asignación, ANTES de
+   * enviarla (29-sep-2026). Mismo cuerpo que `assignOrder`; el servidor corre la
+   * asignación completa dentro de una transacción que deshace: no guarda nada
+   * ni manda correo.
+   */
+  previsualizarAsignacion(
+    id: string,
+    body: Parameters<ApiService['assignOrder']>[1],
+  ): Observable<Wrap<VistaPreviaAsignacion>> {
+    return this.http.post<Wrap<VistaPreviaAsignacion>>(`${this.base}/orders/${id}/assign/preview`, body);
   }
 
   /** ASG-02 · Franjas ya guardadas de una visita (para reprogramar sobre ellas). */
@@ -277,6 +307,58 @@ export class ApiService {
     }>(`${this.base}/orders/cobro`, { ids, estado, ...extra });
   }
 
+  /**
+   * T0-07 · Estado ARL y/o n.º de prefactura de una o varias órdenes. Todo o
+   * nada: el servidor rechaza con un mensaje que dice qué falta (solo
+   * FINALIZADAS; en Bolívar, la prefactura). `numero_prefactura` omitido
+   * conserva el que hay; vacío lo borra.
+   */
+  marcarEstadoArl(
+    ids: string[], estado: EstadoArl, numero_prefactura?: string,
+  ): Observable<{ message: string; estado: EstadoArl; actualizadas: string[]; sin_cambio: number }> {
+    return this.http.patch<{ message: string; estado: EstadoArl; actualizadas: string[]; sin_cambio: number }>(
+      `${this.base}/orders/estado-arl`,
+      numero_prefactura === undefined ? { ids, estado } : { ids, estado, numero_prefactura },
+    );
+  }
+
+  // ---- T0-09 · Prefactura de Bolívar cargada con IA ----
+  /**
+   * Sube el PDF y lo previsualiza: extrae con IA y cruza contra Orbita. NO
+   * escribe nada — eso es `aplicarPrefactura`. Multipart, como `POST /imports`.
+   */
+  previsualizarPrefactura(file: File): Observable<Wrap<PrevisualizacionPrefactura>> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<Wrap<PrevisualizacionPrefactura>>(`${this.base}/prefacturas/previsualizar`, form);
+  }
+  /**
+   * Aplica lo que quedó en la previsualización: guarda la prefactura y, en las
+   * filas marcadas, aprueba la orden ante la ARL. `filasMarcadas` son las
+   * casillas que quedaron con el check en el modal.
+   */
+  aplicarPrefactura(
+    prev: PrevisualizacionPrefactura,
+    filasMarcadas: { codigo_cronograma: string; secuencia: string }[],
+  ): Observable<{ message: string; aplicadas: string[]; omitidas: { codigo_cronograma: string; secuencia: string; resultado: string; codigo: string | null }[] }> {
+    return this.http.post<{ message: string; aplicadas: string[]; omitidas: { codigo_cronograma: string; secuencia: string; resultado: string; codigo: string | null }[] }>(
+      `${this.base}/prefacturas/aplicar`,
+      {
+        numero_prefactura: prev.numero_prefactura, plan_codigo: prev.plan_codigo,
+        plan_descripcion: prev.plan_descripcion, fecha_corte: prev.fecha_corte,
+        valor_total: prev.valor_total, nombre_archivo: prev.nombre_archivo,
+        filas: prev.filas, filas_marcadas: filasMarcadas,
+      },
+    );
+  }
+
+  /** Detalle de la orden + sus tres líneas de tiempo (estados, cobro, estado ARL). */
+  orderEstadoArlHistory(orderId: string): Observable<Wrap<HistorialEstadoArl[]>> {
+    return this.http.get<Wrap<{ historial_estado_arl: HistorialEstadoArl[] }>>(`${this.base}/orders/${orderId}`).pipe(
+      map((r) => ({ data: r.data.historial_estado_arl ?? [] })),
+    );
+  }
+
   /** Historial del eje de cobro de una orden (quién la movió y cuándo). */
   orderCobroHistory(orderId: string): Observable<Wrap<HistorialCobro[]>> {
     return this.http.get<Wrap<HistorialCobro[]>>(`${this.base}/orders/${orderId}/cobro`);
@@ -341,7 +423,7 @@ export class ApiService {
   listTarifas(profId: string): Observable<Wrap<Tarifa[]>> {
     return this.http.get<Wrap<Tarifa[]>>(`${this.base}/professionals/${profId}/tarifas`);
   }
-  addTarifa(profId: string, body: { actividad: string; valor_hora: number; vigente_desde?: string }): Observable<Wrap<Tarifa>> {
+  addTarifa(profId: string, body: { tipo_orden_id: string; valor_hora: number; vigente_desde?: string }): Observable<Wrap<Tarifa>> {
     return this.http.post<Wrap<Tarifa>>(`${this.base}/professionals/${profId}/tarifas`, body);
   }
   removeTarifa(profId: string, tarifaId: string): Observable<Wrap<{ id: string }>> {

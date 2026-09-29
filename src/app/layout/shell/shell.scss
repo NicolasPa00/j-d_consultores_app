@@ -59,6 +59,74 @@
   overflow-y: auto;
 }
 
+/* =================== T0-14 · Sidebar colapsable a voluntad ===================
+   Mismo aspecto que el colapso por ancho (≤820 px, más abajo): icono + isotipo.
+   Se repiten las reglas en vez de compartirlas con la media query porque las
+   dos tienen que poder darse SIN depender la una de la otra: colapsado a mano
+   en un monitor ancho, o el menú móvil abierto encima de un sidebar que la
+   media query ya dejó estrecho. */
+.sidebar--colapsado {
+  width: 76px;
+}
+
+.sidebar--colapsado ~ .main .navbar {
+  width: calc(100% - 76px);
+}
+
+.sidebar--colapsado .nav-link__text,
+.sidebar--colapsado .logout-btn__text {
+  display: none;
+}
+
+.sidebar--colapsado .nav-link,
+.sidebar--colapsado .logout-btn {
+  justify-content: center;
+}
+
+.sidebar--colapsado .sidebar__brand {
+  padding: 0 0.5rem;
+}
+
+.sidebar--colapsado .sidebar__logo--completo {
+  display: none;
+}
+
+.sidebar--colapsado .sidebar__logo--isotipo {
+  display: block;
+}
+
+/* Botón de la barra superior que alterna el sidebar. */
+.menu-toggle {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.menu-toggle:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.menu-toggle svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Fondo oscuro del menú móvil. Fuera de la media query no hace nada visible: el
+   panel al que acompaña tampoco se despliega ahí (ver .sidebar--movil-abierto). */
+.sidebar-backdrop {
+  display: none;
+}
+
 .nav-link {
   position: relative;
   display: flex;
@@ -310,5 +378,46 @@
 
   .sidebar__logo--isotipo {
     display: block;
+  }
+
+  /* T0-14 · El botón de la barra no encoge nada aquí (ya está estrecho): abre
+     el menú completo ENCIMA, como un panel flotante, con su fondo oscuro. Se
+     cierra tocando fuera o al elegir una opción (`cerrarMenuMovil()`). */
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    z-index: 40;
+  }
+
+  .sidebar--movil-abierto {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 260px;
+    z-index: 50;
+    box-shadow: 4px 0 20px rgba(15, 23, 42, 0.25);
+  }
+
+  .sidebar--movil-abierto .sidebar__brand {
+    padding: 0 1.25rem;
+  }
+
+  .sidebar--movil-abierto .sidebar__logo--completo {
+    display: block;
+  }
+
+  .sidebar--movil-abierto .sidebar__logo--isotipo {
+    display: none;
+  }
+
+  .sidebar--movil-abierto .nav-link__text,
+  .sidebar--movil-abierto .logout-btn__text {
+    display: flex;
+  }
+
+  .sidebar--movil-abierto .nav-link,
+  .sidebar--movil-abierto .logout-btn {
+    justify-content: flex-start;
   }
 }

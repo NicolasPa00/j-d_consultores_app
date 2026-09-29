@@ -151,6 +151,23 @@
   color: var(--text-muted);
 }
 
+/* T0-06 · Con nueve columnas (Estado ARL es nueva) el padding de `.table`
+   compartido no cabía a 1366-1440 px sin scroll horizontal: "Opciones" quedaba
+   tras el borde. Se acota SOLO aquí (no en el `.table` global, que usan todas
+   las tablas de la app) para recuperar el ancho que ocupan los pills largos
+   ("SIN PROGRAMAR", "NO FACTURADA") y los iconos de la última columna. */
+.ord-table th,
+.ord-table td {
+  padding: 0.75rem 0.6rem;
+}
+
+/* Los pills de estado ("SIN PROGRAMAR", "NO FACTURADA"…) son el otro tramo
+   ancho: se acortan solo en esta tabla, sin tocar `.pill` global. */
+.ord-table .pill {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+}
+
 .col-num {
   width: 48px;
   text-align: center;
@@ -173,6 +190,13 @@
   color: var(--text-main);
 }
 
+/* T0-06 · El NIT, que antes tenía su propia columna: se movió aquí para que la
+   tabla quepa sin scroll horizontal a 1366-1440 px (ver .col-actions). */
+.who__nit {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
 .who__assigned {
   display: inline-flex;
   align-items: center;
@@ -188,34 +212,23 @@
   height: 13px;
 }
 
-/* Columna "Fecha de vencimiento": fecha arriba, días restantes debajo.
-   El color vive en el bloque completo (no solo en el texto de abajo) para que
-   una orden por vencer se detecte barriendo la columna con la vista. */
+/* Columna "Vencimiento" (T0-06, compactada): una sola línea con la fecha; los
+   días que faltan (o que ya pasaron) van en el `title`, no ocupan ancho. El
+   color de la fecha es el mismo aviso que antes llevaba el bloque completo. */
 .venc {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.25;
-}
-
-.venc__date {
   font-size: 0.86rem;
   color: var(--text-main);
+  cursor: help;
 }
 
-.venc__left {
-  font-size: 0.74rem;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.venc--warn .venc__date,
-.venc--warn .venc__left {
+.venc--warn {
   color: var(--warning);
+  font-weight: 600;
 }
 
-.venc--danger .venc__date,
-.venc--danger .venc__left {
+.venc--danger {
   color: var(--danger);
+  font-weight: 600;
 }
 
 .venc__none {
@@ -1858,3 +1871,115 @@
   font-size: 0.85rem;
   color: var(--text-main);
 }
+
+// ---- Vista previa de formatos antes de asignar (29-sep-2026) ----
+// Lista y observaciones a la izquierda, el PDF a la derecha ocupando el alto
+// del modal: es un documento que se lee, y un visor bajito obliga a desplazarse
+// dentro de un iframe dentro de un modal.
+.vista-formatos {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) 1fr;
+  gap: 16px;
+  min-height: 70vh;
+
+  @media (max-width: 820px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.vista-formatos__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  max-height: 70vh;
+}
+
+.vista-formatos__lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.vista-formatos__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.7;
+  }
+
+  &--activo {
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 1px var(--secondary-color);
+  }
+}
+
+.vista-formatos__nombre {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-main);
+}
+
+.vista-formatos__archivo,
+.vista-formatos__ayuda,
+.vista-formatos__contador {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.vista-formatos__contador {
+  align-self: flex-end;
+}
+
+.vista-formatos__obs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vista-formatos__aviso {
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.vista-formatos__visor {
+  display: flex;
+  min-height: 70vh;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: #f4f6f9;
+
+  iframe {
+    flex: 1;
+    width: 100%;
+    border: 0;
+  }
+}
+
+// Modal de carga de la prefactura (mientras la IA lee el PDF).
+.prefactura-carga {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 24px 16px;
+}
+.prefactura-carga__spinner { width: 32px; height: 32px; }
+.prefactura-carga__texto { margin: 0; color: var(--text-main); }
+.prefactura-carga__nota { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
+
+// Casilla de la vista previa que sigue vacía: lo que falta completar.
+.vista-formatos__obs--vacia .form-control { border-color: var(--warning); background: #fffaf0; }
+.vista-formatos__pendientes { color: var(--warning); font-weight: 600; }

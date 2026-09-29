@@ -4,18 +4,18 @@ import { isPlatformBrowser } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { map, Observable } from 'rxjs';
+import { firstValueFrom, map, Observable, Subscription } from 'rxjs';
 import { ExtractedField, ServiceOrder } from '../../data/service-orders';
 import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
-import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, TipoViatico, FranjaVisita, HistorialCobro, HistorialEstado, Ocupacion, Orden, Plantilla, Profesional, RegistroArl } from '../../core/models';
+import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, EstadoArl, ESTADOS_ARL, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, TipoViatico, CasillaEditable, FilaPrefactura, FormatoPrevio, FranjaVisita, HistorialCobro, HistorialEstado, HistorialEstadoArl, Ocupacion, Orden, Plantilla, PrevisualizacionPrefactura, Profesional, RegistroArl, ResultadoCrucePrefactura } from '../../core/models';
 import { aIsoFecha, fechaLocal } from '../../core/fechas';
 import {
   ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, opcionesDeCampo,
   problemaCampo, tecleoCampo,
 } from '../../shared/campos-orden';
-import { OpcionCampo, esBolivar, etiquetaTipoActividadArl, pistaTipoActividadArl } from '../../core/bolivar';
+import { OpcionCampo, esBolivar, etiquetaEmpresa, etiquetaTipoActividadArl, pistaTipoActividadArl } from '../../core/bolivar';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
@@ -32,6 +32,13 @@ interface FormFieldDescriptor {
   required?: boolean;
   /** Contexto que se lee bajo el campo, tenga valor o no. */
   hint?: string;
+  /** Tope de caracteres (el tema de la orden cabe en una casilla del formato). */
+  maxLength?: number;
+  /**
+   * Lo escribe una persona, no lo lee la IA de un documento: no tiene sentido
+   * enseñarle un porcentaje de confianza ni avisar de "baja confianza".
+   */
+  manual?: boolean;
 }
 
 /**
@@ -248,6 +255,24 @@ export class ValidationComponent implements OnInit, OnDestroy {
   /** Historial del eje de cobro de la orden abierta en el detalle. */
   protected readonly historialCobro = signal<HistorialCobro[]>([]);
 
+  // ---- Estado ARL (T0-07) ----
+  /**
+   * Tercer eje de la orden: si la ARL APROBÓ en su plataforma los documentos.
+   * Es la condición para facturar. Como el de cobro, filtra aparte del ciclo
+   * operativo y se combina con él; a diferencia del de cobro, SÍ se cambia desde
+   * el modo edición de la orden y se guarda con el mismo "Guardar" (T0-15).
+   */
+  protected readonly estadosArl = ESTADOS_ARL;
+  protected readonly filtroArl = signal<EstadoArl | ''>('');
+  /** Historial del estado ARL de la orden abierta en el detalle. */
+  protected readonly historialArl = signal<HistorialEstadoArl[]>([]);
+  /** Lo elegido en el formulario de edición; se manda al pulsar Guardar. */
+  protected estadoArlEdit: EstadoArl = 'PENDIENTE';
+  protected prefacturaEdit = '';
+  /** Marcan en rojo el campo cuyo cambio rechazó el servidor al guardar. */
+  protected readonly estadoError = signal(false);
+  protected readonly estadoArlError = signal(false);
+
   // ---- Modal de detalle / edición ----
   protected readonly detailId = signal<string | null>(null);
   protected readonly editMode = signal(false);
@@ -267,7 +292,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
   /** Estado elegido en el desplegable de cambio manual ('' = ninguno). */
   protected readonly estadoDestino = signal<EstadoOrden | ''>('');
   protected motivoCambio = '';
-  protected readonly cambiandoEstado = signal(false);
 
   // ---- Modal de verificación de soportes (M7) ----
   protected readonly verifyId = signal<string | null>(null);
@@ -308,6 +332,39 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected readonly selectedProfId = signal<string | null>(null);
   protected readonly selectedProfSlots = signal<FranjaVista[]>([]);
   protected readonly assigning = signal(false);
+
+  // ---- Vista previa de formatos antes de enviar (pedido de JD&D, 29-sep-2026) ----
+  // Con la visita completa, "Continuar" no envía: lleva a un segundo paso del
+  // modal donde se ven los PDF tal como saldrán y se escriben observaciones en
+  // ellos. Solo "Confirmar y enviar" guarda y manda el correo.
+  protected readonly pasoAsignacion = signal<'agenda' | 'formatos'>('agenda');
+  protected readonly formatosPrevios = signal<FormatoPrevio[]>([]);
+  protected readonly formatoVisto = signal(0);
+  protected readonly urlFormatoVisto = signal<SafeResourceUrl | null>(null);
+  private urlFormatoObjeto: string | null = null;
+  protected readonly observacionesFormatos = signal<Record<string, string>>({});
+  /** Casillas abiertas llenadas desde el panel, por formato y campo del PDF. */
+  protected readonly camposFormatos = signal<Record<string, Record<string, string>>>({});
+  /** Las casillas abiertas del formato que se está viendo en el visor. */
+  protected readonly formatoEnVisor = computed(() => this.formatosPrevios()[this.formatoVisto()] ?? null);
+  protected readonly previsualizando = signal(false);
+  /** Hay observaciones o casillas escritas que la vista previa todavía no muestra. */
+  protected readonly observacionesSinAplicar = signal(false);
+  /**
+   * Un cuadro de observaciones por FORMATO, no por archivo: las N asistencias de
+   * una visita de N días comparten la misma nota, y pedirla N veces invita a
+   * que difieran sin querer.
+   */
+  protected readonly clavesConObservaciones = computed(() => {
+    const vistas = new Map<string, { clave: string; etiqueta: string; copias: number }>();
+    for (const f of this.formatosPrevios()) {
+      if (!f.clave || !f.admite_observaciones) continue;
+      const ya = vistas.get(f.clave);
+      if (ya) ya.copias += 1;
+      else vistas.set(f.clave, { clave: f.clave, etiqueta: f.etiqueta, copias: 1 });
+    }
+    return [...vistas.values()];
+  });
   /**
    * ASG · Suplencia: los formatos salen a nombre de OTRO profesional.
    *
@@ -407,8 +464,10 @@ export class ValidationComponent implements OnInit, OnDestroy {
     const q = this.query().trim().toLowerCase();
     const view = this.view();
     const cobro = this.filtroCobro();
+    const arl = this.filtroArl();
     return this.orders().filter((o) => {
       if (!this.enVista(o, view)) return false;
+      if (arl && (o.estadoArl ?? null) !== arl) return false;
       // El eje de facturación filtra APARTE del ciclo operativo: la pregunta que
       // se hace desde aquí es "qué está finalizado y sin radicar", que son los
       // dos ejes a la vez. Las órdenes sin OS todavía no tienen estado de cobro,
@@ -530,6 +589,12 @@ export class ValidationComponent implements OnInit, OnDestroy {
     if (esBolivar(o.arl)) {
       opcion('modalidad_ejecucion', 'Modalidad de ejecución', f.modalidadEjecucion, true);
     }
+    // FOR · El AGR de Bolívar (casilla 16 del AT-031). Se enseña siempre en esa ARL,
+    // también vacío: el SIPAB de la orden puede no haberlo traído y hay que poder
+    // escribirlo. Fuera de Bolívar no existe.
+    if (esBolivar(o.arl) && f.asesorGestionRiesgo) {
+      push('asesor_gestion_riesgo', 'Asesor Gestión del Riesgo (AGR)', f.asesorGestionRiesgo);
+    }
     opt('valor_unitario', 'Valor Unitario', f.valorUnitario);
     opt('valor_total', 'Valor Total', f.valorTotal);
     // Los viáticos ya NO son un campo de esta rejilla (ago-2026): se eligen de
@@ -547,6 +612,17 @@ export class ValidationComponent implements OnInit, OnDestroy {
     push('contacto_sst_telefono', 'Contacto SST · Teléfono', f.contactoTelefono);
     push('contacto_sst_correo', 'Contacto SST · Correo', f.contactoCorreo, 'text', 'full');
     push('descripcion', 'Descripción', f.descripcion, 'textarea', 'full');
+    // FOR · Tema/actividad propio (T0-05). Solo con la OS creada: se guarda en la
+    // orden, no en el borrador. Es de todas las ARL, pero solo Bolívar lo imprime.
+    if (o.osId && f.temaActividad) {
+      rows.push({
+        label: 'Tema / actividad a desarrollar', field: f.temaActividad, type: 'textarea',
+        span: 'full', modo: 'texto', maxLength: 300, manual: true,
+        hint: 'Opcional, hasta 300 caracteres. Sale en el AT-031 (Temas desarrollados) y en el AT-028 ' +
+              '(Tema y/o actividad) de Bolívar. Los formatos se generan al asignar: si la orden ya está ' +
+              'programada, reprogramarla los regenera con este tema.',
+      });
+    }
     return rows;
   });
 
@@ -732,6 +808,218 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected filtrarCobro(valor: string): void {
     this.filtroCobro.set((valor || '') as EstadoCobro | '');
     this.pag.reiniciar();
+  }
+
+  // ================= Estado ARL (T0-07) =================
+  protected filtrarArl(valor: string): void {
+    this.filtroArl.set((valor || '') as EstadoArl | '');
+    this.pag.reiniciar();
+  }
+
+  /** Color de la pastilla del estado ARL: verde aprobado, naranja pendiente. */
+  protected pillArl(estado?: EstadoArl | null): string {
+    return estado === 'APROBADO' ? 'pill--success' : 'pill--warning';
+  }
+
+  /** El n.º de prefactura son solo dígitos (los de Bolívar tienen 6). */
+  protected soloDigitos(valor: string): string {
+    return String(valor ?? '').replace(/\D/g, '').slice(0, 12);
+  }
+
+  /**
+   * ¿Se puede marcar APROBADO ahora mismo? La ARL solo aprueba órdenes
+   * FINALIZADAS. También cuenta que en este mismo Guardar se esté pasando a
+   * FINALIZADA: el estado se aplica primero y el estado ARL después.
+   */
+  protected puedeAprobarArl(o: ServiceOrder): boolean {
+    return o.osEstado === 'FINALIZADA' || this.estadoDestino() === 'FINALIZADA';
+  }
+
+  /**
+   * T0-16 · Qué valor hora tendría la orden con el tipo elegido en el formulario.
+   *
+   * Solo se conoce el del CATÁLOGO: la tarifa pactada del profesional no llega al
+   * frontend, así que si la tiene, el servidor aplica esa al guardar y esta cifra
+   * es una estimación. Devuelve null mientras el tipo no haya cambiado.
+   */
+  protected vistaValorHora(o: ServiceOrder): { valor: number | null; sinProfesional: boolean } | null {
+    if (!this.editMode() || !this.tipoOrdenEdit || this.tipoOrdenEdit === (o.tipoOrdenId ?? '')) return null;
+    const tipo = this.tiposOrden().find((t) => t.id === this.tipoOrdenEdit);
+    return { valor: tipo ? Number(tipo.valor_hora) || null : null, sinProfesional: !o.assignedProfId };
+  }
+
+  /**
+   * T0-06 · La razón social con `(cronograma-secuencia)` al lado, solo en
+   * Bolívar. Mismo texto en la fila de la tabla y en el título del detalle.
+   */
+  protected nombreOrden(o: ServiceOrder): string {
+    return etiquetaEmpresa(o.company, o.arl, o.fields.codigoCronograma.value, o.fields.secuencia.value);
+  }
+
+  /** El n.º de prefactura (código SIPAB) solo existe en Bolívar. */
+  protected esBolivarArl(o: ServiceOrder): boolean {
+    return esBolivar(o.arl);
+  }
+
+  protected fechaArl(h: HistorialEstadoArl): string {
+    return h.creado_en ? new Date(h.creado_en).toLocaleString('es-CO') : '—';
+  }
+
+  /**
+   * Icono de "Estado de facturación" (modal para marcar FACTURADA) en cada fila.
+   * APAGADO desde el 29-sep-2026: entra con el segundo lote de cambios, junto con
+   * la facturación. El modal y su lógica se conservan; para volver a mostrarlo
+   * basta con poner `true`. En producción nunca se había usado (0 órdenes
+   * facturadas al 29-sep), así que ocultarlo no le quita nada a nadie.
+   */
+  protected readonly cobroHabilitado = false;
+
+  // ================= T0-09 · Prefactura de Bolívar cargada con IA =================
+  protected readonly prefacturaCargando = signal(false);
+  /**
+   * Nombre del PDF que se está leyendo. El modal de carga se abre en cuanto se
+   * elige el archivo (pedido de JD&D, 29-sep): antes solo cambiaba el texto del
+   * botón durante los segundos que tarda la IA, y parecía que no pasaba nada.
+   */
+  protected readonly prefacturaArchivo = signal<string | null>(null);
+  private prefacturaLectura: Subscription | null = null;
+  protected readonly prefacturaPreview = signal<PrevisualizacionPrefactura | null>(null);
+  /** Claves "cronograma|secuencia" de las filas con el check puesto. */
+  protected readonly prefacturaMarcadas = signal<Set<string>>(new Set());
+  protected readonly prefacturaAplicando = signal(false);
+
+  private claveFila(f: { codigo_cronograma: string; secuencia: string }): string {
+    return `${f.codigo_cronograma}|${f.secuencia}`;
+  }
+
+  /** Dispara al elegir el PDF: sube, extrae con IA y cruza — abre el modal con el resultado. */
+  protected onPrefacturaFile(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = ''; // para poder volver a elegir el MISMO archivo si hace falta reintentar
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      this.alerts.warning('Archivo no válido', 'La prefactura de Bolívar se sube en PDF.');
+      return;
+    }
+    this.prefacturaArchivo.set(file.name);
+    this.prefacturaCargando.set(true);
+    this.prefacturaLectura = this.api.previsualizarPrefactura(file).subscribe({
+      next: (r) => {
+        this.prefacturaCargando.set(false);
+        this.prefacturaLectura = null;
+        this.prefacturaPreview.set(r.data);
+        // Las "encontrada" quedan marcadas de una vez; el resto se elige a mano.
+        this.prefacturaMarcadas.set(new Set(
+          r.data.filas.filter((f) => f.marcada_por_defecto).map((f) => this.claveFila(f)),
+        ));
+      },
+      error: (err) => {
+        this.prefacturaCargando.set(false);
+        this.prefacturaLectura = null;
+        this.prefacturaArchivo.set(null);
+        this.alerts.error('No se pudo leer la prefactura', mensajeError(err, 'El servidor no pudo extraer los datos del PDF.'));
+      },
+    });
+  }
+
+  /**
+   * Cancela la lectura en curso. La previsualización no escribe nada en el
+   * servidor, así que cortarla a mitad no deja nada a medias.
+   */
+  protected cancelarLecturaPrefactura(): void {
+    this.prefacturaLectura?.unsubscribe();
+    this.prefacturaLectura = null;
+    this.prefacturaCargando.set(false);
+    this.prefacturaArchivo.set(null);
+  }
+
+  protected cerrarPrefactura(): void {
+    if (this.prefacturaAplicando()) return;
+    this.prefacturaArchivo.set(null);
+    this.prefacturaPreview.set(null);
+    this.prefacturaMarcadas.set(new Set());
+  }
+
+  protected prefacturaFilaMarcada(f: FilaPrefactura): boolean {
+    return this.prefacturaMarcadas().has(this.claveFila(f));
+  }
+
+  /** Sin orden encontrada no hay nada que marcar: no existe una OS a la que aplicarle nada. */
+  protected prefacturaFilaMarcable(f: FilaPrefactura): boolean {
+    return f.resultado !== 'no_encontrada';
+  }
+
+  protected alternarFilaPrefactura(f: FilaPrefactura, marcada: boolean): void {
+    if (!this.prefacturaFilaMarcable(f)) return;
+    this.prefacturaMarcadas.update((set) => {
+      const nuevo = new Set(set);
+      const clave = this.claveFila(f);
+      if (marcada) nuevo.add(clave); else nuevo.delete(clave);
+      return nuevo;
+    });
+  }
+
+  protected readonly prefacturaMarcadasCount = computed(() => this.prefacturaMarcadas().size);
+
+  protected fechaPrefactura(iso: string): string {
+    return iso ? new Date(iso).toLocaleString('es-CO') : '—';
+  }
+
+  protected etiquetaResultadoPrefactura(r: ResultadoCrucePrefactura): string {
+    switch (r) {
+      case 'encontrada': return 'Encontrada';
+      case 'valor_distinto': return 'Valor distinto';
+      case 'no_finalizada': return 'No finalizada';
+      case 'ya_tiene_otra_prefactura': return 'Ya tiene otra prefactura';
+      default: return 'No encontrada';
+    }
+  }
+
+  protected pillResultadoPrefactura(r: ResultadoCrucePrefactura): string {
+    switch (r) {
+      case 'encontrada': return 'pill--success';
+      case 'valor_distinto': return 'pill--warning';
+      case 'no_finalizada': return 'pill--warning';
+      case 'ya_tiene_otra_prefactura': return 'pill--danger';
+      default: return 'pill--muted';
+    }
+  }
+
+  /** Guarda la prefactura y aprueba las filas marcadas ante la ARL, en una sola transacción del servidor. */
+  protected aplicarPrefactura(): void {
+    const pf = this.prefacturaPreview();
+    if (!pf || this.prefacturaAplicando()) return;
+    const marcadas = [...this.prefacturaMarcadas()].map((clave) => {
+      const [codigo_cronograma, secuencia] = clave.split('|');
+      return { codigo_cronograma, secuencia };
+    });
+    if (!marcadas.length) {
+      this.alerts.warning('Nada marcado', 'Marque al menos una fila para aplicar la prefactura.');
+      return;
+    }
+    this.prefacturaAplicando.set(true);
+    this.api.aplicarPrefactura(pf, marcadas).subscribe({
+      next: (r) => {
+        this.prefacturaAplicando.set(false);
+        this.prefacturaPreview.set(null);
+        this.prefacturaMarcadas.set(new Set());
+        if (r.omitidas.length) {
+          this.alerts.warning(
+            'Prefactura aplicada con avisos',
+            `${r.message} ${r.omitidas.length} fila${r.omitidas.length === 1 ? '' : 's'} no se pudo aplicar ` +
+            `(la orden cambió mientras tanto): ${r.omitidas.map((o) => o.codigo || `${o.codigo_cronograma}-${o.secuencia}`).join(', ')}.`,
+          );
+        } else {
+          this.alerts.success('Prefactura aplicada', r.message);
+        }
+        this.load(); // refleja el nuevo estado ARL y n.º de prefactura en la tabla
+      },
+      error: (err) => {
+        this.prefacturaAplicando.set(false);
+        this.alerts.error('No se pudo aplicar la prefactura', mensajeError(err, 'El servidor rechazó la solicitud.'));
+      },
+    });
   }
 
   /**
@@ -928,7 +1216,12 @@ export class ValidationComponent implements OnInit, OnDestroy {
     const order = this.orders().find((o) => o.id === id);
     this.tipoOrdenEdit = order?.tipoOrdenId ?? '';
     this.tipoViaticoEdit = order?.tipoViaticoId ?? '';
+    this.estadoArlEdit = order?.estadoArl ?? 'PENDIENTE';
+    this.prefacturaEdit = order?.numeroPrefactura ?? '';
+    this.estadoError.set(false);
+    this.estadoArlError.set(false);
     this.historialCobro.set([]);
+    this.historialArl.set([]);
     if (order?.osId) {
       this.cargarCamposDeLaOS(order.id, order.osId);
       // El eje de cobro tiene su propio historial, aparte del de estados: son dos
@@ -953,9 +1246,20 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.api.getOrder(osId).subscribe({
       next: (r) => {
         const os = r.data as Record<string, unknown>;
+        const arl = (os['estado_arl'] as EstadoArl | undefined) ?? null;
+        const prefactura = (os['numero_prefactura'] as string | null | undefined) ?? null;
         this.orders.update((list) =>
-          list.map((o) => (o.id === draftId ? { ...o, fields: camposDesdeOS(o.fields, os) } : o)),
+          list.map((o) => (o.id === draftId
+            ? { ...o, fields: camposDesdeOS(o.fields, os), estadoArl: arl ?? o.estadoArl, numeroPrefactura: prefactura }
+            : o)),
         );
+        // La edición parte de lo que tiene la orden HOY, no de lo que había al
+        // cargar la bandeja, y solo mientras nadie haya tocado el formulario.
+        if (!this.editMode()) {
+          this.estadoArlEdit = arl ?? 'PENDIENTE';
+          this.prefacturaEdit = prefactura ?? '';
+        }
+        this.historialArl.set((os['historial_estado_arl'] as HistorialEstadoArl[] | undefined) ?? []);
       },
       error: () => undefined,
     });
@@ -1024,18 +1328,55 @@ export class ValidationComponent implements OnInit, OnDestroy {
       return;
     }
     if (current.osId) {
-      this.guardarEnLaOrden(current.osId, current);
+      void this.guardarEnLaOrden(current.osId, current);
       return;
     }
     this.validateOrder(current);
   }
 
   /**
-   * EST-05 · Corrección sobre la OS materializada. No mueve el estado ni la
-   * asignación: solo los datos de la orden.
+   * EST-05 · Guardar sobre la OS materializada, con UN solo gesto (T0-15):
+   *
+   *  a) `PUT /orders/:id` con los datos;
+   *  b) si se eligió otro estado, el cambio de estado (rechazo, transición…);
+   *  c) si cambió el estado ARL o la prefactura, `PATCH /orders/estado-arl`.
+   *
+   * El orden importa: aprobar ante la ARL exige la orden FINALIZADA, y esa
+   * finalización puede venir en este mismo Guardar. Y (a) nunca se pierde: si
+   * (b) o (c) fallan, los datos ya están guardados, el modal se queda abierto y
+   * el campo que el servidor rechazó se marca en rojo con su motivo.
    */
-  private guardarEnLaOrden(osId: string, current: ServiceOrder): void {
+  private async guardarEnLaOrden(osId: string, current: ServiceOrder): Promise<void> {
+    // Lo que se puede comprobar sin el servidor se para ANTES de escribir nada:
+    // guardar los datos y dejar a medias el resto sería el peor resultado.
+    const destino = this.estadoDestino();
+    const motivo = this.motivoCambio.trim();
+    if (destino && this.requiereMotivo() && !motivo) {
+      this.estadoError.set(true);
+      this.alerts.warning(
+        'Falta el motivo',
+        destino === 'SIN PROGRAMAR'
+          ? 'Devolver la visita a la bandeja exige dejar constancia del porqué en la auditoría.'
+          : 'Al devolver la orden al profesional debe indicarse qué se necesita corregir.',
+      );
+      return;
+    }
+    const bolivar = esBolivar(current.arl);
+    const prefactura = bolivar ? this.prefacturaEdit.trim() : '';
+    const arlCambio = this.estadoArlEdit !== (current.estadoArl ?? 'PENDIENTE')
+      || prefactura !== (current.numeroPrefactura ?? '');
+    if (arlCambio && this.estadoArlEdit === 'APROBADO' && bolivar && !prefactura) {
+      this.estadoArlError.set(true);
+      this.alerts.warning(
+        'Falta el n.º de prefactura',
+        'En Bolívar, para marcar la orden como APROBADA hay que indicar el n.º de prefactura (código SIPAB).',
+      );
+      return;
+    }
+
     this.saving.set(true);
+    this.estadoError.set(false);
+    this.estadoArlError.set(false);
     const campos: Record<string, string> = {};
     for (const [clave, columna] of CAMPOS_OS) {
       const f = current.fields[clave];
@@ -1054,42 +1395,119 @@ export class ValidationComponent implements OnInit, OnDestroy {
     if (this.tipoViaticoEdit !== (current.tipoViaticoId ?? '')) {
       campos['viaticos_tipo_id'] = this.tipoViaticoEdit;
     }
-    this.api.updateOrder(osId, campos).subscribe({
-      next: (r) => {
-        this.saving.set(false);
-        this.editMode.set(false);
-        // La razón social de la fila sale de la OS: se refleja sin releer todo.
-        const empresa = String((r.data as Record<string, unknown>)['empresa_nombre'] ?? current.company);
-        this.orders.update((list) =>
-          list.map((o) => (o.id === current.id
-            ? {
-                ...o,
-                company: empresa,
-                tipoOrdenId: (r.data as Record<string, unknown>)['tipo_orden_id'] as string ?? o.tipoOrdenId,
-                tipoOrden: (r.data as Record<string, unknown>)['tipo_orden'] as string ?? o.tipoOrden,
-                // Los tres viajan juntos: la categoría, su nombre y el importe
-                // que el servidor acaba de congelar. `?? null` y no `?? o.…`
-                // porque "No aplica" los deja en null y hay que poder verlo.
-                tipoViaticoId: ((r.data as Record<string, unknown>)['viaticos_tipo_id'] as string) ?? null,
-                tipoViatico: ((r.data as Record<string, unknown>)['viaticos_tipo'] as string) ?? null,
-                viaticosValor: numeroONulo((r.data as Record<string, unknown>)['viaticos_valor']),
-                fields: camposDesdeOS(o.fields, r.data as Record<string, unknown>),
-              }
-            : o)),
-        );
-        this.alerts.success(
-          'Orden actualizada',
-          `Se guardaron los cambios de ${current.osCode || empresa}. El estado y la asignación no se modificaron.`,
-        );
-      },
-      error: (err) => {
-        this.saving.set(false);
-        this.alerts.error(
-          'No se pudieron guardar los cambios',
-          mensajeError(err, 'El servidor rechazó la corrección; revise los campos obligatorios de identidad.'),
-        );
-      },
-    });
+
+    // (a) Los datos.
+    let guardada: Record<string, unknown>;
+    let avisos: string[] = [];
+    try {
+      const resp = await firstValueFrom(this.api.updateOrder(osId, campos));
+      guardada = resp.data as Record<string, unknown>;
+      avisos = resp.avisos ?? [];
+    } catch (err) {
+      this.saving.set(false);
+      this.alerts.error(
+        'No se pudieron guardar los cambios',
+        mensajeError(err, 'El servidor rechazó la corrección; revise los campos obligatorios de identidad.'),
+      );
+      return;
+    }
+    // La razón social de la fila sale de la OS: se refleja sin releer todo.
+    const empresa = String(guardada['empresa_nombre'] ?? current.company);
+    this.orders.update((list) =>
+      list.map((o) => (o.id === current.id
+        ? {
+            ...o,
+            company: empresa,
+            tipoOrdenId: (guardada['tipo_orden_id'] as string) ?? o.tipoOrdenId,
+            tipoOrden: (guardada['tipo_orden'] as string) ?? o.tipoOrden,
+            // Los tres viajan juntos: la categoría, su nombre y el importe
+            // que el servidor acaba de congelar. `?? null` y no `?? o.…`
+            // porque "No aplica" los deja en null y hay que poder verlo.
+            tipoViaticoId: (guardada['viaticos_tipo_id'] as string) ?? null,
+            tipoViatico: (guardada['viaticos_tipo'] as string) ?? null,
+            viaticosValor: numeroONulo(guardada['viaticos_valor']),
+            // T0-16 · El servidor recalcula el valor hora al cambiar el tipo: se
+            // copia lo que devolvió para que la etiqueta no se quede con el viejo.
+            valorHoraCobro: guardada['valor_hora_cobro'] != null ? Number(guardada['valor_hora_cobro']) : o.valorHoraCobro,
+            valorHoraOrigen: (guardada['valor_hora_origen'] as string | null | undefined) ?? o.valorHoraOrigen,
+            fields: camposDesdeOS(o.fields, guardada),
+          }
+        : o)),
+    );
+
+    // (b) El cambio de estado, si se pidió. Un fallo aquí no deshace (a).
+    const fallos: string[] = [];
+    let estadoCambiado = false;
+    if (destino) {
+      try {
+        const resp = await firstValueFrom(this.peticionDeEstado(current, osId, destino, motivo));
+        estadoCambiado = true;
+        this.aplicarEstado(current.id, resp.data.estado);
+        this.estadoDestino.set('');
+        this.motivoCambio = '';
+        if (this.historialAbierto()) this.cargarHistorial(osId);
+        else this.historial.set([]);
+      } catch (err) {
+        this.estadoError.set(true);
+        fallos.push(`el estado no se pudo cambiar: ${mensajeError(err, 'el servidor rechazó la transición solicitada.')}`);
+      }
+    }
+
+    // (c) El estado ARL y/o la prefactura, aunque (b) haya fallado: son ejes
+    // distintos y el servidor dice por sí mismo si la orden no está FINALIZADA.
+    let arlCambiado = false;
+    if (arlCambio) {
+      try {
+        await firstValueFrom(this.api.marcarEstadoArl(
+          [osId], this.estadoArlEdit, bolivar ? prefactura : undefined,
+        ));
+        arlCambiado = true;
+        this.orders.update((list) => list.map((o) => (o.id === current.id
+          ? { ...o, estadoArl: this.estadoArlEdit, numeroPrefactura: prefactura || null }
+          : o)));
+        this.api.orderEstadoArlHistory(osId).subscribe({
+          next: (h) => this.historialArl.set(h.data),
+          error: () => undefined,
+        });
+      } catch (err) {
+        this.estadoArlError.set(true);
+        fallos.push(`el estado ARL no se pudo cambiar: ${mensajeError(err, 'el servidor rechazó el cambio.')}`);
+      }
+    }
+
+    this.saving.set(false);
+    const nombre = current.osCode || empresa;
+    // Avisos del servidor que no son un fallo (p. ej. el valor hora no se recalculó
+    // porque la orden ya está en una cuenta de cobro): se dicen, no se callan.
+    if (avisos.length) this.alerts.warning('El valor hora no cambió', avisos.join(' '));
+    if (fallos.length) {
+      // El modal SE QUEDA abierto: los datos están guardados, y lo que falló se
+      // ve en rojo para corregirlo sin volver a escribir nada.
+      this.alerts.warning('Datos actualizados con avisos', `Datos actualizados de ${nombre}; ${fallos.join('; ')}`);
+      return;
+    }
+    this.editMode.set(false);
+    this.alerts.success(
+      estadoCambiado || arlCambiado ? 'Datos y estado actualizados' : 'Datos actualizados',
+      estadoCambiado || arlCambiado
+        ? `Se guardaron los datos de ${nombre} y se aplicó el cambio de estado.`
+        : `Se guardaron los datos de ${nombre}.`,
+    );
+  }
+
+  /**
+   * La llamada que aplica un cambio de estado. Devolver de EJECUTADA a
+   * PROGRAMADA es el rechazo de soportes (VER-04): se usa ese endpoint y no el
+   * genérico porque además reabre el enlace público de carga y notifica al
+   * profesional.
+   */
+  private peticionDeEstado(
+    order: ServiceOrder, osId: string, destino: EstadoOrden, motivo: string,
+  ): Observable<{ data: { estado: string } }> {
+    const esRechazo = order.osEstado === 'EJECUTADA' && destino === 'PROGRAMADA';
+    return esRechazo
+      ? this.api.rejectOrder(osId, motivo)
+      : this.api.changeOrderStatus(osId, destino, motivo || undefined);
   }
 
   /** Guarda las correcciones y persiste la OS (SIN PROGRAMAR) en la BD. */
@@ -1124,6 +1542,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
       ['contacto_empresa_cargo', f.contactoEmpresaCargo],
       ['contacto_empresa_telefono', f.contactoEmpresaTelefono],
       ['tipo_servicio_arl', f.tipoServicioArl], ['modalidad_ejecucion', f.modalidadEjecucion],
+      ['asesor_gestion_riesgo', f.asesorGestionRiesgo],
     ];
     for (const [k, v] of ampliados) if (v) fields[k] = campo(v);
 
@@ -1526,7 +1945,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
   }
 
   protected async closeAssign(): Promise<void> {
-    if (this.assigning()) return;
+    if (this.assigning() || this.previsualizando()) return;
     // Lo marcado en la agenda vive solo en pantalla hasta pulsar "Asignar":
     // cerrar sin guardar lo descarta, y conviene avisarlo.
     if (this.franjasVisita().length) {
@@ -1545,6 +1964,136 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.franjasVisita.set([]);
     this.usarSuplente.set(false);
     this.formatosProfId.set(null);
+    this.limpiarVistaPrevia();
+  }
+
+  /** Lo que viaja en la asignación, igual para la vista previa y para el envío. */
+  private cuerpoAsignacion(profId: string, fechaProgramada: string | null) {
+    return {
+      profesional_id: profId,
+      fecha_programada: fechaProgramada ?? undefined,
+      // ASG-02 · La visita entera, franja a franja. El servidor las
+      // reemplaza en bloque y deriva `fecha_programada` de la primera.
+      franjas: this.franjasOrdenadas().map((f) => ({
+        fecha: f.fecha,
+        hora_inicio: f.hora_inicio,
+        hora_fin: f.hora_fin,
+      })),
+      // ASG · Solo viaja si el interruptor está puesto. `undefined` (y no
+      // null ni '') es lo que hace que el servidor lo lea como "sin
+      // suplencia": el campo se omite del cuerpo entero.
+      profesional_formatos_id: this.usarSuplente() ? (this.formatosProfId() ?? undefined) : undefined,
+      // Solo desde el paso de formatos: antes de verlos no hay nada que decir, y
+      // omitirlo hace que el servidor conserve las observaciones ya guardadas.
+      observaciones_formatos: this.pasoAsignacion() === 'formatos' ? this.observacionesFormatos() : undefined,
+      campos_formatos: this.pasoAsignacion() === 'formatos' ? this.camposFormatos() : undefined,
+    };
+  }
+
+  /**
+   * "Continuar" / "Actualizar vista previa": pide los formatos tal como saldrían.
+   * El servidor ejecuta la asignación entera y la deshace, así que lo que se ve
+   * aquí es exactamente lo que se enviará.
+   */
+  protected previsualizarFormatos(): void {
+    const order = this.assignOrder();
+    const profId = this.selectedProfId();
+    if (!order?.osId || !profId || this.previsualizando()) return;
+    const fechaProgramada = this.fechaProgramadaIso();
+    if (!fechaProgramada) {
+      this.alerts.warning('Falta programar la visita', 'Marque en la agenda al menos una franja con el día y las horas en que se ejecuta la visita.');
+      return;
+    }
+    const primeraVez = this.pasoAsignacion() === 'agenda';
+    this.previsualizando.set(true);
+    this.api.previsualizarAsignacion(order.osId, this.cuerpoAsignacion(profId, fechaProgramada)).subscribe({
+      next: (r) => {
+        this.previsualizando.set(false);
+        this.formatosPrevios.set(r.data.formatos);
+        // Al entrar se parte de lo que la orden ya tenía guardado (una
+        // reprogramación conserva sus notas); al actualizar, manda lo escrito.
+        if (primeraVez) {
+          this.observacionesFormatos.set({ ...r.data.observaciones_formatos });
+          this.camposFormatos.set(structuredClone(r.data.campos_formatos ?? {}));
+        } else {
+          // Una casilla vaciada no borra el dato: el servidor vuelve a imprimir
+          // lo del sistema. Se suelta la corrección vacía para que la pantalla
+          // muestre lo mismo que el PDF en vez de una casilla en blanco.
+          this.camposFormatos.update((c) => Object.fromEntries(
+            Object.entries(c).map(([k, v]) => [k, Object.fromEntries(Object.entries(v).filter(([, t]) => t.trim()))]),
+          ));
+        }
+        this.observacionesSinAplicar.set(false);
+        this.pasoAsignacion.set('formatos');
+        const actual = this.formatoVisto();
+        const indice = !primeraVez && r.data.formatos[actual]?.pdf ? actual : r.data.formatos.findIndex((f) => !!f.pdf);
+        this.verFormato(Math.max(indice, 0));
+      },
+      error: (err) => {
+        this.previsualizando.set(false);
+        this.alerts.error('No se pudo preparar la vista previa', mensajeError(err, 'Intente de nuevo en unos segundos.'));
+      },
+    });
+  }
+
+  /** Muestra en el visor el PDF `i` de la vista previa. */
+  protected verFormato(i: number): void {
+    const f = this.formatosPrevios()[i];
+    this.formatoVisto.set(i);
+    if (this.urlFormatoObjeto) URL.revokeObjectURL(this.urlFormatoObjeto);
+    this.urlFormatoObjeto = null;
+    if (!f?.pdf || !this.isBrowser) {
+      this.urlFormatoVisto.set(null);
+      return;
+    }
+    const bytes = Uint8Array.from(atob(f.pdf), (c) => c.charCodeAt(0));
+    this.urlFormatoObjeto = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+    this.urlFormatoVisto.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.urlFormatoObjeto));
+  }
+
+  protected editarObservacion(clave: string, texto: string): void {
+    this.observacionesFormatos.update((o) => ({ ...o, [clave]: texto }));
+    this.observacionesSinAplicar.set(true);
+  }
+
+  /** Lo que muestra la casilla: la corrección pendiente o lo que ya se imprime. */
+  protected valorCampo(clave: string | null, e: CasillaEditable): string {
+    return (clave ? this.camposFormatos()[clave]?.[e.campo] : undefined) ?? e.valor ?? '';
+  }
+
+  /** Casillas del formato en el visor que siguen vacías: lo que falta completar. */
+  protected readonly casillasVacias = computed(() => {
+    const f = this.formatoEnVisor();
+    if (!f) return 0;
+    return f.editables.filter((e) => !this.valorCampo(f.clave, e).trim()).length;
+  });
+
+  /**
+   * Una casilla abierta del formato. Vive en esta señal, no en el PDF: cambiar
+   * de documento en el visor o actualizar la vista previa ya no la borra, y viaja
+   * con la asignación para imprimirse en lo que se envía.
+   */
+  protected editarCampo(clave: string | null, campo: string, texto: string): void {
+    if (!clave) return;
+    this.camposFormatos.update((c) => ({ ...c, [clave]: { ...(c[clave] ?? {}), [campo]: texto } }));
+    this.observacionesSinAplicar.set(true);
+  }
+
+  /** Vuelve a la agenda sin perder lo marcado ni las observaciones escritas. */
+  protected volverAAgenda(): void {
+    this.pasoAsignacion.set('agenda');
+  }
+
+  private limpiarVistaPrevia(): void {
+    if (this.urlFormatoObjeto) URL.revokeObjectURL(this.urlFormatoObjeto);
+    this.urlFormatoObjeto = null;
+    this.urlFormatoVisto.set(null);
+    this.formatosPrevios.set([]);
+    this.formatoVisto.set(0);
+    this.observacionesFormatos.set({});
+    this.camposFormatos.set({});
+    this.observacionesSinAplicar.set(false);
+    this.pasoAsignacion.set('agenda');
   }
 
   protected async selectProf(id: string): Promise<void> {
@@ -1875,21 +2424,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
     // suscribir. Antes lo unificaba el `switchMap` que envolvía la llamada.
     const asignacion: Observable<ResultadoAsignacion> = order.osId
       ? this.api
-          .assignOrder(order.osId, {
-            profesional_id: profId,
-            fecha_programada: fechaProgramada ?? undefined,
-            // ASG-02 · La visita entera, franja a franja. El servidor las
-            // reemplaza en bloque y deriva `fecha_programada` de la primera.
-            franjas: this.franjasOrdenadas().map((f) => ({
-              fecha: f.fecha,
-              hora_inicio: f.hora_inicio,
-              hora_fin: f.hora_fin,
-            })),
-            // ASG · Solo viaja si el interruptor está puesto. `undefined` (y no
-            // null ni '') es lo que hace que el servidor lo lea como "sin
-            // suplencia": el campo se omite del cuerpo entero.
-            profesional_formatos_id: this.usarSuplente() ? (this.formatosProfId() ?? undefined) : undefined,
-          })
+          .assignOrder(order.osId, this.cuerpoAsignacion(profId, fechaProgramada))
           .pipe(
             map((r) => ({
               os: r.data,
@@ -1951,6 +2486,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
         this.franjasVisita.set([]);
         this.usarSuplente.set(false);
         this.formatosProfId.set(null);
+        this.limpiarVistaPrevia();
 
         const franjas = res.os && visita > 1
           ? ` La visita quedó repartida en ${visita} franjas.`
@@ -2103,56 +2639,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected setEstadoDestino(estado: string): void {
     this.estadoDestino.set(estado as EstadoOrden | '');
     this.motivoCambio = '';
-  }
-
-  /** EST-02 · Aplica el cambio manual de estado sobre la OS materializada. */
-  protected cambiarEstado(): void {
-    const order = this.detailOrder();
-    const destino = this.estadoDestino();
-    const motivo = this.motivoCambio.trim();
-    if (!order?.osId || !destino || this.cambiandoEstado()) return;
-    if (this.requiereMotivo() && !motivo) {
-      this.alerts.warning(
-        'Falta el motivo',
-        destino === 'SIN PROGRAMAR'
-          ? 'Devolver la visita a la bandeja exige dejar constancia del porqué en la auditoría.'
-          : 'Al devolver la orden al profesional debe indicarse qué se necesita corregir.',
-      );
-      return;
-    }
-
-    // Devolver de EJECUTADA a PROGRAMADA es el rechazo de soportes (VER-04): se
-    // usa ese endpoint y no el genérico porque además reabre el enlace público de
-    // carga y notifica al profesional.
-    const esRechazo = order.osEstado === 'EJECUTADA' && destino === 'PROGRAMADA';
-    const peticion = esRechazo
-      ? this.api.rejectOrder(order.osId, motivo)
-      : this.api.changeOrderStatus(order.osId, destino, motivo || undefined);
-
-    this.cambiandoEstado.set(true);
-    peticion.subscribe({
-      next: (r) => {
-        this.cambiandoEstado.set(false);
-        this.aplicarEstado(order.id, r.data.estado);
-        this.estadoDestino.set('');
-        this.motivoCambio = '';
-        // Si está plegado no se recarga: se vacía para que la próxima apertura
-        // traiga el movimiento recién hecho en vez de una lista desactualizada.
-        if (order.osId && this.historialAbierto()) this.cargarHistorial(order.osId);
-        else this.historial.set([]);
-        this.alerts.success(
-          'Estado actualizado',
-          `${order.osCode || order.company} quedó en ${r.data.estado}.`,
-        );
-      },
-      error: (err) => {
-        this.cambiandoEstado.set(false);
-        this.alerts.error(
-          'No se pudo cambiar el estado',
-          mensajeError(err, 'El servidor rechazó la transición solicitada.'),
-        );
-      },
-    });
+    this.estadoError.set(false);
   }
 
   /**
@@ -2674,6 +3161,8 @@ const CAMPOS_OS: [keyof ServiceOrder['fields'], string][] = [
   // permitir dos cifras distintas para el mismo desplazamiento.
   ['tipoServicioArl', 'tipo_servicio_arl'],
   ['modalidadEjecucion', 'modalidad_ejecucion'],
+  ['asesorGestionRiesgo', 'asesor_gestion_riesgo'],
+  ['temaActividad', 'tema_actividad'],
 ];
 
 /**
@@ -2731,7 +3220,7 @@ function numeroONulo(v: unknown): number | null {
 /** Mapea un borrador del backend al modelo ServiceOrder que consume la vista. */
 function toServiceOrder(b: Borrador): ServiceOrder {
   const m = b.metadatos_extraccion || {};
-  return {
+  const base: ServiceOrder = {
     id: b.id,
     // Con la OS ya creada manda su razón social: es la que se corrige desde el
     // detalle, y la del borrador es lo que leyó la IA del documento.
@@ -2762,6 +3251,9 @@ function toServiceOrder(b: Borrador): ServiceOrder {
     // El eje de facturación solo existe sobre la OS: un borrador sin validar no
     // tiene nada que facturarse, y por eso puede llegar null.
     estadoCobro: b.os_estado_cobro ?? null,
+    // T0-07 · Aprobación de la ARL y n.º de prefactura (código SIPAB, Bolívar).
+    estadoArl: b.os_estado_arl ?? null,
+    numeroPrefactura: b.os_numero_prefactura ?? null,
     cobroNumeroFactura: b.os_cobro_numero_factura ?? null,
     tipoViaticoId: b.tipo_viatico_id ?? null,
     tipoViatico: b.tipo_viatico ?? null,
@@ -2796,6 +3288,20 @@ function toServiceOrder(b: Borrador): ServiceOrder {
       viaticos: field(m.viaticos_valor),
       tipoServicioArl: field(m.tipo_servicio_arl),
       modalidadEjecucion: field(m.modalidad_ejecucion),
+      // Con la OS creada valen las columnas de la orden (el AGR pudo corregirse
+      // a mano y el tema no existe en el borrador); antes, lo que leyó el SIPAB.
+      // Un dato del SIPAB de Bolívar sin valor no es "baja confianza": es que la
+      // hoja no lo trajo, y el detalle no debe marcarlo como sospechoso.
+      asesorGestionRiesgo: field({
+        value: m.asesor_gestion_riesgo?.value ?? '', confidence: m.asesor_gestion_riesgo?.confidence ?? 99,
+      }),
+      // Dato de una persona: confianza plena, para que nunca salga marcado.
+      temaActividad: field({ value: '', confidence: 100 }),
     },
   };
+  // T0-18 · Con la OS creada mandan SUS columnas, no el JSON del borrador: la
+  // tabla (NIT, horas), el plazo de vencimiento y la duración de la agenda leen
+  // de aquí, y una corrección hecha con PUT /orders/:id se veía revertida al
+  // recargar. La confianza y el valor original siguen siendo los de la IA.
+  return b.os_campos ? { ...base, fields: camposDesdeOS(base.fields, b.os_campos) } : base;
 }

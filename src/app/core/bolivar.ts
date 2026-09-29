@@ -116,6 +116,30 @@ export function pistaTipoActividadArl(arlNombre: string | null | undefined): str
 }
 
 /**
+ * T0-06 · La razón social con el `(cronograma-secuencia)` de Bolívar al lado,
+ * como lo pidió el cliente: "RAZÓN SOCIAL (1388926-29)". Solo presentación —no
+ * se toca el dato guardado— y solo en Bolívar, que es la única ARL con estos dos
+ * campos; AXA y Colmena devuelven el nombre tal cual.
+ *
+ * Se usa en las cuatro vistas que muestran la razón social de una orden: la
+ * tabla de `/ordenes`, "Órdenes recientes" del dashboard, el detalle de la orden
+ * y las exportaciones de `/informes` (que además llevan "Cronograma" y
+ * "Secuencia" como columnas separadas, para poder filtrar el Excel).
+ */
+export function etiquetaEmpresa(
+  empresaNombre: string | null | undefined,
+  arlNombre: string | null | undefined,
+  codigoCronograma: string | null | undefined,
+  secuencia: string | null | undefined,
+): string {
+  const nombre = String(empresaNombre ?? '').trim() || '—';
+  const cron = String(codigoCronograma ?? '').trim();
+  const sec = String(secuencia ?? '').trim();
+  if (!esBolivar(arlNombre) || !cron || !sec) return nombre;
+  return `${nombre} (${cron}-${sec})`;
+}
+
+/**
  * ¿Esta ARL es Bolívar? El nombre llega de la BD ("Bolívar"), así que se compara
  * sin tildes ni mayúsculas.
  */

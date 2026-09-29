@@ -1,10 +1,16 @@
 <div class="layout">
+  <!-- T0-14 · Fondo oscuro del menú móvil: solo existe mientras el panel está
+       abierto, y cerrarlo (tocar fuera) es la forma obvia de descartarlo. -->
+  @if (menuMovilAbierto()) {
+    <div class="sidebar-backdrop" (click)="cerrarMenuMovil()"></div>
+  }
+
   <!-- ============ SIDEBAR ============ -->
-  <aside class="sidebar">
-    <!-- El sidebar se estrecha a 76 px en pantallas pequeñas y ahí el lockup
-         horizontal quedaría en 13 px de alto (el descriptor, ilegible). Por eso
-         hay dos piezas y las alterna la misma media query que oculta el texto de
-         los enlaces: ancho → marca completa, estrecho → isotipo solo. -->
+  <aside class="sidebar" [class.sidebar--colapsado]="colapsado()" [class.sidebar--movil-abierto]="menuMovilAbierto()">
+    <!-- El sidebar se estrecha a 76 px en pantallas pequeñas (o cuando se
+         colapsa a mano) y ahí el lockup horizontal quedaría en 13 px de alto (el
+         descriptor, ilegible). Por eso hay dos piezas: ancho → marca completa,
+         estrecho → isotipo solo. -->
     <div class="sidebar__brand">
       <img
         class="sidebar__logo sidebar__logo--completo"
@@ -25,6 +31,7 @@
           [routerLink]="item.route"
           routerLinkActive="nav-link--active"
           [routerLinkActiveOptions]="{ exact: true }"
+          (click)="cerrarMenuMovil()"
         >
           <span class="nav-link__icon" aria-hidden="true">
             @switch (item.icon) {
@@ -113,6 +120,21 @@
   <div class="main">
     <!-- ---- NAVBAR ---- -->
     <header class="navbar">
+      <!-- T0-14 · Alterna el sidebar ancho ↔ colapsado en escritorio; en móvil
+           (≤820 px, donde el sidebar ya está estrecho) abre el menú completo
+           encima, como un panel. -->
+      <button
+        type="button"
+        class="menu-toggle"
+        (click)="alternarSidebar()"
+        [attr.aria-label]="menuMovilAbierto() ? 'Cerrar menú' : (colapsado() ? 'Expandir menú' : 'Colapsar menú')"
+        [attr.aria-expanded]="menuMovilAbierto()"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+
       <div class="navbar__title">
         <h1 class="navbar__title-main">Sistema de Gestión de Seguridad y Salud en el Trabajo</h1>
         <span class="navbar__title-sub">JD&amp;D Consultores · Gestión de Órdenes de Servicio</span>

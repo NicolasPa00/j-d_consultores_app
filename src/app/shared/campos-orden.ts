@@ -180,6 +180,8 @@ export const MODO_POR_CAMPO: Readonly<Record<string, ModoCampo>> = {
   tipo_servicio_arl: 'opcion',
   modalidad_ejecucion: 'opcion',
   viaticos_valor: 'decimal',
+  // Es el nombre de una persona: solo letras y espacios, en mayúsculas.
+  asesor_gestion_riesgo: 'letras',
 };
 
 /** El modo de un campo por su clave canónica. */

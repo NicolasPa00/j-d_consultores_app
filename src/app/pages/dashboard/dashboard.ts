@@ -7,6 +7,7 @@ import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
 import { DashboardData, Orden, SoporteEnviado } from '../../core/models';
 import { aIsoFecha, fechaLocal } from '../../core/fechas';
+import { etiquetaEmpresa } from '../../core/bolivar';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
@@ -65,6 +66,9 @@ interface WorkOrder {
   id: string;
   code: string;
   client: string;
+  /** T0-06 · Solo en Bolívar: de aquí sale el `(cronograma-secuencia)` del nombre. */
+  codigoCronograma: string | null;
+  secuencia: string | null;
   nit: string;
   arl: string;
   hours: number;
@@ -254,6 +258,11 @@ export class DashboardComponent implements OnInit {
    * formulario de asignación propio: dos sitios que enseñaban la misma orden con
    * distinta información y que había que mantener a la par.
    */
+  /** T0-06 · La razón social con `(cronograma-secuencia)` al lado, solo en Bolívar. */
+  protected nombreOrden(order: WorkOrder): string {
+    return etiquetaEmpresa(order.client, order.arl, order.codigoCronograma, order.secuencia);
+  }
+
   protected openOrder(order: WorkOrder): void {
     this.router.navigate(['/ordenes'], { queryParams: { os: order.id } });
   }
@@ -339,6 +348,8 @@ function toWorkOrder(o: Orden): WorkOrder {
     id: o.id,
     code: o.codigo,
     client: o.empresa_nombre || '—',
+    codigoCronograma: o.codigo_cronograma ?? null,
+    secuencia: o.secuencia ?? null,
     nit: o.nit_nic || '—',
     arl: o.arl_nombre || '—',
     hours: Number(o.horas_asignadas ?? 0),
