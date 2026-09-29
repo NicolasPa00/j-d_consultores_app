@@ -4,7 +4,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { firstValueFrom, map, Observable } from 'rxjs';
+import { firstValueFrom, map, Observable, Subscription } from 'rxjs';
 import { ExtractedField, ServiceOrder } from '../../data/service-orders';
 import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
@@ -863,6 +863,13 @@ export class ValidationComponent implements OnInit, OnDestroy {
 
   // ================= T0-09 · Prefactura de Bolívar cargada con IA =================
   protected readonly prefacturaCargando = signal(false);
+  /**
+   * Nombre del PDF que se está leyendo. El modal de carga se abre en cuanto se
+   * elige el archivo (pedido de JD&D, 29-sep): antes solo cambiaba el texto del
+   * botón durante los segundos que tarda la IA, y parecía que no pasaba nada.
+   */
+  protected readonly prefacturaArchivo = signal<string | null>(null);
+  private prefacturaLectura: Subscription | null = null;
   protected readonly prefacturaPreview = signal<PrevisualizacionPrefactura | null>(null);
   /** Claves "cronograma|secuencia" de las filas con el check puesto. */
   protected readonly prefacturaMarcadas = signal<Set<string>>(new Set());
@@ -882,10 +889,12 @@ export class ValidationComponent implements OnInit, OnDestroy {
       this.alerts.warning('Archivo no válido', 'La prefactura de Bolívar se sube en PDF.');
       return;
     }
+    this.prefacturaArchivo.set(file.name);
     this.prefacturaCargando.set(true);
-    this.api.previsualizarPrefactura(file).subscribe({
+    this.prefacturaLectura = this.api.previsualizarPrefactura(file).subscribe({
       next: (r) => {
         this.prefacturaCargando.set(false);
+        this.prefacturaLectura = null;
         this.prefacturaPreview.set(r.data);
         // Las "encontrada" quedan marcadas de una vez; el resto se elige a mano.
         this.prefacturaMarcadas.set(new Set(
@@ -894,13 +903,27 @@ export class ValidationComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.prefacturaCargando.set(false);
+        this.prefacturaLectura = null;
+        this.prefacturaArchivo.set(null);
         this.alerts.error('No se pudo leer la prefactura', mensajeError(err, 'El servidor no pudo extraer los datos del PDF.'));
       },
     });
   }
 
+  /**
+   * Cancela la lectura en curso. La previsualización no escribe nada en el
+   * servidor, así que cortarla a mitad no deja nada a medias.
+   */
+  protected cancelarLecturaPrefactura(): void {
+    this.prefacturaLectura?.unsubscribe();
+    this.prefacturaLectura = null;
+    this.prefacturaCargando.set(false);
+    this.prefacturaArchivo.set(null);
+  }
+
   protected cerrarPrefactura(): void {
     if (this.prefacturaAplicando()) return;
+    this.prefacturaArchivo.set(null);
     this.prefacturaPreview.set(null);
     this.prefacturaMarcadas.set(new Set());
   }

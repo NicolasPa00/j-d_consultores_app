@@ -75,7 +75,7 @@
         <path d="M14 3v5h5" />
         <path d="M12 11v6M9 14l3-3 3 3" />
       </svg>
-      {{ prefacturaCargando() ? 'Leyendo con IA…' : 'Cargar prefactura' }}
+      Cargar prefactura
     </button>
   </div>
 </section>
@@ -1676,6 +1676,35 @@
      (¿cuadra la suma de las filas con el total del encabezado?) se ve arriba de
      la tabla; el resultado del cruce, una pill por fila. Solo las "Encontrada"
      quedan marcadas al abrir: son las únicas que se pueden aprobar sin dudar. -->
+<!-- Mientras la IA lee el PDF: el modal se abre en cuanto se elige el archivo,
+     para que se vea que la carga está en marcha. Al llegar el resultado, este
+     modal da paso al de la previsualización. -->
+@if (prefacturaCargando()) {
+  <div class="modal-backdrop"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="prefacturaCargaTitle" aria-busy="true">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="prefacturaCargaTitle">Cargando prefactura</h3>
+        <p class="modal__sub">{{ prefacturaArchivo() }}</p>
+      </div>
+    </header>
+    <div class="modal__body prefactura-carga">
+      <span class="spinner prefactura-carga__spinner" aria-hidden="true"></span>
+      <p class="prefactura-carga__texto">
+        Leyendo el PDF con IA y cruzando cada fila contra las órdenes de Orbita.
+        Suele tardar entre 10 y 30 segundos.
+      </p>
+      <p class="prefactura-carga__nota">Todavía no se guarda nada: podrá revisar el resultado antes de aplicarlo.</p>
+    </div>
+    <footer class="modal__footer">
+      <span class="modal__status"></span>
+      <div class="modal__footer-actions">
+        <button type="button" class="btn btn--ghost" (click)="cancelarLecturaPrefactura()">Cancelar</button>
+      </div>
+    </footer>
+  </div>
+}
+
 @if (prefacturaPreview(); as pf) {
   <div class="modal-backdrop" (click)="cerrarPrefactura()"></div>
   <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="prefacturaTitle">
