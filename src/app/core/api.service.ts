@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura } from './models';
+import { CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -198,9 +198,30 @@ export class ApiService {
        * que el elegido esté registrado ante la ARL de esta orden.
        */
       profesional_formatos_id?: string;
+      /**
+       * Observaciones por formato escritas en la vista previa (`{ at031: '…' }`).
+       * Se imprimen en la casilla de observaciones y se guardan en la orden.
+       * Omitido = se conservan las que ya tenía.
+       */
+      observaciones_formatos?: Record<string, string>;
+      /** Casillas abiertas llenadas en la vista previa: `{ fichaAxa: { 'nombre 4': '…' } }`. */
+      campos_formatos?: Record<string, Record<string, string>>;
     },
   ): Observable<RespuestaAsignacion> {
     return this.http.post<RespuestaAsignacion>(`${this.base}/orders/${id}/assign`, body);
+  }
+
+  /**
+   * Vista previa de los formatos que saldrán con esta asignación, ANTES de
+   * enviarla (29-sep-2026). Mismo cuerpo que `assignOrder`; el servidor corre la
+   * asignación completa dentro de una transacción que deshace: no guarda nada
+   * ni manda correo.
+   */
+  previsualizarAsignacion(
+    id: string,
+    body: Parameters<ApiService['assignOrder']>[1],
+  ): Observable<Wrap<VistaPreviaAsignacion>> {
+    return this.http.post<Wrap<VistaPreviaAsignacion>>(`${this.base}/orders/${id}/assign/preview`, body);
   }
 
   /** ASG-02 · Franjas ya guardadas de una visita (para reprogramar sobre ellas). */

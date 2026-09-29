@@ -1336,3 +1336,49 @@ export interface SincronizacionResoluciones {
   actualizadas: number;
   omitidas: { documento: string; prefijo: string | null; motivo: string }[];
 }
+
+// ---- Vista previa de formatos antes de asignar (pedido de JD&D, 29-sep-2026) ----
+/** Un archivo de los que saldrán en el correo de asignación. */
+export interface FormatoPrevio {
+  /** Clave del formato (at031, asistenciaColmena…); con ella se guardan sus observaciones. */
+  clave: string | null;
+  etiqueta: string;
+  /** Nombre del adjunto ("asistencia-2.pdf"). */
+  nombre: string;
+  prediligenciado: boolean;
+  /** ¿Este archivo tiene casilla donde imprimir las observaciones? */
+  admite_observaciones: boolean;
+  /** El PDF en base64; `null` para los Word/Excel que se adjuntan tal cual. */
+  pdf: string | null;
+  /**
+   * Casillas del formato que se pueden revisar y corregir desde la pantalla, ya
+   * con lo que el sistema llenó (el PDF de la vista previa llega aplanado:
+   * escribir dentro del visor no volvería nunca al servidor).
+   */
+  editables: CasillaEditable[];
+}
+
+/** Una casilla de un formato, con su rótulo impreso y lo que lleva ahora. */
+export interface CasillaEditable {
+  /** Campo del PDF o clave del formato plano; con él viaja la corrección. */
+  campo: string;
+  etiqueta: string;
+  multilinea?: boolean;
+  /** 'fecha' se edita con selector; su valor va en ISO (AAAA-MM-DD). */
+  tipo: 'texto' | 'fecha';
+  /** Lo que se imprime ahora (la corrección del usuario, o lo del sistema). */
+  valor: string;
+  /** Lo que pondría el sistema sin correcciones. */
+  sistema: string;
+}
+
+/** Lo que devuelve `POST /orders/:id/assign/preview` (no guarda nada). */
+export interface VistaPreviaAsignacion {
+  formatos: FormatoPrevio[];
+  /** Observaciones vigentes por clave de formato (las guardadas + las enviadas). */
+  observaciones_formatos: Record<string, string>;
+  /** Casillas abiertas ya llenadas, por formato y por campo del PDF. */
+  campos_formatos: Record<string, Record<string, string>>;
+  /** Casillas de soporte que se le pedirán al profesional. */
+  soportes: string[];
+}

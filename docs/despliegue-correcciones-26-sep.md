@@ -1,9 +1,22 @@
 # Despliegue de las correcciones del 26-sep-2026 (Tanda 0)
 
-> **Estado al 29-sep-2026: LISTO PARA DESPLEGAR, PERO NO SE HA DESPLEGADO.**
-> El usuario avisa cuándo. Todo está commiteado y subido a GitHub en la rama
-> `correcciones-26-sep` de los dos repos, **sin mezclar** a `main`/`master` (el
-> servidor hace `git pull` de la principal, así que mezclar ES desplegar).
+> ✅ **DESPLEGADO el 29-sep-2026 a las 15:36 (hora Colombia)** como «primer lote de cambios»
+> (correcciones del 26-sep + vista previa de formatos). `master` = `6fed74e`, `main` = `d77a2de`.
+>
+> Cómo se hizo, y cómo repetirlo en el próximo lote:
+> 1. Lectura de producción: 153 órdenes (145 Bolívar), 0 facturadas, 0 FINALIZADAS, 0 tarifas
+>    por profesional → las migraciones no alteraban ningún dato existente.
+> 2. **Respaldo** (`~/respaldos/orbita-antes-lote1-20260929-1534.dump` + `storage-…tgz` en el
+>    servidor; copia de la base en `respaldos-produccion/` del PC de desarrollo, fuera de git).
+> 3. **Ensayo**: el respaldo restaurado en una base aparte (`orbita_ensayo`), las 5 migraciones
+>    aplicadas ahí, conteos idénticos antes/después; luego se borró.
+> 4. Migraciones en `orbita` (el código viejo sigue funcionando: son aditivas), después `git pull`
+>    + reinicio de la API, y `git pull` + `npm run build` + reinicio del frontend.
+> 5. Humo de solo lectura con un token firmado en el servidor: bandeja con las 153 órdenes,
+>    detalle con estado ARL e historial, dashboard, cobro y notificaciones en 200; SSR 14,8 kB.
+>
+> Para revertir: `git reset --hard 414d465` (front) / `bc10714` (back) en el servidor y
+> `pg_restore` del respaldo. Las migraciones solo añaden, así que basta con volver el código.
 >
 > Runbook general del servidor: `docs/despliegue-vultr.md`. Este documento solo
 > cubre lo propio de esta tanda. Tablero y fichas: `docs/plan-facturacion-contabilidad.md`
@@ -25,6 +38,9 @@ de la reunión del 26-sep (WhatsApp) y la revisión de formatos con fotos del 29
 | `aea9505` | front | Tanda 0 frontend: pantallas de todo lo anterior + sidebar plegable (T0-14) + estado con "Guardar" (T0-15) |
 | `399247e` | front | Se quita el botón "Pendiente por facturar" (JD&D: la pestaña Finalizadas y los filtros bastan) |
 | *(este doc)* | front | Documentación del despliegue |
+| `ab4f43f`…`4eec36e` | los dos | **Vista previa de formatos** al asignar (rama `previsualizacion-formatos`): paso «Continuar», datos del formato editables, observaciones, fechas con selector. Migración `2026-09-29-observaciones-formatos.sql` |
+| `f35abe3` | front | El modal «Cargando prefactura» se abre en cuanto se elige el PDF |
+| *(29-sep)* | front | Icono «Estado de facturación» **oculto** (`cobroHabilitado = false`): entra con el segundo lote. En producción nunca se usó (0 órdenes facturadas) |
 
 ### 1.1 · Formatos, verificados contra las fotos de JD&D (29-sep)
 
@@ -101,8 +117,8 @@ git -C jdd_consultores_app checkout main && git -C jdd_consultores_app pull --ff
 cd /opt/orbita/sst_ws && git pull
 export PGPASSWORD=$(grep -oP 'postgresql://orbita:\K[^@]+' .env)
 # migraciones A MANO, en este orden (agr-y-tema y estado-arl recrean la misma vista)
-for m in agr-y-tema estado-arl prefacturas tarifa-por-tipo; do
-  psql -h 127.0.0.1 -U orbita -d orbita -v ON_ERROR_STOP=1 -f db/migraciones/2026-09-27-$m.sql || break
+for m in 2026-09-27-agr-y-tema 2026-09-27-estado-arl 2026-09-27-prefacturas 2026-09-27-tarifa-por-tipo 2026-09-29-observaciones-formatos; do
+  psql -h 127.0.0.1 -U orbita -d orbita -v ON_ERROR_STOP=1 -f db/migraciones/$m.sql || break
 done
 cd /opt/orbita/frontend && git pull && npm run build
 sudo systemctl restart orbita-api orbita-web
@@ -132,6 +148,14 @@ casos basta con volver el código.
 ---
 
 ## 4. Lo que queda fuera de este despliegue
+
+> **Código SIPAB en las órdenes de Bolívar — pendiente de que JD&D confirme dónde va.**
+> Mapeado: el «código SIPAB» es el **número de prefactura** (decisión del 27-sep). Vive en
+> `sst.ordenes_servicio.numero_prefactura` (+ `historial_estado_arl`), se llena solo al
+> aplicar una prefactura (T0-09) y a mano en *Editar orden → Estado ARL*, y se muestra en el
+> detalle. Lo que falta decidir es **dónde más** debe verse o capturarse (¿columna en
+> Órdenes?, ¿al importar?, ¿en la relación de Bolívar?). Cuando respondan, es un cambio de
+> pantalla: el dato ya existe.
 
 | Qué | Por qué |
 |---|---|

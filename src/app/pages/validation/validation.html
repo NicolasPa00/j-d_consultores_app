@@ -75,7 +75,7 @@
         <path d="M14 3v5h5" />
         <path d="M12 11v6M9 14l3-3 3 3" />
       </svg>
-      {{ prefacturaCargando() ? 'Leyendo con IA…' : 'Cargar prefactura' }}
+      Cargar prefactura
     </button>
   </div>
 </section>
@@ -237,7 +237,10 @@
                        ofrecen. Solo aparece en las FINALIZADAS, que es donde
                        arranca el eje — antes del cierre no hay nada que
                        facturarle a la ARL y el servidor lo rechazaría. -->
-                  @if (puedeCobrar(order)) {
+                  <!-- 29-sep · Oculto hasta el segundo lote de cambios (pedido del
+                       usuario): el modal sigue en el código, se enciende con
+                       `cobroHabilitado` en validation.ts. -->
+                  @if (cobroHabilitado && puedeCobrar(order)) {
                     <button
                       type="button"
                       class="icon-action"
@@ -909,7 +912,11 @@
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="assignTitle">
-          {{ esReprogramacion(order) ? 'Reprogramar orden' : 'Asignar profesional' }}
+          @if (pasoAsignacion() === 'formatos') {
+            Revisar formatos antes de enviar
+          } @else {
+            {{ esReprogramacion(order) ? 'Reprogramar orden' : 'Asignar profesional' }}
+          }
         </h3>
         <p class="modal__sub">
           {{ order.osCode || order.company }} · {{ order.company }} · {{ order.arl }}
@@ -922,6 +929,119 @@
       </button>
     </header>
 
+    @if (pasoAsignacion() === 'formatos') {
+      <!-- Vista previa de formatos (29-sep-2026): los PDF tal como saldrán en el
+           correo, generados por el servidor con la asignación deshecha al final.
+           Nada se guarda hasta "Confirmar y enviar". -->
+      <div class="modal__body vista-formatos">
+        <aside class="vista-formatos__panel">
+          <p class="assign__section-title">Se enviarán {{ formatosPrevios().length }} documento(s)</p>
+          <div class="vista-formatos__lista">
+            @for (f of formatosPrevios(); track $index) {
+              <button
+                type="button"
+                class="vista-formatos__item"
+                [class.vista-formatos__item--activo]="$index === formatoVisto()"
+                [disabled]="!f.pdf"
+                (click)="verFormato($index)"
+              >
+                <span class="vista-formatos__nombre">{{ f.etiqueta }}</span>
+                <span class="vista-formatos__archivo">
+                  {{ f.nombre }}@if (!f.pdf) { · se adjunta tal cual }
+                </span>
+              </button>
+            }
+          </div>
+
+          @if (formatoEnVisor(); as fv) {
+            @if (fv.editables.length) {
+              <!-- Las casillas llegan llenas con lo mismo que muestra el PDF: se
+                   corrige lo que no convenza y se completa lo vacío (resaltado).
+                   Se editan AQUÍ y no en el PDF: el visor del navegador no
+                   devuelve lo que se escribe en él. -->
+              <p class="assign__section-title">
+                Datos de «{{ fv.etiqueta }}»
+                @if (casillasVacias()) { · <span class="vista-formatos__pendientes">{{ casillasVacias() }} por completar</span> }
+              </p>
+              <p class="vista-formatos__ayuda">
+                Vienen llenos como en el PDF: corrija lo necesario y complete lo vacío.
+                La fecha y el horario de la visita se cambian en la agenda.
+              </p>
+              @for (e of fv.editables; track e.campo) {
+                <label
+                  class="form-field vista-formatos__obs"
+                  [class.vista-formatos__obs--vacia]="!valorCampo(fv.clave, e).trim()"
+                >
+                  <span class="form-label">{{ e.etiqueta }}</span>
+                  @if (e.tipo === 'fecha') {
+                    <input
+                      class="form-control"
+                      type="date"
+                      [ngModel]="valorCampo(fv.clave, e)"
+                      (ngModelChange)="editarCampo(fv.clave, e.campo, $event)"
+                    />
+                  } @else if (e.multilinea) {
+                    <textarea
+                      class="form-control"
+                      rows="3"
+                      maxlength="1000"
+                      [ngModel]="valorCampo(fv.clave, e)"
+                      (ngModelChange)="editarCampo(fv.clave, e.campo, $event)"
+                    ></textarea>
+                  } @else {
+                    <input
+                      class="form-control"
+                      type="text"
+                      maxlength="200"
+                      [ngModel]="valorCampo(fv.clave, e)"
+                      (ngModelChange)="editarCampo(fv.clave, e.campo, $event)"
+                    />
+                  }
+                </label>
+              }
+            }
+          }
+
+          @if (clavesConObservaciones().length) {
+            <p class="assign__section-title">Observaciones</p>
+            <p class="vista-formatos__ayuda">
+              Se imprimen en la casilla de observaciones del formato y quedan guardadas en la orden.
+            </p>
+            @for (c of clavesConObservaciones(); track c.clave) {
+              <label class="form-field vista-formatos__obs">
+                <span class="form-label">
+                  {{ c.etiqueta }}@if (c.copias > 1) { · {{ c.copias }} copias }
+                </span>
+                <textarea
+                  class="form-control"
+                  rows="3"
+                  maxlength="500"
+                  placeholder="Ej.: llevar video beam; el contacto espera en portería…"
+                  [ngModel]="observacionesFormatos()[c.clave] || ''"
+                  (ngModelChange)="editarObservacion(c.clave, $event)"
+                ></textarea>
+                <small class="vista-formatos__contador">{{ (observacionesFormatos()[c.clave] || '').length }}/500</small>
+              </label>
+            }
+            @if (observacionesSinAplicar()) {
+              <p class="alert alert--info vista-formatos__aviso">
+                Pulse «Actualizar vista previa» para ver cómo quedan. Si confirma sin actualizar, igual se envían con estos cambios.
+              </p>
+            }
+          } @else {
+            <p class="vista-formatos__ayuda">Estos formatos no tienen casilla de observaciones.</p>
+          }
+        </aside>
+
+        <section class="vista-formatos__visor">
+          @if (urlFormatoVisto(); as url) {
+            <iframe [src]="url" title="Vista previa del formato"></iframe>
+          } @else {
+            <p class="vista-formatos__ayuda">Este documento no se puede previsualizar.</p>
+          }
+        </section>
+      </div>
+    } @else {
     <div class="modal__body assign">
       <!-- ---- Lista de profesionales ----
            La lista se estira al alto de la agenda (columna posicionada + lista
@@ -1229,10 +1349,13 @@
 
       </div>
     </div>
+    }
 
     <footer class="modal__footer">
       <span class="modal__status">
-        @if (!selectedProfId()) {
+        @if (pasoAsignacion() === 'formatos') {
+          Revise cada documento. Al confirmar, la orden se guarda y el correo sale con estos formatos.
+        } @else if (!selectedProfId()) {
           Marque las franjas en la agenda y elija un profesional para poder asignar.
         } @else if (usarSuplente() && !formatosProfId()) {
           <!-- ASG · El interruptor está puesto pero no se eligió a nadie. Guardar
@@ -1250,33 +1373,60 @@
                validar la OS, que es cuando existe la orden a la que cuelgan. -->
           Queda anotado en el borrador (solo la fecha de inicio); los formatos, el correo
           y las franjas salen al validar la orden.
-        } @else if (esReprogramacion(order)) {
-          Se regenerarán los formatos y se reenviará el correo con la nueva programación.
         } @else {
-          La orden pasará a PROGRAMADA y se enviará el correo con los formatos diligenciados.
+          Pulse «Continuar» para revisar los formatos antes de enviarlos.
         }
       </span>
       <div class="modal__footer-actions">
-        <button type="button" class="btn btn--ghost" (click)="closeAssign()" [disabled]="assigning()">Cancelar</button>
-        <!-- ASG-02 · Basta con haber elegido profesional. Exigir además la visita
-             completa dejaba sin salida el caso de cambiar de asesor en una orden
-             de muchas horas: había que repartirlas todas antes de poder guardar
-             nada, y el backend sí sabe guardar el avance. -->
-        <button
-          type="button"
-          class="btn btn--primary"
-          [disabled]="!selectedProfId() || assigning() || (usarSuplente() && !formatosProfId())"
-          (click)="confirmAssign()"
-        >
-          @if (assigning()) {
-            <span class="spinner" aria-hidden="true"></span>
-            {{ !visitaCompleta() ? 'Guardando…' : (esReprogramacion(order) ? 'Reprogramando…' : 'Asignando…') }}
-          } @else if (!visitaCompleta()) {
-            Guardar avance
+        @if (pasoAsignacion() === 'formatos') {
+          <button type="button" class="btn btn--ghost" (click)="volverAAgenda()" [disabled]="assigning() || previsualizando()">
+            Volver a la agenda
+          </button>
+          <button type="button" class="btn btn--secondary" (click)="previsualizarFormatos()" [disabled]="assigning() || previsualizando()">
+            @if (previsualizando()) { <span class="spinner" aria-hidden="true"></span> Actualizando… } @else { Actualizar vista previa }
+          </button>
+          <button type="button" class="btn btn--primary" (click)="confirmAssign()" [disabled]="assigning() || previsualizando()">
+            @if (assigning()) {
+              <span class="spinner" aria-hidden="true"></span> Enviando…
+            } @else {
+              {{ esReprogramacion(order) ? 'Confirmar y reenviar' : 'Confirmar y enviar' }}
+            }
+          </button>
+        } @else {
+          <button type="button" class="btn btn--ghost" (click)="closeAssign()" [disabled]="assigning() || previsualizando()">Cancelar</button>
+          <!-- ASG-02 · Basta con haber elegido profesional. Exigir además la visita
+               completa dejaba sin salida el caso de cambiar de asesor en una orden
+               de muchas horas: había que repartirlas todas antes de poder guardar
+               nada, y el backend sí sabe guardar el avance.
+               Con la visita completa y la OS ya creada, el botón es «Continuar»:
+               lleva a la vista previa de formatos en vez de enviar directamente. -->
+          @if (order.osId && visitaCompleta()) {
+            <button
+              type="button"
+              class="btn btn--primary"
+              [disabled]="!selectedProfId() || previsualizando() || (usarSuplente() && !formatosProfId())"
+              (click)="previsualizarFormatos()"
+            >
+              @if (previsualizando()) { <span class="spinner" aria-hidden="true"></span> Preparando formatos… } @else { Continuar }
+            </button>
           } @else {
-            {{ esReprogramacion(order) ? 'Reprogramar y reenviar' : 'Asignar profesional' }}
+            <button
+              type="button"
+              class="btn btn--primary"
+              [disabled]="!selectedProfId() || assigning() || (usarSuplente() && !formatosProfId())"
+              (click)="confirmAssign()"
+            >
+              @if (assigning()) {
+                <span class="spinner" aria-hidden="true"></span>
+                {{ !visitaCompleta() ? 'Guardando…' : 'Asignando…' }}
+              } @else if (!visitaCompleta()) {
+                Guardar avance
+              } @else {
+                Asignar profesional
+              }
+            </button>
           }
-        </button>
+        }
       </div>
     </footer>
   </div>
@@ -1578,6 +1728,35 @@
      (¿cuadra la suma de las filas con el total del encabezado?) se ve arriba de
      la tabla; el resultado del cruce, una pill por fila. Solo las "Encontrada"
      quedan marcadas al abrir: son las únicas que se pueden aprobar sin dudar. -->
+<!-- Mientras la IA lee el PDF: el modal se abre en cuanto se elige el archivo,
+     para que se vea que la carga está en marcha. Al llegar el resultado, este
+     modal da paso al de la previsualización. -->
+@if (prefacturaCargando()) {
+  <div class="modal-backdrop"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="prefacturaCargaTitle" aria-busy="true">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="prefacturaCargaTitle">Cargando prefactura</h3>
+        <p class="modal__sub">{{ prefacturaArchivo() }}</p>
+      </div>
+    </header>
+    <div class="modal__body prefactura-carga">
+      <span class="spinner prefactura-carga__spinner" aria-hidden="true"></span>
+      <p class="prefactura-carga__texto">
+        Leyendo el PDF con IA y cruzando cada fila contra las órdenes de Orbita.
+        Suele tardar entre 10 y 30 segundos.
+      </p>
+      <p class="prefactura-carga__nota">Todavía no se guarda nada: podrá revisar el resultado antes de aplicarlo.</p>
+    </div>
+    <footer class="modal__footer">
+      <span class="modal__status"></span>
+      <div class="modal__footer-actions">
+        <button type="button" class="btn btn--ghost" (click)="cancelarLecturaPrefactura()">Cancelar</button>
+      </div>
+    </footer>
+  </div>
+}
+
 @if (prefacturaPreview(); as pf) {
   <div class="modal-backdrop" (click)="cerrarPrefactura()"></div>
   <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="prefacturaTitle">
