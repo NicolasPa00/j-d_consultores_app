@@ -1,0 +1,346 @@
+<section class="page-head fac-head">
+  <div>
+    <h2 class="page-head__title">Facturación</h2>
+    <p class="page-head__sub">Facturas electrónicas ante la DIAN · por pagador y a partir de las órdenes finalizadas</p>
+  </div>
+  @if (puedeOperar()) {
+    <button type="button" class="btn btn--ghost" (click)="actualizarEventos()" [disabled]="actualizandoEventos()"
+            title="Consulta a la DIAN los eventos (acuse, aceptación, reclamo) de las facturas de los últimos 60 días">
+      @if (actualizandoEventos()) { <span class="spinner" aria-hidden="true"></span> Consultando… } @else { Actualizar eventos DIAN }
+    </button>
+  }
+</section>
+
+<div class="tabs" role="tablist">
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'por-facturar'" (click)="cambiarPestana('por-facturar')">
+    Por facturar <span class="tab__count">{{ totalFacturables() }}</span>
+  </button>
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'borradores'" (click)="cambiarPestana('borradores')">
+    Borradores <span class="tab__count">{{ borradores().length }}</span>
+  </button>
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'emitidas'" (click)="cambiarPestana('emitidas')">
+    Emitidas <span class="tab__count">{{ emitidas().length }}</span>
+  </button>
+</div>
+
+<!-- ======================= POR FACTURAR ======================= -->
+@if (pestana() === 'por-facturar') {
+  @if (cargandoRelacion()) {
+    <div class="card fac-vacio"><span class="spinner" aria-hidden="true"></span> Cargando lo pendiente por facturar…</div>
+  } @else if (!pagadoresConLineas().length) {
+    <div class="card fac-vacio">
+      No hay órdenes pendientes por facturar. Aparecen aquí las órdenes <b>finalizadas</b> y
+      <b>aprobadas por la ARL</b> que todavía no tienen factura.
+    </div>
+  } @else {
+    @for (p of pagadoresConLineas(); track p.arl_id) {
+      <section class="card fac-pagador">
+        <header class="card__head fac-pagador__head">
+          <div>
+            <h3 class="card__title">{{ p.arl_nombre }}</h3>
+            <p class="card__hint">
+              Se factura a: {{ p.tercero_nombre || 'sin tercero enlazado' }}
+              · {{ p.modo === 'PREFACTURA' ? 'por prefactura' : 'eligiendo las órdenes' }}
+            </p>
+          </div>
+          @if (!p.tercero_id) {
+            <a class="btn btn--ghost btn--sm" routerLink="/terceros">Enlazar tercero</a>
+          }
+        </header>
+
+        @for (g of p.grupos; track g.clave) {
+          <div class="fac-grupo">
+            <div class="fac-grupo__titulo">
+              @if (g.prefactura) {
+                <span><b>Prefactura {{ g.prefactura.numero }}</b>
+                  @if (g.prefactura.fecha_corte) { · corte {{ fecha(g.prefactura.fecha_corte) }} }
+                  · total {{ pesos(g.prefactura.valor_total) }}</span>
+              } @else if (g.sin_prefactura) {
+                <span><b>Sin prefactura cargada</b> · se habilitan al cargar la prefactura en Órdenes</span>
+              } @else {
+                <span><b>Órdenes pendientes</b></span>
+              }
+              <span class="fac-grupo__resumen">{{ g.n_facturables }} facturable(s) de {{ g.lineas.length }}</span>
+            </div>
+
+            <div class="table-wrap">
+              <table class="table fac-tabla">
+                <thead>
+                  <tr>
+                    <th class="col-check">
+                      @if (puedeOperar() && g.n_facturables) {
+                        <input type="checkbox" [checked]="todasMarcadas(g)" (change)="alternarTodas(g)" aria-label="Marcar todas" />
+                      }
+                    </th>
+                    <th>{{ g.prefactura ? 'Cronograma-secuencia' : 'Orden' }}</th>
+                    <th>Empresa</th>
+                    <th>Actividad</th>
+                    <th class="num">Horas</th>
+                    <th class="num">Valor</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (l of g.lineas; track l.clave) {
+                    <tr [class.fac-fila--bloqueada]="!l.facturable">
+                      <td class="col-check">
+                        @if (puedeOperar() && l.facturable) {
+                          <input type="checkbox" [checked]="estaMarcada(g, l)" (change)="alternarLinea(g, l)" [attr.aria-label]="'Marcar ' + (l.codigo || l.clave)" />
+                        }
+                      </td>
+                      <td>
+                        @if (g.prefactura) { {{ l.codigo_cronograma }}-{{ l.secuencia }} } @else { {{ l.numero_orden || '—' }} }
+                        @if (l.codigo) { <small class="fac-sub">{{ l.codigo }}</small> }
+                      </td>
+                      <td>{{ l.empresa_nombre || '—' }}</td>
+                      <td>{{ l.tema_actividad || l.tipo_actividad || '—' }}</td>
+                      <td class="num">{{ l.horas ?? '—' }}</td>
+                      <td class="num">
+                        @if (l.valor_referencia != null) { {{ pesos(l.valor_referencia) }} }
+                        @else { <span class="pill pill--warning" title="Sin tarifa de venta del pagador ni valor de la ARL">Sin valor</span> }
+                      </td>
+                      <td>
+                        @if (l.facturable) { <span class="pill pill--success">Lista</span> }
+                        @else { <span class="fac-motivo">{{ l.motivo }}</span> }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            @if (g.n_facturables) {
+              <div class="fac-grupo__acciones">
+                <span class="fac-grupo__total">
+                  {{ lineasMarcadas(g).length }} marcada(s) · {{ pesos(totalMarcado(g)) }}
+                  @if (sinValor(g)) { <span class="pill pill--warning">{{ sinValor(g) }} sin valor</span> }
+                </span>
+                <button type="button" class="btn btn--ghost btn--sm" (click)="descargarRelacion(p, g)" [disabled]="descargando() === g.clave">
+                  @if (descargando() === g.clave) { <span class="spinner" aria-hidden="true"></span> } Relación en Excel
+                </button>
+                @if (puedeOperar()) {
+                  <button type="button" class="btn btn--primary btn--sm" (click)="crearFactura(p, g)"
+                          [disabled]="!lineasMarcadas(g).length || creando() === g.clave || !p.tercero_id">
+                    @if (creando() === g.clave) { <span class="spinner" aria-hidden="true"></span> Creando… } @else { Crear factura }
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
+  }
+}
+
+<!-- ======================= BORRADORES ======================= -->
+@if (pestana() === 'borradores') {
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Cliente</th><th>Referencia</th><th>Prefactura</th><th>Creado</th><th class="num">Total a pagar</th><th class="col-actions"></th></tr>
+        </thead>
+        <tbody>
+          @for (d of pagBorradores.visibles(); track d.id) {
+            <tr class="fac-clic" (click)="abrir(d.id)">
+              <td>{{ d.tercero_nombre }}</td>
+              <td><small>{{ d.reference_code }}</small></td>
+              <td>{{ d.numero_prefactura || '—' }}</td>
+              <td>{{ fechaHora(d.creado_en) }}</td>
+              <td class="num">{{ pesos(d.total_a_pagar) }}</td>
+              <td class="col-actions"><button type="button" class="btn btn--ghost btn--sm">Revisar</button></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="table__empty">
+              @if (cargandoListas()) { Cargando… } @else { No hay borradores. Se crean desde «Por facturar». }
+            </td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <app-paginador [pag]="pagBorradores" etiqueta="borradores" />
+  </div>
+}
+
+<!-- ======================= EMITIDAS ======================= -->
+@if (pestana() === 'emitidas') {
+  <div class="fac-filtros">
+    <select class="form-control fac-filtro" [ngModel]="filtroEstado()" (ngModelChange)="filtroEstado.set($event); pagEmitidas.reiniciar()" aria-label="Filtrar por estado">
+      <option value="">Todos los estados</option>
+      <option value="VALIDADO">Validadas</option>
+      <option value="RECHAZADO">Rechazadas</option>
+      <option value="ENVIANDO">Enviando a la DIAN</option>
+      <option value="ANULADO">Anuladas</option>
+    </select>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Número</th><th>Cliente</th><th>Emisión</th><th>Vence</th><th class="num">Total a pagar</th><th>Estado</th><th class="col-actions"></th></tr>
+        </thead>
+        <tbody>
+          @for (d of pagEmitidas.visibles(); track d.id) {
+            <tr class="fac-clic" (click)="abrir(d.id)">
+              <td><b>{{ numeroDe(d) }}</b></td>
+              <td>{{ d.tercero_nombre }}</td>
+              <td>{{ fecha(d.fecha_emision) }}</td>
+              <td>{{ fecha(d.fecha_vencimiento) }}</td>
+              <td class="num">{{ pesos(d.total_a_pagar) }}</td>
+              <td><span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
+              <td class="col-actions"><button type="button" class="btn btn--ghost btn--sm">Ver</button></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="table__empty">
+              @if (cargandoListas()) { Cargando… } @else { Todavía no hay facturas emitidas. }
+            </td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <app-paginador [pag]="pagEmitidas" etiqueta="facturas" />
+  </div>
+}
+
+<!-- ======================= DETALLE ======================= -->
+@if (cargandoDetalle() && !detalle()) {
+  <div class="modal-backdrop"></div>
+  <div class="modal fac-cargando"><span class="spinner" aria-hidden="true"></span> Abriendo factura…</div>
+}
+@if (detalle(); as d) {
+  <div class="modal-backdrop" (click)="cerrar()"></div>
+  <div class="modal modal--factura" role="dialog" aria-modal="true" aria-labelledby="facTitulo">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="facTitulo">
+          {{ d.estado === 'BORRADOR' ? 'Borrador de factura' : 'Factura ' + numeroDe(d) }}
+          <span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span>
+        </h3>
+        <p class="modal__sub">
+          {{ d.tercero_nombre }}
+          @if (d.numero_prefactura) { · prefactura {{ d.numero_prefactura }} }
+          · ref. {{ d.reference_code }}
+        </p>
+      </div>
+      <button type="button" class="icon-action" (click)="cerrar()" aria-label="Cerrar" [disabled]="!!accion()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+
+    <div class="modal__body">
+      @if (d.estado === 'RECHAZADO' && erroresDe(d).length) {
+        <div class="alert alert--error" role="alert">
+          <div class="alert__body">
+            <p class="alert__title">La DIAN rechazó esta factura</p>
+            <ul class="fac-errores">@for (e of erroresDe(d); track $index) { <li>{{ e }}</li> }</ul>
+            <p class="alert__detail">Corrija el origen (tercero, parametrización u orden) y use «Corregir y reemitir».</p>
+          </div>
+        </div>
+      }
+      @if (d.estado === 'ENVIANDO') {
+        <div class="alert alert--info">
+          <div class="alert__body">La DIAN todavía no responde. Use «Consultar estado» en unos minutos; no se vuelve a emitir.</div>
+        </div>
+      }
+
+      <div class="fac-datos">
+        <div><span>Emisión</span><b>{{ d.fecha_emision ? fecha(d.fecha_emision) : 'al emitir' }}</b></div>
+        <div><span>Vencimiento</span><b>{{ fecha(d.fecha_vencimiento) }}</b></div>
+        <div><span>Forma de pago</span><b>{{ d.forma_pago_nombre || '—' }}</b></div>
+        <div><span>Medio de pago</span><b>{{ d.medio_pago_nombre || '—' }}</b></div>
+        @if (d.cufe) { <div class="fac-datos__ancho"><span>CUFE</span><b class="fac-cufe">{{ d.cufe }}</b></div> }
+      </div>
+
+      <div class="table-wrap">
+        <table class="table fac-items">
+          <thead><tr><th>Descripción</th><th class="num">Cant.</th><th class="num">Valor unitario</th><th class="num">IVA</th><th class="num">Total</th></tr></thead>
+          <tbody>
+            @for (it of d.items; track it.id) {
+              <tr>
+                <td>{{ it.descripcion }} @if (it.codigo) { <small class="fac-sub">{{ it.codigo }}</small> }</td>
+                <td class="num">{{ +it.cantidad }}</td>
+                <td class="num">{{ pesos(it.valor_unitario) }}</td>
+                <td class="num">{{ it.iva_pct ? it.iva_pct + ' %' : 'Excluido' }}</td>
+                <td class="num">{{ pesos(it.total_linea) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="fac-totales">
+        <div><span>Total bruto</span><b>{{ pesos(d.totales.total_bruto) }}</b></div>
+        @if (+d.totales.total_descuento) { <div><span>Descuento</span><b>− {{ pesos(d.totales.total_descuento) }}</b></div> }
+        <div><span>Subtotal</span><b>{{ pesos(d.totales.subtotal) }}</b></div>
+        <div><span>IVA</span><b>{{ pesos(d.totales.total_iva) }}</b></div>
+        @for (r of d.retenciones; track r.codigo) {
+          <div class="fac-totales__ret"><span>{{ r.codigo }} ({{ +r.tarifa }} %)</span><b>− {{ pesos(r.valor) }}</b></div>
+        }
+        <div class="fac-totales__final"><span>Total a pagar</span><b>{{ pesos(d.totales.total_a_pagar) }}</b></div>
+      </div>
+
+      @if (d.observaciones) { <p class="fac-obs"><b>Observaciones:</b> {{ d.observaciones }}</p> }
+
+      @if (d.eventos.length) {
+        <div>
+          <p class="fac-seccion">Línea de tiempo</p>
+          <ol class="fac-eventos">
+            @for (e of d.eventos; track $index) {
+              <li><span class="fac-eventos__fecha">{{ fechaHora(e.fecha) }}</span> <b>{{ etiquetaEvento(e.codigo) }}</b>
+                @if (e.descripcion) { · {{ e.descripcion }} }</li>
+            }
+          </ol>
+        </div>
+      }
+
+      @if (d.estado === 'VALIDADO' && puedeOperar()) {
+        <div class="fac-reenvio">
+          <label class="form-field">
+            <span class="form-label">Reenviar al cliente (PDF + XML)</span>
+            <input class="form-control" type="email" placeholder="Vacío = correo de facturación del tercero"
+                   [ngModel]="correoReenvio()" (ngModelChange)="correoReenvio.set($event)" />
+          </label>
+          <button type="button" class="btn btn--ghost" (click)="reenviar()" [disabled]="!!accion()">
+            @if (accion() === 'reenviar') { <span class="spinner" aria-hidden="true"></span> } Reenviar
+          </button>
+        </div>
+      }
+    </div>
+
+    <footer class="modal__footer fac-pie">
+      @if (d.estado === 'VALIDADO') {
+        <button type="button" class="btn btn--ghost" (click)="descargar('pdf')" [disabled]="!!accion() || !d.pdf_path">PDF</button>
+        <button type="button" class="btn btn--ghost" (click)="descargar('xml')" [disabled]="!!accion() || !d.xml_path">XML</button>
+      }
+      <span class="fac-pie__espacio"></span>
+      @if (puedeOperar()) {
+        @switch (d.estado) {
+          @case ('BORRADOR') {
+            <button type="button" class="btn btn--danger" (click)="eliminar()" [disabled]="!!accion()">Eliminar borrador</button>
+            <button type="button" class="btn btn--primary" (click)="emitir()" [disabled]="!!accion()">
+              @if (accion() === 'emitir') { <span class="spinner" aria-hidden="true"></span> Enviando a la DIAN… } @else { Emitir ante la DIAN }
+            </button>
+          }
+          @case ('ENVIANDO') {
+            <button type="button" class="btn btn--primary" (click)="consultarEstado()" [disabled]="!!accion()">
+              @if (accion() === 'estado') { <span class="spinner" aria-hidden="true"></span> } Consultar estado
+            </button>
+          }
+          @case ('RECHAZADO') {
+            <button type="button" class="btn btn--primary" (click)="corregir()" [disabled]="!!accion()">
+              @if (accion() === 'corregir') { <span class="spinner" aria-hidden="true"></span> } Corregir y reemitir
+            </button>
+          }
+          @case ('VALIDADO') {
+            <button type="button" class="btn btn--ghost" (click)="aceptacionTacita()" [disabled]="!!accion()">Aceptación tácita</button>
+            <button type="button" class="btn btn--secondary" (click)="consultarEventos()" [disabled]="!!accion()">
+              @if (accion() === 'eventos') { <span class="spinner" aria-hidden="true"></span> } Consultar eventos DIAN
+            </button>
+          }
+        }
+      }
+      <button type="button" class="btn btn--ghost" (click)="cerrar()" [disabled]="!!accion()">Cerrar</button>
+    </footer>
+  </div>
+}

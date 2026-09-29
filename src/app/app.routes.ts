@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard, permissionGuard } from './core/auth.guard';
+import { authGuard, guestGuard, permissionGuard, seleccionSistemaGuard } from './core/auth.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -19,6 +19,13 @@ export const routes: Routes = [
     path: 'reset-password',
     loadComponent: () =>
       import('./pages/reset-password/reset-password').then((m) => m.ResetPasswordComponent),
+  },
+  {
+    // Selección de sistema (Operación / Finanzas): fuera del shell, a pantalla
+    // completa, como continuación del inicio de sesión.
+    path: 'sistemas',
+    canActivate: [authGuard, seleccionSistemaGuard],
+    loadComponent: () => import('./pages/sistemas/sistemas').then((m) => m.SistemasComponent),
   },
   {
     // Portal público del profesional (sin layout, sin autenticación) · SUP-01/02
@@ -86,6 +93,13 @@ export const routes: Routes = [
         canActivate: [permissionGuard],
         data: { vista: 'empresas' },
         loadComponent: () => import('./pages/companies/companies').then((m) => m.CompaniesComponent),
+      },
+      {
+        // A1-08 · Facturación electrónica (sistema Finanzas).
+        path: 'facturacion',
+        canActivate: [permissionGuard],
+        data: { vista: 'facturacion' },
+        loadComponent: () => import('./pages/facturacion/facturacion').then((m) => m.FacturacionComponent),
       },
       {
         // Fase A · A0-05 · Terceros: a quién se factura o se paga

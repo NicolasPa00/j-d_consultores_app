@@ -4,6 +4,7 @@ import { CanActivateFn, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { AuthService } from './auth.service';
 import { Vista } from './models';
+import { SistemaService } from './sistema.service';
 
 /**
  * Protege las rutas internas. En el servidor (SSR) permite renderizar; en el
@@ -22,8 +23,9 @@ export const authGuard: CanActivateFn = () => {
 /**
  * Rutas de entrada (`/login` y, por el redirect de `''`, también la raíz y las
  * URLs desconocidas). Con una sesión viva no tiene sentido pedir credenciales de
- * nuevo: se manda al dashboard. Esto es lo que hace que pegar la URL base del
- * sistema entre a la aplicación en vez de al formulario de acceso.
+ * nuevo: se manda a su sistema (o a elegirlo, si tiene los dos). Esto es lo que
+ * hace que pegar la URL base del sistema entre a la aplicación en vez de al
+ * formulario de acceso.
  */
 export const guestGuard: CanActivateFn = () => {
   const platformId = inject(PLATFORM_ID);
@@ -31,7 +33,24 @@ export const guestGuard: CanActivateFn = () => {
 
   const auth = inject(AuthService);
   const router = inject(Router);
-  return auth.isAuthenticated() ? router.createUrlTree(['/dashboard']) : true;
+  const sistemas = inject(SistemaService);
+  if (!auth.isAuthenticated()) return true;
+  return auth.ensurePermisos().pipe(map(() => router.parseUrl(sistemas.destinoAlEntrar())));
+};
+
+/**
+ * `/sistemas` solo tiene sentido con dos sistemas: con uno, se entra directo.
+ */
+export const seleccionSistemaGuard: CanActivateFn = () => {
+  const platformId = inject(PLATFORM_ID);
+  if (isPlatformServer(platformId)) return true;
+
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  const sistemas = inject(SistemaService);
+  return auth.ensurePermisos().pipe(
+    map(() => (sistemas.variosSistemas() ? true : router.parseUrl(sistemas.destinoAlEntrar()))),
+  );
 };
 
 /**
@@ -50,7 +69,11 @@ export const permissionGuard: CanActivateFn = (route) => {
 
   const auth = inject(AuthService);
   const router = inject(Router);
+  const sistemas = inject(SistemaService);
+  // Sin permiso se vuelve al inicio del sistema activo (antes, siempre al
+  // dashboard, que es de Operación: la contadora habría caído en un sistema
+  // que no es el suyo).
   return auth.ensurePermisos().pipe(
-    map(() => (auth.puedeVer(vista) ? true : router.createUrlTree(['/dashboard']))),
+    map(() => (auth.puedeVer(vista) ? true : router.parseUrl(sistemas.inicioDe(sistemas.activo().id)))),
   );
 };

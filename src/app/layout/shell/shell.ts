@@ -1,7 +1,10 @@
 import { ChangeDetectionStrategy, Component, OnInit, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { RouterLink, RouterLinkActive, RouterOutlet, Router } from '@angular/router';
+import { NavigationEnd, RouterLink, RouterLinkActive, RouterOutlet, Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { filter } from 'rxjs';
 import { AuthService } from '../../core/auth.service';
+import { SistemaService } from '../../core/sistema.service';
 import { Vista } from '../../core/models';
 import { NotificationsComponent } from '../notifications/notifications';
 
@@ -33,6 +36,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: 'people', label: 'Profesionales', hint: 'Asesores y calificación', route: '/profesionales', vista: 'profesionales' },
   { icon: 'money', label: 'Cuentas de cobro', hint: 'Pago a profesionales', route: '/precuentas', vista: 'precuentas' },
   { icon: 'building', label: 'Empresas', hint: 'Clientes y contactos', route: '/empresas', vista: 'empresas' },
+  { icon: 'invoice', label: 'Facturación', hint: 'Facturas electrónicas DIAN', route: '/facturacion', vista: 'facturacion' },
   { icon: 'people', label: 'Terceros', hint: 'A quién se factura o se paga', route: '/terceros', vista: 'terceros' },
   { icon: 'settings', label: 'Parametrización', hint: 'Emisor, tarifas y numeración', route: '/parametrizacion', vista: 'parametrizacion' },
   { icon: 'reports', label: 'Informes y Resúmenes', hint: 'Indicadores y exportaciones', route: '/informes', vista: 'informes' },
@@ -50,8 +54,24 @@ export class ShellComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  protected readonly sistemas = inject(SistemaService);
 
   protected readonly usuario = this.auth.usuario;
+
+  constructor() {
+    // Un enlace directo a una pantalla del otro sistema (campanita, correo,
+    // enlace orden → factura) cambia el sistema activo sin preguntar.
+    this.sistemas.sincronizarConUrl(this.router.url);
+    this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd), takeUntilDestroyed())
+      .subscribe((e) => this.sistemas.sincronizarConUrl(e.urlAfterRedirects));
+  }
+
+  /** «Cambiar de sistema»: vuelve a la selección y olvida la elección recordada. */
+  protected cambiarSistema(): void {
+    this.sistemas.olvidarEleccion();
+    this.router.navigateByUrl('/sistemas');
+  }
 
   /**
    * T0-14 · Ancho ↔ colapsado, en cualquier ancho de pantalla (antes solo se
@@ -119,8 +139,14 @@ export class ShellComponent implements OnInit {
     this.router.navigateByUrl('/login');
   }
 
-  /** Ítems visibles según los permisos vigentes del rol de la sesión. */
-  protected readonly navItems = computed<NavItem[]>(() =>
-    NAV_ITEMS.filter((item) => this.auth.puedeVer(item.vista)),
-  );
+  /**
+   * Ítems del sistema activo que el rol puede ver, en el orden del menú de ese
+   * sistema (`sistemas.ts`).
+   */
+  protected readonly navItems = computed<NavItem[]>(() => {
+    const menu = this.sistemas.activo().menu;
+    return menu
+      .map((vista) => NAV_ITEMS.find((item) => item.vista === vista))
+      .filter((item): item is NavItem => !!item && this.auth.puedeVer(item.vista));
+  });
 }

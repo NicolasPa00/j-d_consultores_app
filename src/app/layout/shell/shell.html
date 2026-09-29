@@ -63,6 +63,12 @@
                   <path d="M9 13h6M9 17h6" />
                 </svg>
               }
+              @case ('invoice') {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 2h12v20l-3-2-3 2-3-2-3 2Z" />
+                  <path d="M9 7h6M9 11h6M9 15h4" />
+                </svg>
+              }
               @case ('money') {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="2.5" y="6" width="19" height="12" rx="2" />
@@ -137,10 +143,23 @@
 
       <div class="navbar__title">
         <h1 class="navbar__title-main">Sistema de Gestión de Seguridad y Salud en el Trabajo</h1>
-        <span class="navbar__title-sub">JD&amp;D Consultores · Gestión de Órdenes de Servicio</span>
+        <span class="navbar__title-sub">
+          JD&amp;D Consultores ·
+          {{ sistemas.activo().id === 'finanzas' ? 'Finanzas · Facturación y contabilidad' : 'Operación · Gestión de Órdenes de Servicio' }}
+        </span>
       </div>
 
       <div class="navbar__actions">
+        <!-- Subsistemas (29-sep): solo quien tiene los dos ve el cambio. -->
+        @if (sistemas.variosSistemas()) {
+          <button type="button" class="sistema-btn" (click)="cambiarSistema()" title="Cambiar de sistema">
+            <span class="sistema-btn__nombre">{{ sistemas.activo().nombre }}</span>
+            <span class="sistema-btn__accion">Cambiar de sistema</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M7 7h11l-3-3M17 17H6l3 3" />
+            </svg>
+          </button>
+        }
         <!-- NOT-04 · Bandeja interna de notificaciones (badge + panel). -->
         <app-notifications />
 

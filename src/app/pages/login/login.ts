@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
+import { SistemaService } from '../../core/sistema.service';
 import { mensajeError } from '../../core/errores';
 
 @Component({
@@ -14,6 +15,7 @@ import { mensajeError } from '../../core/errores';
 export class LoginComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly sistemas = inject(SistemaService);
 
   protected documento = '';
   protected password = '';
@@ -37,7 +39,8 @@ export class LoginComponent {
     this.auth.login(this.documento.trim(), this.password).subscribe({
       next: (res) => {
         this.loading.set(false);
-        this.router.navigateByUrl('/dashboard');
+        // A su sistema, o a elegirlo si tiene los dos (ver `SistemaService`).
+        this.router.navigateByUrl(this.sistemas.destinoAlEntrar());
         // Recomendación de seguridad: contraseña = cédula (usuario recién creado).
         if (res.requiere_cambio_contrasena) this.auth.recomendarCambioContrasena();
       },

@@ -1,0 +1,178 @@
+:host {
+  display: block;
+}
+
+// Mismo degradado de marca que el panel izquierdo del login: es la continuación
+// del inicio de sesión, no una pantalla más de la aplicación.
+.sistemas {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(160deg, #000b50 0%, #163a8c 55%, #2d7bc8 100%);
+  color: #fff;
+}
+
+.sistemas__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 32px;
+}
+
+.sistemas__logo {
+  height: 40px;
+  // El lockup horizontal es oscuro: sobre el degradado se pasa a blanco.
+  filter: brightness(0) invert(1);
+}
+
+.sistemas__salir {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  color: #fff;
+  border-radius: var(--radius-sm, 8px);
+  padding: 8px 14px;
+  cursor: pointer;
+  font: inherit;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+
+.sistemas__cuerpo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px 48px;
+  text-align: center;
+}
+
+.sistemas__saludo {
+  margin: 0;
+  opacity: 0.85;
+}
+
+.sistemas__titulo {
+  // Explícito: el h1 global es oscuro y sobre el degradado no se leía.
+  color: #fff;
+  margin: 6px 0 8px;
+  font-size: 1.9rem;
+  font-weight: 700;
+}
+
+.sistemas__sub {
+  margin: 0 0 32px;
+  opacity: 0.8;
+  font-size: 0.95rem;
+}
+
+.sistemas__tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 340px));
+  gap: 24px;
+  justify-content: center;
+  width: 100%;
+  max-width: 760px;
+}
+
+.tarjeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  text-align: left;
+  padding: 24px;
+  background: #fff;
+  color: var(--text-main, #1f2937);
+  border: 0;
+  border-radius: var(--radius-lg, 16px);
+  box-shadow: 0 12px 32px rgba(0, 11, 80, 0.28);
+  cursor: pointer;
+  font: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 40px rgba(0, 11, 80, 0.35);
+    outline: none;
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px #88b2e8, 0 18px 40px rgba(0, 11, 80, 0.35);
+  }
+}
+
+.tarjeta__icono {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #e8f0fb;
+  color: #163a8c;
+
+  svg {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+.tarjeta--finanzas .tarjeta__icono {
+  background: #e3f6ee;
+  color: #1f7a55;
+}
+
+.tarjeta__nombre {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #000b50;
+}
+
+.tarjeta__descripcion {
+  font-size: 0.9rem;
+  color: var(--text-muted, #5b6675);
+  line-height: 1.45;
+}
+
+.tarjeta__pantallas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tarjeta__pantalla {
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #f1f4f8;
+  color: #3b4656;
+}
+
+.tarjeta__entrar {
+  margin-top: auto;
+  padding-top: 6px;
+  font-weight: 600;
+  color: #2d7bc8;
+}
+
+.sistemas__recordar {
+  margin-top: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  opacity: 0.9;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .sistemas__cabecera {
+    padding: 16px;
+  }
+  .sistemas__titulo {
+    font-size: 1.5rem;
+  }
+}

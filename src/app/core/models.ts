@@ -49,12 +49,12 @@ export interface MeResponse {
 /** Vistas gestionables desde Configuración → Roles y permisos (= ítems del sidebar). */
 export type Vista =
   | 'dashboard' | 'importar' | 'ordenes' | 'informes' | 'precuentas' | 'empresas' | 'terceros'
-  | 'parametrizacion' | 'profesionales' | 'configuracion';
+  | 'parametrizacion' | 'facturacion' | 'profesionales' | 'configuracion';
 
 /** Catálogo completo de vistas. Es también el fallback cuando no hay permisos conocidos. */
 export const VISTAS: Vista[] = [
   'dashboard', 'importar', 'ordenes', 'informes', 'precuentas', 'empresas', 'terceros',
-  'parametrizacion', 'profesionales', 'configuracion',
+  'parametrizacion', 'facturacion', 'profesionales', 'configuracion',
 ];
 
 export interface PermisoRol {
@@ -1381,4 +1381,117 @@ export interface VistaPreviaAsignacion {
   campos_formatos: Record<string, Record<string, string>>;
   /** Casillas de soporte que se le pedirán al profesional. */
   soportes: string[];
+}
+
+// ─── A1-08 · Pantalla de Facturación ─────────────────────────────────────────
+/** Una línea de la relación a facturar: una orden (o una fila de prefactura de Bolívar). */
+export interface LineaPorFacturar {
+  clave: string;
+  orden_id: string | null;
+  fila_id: string | null;
+  codigo: string | null;
+  numero_orden: string | null;
+  codigo_cronograma: string | null;
+  secuencia: string | null;
+  empresa_nombre: string | null;
+  tipo_actividad: string | null;
+  tema_actividad: string | null;
+  horas: number | null;
+  valor_unitario: number | null;
+  transporte: number;
+  /** Lo que se facturaría; `null` si no hay tarifa de venta ni valor de la ARL. */
+  valor_referencia: number | null;
+  origen_valor: 'TARIFA' | 'ORDEN' | 'PREFACTURA' | null;
+  facturable: boolean;
+  /** Por qué no se puede facturar todavía (null si se puede). */
+  motivo: string | null;
+  marcada_por_defecto: boolean;
+  documento_id: string | null;
+  documento_estado: string | null;
+}
+
+export interface GrupoPorFacturar {
+  clave: string;
+  tipo: 'PREFACTURA' | 'ORDENES';
+  prefactura?: { id: string; numero: string; fecha_corte: string | null; valor_total: number | null };
+  /** Órdenes de Bolívar que ninguna prefactura cargada cubre (informativas). */
+  sin_prefactura?: boolean;
+  lineas: LineaPorFacturar[];
+  n_facturables: number;
+  total_marcadas?: number;
+}
+
+export interface PagadorPorFacturar {
+  arl_id: string;
+  arl_nombre: string;
+  tercero_id: string | null;
+  tercero_nombre: string | null;
+  /** Bolívar se factura por prefactura; el resto, eligiendo órdenes. */
+  modo: 'SELECCION' | 'PREFACTURA';
+  grupos: GrupoPorFacturar[];
+}
+
+export type EstadoDocumento = 'BORRADOR' | 'ENVIANDO' | 'VALIDADO' | 'RECHAZADO' | 'ANULADO';
+
+/** Documento electrónico (factura) tal como lo lista `GET /facturacion/borradores`. */
+export interface DocumentoFactura {
+  id: string;
+  tipo: string;
+  estado: EstadoDocumento;
+  reference_code: string;
+  numero: string | number | null;
+  prefijo: string | null;
+  tercero_id: string;
+  tercero_nombre: string;
+  prefactura_id: string | null;
+  numero_prefactura: string | null;
+  fecha_emision: string | null;
+  fecha_vencimiento: string | null;
+  forma_pago_nombre: string | null;
+  medio_pago_nombre: string | null;
+  observaciones: string | null;
+  total_bruto: string;
+  total_descuento: string;
+  subtotal: string;
+  total_iva: string;
+  total_retenciones: string;
+  total_a_pagar: string;
+  cufe: string | null;
+  qr_url: string | null;
+  pdf_path: string | null;
+  xml_path: string | null;
+  errores: unknown;
+  creado_en: string;
+}
+
+export interface ItemFactura {
+  id: string;
+  orden_id: string | null;
+  codigo: string | null;
+  descripcion: string;
+  cantidad: string;
+  valor_unitario: string;
+  descuento: string;
+  base: string;
+  total_linea: string;
+  iva_pct: number;
+  iva_valor: string;
+}
+
+export interface EventoFactura {
+  codigo: string;
+  descripcion: string | null;
+  fecha: string;
+  datos: unknown;
+}
+
+/** Detalle de `GET /facturacion/borradores/:id` (cualquier estado). */
+export interface DetalleFactura extends DocumentoFactura {
+  eventos: EventoFactura[];
+  items: ItemFactura[];
+  retenciones: { codigo: string; tipo: string; tarifa: string; valor: string }[];
+  totales: {
+    total_bruto: string; total_descuento: string; subtotal: string;
+    total_iva: string; total_retenciones: string; total_a_pagar: string;
+  };
 }

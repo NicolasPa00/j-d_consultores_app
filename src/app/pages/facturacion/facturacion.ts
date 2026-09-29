@@ -1,0 +1,424 @@
+import { ChangeDetectionStrategy, Component, OnInit, PLATFORM_ID, computed, inject, signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { Observable } from 'rxjs';
+import { ApiService } from '../../core/api.service';
+import { AlertService } from '../../core/alert.service';
+import { AuthService } from '../../core/auth.service';
+import { mensajeError } from '../../core/errores';
+import {
+  DetalleFactura, DocumentoFactura, EstadoDocumento, GrupoPorFacturar, LineaPorFacturar, PagadorPorFacturar,
+} from '../../core/models';
+import { paginar } from '../../shared/paginacion';
+import { PaginadorComponent } from '../../shared/paginador/paginador';
+
+type Pestana = 'por-facturar' | 'borradores' | 'emitidas';
+
+/** Estados que caben en «Emitidas»: todo lo que ya salió (o intentó salir) a la DIAN. */
+const ESTADOS_EMITIDAS = 'VALIDADO,RECHAZADO,ENVIANDO,ANULADO';
+
+const PESOS = new Intl.NumberFormat('es-CO', {
+  style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 2,
+});
+
+/**
+ * A1-08 · Pantalla de Facturación (sistema Finanzas).
+ *
+ * Junta en un solo sitio lo que el backend ya sabía hacer desde A1-03..A1-07:
+ *
+ *   · Por facturar → la relación por pagador (FEL-01/02). En Bolívar se factura
+ *     por prefactura (sus filas vienen marcadas); en AXA, Colmena y privados se
+ *     eligen las órdenes. «Crear factura» arma el borrador con el cálculo de
+ *     impuestos del servidor (A1-04): aquí no se suma nada.
+ *   · Borradores  → revisar el cálculo y emitir ante la DIAN (A1-05).
+ *   · Emitidas    → estado DIAN, PDF/XML, reenvío (A1-06), rechazos y eventos
+ *     RADIAN (A1-07).
+ *
+ * Leer: admin, contador y auditor. Operar (crear, emitir, reenviar…): admin y
+ * contador — el servidor lo exige igual; aquí solo se ocultan los botones.
+ */
+@Component({
+  selector: 'app-facturacion',
+  imports: [FormsModule, RouterLink, PaginadorComponent],
+  templateUrl: './facturacion.html',
+  styleUrl: './facturacion.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class FacturacionComponent implements OnInit {
+  private readonly api = inject(ApiService);
+  private readonly alerts = inject(AlertService);
+  private readonly auth = inject(AuthService);
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+
+  protected readonly pestana = signal<Pestana>('por-facturar');
+  protected readonly puedeOperar = computed(() => ['admin', 'contador'].includes(this.auth.usuario()?.rol ?? ''));
+
+  // ---------------- Por facturar ----------------
+  protected readonly pagadores = signal<PagadorPorFacturar[]>([]);
+  protected readonly cargandoRelacion = signal(false);
+  /** Líneas marcadas por grupo: `grupo.clave` → claves de línea. */
+  protected readonly marcadas = signal<Record<string, string[]>>({});
+  protected readonly creando = signal<string | null>(null);
+  protected readonly descargando = signal<string | null>(null);
+
+  /** Pagadores con algo que mostrar (los que no tienen órdenes candidatas se omiten). */
+  protected readonly pagadoresConLineas = computed(() => this.pagadores().filter((p) => p.grupos.length));
+  protected readonly totalFacturables = computed(() =>
+    this.pagadores().reduce((n, p) => n + p.grupos.reduce((m, g) => m + g.n_facturables, 0), 0),
+  );
+
+  // ---------------- Borradores / Emitidas ----------------
+  protected readonly borradores = signal<DocumentoFactura[]>([]);
+  protected readonly emitidas = signal<DocumentoFactura[]>([]);
+  protected readonly cargandoListas = signal(false);
+  protected readonly filtroEstado = signal<'' | EstadoDocumento>('');
+  protected readonly emitidasFiltradas = computed(() => {
+    const f = this.filtroEstado();
+    return f ? this.emitidas().filter((d) => d.estado === f) : this.emitidas();
+  });
+  protected readonly pagBorradores = paginar(this.borradores);
+  protected readonly pagEmitidas = paginar(this.emitidasFiltradas);
+  protected readonly actualizandoEventos = signal(false);
+
+  // ---------------- Detalle ----------------
+  protected readonly detalle = signal<DetalleFactura | null>(null);
+  protected readonly cargandoDetalle = signal(false);
+  /** Acción en curso sobre el documento abierto ('emitir', 'reenviar'…); bloquea los botones. */
+  protected readonly accion = signal<string | null>(null);
+  protected readonly correoReenvio = signal('');
+
+  ngOnInit(): void {
+    this.cargarRelacion();
+    this.cargarListas();
+  }
+
+  protected cambiarPestana(p: Pestana): void {
+    this.pestana.set(p);
+    this.pagBorradores.reiniciar();
+    this.pagEmitidas.reiniciar();
+  }
+
+  // ================= Por facturar =================
+  protected cargarRelacion(): void {
+    this.cargandoRelacion.set(true);
+    this.api.porFacturar().subscribe({
+      next: (r) => {
+        this.cargandoRelacion.set(false);
+        this.pagadores.set(r.data.pagadores);
+        // Bolívar trae marcadas las filas que cuadran con la prefactura; en los
+        // demás pagadores no se marca nada solo: se elige a propósito.
+        const marcas: Record<string, string[]> = {};
+        for (const p of r.data.pagadores) {
+          for (const g of p.grupos) marcas[g.clave] = g.lineas.filter((l) => l.marcada_por_defecto).map((l) => l.clave);
+        }
+        this.marcadas.set(marcas);
+      },
+      error: (err) => {
+        this.cargandoRelacion.set(false);
+        this.alerts.error('No se pudo cargar lo pendiente por facturar', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  protected estaMarcada(g: GrupoPorFacturar, l: LineaPorFacturar): boolean {
+    return (this.marcadas()[g.clave] ?? []).includes(l.clave);
+  }
+
+  protected alternarLinea(g: GrupoPorFacturar, l: LineaPorFacturar): void {
+    if (!l.facturable) return;
+    this.marcadas.update((m) => {
+      const actuales = m[g.clave] ?? [];
+      return {
+        ...m,
+        [g.clave]: actuales.includes(l.clave) ? actuales.filter((c) => c !== l.clave) : [...actuales, l.clave],
+      };
+    });
+  }
+
+  protected alternarTodas(g: GrupoPorFacturar): void {
+    const facturables = g.lineas.filter((l) => l.facturable).map((l) => l.clave);
+    const todas = facturables.length > 0 && facturables.every((c) => (this.marcadas()[g.clave] ?? []).includes(c));
+    this.marcadas.update((m) => ({ ...m, [g.clave]: todas ? [] : facturables }));
+  }
+
+  protected todasMarcadas(g: GrupoPorFacturar): boolean {
+    const facturables = g.lineas.filter((l) => l.facturable);
+    return facturables.length > 0 && facturables.every((l) => this.estaMarcada(g, l));
+  }
+
+  protected lineasMarcadas(g: GrupoPorFacturar): LineaPorFacturar[] {
+    return g.lineas.filter((l) => this.estaMarcada(g, l));
+  }
+
+  /** Suma de lo marcado (referencia en pantalla; el valor que manda lo calcula el servidor). */
+  protected totalMarcado(g: GrupoPorFacturar): number {
+    return this.lineasMarcadas(g).reduce((s, l) => s + (l.valor_referencia ?? 0), 0);
+  }
+
+  protected sinValor(g: GrupoPorFacturar): number {
+    return this.lineasMarcadas(g).filter((l) => l.valor_referencia == null).length;
+  }
+
+  protected crearFactura(p: PagadorPorFacturar, g: GrupoPorFacturar): void {
+    const lineas = this.lineasMarcadas(g);
+    if (!lineas.length || this.creando()) return;
+    const body = g.tipo === 'PREFACTURA' && g.prefactura
+      ? { arl_id: p.arl_id, prefactura_id: g.prefactura.id, fila_ids: lineas.map((l) => l.fila_id!).filter(Boolean) }
+      : { arl_id: p.arl_id, orden_ids: lineas.map((l) => l.orden_id!).filter(Boolean) };
+    this.creando.set(g.clave);
+    this.api.crearBorradorFactura(body).subscribe({
+      next: (r) => {
+        this.creando.set(null);
+        this.alerts.success('Borrador creado', 'Revise el cálculo y emítalo ante la DIAN cuando esté listo.');
+        this.cargarRelacion();
+        this.cargarListas();
+        this.pestana.set('borradores');
+        this.abrir(r.data.id);
+      },
+      error: (err) => {
+        this.creando.set(null);
+        this.alerts.error('No se pudo crear la factura', mensajeError(err, 'Revise la selección.'));
+      },
+    });
+  }
+
+  protected descargarRelacion(p: PagadorPorFacturar, g: GrupoPorFacturar): void {
+    const marcadas = this.lineasMarcadas(g);
+    this.descargando.set(g.clave);
+    const ids = g.tipo === 'PREFACTURA' ? undefined : (marcadas.length ? marcadas : g.lineas.filter((l) => l.facturable)).map((l) => l.orden_id!);
+    this.api.relacionFacturacion(p.arl_id, g.prefactura?.id, ids).subscribe({
+      next: (blob) => {
+        this.descargando.set(null);
+        this.guardarArchivo(blob, `relacion-${p.arl_nombre}-${g.prefactura?.numero ?? new Date().toISOString().slice(0, 10)}.xlsx`);
+      },
+      error: (err) => {
+        this.descargando.set(null);
+        this.alerts.error('No se pudo generar la relación', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  // ================= Borradores y emitidas =================
+  protected cargarListas(): void {
+    this.cargandoListas.set(true);
+    let pendientes = 2;
+    const listo = () => { if (--pendientes === 0) this.cargandoListas.set(false); };
+    this.api.listarFacturas('BORRADOR').subscribe({
+      next: (r) => { this.borradores.set(r.data); listo(); },
+      error: () => listo(),
+    });
+    this.api.listarFacturas(ESTADOS_EMITIDAS).subscribe({
+      next: (r) => { this.emitidas.set(r.data); listo(); },
+      error: () => listo(),
+    });
+  }
+
+  protected actualizarEventos(): void {
+    if (this.actualizandoEventos()) return;
+    this.actualizandoEventos.set(true);
+    this.api.actualizarEventosFacturas().subscribe({
+      next: (r) => {
+        this.actualizandoEventos.set(false);
+        this.alerts.success('Eventos de la DIAN actualizados', r.message);
+        this.cargarListas();
+      },
+      error: (err) => {
+        this.actualizandoEventos.set(false);
+        this.alerts.error('No se pudieron consultar los eventos', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  // ================= Detalle y acciones =================
+  protected abrir(id: string): void {
+    this.cargandoDetalle.set(true);
+    this.correoReenvio.set('');
+    this.api.obtenerFactura(id).subscribe({
+      next: (r) => { this.cargandoDetalle.set(false); this.detalle.set(r.data); },
+      error: (err) => {
+        this.cargandoDetalle.set(false);
+        this.alerts.error('No se pudo abrir la factura', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  protected cerrar(): void {
+    if (this.accion()) return;
+    this.detalle.set(null);
+  }
+
+  private refrescarDetalle(): void {
+    const d = this.detalle();
+    if (d) this.abrir(d.id);
+    this.cargarListas();
+    this.cargarRelacion();
+  }
+
+  /** Ejecuta una acción del detalle con su spinner y su mensaje. */
+  private ejecutar(nombre: string, llamada: Observable<{ message: string }>, titulo: string): void {
+    this.accion.set(nombre);
+    llamada.subscribe({
+      next: (r) => {
+        this.accion.set(null);
+        this.alerts.success(titulo, r.message);
+        this.refrescarDetalle();
+      },
+      error: (err) => {
+        this.accion.set(null);
+        this.alerts.error(`No se pudo completar: ${titulo.toLowerCase()}`, mensajeError(err, 'Intente de nuevo.'));
+        this.refrescarDetalle();
+      },
+    });
+  }
+
+  protected async emitir(): Promise<void> {
+    const d = this.detalle();
+    if (!d) return;
+    const ok = await this.alerts.confirm({
+      title: 'Emitir factura ante la DIAN',
+      message: `Se enviará a la DIAN la factura para ${d.tercero_nombre} por ${this.pesos(d.totales.total_a_pagar)}. ` +
+               'Una vez validada no se puede modificar: solo se corrige con una nota crédito.',
+      confirmText: 'Emitir',
+    });
+    if (ok) this.ejecutar('emitir', this.api.emitirFactura(d.id), 'Factura enviada');
+  }
+
+  protected async eliminar(): Promise<void> {
+    const d = this.detalle();
+    if (!d) return;
+    const ok = await this.alerts.confirm({
+      title: 'Eliminar borrador',
+      message: 'Las órdenes vuelven a quedar pendientes por facturar. No se envía nada a la DIAN.',
+      confirmText: 'Eliminar', tone: 'danger',
+    });
+    if (!ok) return;
+    this.accion.set('eliminar');
+    this.api.eliminarBorradorFactura(d.id).subscribe({
+      next: () => {
+        this.accion.set(null);
+        this.detalle.set(null);
+        this.alerts.success('Borrador eliminado', 'Las órdenes volvieron a «Por facturar».');
+        this.cargarListas();
+        this.cargarRelacion();
+      },
+      error: (err) => {
+        this.accion.set(null);
+        this.alerts.error('No se pudo eliminar', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  protected consultarEstado(): void {
+    const d = this.detalle();
+    if (d) this.ejecutar('estado', this.api.consultarEstadoFactura(d.id), 'Estado consultado');
+  }
+
+  protected corregir(): void {
+    const d = this.detalle();
+    if (d) this.ejecutar('corregir', this.api.corregirFactura(d.id), 'Factura devuelta a borrador');
+  }
+
+  protected consultarEventos(): void {
+    const d = this.detalle();
+    if (d) this.ejecutar('eventos', this.api.consultarEventosFactura(d.id), 'Eventos consultados');
+  }
+
+  protected async aceptacionTacita(): Promise<void> {
+    const d = this.detalle();
+    if (!d) return;
+    const ok = await this.alerts.confirm({
+      title: 'Marcar aceptación tácita',
+      message: 'Es un apunte interno de ORBITA (no se envía a la DIAN): úselo cuando el cliente no reclamó la factura en el plazo legal.',
+      confirmText: 'Marcar',
+    });
+    if (ok) this.ejecutar('tacita', this.api.aceptacionTacitaFactura(d.id), 'Aceptación tácita registrada');
+  }
+
+  protected reenviar(): void {
+    const d = this.detalle();
+    if (!d) return;
+    const correo = this.correoReenvio().trim();
+    if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+      this.alerts.warning('Correo no válido', 'Revise la dirección o déjela vacía para usar la del tercero.');
+      return;
+    }
+    this.ejecutar('reenviar', this.api.reenviarFactura(d.id, correo || undefined), 'Factura reenviada');
+  }
+
+  protected descargar(tipo: 'pdf' | 'xml'): void {
+    const d = this.detalle();
+    if (!d) return;
+    this.accion.set(tipo);
+    this.api.archivoFactura(d.id, tipo).subscribe({
+      next: (blob) => {
+        this.accion.set(null);
+        this.guardarArchivo(blob, `${this.numeroDe(d)}.${tipo}`);
+      },
+      error: (err) => {
+        this.accion.set(null);
+        this.alerts.error(`No se pudo descargar el ${tipo.toUpperCase()}`, mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  // ================= Presentación =================
+  protected pesos(v: string | number | null | undefined): string {
+    const n = Number(v);
+    return v == null || v === '' || Number.isNaN(n) ? '—' : PESOS.format(n);
+  }
+
+  protected numeroDe(d: DocumentoFactura): string {
+    return d.numero ? `${d.prefijo ?? ''}${d.numero}` : 'Sin número';
+  }
+
+  protected pillEstado(e: EstadoDocumento): string {
+    return ({
+      BORRADOR: 'pill--muted', ENVIANDO: 'pill--info', VALIDADO: 'pill--success',
+      RECHAZADO: 'pill--danger', ANULADO: 'pill--muted',
+    } as Record<EstadoDocumento, string>)[e] ?? 'pill--muted';
+  }
+
+  protected etiquetaEstado(e: EstadoDocumento): string {
+    return ({
+      BORRADOR: 'Borrador', ENVIANDO: 'Enviando a la DIAN', VALIDADO: 'Validada',
+      RECHAZADO: 'Rechazada', ANULADO: 'Anulada',
+    } as Record<EstadoDocumento, string>)[e] ?? e;
+  }
+
+  /** Los eventos RADIAN llegan con prefijo; los propios de ORBITA, tal cual. */
+  protected etiquetaEvento(codigo: string): string {
+    return codigo.startsWith('RADIAN_') ? `DIAN · evento ${codigo.slice(7)}` : codigo.charAt(0) + codigo.slice(1).toLowerCase().replace(/_/g, ' ');
+  }
+
+  /** '2026-09-30' o '2026-09-30T05:00:00.000Z' (un DATE serializado) → '30/09/2026'. */
+  protected fecha(valor: string | null): string {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(valor ?? '');
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : (valor ?? '—');
+  }
+
+  protected fechaHora(iso: string): string {
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? iso : d.toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
+  }
+
+  protected erroresDe(d: DetalleFactura): string[] {
+    const e = d.errores as unknown;
+    if (!e) return [];
+    if (Array.isArray(e)) return e.map((x) => (typeof x === 'string' ? x : JSON.stringify(x)));
+    if (typeof e === 'object') {
+      return Object.entries(e as Record<string, unknown>).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : String(v)}`);
+    }
+    return [String(e)];
+  }
+
+  private guardarArchivo(blob: Blob, nombre: string): void {
+    if (!this.isBrowser) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nombre;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+}

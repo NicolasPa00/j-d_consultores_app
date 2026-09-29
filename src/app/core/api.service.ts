@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion } from './models';
+import { CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, DetalleFactura, DocumentoFactura, PagadorPorFacturar } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -953,5 +953,75 @@ export class ApiService {
     return this.http.post<{ message: string; data: unknown[] }>(
       `${this.base}/public/support/${token}/files`, fd,
     );
+  }
+
+  // ---- A1-08 · Facturación electrónica (Finanzas) ----
+  /** FEL-01/02 · Lo que se puede facturar hoy, por pagador (Bolívar agrupado por prefactura). */
+  porFacturar(arlId?: string): Observable<Wrap<{ pagadores: PagadorPorFacturar[] }>> {
+    return this.http.get<Wrap<{ pagadores: PagadorPorFacturar[] }>>(
+      `${this.base}/facturacion/por-facturar${queryString({ arl_id: arlId })}`,
+    );
+  }
+  /** FEL-03 · Excel de la relación para radicar ante el pagador. */
+  relacionFacturacion(arlId: string, prefacturaId?: string, ordenIds?: string[]): Observable<Blob> {
+    return this.http.get(
+      `${this.base}/facturacion/relacion.xlsx${queryString({ arl_id: arlId, prefactura_id: prefacturaId, orden_ids: ordenIds?.join(',') })}`,
+      { responseType: 'blob' },
+    );
+  }
+  /** FEL-04 · Crea el borrador de factura con la selección de «Por facturar». */
+  crearBorradorFactura(body: {
+    arl_id: string; orden_ids?: string[]; prefactura_id?: string; fila_ids?: string[]; observaciones?: string;
+  }): Observable<Wrap<DetalleFactura> & { message: string }> {
+    return this.http.post<Wrap<DetalleFactura> & { message: string }>(`${this.base}/facturacion/borradores`, body);
+  }
+  /** Facturas por estado (uno o varios separados por coma: «VALIDADO,RECHAZADO»). */
+  listarFacturas(estado: string): Observable<Wrap<DocumentoFactura[]>> {
+    return this.http.get<Wrap<DocumentoFactura[]>>(`${this.base}/facturacion/borradores${queryString({ estado })}`);
+  }
+  /** Detalle de una factura en cualquier estado: ítems, totales, retenciones y eventos. */
+  obtenerFactura(id: string): Observable<Wrap<DetalleFactura>> {
+    return this.http.get<Wrap<DetalleFactura>>(`${this.base}/facturacion/borradores/${id}`);
+  }
+  eliminarBorradorFactura(id: string): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.base}/facturacion/borradores/${id}`);
+  }
+  /**
+   * FEL-10 · Emite ante la DIAN por Factus. 200 = decidió (VALIDADO o RECHAZADO);
+   * 202 = sigue ENVIANDO: se reconcilia con «Consultar estado», nunca reemitiendo.
+   */
+  emitirFactura(id: string): Observable<Wrap<DocumentoFactura & { pendiente?: boolean }> & { message: string }> {
+    return this.http.post<Wrap<DocumentoFactura & { pendiente?: boolean }> & { message: string }>(
+      `${this.base}/facturacion/documentos/${id}/emitir`, {},
+    );
+  }
+  consultarEstadoFactura(id: string): Observable<Wrap<DocumentoFactura & { pendiente?: boolean }> & { message: string }> {
+    return this.http.post<Wrap<DocumentoFactura & { pendiente?: boolean }> & { message: string }>(
+      `${this.base}/facturacion/documentos/${id}/consultar-estado`, {},
+    );
+  }
+  /** FEL-16 · Reenvía PDF + XML con el correo de ORBITA (sin `correo`: el de facturación del tercero). */
+  reenviarFactura(id: string, correo?: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.base}/facturacion/documentos/${id}/reenviar`, correo ? { correo } : {});
+  }
+  /** FEL-12 · RECHAZADO → BORRADOR con un reference_code nuevo, para corregir y reemitir. */
+  corregirFactura(id: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.base}/facturacion/documentos/${id}/corregir`, {});
+  }
+  /** FEL-19 · Eventos RADIAN de una factura. */
+  consultarEventosFactura(id: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.base}/facturacion/documentos/${id}/eventos/consultar`, {});
+  }
+  /** FEL-19 · Eventos de todas las facturas de los últimos `dias`. */
+  actualizarEventosFacturas(dias?: number): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.base}/facturacion/eventos/actualizar-lote`, dias ? { dias } : {});
+  }
+  /** Apunte interno de aceptación tácita (no llama a Factus: Q-26). */
+  aceptacionTacitaFactura(id: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.base}/facturacion/documentos/${id}/aceptacion-tacita`, {});
+  }
+  /** PDF o XML de una factura validada (exige sesión: se descarga como blob). */
+  archivoFactura(id: string, tipo: 'pdf' | 'xml'): Observable<Blob> {
+    return this.http.get(`${this.base}/facturacion/documentos/${id}/archivo/${tipo}`, { responseType: 'blob' });
   }
 }

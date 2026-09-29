@@ -445,6 +445,7 @@ export class SettingsComponent implements OnInit {
     { clave: 'empresas', label: 'Empresas', hint: 'Módulo 12 · CFG-02 · clientes' },
     { clave: 'terceros', label: 'Terceros', hint: 'Fase A · PAR-03 · a quién se factura o se paga' },
     { clave: 'parametrizacion', label: 'Parametrización', hint: 'Fase A · emisor, productos, tarifas, retenciones y numeración' },
+    { clave: 'facturacion', label: 'Facturación', hint: 'Finanzas · facturas electrónicas ante la DIAN' },
     { clave: 'profesionales', label: 'Profesionales', hint: 'Módulo 12 · asesores de campo' },
     { clave: 'configuracion', label: 'Configuración', hint: 'Perfil propio y ajustes' },
   ];
