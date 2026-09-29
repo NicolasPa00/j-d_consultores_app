@@ -1983,3 +1983,17 @@
 // Casilla de la vista previa que sigue vacía: lo que falta completar.
 .vista-formatos__obs--vacia .form-control { border-color: var(--warning); background: #fffaf0; }
 .vista-formatos__pendientes { color: var(--warning); font-weight: 600; }
+
+// A3-01 · Formulario de la orden manual: dos columnas, una en el móvil.
+.manual-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0 16px;
+  margin-bottom: 12px;
+
+  &__ancho { grid-column: 1 / -1; }
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}

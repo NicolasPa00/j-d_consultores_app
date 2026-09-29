@@ -228,6 +228,12 @@ export interface Borrador {
   os_estado_cobro?: EstadoCobro | null;
   os_cobro_numero_factura?: string | null;
   /**
+   * A3-01 · Orden de un cliente PARTICULAR (sin ARL): el tercero que la paga.
+   * NULL en las órdenes de ARL. `pagador_nombre` va donde las demás llevan la ARL.
+   */
+  pagador_tercero_id?: string | null;
+  pagador_nombre?: string | null;
+  /**
    * Viáticos (ago-2026): la categoría elegida y su valor vigente en el catálogo.
    * `os_viaticos_valor` es el importe CONGELADO en la orden, que es el que vale:
    * si el catálogo sube después, la orden ya cargada no cambia. NULL en las tres
@@ -1422,8 +1428,13 @@ export interface GrupoPorFacturar {
 }
 
 export interface PagadorPorFacturar {
-  arl_id: string;
-  arl_nombre: string;
+  /** Identifica al pagador en la lista: `arl:<id>` o `tercero:<id>` (A3-01). */
+  clave: string;
+  /** A3-01 · Cliente particular (sin ARL): se factura por `pagador_tercero_id`. */
+  particular: boolean;
+  pagador_tercero_id: string | null;
+  arl_id: string | null;
+  arl_nombre: string | null;
   tercero_id: string | null;
   tercero_nombre: string | null;
   /** Bolívar se factura por prefactura; el resto, eligiendo órdenes. */
@@ -1505,4 +1516,29 @@ export interface DetalleFactura extends DocumentoFactura {
     total_bruto: string; total_descuento: string; subtotal: string;
     total_iva: string; total_retenciones: string; total_a_pagar: string;
   };
+}
+
+/**
+ * A3-01 · Alta manual de una orden de un cliente particular (`POST /drafts/manual`).
+ * El pagador es un tercero cliente que no es ARL. La empresa donde se ejecuta es,
+ * si se deja vacía, el mismo cliente (con su NIT, ciudad y dirección).
+ */
+export interface OrdenManualForm {
+  pagador_tercero_id: string;
+  tipo_orden_id: string;
+  tipo_viatico_id: string | null;
+  descripcion: string;
+  horas_asignadas: number | null;
+  fecha_vencimiento: string;
+  /** Vacío = se factura con la tarifa de venta del cliente. */
+  valor_total: number | null;
+  tipo_actividad: string;
+  modalidad: string;
+  empresa_nombre: string;
+  nit_nic: string;
+  ciudad_ejecucion: string;
+  direccion: string;
+  contacto_sst_nombre: string;
+  contacto_sst_telefono: string;
+  contacto_sst_correo: string;
 }

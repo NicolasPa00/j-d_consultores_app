@@ -77,6 +77,17 @@
       </svg>
       Cargar prefactura
     </button>
+
+    <!-- A3-01 · Orden de un cliente particular (sin ARL): no llega en ningún
+         documento, así que se escribe a mano y entra en SIN PROGRAMAR. -->
+    @if (puedeCrearManual()) {
+      <button type="button" class="btn btn--primary btn--sm" (click)="abrirManual()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        Nueva orden manual
+      </button>
+    }
   </div>
 </section>
 
@@ -156,7 +167,10 @@
             <!-- T0-07 · Aprobación de la ARL. Sin OS no hay nada que aprobar. En
                  Bolívar, el n.º de prefactura se ve al pasar el cursor. -->
             <td>
-              @if (order.osId) {
+              @if (order.particular) {
+                <!-- A3-01 · Cliente particular: no hay ARL que apruebe. -->
+                <span class="venc__none" title="Orden de un cliente particular">No aplica</span>
+              } @else if (order.osId) {
                 <span
                   class="pill"
                   [class]="pillArl(order.estadoArl)"
@@ -659,104 +673,107 @@
            tiempo distintas sobre la misma orden (el ciclo operativo y el cobro a
            la ARL), y mezclarlas haría ilegible cualquiera de las dos. -->
       @if (order.osId) {
-        <!-- ---- T0-07 · Aprobación de la ARL ----
-             ¿Aprobó la ARL en su plataforma los documentos de la orden? Es la
-             condición para facturar. Leyendo la ficha solo se CONSULTA; en modo
-             edición se elige aquí y se guarda con el mismo "Guardar cambios". -->
-        <div class="card cobro-card">
-          <div class="card__head">
-            <span class="card__title">Aprobación de la ARL</span>
-            <span class="pill" [class]="pillArl(order.estadoArl)">
-              {{ order.estadoArl === 'APROBADO' ? 'Aprobado' : 'Pendiente' }}
-            </span>
-          </div>
-          <div class="card__body">
-            @if (!editMode()) {
-              @if (esBolivarArl(order) && order.numeroPrefactura) {
-                <p class="cobro-card__dato">Prefactura (código SIPAB) <strong class="mono">{{ order.numeroPrefactura }}</strong></p>
-              }
-              @if (order.estadoArl !== 'APROBADO') {
-                <p class="card__hint">
-                  {{ order.osEstado === 'FINALIZADA'
-                    ? 'La ARL todavía no aprueba esta orden: hasta entonces no se puede facturar. Se cambia en modo edición.'
-                    : 'La ARL solo aprueba órdenes FINALIZADAS.' }}
+        <!-- A3-01 · Una orden particular no pasa por ninguna ARL: sin tarjeta. -->
+        @if (!order.particular) {
+          <!-- ---- T0-07 · Aprobación de la ARL ----
+               ¿Aprobó la ARL en su plataforma los documentos de la orden? Es la
+               condición para facturar. Leyendo la ficha solo se CONSULTA; en modo
+               edición se elige aquí y se guarda con el mismo "Guardar cambios". -->
+          <div class="card cobro-card">
+            <div class="card__head">
+              <span class="card__title">Aprobación de la ARL</span>
+              <span class="pill" [class]="pillArl(order.estadoArl)">
+                {{ order.estadoArl === 'APROBADO' ? 'Aprobado' : 'Pendiente' }}
+              </span>
+            </div>
+            <div class="card__body">
+              @if (!editMode()) {
+                @if (esBolivarArl(order) && order.numeroPrefactura) {
+                  <p class="cobro-card__dato">Prefactura (código SIPAB) <strong class="mono">{{ order.numeroPrefactura }}</strong></p>
+                }
+                @if (order.estadoArl !== 'APROBADO') {
+                  <p class="card__hint">
+                    {{ order.osEstado === 'FINALIZADA'
+                      ? 'La ARL todavía no aprueba esta orden: hasta entonces no se puede facturar. Se cambia en modo edición.'
+                      : 'La ARL solo aprueba órdenes FINALIZADAS.' }}
+                  </p>
+                }
+              } @else {
+                <div class="estado-form">
+                  <label class="form-field estado-form__field">
+                    <span class="form-field__label">Estado ARL</span>
+                    <select
+                      class="form-control"
+                      [class.form-control--error]="estadoArlError()"
+                      [disabled]="!puedeAprobarArl(order) && estadoArlEdit !== 'APROBADO'"
+                      [(ngModel)]="estadoArlEdit"
+                      (ngModelChange)="estadoArlError.set(false)"
+                      name="estadoArlEdit"
+                    >
+                      <option value="PENDIENTE">Pendiente</option>
+                      <option value="APROBADO" [disabled]="!puedeAprobarArl(order)">Aprobado</option>
+                    </select>
+                  </label>
+                  @if (esBolivarArl(order)) {
+                    <label class="form-field estado-form__field">
+                      <span class="form-field__label">
+                        N.º de prefactura (código SIPAB){{ estadoArlEdit === 'APROBADO' ? ' *' : '' }}
+                      </span>
+                      <input
+                        class="form-control mono"
+                        type="text"
+                        inputmode="numeric"
+                        maxlength="12"
+                        placeholder="Ej. 160441"
+                        [class.form-control--error]="estadoArlError() && !prefacturaEdit"
+                        [(ngModel)]="prefacturaEdit"
+                        (ngModelChange)="prefacturaEdit = soloDigitos($event); estadoArlError.set(false)"
+                        name="prefacturaEdit"
+                      />
+                    </label>
+                  }
+                </div>
+                <p class="form-note estado-form__note">
+                  @if (!puedeAprobarArl(order)) {
+                    La ARL solo aprueba órdenes FINALIZADAS: antes no hay soportes aceptados que aprobar.
+                  } @else if (esBolivarArl(order)) {
+                    En Bolívar, aprobar exige el n.º de prefactura. Se guarda con
+                    <strong>Guardar cambios</strong>.
+                  } @else {
+                    Se guarda con <strong>Guardar cambios</strong>.
+                  }
                 </p>
               }
-            } @else {
-              <div class="estado-form">
-                <label class="form-field estado-form__field">
-                  <span class="form-field__label">Estado ARL</span>
-                  <select
-                    class="form-control"
-                    [class.form-control--error]="estadoArlError()"
-                    [disabled]="!puedeAprobarArl(order) && estadoArlEdit !== 'APROBADO'"
-                    [(ngModel)]="estadoArlEdit"
-                    (ngModelChange)="estadoArlError.set(false)"
-                    name="estadoArlEdit"
-                  >
-                    <option value="PENDIENTE">Pendiente</option>
-                    <option value="APROBADO" [disabled]="!puedeAprobarArl(order)">Aprobado</option>
-                  </select>
-                </label>
-                @if (esBolivarArl(order)) {
-                  <label class="form-field estado-form__field">
-                    <span class="form-field__label">
-                      N.º de prefactura (código SIPAB){{ estadoArlEdit === 'APROBADO' ? ' *' : '' }}
-                    </span>
-                    <input
-                      class="form-control mono"
-                      type="text"
-                      inputmode="numeric"
-                      maxlength="12"
-                      placeholder="Ej. 160441"
-                      [class.form-control--error]="estadoArlError() && !prefacturaEdit"
-                      [(ngModel)]="prefacturaEdit"
-                      (ngModelChange)="prefacturaEdit = soloDigitos($event); estadoArlError.set(false)"
-                      name="prefacturaEdit"
-                    />
-                  </label>
-                }
-              </div>
-              <p class="form-note estado-form__note">
-                @if (!puedeAprobarArl(order)) {
-                  La ARL solo aprueba órdenes FINALIZADAS: antes no hay soportes aceptados que aprobar.
-                } @else if (esBolivarArl(order)) {
-                  En Bolívar, aprobar exige el n.º de prefactura. Se guarda con
-                  <strong>Guardar cambios</strong>.
-                } @else {
-                  Se guarda con <strong>Guardar cambios</strong>.
-                }
-              </p>
-            }
 
-            @if (historialArl().length) {
-              <ol class="timeline">
-                @for (h of historialArl(); track h.id) {
-                  <li class="timeline__item">
-                    <span class="timeline__dot" aria-hidden="true"></span>
-                    <div class="timeline__body">
-                      <p class="timeline__head">
-                        @if (h.estado_anterior) {
-                          <span class="timeline__from">{{ h.estado_anterior }}</span>
-                          <span class="timeline__arrow" aria-hidden="true">→</span>
-                        }
-                        <span class="pill" [class]="pillArl(h.estado_nuevo)">{{ h.estado_nuevo }}</span>
-                      </p>
-                      <p class="timeline__meta">
-                        {{ fechaArl(h) }} · {{ h.usuario_nombre || 'Sistema' }}
-                        @if (h.numero_prefactura) { · prefactura {{ h.numero_prefactura }} }
-                      </p>
-                    </div>
-                  </li>
-                }
-              </ol>
-            }
+              @if (historialArl().length) {
+                <ol class="timeline">
+                  @for (h of historialArl(); track h.id) {
+                    <li class="timeline__item">
+                      <span class="timeline__dot" aria-hidden="true"></span>
+                      <div class="timeline__body">
+                        <p class="timeline__head">
+                          @if (h.estado_anterior) {
+                            <span class="timeline__from">{{ h.estado_anterior }}</span>
+                            <span class="timeline__arrow" aria-hidden="true">→</span>
+                          }
+                          <span class="pill" [class]="pillArl(h.estado_nuevo)">{{ h.estado_nuevo }}</span>
+                        </p>
+                        <p class="timeline__meta">
+                          {{ fechaArl(h) }} · {{ h.usuario_nombre || 'Sistema' }}
+                          @if (h.numero_prefactura) { · prefactura {{ h.numero_prefactura }} }
+                        </p>
+                      </div>
+                    </li>
+                  }
+                </ol>
+              }
+            </div>
           </div>
-        </div>
+        }
 
         <div class="card cobro-card">
           <div class="card__head">
-            <span class="card__title">Facturación a la ARL</span>
+            <span class="card__title">{{ order.particular ? 'Facturación al cliente' : 'Facturación a la ARL' }}</span>
             <span class="pill" [class]="pillCobro(order.estadoCobro)">
               {{ order.estadoCobro || 'NO FACTURADA' }}
             </span>
@@ -1074,8 +1091,9 @@
              tiene registrados, y no todo el equipo lo está. Cuando el que puede
              ir no lo está, la visita la ejecuta él y el formato lleva el nombre
              de un registrado. Todo lo demás —correo, enlace de soportes, agenda,
-             cuenta de cobro y encuesta— sigue siendo del que ejecuta. -->
-        @if (selectedProfId()) {
+             cuenta de cobro y encuesta— sigue siendo del que ejecuta.
+             A3-01 · Una orden particular no lleva formatos: no hay suplente. -->
+        @if (selectedProfId() && !order.particular) {
           <div class="suplente">
             @if (ejecutorRegistrado()) {
               <p class="suplente__ok">
@@ -1866,6 +1884,156 @@
             Aplicando…
           } @else {
             Aplicar ({{ prefacturaMarcadasCount() }})
+          }
+        </button>
+      </div>
+    </footer>
+  </div>
+}
+
+<!-- ============ A3-01 · NUEVA ORDEN MANUAL (cliente particular) ============
+     La orden de un cliente que le paga directamente a JD&D, sin ARL. No llega en
+     un documento, así que se escribe aquí; entra en SIN PROGRAMAR y sigue el
+     ciclo normal. No lleva formatos de ARL ni estado ARL, y se factura al propio
+     cliente (con IVA). -->
+@if (manualAbierto()) {
+  <div class="modal-backdrop" (click)="cerrarManual()"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="manualTitle">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="manualTitle">Nueva orden manual</h3>
+        <p class="modal__sub">Cliente particular, sin ARL: se factura directamente al cliente.</p>
+      </div>
+      <button type="button" class="icon-action" (click)="cerrarManual()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="modal__body">
+      @if (!clientesCargando() && !clientesParticulares().length) {
+        <div class="alert alert--warning alert--sm" role="alert">
+          <div class="alert__body">
+            <p class="alert__title">No hay clientes particulares.</p>
+            <p class="alert__detail">
+              Créelo en Finanzas → Terceros, marcado como <strong>cliente</strong> (y no como ARL), y vuelva a abrir este formulario.
+            </p>
+          </div>
+        </div>
+      }
+
+      <p class="assign__section-title">Quién paga y qué se hace</p>
+      <div class="manual-grid">
+        <div class="form-field manual-grid__ancho">
+          <label class="form-field__label" for="manualCliente">Cliente *</label>
+          <select id="manualCliente" class="form-control" [(ngModel)]="manual.pagador_tercero_id" name="manualCliente" [disabled]="clientesCargando()">
+            <option value="">{{ clientesCargando() ? 'Cargando…' : 'Elija el cliente' }}</option>
+            @for (t of clientesParticulares(); track t.id) {
+              <option [value]="t.id">{{ t.nombre }} · {{ t.numero_documento }}{{ t.dv != null ? '-' + t.dv : '' }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="manualTipo">Tipo de orden *</label>
+          <select id="manualTipo" class="form-control" [(ngModel)]="manual.tipo_orden_id" name="manualTipo">
+            <option value="">Elija el tipo</option>
+            @for (t of tiposOrden(); track t.id) {
+              <option [value]="t.id">{{ t.nombre }}</option>
+            }
+          </select>
+          <span class="form-field__hint">De él sale el valor hora que se le paga al profesional.</span>
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="manualActividad">Tipo de actividad</label>
+          <input id="manualActividad" class="form-control" type="text" maxlength="120" placeholder="Ej. Capacitación" [(ngModel)]="manual.tipo_actividad" name="manualActividad" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="manualHoras">Horas *</label>
+          <input id="manualHoras" class="form-control" type="number" min="0.5" step="0.5" [(ngModel)]="manual.horas_asignadas" name="manualHoras" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="manualVence">Fecha de vencimiento *</label>
+          <input id="manualVence" class="form-control" type="date" [(ngModel)]="manual.fecha_vencimiento" name="manualVence" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="manualValor">Valor a facturar (opcional)</label>
+          <input id="manualValor" class="form-control" type="number" min="0" step="1" placeholder="Sin IVA" [(ngModel)]="manual.valor_total" name="manualValor" />
+          <span class="form-field__hint">Vacío: se factura con la tarifa de venta del cliente.</span>
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="manualModalidad">Modalidad</label>
+          <select id="manualModalidad" class="form-control" [(ngModel)]="manual.modalidad" name="manualModalidad">
+            <option value="">Sin indicar</option>
+            <option value="PRESENCIAL">Presencial</option>
+            <option value="VIRTUAL">Virtual</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="manualViatico">Viáticos</label>
+          <select id="manualViatico" class="form-control" [(ngModel)]="manual.tipo_viatico_id" name="manualViatico">
+            <option [ngValue]="null">No aplica</option>
+            @for (v of tiposViatico(); track v.id) {
+              <option [ngValue]="v.id">{{ v.nombre }} · {{ pesos(+v.valor) }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field manual-grid__ancho">
+          <label class="form-field__label" for="manualDesc">Descripción de la actividad *</label>
+          <textarea id="manualDesc" class="form-control" rows="3" maxlength="1000" [(ngModel)]="manual.descripcion" name="manualDesc"></textarea>
+        </div>
+      </div>
+
+      <p class="assign__section-title">Dónde se ejecuta</p>
+      <p class="form-field__hint">
+        @if (clienteManual(); as c) {
+          Si deja la empresa vacía, es el mismo cliente: {{ c.nombre }}{{ c.municipio_nombre ? ', ' + c.municipio_nombre : '' }}{{ c.direccion ? ', ' + c.direccion : '' }}.
+        } @else {
+          Si deja la empresa vacía, es el mismo cliente que paga.
+        }
+      </p>
+      <div class="manual-grid">
+        <div class="form-field">
+          <label class="form-field__label" for="manualEmpresa">Empresa</label>
+          <input id="manualEmpresa" class="form-control" type="text" maxlength="200" [(ngModel)]="manual.empresa_nombre" name="manualEmpresa" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="manualNit">NIT</label>
+          <input id="manualNit" class="form-control" type="text" maxlength="20" [(ngModel)]="manual.nit_nic" name="manualNit" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="manualCiudad">Ciudad</label>
+          <input id="manualCiudad" class="form-control" type="text" maxlength="120" [(ngModel)]="manual.ciudad_ejecucion" name="manualCiudad" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="manualDireccion">Dirección</label>
+          <input id="manualDireccion" class="form-control" type="text" maxlength="200" [(ngModel)]="manual.direccion" name="manualDireccion" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="manualContacto">Contacto SST</label>
+          <input id="manualContacto" class="form-control" type="text" maxlength="120" [(ngModel)]="manual.contacto_sst_nombre" name="manualContacto" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="manualTelefono">Teléfono del contacto</label>
+          <input id="manualTelefono" class="form-control" type="tel" maxlength="30" [(ngModel)]="manual.contacto_sst_telefono" name="manualTelefono" />
+        </div>
+        <div class="form-field manual-grid__ancho">
+          <label class="form-field__label" for="manualCorreo">Correo del contacto</label>
+          <input id="manualCorreo" class="form-control" type="email" maxlength="160" [(ngModel)]="manual.contacto_sst_correo" name="manualCorreo" />
+          <span class="form-field__hint">A este correo llega la encuesta de satisfacción al cerrar la orden.</span>
+        </div>
+      </div>
+    </div>
+
+    <footer class="modal__footer">
+      <span class="modal__status">Entra en SIN PROGRAMAR</span>
+      <div class="modal__footer-actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrarManual()" [disabled]="manualGuardando()">Cancelar</button>
+        <button type="button" class="btn btn--primary" (click)="guardarManual()" [disabled]="manualGuardando() || clientesCargando()">
+          @if (manualGuardando()) {
+            <span class="spinner" aria-hidden="true"></span> Creando…
+          } @else {
+            Crear orden
           }
         </button>
       </div>

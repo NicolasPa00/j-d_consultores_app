@@ -178,9 +178,11 @@ export class FacturacionComponent implements OnInit {
   protected crearFactura(p: PagadorPorFacturar, g: GrupoPorFacturar): void {
     const lineas = this.lineasMarcadas(g);
     if (!lineas.length || this.creando()) return;
+    // A3-01 · El pagador es la ARL o, en una orden particular, el propio cliente.
+    const pagador = p.particular ? { pagador_tercero_id: p.pagador_tercero_id! } : { arl_id: p.arl_id! };
     const body = g.tipo === 'PREFACTURA' && g.prefactura
-      ? { arl_id: p.arl_id, prefactura_id: g.prefactura.id, fila_ids: lineas.map((l) => l.fila_id!).filter(Boolean) }
-      : { arl_id: p.arl_id, orden_ids: lineas.map((l) => l.orden_id!).filter(Boolean) };
+      ? { ...pagador, prefactura_id: g.prefactura.id, fila_ids: lineas.map((l) => l.fila_id!).filter(Boolean) }
+      : { ...pagador, orden_ids: lineas.map((l) => l.orden_id!).filter(Boolean) };
     this.creando.set(g.clave);
     this.api.crearBorradorFactura(body).subscribe({
       next: (r) => {
@@ -202,10 +204,10 @@ export class FacturacionComponent implements OnInit {
     const marcadas = this.lineasMarcadas(g);
     this.descargando.set(g.clave);
     const ids = g.tipo === 'PREFACTURA' ? undefined : (marcadas.length ? marcadas : g.lineas.filter((l) => l.facturable)).map((l) => l.orden_id!);
-    this.api.relacionFacturacion(p.arl_id, g.prefactura?.id, ids).subscribe({
+    this.api.relacionFacturacion(p, g.prefactura?.id, ids).subscribe({
       next: (blob) => {
         this.descargando.set(null);
-        this.guardarArchivo(blob, `relacion-${p.arl_nombre}-${g.prefactura?.numero ?? new Date().toISOString().slice(0, 10)}.xlsx`);
+        this.guardarArchivo(blob, `relacion-${p.arl_nombre ?? p.tercero_nombre}-${g.prefactura?.numero ?? new Date().toISOString().slice(0, 10)}.xlsx`);
       },
       error: (err) => {
         this.descargando.set(null);

@@ -21,7 +21,10 @@ export interface ExtractedField {
 export interface ServiceOrder {
   id: string;
   company: string;
+  /** Nombre de la ARL o, en una orden particular (A3-01), del cliente que la paga. */
   arl: string;
+  /** A3-01 · Orden de un cliente particular: sin estado ARL, prefactura ni formatos. */
+  particular?: boolean;
   /** IA-03: confianza (0-100) de la clasificación de ARL sugerida. */
   arlConfidence?: number;
   fileName: string;

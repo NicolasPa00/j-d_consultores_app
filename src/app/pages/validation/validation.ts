@@ -9,7 +9,8 @@ import { ExtractedField, ServiceOrder } from '../../data/service-orders';
 import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
-import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, EstadoArl, ESTADOS_ARL, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, TipoViatico, CasillaEditable, FilaPrefactura, FormatoPrevio, FranjaVisita, HistorialCobro, HistorialEstado, HistorialEstadoArl, Ocupacion, Orden, Plantilla, PrevisualizacionPrefactura, Profesional, RegistroArl, ResultadoCrucePrefactura } from '../../core/models';
+import { AuthService } from '../../core/auth.service';
+import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, EstadoArl, ESTADOS_ARL, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, TipoViatico, CasillaEditable, FilaPrefactura, FormatoPrevio, FranjaVisita, HistorialCobro, HistorialEstado, HistorialEstadoArl, Ocupacion, Orden, OrdenManualForm, Plantilla, PrevisualizacionPrefactura, Profesional, RegistroArl, ResultadoCrucePrefactura, Tercero } from '../../core/models';
 import { aIsoFecha, fechaLocal } from '../../core/fechas';
 import {
   ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, opcionesDeCampo,
@@ -187,6 +188,7 @@ interface BloqueAgenda {
 export class ValidationComponent implements OnInit, OnDestroy {
   private readonly api = inject(ApiService);
   private readonly alerts = inject(AlertService);
+  private readonly auth = inject(AuthService);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -873,6 +875,87 @@ export class ValidationComponent implements OnInit, OnDestroy {
    * facturadas al 29-sep), así que ocultarlo no le quita nada a nadie.
    */
   protected readonly cobroHabilitado = false;
+
+  // ================= A3-01 · Alta manual de una orden particular =================
+  /**
+   * Solo el administrador crea órdenes (el backend también lo exige): el botón
+   * no se le enseña a quien recibiría un 403 al guardar.
+   */
+  protected readonly puedeCrearManual = computed(() => this.auth.usuario()?.rol === 'admin');
+  protected readonly manualAbierto = signal(false);
+  protected readonly manualGuardando = signal(false);
+  /** Clientes que no son ARL: los únicos a los que se les abre una orden a mano. */
+  protected readonly clientesParticulares = signal<Tercero[]>([]);
+  protected readonly clientesCargando = signal(false);
+  protected manual: OrdenManualForm = this.manualVacio();
+
+  private manualVacio(): OrdenManualForm {
+    return {
+      pagador_tercero_id: '', tipo_orden_id: '', tipo_viatico_id: null, descripcion: '',
+      horas_asignadas: null, fecha_vencimiento: '', valor_total: null, tipo_actividad: '', modalidad: '',
+      empresa_nombre: '', nit_nic: '', ciudad_ejecucion: '', direccion: '',
+      contacto_sst_nombre: '', contacto_sst_telefono: '', contacto_sst_correo: '',
+    };
+  }
+
+  protected abrirManual(): void {
+    this.manual = this.manualVacio();
+    this.manualAbierto.set(true);
+    // Se piden al abrir, no al cargar la bandeja: el alta manual es la excepción,
+    // y un cliente creado en Terceros hace un momento tiene que salir ya.
+    this.clientesCargando.set(true);
+    this.api.listTerceros().subscribe({
+      next: (r) => {
+        this.clientesParticulares.set(
+          r.data.filter((t) => t.activo && t.es_cliente && !t.es_arl)
+            .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
+        );
+        this.clientesCargando.set(false);
+      },
+      error: (err) => {
+        this.clientesCargando.set(false);
+        this.alerts.error('No se pudieron cargar los clientes', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  protected cerrarManual(): void {
+    if (this.manualGuardando()) return;
+    this.manualAbierto.set(false);
+  }
+
+  /** El cliente elegido, para enseñar qué se hereda si la empresa se deja vacía. */
+  protected clienteManual(): Tercero | undefined {
+    return this.clientesParticulares().find((t) => t.id === this.manual.pagador_tercero_id);
+  }
+
+  protected guardarManual(): void {
+    const m = this.manual;
+    const falta = [
+      !m.pagador_tercero_id && 'el cliente',
+      !m.tipo_orden_id && 'el tipo de orden',
+      !(Number(m.horas_asignadas) > 0) && 'las horas',
+      !m.fecha_vencimiento && 'la fecha de vencimiento',
+      !m.descripcion.trim() && 'la descripción',
+    ].filter(Boolean);
+    if (falta.length) {
+      this.alerts.warning('Faltan datos', `Complete ${falta.join(', ')}.`);
+      return;
+    }
+    this.manualGuardando.set(true);
+    this.api.crearOrdenManual(m).subscribe({
+      next: (r) => {
+        this.manualGuardando.set(false);
+        this.manualAbierto.set(false);
+        this.orders.update((lista) => [toServiceOrder(r.data), ...lista]);
+        this.alerts.success('Orden creada', r.message);
+      },
+      error: (err) => {
+        this.manualGuardando.set(false);
+        this.alerts.error('No se pudo crear la orden', mensajeError(err, 'Revise los datos e intente de nuevo.'));
+      },
+    });
+  }
 
   // ================= T0-09 · Prefactura de Bolívar cargada con IA =================
   protected readonly prefacturaCargando = signal(false);
@@ -1683,7 +1766,8 @@ export class ValidationComponent implements OnInit, OnDestroy {
    */
   protected arlSinFormatos(): boolean {
     const arl = this.assignOrder()?.arl;
-    if (!arl) return false;
+    // A3-01 · La orden particular no lleva formatos a propósito: no falta nada.
+    if (!arl || this.assignOrder()?.particular) return false;
     // FOR · Bolívar y Colmena traen sus formatos oficiales con el backend, así
     // que aquí no falta nada aunque no tengan ni una plantilla genérica.
     if (this.arlsConFormatoPropio().includes(arl)) return false;
@@ -3225,7 +3309,9 @@ function toServiceOrder(b: Borrador): ServiceOrder {
     // Con la OS ya creada manda su razón social: es la que se corrige desde el
     // detalle, y la del borrador es lo que leyó la IA del documento.
     company: b.os_empresa_nombre || m.empresa_nombre?.value || 'Sin nombre',
-    arl: b.arl_nombre || '—',
+    // A3-01 · Una orden particular no tiene ARL: en su lugar va el cliente que la paga.
+    arl: b.arl_nombre || b.pagador_nombre || '—',
+    particular: !b.arl_id && !!b.pagador_tercero_id,
     arlConfidence: m.arl_confidence != null ? Math.round(Number(m.arl_confidence)) : undefined,
     fileName: b.nombre_archivo || 'documento',
     fileType: (b.tipo_mime || '').includes('pdf') ? 'pdf' : 'excel',

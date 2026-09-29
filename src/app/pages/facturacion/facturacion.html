@@ -36,11 +36,15 @@
       <b>aprobadas por la ARL</b> que todavía no tienen factura.
     </div>
   } @else {
-    @for (p of pagadoresConLineas(); track p.arl_id) {
+    @for (p of pagadoresConLineas(); track p.clave) {
       <section class="card fac-pagador">
         <header class="card__head fac-pagador__head">
           <div>
-            <h3 class="card__title">{{ p.arl_nombre }}</h3>
+            <!-- A3-01 · Un cliente particular no tiene ARL: el título es él mismo. -->
+            <h3 class="card__title">
+              {{ p.arl_nombre ?? p.tercero_nombre }}
+              @if (p.particular) { <span class="pill pill--muted">Particular</span> }
+            </h3>
             <p class="card__hint">
               Se factura a: {{ p.tercero_nombre || 'sin tercero enlazado' }}
               · {{ p.modo === 'PREFACTURA' ? 'por prefactura' : 'eligiendo las órdenes' }}

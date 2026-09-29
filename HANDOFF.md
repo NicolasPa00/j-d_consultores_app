@@ -16,6 +16,14 @@
 > servidor. **Lo último desplegado:** el Excel SIPAB de Bolívar dejó de leerse
 > cuando llegaba como `.xls` binario (ver §0 punto 2 y la Tanda 23 en §3).
 >
+> 🆕 **29-sep-2026 (última sesión) · A3-01 ÓRDENES PARTICULARES (sin ARL) construida en
+> `fase-a-facturacion`.** «Nueva orden manual» en `/ordenes` (solo admin) → la orden se factura
+> al propio cliente con IVA 19 %. `ordenes_servicio.arl_id` pasa a nullable con
+> `pagador_tercero_id` y un `CHECK` de un solo pagador. **⚠️ La migración
+> `sst_ws/db/migraciones/2026-09-29-ordenes-particulares.sql` NO está aplicada en `jdd_dev`**: hasta
+> aplicarla, Facturación y el alta manual fallan en local. Trampa nueva: `vw_ordenes_expandidas`
+> ahora vive AL FINAL de `schema.sql` (cruza con `sst.terceros`). Detalle en el §0 del plan.
+>
 > 🚀🆕 **29-sep-2026 · CORRECCIONES DEL 26-SEP LISTAS PARA DESPLEGAR (aún NO desplegadas).**
 > Rama `correcciones-26-sep` en los dos repos, subida a GitHub y **sin mezclar** a
 > `main`/`master`. Qué entra, los 4 cambios de comportamiento que JD&D debe conocer

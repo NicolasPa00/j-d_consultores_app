@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar } from './models';
+import { CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar, OrdenManualForm } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -833,6 +833,14 @@ export class ApiService {
       `${this.base}/drafts/${id}/confirm`, {},
     );
   }
+  /**
+   * A3-01 · Alta manual de una orden de un cliente particular (sin ARL). Crea el
+   * borrador y la OS en SIN PROGRAMAR; devuelve el borrador expandido, que es lo
+   * que lista la vista Órdenes.
+   */
+  crearOrdenManual(body: OrdenManualForm): Observable<Wrap<Borrador> & { message: string }> {
+    return this.http.post<Wrap<Borrador> & { message: string }>(`${this.base}/drafts/manual`, body);
+  }
   validateDraft(id: string): Observable<Wrap<Orden>> {
     return this.http.post<Wrap<Orden>>(`${this.base}/drafts/${id}/validate`, {});
   }
@@ -963,15 +971,19 @@ export class ApiService {
     );
   }
   /** FEL-03 · Excel de la relación para radicar ante el pagador. */
-  relacionFacturacion(arlId: string, prefacturaId?: string, ordenIds?: string[]): Observable<Blob> {
+  relacionFacturacion(pagador: { arl_id?: string | null; pagador_tercero_id?: string | null }, prefacturaId?: string, ordenIds?: string[]): Observable<Blob> {
     return this.http.get(
-      `${this.base}/facturacion/relacion.xlsx${queryString({ arl_id: arlId, prefactura_id: prefacturaId, orden_ids: ordenIds?.join(',') })}`,
+      `${this.base}/facturacion/relacion.xlsx${queryString({
+        arl_id: pagador.arl_id ?? undefined, pagador_tercero_id: pagador.pagador_tercero_id ?? undefined,
+        prefactura_id: prefacturaId, orden_ids: ordenIds?.join(','),
+      })}`,
       { responseType: 'blob' },
     );
   }
   /** FEL-04 · Crea el borrador de factura con la selección de «Por facturar». */
   crearBorradorFactura(body: {
-    arl_id: string; orden_ids?: string[]; prefactura_id?: string; fila_ids?: string[]; observaciones?: string;
+    // A3-01 · Un cliente particular se factura por `pagador_tercero_id` en vez de `arl_id`.
+    arl_id?: string; pagador_tercero_id?: string; orden_ids?: string[]; prefactura_id?: string; fila_ids?: string[]; observaciones?: string;
   }): Observable<Wrap<DetalleFactura> & { message: string }> {
     return this.http.post<Wrap<DetalleFactura> & { message: string }>(`${this.base}/facturacion/borradores`, body);
   }
