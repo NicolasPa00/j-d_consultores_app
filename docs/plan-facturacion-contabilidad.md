@@ -37,7 +37,7 @@
   `verificar-relacion-facturar` y `verificar-borrador-factura` en verde sin residuos en
   `jdd_dev`; `factus-humo` autentica contra el sandbox (siguiente FE: SETP 990021780); los
   endpoints de terceros, resoluciones, relación y borradores responden en local.
-- **Siguiente ficha: A1-08 (pantalla de Facturación)**, con el encabezado «Finanzas» del menú.
+- **A1-08 hecha** (29-sep, con los subsistemas Operación/Finanzas en vez del encabezado «Finanzas»). **Siguiente: A2-01 (nota crédito).**
 - ⚠️ **R-01: la resolución de facturación de JD&D vence el 11-oct-2026.**
 
 ### ▶ 29-sep-2026 — JD&D ACEPTÓ LA COTIZACIÓN; todo quedó commiteado
@@ -371,7 +371,7 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecha y verificada · ❓ espera 
 | A1-05 | Emitir, conectar con el eje de cobro y trazabilidad (FEL-10) | A1-02, A1-04 | M | ✅ 28-sep, probado en el sandbox real de Factus (ver bitácora) |
 | A1-06 | Envío al cliente (FEL-16) | A1-05 | S | ✅ 28-sep (local; ver bitácora) |
 | A1-07 | Rechazos, reenvíos y eventos DIAN (FEL-12, FEL-19) | A1-05 | M | ✅ 28-sep, probado en el sandbox real (ver bitácora) |
-| A1-08 | Pantalla de Facturación | A1-03..07 | L | ⬜ |
+| A1-08 | Pantalla de Facturación | A1-03..07 | L | ✅ 29-sep con los subsistemas Operación/Finanzas (selección al entrar, «Cambiar de sistema»); probado en navegador: crear y eliminar el borrador de la prefactura 170501. Emisión desde la pantalla sin probar (marcaría como facturadas las órdenes de prueba) |
 | A2-01 | Nota crédito (FEL-11) | A1-05 | M | ⬜ |
 | A3-01 | Órdenes manuales para privados (pagador sin ARL) | A0-05 | L | ⬜ |
 | A4-01 | Documento soporte desde la cuenta de cobro (DSP-01, CXP-05) | A1-02, A0-05 | L | ❓ Q-17 |

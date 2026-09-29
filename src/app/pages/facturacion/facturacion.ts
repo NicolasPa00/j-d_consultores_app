@@ -368,8 +368,11 @@ export class FacturacionComponent implements OnInit {
     return v == null || v === '' || Number.isNaN(n) ? '—' : PESOS.format(n);
   }
 
+  /** Factus devuelve el número con el prefijo ya incluido ("SETP990019103"). */
   protected numeroDe(d: DocumentoFactura): string {
-    return d.numero ? `${d.prefijo ?? ''}${d.numero}` : 'Sin número';
+    if (!d.numero) return 'Sin número';
+    const n = String(d.numero);
+    return d.prefijo && !n.startsWith(d.prefijo) ? `${d.prefijo}${n}` : n;
   }
 
   protected pillEstado(e: EstadoDocumento): string {
