@@ -110,6 +110,9 @@ curl -s localhost:4000/api/health
 curl -s https://orbita.jddconsultores.com/login | wc -c    # > 14 kB (SSR vivo)
 ```
 
+⛔ **NO** definir `EMAIL_REDIRECT_TO` en el `.env` de producción: es solo para
+pruebas locales (desvía TODOS los correos a una sola dirección).
+
 ⛔ **NO** correr `npm run migrate` (resiembra datos inventados, trampa 86) ni
 `npm run seed:demo`. Solo los cuatro archivos de arriba.
 
@@ -144,4 +147,7 @@ casos basta con volver el código.
   (las 3 órdenes de prueba) y `170502.pdf` (una ya prefacturada + una que no existe).
 - En `jdd_dev`: OS-2026-0002/0003/0004 (Bolívar) FINALIZADAS con soportes de
   ejemplo, usadas para probar la carga de prefactura.
-- Arranque local: `iniciar-local.bat` en la raíz del monorepo (correo en consola).
+- Arranque local: `iniciar-local.bat` en la raíz del monorepo. Correo en consola, o
+  REAL con la cuenta de EscalApp si `correo-pruebas.env` (misma carpeta, fuera de git)
+  tiene la contraseña; en ese modo **todo** se redirige a `escalappsystem@gmail.com`
+  (`EMAIL_REDIRECT_TO`), porque `jdd_dev` tiene correos de clientes reales.
