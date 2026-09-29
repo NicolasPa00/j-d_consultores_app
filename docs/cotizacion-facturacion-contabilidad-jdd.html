@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="es-CO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cotización · Facturación electrónica y contabilidad · JD&amp;D</title>
+<style>
+  :root {
+    --azul: #103d66;
+    --azul-osc: #0a2a47;
+    --cian: #1596b8;
+    --cian-suave: #e6f4f8;
+    --tinta: #1f2933;
+    --tinta-suave: #5b6773;
+    --linea: #d9e0e7;
+    --fondo: #ffffff;
+    --fondo-suave: #f5f8fb;
+    --alerta: #8a5a00;
+    --alerta-fondo: #fff6e0;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    margin: 0;
+    background: #eef2f6;
+    color: var(--tinta);
+    font: 14px/1.55 "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  }
+  .hoja {
+    max-width: 920px;
+    margin: 24px auto;
+    background: var(--fondo);
+    box-shadow: 0 2px 18px rgba(16, 61, 102, .12);
+  }
+  .cuerpo { padding: 8px 48px 40px; }
+
+  /* Encabezado */
+  .portada {
+    background: linear-gradient(135deg, var(--azul-osc), var(--azul) 60%, #16628f);
+    color: #fff;
+    padding: 40px 48px 34px;
+  }
+  .marca { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; opacity: .85; }
+  .portada h1 { margin: 10px 0 6px; font-size: 28px; line-height: 1.2; font-weight: 700; }
+  .portada .sub { margin: 0; font-size: 15px; opacity: .92; max-width: 640px; }
+  .meta {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    margin-top: 26px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.25);
+  }
+  .meta dt { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; opacity: .7; }
+  .meta dd { margin: 2px 0 0; font-weight: 600; }
+
+  h2 {
+    color: var(--azul); font-size: 19px; margin: 38px 0 6px;
+    padding-bottom: 6px; border-bottom: 2px solid var(--cian);
+  }
+  h2 .n { color: var(--cian); margin-right: 6px; }
+  h3 { color: var(--azul); font-size: 14.5px; margin: 0 0 6px; }
+  p { margin: 8px 0; }
+  .suave { color: var(--tinta-suave); }
+  .peq { font-size: 12.5px; }
+
+  /* Inversión */
+  .precios { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; margin: 18px 0 8px; }
+  .precio {
+    border: 1px solid var(--linea); border-radius: 10px; padding: 20px 22px;
+    background: var(--fondo-suave);
+  }
+  .precio.principal { background: var(--azul); border-color: var(--azul); color: #fff; }
+  .precio .et { font-size: 11.5px; text-transform: uppercase; letter-spacing: .09em; opacity: .75; }
+  .precio .monto { font-size: 32px; font-weight: 700; margin: 4px 0 2px; letter-spacing: -.01em; }
+  .precio .monto small { font-size: 14px; font-weight: 500; opacity: .8; }
+  .precio p { margin: 4px 0 0; font-size: 13px; }
+  .nota-precio {
+    background: var(--cian-suave); border-left: 4px solid var(--cian);
+    padding: 10px 14px; border-radius: 0 8px 8px 0; font-size: 13px; margin-top: 12px;
+  }
+
+  /* Módulos */
+  .modulos { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+  .modulo {
+    border: 1px solid var(--linea); border-radius: 10px; padding: 14px 16px 12px;
+    break-inside: avoid; background: #fff;
+  }
+  .modulo header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .sigla {
+    background: var(--cian-suave); color: var(--azul); font-weight: 700; font-size: 11px;
+    padding: 2px 7px; border-radius: 5px; letter-spacing: .05em;
+  }
+  .modulo h3 { margin: 0; }
+  .modulo ul { margin: 6px 0 0; padding-left: 18px; }
+  .modulo li { margin: 3px 0; font-size: 13px; }
+  .modulo.ancho { grid-column: 1 / -1; }
+  .modulo.ancho ul { columns: 2; column-gap: 28px; }
+  .modulo.ancho li { break-inside: avoid; }
+
+  /* Listas */
+  ul.lista { padding-left: 20px; margin: 8px 0; }
+  ul.lista li { margin: 5px 0; }
+  ul.check { list-style: none; padding: 0; margin: 10px 0; }
+  ul.check li { padding-left: 26px; position: relative; margin: 7px 0; }
+  ul.check li::before {
+    content: "✓"; position: absolute; left: 0; top: 0; color: #fff; background: var(--cian);
+    width: 18px; height: 18px; border-radius: 50%; font-size: 11px; line-height: 18px; text-align: center;
+  }
+  ul.no li::before { content: "–"; background: #8b97a3; }
+
+  /* Tablas */
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  th, td { border: 1px solid var(--linea); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--azul); color: #fff; font-weight: 600; font-size: 12px; }
+  tbody tr:nth-child(even) { background: var(--fondo-suave); }
+  td.der, th.der { text-align: right; white-space: nowrap; }
+  tr.grupo td { background: var(--cian-suave); color: var(--azul); font-weight: 700; font-size: 12px; }
+  tr { break-inside: avoid; }
+  .fase {
+    display: inline-block; min-width: 22px; text-align: center; font-weight: 700; font-size: 11.5px;
+    border-radius: 5px; padding: 1px 6px; color: #fff;
+  }
+  .fase.A { background: #1596b8; } .fase.B { background: #103d66; } .fase.C { background: #6b7c8d; }
+
+  /* Fases */
+  .fases { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 12px; }
+  .fase-card { border: 1px solid var(--linea); border-radius: 10px; padding: 14px 16px; break-inside: avoid; }
+  .fase-card h3 { display: flex; align-items: center; gap: 8px; }
+  .fase-card ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; }
+
+  /* Flujo */
+  .flujo { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 4px; align-items: stretch; }
+  .paso {
+    flex: 1 1 110px; background: var(--fondo-suave); border: 1px solid var(--linea);
+    border-radius: 8px; padding: 9px 10px; font-size: 12px; text-align: center; position: relative;
+  }
+  .paso b { display: block; color: var(--azul); font-size: 12.5px; margin-bottom: 2px; }
+  .paso.dian { background: var(--cian-suave); border-color: var(--cian); }
+
+  /* Firmas */
+  .firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 46px; }
+  .firma { border-top: 1px solid var(--tinta); padding-top: 8px; font-size: 12.5px; }
+  .pie {
+    margin-top: 34px; padding-top: 14px; border-top: 1px solid var(--linea);
+    font-size: 11.5px; color: var(--tinta-suave);
+  }
+
+  @media (max-width: 760px) {
+    .hoja { margin: 0; }
+    .cuerpo, .portada { padding-left: 20px; padding-right: 20px; }
+    .meta { grid-template-columns: 1fr 1fr; }
+    .precios, .modulos, .fases, .firmas { grid-template-columns: 1fr; }
+    .modulo.ancho ul { columns: 1; }
+    table { font-size: 12px; }
+    .precio .monto { font-size: 28px; }
+  }
+  @media print {
+    body { background: #fff; }
+    .hoja { box-shadow: none; margin: 0; max-width: none; }
+    @page { size: A4; margin: 14mm 12mm; }
+    h2 { break-after: avoid; }
+    .cuerpo { padding: 4px 6px 0; }
+    .portada { padding: 26px 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="hoja">
+
+  <header class="portada">
+    <div class="marca">ORBITA · Gestión Inteligente</div>
+    <h1>Cotización: integración de facturación electrónica y contabilidad</h1>
+    <p class="sub">Un solo sistema para emitir y recibir documentos electrónicos, llevar la contabilidad y cerrar el ciclo completo de cada orden de servicio.</p>
+    <dl class="meta">
+      <div><dt>Cliente</dt><dd>JD&amp;D Consultores</dd></div>
+      <div><dt>Preparada por</dt><dd>EscalApp</dd></div>
+      <div><dt>Fecha</dt><dd>26 de septiembre de 2026</dd></div>
+      <div><dt>Vigencia</dt><dd>30 días calendario</dd></div>
+    </dl>
+  </header>
+
+  <main class="cuerpo">
+
+    <!-- 1. INVERSIÓN -->
+    <h2><span class="n">1</span>Resumen de la inversión</h2>
+    <p>Esta cotización recoge lo conversado en la reunión, la lista de necesidades de la contadora y el flujo real de trabajo con las ARL. Se compone de un pago único por la integración y de una anualidad que incluye el certificado digital y los paquetes del proveedor tecnológico.</p>
+
+    <div class="precios">
+      <div class="precio principal">
+        <div class="et">Integración del software contable · pago único</div>
+        <div class="monto">$5.700.000 <small>COP</small></div>
+        <p>Desarrollo, configuración, migración de saldos iniciales, pruebas con la contadora y puesta en producción de los 10 módulos descritos en la sección 2.</p>
+      </div>
+      <div class="precio">
+        <div class="et">Anualidad</div>
+        <div class="monto">$1.200.000 <small>COP / año</small></div>
+        <p>Certificado digital ($130.000) y paquetes del proveedor tecnológico, más soporte y acompañamiento cuando lo necesiten, corrección de fallos y ajustes por cambios normativos.</p>
+      </div>
+    </div>
+    <div class="nota-precio">
+      <b>Primer año:</b> $5.700.000 de integración. 
+      <br>
+      <b>$1.200.000 de anualidad:</b>  incluye certificado digital ($130.000) y paquetes del proveedor tecnológico(Hasta 1.000 documentos). 
+    </div>
+
+    <!-- 2. QUÉ INCLUYE -->
+    <h2><span class="n">2</span>Qué incluye la integración</h2>
+    <p>Diez módulos, construidos sobre ORBITA. La lista sigue el orden de la que envió la contadora; en la sección 9 se ve cada uno de sus 33 ítems y dónde queda cubierto.</p>
+
+    <div class="modulos">
+
+      <section class="modulo ancho">
+        <header><span class="sigla">FEL</span><h3>Facturación electrónica</h3></header>
+        <ul>
+          <li>Relación de actividades a facturar, generada desde las órdenes finalizadas y agrupada según las reglas de cada ARL.</li>
+          <li>Factura electrónica de venta firmada y validada ante la DIAN, con CUFE y código QR.</li>
+          <li>Facturación a ARL y también a <b>empresas privadas</b>, con <b>órdenes creadas a mano</b>, sin necesidad del PDF o Excel de la ARL.</li>
+          <li>Productos y servicios <b>gravados, exentos y excluidos</b>; IVA, retención en la fuente, ICA discriminado y <b>descuentos comerciales</b>.</li>
+          <li>Información de pago: forma, medio y fecha de vencimiento. Una factura a crédito abre su cuenta por cobrar.</li>
+          <li>Administración de la <b>numeración</b> (resoluciones) con aviso antes de que se agote o venza.</li>
+          <li>Documento de actividades, paz y salvo de seguridad social y <b>paquete de radicación listo para subir a la plataforma de la ARL en un solo paso</b>, sin descomprimir y volver a cargar.</li>
+          <li>Envío al cliente por correo con XML y PDF; manejo de rechazos y reenvíos.</li>
+          <li>Notas crédito con su causal, que ajustan solas la contabilidad y la cartera.</li>
+          <li>Consulta de los <b>eventos</b> de cada factura ante la DIAN (acuse, recibo, aceptación, reclamo).</li>
+          <li>Control de la vigencia del certificado digital.</li>
+        </ul>
+      </section>
+
+      <section class="modulo">
+        <header><span class="sigla">DSP</span><h3>Documentos soporte</h3></header>
+        <ul>
+          <li>Emisión para compras a quienes no facturan (unos 35 al mes), con consecutivo, proveedor e ítems.</li>
+          <li>Generación desde las <b>cuentas de cobro</b> de los asesores, sin digitar dos veces.</li>
+          <li><b>Carga masiva desde Excel</b>, para no subirlos uno por uno.</li>
+          <li>Notas de ajuste sobre un documento ya emitido.</li>
+          <li>Cada documento abre su cuenta por pagar y se contabiliza solo.</li>
+        </ul>
+      </section>
+
+      <section class="modulo">
+        <header><span class="sigla">NOM</span><h3>Nómina electrónica</h3></header>
+        <ul>
+          <li>Ficha del empleado y liquidación por periodo.</li>
+          <li>Provisiones de prestaciones sociales.</li>
+          <li>Documento electrónico de nómina ante la DIAN.</li>
+          <li>Dimensionada para un empleado, como se informó.</li>
+        </ul>
+      </section>
+
+      <section class="modulo ancho">
+        <header><span class="sigla">CNT</span><h3>Contabilidad</h3></header>
+        <ul>
+          <li>Plan de cuentas (PUC) jerárquico y parametrizable: código, nombre, naturaleza y si acepta movimiento.</li>
+          <li>Comprobantes con <b>partida doble</b> validada.</li>
+          <li><b>Contabilización automática</b> de cada factura (ingreso, IVA, retención en la fuente, autorretención y cuenta por cobrar), documento soporte, nota crédito, compra y nómina.</li>
+          <li><b>Tabla de retenciones</b> por pagador y concepto (por ejemplo 4 % servicios, 3,5 % otros), que se actualiza cuando cambia la UVT.</li>
+          <li>Recibos de caja y comprobantes de egreso.</li>
+          <li>Notas internas: conciliación bancaria, provisión de prestaciones, seguridad social (pago del empleador y del empleado).</li>
+          <li><b>Saldos iniciales</b> por cuenta y por tercero, a la fecha de corte de la migración.</li>
+          <li><b>Cierre de año</b>: cancela las cuentas de resultado y deja el año cerrado.</li>
+          <li>Centros de costo para controlar gastos por actividad (honorarios, transporte, materiales).</li>
+        </ul>
+      </section>
+
+      <section class="modulo">
+        <header><span class="sigla">CYG</span><h3>Compras y gastos</h3></header>
+        <ul>
+          <li>Registro de compras, servicios y servicios profesionales, con proveedor, centro de costo, impuestos y retenciones.</li>
+          <li><b>Comprobantes de gasto internos</b> (combustible, compras menores) que no van a la DIAN.</li>
+          <li>Recepción de facturas de proveedores y emisión de sus <b>eventos de aceptación</b> ante la DIAN, en la medida en que el proveedor tecnológico lo permita.</li>
+        </ul>
+      </section>
+
+      <section class="modulo">
+        <header><span class="sigla">PAR</span><h3>Parametrización</h3></header>
+        <ul>
+          <li>Países, departamentos y ciudades con los códigos DANE que exige la DIAN.</li>
+          <li>Formas y medios de pago.</li>
+          <li>Registro único de <b>terceros</b> (clientes, proveedores, empleados, ARL) con cálculo del dígito de verificación.</li>
+          <li>Catálogo de productos y servicios con su tratamiento de IVA.</li>
+        </ul>
+      </section>
+
+      <section class="modulo">
+        <header><span class="sigla">CXC</span><h3>Cuentas por cobrar</h3></header>
+        <ul>
+          <li>Cartera por factura, con vencimientos.</li>
+          <li>Aplicación de pagos a una o varias facturas, total o parcial.</li>
+          <li>Manejo de lo que el pagador <b>retiene y consigna de menos</b>: la diferencia queda como retención a favor y no como saldo pendiente.</li>
+          <li>Antigüedad de cartera y estado de cuenta por cliente.</li>
+        </ul>
+      </section>
+
+      <section class="modulo">
+        <header><span class="sigla">CXP</span><h3>Cuentas por pagar</h3></header>
+        <ul>
+          <li>Obligaciones con proveedores y asesores desde compras y documentos soporte.</li>
+          <li>Pago con comprobante de egreso, descontando las retenciones que JD&amp;D practica.</li>
+          <li>Antigüedad de saldos y estado de cuenta por proveedor.</li>
+        </ul>
+      </section>
+
+      <section class="modulo">
+        <header><span class="sigla">ACT</span><h3>Activos fijos</h3></header>
+        <ul>
+          <li>Registro de activos con valor, cuenta contable, responsable y <b>código QR</b>.</li>
+          <li>Depreciación mensual con su comprobante automático.</li>
+          <li>Consulta del activo al escanear el QR.</li>
+        </ul>
+      </section>
+
+      <section class="modulo ancho">
+        <header><span class="sigla">RPC</span><h3>Informes financieros y reportes</h3></header>
+        <ul>
+          <li>Estado de situación financiera.</li>
+          <li>Estado de resultados.</li>
+          <li>Balance de comprobación.</li>
+          <li>Conciliación bancaria (extracto contra libros).</li>
+          <li>Libros auxiliares de IVA, cuentas por pagar y cuentas por cobrar.</li>
+          <li>Movimiento general por cuenta, con enlace al comprobante de origen.</li>
+          <li>Tercero general y detallado.</li>
+          <li>Impuestos detallados (IVA, retención en la fuente, ReteICA, ReteIVA) y ventas por cliente.</li>
+          <li>Todo se exporta a Excel y PDF.</li>
+        </ul>
+      </section>
+    </div>
+
+    <!-- 3. REUNIÓN -->
+    <h2><span class="n">3</span>Lo que quedó claro en la reunión</h2>
+    <p>Puntos que la contadora mostró o que se conversaron y que quedan reflejados en el alcance:</p>
+    <ul class="check">
+      <li><b>Cada factura se contabiliza sola</b>: ingreso, IVA, retención en la fuente, autorretención y cuenta por cobrar, con la vista de contabilización para revisarla.</li>
+      <li><b>Las retenciones dependen del pagador y del servicio</b>, y las tarifas cambian con la UVT. Por eso van en una tabla que la contadora puede editar.</li>
+      <li><b>El cobro se cierra con el recibo de caja</b>, y el pago suele llegar con descuentos de retención.</li>
+      <li><b>Documento soporte y comprobante de gasto son cosas distintas</b>: el primero va a la DIAN, el segundo es interno.</li>
+      <li><b>Volumen: alrededor de 50 documentos electrónicos al mes</b> (unos 600 al año): unas 15 facturas de venta y unos 35 documentos soporte, más las notas que se generen. Todo el dimensionamiento parte de esa cifra, y la anualidad cubre hasta 1.000 documentos al año.</li>
+      <li><b>Cargas masivas por Excel</b> en lugar de subir documento por documento.</li>
+      <li><b>Órdenes manuales</b> para clientes particulares, sin el documento de la ARL.</li>
+      <li><b>Un solo paso</b> para entregar a la ARL el paquete de soportes junto con la factura.</li>
+    </ul>
+
+    <!-- 4. CÓMO FUNCIONA -->
+    <h2><span class="n">4</span>Cómo funciona con el proveedor tecnológico</h2>
+    <p>Para emitir ante la DIAN hace falta un proveedor tecnológico autorizado. Ser uno propio exige un patrimonio y una facturación anual muy altos, así que el sistema se conecta por API a un proveedor ya habilitado. <b>El software es de JD&amp;D</b>; el proveedor solo firma, transmite y entrega los documentos.</p>
+    <div class="flujo">
+      <div class="paso"><b>Orden finalizada</b>en ORBITA</div>
+      <div class="paso"><b>Relación</b>de actividades</div>
+      <div class="paso"><b>Factura</b>o documento soporte</div>
+      <div class="paso dian"><b>Proveedor + DIAN</b>firma y valida</div>
+      <div class="paso"><b>Envío</b>al cliente / ARL</div>
+      <div class="paso"><b>Recibo de caja</b>y cartera</div>
+      <div class="paso"><b>Contabilidad</b>automática</div>
+    </div>
+    <p class="suave peq">La contabilización y los saldos se actualizan en cada paso, sin volver a digitar.</p>
+
+    <!-- 5. FASES -->
+    <h2><span class="n">5</span>Entrega por fases</h2>
+    <p>Proponemos entregar por etapas para que JD&amp;D empiece a facturar cuanto antes y la contabilidad se valide con calma. Las fechas se fijan en el plan de trabajo, una vez aceptada la cotización, según la fecha de salida del software actual y la disponibilidad de la contadora para probar.</p>
+    <div class="fases">
+      <div class="fase-card">
+        <h3><span class="fase A">A</span>Facturar</h3>
+        <ul>
+          <li>Facturación electrónica y notas crédito</li>
+          <li>Documentos soporte y carga masiva</li>
+          <li>Nómina electrónica</li>
+          <li>Parametrización y terceros</li>
+          <li>Órdenes manuales para privados</li>
+        </ul>
+      </div>
+      <div class="fase-card">
+        <h3><span class="fase B">B</span>Contabilidad</h3>
+        <ul>
+          <li>Plan de cuentas y comprobantes</li>
+          <li>Contabilización automática</li>
+          <li>Cuentas por cobrar y por pagar</li>
+          <li>Compras y gastos</li>
+          <li>Saldos iniciales y cierre de año</li>
+          <li>Migración y salida del software actual</li>
+        </ul>
+      </div>
+      <div class="fase-card">
+        <h3><span class="fase C">C</span>Informes y complementos</h3>
+        <ul>
+          <li>Estados financieros y libros auxiliares</li>
+          <li>Movimiento por cuenta y por tercero</li>
+          <li>Activos fijos y depreciación</li>
+          <li>Aceptación de facturas de proveedores</li>
+        </ul>
+      </div>
+    </div>
+    <p><b>Criterio de aceptación de la contabilidad:</b> un mes en paralelo con el software actual, y que el <b>balance de comprobación de ORBITA coincida con el de ese software</b>.</p>
+
+    <!-- 6. COSTOS Y PAGO -->
+    <h2><span class="n">6</span>Detalle económico y forma de pago</h2>
+    <table>
+      <thead><tr><th>Concepto</th><th>Periodicidad</th><th class="der">Valor (COP)</th></tr></thead>
+      <tbody>
+        <tr><td>Integración del software contable (10 módulos, migración de saldos iniciales, pruebas y puesta en producción)</td><td>Pago único</td><td class="der">$5.700.000</td></tr>
+        <tr><td>Anualidad: certificado digital, paquetes del proveedor tecnológico (facturación, nómina, eventos) y soporte</td><td>Anual</td><td class="der">$1.200.000</td></tr>
+      </tbody>
+    </table>
+    <p><b>Forma de pago de la integración:</b> 50 % al aceptar la cotización ($2.850.000) y 50 % a la puesta en producción ($2.850.000).</p>
+
+    <h3 style="margin-top:18px">Qué paquetes incluye la anualidad</h3>
+    <p>Son el costo del servicio de emisión ante la DIAN que presta el proveedor tecnológico. JD&amp;D no los compra por separado: van dentro de la anualidad.</p>
+    <table>
+      <thead><tr><th>Paquete</th><th>Qué cubre</th></tr></thead>
+      <tbody>
+        <tr><td>Facturación electrónica</td><td>Facturas de venta, documentos soporte y notas, hasta 1.000 documentos al año. Incluye el certificado digital.</td></tr>
+        <tr><td>Nómina electrónica</td><td>Documentos de nómina de un empleado.</td></tr>
+        <tr><td>Eventos de facturas (aceptación)</td><td>Acuse, recibo y aceptación de facturas de proveedores, dentro del mismo tope de 1.000 documentos al año.</td></tr>
+      </tbody>
+    </table>
+    <p class="suave peq">Si se supera el tope de 1.000 documentos al año, el paquete adicional se cotiza por separado.</p>
+
+    <!-- 7. SOPORTE -->
+    <h2><span class="n">7</span>Qué cubre la anualidad</h2>
+    <div class="modulos">
+      <section class="modulo">
+        <h3>Incluye</h3>
+        <ul class="check">
+          <li>Certificado digital y paquetes del proveedor tecnológico (sección 6).</li>
+          <li>Atención de consultas de uso por escrito, en horario hábil.</li>
+          <li>Corrección de fallos del sistema.</li>
+          <li>Ajustes por cambios normativos o del anexo técnico de la DIAN que no impliquen módulos nuevos.</li>
+          <li>Acompañamiento en el manejo de rechazos de documentos.</li>
+        </ul>
+      </section>
+      <section class="modulo">
+        <h3>No incluye</h3>
+        <ul class="check no">
+          <li>Funcionalidades o módulos nuevos.</li>
+          <li>Capacitación adicional a nuevos usuarios.</li>
+          <li>Paquetes adicionales si se supera el tope de 1.000 documentos al año.</li>
+          <li>Asesoría contable o tributaria: el criterio lo define y lo valida la contadora.</li>
+        </ul>
+      </section>
+    </div>
+    <p class="suave peq">Los tiempos de respuesta y los canales de atención se acuerdan por escrito en el contrato de servicio.</p>
+
+    <!-- 8. ALCANCE -->
+    <h2><span class="n">8</span>Alcance, exclusiones y lo que necesitamos de JD&amp;D</h2>
+    <div class="modulos">
+      <section class="modulo">
+        <h3>Queda fuera de esta cotización</h3>
+        <ul>
+          <li>Presentación de declaraciones de impuestos e información exógena. El sistema entrega los auxiliares e informes para prepararlas.</li>
+          <li>Notas a los estados financieros y flujo de efectivo.</li>
+          <li>Inventarios, moneda extranjera y sucursales.</li>
+          <li>Tipos de comprobante que la lista no pidió (diferidos, legalización de viáticos, liquidaciones de contrato).</li>
+          <li>Gestión de activos más allá del registro, el QR y la depreciación (asignaciones, traslados, bajas).</li>
+          <li>Migración de movimientos históricos: se cargan los saldos iniciales por tercero y el histórico se conserva exportado del software actual.</li>
+          <li>Liquidación de la PILA: se registra su nota contable.</li>
+          <li>Notas débito.</li>
+        </ul>
+      </section>
+      <section class="modulo">
+        <h3>Lo que necesitamos de JD&amp;D</h3>
+        <ul>
+          <li>La contadora <b>activa y disponible</b> durante las primeras dos semanas de adaptación, para resolver dudas y validar resultados.</li>
+          <li>RUT, cámara de comercio (máximo 30 días), cédula del representante legal y logo.</li>
+          <li>La <b>resolución de facturación</b> vigente, con el consecutivo actual.</li>
+          <li>Entre 5 y 10 facturas electrónicas de cada ARL, para parametrizar servicios y actividades.</li>
+          <li>Plan de cuentas, balance de prueba por tercero y lista de terceros exportados del software actual.</li>
+          <li>La fecha de renovación o cancelación del software actual y el día desde el cual quieren operar solo en ORBITA.</li>
+          <li>Enviar la documentación del certificado digital dentro de los 8 días siguientes a la compra del paquete.</li>
+        </ul>
+      </section>
+    </div>
+    <p>Cualquier funcionalidad no descrita en esta cotización se considera fuera del alcance inicial. Si se necesita, se dimensiona y se cotiza por escrito antes de construirla. Los datos son de JD&amp;D y pueden exportarse en cualquier momento a Excel, PDF y XML.</p>
+
+    <!-- 9. TRAZABILIDAD -->
+    <h2><span class="n">9</span>Cada ítem de la lista de la contadora</h2>
+    <p>Los 33 ítems de la lista y el módulo y la fase donde quedan cubiertos.</p>
+    <table>
+      <thead><tr><th style="width:34px">#</th><th>Ítem de la lista</th><th>Módulo</th><th style="width:60px">Fase</th></tr></thead>
+      <tbody>
+        <tr class="grupo"><td colspan="4">Documentos electrónicos</td></tr>
+        <tr><td>1</td><td>Facturación electrónica</td><td>FEL</td><td><span class="fase A">A</span></td></tr>
+        <tr><td>2</td><td>Nota crédito</td><td>FEL</td><td><span class="fase A">A</span></td></tr>
+        <tr><td>3</td><td>Eventos de la factura electrónica: aceptación</td><td>FEL</td><td><span class="fase A">A</span></td></tr>
+        <tr><td>4</td><td>Documentos soporte</td><td>DSP</td><td><span class="fase A">A</span></td></tr>
+        <tr><td>5</td><td>Aceptación de facturas a proveedores</td><td>CYG</td><td><span class="fase C">C</span></td></tr>
+        <tr><td>6</td><td>Nómina electrónica</td><td>NOM</td><td><span class="fase A">A</span></td></tr>
+        <tr class="grupo"><td colspan="4">Documentos no electrónicos</td></tr>
+        <tr><td>7</td><td>Recibos de caja</td><td>CNT · CXC</td><td><span class="fase B">B</span></td></tr>
+        <tr><td>8</td><td>Comprobantes de egreso</td><td>CNT · CXP</td><td><span class="fase B">B</span></td></tr>
+        <tr><td>9</td><td>Notas internas: conciliación bancaria, provisión de prestaciones, seguridad social (empleador y empleado)</td><td>CNT</td><td><span class="fase B">B</span></td></tr>
+        <tr><td>10</td><td>Registros de compra: compras, servicios, servicios profesionales</td><td>CYG</td><td><span class="fase B">B</span></td></tr>
+        <tr><td>11</td><td>Saldos iniciales</td><td>CNT</td><td><span class="fase B">B</span></td></tr>
+        <tr><td>12</td><td>Cierre de año</td><td>CNT</td><td><span class="fase B">B</span></td></tr>
+        <tr class="grupo"><td colspan="4">Módulos</td></tr>
+        <tr><td>13</td><td>Documentos electrónicos</td><td>FEL · DSP · NOM</td><td><span class="fase A">A</span></td></tr>
+        <tr><td>14</td><td>Contabilidad</td><td>CNT</td><td><span class="fase B">B</span></td></tr>
+        <tr><td>15</td><td>Cuentas por cobrar</td><td>CXC</td><td><span class="fase B">B</span></td></tr>
+        <tr><td>16</td><td>Cuentas por pagar</td><td>CXP</td><td><span class="fase B">B</span></td></tr>
+        <tr><td>17</td><td>Activos fijos</td><td>ACT</td><td><span class="fase C">C</span></td></tr>
+        <tr><td>18</td><td>Parametrización: países y ciudades, formas de pago, terceros</td><td>PAR</td><td><span class="fase A">A</span></td></tr>
+        <tr class="grupo"><td colspan="4">Informes financieros</td></tr>
+        <tr><td>19</td><td>Estado de situación financiera</td><td>RPC</td><td><span class="fase C">C</span></td></tr>
+        <tr><td>20</td><td>Estado de resultados</td><td>RPC</td><td><span class="fase C">C</span></td></tr>
+        <tr><td>21</td><td>Balance de comprobación</td><td>RPC</td><td><span class="fase C">C</span></td></tr>
+        <tr><td>22</td><td>Conciliación bancaria</td><td>CNT · RPC</td><td><span class="fase B">B</span></td></tr>
+        <tr><td>23</td><td>Libros auxiliares: IVA, cuentas por pagar, cuentas por cobrar</td><td>RPC</td><td><span class="fase C">C</span></td></tr>
+        <tr class="grupo"><td colspan="4">Administración de cuentas contables y terceros</td></tr>
+        <tr><td>24</td><td>Apertura de cuentas contables</td><td>CNT</td><td><span class="fase B">B</span></td></tr>
+        <tr><td>25</td><td>Movimiento general</td><td>RPC</td><td><span class="fase C">C</span></td></tr>
+        <tr><td>26</td><td>Apertura de terceros</td><td>PAR</td><td><span class="fase A">A</span></td></tr>
+        <tr><td>27</td><td>Tercero por detallado: general y detallado</td><td>RPC</td><td><span class="fase C">C</span></td></tr>
+        <tr class="grupo"><td colspan="4">Facturación</td></tr>
+        <tr><td>28</td><td>Certificado digital</td><td>FEL</td><td><span class="fase A">A</span></td></tr>
+        <tr><td>29</td><td>Creación de productos: gravados, exentos, excluidos</td><td>FEL · PAR</td><td><span class="fase A">A</span></td></tr>
+        <tr><td>30</td><td>Numeración de facturación</td><td>FEL</td><td><span class="fase A">A</span></td></tr>
+        <tr><td>31</td><td>Envío de factura al cliente</td><td>FEL</td><td><span class="fase A">A</span></td></tr>
+        <tr><td>32</td><td>Verificación de los eventos de la factura</td><td>FEL</td><td><span class="fase A">A</span></td></tr>
+        <tr><td>33</td><td>Información de pago</td><td>FEL</td><td><span class="fase A">A</span></td></tr>
+      </tbody>
+    </table>
+
+    <!-- 10. ACEPTACIÓN -->
+    <h2><span class="n">10</span>Aceptación</h2>
+    <p>Al firmar, JD&amp;D acepta el alcance, los valores y las condiciones de esta cotización. La integración se inicia con el pago del primer 50 %.</p>
+    <div class="firmas">
+      <div class="firma"><b>Por JD&amp;D Consultores</b><br>Nombre y cargo:<br>Fecha:</div>
+      <div class="firma"><b>Por EscalApp</b><br>Nombre y cargo:<br>Fecha:</div>
+    </div>
+
+    <div class="pie">
+      Valores en pesos colombianos (COP). No incluyen los impuestos que puedan aplicar. Documento confidencial para uso exclusivo de JD&amp;D Consultores.    </div>
+  </main>
+</div>
+</body>
+</html>

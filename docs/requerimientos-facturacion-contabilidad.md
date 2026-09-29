@@ -9,6 +9,12 @@
 >
 > **Última actualización:** 19-sep-2026.
 >
+> ⚠️ **23-sep-2026: este documento tiene sucesor.** Llegó la lista de la contadora y
+> se volcó en [`requerimientos-facturacion-contabilidad-v2.md`](requerimientos-facturacion-contabilidad-v2.md),
+> que pasa de 7 a 10 módulos (suma CXC, CXP y PAR) y agrega informes financieros y
+> eventos de la factura. **Los IDs de aquí se mantienen** en la v2. Este archivo se
+> conserva por el flujo real de Siigo y las fuentes; para el alcance vigente, leer la v2.
+>
 > **Por qué existe aparte de `docs/facturacion-electronica.md`:** ese documento
 > analiza la integración de **Factus** para los documentos DIAN (factura,
 > documento soporte, nómina) y sigue vigente para eso. Pero la reunión del

@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Cuestionario de Cierre de Alcance - JD&D</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 30px;
+            color: #2b2b2b;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        h1 {
+            color: #1a365d;
+            font-size: 20px;
+            border-bottom: 2px solid #2b6cb0;
+            padding-bottom: 8px;
+            margin-bottom: 5px;
+        }
+        .header-info {
+            margin-bottom: 20px;
+            background: #edf2f7;
+            padding: 12px;
+            border-radius: 6px;
+        }
+        .header-info p {
+            margin: 3px 0;
+        }
+        h2 {
+            color: #2b6cb0;
+            font-size: 14px;
+            margin-top: 25px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            page-break-inside: auto;
+        }
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+        th, td {
+            border: 1px solid #cbd5e0;
+            padding: 7px 9px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th {
+            background-color: #2d3748;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 11px;
+        }
+        tr:nth-child(even) {
+            background-color: #f7fafc;
+        }
+        .prio-p1 {
+            color: #e53e3e;
+            font-weight: bold;
+            text-align: center;
+        }
+        .prio-p2 {
+            color: #dd6b20;
+            font-weight: bold;
+            text-align: center;
+        }
+        .prio-p3 {
+            color: #319795;
+            font-weight: bold;
+            text-align: center;
+        }
+        .col-id {
+            width: 6%;
+            font-weight: bold;
+            text-align: center;
+        }
+        .col-prio {
+            width: 8%;
+        }
+        .col-pregunta {
+            width: 50%;
+        }
+        .col-importancia {
+            width: 36%;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 4px;
+        }
+        @media print {
+            body { margin: 15mm 10mm; }
+            h2 { page-break-after: avoid; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Cuestionario de Cierre de Alcance Técnico y Contable</h1>
+    <div class="header-info">
+        <p><strong>Proyecto:</strong> Implementación de Sistema / Módulo de Facturación y Contabilidad</p>
+        <p><strong>Cliente:</strong> JD&D y Contabilidad</p>
+        <p><strong>Fecha:</strong> 23 de septiembre de 2026</p>
+        <p><strong>Prioridades:</strong> <span class="prio-p1">P1</span> = Crítica (Cierra alcance/precio) | <span class="prio-p2">P2</span> = Alta (Previa a construcción) | <span class="prio-p3">P3</span> = Media (Durante ejecución)</p>
+    </div>
+
+    <h2>A. Volumen y alcance general</h2>
+    <table>
+        <thead>
+            <tr>
+                <th class="col-id">#</th>
+                <th class="col-pregunta">Pregunta</th>
+                <th class="col-importancia">Por qué importa</th>
+                <th class="col-prio">Prio.</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="col-id">A-1</td>
+                <td>¿Cuántas facturas de venta emitió JD&D en total en 2025 y cómo se reparten por mes? (Se requiere el dato real de Siigo).</td>
+                <td>Dimensiona el paquete de documentos y confirma el volumen real.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">A-2</td>
+                <td>¿Ese volumen es estable o crece? ¿Hay meses pico (cierres de contrato, campañas ARL)?</td>
+                <td>Evita comprar un paquete de folios que quede corto a mitad de año.</td>
+                <td class="prio-p2">P2</td>
+            </tr>
+            <tr>
+                <td class="col-id">A-3</td>
+                <td>¿Cuántas facturas de proveedores recibe JD&D al mes? ¿Por qué canal llegan hoy (correo, portal, Siigo)?</td>
+                <td>Define cuánto pesa la recepción y aceptación de facturas de proveedores.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">A-4</td>
+                <td>Los ~35 documentos soporte al mes: ¿son estables? ¿Se emiten hoy desde Siigo?</td>
+                <td>Confirma volumen real y de dónde sale la emisión.</td>
+                <td class="prio-p2">P2</td>
+            </tr>
+            <tr>
+                <td class="col-id">A-5</td>
+                <td>¿Piensan cambiar la estructura legal de JD&D (nueva sociedad, otro NIT) en el corto o mediano plazo?</td>
+                <td>Un NIT nuevo obliga a rehacer la habilitación DIAN desde cero.</td>
+                <td class="prio-p2">P2</td>
+            </tr>
+            <tr>
+                <td class="col-id">A-6</td>
+                <td>La lista contable no menciona: relación de actividades, agrupación de órdenes, paz y salvo, paquete de radicación, centros de costo, ventas por cliente y QR de activos. ¿Se mantienen todas?</td>
+                <td>Lo que no se confirme en esta etapa quedará fuera del alcance inicial.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>B. Facturación de venta</h2>
+    <table>
+        <thead>
+            <tr>
+                <th class="col-id">#</th>
+                <th class="col-pregunta">Pregunta</th>
+                <th class="col-importancia">Por qué importa</th>
+                <th class="col-prio">Prio.</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="col-id">B-1</td>
+                <td>Agrupación: AXA Colpatria se factura agrupada (~3 actividades/factura). ¿Bolívar y Colmena agrupan o facturan 1 a 1? ¿Con qué criterio?</td>
+                <td>Cambia cómo se arma cada factura y el volumen final de documentos.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">B-2</td>
+                <td>El código "Estado de facturación" del Excel de Bolívar (160743, 160441...): ¿qué es y quién lo asigna? ¿Es un radicado/lote asignado por la ARL?</td>
+                <td>Decide qué se agrupa y qué campos obligatorios lleva la factura.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">B-3</td>
+                <td>Envíen la lista de lo que JD&D factura (asesoría, capacitación, etc.) e indiquen: ¿gravado, exento o excluido? Aclarar tratamiento ARL.</td>
+                <td>Exento y excluido cambian los impuestos y la declaración contable.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">B-4</td>
+                <td>Las 3 facturas al mes con IVA (empresas privadas): ¿a qué tarifa? ¿Es siempre la misma?</td>
+                <td>Configurar el impuesto correcto en el sistema.</td>
+                <td class="prio-p2">P2</td>
+            </tr>
+            <tr>
+                <td class="col-id">B-5</td>
+                <td>Clientes privados (ej. Alkosto): ¿deben registrarse como órdenes de servicio en el sistema o se facturan directo sin pasar por el ciclo de orden?</td>
+                <td>Hoy toda orden exige ARL: esto decide si se ajusta el modelo.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">B-6</td>
+                <td>¿Facturan fuera de las órdenes habituales (otras consultorías) que hoy pasan por Siigo?</td>
+                <td>Determina si hay facturas sin orden de origen.</td>
+                <td class="prio-p2">P2</td>
+            </tr>
+            <tr>
+                <td class="col-id">B-7</td>
+                <td>Datos fiscales de las 3 ARL (NIT, razón social, dirección, responsabilidades, ciudad). Envíen una factura de ejemplo de cada una.</td>
+                <td>Evita cargar datos erróneos en el catálogo corporativo.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">B-8</td>
+                <td>Datos fiscales de JD&D: NIT con DV, régimen tributario, responsabilidades, actividad CIIU. Envíen el RUT actualizado.</td>
+                <td>Es la ficha del emisor requerida para parametrización.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">B-9</td>
+                <td>Resolución de facturación vigente: número, prefijo, rango, consecutivo actual y vencimiento. Envíen copia de la resolución.</td>
+                <td>Decide si se reutiliza el rango o hay que solicitar uno nuevo.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">B-10</td>
+                <td>Certificado digital: ¿A nombre de quién está (JD&D o proveedor de Siigo)? ¿Cuándo vence? ¿Es reutilizable con otro sistema?</td>
+                <td>Define si hay que tramitar un nuevo certificado y sus tiempos.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">B-11</td>
+                <td>¿Alguna ARL exige recibir la factura por un canal propio (portal/correo específico) además del envío DIAN?</td>
+                <td>Define el flujo de envío y la estructuración de la radicación.</td>
+                <td class="prio-p2">P2</td>
+            </tr>
+            <tr>
+                <td class="col-id">B-12</td>
+                <td>Retención en la fuente e ICA: ¿Qué retenciones practica cada pagador? ¿Tarifa fija (11%) o variable? ¿En qué municipios se autoliquida ICA?</td>
+                <td>Si las tarifas no se parametrizan correctamente, no se puede calcular.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">B-13</td>
+                <td>Envíen 2 o 3 facturas reales emitidas (pueden anonimizar datos de personas), incluyendo ARL y cliente privado con IVA.</td>
+                <td>Permite verificar que no falte ningún campo en el formato.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>C. Notas, eventos y cartera</h2>
+    <table>
+        <thead>
+            <tr>
+                <th class="col-id">#</th>
+                <th class="col-pregunta">Pregunta</th>
+                <th class="col-importancia">Por qué importa</th>
+                <th class="col-prio">Prio.</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="col-id">C-1</td>
+                <td>Eventos de la factura: ¿Hoy revisan si la ARL/cliente registró acuse o aceptación? ¿Dónde lo miran y qué hacen sin respuesta?</td>
+                <td>Define qué vistas construir y qué automatizar.</td>
+                <td class="prio-p2">P2</td>
+            </tr>
+            <tr>
+                <td class="col-id">C-2</td>
+                <td>Si una factura a crédito no recibe respuesta, ¿quieren que el sistema registre la aceptación tácita automática o prefieren manual?</td>
+                <td>Decisión operativa del cliente para el flujo contable.</td>
+                <td class="prio-p2">P2</td>
+            </tr>
+            <tr>
+                <td class="col-id">C-3</td>
+                <td>Notas crédito: ¿Han tenido que anular/corregir facturas? ¿Cuántas al año y por qué motivos (error, rechazo)?</td>
+                <td>Decide qué casos de uso de corrección hay que soportar.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">C-4</td>
+                <td>Una vez la ARL acepta la factura, la DIAN no permite notas crédito directas. Si hay que corregir después de aceptada, ¿cómo lo resuelven?</td>
+                <td>Ajusta el procedimiento contable de corrección.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">C-5</td>
+                <td>Cartera: ¿Manejan pagos parciales, un pago para varias facturas o anticipos? ¿Días de crédito por ARL/cliente?</td>
+                <td>Define cómo se procesan y aplican los pagos.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">C-6</td>
+                <td>Cuando la ARL paga aplicando retenciones y consigna un neto menor: ¿cómo registran la diferencia en el recibo de caja? Envíen ejemplo.</td>
+                <td>Garantiza la correcta conciliación entre cobro e impuestos.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">C-7</td>
+                <td>Lo solicitado como "Cuentas por Cobrar", ¿es la parte contable (saldo, pagos aplicados, antigüedad) y no el reporte previo retirado?</td>
+                <td>Evita reabrir requerimientos descartados en etapas anteriores.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">C-8</td>
+                <td>¿Hay cartera de años anteriores que deba ser cargada en la migración?</td>
+                <td>Indispensable para el balance de saldos iniciales.</td>
+                <td class="prio-p2">P2</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>D. Compras, proveedores y documento soporte</h2>
+    <table>
+        <thead>
+            <tr>
+                <th class="col-id">#</th>
+                <th class="col-pregunta">Pregunta</th>
+                <th class="col-importancia">Por qué importa</th>
+                <th class="col-prio">Prio.</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="col-id">D-1</td>
+                <td>Aceptación de facturas de proveedores: ¿Esperan que el sistema procese recepción, acuse, recibo y aceptación? ¿Quién figura como el emisor del evento?</td>
+                <td>Cada evento ante la DIAN requiere firma registrada a nombre de un responsable.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">D-2</td>
+                <td>¿Qué hacen hoy cuando llega una factura de proveedor no conforme (reclamo)?</td>
+                <td>Define si hace falta construir la opción de reclamo DIAN.</td>
+                <td class="prio-p3">P3</td>
+            </tr>
+            <tr>
+                <td class="col-id">D-3</td>
+                <td>Registros de compra: Se mencionan "Servicios Profesionales". En Siigo existen "Gastos Asesores". ¿Es el mismo concepto o son diferentes?</td>
+                <td>Define los tipos de comprobantes y conceptos a homologar.</td>
+                <td class="prio-p2">P2</td>
+            </tr>
+            <tr>
+                <td class="col-id">D-4</td>
+                <td>Los ~35 pagos mensuales por documento soporte, ¿son cuentas de cobro de asesores? ¿Se pagan al aprobar la cuenta?</td>
+                <td>Permite enlazar cuenta de cobro, documento soporte y pago de forma automática.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">D-5</td>
+                <td>¿Importan hoy compras desde archivos XML o ZIP, o el registro es manual?</td>
+                <td>Define si se requiere desarrollar un cargador masivo de XML.</td>
+                <td class="prio-p2">P2</td>
+            </tr>
+            <tr>
+                <td class="col-id">D-6</td>
+                <td>Centros de costo: ¿Qué estructura usan hoy en Siigo (por ARL, proyecto, área)? ¿Sigue siendo necesaria?</td>
+                <td>Configura la contabilidad analítica del sistema.</td>
+                <td class="prio-p2">P2</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>E. Contabilidad y estados financieros</h2>
+    <table>
+        <thead>
+            <tr>
+                <th class="col-id">#</th>
+                <th class="col-pregunta">Pregunta</th>
+                <th class="col-importancia">Por qué importa</th>
+                <th class="col-prio">Prio.</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="col-id">E-1</td>
+                <td>¿Los comprobantes contables deben generarse automáticamente desde cada transacción (factura, compra, pago) o se registrarán a mano?</td>
+                <td>Es la decisión técnica que más impacta el esfuerzo de desarrollo.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">E-2</td>
+                <td>Plan de Cuentas: Envíen el PUC actual exportado de Siigo. ¿Se migra idéntico o se va a reestructurar?</td>
+                <td>Es la columna vertebral del módulo contable.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">E-3</td>
+                <td>Estados Financieros: ¿Bajo qué grupo NIIF reporta JD&D? ¿Requieren comparativo año anterior y Notas? Envíen su formato actual.</td>
+                <td>Permite mapear la estructura de salida de los informes contables.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">E-4</td>
+                <td>Cierre de año: ¿Quién lo ejecuta y bajo qué pasos en Siigo? ¿Se requiere reabrir periodos cerrados en el futuro?</td>
+                <td>Establece los bloqueos de seguridad e hitos de cierre.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">E-5</td>
+                <td>Saldos iniciales: ¿A qué fecha de corte exacta se migra? ¿Pueden exportar de Siigo el balance de prueba por tercero a esa fecha?</td>
+                <td>Garantiza la continuidad contable sin pérdida de datos.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">E-6</td>
+                <td>Conciliación bancaria: ¿Cuántas cuentas bancarias se concilian? ¿Cómo llega el extracto (Excel, PDF)? Envíen ejemplo.</td>
+                <td>Determina el alcance del módulo de tesorería y bancos.</td>
+                <td class="prio-p2">P2</td>
+            </tr>
+            <tr>
+                <td class="col-id">E-7</td>
+                <td>Varios comprobantes vistos en Siigo no figuran en la lista contable (depreciación, diferidos, viáticos, caja menor). ¿Quedan fuera del proyecto?</td>
+                <td>Lo que no se pida expresamente queda fuera del alcance inicial.</td>
+                <td class="prio-p2">P2</td>
+            </tr>
+            <tr>
+                <td class="col-id">E-8</td>
+                <td>¿Qué libros auxiliares e informes necesitan a diario y cuáles solo por cumplimiento legal? ¿Formatos requeridos?</td>
+                <td>Permite priorizar la batería de reportes a construir.</td>
+                <td class="prio-p3">P3</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>F. Nómina y seguridad social</h2>
+    <table>
+        <thead>
+            <tr>
+                <th class="col-id">#</th>
+                <th class="col-pregunta">Pregunta</th>
+                <th class="col-importancia">Por qué importa</th>
+                <th class="col-prio">Prio.</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="col-id">F-1</td>
+                <td>¿La nómina electrónica se emite actualmente por Siigo? ¿Cuántos documentos mensuales procesan?</td>
+                <td>Define el dimensionamiento y licenciamiento del paquete de nómina.</td>
+                <td class="prio-p2">P2</td>
+            </tr>
+            <tr>
+                <td class="col-id">F-2</td>
+                <td>Seguridad social: ¿La contabilización del pago patronal y empleado se origina en la PILA o en la nómina? Envíen comprobante de ejemplo.</td>
+                <td>Define el origen de los asientos contables correspondientes.</td>
+                <td class="prio-p2">P2</td>
+            </tr>
+            <tr>
+                <td class="col-id">F-3</td>
+                <td>Provisiones de prestaciones: ¿Se calculan mensualmente con porcentajes fijos? Indicar porcentajes y bases.</td>
+                <td>Permite automatizar el asiento mensual de provisiones.</td>
+                <td class="prio-p2">P2</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>G. Activos fijos, terceros y catálogos</h2>
+    <table>
+        <thead>
+            <tr>
+                <th class="col-id">#</th>
+                <th class="col-pregunta">Pregunta</th>
+                <th class="col-importancia">Por qué importa</th>
+                <th class="col-prio">Prio.</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="col-id">G-1</td>
+                <td>Activos fijos: ¿El módulo requiere solo inventario o también cálculo de depreciación y asiento contable? Indicar activos y método.</td>
+                <td>Aclara si se incluye el motor de depreciación.</td>
+                <td class="prio-p2">P2</td>
+            </tr>
+            <tr>
+                <td class="col-id">G-2</td>
+                <td>Código QR para activos: ¿Se mantiene? ¿Qué acción debe ejecutar la lectura del QR (consulta, traslado, baja)?</td>
+                <td>Define la funcionalidad del lector/escáner de activos.</td>
+                <td class="prio-p3">P3</td>
+            </tr>
+            <tr>
+                <td class="col-id">G-3</td>
+                <td>Terceros: Envíen el maestro de terceros actual (clientes, proveedores, empleados) exportado de Siigo para migración.</td>
+                <td>Es la base de datos maestra que consumen todos los módulos.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">G-4</td>
+                <td>Catálogo de formas y medios de pago utilizados actualmente (contado, crédito, transferencia, cheque, etc.).</td>
+                <td>Parametrización contable del sistema.</td>
+                <td class="prio-p3">P3</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>H. Estrategia de migración</h2>
+    <table>
+        <thead>
+            <tr>
+                <th class="col-id">#</th>
+                <th class="col-pregunta">Pregunta</th>
+                <th class="col-importancia">Por qué importa</th>
+                <th class="col-prio">Prio.</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="col-id">H-1</td>
+                <td>¿Cuándo vence o se renueva el contrato con Siigo? ¿Existe periodo de preaviso para cancelación sin penalidad?</td>
+                <td>Establece la fecha límite e inamovible de salida a producción.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">H-2</td>
+                <td>¿Prefieren cambiar a mitad de mes/año o esperar un cierre contable de mes para no dividir la numeración?</td>
+                <td>Define la fecha exacta de arranque y la estrategia de corte.</td>
+                <td class="prio-p1">P1</td>
+            </tr>
+            <tr>
+                <td class="col-id">H-3</td>
+                <td>¿Qué volumen de historial de Siigo necesitan mantener consultable en la nueva plataforma?</td>
+                <td>Define si se migra historial extenso o solo saldos iniciales.</td>
+                <td class="prio-p2">P2</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>I. Resumen de documentación a solicitar</h2>
+    <ul>
+        <li><strong>RUT de JD&D</strong> y <strong>Resolución de facturación electrónica</strong> vigente (B-8, B-9).</li>
+        <li><strong>Ejemplos de Facturación:</strong> 2-3 facturas reales emitidas (ARL y privado con IVA) (B-13) + 1 de cada ARL (B-7).</li>
+        <li><strong>Tarifario / Catálogo:</strong> Lista de productos/servicios con tratamiento de IVA (B-3).</li>
+        <li><strong>Archivos de Siigo:</strong> PUC exportado (E-2) y Balance de prueba por tercero a la fecha de corte (E-5).</li>
+        <li><strong>Catálogos:</strong> Maestro de terceros exportado de Siigo (G-3).</li>
+        <li><strong>Muestras / Ejemplos en archivo o foto de:</strong>
+            <ul>
+                <li>Recibo de caja con retenciones (C-6).</li>
+                <li>Comprobante de contabilización de Seguridad Social (F-2).</li>
+                <li>Conciliación bancaria y extracto (E-6).</li>
+                <li>Formato de Estados Financieros actual (E-3).</li>
+                <li>Comprobante o proceso de cierre de año (E-4).</li>
+            </ul>
+        </li>
+        <li><strong>Proveedor:</strong> 1 factura reciente de proveedor + indicación de cómo llegó (A-3).</li>
+        <li><strong>Técnico / Legales:</strong> Datos del Certificado Digital actual + fecha de vencimiento del contrato con Siigo (B-10, H-1).</li>
+    </ul>
+
+</body>
+</html>

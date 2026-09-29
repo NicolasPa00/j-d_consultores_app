@@ -22,7 +22,131 @@
 
 ## 0. Dónde retomar (leer SIEMPRE primero)
 
-**Estado al 27-sep-2026:** plan escrito, **ninguna tarea empezada**.
+### ▶ 29-sep-2026 — JD&D ACEPTÓ LA COTIZACIÓN; todo quedó commiteado — leer esto primero
+
+Los bloques de abajo (27/28-sep) dicen "NADA ESTÁ COMMITEADO": **ya no es cierto.**
+El usuario levantó la orden de no commitear y se ordenó el trabajo así:
+
+| Rama (mismo nombre en los dos repos) | Carpetas | Estado |
+|---|---|---|
+| `correcciones-26-sep` | `sst_ws/`, `jdd_consultores_app/` | **Tanda 0 commiteada y subida a GitHub** (sst_ws `b12d2b6`, front `aea9505`). **No** mezclada a `master`/`main` ni desplegada: el servidor hace `git pull` de la principal, y mezclar es el paso previo al despliegue (T0-17). |
+| `fase-a-facturacion` | worktrees `sst_ws-fase-a/`, `jdd_consultores_app-fase-a/` | Fase A commiteada (**solo local**, sin push) **y con la Tanda 0 ya mezclada encima** (sst_ws `9f64bb6`, front `d31957e`): los choques conocidos quedaron resueltos (`routes/index.js`, `PATCH /orders/cobro` que ahora lee `estado_arl` **y** `tiene_factura_orbita`, el import de `api.service.ts`). `node --check` de todo el backend y `ng build` limpios. |
+
+**Consecuencias para seguir:**
+- **La facturación se trabaja en los worktrees `*-fase-a`**, que ya contienen la Tanda 0.
+  El plan, el HANDOFF y los docs de facturación/cotización viven ahora en esta rama.
+- Las carpetas principales quedan para la Tanda 0: T0-19, T0-17 (pruebas en la app,
+  consulta de tarifas en producción, mezcla y despliegue) y cualquier arreglo urgente de
+  producción. Lo que se arregle ahí se trae luego con `git merge correcciones-26-sep`.
+- `schema.sql` combinado: el orden es correcto (tablas de T0 antes que el bloque de Fase A
+  que las referencia), pero **no se aplicó sobre una base vacía** tras el merge.
+- **Pendiente del merge:** el encabezado de grupo **"Finanzas"** del sidebar (A0-10) no
+  existe todavía — el menú no tiene grupos. Hacerlo en **A1-08**, cuando entre el ítem
+  "Facturación".
+- En la carpeta principal del frontend quedaron **copias sin commitear** de estos docs (el
+  auto-modo no dejó borrarlas) y en `sst_ws/` los archivos exploratorios del 19-sep
+  (`src/modules/facturacion/`, `src/utils/nit.js`, `scripts/verificar-nit.mjs`), ya
+  superados por los del worktree. Respaldados; se pueden borrar a mano.
+
+**Siguiente:** **A1-08** (pantalla de Facturación) en los worktrees; en paralelo, T0-19 y T0-17.
+
+### ▶ ESTADO AL CIERRE DEL 27/28-sep-2026
+
+**Lo hecho** (detalle en el tablero §2 y en la bitácora §11):
+- **Tanda 0:** T0-03..08, T0-10..16 y T0-18 ✅ (verificadas por la sesión directora).
+  **T0-09** (prefacturas con IA) y **T0-01** (revisión del portal) también ✅, revisadas
+  al cierre. Pendientes de la tanda: **T0-19** (detalle pequeño de permisos), **T0-02**
+  ⛔ (faltan los originales de Colmena) y **T0-17** (cierre y despliegue). Todas las
+  sesiones ejecutoras terminaron limpias: `jdd_dev` sin datos de prueba (queda la base
+  de A1: 5 terceros, 2 productos, 4 tarifas, 4 retenciones, 2 condiciones).
+- **Fase A:** A0-01..A0-10 ✅, **A1-01 y A1-02 ✅** (primera factura real en el sandbox
+  de Factus, totales al centavo). Siguiente entonces: **A1-03** (relación a facturar).
+
+### ▶ Esta sesión (28-sep-2026, continuación) — A1-03 a A1-07, todo backend
+
+Sigue **sin commitear**, en el mismo worktree `sst_ws-fase-a` (rama `fase-a-facturacion`).
+Detalle completo de cada ficha en la bitácora (§11); aquí solo el resumen para retomar.
+
+**Construido:**
+- **A1-03** — `GET /facturacion/por-facturar` (relación por pagador; Bolívar por
+  prefactura, el resto por selección de órdenes) y `POST /facturacion/seleccion/validar`.
+- **A1-04** — `POST/GET/PUT/DELETE /facturacion/borradores`: arma el documento con
+  `calculo.js` (bruto → descuento → IVA → retenciones → total). Rechaza crear un
+  borrador si falta la tarifa de venta del pagador — nunca inventa una cifra.
+- **A1-05** — `POST /facturacion/documentos/:id/emitir` + `/consultar-estado`: valida,
+  pasa a ENVIANDO, llama a Factus fuera de cualquier transacción abierta, y VALIDADO
+  marca las órdenes como FACTURADA (con `historial_cobro_orden.documento_id`, columna
+  nueva). `PATCH /orders/cobro` ahora rechaza desmarcar una orden con factura de Orbita.
+  **Probado de verdad contra el sandbox**, no solo con datos falsos.
+- **A1-06** — `POST /facturacion/documentos/:id/reenviar`: Factus manda su propio
+  correo al validar; este endpoint reenvía con el correo de Orbita y PDF+XML adjuntos.
+- **A1-07** — `POST /facturacion/documentos/:id/corregir` (RECHAZADO → BORRADOR con
+  `reference_code` nuevo), `/eventos/consultar` + `/facturacion/eventos/actualizar-lote`
+  (eventos RADIAN reales de Factus) y `/aceptacion-tacita` (apunte interno, no llama a
+  Factus — ver Q-26). **También probado contra el sandbox real**, incluido un rechazo
+  genuino provocado a propósito.
+
+**Hallazgos que importan al retomar:**
+- `npm run typecheck` **no cubre `src/modules/**`** (su `tsconfig.json` solo mira otras
+  carpetas): usar `node --check <archivo>` para verificar sintaxis en este código.
+- **Reglas de correo del usuario:** la única cuenta SMTP del repo es la real de JD&D
+  (`redes.jddconsultores@gmail.com`) — no usarla para probar. `EMAIL_DRIVER=console`
+  (no manda nada) o, si hace falta un envío real, solo entre correos propios de
+  desarrollador (`escalappsystem@gmail.com`), nunca a un cliente ni con la identidad de JD&D.
+- **Q-25 y Q-26 nuevas** (§10): `{numero_autorizacion}` de la plantilla de descripción sin
+  campo confirmado; el endpoint de escritura de aceptación tácita no está confirmado para
+  facturas emitidas (parece ser solo para las recibidas).
+- La modificación de `orders.routes.js` (A1-05) vive **solo** en `fase-a-facturacion`:
+  hay que reaplicarla al juntar con `correcciones-26-sep`, que tiene su propia versión de
+  ese archivo desde T0-07.
+
+**Siguiente:** **A1-08**, la pantalla de Facturación (frontend) que junta todo esto.
+
+**⚠️ NADA ESTÁ COMMITEADO** (orden del usuario del 27-sep), salvo `593cab8` (T0-03, en
+`sst_ws` rama `correcciones-26-sep`) y el propio plan en `main` (9e63ad3). El trabajo
+vive como cambios locales en **cuatro carpetas** de la raíz del monorepo:
+
+| Carpeta | Repo | Rama | Qué contiene |
+|---|---|---|---|
+| `sst_ws/` | backend | `correcciones-26-sep` | Tanda 0 (migraciones 2026-09-27-agr-y-tema, estado-arl, tarifa-por-tipo, prefacturas) |
+| `jdd_consultores_app/` | frontend | `correcciones-26-sep` | Tanda 0 + **este plan y el HANDOFF** |
+| `sst_ws-fase-a/` | backend (worktree) | `fase-a-facturacion` | Fase A (migraciones 2026-09-27-catalogos-dian, terceros, emisor, resoluciones-numeracion, productos-tarifas, retenciones-condiciones, parametrizacion-permiso, documentos-electronicos, 2026-09-28-historial-cobro-documento) |
+| `jdd_consultores_app-fase-a/` | frontend (worktree) | `fase-a-facturacion` | Fase A (/terceros, /parametrizacion) |
+
+Los dos worktrees tienen `node_modules` como *junction* al de su repo principal; el
+de backend tiene su `.env` propio (con `FACTUS_*` del sandbox) y una copia de
+`src/infrastructure/storage/in-memory-file-storage.ts` (ignorado por git).
+**Todas las migraciones de las dos ramas YA ESTÁN APLICADAS en `jdd_dev`.**
+
+**Primeras decisiones que hay que pedirle al usuario al retomar:**
+1. **¿Se commitea ya?** Recomendación: sí, un commit por ficha en cada rama, antes de
+   seguir; trabajo sin commitear en cuatro carpetas es frágil.
+2. **Juntar las dos ramas** cuando la Tanda 0 se despliegue: los choques conocidos son
+   `db/schema.sql` (cada rama escribió en un bloque propio: Tanda 0 junto a las tablas que
+   toca, Fase A al final del archivo) y `layout/shell/shell.ts` (T0-14 lo reestructuró; la
+   Fase A solo añadió dos ítems de menú: Terceros y Parametrización). Al juntar, poner el
+   encabezado de grupo **"Finanzas"** del sidebar (A0-10). `core/models.ts`,
+   `api.service.ts`, `app.routes.ts` y `settings.ts` los tocan las dos: son adiciones.
+3. **T0-17 paso 3:** autorizar la consulta de **solo lectura** en producción de las
+   tarifas antes de desplegar T0-10.
+4. **Despliegue de la Tanda 0** (runbook `despliegue-vultr.md`; migraciones a mano en
+   orden de fecha; recordar R-02: producción sin respaldos).
+
+**Cómo verificar lo de otra sesión** (lo que hizo la directora): leer su informe/fila de
+bitácora, `git status`/`git diff --stat` en su carpeta, **re-ejecutar** sus scripts de
+verificación, una consulta a `jdd_dev` que confirme los datos, y **mirar las capturas
+PNG** (quedan en el scratchpad de cada sesión:
+`%TEMP%\claude\C--Users-nicol-Desktop-jdd-consultores-app\<id-de-sesión>\scratchpad\`;
+la Tanda 0 en `efd83085-…\scratchpad\shots` y `pdf4`, la Fase A en
+`98e14981-…\scratchpad\capturas`). Solo entonces ✅.
+
+**Herramientas que funcionaron:** la extensión Claude in Chrome **no conecta** en esta
+máquina; las pruebas de navegador se hicieron con **puppeteer-core + Chrome headless**
+instalado en el scratchpad (nunca en `package.json`), sirviendo el front en otro puerto y
+añadiendo ese origen a `CORS_ORIGIN` **temporalmente** (si no, R-07 muestra todo el
+menú). `psql` no está en el PATH: usar `C:/Program Files/PostgreSQL/18/bin/psql.exe`.
+Puertos usados: :4000/:4001 los normales, :4010-4012 pruebas de la Tanda 0, :4020/:4021
+Fase A.
 
 **Decisiones del usuario que enmarcan todo (27-sep-2026):**
 
@@ -41,6 +165,15 @@
 5. La **selección del paquete de Factus** sigue pospuesta a propósito hasta después
    del desarrollo: todo se construye contra el **sandbox**. La salida a producción es
    la fase S (§9).
+
+**Organización vigente (27-sep-2026, orden del usuario):** **no se commitea nada**
+por ahora; todo queda en local. Tanda 0 → sesión `jdd-consultores-app-74` en las
+carpetas normales (`sst_ws/`, `jdd_consultores_app/`, rama `correcciones-26-sep`).
+Fase A → sesión `jdd-consultores-app-a1` en los worktrees
+`sst_ws-fase-a` y `jdd_consultores_app-fase-a` (raíz del monorepo) (rama `fase-a-facturacion`, `node_modules` enlazado
+al de `sst_ws`). La sesión `jdd-consultores-app-9e` asigna y verifica. Como las dos
+editan `db/schema.sql`, la Fase A escribe lo suyo en un bloque propio al final del
+archivo, y se junta a mano.
 
 **Cómo arrancar una sesión de trabajo:**
 
@@ -178,45 +311,47 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecha y verificada · ❓ espera 
 
 | ID | Tarea | Depende | Tam. | Estado |
 |---|---|---|---|---|
-| T0-01 | Revisar la carga de soportes del asesor (qué falla) | — | S | ❓ Q-01 |
+| T0-01 | Revisar la carga de soportes del asesor (qué falla) | — | S | ✅ 28-sep revisión + `docs/guia-carga-soportes.md`; 2 fricciones menores esperan Q-01 |
 | T0-02 | Formatos originales de Colmena | Q-02 | M | ⛔ faltan los originales |
-| T0-03 | Colmena: no enviar el Excel ni el instructivo | — | S | ⬜ |
-| T0-04 | Bolívar: pasar el AGR del SIPAB a la orden y al AT-031 | — | S | ⬜ |
-| T0-05 | Tema/actividad manual en seguimiento y asistencia | — | M | ⬜ |
-| T0-06 | Cronograma y secuencia junto a la razón social (Bolívar) | — | S | ❓ Q-07 |
-| T0-07 | Estado ARL + n.º de prefactura (código SIPAB) | — | M | ⬜ |
-| T0-08 | Reporte "Bolívar: qué debo facturar" (relación en Excel) | T0-07 | M | ⬜ |
-| T0-09 | Cargar prefactura de la ARL con IA y previsualización | T0-07 | L | ⬜ |
-| T0-10 | Valor hora de los socios sale "estándar" | — | S | ⬜ |
-| T0-11 | Fecha en los formatos de Colmena | — | S | ❓ Q-04 |
-| T0-12 | Horas ejecutadas por sesión en formatos | — | S | ❓ Q-05 |
-| T0-13 | Bolívar: un solo AT-031, un AT-028 por sesión | — | M | ❓ Q-06 |
-| T0-14 | Sidebar que se oculta y se despliega | — | S | ⬜ |
-| T0-15 | El cambio de estado se aplica con "Guardar" | — | M | ⬜ |
-| T0-16 | Cambiar el tipo de orden recalcula y muestra el valor | — | M | ⬜ |
+| T0-03 | Colmena: no enviar el Excel ni el instructivo | — | S | ✅ 27-sep (sst_ws 593cab8, único commit previo a la orden de no commitear) |
+| T0-04 | Bolívar: pasar el AGR del SIPAB a la orden y al AT-031 | — | S | ✅ 27-sep (local; falta verlo en navegador) |
+| T0-05 | Tema/actividad manual en seguimiento y asistencia | — | M | ✅ 27-sep (local; falta verlo en navegador) |
+| T0-06 | Cronograma y secuencia junto a la razón social (Bolívar) | — | S | ✅ 27-sep (local; tabla compactada, cabe a 1366 px; Excel de Vencidas/Cobro/Satisfacción sin cronograma, fuera de ficha) |
+| T0-07 | Estado ARL + n.º de prefactura (código SIPAB) | — | M | ✅ 27-sep (local; probado en navegador headless) |
+| T0-08 | Reporte "Bolívar: qué debo facturar" (relación en Excel) | T0-07 | M | ✅ 27-sep (local; encabezados idénticos al ejemplo) |
+| T0-09 | Cargar prefactura de la ARL con IA y previsualización | T0-07 | L | ✅ 28-sep (local; 13+3+10 filas y totales exactos; revisado por la directora, captura 20) |
+| T0-10 | Valor hora de los socios sale "estándar" | — | S | ✅ 27-sep (local; tarifa por `tipo_orden_id`; antes de desplegar ver T0-17 paso 3) |
+| T0-11 | Fecha en los formatos de Colmena | — | S | ✅ 27-sep con el supuesto (fecha de generación); ❓ Q-04 sigue abierta |
+| T0-12 | Horas ejecutadas por sesión en formatos | — | S | ✅ 27-sep con el supuesto; ❓ Q-05 sigue abierta |
+| T0-13 | Bolívar: un solo AT-031, un AT-028 por sesión | — | M | ✅ 27-sep con el supuesto; ❓ Q-06 sigue abierta |
+| T0-14 | Sidebar que se oculta y se despliega | — | S | ✅ 27-sep (local) |
+| T0-15 | El cambio de estado se aplica con "Guardar" | — | M | ✅ 27-sep (local; probado en navegador headless) |
+| T0-16 | Cambiar el tipo de orden recalcula y muestra el valor | — | M | ✅ 27-sep (local) |
+| T0-18 | Ediciones de la OS que "se revierten" al recargar (el detalle se arma desde el JSON del borrador) | — | M | ✅ 27-sep (local; eran NIT, horas, vencimiento y duración de agenda) |
+| T0-19 | Ocultar "Cargar prefactura" a quien no es admin/contador (el backend ya lo exige) | T0-09 | S | ⬜ |
 | T0-17 | Cierre de la tanda: HANDOFF, pruebas en la app, despliegue | todas | S | ⬜ |
 
 ### Fase A — Facturar (rama `fase-a-facturacion`)
 
 | ID | Tarea | Depende | Tam. | Estado |
 |---|---|---|---|---|
-| A0-01 | Rama, código exploratorio y utilidad del DV del NIT | — | S | ⬜ |
+| A0-01 | Rama, código exploratorio y utilidad del DV del NIT | — | S | ✅ 27-sep (local; back + `core/nit.ts`) |
 | A0-02 | Respaldos de producción (prerrequisito de datos contables) | — | M | ⬜ (usuario) |
-| A0-03 | Cliente HTTP de Factus + humo contra sandbox | A0-01 | M | ⬜ |
-| A0-04 | Utilidad de dinero + catálogos DIAN (países, municipios, pagos, documentos, unidades) | A0-03 | M | ⬜ |
-| A0-05 | Terceros (PAR-03) | A0-04 | L | ⬜ |
-| A0-06 | Productos y servicios + tarifas de venta por pagador | A0-05 | M | ❓ Q-14, Q-16 |
-| A0-07 | Retenciones, autorretención, UVT y descuento comercial por pagador | A0-05 | M | ❓ Q-11 |
-| A0-08 | Resoluciones de numeración (FEL-13) | A0-03 | M | ⬜ |
-| A0-09 | Ficha del emisor + vigencia del paquete/certificado (FEL-14) | A0-04 | S | ❓ Q-21 |
-| A0-10 | Pantalla de Parametrización + permisos + menú | A0-05..09 | M | ⬜ |
-| A1-01 | Esquema de documentos electrónicos | A0-10 | M | ⬜ |
-| A1-02 | Adaptador Factus: factura de venta | A1-01 | L | ⬜ |
-| A1-03 | Relación a facturar y agrupación (FEL-01/02) | A1-01, T0-07 | L | ❓ Q-15 |
-| A1-04 | Borrador de factura con cálculo de impuestos (FEL-04..07, 17) | A1-03, A0-06, A0-07 | L | ⬜ |
-| A1-05 | Emitir, conectar con el eje de cobro y trazabilidad (FEL-10) | A1-02, A1-04 | M | ⬜ |
-| A1-06 | Envío al cliente (FEL-16) | A1-05 | S | ⬜ |
-| A1-07 | Rechazos, reenvíos y eventos DIAN (FEL-12, FEL-19) | A1-05 | M | ⬜ |
+| A0-03 | Cliente HTTP de Factus + humo contra sandbox | A0-01 | M | ✅ 27-sep (local) |
+| A0-04 | Utilidad de dinero + catálogos DIAN (países, municipios, pagos, documentos, unidades) | A0-03 | M | ✅ 27-sep (local; el endpoint de lectura pasa a A0-09) |
+| A0-05 | Terceros (PAR-03) | A0-04 | L | ✅ 27-sep (local; API + navegador headless) |
+| A0-06 | Productos y servicios + tarifas de venta por pagador | A0-05 | M | ✅ 27-sep (local; tratamiento IVA sigue en Q-14) |
+| A0-07 | Retenciones, autorretención, UVT y descuento comercial por pagador | A0-05 | M | ✅ 27-sep (local; UVT vacía a propósito: la carga la contadora) |
+| A0-08 | Resoluciones de numeración (FEL-13) | A0-03 | M | ✅ 27-sep backend (sincroniza con sandbox; alertas probadas); pantalla en A0-10 |
+| A0-09 | Ficha del emisor + vigencia del paquete/certificado (FEL-14) | A0-04 | S | ✅ 27-sep backend (+ GET /parametros/catalogos); pantalla en A0-10; dirección sigue en Q-21 |
+| A0-10 | Pantalla de Parametrización + permisos + menú | A0-05..09 | M | ✅ 27-sep (local; el encabezado "Finanzas" se hace al juntar con T0-14) |
+| A1-01 | Esquema de documentos electrónicos | A0-10 | M | ✅ 27-sep (local; triggers que impiden dos facturas VALIDADO sobre la misma orden) |
+| A1-02 | Adaptador Factus: factura de venta | A1-01 | L | ✅ 27-sep (FE-775 y FE-781 validadas en sandbox con CUFE; `calculo.js` cuadra al centavo) |
+| A1-03 | Relación a facturar y agrupación (FEL-01/02) | A1-01, T0-07 | L | ✅ 28-sep backend con el supuesto de Q-15 (local; sin pantalla: es A1-08; ❓ Q-15 sigue abierta) |
+| A1-04 | Borrador de factura con cálculo de impuestos (FEL-04..07, 17) | A1-03, A0-06, A0-07 | L | ✅ 28-sep backend (local; ver bitácora) |
+| A1-05 | Emitir, conectar con el eje de cobro y trazabilidad (FEL-10) | A1-02, A1-04 | M | ✅ 28-sep, probado en el sandbox real de Factus (ver bitácora) |
+| A1-06 | Envío al cliente (FEL-16) | A1-05 | S | ✅ 28-sep (local; ver bitácora) |
+| A1-07 | Rechazos, reenvíos y eventos DIAN (FEL-12, FEL-19) | A1-05 | M | ✅ 28-sep, probado en el sandbox real (ver bitácora) |
 | A1-08 | Pantalla de Facturación | A1-03..07 | L | ⬜ |
 | A2-01 | Nota crédito (FEL-11) | A1-05 | M | ⬜ |
 | A3-01 | Órdenes manuales para privados (pagador sin ARL) | A0-05 | L | ⬜ |
@@ -896,12 +1031,31 @@ en la BD; en una orden ya cobrada, no cambia y avisa.
 
 ---
 
+### T0-18 · Ediciones de la OS que se revierten al recargar · M · ⬜
+
+**Hallazgo del ejecutor de T0-05 (27-sep):** el detalle de `/ordenes` se construye desde
+el JSON del **borrador**, no desde las columnas de la OS. `drafts.routes.js`
+(`DRAFT_SELECT`) solo superpone algunas columnas de la OS (`empresa_nombre`,
+`tipo_orden`, viáticos y ahora AGR y tema). Cualquier otro campo editado con
+`PUT /orders/:id` (contacto, dirección, horas…) se guarda en la OS pero **al recargar
+se ve el valor viejo del borrador**.
+
+**Pasos:** 1) reproducir: editar la dirección de una OS de prueba, recargar, comparar
+la pantalla con `SELECT` a la OS; 2) si se confirma, hacer que el detalle de una orden
+ya materializada lea **todos** los campos de `CAMPOS_OS` desde la OS (superponer en
+`DRAFT_SELECT` o en `camposDesdeOS` del front), sin romper la confianza por campo;
+3) verificar con 3 campos distintos y con una orden todavía en borrador.
+
 ### T0-17 · Cierre de la Tanda 0 · S · ⬜
 
 1. Recorrer en la app (`:4001` + `:4000`) cada ficha con órdenes de prueba propias.
 2. Actualizar `HANDOFF.md` (§3, una "Tanda" nueva con lo construido y las trampas) y
    la tabla de estado de `CLAUDE.md` si cambió algún módulo (M4, M5, M10, M13).
-3. Pedirle al usuario aprobación para mezclar `correcciones-26-sep` y desplegar con
+3. **Antes de desplegar T0-10** (decisión del usuario): consulta de **solo lectura** en
+   producción del texto de `sst.tarifas_actividad_profesional.actividad` contra
+   `sst.tipos_orden.nombre`, para saber cuántas tarifas quedarán con `tipo_orden_id`
+   NULL tras el backfill y corregirlas desde la pantalla.
+4. Pedirle al usuario aprobación para mezclar `correcciones-26-sep` y desplegar con
    `docs/despliegue-vultr.md` (las migraciones de la tanda se aplican a mano en
    producción, en orden de fecha).
 
@@ -996,12 +1150,32 @@ sidebar, un grupo nuevo **"Finanzas"** bajo el de operación.
   sobre facturas recibidas `PATCH /v2/receptions/bills/:id/radian/events/:tipo`
   (030 acuse, 031 reclamo, 032 recibo, 033 aceptación expresa, 034 tácita; orden
   obligatorio). `send_email` apagable. Producto excluido con `is_excluded`.
+- **Hallazgos de la primera emisión real en sandbox (27-sep):**
+  - `payment_details.amount` debe ser el total **BRUTO** (subtotal + IVA), **no** el neto
+    de retenciones que imprime Siigo; Factus lo valida y rechaza el neto ("Esperado:
+    3.518.411,68 - Enviado: 3.131.386,40"). La retención se aplica al pagar.
+    `calculo.js` da los dos: el bruto va a Factus y el neto (`total_a_pagar`) a la
+    cartera (Fase B).
+  - `unit_measure_code`: de la tabla publicada solo validó **`94`** (unidad); `HUR` y
+    otros 7 alfabéticos dieron "código inválido". Por ahora todo va con `94` y las horas
+    en la descripción. **Pregunta para Factus** (añadida en §10.3).
+  - Endpoints confirmados: `POST /v2/bills/validate`, `GET /v2/bills/:number`,
+    `GET /v2/bills/:number/download-pdf`, `GET /v2/bills/:number/download-xml`.
 - **Restricción importante:** tras un evento de **aceptación** (expresa o tácita) no
   se pueden crear **notas crédito** sobre esa factura (pendiente de confirmar con
   Factus, pregunta 2 de `preguntas-factus-cumplimiento.md`). A2-01 debe consultar los
   eventos antes de ofrecer la NC.
-- **Catálogos:** Factus identifica municipios, unidades de medida, tributos y tipos de
-  documento con **ids propios**. Se guardan junto al código DIAN (A0-04).
+- **Catálogos (CORREGIDO 27-sep, verificado en sandbox):** la cuenta es **solo API v2**
+  (`/v1/*` da 403) y la v2 **no tiene ids ni endpoints de catálogo**: el payload usa
+  **códigos** (`municipality_code`, `unit_measure_code`, `payment_method_code`,
+  `identification_document_code`, `tribute_code`). Los catálogos salen de las tablas
+  de referencia publicadas en developers.factus.com.co; `factus_id` guarda el código que
+  Factus recibe. Códigos útiles: hora `HUR`, unidad `94`, mes `LUN`; forma de pago
+  crédito `2`; medio "Otro" `ZZZ`; tributo "No aplica" `ZZ`. Autorretenciones por ítem
+  en `withholding_taxes` (ejemplo "estandar-autorrentenciones" de su doc).
+- **Endpoints confirmados en sandbox (27-sep):** `POST /oauth/token` (password y
+  refresh), `GET /v2/companies`, `GET /v2/numbering-ranges` (paginado de 10, `?page=`).
+  El sandbox trae rangos SETP (factura), SEDS (DS), NC, ND, NA.
 - **Sandbox:** todo el desarrollo de A, B y C va contra sandbox. La cuenta de
   producción de JD&D no existe hasta S-01.
 
@@ -1603,7 +1777,7 @@ contradice el supuesto, abrir una tarea de ajuste en el tablero.
 | Q-10 | ¿Con qué NIT se va a facturar (JD&D actual o la sociedad nueva)? | El de JD&D; es configurable (A0-09) | S-03 |
 | Q-11 | Descuento comercial del 2 % a AXA: ¿siempre? ¿desde cuándo? FE-810 salió sin él. ¿Otros pagadores tienen descuento? | 2 % en todas las de AXA; nadie más | A0-07 |
 | Q-12 | ReteICA que practican al pagar: ¿tarifa de cada pagador? (vimos 5 ‰ Bolívar, 6 ‰ AXA) | Esas dos; editable | B3-01 |
-| Q-13 | ¿La Equidad sigue siendo cliente? Envíen una factura reciente de **Bolívar** (NIT y dirección) | La Equidad inactiva; Bolívar sin tercero hasta recibirla | A0-05 (parcial) |
+| Q-13 | ¿La Equidad sigue siendo cliente? Confirmar la razón social y dirección con que se le factura a **Bolívar** | La Equidad inactiva. Bolívar: NIT **860.002.503-2**, Av. El Dorado N. 68B-31, Bogotá (pie del formato oficial AT-031, visto el 27-sep); razón social la del auxiliar | A0-05 |
 | Q-14 | Servicios a ARL: ¿**exentos** o **excluidos** de IVA? (D-17) | Exentos | S-04 |
 | Q-15 | Bolívar: ¿una factura por prefactura? | Sí | A1-03 |
 | Q-16 | Confirmar la lista de precios de venta por ARL y actividad (§3.4) | La de §3.4 | A0-06 |
@@ -1614,6 +1788,8 @@ contradice el supuesto, abrir una tarea de ajuste en el tablero.
 | Q-22 | Envíen el **PUC completo** exportado de Siigo y el balance de prueba por tercero (solo llegó el auxiliar de septiembre) | Se desarrolla con las 80 cuentas del auxiliar | B0-01 (carga real) |
 | Q-23 | Siigo pone vencimiento = fecha de emisión en las facturas a crédito. ¿Cuál es el plazo real de pago de cada pagador? | 30 días | B3-01 (antigüedad) |
 | Q-24 | ¿Qué exige cada plataforma de ARL para radicar (un PDF, un ZIP, tamaño máximo, orden de los documentos)? Plantilla del paz y salvo | Un PDF único ≤ 10 MB | A6-01 |
+| Q-25 | Plantilla de descripción de línea: ¿de qué campo sale `{numero_autorizacion}` (Colmena) para cada orden? Hoy no hay ninguno extraído con ese nombre | Queda vacío en la descripción, editable a mano | A1-04 (cosmético) |
+| Q-26 | Aceptación tácita (034): ¿el EMISOR puede/debe registrarla vía `POST /v2/bills/:number/radian/events/034`, o es automática de la DIAN pasados 3 días hábiles del evento 032? La doc pública solo confirma la escritura para facturas RECIBIDAS (`PATCH /v2/receptions/bills/:id/...`). Sin confirmar con Factus | Orbita la deja como un apunte INTERNO (nunca llama a Factus); si la sincronización de eventos trae un 034 real de la DIAN, ese manda | A1-07 |
 
 Siguen vigentes, sin repetirlas aquí, las de `guia-reunion-jdd.md` §3 que no se
 respondieron (A1 exógena → ya quedó **fuera** en la cotización; A3 bancos y formato del
@@ -1623,7 +1799,7 @@ extracto → B7-01; B1 disponibilidad de la contadora; B3 acceso a la DIAN).
 
 Las 10 de `preguntas-factus-cumplimiento.md` (sección 3). Las que bloquean tareas:
 **2** (notas crédito tras aceptación → A2-01), **3-5 y 10** (recepción y RADIAN →
-C8-01), nómina en sandbox (→ A5-01), **8** (migrar la resolución de Siigo → S-02).
+C8-01), nómina en sandbox (→ A5-01), **8** (migrar la resolución de Siigo → S-02). **Nueva (27-sep):** ¿qué `unit_measure_code` acepta la v2 para **horas**? `HUR` se rechaza en sandbox (→ A1-04, cosmético: hoy va `94`).
 
 ### 10.4 Riesgos
 
@@ -1634,6 +1810,7 @@ C8-01), nómina en sandbox (→ A5-01), **8** (migrar la resolución de Siigo �
 | R-03 | Cambio de NIT/sociedad | Emisor 100 % configurable (A0-09); nada en duro |
 | R-04 | `arl_id` nullable rompe consultas existentes | Inventario de usos antes de cambiar (A3-01) y prueba de importación AXA + SIPAB |
 | R-05 | Criterios contables sin validar (no somos contadores) | Reglas editables (B2-01) + mes en paralelo (B11-01) |
+| R-07 | Si `/auth/me` falla (p. ej. CORS mal puesto), el front muestra **todo** el menú a cualquier rol (respaldo a prueba de fallos de `auth.service.ts`). Lo destapó la prueba de A0-10 | Revisar al desplegar que `CORS_ORIGIN` sea el correcto; confirmar que **cada ruta del backend** exige rol (el menú no es la barrera) |
 | R-06 | Precio fijo ($5,7M) con alcance que puede crecer | Todo pedido nuevo va a esta tabla como "fuera de alcance" hasta que el usuario lo acepte |
 
 ---
@@ -1644,4 +1821,38 @@ Una línea por sesión de trabajo: fecha · tarea(s) · qué se hizo · qué que
 
 | Fecha | Tareas | Qué pasó | Commit |
 |---|---|---|---|
+| 28-sep-2026 | T0-09/T0-01 | Revisadas por la sesión directora (captura 20 del modal con los 5 resultados; `jdd_dev` limpio). Nueva T0-19. | local |
+| 27-sep-2026 | A0-07/A1-01/A1-02 | Verificadas por la sesión directora (verificar-calculo re-ejecutado). Primera emisión real en sandbox. Hallazgos en §5.4 (bruto vs neto, unidad de hora). | local |
+| 27-sep-2026 | T0-08/11/12/13 | Verificadas por la sesión directora (PNG del AT-031 de dos sesiones y del PSP-F-007 con 8/4 y fecha). Aceptado: "Tipo de actividad" normalizado en la relación. | local |
+| 27-sep-2026 | T0-06/10/14/16 | Verificadas por la sesión directora (capturas 10 y 18). | local |
+| 27-sep-2026 | A0-05/06/07/10 | Verificadas por la sesión directora (consulta a jdd_dev + captura de Impuestos). Bugs corregidos por el ejecutor: índice único de tarifas sin `unidad` y ReteICA admitida como retención de factura. Queda en jdd_dev una base para A1 (2 productos, 4 tarifas, 4 retenciones, condiciones de AXA y Bolívar). Riesgo nuevo R-07. | local |
+| 27-sep-2026 | A0-01/05/08/09 | Verificadas por la sesión directora (consulta a jdd_dev: 5 terceros con DV, 3 ARL enlazadas, 5 rangos del sandbox). Aceptado: fábrica `proveedorFE()` en `facturacion/index.js`; responsabilidades del RUT (emisor) y de Factus (terceros) en catálogos separados; /terceros como vista propia del sidebar. Choque previsto al juntar: `layout/shell/shell.ts` lo tocan T0-14 y A0-05. | local |
+| 27-sep-2026 | T0-07/15/18 | Verificadas por la sesión directora (capturas 01 y 04). Reglas añadidas y aceptadas: FACTURADA no vuelve a PENDIENTE; prefactura solo Bolívar, solo dígitos ≤ 12; en un mismo Guardar se puede finalizar y aprobar. La tabla de /ordenes desborda a 1440 px → se compacta con T0-06. | local |
+| 27-sep-2026 | A0-01/03/04 | Verificadas por la sesión directora (scripts de NIT y dinero re-ejecutados, municipios con factus_id en jdd_dev). Desviación aceptada: Factus v2 usa códigos, no ids. Se crea el worktree del front `jdd_consultores_app-fase-a`. | local |
+| 27-sep-2026 | T0-03/04/05 | Verificadas por la sesión directora: diff revisado, AT-031 de prueba con AGR y tema en su casilla. Se abre T0-18. | 593cab8 (T0-03); resto local |
 | 27-sep-2026 | — | Plan escrito a partir de la cotización, la v2, `DocFacturacion/` y las correcciones del 26-sep. Decisiones del usuario en §0. | — |
+| 27-sep-2026 | T0-03, T0-04, T0-05 | Sesión `jdd-consultores-app-74`, rama `correcciones-26-sep` en los dos repos. **T0-03:** la capacitación de Colmena ya no adjunta el `.xls` ni el `.pptx` (supuesto Q-03). **T0-04/T0-05:** migración `2026-09-27-agr-y-tema.sql` (columnas `asesor_gestion_riesgo` y `tema_actividad` + vista recreada), aplicada a `jdd_dev`; el AGR sale del SIPAB al borrador, a la OS y a la casilla 16 del AT-031; el tema manual va a "Temas desarrollados" (AT-031) y "Tema y/o actividad" (AT-028); campos en el detalle/edición de la orden y en la vista previa de Importar. Verificado con OS de prueba (ROLLBACK/borrada), PDF revisados a ojo, endpoints en :4010, `typecheck` y `ng build`. Sin ✅ en el tablero (lo marca quien revisa). | T0-03 `593cab8` en sst_ws; el resto sin commitear |
+| 27-sep-2026 | A0-01, A0-03, A0-04 | Sesión `jdd-consultores-app-a1`, worktree `sst_ws-fase-a` (rama `fase-a-facturacion`), **sin commitear**. **A0-01:** `nit.js` portado a ESM desde el de ADMIN_APP (difería en API y en el manejo de errores); los 5 NIT dan 4/9/3/1/1. **A0-03:** `factus.cliente.js` + `scripts/factus-humo.mjs` (sandbox: token, empresa, 6 rangos). **A0-04:** `dinero.js` (3 casos de la ficha + bordes), 8 tablas de catálogos (migración 2026-09-27 aplicada en `jdd_dev`) y `sembrar-catalogos-dian.mjs` (1.122 municipios; Pasto 52001 y Bogotá 11001 con `factus_id`). ⚠️ **Hallazgos:** la cuenta de Factus es **solo v2** y la v2 **no expone catálogos por API** ni tiene ids propios: todo va por **código** (`municipality_code`, `unit_measure_code`…), así que `factus_id` = ese código y la siembra sale de las tablas públicas de su documentación, cruzadas con el sandbox. La unidad **hora** es `HUR`, no `414`. Falta el endpoint `GET /parametros/catalogos/:nombre` de A0-04 (no estaba en el encargo) y el espejo `core/nit.ts`. | — |
+| 27-sep-2026 | T0-18, T0-07, T0-15 | Sesión `jdd-consultores-app-74`, rama `correcciones-26-sep`, **sin commitear**. **T0-18:** `DRAFT_SELECT` trae `os_campos` (todas las columnas editables de la OS) y `toServiceOrder` las superpone con `camposDesdeOS`: la tabla (NIT, horas), el vencimiento y la duración de la agenda ya no leen el JSON del borrador. **T0-07:** migración `2026-09-27-estado-arl.sql` (enum `estado_arl`, 4 columnas, `historial_estado_arl`, vista recreada), `PATCH /orders/estado-arl` (todo o nada), `PATCH /orders/cobro` exige APROBADO, columna/filtro/atajo "Pendiente por facturar" y bloque "Aprobación de la ARL". **T0-15:** se quitó "Aplicar cambio"; Guardar = PUT + estado + estado ARL, con el campo rechazado en rojo. Verificado por HTTP (:4000), en Chrome (puppeteer) y con `typecheck`/`ng build`; datos de prueba borrados. | sin commit |
+| 27-sep-2026 | T0-10, T0-16, T0-06, T0-14 | Sesión `jdd-consultores-app-74`, rama `correcciones-26-sep`, **sin commitear**. **T0-10:** diagnóstico confirmado (hipótesis de la ficha); migración `2026-09-27-tarifa-por-tipo.sql` (`sst.norm_texto()` sin unaccent, `tarifas_actividad_profesional.tipo_orden_id` + backfill), la tarifa se busca por id con respaldo por nombre normalizado en `valorHoraDeOrden` y `resolverValorHora`; alta de tarifa exige un tipo del catálogo; la pantalla de tarifas marca las huérfanas ("Sin tipo del catálogo"). **T0-16:** `PUT /orders/:id` recalcula `valor_hora_cobro`/`valor_hora_origen` al cambiar el tipo si hay profesional asignado, salvo que la orden esté en una cuenta de cobro generada o aceptada (devuelve aviso); la etiqueta del valor cambia en el formulario al elegir otro tipo. **T0-06:** `etiquetaEmpresa()` en `core/bolivar.ts`, usada en la tabla de `/ordenes`, el detalle, "Órdenes recientes" del dashboard y el Excel/PDF/tabla de la pestaña Órdenes de informes; el Excel de esa pestaña ya tenía columnas separadas de cronograma/secuencia. Aprovechado para compactar la tabla de `/ordenes` (NIT bajo la razón social, vencimiento en una línea con los días en el `title`, padding y pills propios de `.ord-table`): "Opciones" queda visible sin scroll a 1366 y 1440 px. **T0-14:** sidebar plegable con un botón en la barra superior, persistido en `localStorage`; en móvil (≤820 px) abre un panel completo sobre un fondo oscuro y se cierra al navegar. Verificado con ROLLBACK, HTTP contra una instancia temporal, capturas en Chrome (puppeteer) a 1366/1440/375 px y `typecheck`/`ng build`; datos de prueba borrados. | sin commit |
+| 27-sep-2026 | T0-13, T0-11, T0-12, T0-08 | Sesión `jdd-consultores-app-74`, rama `correcciones-26-sep`, **sin commitear**. **T0-13:** `at031` pasa a `alcance:'orden'` (un solo documento aunque haya varios días); `tramoDe()` calcula fecha/hora de la primera y la última sesión y añade "Sesiones: DD/MM HH:MM-HH:MM; …" en Observaciones (casilla 42) solo si hay más de un día. **T0-11:** los tres PDF de Colmena (PSP-F-007/006/010) llevan "Fecha de impresión: DD/MM/AAAA" en 7 pt, margen inferior derecho, sin tocar las celdas DD/MM/AAAA existentes. **T0-12:** nueva casilla `cantidad_ejecutada` en el PSP-F-007 = horas de la sesión; se confirmó que AT-028 y AXA ya usaban `sesion.horas`. **T0-08:** `GET /reports/relacion-bolivar` (mismas 10 columnas y orden que el Excel de JD&D, corte por defecto 16 del mes anterior al 15 del actual) + botón "Relación para Bolívar (Excel)" en Informes → Cobro; sin `valor_unitario` la celda y el total quedan vacíos y resaltados, nunca un valor inventado. Verificado con órdenes/franjas de prueba (PNG de los 3 AT-028/AT-031 y de los 3 PSP-F-007), comparación de encabezados y total del Excel contra el original, y `typecheck`/`ng build`; datos de prueba borrados. | sin commit |
+| 28-sep-2026 | A0-07 (fin), A1-01, A1-02 | Sesión `jdd-consultores-app-a1`, worktree `sst_ws-fase-a` + `jdd_consultores_app-fase-a` (rama `fase-a-facturacion`), sin commitear. **A0-07 (fin):** formulario de condiciones de facturación dentro de la ficha del tercero pagador en /terceros (retenciones en factura, ReteICA al pagar, descuento, plazo, plantilla de descripción con las variables de A1-04) y formato es-CO en /parametrizacion (UVT en pesos, tarifas en `%`, ReteICA en `‰`). **UVT:** el 49.900 del lote 3 era un valor de PRUEBA mío, sin fuente oficial — lo BORRÉ; `sst.uvt` queda vacía a propósito hasta que la contadora la cargue. **A1-01:** 5 tablas (documentos_electronicos, documento_items, documento_item_tributos, documento_eventos, documento_ordenes), `tipo`/`estado` como TEXT+CHECK (no ENUM); añadí un índice único parcial + 2 triggers (no pedidos explícitamente, pero exigidos por la propia tabla) que impiden que dos facturas VALIDADO se disputen la misma orden — probado con ROLLBACK, jdd_dev queda en 0 filas. **A1-02:** `calculo.js` puro (reparto del descuento a prorrata por mayor resto) reproduce FE-775 y FE-781 al centavo; adaptador Factus con emitirFactura/consultarEstado/descargarPdf/descargarXml, **probado con emisión REAL en el sandbox** (dos corridas, la 2ª ya con los nombres de campo corregidos): FE-775 → número **SETP990021433**, CUFE `81e4f44b7313e16c0e785cad1e7f112e614a15315a22888be5089c8cd5bec05fab459e30f2b32730d365b9c51b86da02`; FE-781 → número **SETP990021434**, CUFE `80b9ae2967f23a967f461a54181bef3628ce0cf99ff4db1a08c6c69bb160074a8ae9a9a3dd384c42e3c1af2e23efb181` (más una 1ª corrida también validada: SETP990021431/CUFE `4808f97d…d387778cfcef5d5924ae56686d338069` y SETP990021432/CUFE `102c6cae…3479e1854d71fb3`; las 4 existen en el sandbox, ninguna se puede borrar por estar VALIDADO). **Hallazgo (no forzado, reportado):** Factus exige el total BRUTO en `payment_details.amount` (subtotal+IVA, 3.518.411,68 en FE-775) y lo rechaza si se manda el NETO que imprime Siigo (3.131.386,40, con el retefuente restado) — mensaje exacto: "La suma de todos los detalles de pago no es igual al total de la factura. Esperado: 3.518.411,68 - Enviado: 3.131.386,40". Las dos facturas CUADRARON AL CENTAVO contra Factus una vez enviado el bruto; `calculo.js` sigue devolviendo el neto (3.131.386,40 y 2.075.820,01) porque es lo que necesita Fase B. Segundo hallazgo: `unit_measure_code` de Factus v2 no acepta `HUR` (hora) pese a estar en su propia documentación (8 códigos alfabéticos probados, todos rechazados); se usa `94` (unidad) con la hora en la descripción, sin resolver. Verificado con `node scripts/verificar-calculo.mjs`, `typecheck` y `ng build`. Datos de prueba (usuarios, UVT, notificaciones) borrados; base de A1 (2 productos, 4 tarifas, 4 retenciones, 2 condiciones, 5 terceros) se deja sembrada en jdd_dev. Servidores de prueba (:4020, :4021) cerrados. | sin commit |
+| 28-sep-2026 | T0-09, T0-01 | Sesión `jdd-consultores-app-74`, rama `correcciones-26-sep`, **sin commitear**. **Cierre de la Tanda 0 grande** (instrucción de la sesión directora: terminar y dejarlo todo escrito porque podía quedarse sin tokens). **T0-09:** módulo nuevo `src/modules/prefacturas/` (esquema Zod propio, prompt propio, `PdfExtractor` + OpenAI reutilizados como glue, sin tocar el servicio TS "congelado" de extracción de OS). Migración `2026-09-27-prefacturas.sql` (tablas `sst.prefacturas` y `sst.prefactura_filas`, exactamente con las columnas de la ficha), aplicada a jdd_dev. `POST /prefacturas/previsualizar` (sube el PDF, extrae, cruza por `(codigo_cronograma, secuencia)` + ARL Bolívar, no escribe nada) y `POST /prefacturas/aplicar` (una transacción: upsert de encabezado+filas por `numero_prefactura` — recargar no duplica —, revalida cada fila EN ESE MOMENTO antes de aprobarla, pone `estado_arl=APROBADO` + `numero_prefactura` con `origen=PREFACTURA` en `historial_estado_arl`, reaplicar no repite fila de historial). Modal en `/ordenes` (botón "Cargar prefactura"): tabla con las 5 pills de resultado, checkbox por fila (solo "Encontrada" marcada por defecto), aviso de "cuadra"/"no cuadra" y de "ya cargada". **T0-01:** recorrido completo del portal de soportes a 375 px (asignar → enlace del correo con `EMAIL_DRIVER=console` → subir 3 archivos → enviar → confirmación); sin fricciones graves — detalle abajo. Escrito `docs/guia-carga-soportes.md`. Sin cambios de código en esta ficha, como pedía. | sin commit |
+
+**T0-09 — extracción con IA (gasta dinero; se hizo con cuidado):** las 3 prefacturas reales de `DocFacturacion/PREFACTURAS/` (160441, 160680, 160743) se extrajeron **una sola vez cada una** y dieron, al primer intento, exactamente lo que pide el criterio de aceptación: **13 + 3 + 10 filas** y totales **5.559.703 / 1.738.828 / 1.429.140**, los tres con `cuadra: true` (el control determinista de la suma pasó sin ajustes). Las salidas quedaron cacheadas en el scratchpad y se reusaron para todo el resto de la verificación (cruce, aplicar, navegador), salvo 2 llamadas más que sí eran necesarias: una por un reinicio de `--watch` a mitad de una petición (infraestructura, no repetición deliberada) y otra para probar en vivo el aviso de "ya cargada" (que se calcula dentro del propio endpoint, no se puede fingir con la caché). En total, **5 llamadas reales a OpenAI** para todo T0-09.
+
+**T0-09 — verificación:** con 4 órdenes de prueba (creadas con `codigo_cronograma`/`secuencia` reales de la prefactura 160441, en los 4 estados que producen cada resultado del cruce) se probó por HTTP contra una instancia temporal: las 5 categorías de resultado (encontrada, valor_distinto, ya_tiene_otra_prefactura, no_finalizada, no_encontrada) clasifican correctamente; aplicar aprueba las filas marcadas y dejó el historial con `origen=PREFACTURA`; reaplicar la misma prefactura no duplica la fila de historial; la recarga duplicada avisa con fecha y usuario. Después, el mismo flujo completo se repitió en Chrome real (headless, vía puppeteer — la extensión Claude in Chrome sigue sin conectar): capturas del modal con las 5 pills, el aviso de "cuadra", el aviso de "ya cargada", y el toast + la orden ya no visible en la bandeja de prueba tras aplicar (capturas en el scratchpad, `shots/20` a `23`). `npm run typecheck` y `npx ng build` sin errores. Toda la BD de prueba (las 4 órdenes, sus historiales, la prefactura 160441 y sus 13 filas) quedó borrada al terminar.
+
+**T0-01 — hallazgos (para el usuario, Q-01):** con una orden de prueba real (Bolívar, capacitación presencial) no aparecieron fricciones graves. El formulario es claro a 375 px, los nombres de casilla ya son legibles ("Acta de visita firmada", "Lista de asistencia", "Registro fotográfico / evidencias" — no los nombres técnicos internos), el botón de enviar permanece deshabilitado y dice qué falta hasta que las 3 casillas tienen archivo, y la confirmación es clara ("Soportes enviados con éxito", estado EJECUTADA). Dos observaciones menores, ninguna bloqueante: (1) "Acta de visita firmada" es un nombre genérico para lo que en Bolívar es en realidad el AT-031 (Seguimiento de Reuniones y Actividades); un asesor nuevo podría no reconocer de inmediato que ahí va ESE formato. (2) tras elegir el archivo, la casilla muestra el nombre crudo del archivo del celular (p. ej. "IMG_2026.jpg"), no una confirmación más amigable tipo "Archivo cargado ✓". No se tocó código: la ficha lo pedía así.
+
+**Lo que falta de verdad (nada a medias, pero esto no se hizo):** T0-09 no se probó con un PDF de prefactura MAL formado o con datos atípicos fuera de los 3 reales de JD&D (p. ej. una fila sin NIT, un plan "ALOJA ALIMENTA" con más de una fila de valor grande) — el prompt tiene instrucciones para esos casos pero no se vio ninguno en la práctica. Tampoco se probó `POST /prefacturas/aplicar` con un PDF real distinto de 160441 (160680 y 160743 solo se extrajeron, no se cruzaron ni se aplicaron, para no gastar más llamadas de las necesarias). El botón "Cargar prefactura" no se restringió a un rol específico en el frontend (el backend sí exige admin o contador); cualquiera que vea /ordenes lo ve. T0-01 es observación pura: si el cliente confirma que esas dos fricciones importan, falta ficha de código para T0-15-style (renombrar la casilla, mejorar la confirmación de archivo).
+
+**A1-03 (28-sep-2026) —** Sesión directa (sin ejecutor), worktree `sst_ws-fase-a` (rama `fase-a-facturacion`), **sin commitear** (el usuario ratificó no commitear). **Módulo nuevo** `src/modules/facturacion/relacion.service.js` + `facturacion.routes.js` (montado en `/facturacion`): `GET /facturacion/por-facturar` (por pagador; admin/contador/auditor), `POST /facturacion/seleccion/validar` (admin/contador; lo reutilizará A1-04 para crear el borrador) y `GET /facturacion/relacion.xlsx` (la relación de T0-08 generalizada a cualquier pagador; Bolívar exige `prefactura_id`). **Reglas:** candidata = FINALIZADA + `estado_cobro` NO FACTURADA + sin factura VALIDADO; facturable = además `estado_arl` APROBADO y no estar ya en un borrador; las no facturables se listan con su motivo. **Bolívar:** un grupo por prefactura con `valor_a_facturar` como precio (manda sobre la tarifa); la fila sin orden en Orbita es facturable pero NO se marca sola (la prefactura trae órdenes de otros proveedores); las candidatas de Bolívar sin prefactura cargada van a un grupo informativo. **Resto de pagadores:** se eligen órdenes; valor de referencia = tarifa de venta (HORA o UNIDAD según tenga horas) → valor del documento de la ARL → vacío (nunca se inventa). **Verificación:** `scripts/verificar-relacion-facturar.mjs` (28 comprobaciones, todo con `ROLLBACK`, 0 residuos), endpoints por HTTP en :4020 (200/401/403/400, Excel abierto con exceljs), `npm run typecheck` limpio. **Ojo al juntar ramas:** este código lee `sst.prefacturas`, `sst.prefactura_filas` y `ordenes_servicio.estado_arl`, que solo existen en el código de la rama `correcciones-26-sep` (en `jdd_dev` ya están migradas); hasta juntar las ramas, `schema.sql` de `fase-a-facturacion` no las declara. Deuda menor: `SQL_CANDIDATAS` usa `esBolivar()` por nombre (como el resto del repo), no un indicador propio.
+
+**A1-04 (28-sep-2026) —** Sesión directa, worktree `sst_ws-fase-a` (rama `fase-a-facturacion`), **sin commitear**. **Módulo nuevo** `src/modules/facturacion/borrador.service.js`, montado en `/facturacion/borradores` (`facturacion.routes.js`): `POST` crea el borrador desde la selección de A1-03 (revalida dentro de la misma transacción, no se fía de lo que llegó del navegador), `GET` lista y trae el detalle con los totales **recalculados en vivo** mientras sigue en BORRADOR, `PUT` reemplaza ítems/descuento/retenciones/fechas/observaciones y `DELETE` solo si sigue en BORRADOR. **Regla de producto:** a la ARL se le factura con el producto EXENTO, a un pagador que no es ARL con el GRAVADO 19 % (A0-06 solo tiene esos dos sembrados); si falta la tarifa de venta del pagador, **rechaza crear el borrador** en vez de inventar una cifra. **Bolívar:** la línea de una fila de prefactura es 1 unidad por el `valor_a_facturar` íntegro (no por hora: prorratear un paquete que ya trae viáticos inventaría un valor-hora que la prefactura no dice). **Unidad de medida:** siempre código DIAN `94`, nunca `HUR` (hallazgo del 27-sep, §10.3 del plan: el sandbox de Factus rechaza `HUR`). **Descripción de línea:** interpola `condiciones_pagador.formato_descripcion` con las variables de la ficha; `{numero_autorizacion}` queda vacía a propósito — **nueva pregunta Q-25**, sin campo confirmado en `ordenes_servicio` (ver §10). **Retenciones:** se calculan al nivel del documento (como en las facturas reales, una sola línea de retefuente, no prorrateada) y se guardan colgadas del último ítem porque el esquema exige `item_id` no nulo en `documento_item_tributos`; deuda documentada en el propio código. **Verificación:** `scripts/verificar-borrador-factura.mjs` (24 comprobaciones, todo con `ROLLBACK` en una sola transacción — `crearBorrador`/`actualizarBorrador`/`eliminarBorrador` ahora aceptan un `dbClient` opcional para esto, mismo patrón que `relacion.service.js`), reprodujo AXA (descuento 2 % + retefuente 11 % + autorretención 1,1 % informativa, cuadra con `calculo.js`) y confirmó que Bolívar **ya tiene** una condición real sembrada (retefuente 11 %, A0-07) — el supuesto inicial de "sin retención" del script estaba mal, no el código. Probado también por HTTP en :4021 (crear/listar/detalle/editar/borrar, 200 en cada paso, datos de prueba limpiados). `npm run typecheck` limpio.
+
+**A1-05 (28-sep-2026) —** Sesión directa, worktree `sst_ws-fase-a` (rama `fase-a-facturacion`), **sin commitear**. **Módulo nuevo** `src/modules/facturacion/emision.service.js`, montado en `POST /facturacion/documentos/:id/emitir` y `POST /facturacion/documentos/:id/consultar-estado`. **Diseño en dos fases, aposta:** (1) valida (tercero completo incluido el DV, resolución activa y vigente, totales > 0, órdenes aún libres con `FOR UPDATE`), pasa a ENVIANDO **y confirma esa transacción** antes de llamar a Factus — si el proceso muere a mitad de camino, el documento queda ENVIANDO, nunca a medio escribir; (2) llama al adaptador FUERA de cualquier transacción abierta y resuelve el resultado en una transacción nueva: VALIDADO guarda número/CUFE/QR/PDF/XML (descargados y subidos a `storage.service.js`) y marca cada orden del documento como FACTURADA + fila en `historial_cobro_orden` con el `documento_id` nuevo (columna añadida por la migración `2026-09-28-historial-cobro-documento.sql`, ya aplicada en `jdd_dev`); RECHAZADO guarda los mensajes de la DIAN en `errores` y no toca las órdenes; sin decisión ("la DIAN va lenta") o error de red, el documento **queda en ENVIANDO** y el evento lo dice, sin lanzar un error duro (`{pendiente: true}`, HTTP 202). **`reconciliarDocumento`** (para un ENVIANDO): con número, consulta el estado real (se enriqueció `factus.adaptador.consultarEstado` para que devuelva también CUFE/QR/totales, no solo el estado, y así una reconciliación no necesite volver a emitir); sin número, reintenta con el **mismo** `reference_code` (nunca uno nuevo: es la clave de idempotencia). **`PATCH /orders/cobro` (orders.routes.js, ya existía de la tanda 22-ago) ahora rechaza desmarcar** una orden cuya factura VALIDADA es un documento de Orbita (`documento_ordenes.documento_validado_id`); la respuesta lista esas órdenes aparte (`bloqueadas_por_factura_electronica`) en vez de fallar todo el lote — corregirla es cosa de una nota crédito (A2-01, sin construir). ⚠️ **Esta modificación vive en la rama `fase-a-facturacion` y no en `correcciones-26-sep`**, donde también existe `orders.routes.js` con los cambios de T0-07: hay que volver a aplicarla (o resolverla como conflicto de verdad) al juntar las dos ramas. **Dos bugs reales que solo salieron al probar contra el sandbox de verdad, no en las comprobaciones con datos falsos:** (1) mezclar `d.*` con el `TERCERO_SELECT` de `terceros.service.js` (que trae `t.id` sin alias) hacía que la columna `id` del TERCERO pisara la del DOCUMENTO en el objeto que arma `pg` — se cambió a columnas explícitas, sin colisión; (2) el `DOCUMENTO_SELECT` de `borrador.service.js` (reutilizado por `obtenerBorrador`, que es el que arma la respuesta de todo el módulo) nunca incluía `pdf_path`/`xml_path`/`qr_url`/`errores`: la factura se validaba, el PDF y el XML se descargaban y guardaban bien, pero la respuesta de la API nunca los mostraba — ya corregido. **Hallazgo nuevo, sin relación con la ficha:** `npm run typecheck` (`tsc --noEmit`) **no cubre nada de `src/modules/**`** — su `tsconfig.json` solo incluye `src/domain|validation|application|infrastructure`, carpetas que este código no usa; "typecheck limpio" en las bitácoras de A1-01 a A1-04 no protegió nada de lo construido ahí (de hecho dejó pasar un error de sintaxis real en esta misma ficha). La verificación real de sintaxis en adelante es `node --check <archivo>`. **Verificación:** `scripts/verificar-emision-factura.mjs`, contra el **sandbox real de Factus** (no solo `ROLLBACK`, porque emitir habla con un proveedor externo): crea una orden desechable para AXA (a la que le faltaba el correo de facturación — dato real, se completó para la prueba y se restauró después, regla de CLAUDE.md §5), la factura quedó VALIDADO con CUFE y número reales, PDF y XML se descargaron y se confirmó que existen en el storage, la orden pasó a FACTURADA con el historial enlazado al documento, reemitir un documento VALIDADO se rechaza sin tocar la red, y `PATCH /orders/cobro` por HTTP de verdad (instancia temporal con `createApp()`, necesita correr con `node --import tsx` porque `src/app.js` arrastra módulos `.ts`) confirmó que la orden queda bloqueada y no se desmarca. Limpieza completa: documento y orden borrados, correo de AXA restaurado, PDF/XML retirados del storage — la factura VALIDADA **no** se borra en el sandbox de Factus (sería alterar un documento fiscal, mismo criterio que `factus-borrar-prueba.mjs`). Probado también por HTTP con Colmena (permiso 403 para auditor; 400 antes de llamar a Factus por falta de correo, sin gastar una llamada real).
+
+**A1-06 (28-sep-2026) —** Sesión directa, worktree `sst_ws-fase-a` (rama `fase-a-facturacion`), **sin commitear**. **Módulo nuevo** `src/modules/facturacion/envio.service.js`, montado en `POST /facturacion/documentos/:id/reenviar`. Dos canales, como pide la ficha: (1) se cambió `enviarCorreo: false → true` en `emision.service.js` — al VALIDAR, Factus manda ahora su propio correo al `correo_facturacion` del tercero (A1-05 ya exige que exista antes de emitir, nunca se manda "al aire"); (2) "Reenviar al cliente" usa el correo PROPIO de Orbita (`email.service.js` + `email-layout.service.js`, misma plantilla de marca que las cuentas de cobro de `billing.service.js`) con PDF y XML adjuntos, admite un `correo` alterno en el cuerpo sin tocar la ficha del tercero, y deja el evento `CORREO_ENVIADO`. Solo funciona sobre un documento VALIDADO con PDF/XML guardados. **Seguridad de las pruebas (instrucción explícita del usuario):** la única cuenta SMTP configurada en el repo es la real de JD&D (`redes.jddconsultores@gmail.com`, `EMAIL_FROM`) y el usuario pidió no usarla para este tipo de prueba, ni mandar nada a un cliente real. Verificación con `EMAIL_DRIVER=console` (nunca toca SMTP real, patrón ya establecido en el proyecto — CLAUDE.md §5): `scripts/verificar-envio-factura.mjs` arma un documento VALIDADO desechable con un PDF/XML de mentira en el storage (sin pasar por Factus: eso ya lo probó `verificar-emision-factura.mjs`), confirma que rechaza un BORRADOR y un documento sin correo, y que el "Para:" que imprime el driver console es `escalappsystem@gmail.com` (el correo de los propios desarrolladores) — nunca la identidad de JD&D ni un correo de cliente. Probado también por HTTP en :4023 con el mismo driver: 403 para auditor, 200 para contador con el override de correo.
+
+**A1-07 (28-sep-2026) —** Sesión directa, worktree `sst_ws-fase-a` (rama `fase-a-facturacion`), **sin commitear**. Tres piezas: **`corregirDocumento`** (`emision.service.js`, `POST /facturacion/documentos/:id/corregir`) — de RECHAZADO vuelve a BORRADOR con un `reference_code` **nuevo** (el rechazado queda "quemado" del lado de Factus) y conserva TODO el historial de eventos, incluido el rechazo original; se reemite después con `actualizarBorrador` + `emitirDocumento` de siempre. **`eventos.service.js`** — `consultarEventosDocumento` (`GET /v2/bills/:number/radian/events`, confirmado contra el sandbox: `{status,message,data:[]}`; los eventos se guardan en `documento_eventos` con prefijo `RADIAN_` y se deduplican por código+fecha) y `actualizarEventosEnLote` (facturas VALIDADAS de los últimos N días, 60 por defecto; una que falle no detiene a las demás). `obtenerBorrador` (`borrador.service.js`) ahora también devuelve `eventos` — es la línea de tiempo que pedía la ficha, antes invisible en la respuesta. **`marcarAceptacionTacita`** — ⚠️ **hallazgo importante, con pregunta nueva (Q-26):** la documentación pública de Factus para *escribir* un evento RADIAN (`PATCH /v2/receptions/bills/:id/radian/events/:tipo`) es del módulo de facturas RECIBIDAS (C8-01, Fase C), no del de las que EMITIMOS; y dice que la aceptación tácita (034) "ocurre automáticamente pasados 3 días hábiles" del lado de la DIAN, no algo que el emisor registre a mano. Un `POST /v2/bills/:number/radian/events/034` de prueba sí existe (422 pidiendo identidad de persona natural), pero su semántica para una factura propia no está confirmada. Por eso el "botón" de la ficha se implementó como un **apunte INTERNO de Orbita** (nunca llama a Factus): exige crédito, plazo de pago vencido y que no haya ya un reclamo (031) o aceptación (033, o el propio apunte) registrados — útil para la Fase B mientras no haya confirmación. **Verificación:** `scripts/verificar-eventos-factura.mjs`, contra el **sandbox real**: se provoca un rechazo genuino (un ARL/tercero/municipio **desechables**, creados y borrados por el propio script — nunca se tocan los catálogos ni los terceros reales — con un código DANE inválido), se corrige, se reemite y valida con el `reference_code` nuevo, se consultan sus eventos de verdad (vacíos, es una factura nueva) sin duplicar al repetir la consulta, y las cinco reglas de la aceptación tácita interna se prueban una por una (contado la rechaza, sin vencer la rechaza, vencida la marca, marcarla dos veces se rechaza, un reclamo 031 la bloquea). Probado también por HTTP en :4024 (403 auditor, 200 contador, el detalle del documento ya trae `eventos`).

@@ -14,7 +14,16 @@
 
 ## 0. Dónde retomar (leer esto primero)
 
-1. **Documento vivo de requerimientos, ya con PDF entregable:**
+0. 🆕 **23-sep-2026: llegó la lista de la contadora y el alcance vigente es
+   `docs/requerimientos-facturacion-contabilidad-v2.md`, no la v1 del punto 1.**
+   Pasa de 7 a 10 módulos (suma cuentas por cobrar, por pagar y parametrización) y
+   agrega informes financieros, saldos iniciales, cierre de año, eventos de la
+   factura y aceptación de facturas de proveedores. **La propuesta formal y el PDF
+   del escritorio son de la v1 y ya no cubren todo lo pedido** — actualizarlos antes
+   de que JD&D confirme. Lo primero a verificar: si el proveedor tecnológico permite
+   emitir y consultar eventos por API (D-15 de la v2). Los puntos 1-8 de abajo siguen
+   siendo ciertos salvo donde la v2 los contradiga.
+1. **Documento vivo de requerimientos, ya con PDF entregable (v1):**
    `docs/requerimientos-facturacion-contabilidad.md` tiene el borrador completo (módulos
    FEL, DSP, NOM, CNT, CYG, ACT, RPC) y un PDF limpio para el cliente ya generado en
    `C:\Users\nicol\Desktop\Requerimientos-Facturacion-Contabilidad-JDD.pdf` (sin capturas,

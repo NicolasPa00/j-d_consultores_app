@@ -16,6 +16,44 @@
 > servidor. **Lo último desplegado:** el Excel SIPAB de Bolívar dejó de leerse
 > cuando llegaba como `.xls` binario (ver §0 punto 2 y la Tanda 23 en §3).
 >
+> 🆕🆕🆕🆕 **29-sep-2026: JD&D aceptó la cotización y todo quedó commiteado.** La Tanda 0
+> de correcciones está en la rama `correcciones-26-sep` de los dos repos, **subida a
+> GitHub pero sin mezclar a la principal ni desplegar**. La facturación sigue en
+> `fase-a-facturacion` (worktrees `sst_ws-fase-a/` y `jdd_consultores_app-fase-a/`,
+> commiteada solo en local) y **ya lleva la Tanda 0 mezclada**. Cómo quedó cada carpeta y
+> qué sigue: §0 de `docs/plan-facturacion-contabilidad.md`, bloque del 29-sep. Lo que
+> dice abajo de "NADA ESTÁ COMMITEADO" quedó superado.
+>
+> 🆕🆕🆕 **CIERRE DEL 27/28-sep-2026 — LEER PRIMERO el §0 de
+> `docs/plan-facturacion-contabilidad.md` ("ESTADO AL CIERRE").** En una noche, dos
+> sesiones ejecutoras (dirigidas y verificadas por una tercera) construyeron casi toda
+> la Tanda 0 de correcciones y las fundaciones de la Fase A, **incluida la primera factura
+> validada en el sandbox de Factus**. **NADA ESTÁ COMMITEADO** (orden del usuario): el
+> trabajo vive en `sst_ws/` y `jdd_consultores_app/` (rama `correcciones-26-sep`) y en
+> los worktrees `sst_ws-fase-a/` y `jdd_consultores_app-fase-a/` (rama
+> `fase-a-facturacion`). Todas las migraciones ya están aplicadas en `jdd_dev`.
+>
+> **28-sep-2026 (sesión siguiente) — A1-03 a A1-07, todo backend, sigue sin commitear.**
+> Detalle completo en el §0 del plan (nueva sección "Esta sesión") y la bitácora (§11);
+> resumen aquí:
+> - **Construido:** la relación a facturar (A1-03), el borrador con cálculo de impuestos
+>   (A1-04), emitir contra Factus y marcar las órdenes como FACTURADA (A1-05, **probado
+>   de verdad en el sandbox**), el envío al cliente (A1-06) y rechazos/corrección/eventos
+>   DIAN/aceptación tácita (A1-07, **también probado en el sandbox con un rechazo real**).
+>   Nueve endpoints nuevos bajo `/api/facturacion/`.
+> - **Tres hallazgos para no repetir:** `npm run typecheck` no cubre `src/modules/**`
+>   (usar `node --check <archivo>`); la única cuenta SMTP del repo es la real de JD&D —
+>   no usarla para pruebas, usar `EMAIL_DRIVER=console` o, si hace falta un envío real,
+>   solo entre correos propios de desarrollador; el endpoint de aceptación tácita de
+>   Factus no está confirmado para facturas emitidas (Q-26), así que quedó como apunte
+>   interno, nunca una llamada a Factus.
+> - **Ojo al juntar ramas:** la modificación de `orders.routes.js` (A1-05, para no dejar
+>   desmarcar una factura de Orbita) vive solo en `fase-a-facturacion`; hay que
+>   reaplicarla sobre la versión de `correcciones-26-sep` (que tiene sus propios cambios
+>   de T0-07).
+> - **Siguiente:** **A1-08**, la pantalla de Facturación (frontend). La Tanda 0 sigue con
+>   T0-19, T0-02 ⛔ y T0-17 pendientes.
+>
 > 🆕🆕 **27-sep-2026: EMPIEZA LA IMPLEMENTACIÓN — el tablero es
 > `docs/plan-facturacion-contabilidad.md`.** El usuario decidió construir ya, aunque la
 > cotización no está firmada (falta definir si se constituye una sociedad o se paga;
