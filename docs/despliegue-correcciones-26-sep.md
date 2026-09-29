@@ -1,9 +1,22 @@
 # Despliegue de las correcciones del 26-sep-2026 (Tanda 0)
 
-> **Estado al 29-sep-2026: LISTO PARA DESPLEGAR, PERO NO SE HA DESPLEGADO.**
-> El usuario avisa cuándo. Todo está commiteado y subido a GitHub en la rama
-> `correcciones-26-sep` de los dos repos, **sin mezclar** a `main`/`master` (el
-> servidor hace `git pull` de la principal, así que mezclar ES desplegar).
+> ✅ **DESPLEGADO el 29-sep-2026 a las 15:36 (hora Colombia)** como «primer lote de cambios»
+> (correcciones del 26-sep + vista previa de formatos). `master` = `6fed74e`, `main` = `d77a2de`.
+>
+> Cómo se hizo, y cómo repetirlo en el próximo lote:
+> 1. Lectura de producción: 153 órdenes (145 Bolívar), 0 facturadas, 0 FINALIZADAS, 0 tarifas
+>    por profesional → las migraciones no alteraban ningún dato existente.
+> 2. **Respaldo** (`~/respaldos/orbita-antes-lote1-20260929-1534.dump` + `storage-…tgz` en el
+>    servidor; copia de la base en `respaldos-produccion/` del PC de desarrollo, fuera de git).
+> 3. **Ensayo**: el respaldo restaurado en una base aparte (`orbita_ensayo`), las 5 migraciones
+>    aplicadas ahí, conteos idénticos antes/después; luego se borró.
+> 4. Migraciones en `orbita` (el código viejo sigue funcionando: son aditivas), después `git pull`
+>    + reinicio de la API, y `git pull` + `npm run build` + reinicio del frontend.
+> 5. Humo de solo lectura con un token firmado en el servidor: bandeja con las 153 órdenes,
+>    detalle con estado ARL e historial, dashboard, cobro y notificaciones en 200; SSR 14,8 kB.
+>
+> Para revertir: `git reset --hard 414d465` (front) / `bc10714` (back) en el servidor y
+> `pg_restore` del respaldo. Las migraciones solo añaden, así que basta con volver el código.
 >
 > Runbook general del servidor: `docs/despliegue-vultr.md`. Este documento solo
 > cubre lo propio de esta tanda. Tablero y fichas: `docs/plan-facturacion-contabilidad.md`
