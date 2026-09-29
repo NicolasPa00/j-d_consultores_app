@@ -237,7 +237,10 @@
                        ofrecen. Solo aparece en las FINALIZADAS, que es donde
                        arranca el eje — antes del cierre no hay nada que
                        facturarle a la ARL y el servidor lo rechazaría. -->
-                  @if (puedeCobrar(order)) {
+                  <!-- 29-sep · Oculto hasta el segundo lote de cambios (pedido del
+                       usuario): el modal sigue en el código, se enciende con
+                       `cobroHabilitado` en validation.ts. -->
+                  @if (cobroHabilitado && puedeCobrar(order)) {
                     <button
                       type="button"
                       class="icon-action"

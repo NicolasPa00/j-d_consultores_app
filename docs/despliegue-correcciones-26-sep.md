@@ -25,6 +25,9 @@ de la reunión del 26-sep (WhatsApp) y la revisión de formatos con fotos del 29
 | `aea9505` | front | Tanda 0 frontend: pantallas de todo lo anterior + sidebar plegable (T0-14) + estado con "Guardar" (T0-15) |
 | `399247e` | front | Se quita el botón "Pendiente por facturar" (JD&D: la pestaña Finalizadas y los filtros bastan) |
 | *(este doc)* | front | Documentación del despliegue |
+| `ab4f43f`…`4eec36e` | los dos | **Vista previa de formatos** al asignar (rama `previsualizacion-formatos`): paso «Continuar», datos del formato editables, observaciones, fechas con selector. Migración `2026-09-29-observaciones-formatos.sql` |
+| `f35abe3` | front | El modal «Cargando prefactura» se abre en cuanto se elige el PDF |
+| *(29-sep)* | front | Icono «Estado de facturación» **oculto** (`cobroHabilitado = false`): entra con el segundo lote. En producción nunca se usó (0 órdenes facturadas) |
 
 ### 1.1 · Formatos, verificados contra las fotos de JD&D (29-sep)
 
@@ -101,8 +104,8 @@ git -C jdd_consultores_app checkout main && git -C jdd_consultores_app pull --ff
 cd /opt/orbita/sst_ws && git pull
 export PGPASSWORD=$(grep -oP 'postgresql://orbita:\K[^@]+' .env)
 # migraciones A MANO, en este orden (agr-y-tema y estado-arl recrean la misma vista)
-for m in agr-y-tema estado-arl prefacturas tarifa-por-tipo; do
-  psql -h 127.0.0.1 -U orbita -d orbita -v ON_ERROR_STOP=1 -f db/migraciones/2026-09-27-$m.sql || break
+for m in 2026-09-27-agr-y-tema 2026-09-27-estado-arl 2026-09-27-prefacturas 2026-09-27-tarifa-por-tipo 2026-09-29-observaciones-formatos; do
+  psql -h 127.0.0.1 -U orbita -d orbita -v ON_ERROR_STOP=1 -f db/migraciones/$m.sql || break
 done
 cd /opt/orbita/frontend && git pull && npm run build
 sudo systemctl restart orbita-api orbita-web
@@ -132,6 +135,14 @@ casos basta con volver el código.
 ---
 
 ## 4. Lo que queda fuera de este despliegue
+
+> **Código SIPAB en las órdenes de Bolívar — pendiente de que JD&D confirme dónde va.**
+> Mapeado: el «código SIPAB» es el **número de prefactura** (decisión del 27-sep). Vive en
+> `sst.ordenes_servicio.numero_prefactura` (+ `historial_estado_arl`), se llena solo al
+> aplicar una prefactura (T0-09) y a mano en *Editar orden → Estado ARL*, y se muestra en el
+> detalle. Lo que falta decidir es **dónde más** debe verse o capturarse (¿columna en
+> Órdenes?, ¿al importar?, ¿en la relación de Bolívar?). Cuando respondan, es un cambio de
+> pantalla: el dato ya existe.
 
 | Qué | Por qué |
 |---|---|

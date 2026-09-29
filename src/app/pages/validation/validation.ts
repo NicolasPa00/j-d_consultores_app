@@ -865,6 +865,15 @@ export class ValidationComponent implements OnInit, OnDestroy {
     return h.creado_en ? new Date(h.creado_en).toLocaleString('es-CO') : '—';
   }
 
+  /**
+   * Icono de "Estado de facturación" (modal para marcar FACTURADA) en cada fila.
+   * APAGADO desde el 29-sep-2026: entra con el segundo lote de cambios, junto con
+   * la facturación. El modal y su lógica se conservan; para volver a mostrarlo
+   * basta con poner `true`. En producción nunca se había usado (0 órdenes
+   * facturadas al 29-sep), así que ocultarlo no le quita nada a nadie.
+   */
+  protected readonly cobroHabilitado = false;
+
   // ================= T0-09 · Prefactura de Bolívar cargada con IA =================
   protected readonly prefacturaCargando = signal(false);
   /**
