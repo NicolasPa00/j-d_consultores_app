@@ -312,7 +312,7 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecha y verificada · ❓ espera 
 | ID | Tarea | Depende | Tam. | Estado |
 |---|---|---|---|---|
 | T0-01 | Revisar la carga de soportes del asesor (qué falla) | — | S | ✅ 28-sep revisión + `docs/guia-carga-soportes.md`; 2 fricciones menores esperan Q-01 |
-| T0-02 | Formatos originales de Colmena | Q-02 | M | ⛔ faltan los originales |
+| T0-02 | Formatos originales de Colmena | Q-02 | M | 🟨 29-sep: informe (SPM-F 38 = PDF de la orden) y asistencia (PSP-F-006 V3) ya son los originales (`de5adcb`); falta la evaluación PSP-F-010 ⛔ |
 | T0-03 | Colmena: no enviar el Excel ni el instructivo | — | S | ✅ 27-sep (sst_ws 593cab8, único commit previo a la orden de no commitear) |
 | T0-04 | Bolívar: pasar el AGR del SIPAB a la orden y al AT-031 | — | S | ✅ 27-sep (local; falta verlo en navegador) |
 | T0-05 | Tema/actividad manual en seguimiento y asistencia | — | M | ✅ 27-sep (local; falta verlo en navegador) |
@@ -321,15 +321,16 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecha y verificada · ❓ espera 
 | T0-08 | Reporte "Bolívar: qué debo facturar" (relación en Excel) | T0-07 | M | ✅ 27-sep (local; encabezados idénticos al ejemplo) |
 | T0-09 | Cargar prefactura de la ARL con IA y previsualización | T0-07 | L | ✅ 28-sep (local; 13+3+10 filas y totales exactos; revisado por la directora, captura 20) |
 | T0-10 | Valor hora de los socios sale "estándar" | — | S | ✅ 27-sep (local; tarifa por `tipo_orden_id`; antes de desplegar ver T0-17 paso 3) |
-| T0-11 | Fecha en los formatos de Colmena | — | S | ✅ 27-sep con el supuesto (fecha de generación); ❓ Q-04 sigue abierta |
-| T0-12 | Horas ejecutadas por sesión en formatos | — | S | ✅ 27-sep con el supuesto; ❓ Q-05 sigue abierta |
-| T0-13 | Bolívar: un solo AT-031, un AT-028 por sesión | — | M | ✅ 27-sep con el supuesto; ❓ Q-06 sigue abierta |
+| T0-11 | Fecha en los formatos de Colmena | — | S | ✅ 29-sep **rehecha**: la "Fecha Impresión" es la del SPM-F 38 original de Colmena, sobre el que ahora se escribe (fotos de JD&D); Q-04 resuelta |
+| T0-12 | Horas ejecutadas por sesión en formatos | — | S | ✅ 29-sep verificada sobre el SPM-F 38 original (12 h en 2 días → Ejecutada 6 en cada copia) |
+| T0-13 | Bolívar: un solo AT-031, un AT-028 por sesión | — | M | ✅ 29-sep verificada en una asignación real (1 AT-031 + 2 AT-028); horas sin segundos en Observaciones; ❓ Q-06 sigue abierta |
 | T0-14 | Sidebar que se oculta y se despliega | — | S | ✅ 27-sep (local) |
 | T0-15 | El cambio de estado se aplica con "Guardar" | — | M | ✅ 27-sep (local; probado en navegador headless) |
 | T0-16 | Cambiar el tipo de orden recalcula y muestra el valor | — | M | ✅ 27-sep (local) |
 | T0-18 | Ediciones de la OS que "se revierten" al recargar (el detalle se arma desde el JSON del borrador) | — | M | ✅ 27-sep (local; eran NIT, horas, vencimiento y duración de agenda) |
 | T0-19 | Ocultar "Cargar prefactura" a quien no es admin/contador (el backend ya lo exige) | T0-09 | S | ⬜ |
-| T0-17 | Cierre de la tanda: HANDOFF, pruebas en la app, despliegue | todas | S | ⬜ |
+| T0-20 | Quitar el botón "Pendiente por facturar" de /ordenes (pedido de JD&D, 29-sep) | — | S | ✅ 29-sep (`399247e`) |
+| T0-17 | Cierre de la tanda: HANDOFF, pruebas en la app, despliegue | todas | S | 🟨 29-sep: documentado en `docs/despliegue-correcciones-26-sep.md` y subido; **despliegue en espera de la orden del usuario** |
 
 ### Fase A — Facturar (rama `fase-a-facturacion`)
 
@@ -1822,6 +1823,7 @@ Una línea por sesión de trabajo: fecha · tarea(s) · qué se hizo · qué que
 | Fecha | Tareas | Qué pasó | Commit |
 |---|---|---|---|
 | 28-sep-2026 | T0-09/T0-01 | Revisadas por la sesión directora (captura 20 del modal con los 5 resultados; `jdd_dev` limpio). Nueva T0-19. | local |
+| 29-sep-2026 | T0-02/11/12/13, T0-20, T0-17 | Revisión de formatos con fotos de JD&D. Colmena: el informe correcto es el SPM-F 38 = PDF de la propia orden (se escribe encima; respaldo PSP-F-007 si no hay original) y la asistencia el PSP-F-006 V3 exportado del `.xls`. Bolívar verificado en asignación real; corregidas las horas con segundos del AT-031. Quitado el botón "Pendiente por facturar". Soportes de ejemplo en OS-2026-0002..0004 y prefacturas de ejemplo 170501/170502 (`DocFacturacion/PREFACTURAS/EJEMPLOS-PRUEBA/`); el usuario las aceptó y probó la carga. Hallazgo: `valor_total` vacío en órdenes SIPAB → el cruce "valor distinto" nunca se activa. Guía de despliegue escrita. | `de5adcb`, `399247e`, `696333e` (subidos) |
 | 27-sep-2026 | A0-07/A1-01/A1-02 | Verificadas por la sesión directora (verificar-calculo re-ejecutado). Primera emisión real en sandbox. Hallazgos en §5.4 (bruto vs neto, unidad de hora). | local |
 | 27-sep-2026 | T0-08/11/12/13 | Verificadas por la sesión directora (PNG del AT-031 de dos sesiones y del PSP-F-007 con 8/4 y fecha). Aceptado: "Tipo de actividad" normalizado en la relación. | local |
 | 27-sep-2026 | T0-06/10/14/16 | Verificadas por la sesión directora (capturas 10 y 18). | local |

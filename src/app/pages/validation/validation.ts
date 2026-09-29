@@ -788,36 +788,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
     return estado === 'APROBADO' ? 'pill--success' : 'pill--warning';
   }
 
-  /**
-   * "Pendiente por facturar": FINALIZADA + APROBADA por la ARL + sin facturar.
-   * Es el cruce de los tres ejes que responde la pregunta de la contadora, y
-   * ahí se factura. Se cuenta sobre la bandeja entera, no sobre el filtro puesto.
-   */
-  protected readonly pendientePorFacturar = computed(() =>
-    this.orders().filter((o) =>
-      !o.disabled && o.osEstado === 'FINALIZADA'
-      && o.estadoArl === 'APROBADO' && (o.estadoCobro ?? 'NO FACTURADA') === 'NO FACTURADA').length,
-  );
-
-  /** ¿Están puestos justo los tres filtros del atajo? */
-  protected readonly atajoPendienteActivo = computed(() =>
-    this.view() === 'finalizadas' && this.filtroArl() === 'APROBADO' && this.filtroCobro() === 'NO FACTURADA',
-  );
-
-  /** Enciende el atajo (los tres filtros a la vez) o lo apaga y vuelve a "Todas". */
-  protected alternarPendientePorFacturar(): void {
-    if (this.atajoPendienteActivo()) {
-      this.view.set('todas');
-      this.filtroArl.set('');
-      this.filtroCobro.set('');
-    } else {
-      this.view.set('finalizadas');
-      this.filtroArl.set('APROBADO');
-      this.filtroCobro.set('NO FACTURADA');
-    }
-    this.pag.reiniciar();
-  }
-
   /** El n.º de prefactura son solo dígitos (los de Bolívar tienen 6). */
   protected soloDigitos(valor: string): string {
     return String(valor ?? '').replace(/\D/g, '').slice(0, 12);
