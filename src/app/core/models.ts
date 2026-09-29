@@ -114,6 +114,11 @@ export interface MetadatosExtraccion {
    * las columnas del SIPAB; en AXA y Colmena se escribe a mano.
    */
   viaticos_valor?: CampoExtraido;
+  /**
+   * FOR · Asesor de Gestión del Riesgo de la ARL (casilla 16 del AT-031). Solo lo
+   * trae el SIPAB de Bolívar, en su propia columna; tampoco se le pide a la IA.
+   */
+  asesor_gestion_riesgo?: CampoExtraido;
   overall_confidence?: number;
   engine?: string;
   /** IA-03: confianza (0-100) de la clasificación de ARL por contenido. */
@@ -201,6 +206,17 @@ export interface Borrador {
    * los formatos y los correos.
    */
   os_empresa_nombre?: string | null;
+  /**
+   * T0-18 · Los campos editables de la OS tal como están HOY en la orden
+   * (clave = columna). Con la orden materializada mandan sobre el JSON del
+   * borrador, que es lo que leyó la IA: sin esto, una corrección hecha con
+   * `PUT /orders/:id` se veía revertida en la tabla y en la asignación tras
+   * recargar. NULL mientras el borrador no tiene OS. Incluye el AGR y el tema.
+   */
+  os_campos?: Record<string, unknown> | null;
+  /** T0-07 · Aprobación de la ARL y n.º de prefactura (código SIPAB de Bolívar). */
+  os_estado_arl?: EstadoArl | null;
+  os_numero_prefactura?: string | null;
   /**
    * ASG · A nombre de quién salen los formatos de la OS, cuando no es quien
    * ejecuta. Viaja con el listado para que la suplencia se vea en la fila sin
@@ -310,6 +326,77 @@ export type EstadoCobro = 'NO FACTURADA' | 'FACTURADA';
 
 /** El eje en orden, para pintarlo y para ofrecerlo en los selectores. */
 export const ESTADOS_COBRO: EstadoCobro[] = ['NO FACTURADA', 'FACTURADA'];
+
+/**
+ * T0-07 · Estado ARL: ¿la ARL aprobó en su plataforma los documentos de la orden?
+ * Es la condición para facturar. Su lista está copiada en otros dos sitios —el
+ * enum `sst.estado_arl` y `ESTADOS_ARL` de `orders.routes.js`—: si se añade un
+ * valor (Q-08) hay que tocar los tres.
+ */
+export type EstadoArl = 'PENDIENTE' | 'APROBADO';
+
+export const ESTADOS_ARL: EstadoArl[] = ['PENDIENTE', 'APROBADO'];
+
+/** Entrada del historial del estado ARL. */
+export interface HistorialEstadoArl {
+  id: string;
+  orden_id: string;
+  estado_anterior?: EstadoArl | null;
+  estado_nuevo: EstadoArl;
+  numero_prefactura?: string | null;
+  usuario_nombre?: string | null;
+  origen: 'MANUAL' | 'PREFACTURA';
+  creado_en: string;
+}
+
+// ---------------------------------------------------------------------------
+// T0-09 · Prefactura de Bolívar cargada con IA
+// ---------------------------------------------------------------------------
+
+/** Los cinco resultados del cruce prefactura ↔ Orbita, mutuamente excluyentes. */
+export type ResultadoCrucePrefactura =
+  | 'encontrada' | 'no_encontrada' | 'ya_tiene_otra_prefactura' | 'no_finalizada' | 'valor_distinto';
+
+/** Una fila de la prefactura, ya cruzada contra la orden de Orbita (si existe). */
+export interface FilaPrefactura {
+  codigo_cronograma: string;
+  secuencia: string;
+  nit_empresa: string | null;
+  razon_social: string | null;
+  actividad_programa: string | null;
+  valor_actividad: number;
+  alimentacion: number;
+  alojamiento: number;
+  transporte: number;
+  material: number;
+  tiempo_muerto: number;
+  valor_a_facturar: number;
+  resultado: ResultadoCrucePrefactura;
+  /** Solo si el cruce encontró una orden (aunque el resultado no sea "encontrada"). */
+  orden: {
+    id: string; codigo: string; estado: string; estado_arl: string | null;
+    numero_prefactura: string | null; valor_total: number | string | null; empresa_nombre: string;
+  } | null;
+  /** Se marca sola al abrir el modal: solo las "encontrada" (FINALIZADA, sin otra prefactura, valor ok). */
+  marcada_por_defecto: boolean;
+}
+
+/** Lo que devuelve `POST /prefacturas/previsualizar`. */
+export interface PrevisualizacionPrefactura {
+  numero_prefactura: string;
+  plan_codigo: string | null;
+  plan_descripcion: string | null;
+  fecha_corte: string | null;
+  valor_total: number;
+  nit_proveedor: string | null;
+  filas: FilaPrefactura[];
+  suma_filas: number;
+  /** Control determinista: la suma de "valor a facturar" vs. el total del encabezado. */
+  cuadra: boolean;
+  nombre_archivo: string;
+  /** No es un bloqueo: cargar de nuevo no duplica nada y se puede volver a aplicar. */
+  ya_cargada: { cargada_en: string; cargada_por: string | null } | null;
+}
 
 /** Entrada del historial del eje de cobro: quién lo movió, cuándo y por qué. */
 export interface HistorialCobro {
@@ -637,6 +724,12 @@ export interface Tarifa {
   valor_hora: string | number;
   vigente_desde: string;
   creado_en?: string;
+  /**
+   * T0-10 · El tipo de orden del catálogo al que aplica. NULL = tarifa huérfana:
+   * su texto no casó con ningún tipo y hay que corregirla a mano.
+   */
+  tipo_orden_id?: string | null;
+  tipo_orden?: string | null;
 }
 
 /** Periodo con horas ejecutadas (para saber qué meses hay por generar). */
@@ -791,6 +884,13 @@ export interface Orden {
   tipo_servicio_arl?: string | null;
   /** PRESENCIAL o VIRTUAL. Obligatorio en Bolívar: decide qué formatos se envían. */
   modalidad_ejecucion?: string | null;
+  /** Aprobación de la ARL (T0-07) y n.º de prefactura, solo Bolívar. */
+  estado_arl?: EstadoArl | null;
+  numero_prefactura?: string | null;
+  /** Asesor de Gestión del Riesgo de Bolívar (casilla 16 del AT-031). */
+  asesor_gestion_riesgo?: string | null;
+  /** Tema/actividad manual: sale en el AT-031 (Temas desarrollados) y el AT-028. */
+  tema_actividad?: string | null;
   // ---- Viáticos (ago-2026) ----
   /**
    * Valor aparte de las horas, para las órdenes que se ejecutan fuera de la

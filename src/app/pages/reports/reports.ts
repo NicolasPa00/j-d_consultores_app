@@ -11,6 +11,7 @@ import {
 } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
+import { etiquetaEmpresa } from '../../core/bolivar';
 
 type ReportTab = 'ordenes' | 'profesionales' | 'satisfaccion' | 'vencidas' | 'horas' | 'cobro';
 
@@ -41,6 +42,7 @@ export class ReportsComponent implements OnInit {
   protected readonly loadingProfs = signal(false);
   /** Exportar ahora viaja al servidor: evita disparar dos descargas seguidas. */
   protected readonly exporting = signal(false);
+  protected readonly exportingRelacion = signal(false);
 
   // ---- Filtros ----
   // ARL y estado son multiselección: los botones marcados dentro de un mismo
@@ -515,6 +517,16 @@ export class ReportsComponent implements OnInit {
   }
 
   // ================= Exportaciones =================
+  /**
+   * T0-06 · La razón social con `(cronograma-secuencia)` al lado, solo en
+   * Bolívar. En el Excel de la pestaña Órdenes NO se usa: ahí "Código
+   * cronograma" y "Secuencia" ya son columnas separadas (un Excel con el
+   * paréntesis dentro del texto no se puede filtrar por ellas).
+   */
+  protected nombreOrden(o: Orden): string {
+    return etiquetaEmpresa(o.empresa_nombre, o.arl_nombre, o.codigo_cronograma, o.secuencia);
+  }
+
   protected exportExcel(): void {
     if (this.activeTab() === 'ordenes') {
       // RPT-03 / CA-07: exportar TODOS los datos extraídos por IA, con la confianza por campo.
@@ -629,7 +641,7 @@ export class ReportsComponent implements OnInit {
       title = 'Listado de órdenes de servicio';
       headers = ['Código', 'Empresa', 'NIT', 'ARL', 'Horas', 'Estado', 'Confianza'];
       rows = this.filteredOrders().map((o) => [
-        o.codigo || '', o.empresa_nombre || '', o.nit_nic || '', o.arl_nombre || '',
+        o.codigo || '', this.nombreOrden(o), o.nit_nic || '', o.arl_nombre || '',
         o.horas_asignadas ?? '', o.estado, `${this.confidenceOf(o)}%`,
       ]);
       // El pie del PDF deja constancia de con qué filtros se generó: sin esto,
@@ -736,6 +748,33 @@ export class ReportsComponent implements OnInit {
             ? 'El informe tiene demasiados registros para exportarlo de una vez. Aplique filtros y reintente.'
             : 'El servidor no pudo construir el archivo. Intente nuevamente.',
         );
+      },
+    });
+  }
+
+  /**
+   * T0-08 · Descarga la relación de Bolívar tal como la genera el backend (con
+   * el corte por defecto: 16 del mes anterior al 15 del actual). El resto del
+   * cálculo —filtros, total, celdas resaltadas sin tarifa— vive ahí; aquí solo
+   * se baja el archivo, igual que los demás PDF/Excel de esta pantalla.
+   */
+  protected exportarRelacionBolivar(): void {
+    if (!this.isBrowser || this.exportingRelacion()) return;
+    this.exportingRelacion.set(true);
+    this.api.relacionBolivar().subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `relacion-bolivar_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.exportingRelacion.set(false);
+        this.alerts.success('Relación generada', 'Se descargó el Excel para radicar ante Bolívar.');
+      },
+      error: () => {
+        this.exportingRelacion.set(false);
+        this.alerts.error('No se pudo generar la relación', 'El servidor no pudo construir el archivo. Intente nuevamente.');
       },
     });
   }

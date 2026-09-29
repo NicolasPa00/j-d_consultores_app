@@ -7,7 +7,7 @@ import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
-import { CuentaDelMes, EstadoPrecuenta, Precuenta, Profesional, Tarifa } from '../../core/models';
+import { CuentaDelMes, EstadoPrecuenta, Precuenta, Profesional, Tarifa, TipoOrden } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
@@ -89,7 +89,15 @@ export class BillingComponent implements OnInit {
   protected readonly tarifas = signal<Tarifa[]>([]);
   protected readonly loadingTarifas = signal(false);
   protected readonly savingTarifa = signal(false);
-  protected nuevaActividad = '';
+  /**
+   * T0-10 · La tarifa se liga a un tipo del catálogo, que se ELIGE (antes se
+   * escribía: "Capacitacion" sin tilde no casaba con "Capacitación" y la orden
+   * caía al valor estándar sin avisar).
+   */
+  protected readonly tiposOrden = signal<TipoOrden[]>([]);
+  protected nuevoTipoId = '';
+  /** Tarifas cuyo texto no casó con ningún tipo: hay que enlazarlas a mano. */
+  protected readonly tarifasHuerfanas = computed(() => this.tarifas().filter((t) => !t.tipo_orden_id).length);
   protected nuevoValorHora: number | null = null;
   protected nuevaVigencia = '';
 
@@ -132,6 +140,10 @@ export class BillingComponent implements OnInit {
     this.api.listProfessionals().subscribe({
       next: (r) => this.professionals.set(r.data),
       error: () => this.professionals.set([]),
+    });
+    this.api.listTiposOrden().subscribe({
+      next: (r) => this.tiposOrden.set(r.data),
+      error: () => this.tiposOrden.set([]),
     });
 
     // PRE-06 · Pulsar la campanita estando YA en esta vista no reconstruye el
@@ -423,11 +435,11 @@ export class BillingComponent implements OnInit {
 
   protected agregarTarifa(): void {
     const profId = this.tarifaProfId();
-    const actividad = (this.nuevaActividad || '').trim();
+    const tipoId = this.nuevoTipoId;
     const valor = Number(this.nuevoValorHora);
     if (!profId) return;
-    if (!actividad) {
-      this.alerts.warning('Falta la actividad', 'Escriba el tipo de actividad (p. ej. Capacitación).');
+    if (!tipoId) {
+      this.alerts.warning('Falta el tipo de orden', 'Elija el tipo del catálogo al que aplica la tarifa (p. ej. Capacitación).');
       return;
     }
     if (!Number.isFinite(valor) || valor <= 0) {
@@ -436,11 +448,11 @@ export class BillingComponent implements OnInit {
     }
     this.savingTarifa.set(true);
     this.api.addTarifa(profId, {
-      actividad, valor_hora: valor, vigente_desde: this.nuevaVigencia || undefined,
+      tipo_orden_id: tipoId, valor_hora: valor, vigente_desde: this.nuevaVigencia || undefined,
     }).subscribe({
       next: () => {
         this.savingTarifa.set(false);
-        this.nuevaActividad = '';
+        this.nuevoTipoId = '';
         this.nuevoValorHora = null;
         this.nuevaVigencia = '';
         this.alerts.success('Tarifa registrada', 'Se aplicará a las cuentas que se generen desde su fecha de vigencia.');
@@ -456,7 +468,7 @@ export class BillingComponent implements OnInit {
   protected async eliminarTarifa(t: Tarifa): Promise<void> {
     const ok = await this.alerts.confirm({
       title: 'Eliminar tarifa',
-      message: `Se eliminará "${t.actividad}" (${this.pesos(t.valor_hora)}/hora). Las cuentas ya generadas conservan su valor.`,
+      message: `Se eliminará "${t.tipo_orden || t.actividad}" (${this.pesos(t.valor_hora)}/hora). Las cuentas ya generadas conservan su valor.`,
       confirmText: 'Eliminar',
       tone: 'danger',
     });
