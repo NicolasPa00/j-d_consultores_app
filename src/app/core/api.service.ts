@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar, OrdenManualForm } from './models';
+import { AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar, OrdenManualForm } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -1120,5 +1120,34 @@ export class ApiService {
   /** Solo admin, con motivo. */
   reabrirPeriodo(anio: number, mes: number, motivo: string): Observable<Wrap<PeriodoContable>> {
     return this.http.post<Wrap<PeriodoContable>>(`${this.base}/contabilidad/periodos/${anio}/${mes}/reabrir`, { motivo });
+  }
+
+  // ---- Fase B · B2-01 · Reglas y contabilización automática (CNT-13, FEL-18) ----
+
+  listReglasContables(): Observable<Wrap<{ conceptos: ConceptoContable[]; reglas: ReglaContable[] }>> {
+    return this.http.get<Wrap<{ conceptos: ConceptoContable[]; reglas: ReglaContable[] }>>(`${this.base}/contabilidad/reglas`);
+  }
+  /** Crea o reemplaza la regla de un concepto para su alcance (general, producto o tercero). */
+  guardarReglaContable(body: { concepto: string; cuenta_id: string; producto_id?: string | null; tercero_id?: string | null }): Observable<Wrap<ReglaContable>> {
+    return this.http.put<Wrap<ReglaContable>>(`${this.base}/contabilidad/reglas`, body);
+  }
+  deleteReglaContable(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/contabilidad/reglas/${id}`);
+  }
+  /** Carga las reglas generales que falten con las cuentas que usa hoy el software contable. */
+  sembrarReglasContables(): Observable<Wrap<{ creadas: string[]; sin_cuenta: { concepto: string; codigo: string }[] }>> {
+    return this.http.post<Wrap<{ creadas: string[]; sin_cuenta: { concepto: string; codigo: string }[] }>>(`${this.base}/contabilidad/reglas/por-defecto`, {});
+  }
+  listPendientesContabilizar(): Observable<{ data: DocumentoPendienteContabilizar[]; total: number }> {
+    return this.http.get<{ data: DocumentoPendienteContabilizar[]; total: number }>(`${this.base}/contabilidad/documentos/pendientes`);
+  }
+  contabilizarPendientes(): Observable<Wrap<{ procesados: number; contabilizados: number; resultados: { documento: string; ok: boolean; numero?: string; error?: string }[] }>> {
+    return this.http.post<Wrap<{ procesados: number; contabilizados: number; resultados: { documento: string; ok: boolean; numero?: string; error?: string }[] }>>(
+      `${this.base}/contabilidad/documentos/contabilizar-pendientes`, {},
+    );
+  }
+  /** Vista de contabilización de una factura o nota crédito (también de un borrador). */
+  asientoDocumento(id: string): Observable<Wrap<AsientoDocumento>> {
+    return this.http.get<Wrap<AsientoDocumento>>(`${this.base}/contabilidad/documentos/${id}/asiento`);
   }
 }

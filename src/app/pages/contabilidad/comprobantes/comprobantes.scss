@@ -227,3 +227,27 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* B2-01 · Documentos validados que aún no tienen asiento. */
+.cmp-pendientes {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.95rem;
+  font-size: 0.88rem;
+  color: #7a5a00;
+  background: #fff8e1;
+  border-left: 4px solid #f1c40f;
+  border-radius: 0 8px 8px 0;
+}
+
+.cmp-pendientes ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.cmp-pendientes__error {
+  color: #8a3a00;
+}

@@ -1,3 +1,24 @@
+@if (pendientes().length) {
+  <div class="cmp-pendientes">
+    <div>
+      <strong>{{ pendientes().length }} {{ pendientes().length === 1 ? 'documento validado sin contabilizar' : 'documentos validados sin contabilizar' }}</strong>
+      <ul>
+        @for (p of pendientes().slice(0, 5); track p.id) {
+          <li>
+            <span class="mono">{{ p.numero_completo }}</span> · {{ p.tercero_nombre }}
+            @if (p.contabilizacion_error) { — <span class="cmp-pendientes__error">{{ p.contabilizacion_error }}</span> }
+          </li>
+        }
+      </ul>
+    </div>
+    @if (puedeEditar()) {
+      <button type="button" class="btn btn--primary btn--sm" (click)="contabilizarPendientes()" [disabled]="contabilizandoPendientes()">
+        @if (contabilizandoPendientes()) { <span class="spinner" aria-hidden="true"></span> } Contabilizar ahora
+      </button>
+    }
+  </div>
+}
+
 <div class="cmp-filtros">
   <select class="form-control" [(ngModel)]="fTipo" (ngModelChange)="cargar()" aria-label="Tipo de comprobante">
     <option value="">Todos los tipos</option>

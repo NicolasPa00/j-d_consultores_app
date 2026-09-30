@@ -1659,3 +1659,46 @@ export interface PeriodoContable {
   contabilizados: number;
   borradores: number;
 }
+
+// ---- Fase B · B2-01 · Reglas y contabilización automática (CNT-13, FEL-18) ----
+
+export interface ConceptoContable {
+  concepto: string;
+  documento: 'FACTURA' | 'NOTA_CREDITO';
+  nombre: string;
+  lado: 'D' | 'C';
+}
+
+export interface ReglaContable {
+  id: string;
+  concepto: string;
+  cuenta_id: string;
+  cuenta_codigo: string;
+  cuenta_nombre: string;
+  producto_id: string | null;
+  producto_nombre: string | null;
+  tercero_id: string | null;
+  tercero_nombre: string | null;
+  activa: boolean;
+}
+
+export interface DocumentoPendienteContabilizar {
+  id: string;
+  tipo: 'FACTURA' | 'NOTA_CREDITO';
+  estado: string;
+  numero_completo: string | null;
+  fecha_emision: string | null;
+  total_a_pagar: string;
+  tercero_nombre: string;
+  contabilizacion_error: string | null;
+}
+
+/** El asiento que produce (o produciría) un documento: la «vista de contabilización». */
+export interface AsientoDocumento {
+  documento: { id: string; tipo: string; estado: string; numero: string; tercero_nombre: string };
+  tipo_comprobante: string;
+  fecha: string;
+  descripcion: string;
+  lineas: { linea: number; cuenta_codigo: string; cuenta_nombre: string; debito: string | null; credito: string | null; descripcion: string | null }[];
+  totales: { debito: string; credito: string };
+}

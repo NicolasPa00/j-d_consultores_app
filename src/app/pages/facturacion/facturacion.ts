@@ -7,7 +7,7 @@ import { ApiService } from '../../core/api.service';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
 import { mensajeError } from '../../core/errores';
-import {
+import { AsientoDocumento,
   CausalNotaCredito, DetalleFactura, DocumentoFactura, EstadoDocumento, GrupoPorFacturar, LineaPorFacturar,
   PagadorPorFacturar,
 } from '../../core/models';
@@ -96,6 +96,9 @@ export class FacturacionComponent implements OnInit {
 
   // ---------------- Detalle ----------------
   protected readonly detalle = signal<DetalleFactura | null>(null);
+  /** B2-01 · Vista de contabilización del documento abierto (se pide al pulsar). */
+  protected readonly asiento = signal<AsientoDocumento | null>(null);
+  protected readonly cargandoAsiento = signal(false);
   protected readonly cargandoDetalle = signal(false);
   /** Acción en curso sobre el documento abierto ('emitir', 'reenviar'…); bloquea los botones. */
   protected readonly accion = signal<string | null>(null);
@@ -256,6 +259,7 @@ export class FacturacionComponent implements OnInit {
     this.cargandoDetalle.set(true);
     this.correoReenvio.set('');
     this.formNota.set(false);
+    this.asiento.set(null);
     this.api.obtenerFactura(id).subscribe({
       next: (r) => { this.cargandoDetalle.set(false); this.detalle.set(r.data); },
       error: (err) => {
@@ -472,7 +476,24 @@ export class FacturacionComponent implements OnInit {
   }
 
   /** Los eventos RADIAN llegan con prefijo; los propios de ORBITA, tal cual. */
+  /**
+   * B2-01 · El asiento contable del documento. En un borrador es la vista previa de
+   * lo que se contabilizará al validarlo; en uno validado, lo contabilizado.
+   */
+  protected verAsiento(d: DetalleFactura): void {
+    if (this.asiento()) { this.asiento.set(null); return; }
+    this.cargandoAsiento.set(true);
+    this.api.asientoDocumento(d.id).subscribe({
+      next: (r) => { this.cargandoAsiento.set(false); this.asiento.set(r.data); },
+      error: (err) => {
+        this.cargandoAsiento.set(false);
+        this.alerts.error('No se pudo armar la contabilización', mensajeError(err, 'Revise las reglas en Contabilidad.'));
+      },
+    });
+  }
+
   protected etiquetaEvento(codigo: string): string {
+    if (codigo === 'CONTABILIZACION_PENDIENTE') return 'Contabilidad pendiente';
     return codigo.startsWith('RADIAN_') ? `DIAN · evento ${codigo.slice(7)}` : codigo.charAt(0) + codigo.slice(1).toLowerCase().replace(/_/g, ' ');
   }
 

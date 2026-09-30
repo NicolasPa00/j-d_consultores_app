@@ -1,0 +1,76 @@
+:host {
+  display: block;
+}
+
+.rg-ayuda {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.rg-aviso {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.88rem;
+  color: #7a5a00;
+  background: #fff8e1;
+  border-left: 4px solid #f1c40f;
+  border-radius: 0 8px 8px 0;
+}
+
+.rg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.rg-lado {
+  width: 48px;
+  text-align: center;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.rg-falta td {
+  background: #fff8e1;
+}
+
+.rg-grid .form-control {
+  padding: 0.45rem 0.6rem;
+  font-size: 0.86rem;
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+}
+
+.rg-vacio {
+  margin: 0 0 1rem;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.rg-nueva {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1.3fr auto;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 720px) {
+  .rg-grid,
+  .rg-nueva {
+    grid-template-columns: 1fr;
+  }
+}

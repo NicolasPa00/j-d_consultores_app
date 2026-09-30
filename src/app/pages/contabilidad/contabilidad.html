@@ -5,6 +5,7 @@
       @switch (pestana()) {
         @case ('plan') { Plan de cuentas · CNT-01 · {{ cuentas().length }} cuentas, {{ totalMovimiento() }} reciben movimiento }
         @case ('comprobantes') { Libro diario · CNT-02 · comprobantes y notas internas }
+        @case ('reglas') { Reglas de contabilización · CNT-13 · qué cuenta usa cada concepto }
         @case ('periodos') { Periodos contables · CNT-03 · cierre mensual }
       }
     </p>
@@ -26,11 +27,14 @@
 <div class="tabs" role="tablist">
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'plan'" (click)="pestana.set('plan')">Plan de cuentas</button>
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'comprobantes'" (click)="pestana.set('comprobantes')">Comprobantes</button>
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'reglas'" (click)="pestana.set('reglas')">Reglas</button>
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'periodos'" (click)="pestana.set('periodos')">Periodos</button>
 </div>
 
 @if (pestana() === 'comprobantes') {
   <app-comprobantes [puedeEditar]="puedeEditar()" />
+} @else if (pestana() === 'reglas') {
+  <app-reglas [puedeEditar]="puedeEditar()" />
 } @else if (pestana() === 'periodos') {
   <app-periodos [puedeEditar]="puedeEditar()" [esAdmin]="esAdmin()" />
 } @else {

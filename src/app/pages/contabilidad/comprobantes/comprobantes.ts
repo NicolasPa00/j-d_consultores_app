@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/api.service';
 import { mensajeError } from '../../../core/errores';
 import { AlertService } from '../../../core/alert.service';
-import { Comprobante, CuentaContable, EstadoComprobante, LineaComprobanteForm, Tercero, TipoComprobante } from '../../../core/models';
+import { Comprobante, CuentaContable, DocumentoPendienteContabilizar, EstadoComprobante, LineaComprobanteForm, Tercero, TipoComprobante } from '../../../core/models';
 import { paginar } from '../../../shared/paginacion';
 import { PaginadorComponent } from '../../../shared/paginador/paginador';
 
@@ -65,9 +65,40 @@ export class ComprobantesComponent implements OnInit {
 
   protected readonly pag = paginar(this.comprobantes);
 
+  // B2-01 · Facturas y notas validadas que aún no tienen asiento (con el motivo).
+  protected readonly pendientes = signal<DocumentoPendienteContabilizar[]>([]);
+  protected readonly contabilizandoPendientes = signal(false);
+
   ngOnInit(): void {
     this.api.listTiposComprobante().subscribe({ next: (r) => this.tipos.set(r.data) });
     this.cargar();
+    this.cargarPendientes();
+  }
+
+  protected cargarPendientes(): void {
+    this.api.listPendientesContabilizar().subscribe({ next: (r) => this.pendientes.set(r.data) });
+  }
+
+  /** Reintenta (o hace por primera vez, el backfill de la Fase A) los asientos pendientes. */
+  protected contabilizarPendientes(): void {
+    this.contabilizandoPendientes.set(true);
+    this.api.contabilizarPendientes().subscribe({
+      next: (r) => {
+        this.contabilizandoPendientes.set(false);
+        const fallidos = r.data.resultados.filter((x) => !x.ok);
+        if (fallidos.length) {
+          this.alerts.warning(`${r.data.contabilizados} de ${r.data.procesados} contabilizados`, `${fallidos[0].documento}: ${fallidos[0].error}`);
+        } else {
+          this.alerts.success(`${r.data.contabilizados} documentos contabilizados`);
+        }
+        this.cargar();
+        this.cargarPendientes();
+      },
+      error: (err) => {
+        this.contabilizandoPendientes.set(false);
+        this.alerts.error('No se pudieron contabilizar', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
   }
 
   protected cargar(): void {

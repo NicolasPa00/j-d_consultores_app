@@ -325,6 +325,36 @@
 
       @if (d.observaciones) { <p class="fac-obs"><b>Observaciones:</b> {{ d.observaciones }}</p> }
 
+      <!-- B2-01 · Vista de contabilización (la cotización la promete en el detalle del documento) -->
+      <div class="fac-asiento">
+        <button type="button" class="btn btn--ghost btn--sm" (click)="verAsiento(d)" [disabled]="cargandoAsiento()">
+          @if (cargandoAsiento()) { <span class="spinner" aria-hidden="true"></span> }
+          {{ asiento() ? 'Ocultar contabilización' : 'Ver contabilización' }}
+        </button>
+        @if (asiento(); as a) {
+          <p class="fac-asiento__nota">
+            @if (d.estado === 'BORRADOR') { Vista previa: así quedará el asiento cuando la DIAN valide el documento. }
+            @else { Asiento {{ a.tipo_comprobante }} del {{ fecha(a.fecha) }}. }
+          </p>
+          <table class="table fac-asiento__tabla">
+            <thead><tr><th>Cuenta</th><th>Detalle</th><th class="col-num">Débito</th><th class="col-num">Crédito</th></tr></thead>
+            <tbody>
+              @for (l of a.lineas; track l.linea) {
+                <tr>
+                  <td><span class="mono">{{ l.cuenta_codigo }}</span> <small>{{ l.cuenta_nombre }}</small></td>
+                  <td><small>{{ l.descripcion || '' }}</small></td>
+                  <td class="col-num mono">{{ l.debito ? pesos(l.debito) : '' }}</td>
+                  <td class="col-num mono">{{ l.credito ? pesos(l.credito) : '' }}</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr><td colspan="2"><b>Totales</b></td><td class="col-num mono"><b>{{ pesos(a.totales.debito) }}</b></td><td class="col-num mono"><b>{{ pesos(a.totales.credito) }}</b></td></tr>
+            </tfoot>
+          </table>
+        }
+      </div>
+
       @if (d.eventos.length) {
         <div>
           <p class="fac-seccion">Línea de tiempo</p>

@@ -8,8 +8,9 @@ import { AuthService } from '../../core/auth.service';
 import { CuentaContable, CuentaForm, NaturalezaCuenta, ResumenImportCuentas } from '../../core/models';
 import { ComprobantesComponent } from './comprobantes/comprobantes';
 import { PeriodosComponent } from './periodos/periodos';
+import { ReglasComponent } from './reglas/reglas';
 
-type Pestana = 'plan' | 'comprobantes' | 'periodos';
+type Pestana = 'plan' | 'comprobantes' | 'reglas' | 'periodos';
 
 /** Longitudes válidas del código (clase, grupo, cuenta, subcuenta, auxiliar, sub-auxiliar). */
 const LONGITUDES = [1, 2, 4, 6, 8, 10];
@@ -46,7 +47,7 @@ const FORM_VACIO: CuentaForm = {
  */
 @Component({
   selector: 'app-contabilidad',
-  imports: [FormsModule, ComprobantesComponent, PeriodosComponent],
+  imports: [FormsModule, ComprobantesComponent, PeriodosComponent, ReglasComponent],
   templateUrl: './contabilidad.html',
   styleUrl: './contabilidad.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

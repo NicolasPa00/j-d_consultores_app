@@ -1,0 +1,93 @@
+<p class="rg-ayuda">
+  Qué cuenta usa cada concepto al contabilizar las facturas y las notas crédito. Cada factura validada ante la DIAN
+  se contabiliza sola con estas reglas; si falta una, queda pendiente hasta completarla.
+</p>
+
+@if (faltantes().length && !loading()) {
+  <div class="rg-aviso">
+    <span><strong>Faltan {{ faltantes().length }} reglas</strong>: sin ellas las facturas quedan pendientes de contabilizar.</span>
+    @if (puedeEditar()) {
+      <button type="button" class="btn btn--primary btn--sm" (click)="sembrar()" [disabled]="sembrando()">
+        @if (sembrando()) { <span class="spinner" aria-hidden="true"></span> } Cargar las del software contable actual
+      </button>
+    }
+  </div>
+}
+
+<div class="rg-grid">
+  @for (grupo of [{ titulo: 'Factura de venta', lista: deFactura() }, { titulo: 'Nota crédito', lista: deNota() }]; track grupo.titulo) {
+    <div class="card">
+      <div class="card__head"><h3 class="card__title">{{ grupo.titulo }}</h3></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Concepto</th><th class="rg-lado">D/C</th><th>Cuenta</th></tr></thead>
+          <tbody>
+            @for (c of grupo.lista; track c.concepto) {
+              <tr [class.rg-falta]="!cuentaGeneral(c.concepto)">
+                <td>{{ c.nombre }}</td>
+                <td class="rg-lado">{{ c.lado }}</td>
+                <td>
+                  <select class="form-control" [ngModel]="cuentaGeneral(c.concepto)" (ngModelChange)="cambiarGeneral(c.concepto, $event)"
+                          [disabled]="!puedeEditar() || guardando() === c.concepto" [attr.aria-label]="'Cuenta de ' + c.nombre">
+                    <option value="">— Sin regla —</option>
+                    @for (cu of cuentas(); track cu.id) { <option [value]="cu.id">{{ cu.codigo }} · {{ cu.nombre }}</option> }
+                  </select>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</div>
+
+<div class="card rg-especificas">
+  <div class="card__head"><h3 class="card__title">Reglas por tercero</h3></div>
+  <div class="card__body">
+    <p class="rg-ayuda">Reemplazan a la regla general para ese cliente (por ejemplo, el ingreso de una ARL a una cuenta propia).</p>
+    @if (especificas().length) {
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Concepto</th><th>Tercero</th><th>Cuenta</th>@if (puedeEditar()) { <th class="col-actions"></th> }</tr></thead>
+          <tbody>
+            @for (r of especificas(); track r.id) {
+              <tr>
+                <td>{{ concepto(r.concepto) }}</td>
+                <td>{{ r.tercero_nombre ?? r.producto_nombre }}</td>
+                <td><span class="mono">{{ r.cuenta_codigo }}</span> · {{ r.cuenta_nombre }}</td>
+                @if (puedeEditar()) {
+                  <td class="col-actions">
+                    <button type="button" class="icon-action" (click)="quitar(r)" aria-label="Quitar regla" title="Quitar">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                    </button>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p class="rg-vacio">No hay reglas por tercero: todos usan la general.</p>
+    }
+
+    @if (puedeEditar()) {
+      <div class="rg-nueva">
+        <select class="form-control" [(ngModel)]="nConcepto" aria-label="Concepto">
+          <option value="">Concepto…</option>
+          @for (c of conceptos(); track c.concepto) { <option [value]="c.concepto">{{ c.documento === 'FACTURA' ? 'FV' : 'NC' }} · {{ c.nombre }}</option> }
+        </select>
+        <select class="form-control" [(ngModel)]="nTercero" aria-label="Tercero">
+          <option value="">Tercero…</option>
+          @for (t of terceros(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
+        </select>
+        <select class="form-control" [(ngModel)]="nCuenta" aria-label="Cuenta">
+          <option value="">Cuenta…</option>
+          @for (cu of cuentas(); track cu.id) { <option [value]="cu.id">{{ cu.codigo }} · {{ cu.nombre }}</option> }
+        </select>
+        <button type="button" class="btn btn--ghost" (click)="agregarEspecifica()" [disabled]="guardando() === 'nueva'">Agregar</button>
+      </div>
+    }
+  </div>
+</div>
