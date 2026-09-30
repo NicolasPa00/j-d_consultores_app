@@ -48,8 +48,14 @@
   factura (ReteICA **y retefuente**: RC-1-105 muestra que un cliente puede retenerla al pagar) a la cuenta de cada
   retención (`sst.retenciones.cuenta_id`, nueva; en Siigo la ReteICA va a la «Rete Ica N» de su tarifa, no a una por
   cliente). Pantalla `/cartera` (vista nueva `cartera`). En `jdd_dev`: cartera sincronizada y un RC-1 de prueba anulado.
-- **Siguiente:** B4-01 (cuentas por pagar, egresos y anticipos). Ojo: el DS (A4-01) sigue bloqueado, así que la CxP
-  nacerá primero de las compras (B5-01) o a mano; decidir el orden al empezar.
+- **B5-01 + B4-01 hechas (30-sep), juntas:** como el DS sigue bloqueado, la CxP nace de las compras. Compra (FC; gasto
+  interno CG) con IVA descontable y retención practicada; anticipo (RP); egreso (CE) con retención al pagar y cruce
+  de anticipos del más antiguo al más nuevo. Una compra con pagos no se anula; la anulada deja su CxP en cero y
+  marcada (`cartera_documentos.anulado`), no se borra. Pantallas `/compras` (vista nueva) y Cartera → Por pagar /
+  Egresos y anticipos. En `jdd_dev`: FC-1 y CE-1 de prueba, los dos anulados.
+- **Pendiente de B5-01:** carga masiva de compras por Excel.
+- **Siguiente:** B8-01 (centros de costo, pequeña) y B6-01 (provisiones y seguridad social, ❓ D-25), o B7-01
+  (bancos y conciliación, necesita un extracto real).
 
 ### ▶ 29-sep-2026 (noche) — PRIMER LOTE EN PRODUCCIÓN Y CARPETAS UNIFICADAS — leer esto primero
 
@@ -498,8 +504,8 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecha y verificada · ❓ espera 
 | B1-01 | Motor de comprobantes: partida doble, periodos, consecutivos (CNT-02, 03) | B0-01 | L | ✅ 29-sep (back `817d8e2`, front `77f135e`): `scripts/verificar-comprobantes.mjs` 23 OK con ROLLBACK (incluye saltarse el servicio); editor de NI y periodos probados en el navegador |
 | B2-01 | Reglas de contabilización + contabilización automática de FV, NC y DS (CNT-13, FEL-18, DSP-04) | B1-01 | L | ✅ 30-sep FV y NC (back `7668707`): `verificar-contabilizacion.mjs` reproduce FV-1-809, FV-1-807 y NC-1-87 **igual que Siigo al centavo**; backfill de la Fase A hecho en `jdd_dev` (FV-1..4, NC-1). El DS espera a A4-01. ❓ Q-28 (autorretención en todas las ventas) |
 | B3-01 | Cuentas por cobrar y recibos de caja (CXC-01..04, CNT-05) | B2-01 | L | ✅ 30-sep (back `234c8bb`): `verificar-cartera.mjs` reproduce RC-1-101, RC-1-97 y RC-1-105 **igual que Siigo** (18 OK); ciclo recibo → anulación probado en la pantalla; conciliación cartera = libro. Tarifas de ReteICA editables (supuesto de Q-12) |
-| B4-01 | Cuentas por pagar, egresos y anticipos (CXP-01..04, CNT-04) | B2-01 | L | ⬜ |
-| B5-01 | Compras, servicios y gastos internos (CYG-01..03) + carga masiva | B4-01 | L | ⬜ |
+| B4-01 | Cuentas por pagar, egresos y anticipos (CXP-01..04, CNT-04) | B2-01 | L | ✅ 30-sep (back `fb387e3`): CxP desde compras; egreso con retención al pagar y cruce de anticipos; RP-1-2 igual que Siigo; ciclo compra → egreso → anulaciones probado en pantalla. Falta la CxP del DS (espera A4-01) y el «Pagada» en `/precuentas` |
+| B5-01 | Compras, servicios y gastos internos (CYG-01..03) + carga masiva | B4-01 | L | 🟨 30-sep: compras, servicios, honorarios y gastos internos (FC/CG) con IVA descontable y retenciones; FC-1-10 igual que Siigo (`verificar-compras.mjs`). **Falta la carga masiva por Excel** (misma mecánica que A4-02, que no existe aún) |
 | B6-01 | Notas internas: provisiones y seguridad social (CNT-06, 08) | B1-01 | M | ❓ D-25 |
 | B7-01 | Bancos y conciliación bancaria (CNT-07, RPC-07) | B3-01, B4-01 | L | ❓ A3 guía |
 | B8-01 | Centros de costo (CNT-09) | B1-01 | S | ⬜ |
