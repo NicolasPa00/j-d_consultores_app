@@ -54,8 +54,17 @@
   marcada (`cartera_documentos.anulado`), no se borra. Pantallas `/compras` (vista nueva) y Cartera → Por pagar /
   Egresos y anticipos. En `jdd_dev`: FC-1 y CE-1 de prueba, los dos anulados.
 - **Pendiente de B5-01:** carga masiva de compras por Excel.
-- **Siguiente:** B8-01 (centros de costo, pequeña) y B6-01 (provisiones y seguridad social, ❓ D-25), o B7-01
-  (bancos y conciliación, necesita un extracto real).
+- **B8-01 y B10-01 hechas (30-sep).** Centros de costo (opcionales, obligatorios donde la cuenta lo exige, también
+  en el trigger) y cierre de año (CA del 31-dic contra la utilidad o la pérdida, clase 3 elegida por la contadora; el
+  PUC de desarrollo NO trae la clase 3). Vista previa del cierre de 2026 en `jdd_dev`: utilidad 1.318.742.
+- ⚠️ **Trampa del `ng serve` (30-sep):** tras varias ediciones, el servidor de desarrollo del frontend (:4001) siguió
+  pintando la plantilla VIEJA de Contabilidad aunque el chunk servido ya era el nuevo y `ng build` pasaba (sin SW,
+  sin errores; ni `touch` ni recarga forzada lo arreglaron). Casi seguro el reemplazo en caliente de plantillas de
+  Angular. **Arreglo: reiniciar la ventana del frontend** (`npm start`). Un `ng serve` en otro puerto no sirve de
+  prueba: el `CORS_ORIGIN` del backend solo admite :4001.
+- **Siguiente:** B6-01 (provisiones y seguridad social, ❓ D-25: porcentajes a validar con la contadora), B7-01
+  (bancos, necesita un extracto real), B9-01 ⛔ o la carga masiva de compras.
+
 
 ### ▶ 29-sep-2026 (noche) — PRIMER LOTE EN PRODUCCIÓN Y CARPETAS UNIFICADAS — leer esto primero
 
@@ -508,9 +517,9 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecha y verificada · ❓ espera 
 | B5-01 | Compras, servicios y gastos internos (CYG-01..03) + carga masiva | B4-01 | L | 🟨 30-sep: compras, servicios, honorarios y gastos internos (FC/CG) con IVA descontable y retenciones; FC-1-10 igual que Siigo (`verificar-compras.mjs`). **Falta la carga masiva por Excel** (misma mecánica que A4-02, que no existe aún) |
 | B6-01 | Notas internas: provisiones y seguridad social (CNT-06, 08) | B1-01 | M | ❓ D-25 |
 | B7-01 | Bancos y conciliación bancaria (CNT-07, RPC-07) | B3-01, B4-01 | L | ❓ A3 guía |
-| B8-01 | Centros de costo (CNT-09) | B1-01 | S | ⬜ |
+| B8-01 | Centros de costo (CNT-09) | B1-01 | S | ✅ 30-sep (back `aef92cf`, front `99a58b9`): maestro, opcional en movimientos y compras, obligatorio donde la cuenta lo exige (servicio + trigger) |
 | B9-01 | Saldos iniciales (CNT-11) | B3-01, B4-01 | M | ⛔ Q-20, A0-02 |
-| B10-01 | Cierre de año (CNT-12) | B1-01 | M | ⬜ |
+| B10-01 | Cierre de año (CNT-12) | B1-01 | M | ✅ 30-sep: CA al 31-dic contra utilidad/pérdida (clase 3, la elige la contadora), cierra los 12 meses; no se reabre (D-20). `verificar-cierre-y-centros.mjs` 16 OK. **No se ha visto en el navegador**: el `ng serve` del usuario sirve plantillas viejas (ver §0) |
 | B11-01 | Mes en paralelo con Siigo y criterio de aceptación | todas B | M | ⬜ |
 
 ### Fase C — Informes y complementos (rama `fase-c-informes`)
