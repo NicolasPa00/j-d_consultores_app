@@ -53,7 +53,7 @@
   de anticipos del más antiguo al más nuevo. Una compra con pagos no se anula; la anulada deja su CxP en cero y
   marcada (`cartera_documentos.anulado`), no se borra. Pantallas `/compras` (vista nueva) y Cartera → Por pagar /
   Egresos y anticipos. En `jdd_dev`: FC-1 y CE-1 de prueba, los dos anulados.
-- **Pendiente de B5-01:** carga masiva de compras por Excel.
+- **Carga masiva de compras (B5-01) y T0-19 hechas (30-sep).** Con el frontend reiniciado se validaron en pantalla los centros de costo y la revisión del cierre de año.
 - **B8-01 y B10-01 hechas (30-sep).** Centros de costo (opcionales, obligatorios donde la cuenta lo exige, también
   en el trigger) y cierre de año (CA del 31-dic contra la utilidad o la pérdida, clase 3 elegida por la contadora; el
   PUC de desarrollo NO trae la clase 3). Vista previa del cierre de 2026 en `jdd_dev`: utilidad 1.318.742.
@@ -470,7 +470,7 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecha y verificada · ❓ espera 
 | T0-15 | El cambio de estado se aplica con "Guardar" | — | M | ✅ 27-sep (local; probado en navegador headless) |
 | T0-16 | Cambiar el tipo de orden recalcula y muestra el valor | — | M | ✅ 27-sep (local) |
 | T0-18 | Ediciones de la OS que "se revierten" al recargar (el detalle se arma desde el JSON del borrador) | — | M | ✅ 27-sep (local; eran NIT, horas, vencimiento y duración de agenda) |
-| T0-19 | Ocultar "Cargar prefactura" a quien no es admin/contador (el backend ya lo exige) | T0-09 | S | ⬜ |
+| T0-19 | Ocultar "Cargar prefactura" a quien no es admin/contador (el backend ya lo exige) | T0-09 | S | ✅ 30-sep (`f3dba63`, en `fase-b-contabilidad`) |
 | T0-20 | Quitar el botón "Pendiente por facturar" de /ordenes (pedido de JD&D, 29-sep) | — | S | ✅ 29-sep (`399247e`) |
 | T0-17 | Cierre de la tanda: HANDOFF, pruebas en la app, despliegue | todas | S | 🟨 29-sep: documentado en `docs/despliegue-correcciones-26-sep.md` y subido; **despliegue en espera de la orden del usuario** |
 
@@ -514,7 +514,7 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecha y verificada · ❓ espera 
 | B2-01 | Reglas de contabilización + contabilización automática de FV, NC y DS (CNT-13, FEL-18, DSP-04) | B1-01 | L | ✅ 30-sep FV y NC (back `7668707`): `verificar-contabilizacion.mjs` reproduce FV-1-809, FV-1-807 y NC-1-87 **igual que Siigo al centavo**; backfill de la Fase A hecho en `jdd_dev` (FV-1..4, NC-1). El DS espera a A4-01. ❓ Q-28 (autorretención en todas las ventas) |
 | B3-01 | Cuentas por cobrar y recibos de caja (CXC-01..04, CNT-05) | B2-01 | L | ✅ 30-sep (back `234c8bb`): `verificar-cartera.mjs` reproduce RC-1-101, RC-1-97 y RC-1-105 **igual que Siigo** (18 OK); ciclo recibo → anulación probado en la pantalla; conciliación cartera = libro. Tarifas de ReteICA editables (supuesto de Q-12) |
 | B4-01 | Cuentas por pagar, egresos y anticipos (CXP-01..04, CNT-04) | B2-01 | L | ✅ 30-sep (back `fb387e3`): CxP desde compras; egreso con retención al pagar y cruce de anticipos; RP-1-2 igual que Siigo; ciclo compra → egreso → anulaciones probado en pantalla. Falta la CxP del DS (espera A4-01) y el «Pagada» en `/precuentas` |
-| B5-01 | Compras, servicios y gastos internos (CYG-01..03) + carga masiva | B4-01 | L | 🟨 30-sep: compras, servicios, honorarios y gastos internos (FC/CG) con IVA descontable y retenciones; FC-1-10 igual que Siigo (`verificar-compras.mjs`). **Falta la carga masiva por Excel** (misma mecánica que A4-02, que no existe aún) |
+| B5-01 | Compras, servicios y gastos internos (CYG-01..03) + carga masiva | B4-01 | L | ✅ 30-sep: compras, servicios, honorarios y gastos internos (FC/CG); FC-1-10 igual que Siigo (`verificar-compras.mjs`); carga masiva por Excel con revisión y todo-o-nada, probada en pantalla (FC-2 y CG-1 de prueba, anuladas) |
 | B6-01 | Notas internas: provisiones y seguridad social (CNT-06, 08) | B1-01 | M | ❓ D-25 |
 | B7-01 | Bancos y conciliación bancaria (CNT-07, RPC-07) | B3-01, B4-01 | L | ❓ A3 guía |
 | B8-01 | Centros de costo (CNT-09) | B1-01 | S | ✅ 30-sep (back `aef92cf`, front `99a58b9`): maestro, opcional en movimientos y compras, obligatorio donde la cuenta lo exige (servicio + trigger) |

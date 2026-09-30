@@ -5,7 +5,7 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 20-sep-2026 (ver el bloque de facturación electrónica más abajo
+> **Última actualización:** 30-sep-2026 (Fase B, ver el primer bloque 🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
 > para lo último; el resto de esta cabecera es del 16-sep) — **🚀 EL SISTEMA ESTÁ EN
 > PRODUCCIÓN**
 > (desde el 2-sep-2026) y ya lo están usando clientes reales. ORBITA vive en
@@ -16,7 +16,17 @@
 > servidor. **Lo último desplegado:** el Excel SIPAB de Bolívar dejó de leerse
 > cuando llegaba como `.xls` binario (ver §0 punto 2 y la Tanda 23 en §3).
 >
-> 🆕 **29-sep-2026 (última sesión) · A3-01 ÓRDENES PARTICULARES (sin ARL) construida en
+> 🆕🆕 **30-sep-2026 (última sesión) · FASE B — CONTABILIDAD, CASI COMPLETA.** Rama
+> **`fase-b-contabilidad`** en los dos repos (creada desde `fase-a-facturacion`, **solo local, sin push**).
+> Hecho y probado: plan de cuentas, comprobantes y periodos, contabilización automática de FV/NC (igual que
+> Siigo al centavo), cartera por cobrar y recibos de caja, compras y gastos (con carga masiva por Excel),
+> cuentas por pagar, anticipos y egresos, centros de costo y cierre de año; pantallas nuevas `/contabilidad`,
+> `/cartera`, `/compras`. **Todas las migraciones del 29/30-sep ya están en `jdd_dev`; producción NO tiene
+> ninguna** (A3-01 incluida). Falta: B6-01 (❓ D-25), B7-01 (extracto real), B9-01 ⛔, B11-01. Fallo de la
+> Fase A corregido: la fecha de emisión salía en UTC (`hoyCO()`). El detalle y las trampas nuevas, en el §0 de
+> `docs/plan-facturacion-contabilidad.md`.
+>
+> 🆕 **29-sep-2026 · A3-01 ÓRDENES PARTICULARES (sin ARL) construida en
 > `fase-a-facturacion`.** «Nueva orden manual» en `/ordenes` (solo admin) → la orden se factura
 > al propio cliente con IVA 19 %. `ordenes_servicio.arl_id` pasa a nullable con
 > `pagador_tercero_id` y un `CHECK` de un solo pagador. **⚠️ La migración
