@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar, OrdenManualForm } from './models';
+import { CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar, OrdenManualForm } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -1055,5 +1055,31 @@ export class ApiService {
   /** PDF o XML de una factura validada (exige sesión: se descarga como blob). */
   archivoFactura(id: string, tipo: 'pdf' | 'xml'): Observable<Blob> {
     return this.http.get(`${this.base}/facturacion/documentos/${id}/archivo/${tipo}`, { responseType: 'blob' });
+  }
+
+  // ---- Fase B · B0-01 · Plan de cuentas (CNT-01) ----
+
+  /** El plan completo, ordenado por código (la pantalla arma el árbol y filtra en memoria). */
+  listCuentas(): Observable<{ data: CuentaContable[]; total: number }> {
+    return this.http.get<{ data: CuentaContable[]; total: number }>(`${this.base}/contabilidad/cuentas`);
+  }
+  createCuenta(body: Partial<CuentaForm>): Observable<Wrap<CuentaContable>> {
+    return this.http.post<Wrap<CuentaContable>>(`${this.base}/contabilidad/cuentas`, body);
+  }
+  /** Edita todo menos el código (no se cambia: se crea otra y se inactiva esta). */
+  updateCuenta(id: string, body: Partial<CuentaForm>): Observable<Wrap<CuentaContable>> {
+    return this.http.put<Wrap<CuentaContable>>(`${this.base}/contabilidad/cuentas/${id}`, body);
+  }
+  /** Una cuenta no se borra: se inactiva. */
+  setCuentaActiva(id: string, activa: boolean): Observable<Wrap<CuentaContable>> {
+    return this.http.patch<Wrap<CuentaContable>>(`${this.base}/contabilidad/cuentas/${id}/activa`, { activa });
+  }
+  /** Importa el PUC desde Excel; `simular` corre todo y deshace (vista previa). */
+  importarCuentas(file: File, simular: boolean): Observable<Wrap<ResumenImportCuentas>> {
+    const fd = new FormData();
+    fd.append('file', file);
+    return this.http.post<Wrap<ResumenImportCuentas>>(
+      `${this.base}/contabilidad/cuentas/importar${queryString({ simular: simular ? 'true' : undefined })}`, fd,
+    );
   }
 }

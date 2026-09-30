@@ -49,12 +49,12 @@ export interface MeResponse {
 /** Vistas gestionables desde Configuración → Roles y permisos (= ítems del sidebar). */
 export type Vista =
   | 'dashboard' | 'importar' | 'ordenes' | 'informes' | 'precuentas' | 'empresas' | 'terceros'
-  | 'parametrizacion' | 'facturacion' | 'profesionales' | 'configuracion';
+  | 'parametrizacion' | 'facturacion' | 'contabilidad' | 'profesionales' | 'configuracion';
 
 /** Catálogo completo de vistas. Es también el fallback cuando no hay permisos conocidos. */
 export const VISTAS: Vista[] = [
   'dashboard', 'importar', 'ordenes', 'informes', 'precuentas', 'empresas', 'terceros',
-  'parametrizacion', 'facturacion', 'profesionales', 'configuracion',
+  'parametrizacion', 'facturacion', 'contabilidad', 'profesionales', 'configuracion',
 ];
 
 export interface PermisoRol {
@@ -1541,4 +1541,51 @@ export interface OrdenManualForm {
   contacto_sst_nombre: string;
   contacto_sst_telefono: string;
   contacto_sst_correo: string;
+}
+
+// ---- Fase B · B0-01 · Plan de cuentas (CNT-01) ----
+
+export type NaturalezaCuenta = 'DEBITO' | 'CREDITO';
+
+/** Una cuenta del PUC. El nivel es la longitud del código (1 clase … 8 auxiliar). */
+export interface CuentaContable {
+  id: string;
+  codigo: string;
+  nombre: string;
+  naturaleza: NaturalezaCuenta;
+  nivel: number;
+  padre_id: string | null;
+  padre_codigo: string | null;
+  acepta_movimiento: boolean;
+  exige_tercero: boolean;
+  exige_centro_costo: boolean;
+  es_cartera: 'CXC' | 'CXP' | null;
+  es_banco: boolean;
+  renglon_esf: string | null;
+  renglon_er: string | null;
+  activa: boolean;
+  n_hijas: number;
+}
+
+export interface CuentaForm {
+  codigo: string;
+  nombre: string;
+  naturaleza: NaturalezaCuenta;
+  acepta_movimiento: boolean;
+  exige_tercero: boolean;
+  exige_centro_costo: boolean;
+  es_cartera: '' | 'CXC' | 'CXP';
+  es_banco: boolean;
+}
+
+/** Resultado de importar (o simular la importación de) un PUC en Excel. */
+export interface ResumenImportCuentas {
+  leidas: number;
+  creadas: number;
+  actualizadas: number;
+  sin_cambios: number;
+  padres_provisionales: string[];
+  errores: { fila: number; codigo: string | null; error: string }[];
+  simulado: boolean;
+  total_plan: number;
 }

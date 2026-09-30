@@ -116,6 +116,13 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/parametrizacion/parametrizacion').then((m) => m.ParametrizacionComponent),
       },
       {
+        // Fase B · B0-01 · Contabilidad: plan de cuentas (y, luego, comprobantes)
+        path: 'contabilidad',
+        canActivate: [permissionGuard],
+        data: { vista: 'contabilidad' },
+        loadComponent: () => import('./pages/contabilidad/contabilidad').then((m) => m.ContabilidadComponent),
+      },
+      {
         path: 'profesionales',
         canActivate: [permissionGuard],
         data: { vista: 'profesionales' },

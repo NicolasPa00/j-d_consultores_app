@@ -1,0 +1,309 @@
+<section class="page-head cnt-head">
+  <div>
+    <h2 class="page-head__title">Contabilidad</h2>
+    <p class="page-head__sub">
+      Plan de cuentas · CNT-01 · {{ cuentas().length }} cuentas, {{ totalMovimiento() }} reciben movimiento
+    </p>
+  </div>
+
+  @if (puedeEditar()) {
+    <div class="cnt-head__actions">
+      <button type="button" class="btn btn--ghost" (click)="openImportar()">Importar desde Excel</button>
+      <button type="button" class="btn btn--primary" (click)="openNueva()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        Nueva cuenta
+      </button>
+    </div>
+  }
+</section>
+
+@if (porConfirmar()) {
+  <p class="cnt-aviso">
+    <strong>{{ porConfirmar() }} cuentas tienen el nombre «por confirmar».</strong>
+    Se crearon para completar el árbol y su nombre lo define la contadora: edítelas aquí o importe el plan de cuentas completo.
+  </p>
+}
+
+<div class="cnt-filtros">
+  <div class="cnt-search">
+    <svg class="cnt-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </svg>
+    <input
+      class="cnt-search__input"
+      type="text"
+      placeholder="Buscar por código o nombre…"
+      [ngModel]="query()"
+      (ngModelChange)="query.set($event)"
+      aria-label="Buscar cuenta"
+    />
+  </div>
+  <label class="cnt-toggle">
+    <input type="checkbox" [checked]="soloMovimiento()" (change)="soloMovimiento.set(!soloMovimiento())" />
+    Solo las que reciben movimiento
+  </label>
+  <label class="cnt-toggle">
+    <input type="checkbox" [checked]="verInactivas()" (change)="verInactivas.set(!verInactivas())" />
+    Mostrar inactivas
+  </label>
+  <span class="cnt-filtros__sep"></span>
+  <button type="button" class="btn btn--ghost btn--sm" (click)="plegarTodo()" [disabled]="!!query() || soloMovimiento()">Contraer</button>
+  <button type="button" class="btn btn--ghost btn--sm" (click)="desplegarTodo()" [disabled]="!!query() || soloMovimiento()">Expandir</button>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="table cnt-tabla">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Nombre</th>
+          <th>Naturaleza</th>
+          <th>Uso</th>
+          <th>Estado</th>
+          @if (puedeEditar()) { <th class="col-actions">Acciones</th> }
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading() && !cuentas().length) {
+          <tr><td [attr.colspan]="puedeEditar() ? 6 : 5" class="cnt-vacio">Cargando el plan de cuentas…</td></tr>
+        } @else if (!cuentas().length) {
+          <tr>
+            <td [attr.colspan]="puedeEditar() ? 6 : 5" class="cnt-vacio">
+              Todavía no hay plan de cuentas. Impórtelo desde el Excel que exporta el software contable actual.
+            </td>
+          </tr>
+        } @else if (!filas().length) {
+          <tr><td [attr.colspan]="puedeEditar() ? 6 : 5" class="cnt-vacio">Ninguna cuenta coincide con la búsqueda.</td></tr>
+        }
+        @for (c of filas(); track c.id) {
+          <tr [class.cnt-fila--grupo]="c.nivel <= 2" [class.cnt-fila--inactiva]="!c.activa">
+            <td class="cnt-codigo">
+              <span class="cnt-codigo__in" [style.padding-left.rem]="sangria(c)">
+                @if (c.n_hijas && !query() && !soloMovimiento()) {
+                  <button type="button" class="cnt-caret" [class.cnt-caret--plegada]="estaPlegada(c)" (click)="alternarPlegado(c)"
+                          [attr.aria-label]="(estaPlegada(c) ? 'Expandir ' : 'Contraer ') + c.codigo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </button>
+                } @else {
+                  <span class="cnt-caret cnt-caret--vacio"></span>
+                }
+                <span class="mono">{{ c.codigo }}</span>
+              </span>
+            </td>
+            <td>
+              <span class="cnt-nombre">{{ c.nombre }}</span>
+              <small class="cnt-nivel">{{ nombreNivel[c.nivel] }}</small>
+              @if (esProvisional(c)) { <span class="pill pill--warning">Por confirmar</span> }
+            </td>
+            <td>{{ c.naturaleza === 'DEBITO' ? 'Débito' : 'Crédito' }}</td>
+            <td>
+              <div class="cnt-usos">
+                @if (c.acepta_movimiento) { <span class="pill pill--success">Movimiento</span> }
+                @if (c.exige_tercero) { <span class="pill pill--info">Tercero</span> }
+                @if (c.exige_centro_costo) { <span class="pill pill--info">Centro de costo</span> }
+                @if (c.es_cartera) { <span class="pill pill--info">{{ c.es_cartera === 'CXC' ? 'Cartera por cobrar' : 'Cartera por pagar' }}</span> }
+                @if (c.es_banco) { <span class="pill pill--info">Banco</span> }
+              </div>
+            </td>
+            <td>
+              <span class="pill" [class]="c.activa ? 'pill--success' : 'pill--muted'">{{ c.activa ? 'Activa' : 'Inactiva' }}</span>
+            </td>
+            @if (puedeEditar()) {
+              <td class="col-actions">
+                <div class="row-actions">
+                  @if (c.nivel < 10 && c.activa) {
+                    <button type="button" class="icon-action" (click)="openNueva(c)" [attr.aria-label]="'Nueva subcuenta de ' + c.codigo" title="Nueva subcuenta">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 5v14M5 12h14" />
+                      </svg>
+                    </button>
+                  }
+                  <button type="button" class="icon-action" (click)="openEditar(c)" [attr.aria-label]="'Editar ' + c.codigo" title="Editar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                    </svg>
+                  </button>
+                  <button type="button" class="icon-action" (click)="alternarActiva(c)"
+                          [attr.aria-label]="(c.activa ? 'Inactivar ' : 'Activar ') + c.codigo" [title]="c.activa ? 'Inactivar' : 'Activar'">
+                    @if (c.activa) {
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="m5.6 5.6 12.8 12.8" />
+                      </svg>
+                    } @else {
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M20 6 9 17l-5-5" />
+                      </svg>
+                    }
+                  </button>
+                </div>
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============ MODAL · ALTA / EDICIÓN ============ -->
+@if (formOpen()) {
+  <div class="modal-backdrop" (click)="closeForm()"></div>
+  <div class="modal modal--form" role="dialog" aria-modal="true" aria-labelledby="cntFormTitle">
+    <header class="modal__head">
+      <h3 class="modal__title" id="cntFormTitle">{{ editando() ? 'Editar cuenta ' + editando()!.codigo : 'Nueva cuenta' }}</h3>
+      <button type="button" class="icon-action" (click)="closeForm()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </header>
+
+    <form class="modal__body" (ngSubmit)="save()">
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-field__label" for="cCodigo">Código *</label>
+          <input id="cCodigo" class="form-control mono" type="text" inputmode="numeric" maxlength="10"
+                 [ngModel]="draft.codigo" (ngModelChange)="cambiarCodigo($event)" name="codigo"
+                 [disabled]="!!editando()" placeholder="p. ej. 41800102" />
+          @if (editando()) {
+            <p class="form-field__hint">El código no se cambia: para moverla, cree la cuenta nueva e inactive esta.</p>
+          } @else {
+            @switch (padreDelDraft().estado) {
+              @case ('ok') {
+                <p class="form-field__hint">Cuelga de <strong>{{ $any(padreDelDraft()).padre.codigo }} · {{ $any(padreDelDraft()).padre.nombre }}</strong>.</p>
+              }
+              @case ('falta') {
+                <p class="form-field__hint form-field__hint--error">Primero hay que crear la cuenta {{ $any(padreDelDraft()).codigo }}, que la agrupa.</p>
+              }
+              @case ('longitud') {
+                <p class="form-field__hint form-field__hint--error">Un código tiene 1, 2, 4, 6, 8 o 10 dígitos; este tiene {{ $any(padreDelDraft()).largo }}.</p>
+              }
+              @case ('existe') {
+                <p class="form-field__hint form-field__hint--error">La cuenta {{ draft.codigo }} ya existe: complete los dígitos de la subcuenta.</p>
+              }
+              @case ('clase') {
+                <p class="form-field__hint">Es una clase: no cuelga de ninguna cuenta.</p>
+              }
+              @default {
+                <p class="form-field__hint">Solo dígitos. De él sale la cuenta de la que cuelga.</p>
+              }
+            }
+          }
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="cNat">Naturaleza *</label>
+          <select id="cNat" class="form-control" [(ngModel)]="draft.naturaleza" name="naturaleza">
+            <option value="DEBITO">Débito</option>
+            <option value="CREDITO">Crédito</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label class="form-field__label" for="cNombre">Nombre *</label>
+        <input id="cNombre" class="form-control" type="text" [(ngModel)]="draft.nombre" name="nombre" />
+      </div>
+
+      <div class="form-field">
+        <span class="form-field__label">Uso</span>
+        <div class="cnt-checks">
+          <label class="cnt-check">
+            <input type="checkbox" [(ngModel)]="draft.acepta_movimiento" name="mov" [disabled]="!!editando()?.n_hijas" />
+            Recibe movimiento
+          </label>
+          <label class="cnt-check"><input type="checkbox" [(ngModel)]="draft.exige_tercero" name="ter" /> Exige tercero</label>
+          <label class="cnt-check"><input type="checkbox" [(ngModel)]="draft.exige_centro_costo" name="cc" /> Exige centro de costo</label>
+          <label class="cnt-check"><input type="checkbox" [(ngModel)]="draft.es_banco" name="banco" /> Es cuenta de banco</label>
+        </div>
+        @if (editando()?.n_hijas) {
+          <p class="form-field__hint">Tiene subcuentas: los movimientos van en ellas, no en la que las agrupa.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label class="form-field__label" for="cCartera">Cartera</label>
+        <select id="cCartera" class="form-control" [(ngModel)]="draft.es_cartera" name="cartera">
+          <option value="">No lleva cartera</option>
+          <option value="CXC">Cuentas por cobrar (clientes)</option>
+          <option value="CXP">Cuentas por pagar (proveedores)</option>
+        </select>
+        <p class="form-field__hint">Su saldo se compara con el de la cartera para avisar si no cuadran.</p>
+      </div>
+
+      <footer class="modal__footer">
+        <button type="button" class="btn btn--ghost" (click)="closeForm()" [disabled]="saving()">Cancelar</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving() || (!editando() && padreDelDraft().estado !== 'ok' && padreDelDraft().estado !== 'clase')">
+          @if (saving()) { <span class="spinner" aria-hidden="true"></span> Guardando… } @else { {{ editando() ? 'Guardar' : 'Crear cuenta' }} }
+        </button>
+      </footer>
+    </form>
+  </div>
+}
+
+<!-- ============ MODAL · IMPORTAR ============ -->
+@if (importOpen()) {
+  <div class="modal-backdrop" (click)="closeImportar()"></div>
+  <div class="modal modal--form" role="dialog" aria-modal="true" aria-labelledby="cntImpTitle">
+    <header class="modal__head">
+      <h3 class="modal__title" id="cntImpTitle">Importar plan de cuentas</h3>
+      <button type="button" class="icon-action" (click)="closeImportar()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      <p class="cnt-ayuda">
+        Suba el Excel del plan de cuentas que exporta el software contable actual (columnas <strong>Código</strong>
+        y <strong>Nombre</strong>; <strong>Naturaleza</strong> si la trae). Primero se muestra qué va a pasar y
+        no se guarda nada hasta confirmar. Las cuentas que ya existen solo cambian de nombre y naturaleza: lo que
+        se haya marcado en esta pantalla (tercero, cartera, banco) se conserva.
+      </p>
+      <input type="file" class="form-control" accept=".xlsx,.xls" (change)="elegirArchivo($event)" [disabled]="importando()" />
+
+      @if (importando() && !resumen()) {
+        <p class="cnt-ayuda"><span class="spinner" aria-hidden="true"></span> Leyendo el archivo…</p>
+      }
+      @if (resumen(); as r) {
+        <div class="cnt-resumen">
+          <p><strong>{{ r.leidas }}</strong> cuentas leídas del archivo.</p>
+          <ul>
+            <li><strong>{{ r.creadas }}</strong> nuevas</li>
+            <li><strong>{{ r.actualizadas }}</strong> cambian de nombre o naturaleza</li>
+            <li><strong>{{ r.sin_cambios }}</strong> ya estaban iguales</li>
+          </ul>
+          @if (r.padres_provisionales.length) {
+            <p class="cnt-aviso cnt-aviso--inline">
+              {{ r.padres_provisionales.length }} niveles no vienen en el archivo y se crearán con el nombre «por confirmar»:
+              <span class="mono">{{ r.padres_provisionales.slice(0, 12).join(', ') }}{{ r.padres_provisionales.length > 12 ? '…' : '' }}</span>
+            </p>
+          }
+          @if (r.errores.length) {
+            <p class="form-field__hint form-field__hint--error">{{ r.errores.length }} filas no se pueden cargar y se omiten:</p>
+            <ul class="cnt-errores">
+              @for (e of r.errores.slice(0, 8); track e.fila) {
+                <li>Fila {{ e.fila }} ({{ e.codigo || 'sin código' }}): {{ e.error }}</li>
+              }
+            </ul>
+          }
+          <p>El plan quedará con <strong>{{ r.total_plan }}</strong> cuentas.</p>
+        </div>
+      }
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--ghost" (click)="closeImportar()" [disabled]="importando()">Cancelar</button>
+      <button type="button" class="btn btn--primary" (click)="importar(false)"
+              [disabled]="importando() || !resumen() || (!resumen()!.creadas && !resumen()!.actualizadas)">
+        @if (importando() && resumen()) { <span class="spinner" aria-hidden="true"></span> Importando… } @else { Importar }
+      </button>
+    </footer>
+  </div>
+}

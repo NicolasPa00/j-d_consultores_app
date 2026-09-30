@@ -5,7 +5,7 @@ import { Vista } from './models';
  *
  * Un solo inicio de sesión y una sola aplicación, pero dos espacios de trabajo
  * con su propio menú: *Operación* (el ciclo de las órdenes de las ARL) y
- * *Finanzas* (facturación electrónica y, más adelante, contabilidad). A quien
+ * *Finanzas* (facturación electrónica y contabilidad). A quien
  * tiene acceso a uno solo se le lleva directo; a quien tiene los dos se le
  * pregunta en `/sistemas`.
  *
@@ -42,9 +42,9 @@ export const SISTEMAS: Sistema[] = [
   {
     id: 'finanzas',
     nombre: 'Finanzas',
-    descripcion: 'Facturación electrónica ante la DIAN, terceros y parametrización; más adelante, la contabilidad.',
-    llaves: ['facturacion', 'terceros', 'parametrizacion'],
-    menu: ['facturacion', 'terceros', 'parametrizacion', 'precuentas', 'informes', 'configuracion'],
+    descripcion: 'Facturación electrónica ante la DIAN, contabilidad, terceros y parametrización.',
+    llaves: ['facturacion', 'contabilidad', 'terceros', 'parametrizacion'],
+    menu: ['facturacion', 'contabilidad', 'terceros', 'parametrizacion', 'precuentas', 'informes', 'configuracion'],
   },
 ];
 
@@ -61,6 +61,7 @@ export const RUTA_DE_VISTA: Record<Vista, string> = {
   facturacion: '/facturacion',
   terceros: '/terceros',
   parametrizacion: '/parametrizacion',
+  contabilidad: '/contabilidad',
 };
 
 /** Vista a la que pertenece una URL ("/ordenes?os=…" → 'ordenes'), si alguna. */
