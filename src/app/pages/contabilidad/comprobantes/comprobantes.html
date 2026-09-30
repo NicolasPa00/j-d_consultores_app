@@ -1,0 +1,238 @@
+<div class="cmp-filtros">
+  <select class="form-control" [(ngModel)]="fTipo" (ngModelChange)="cargar()" aria-label="Tipo de comprobante">
+    <option value="">Todos los tipos</option>
+    @for (t of tipos(); track t.id) { <option [value]="t.codigo">{{ t.codigo }} · {{ t.nombre }}</option> }
+  </select>
+  <select class="form-control" [(ngModel)]="fEstado" (ngModelChange)="cargar()" aria-label="Estado">
+    <option value="">Todos los estados</option>
+    <option value="BORRADOR">Borradores</option>
+    <option value="CONTABILIZADO">Contabilizados</option>
+    <option value="ANULADO">Anulados</option>
+  </select>
+  <label class="cmp-fecha">Desde <input type="date" class="form-control" [(ngModel)]="fDesde" (change)="cargar()" /></label>
+  <label class="cmp-fecha">Hasta <input type="date" class="form-control" [(ngModel)]="fHasta" (change)="cargar()" /></label>
+  <input type="text" class="form-control cmp-q" placeholder="Número, descripción o documento…" [(ngModel)]="fQ" (keyup.enter)="cargar()" aria-label="Buscar" />
+  <button type="button" class="btn btn--ghost btn--sm" (click)="limpiarFiltros()">Limpiar</button>
+  <span class="cmp-sep"></span>
+  @if (puedeEditar()) {
+    <button type="button" class="btn btn--primary" (click)="nuevaNota()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+      Nueva nota interna
+    </button>
+  }
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Comprobante</th>
+          <th>Fecha</th>
+          <th>Descripción</th>
+          <th class="col-num">Débitos</th>
+          <th class="col-num">Créditos</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading() && !comprobantes().length) {
+          <tr><td colspan="6" class="cmp-vacio">Cargando…</td></tr>
+        } @else if (!comprobantes().length) {
+          <tr><td colspan="6" class="cmp-vacio">No hay comprobantes con esos filtros.</td></tr>
+        }
+        @for (c of pag.visibles(); track c.id) {
+          <tr class="cmp-fila" (click)="abrir(c)">
+            <td>
+              <strong class="mono">{{ c.numero_completo ?? c.tipo_codigo + ' · borrador' }}</strong>
+              <small class="cmp-sub">{{ c.tipo_nombre }}</small>
+            </td>
+            <td class="mono">{{ c.fecha }}</td>
+            <td class="cmp-desc">{{ c.descripcion || '—' }}</td>
+            <td class="col-num mono">{{ pesos(c.total_debito) }}</td>
+            <td class="col-num mono">{{ pesos(c.total_credito) }}</td>
+            <td><span class="pill" [class]="tonoEstado(c.estado)">{{ etiquetaEstado[c.estado] }}</span></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <app-paginador [pag]="pag" etiqueta="comprobantes" />
+</div>
+
+<!-- ============ MODAL · DETALLE ============ -->
+@if (detalle(); as c) {
+  <div class="modal-backdrop" (click)="cerrarDetalle()"></div>
+  <div class="modal modal--ancho" role="dialog" aria-modal="true" aria-labelledby="cmpTitle">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="cmpTitle">{{ c.numero_completo ?? 'Borrador de ' + c.tipo_nombre.toLowerCase() }}</h3>
+        <small class="cmp-sub">{{ c.tipo_nombre }} · {{ c.fecha }}{{ c.creado_por_nombre ? ' · ' + c.creado_por_nombre : '' }}</small>
+      </div>
+      <span class="pill" [class]="tonoEstado(c.estado)">{{ etiquetaEstado[c.estado] }}</span>
+      <button type="button" class="icon-action" (click)="cerrarDetalle()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      @if (c.descripcion) { <p class="cmp-texto">{{ c.descripcion }}</p> }
+      @if (c.estado === 'ANULADO' && c.motivo_anulacion) {
+        <p class="cmp-anulado">Anulado: {{ c.motivo_anulacion }}</p>
+      }
+      @if (cargandoDetalle()) {
+        <p class="cmp-vacio">Cargando movimientos…</p>
+      } @else {
+        <div class="table-wrap">
+          <table class="table cmp-mov">
+            <thead>
+              <tr><th>#</th><th>Cuenta</th><th>Tercero</th><th>Detalle</th><th class="col-num">Débito</th><th class="col-num">Crédito</th></tr>
+            </thead>
+            <tbody>
+              @for (m of c.movimientos ?? []; track m.id) {
+                <tr>
+                  <td class="mono">{{ m.linea }}</td>
+                  <td><span class="mono">{{ m.cuenta_codigo }}</span> <small class="cmp-sub">{{ m.cuenta_nombre }}</small></td>
+                  <td>{{ m.tercero_nombre || '—' }}</td>
+                  <td>{{ m.descripcion || m.documento_cruce || '' }}</td>
+                  <td class="col-num mono">{{ Number(m.debito) ? pesos(m.debito) : '' }}</td>
+                  <td class="col-num mono">{{ Number(m.credito) ? pesos(m.credito) : '' }}</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="4" class="cmp-total">Totales</td>
+                <td class="col-num mono cmp-total">{{ pesos(c.total_debito) }}</td>
+                <td class="col-num mono cmp-total">{{ pesos(c.total_credito) }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      }
+
+      @if (anulando()) {
+        <div class="form-field">
+          <label class="form-field__label" for="cmpMotivo">Motivo de la anulación *</label>
+          <input id="cmpMotivo" class="form-control" type="text" [(ngModel)]="motivoAnulacion" placeholder="Qué pasó y cómo se corrige" />
+          <p class="form-field__hint">El comprobante conserva su número y sus líneas, pero deja de contar en los saldos.</p>
+        </div>
+      }
+    </div>
+    @if (puedeEditar() && !cargandoDetalle()) {
+      <footer class="modal__footer">
+        @if (c.estado === 'BORRADOR') {
+          <button type="button" class="btn btn--ghost cmp-peligro" (click)="eliminar(c)" [disabled]="accionando()">Eliminar</button>
+          <button type="button" class="btn btn--ghost" (click)="editarBorrador(c)" [disabled]="accionando()">Editar</button>
+          <button type="button" class="btn btn--primary" (click)="contabilizar(c)" [disabled]="accionando()">
+            @if (accionando()) { <span class="spinner" aria-hidden="true"></span> } Contabilizar
+          </button>
+        } @else if (c.estado === 'CONTABILIZADO' && !c.origen_tipo) {
+          @if (anulando()) {
+            <button type="button" class="btn btn--ghost" (click)="anulando.set(false)" [disabled]="accionando()">Cancelar</button>
+            <button type="button" class="btn btn--primary cmp-btn-peligro" (click)="confirmarAnular(c)" [disabled]="accionando()">
+              @if (accionando()) { <span class="spinner" aria-hidden="true"></span> } Anular comprobante
+            </button>
+          } @else {
+            <button type="button" class="btn btn--ghost cmp-peligro" (click)="empezarAnular()">Anular</button>
+          }
+        } @else if (c.estado === 'CONTABILIZADO') {
+          <p class="cmp-sub">Lo generó un documento: se anula desde ese documento.</p>
+        }
+      </footer>
+    }
+  </div>
+}
+
+<!-- ============ MODAL · EDITOR DE NOTA INTERNA ============ -->
+@if (editorOpen()) {
+  <div class="modal-backdrop" (click)="cerrarEditor()"></div>
+  <div class="modal modal--ancho" role="dialog" aria-modal="true" aria-labelledby="cmpEdTitle">
+    <header class="modal__head">
+      <h3 class="modal__title" id="cmpEdTitle">{{ editandoId() ? 'Editar borrador' : 'Nueva nota interna' }}</h3>
+      <button type="button" class="icon-action" (click)="cerrarEditor()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      <div class="cmp-cabecera">
+        <div class="form-field">
+          <label class="form-field__label" for="cmpFecha">Fecha *</label>
+          <input id="cmpFecha" type="date" class="form-control" [(ngModel)]="fecha" />
+        </div>
+        <div class="form-field cmp-cabecera__desc">
+          <label class="form-field__label" for="cmpDesc">Descripción</label>
+          <input id="cmpDesc" type="text" class="form-control" [(ngModel)]="descripcion" placeholder="p. ej. Provisión de prestaciones de septiembre" />
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table cmp-editor">
+          <thead>
+            <tr><th>Cuenta</th><th>Tercero</th><th>Detalle</th><th class="col-num">Débito</th><th class="col-num">Crédito</th><th></th></tr>
+          </thead>
+          <tbody>
+            @for (l of lineas(); track $index; let i = $index) {
+              <tr>
+                <td>
+                  <select class="form-control" [ngModel]="l.cuenta_id" (ngModelChange)="cambiar(i, 'cuenta_id', $event)" [attr.aria-label]="'Cuenta de la línea ' + (i + 1)">
+                    <option value="">Elija…</option>
+                    @for (cu of cuentasMovimiento(); track cu.id) { <option [value]="cu.id">{{ cu.codigo }} · {{ cu.nombre }}</option> }
+                  </select>
+                </td>
+                <td>
+                  <select class="form-control" [class.form-control--error]="exigeTercero(l) && !l.tercero_id"
+                          [ngModel]="l.tercero_id" (ngModelChange)="cambiar(i, 'tercero_id', $event)" [attr.aria-label]="'Tercero de la línea ' + (i + 1)">
+                    <option value="">{{ exigeTercero(l) ? 'Obligatorio…' : '—' }}</option>
+                    @for (t of terceros(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
+                  </select>
+                </td>
+                <td><input type="text" class="form-control" [ngModel]="l.descripcion" (ngModelChange)="cambiar(i, 'descripcion', $event)" [attr.aria-label]="'Detalle de la línea ' + (i + 1)" /></td>
+                <td><input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="l.debito" (ngModelChange)="cambiar(i, 'debito', $event)" [attr.aria-label]="'Débito de la línea ' + (i + 1)" /></td>
+                <td><input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="l.credito" (ngModelChange)="cambiar(i, 'credito', $event)" [attr.aria-label]="'Crédito de la línea ' + (i + 1)" /></td>
+                <td class="cmp-acc">
+                  @if (cuadre().diferencia) {
+                    <button type="button" class="icon-action" (click)="cuadrarCon(i)" title="Poner aquí la diferencia" [attr.aria-label]="'Cuadrar con la línea ' + (i + 1)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h16M4 15h16" /></svg>
+                    </button>
+                  }
+                  <button type="button" class="icon-action" (click)="quitarLinea(i)" [disabled]="lineas().length <= 2" title="Quitar línea" [attr.aria-label]="'Quitar la línea ' + (i + 1)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3">
+                <button type="button" class="btn btn--ghost btn--sm" (click)="agregarLinea()">+ Agregar línea</button>
+              </td>
+              <td class="col-num mono cmp-total">{{ pesosCentavos(cuadre().debito) }}</td>
+              <td class="col-num mono cmp-total">{{ pesosCentavos(cuadre().credito) }}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <p class="cmp-cuadre" [class.cmp-cuadre--ok]="!cuadre().diferencia && cuadre().debito > 0">
+        @if (cuadre().invalidas) {
+          Hay importes que no son números.
+        } @else if (!cuadre().debito && !cuadre().credito) {
+          Escriba los valores de las líneas.
+        } @else if (cuadre().diferencia) {
+          No cuadra: faltan {{ pesosCentavos(Math.abs(cuadre().diferencia)) }} {{ cuadre().diferencia > 0 ? 'en créditos' : 'en débitos' }}.
+        } @else {
+          Cuadra: débitos = créditos.
+        }
+      </p>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--ghost" (click)="cerrarEditor()" [disabled]="guardando()">Cancelar</button>
+      <button type="button" class="btn btn--ghost" (click)="guardar(false)" [disabled]="guardando()">Guardar borrador</button>
+      <button type="button" class="btn btn--primary" (click)="guardar(true)" [disabled]="guardando() || !!cuadre().diferencia || !cuadre().debito">
+        @if (guardando()) { <span class="spinner" aria-hidden="true"></span> Guardando… } @else { Guardar y contabilizar }
+      </button>
+    </footer>
+  </div>
+}

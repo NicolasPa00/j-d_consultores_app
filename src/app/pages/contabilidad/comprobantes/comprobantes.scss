@@ -1,0 +1,229 @@
+:host {
+  display: block;
+}
+
+.cmp-filtros {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.cmp-filtros .form-control {
+  width: auto;
+}
+
+.cmp-fecha {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.cmp-q {
+  min-width: 240px;
+}
+
+.cmp-sep {
+  flex: 1;
+}
+
+.cmp-filtros .btn svg {
+  width: 17px;
+  height: 17px;
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+}
+
+.col-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.cmp-fila {
+  cursor: pointer;
+}
+
+.cmp-sub {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.cmp-desc {
+  max-width: 340px;
+  white-space: normal;
+}
+
+.cmp-vacio {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.cmp-texto {
+  margin: 0;
+}
+
+.cmp-anulado {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.88rem;
+  color: #7a1f1f;
+  background: #fdecec;
+  border-radius: 8px;
+}
+
+.cmp-total {
+  font-weight: 700;
+}
+
+.cmp-mov td small {
+  display: inline;
+  /* Angular recorta el espacio entre elementos: sin esto sale "11100501Moneda nacional". */
+  margin-left: 0.4rem;
+}
+
+.cmp-peligro {
+  margin-right: auto;
+  color: var(--danger);
+}
+
+.cmp-btn-peligro {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+/* ===== Editor ===== */
+.cmp-cabecera {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 1rem;
+}
+
+.cmp-editor td {
+  vertical-align: middle;
+}
+
+.cmp-editor .form-control {
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.86rem;
+}
+
+.cmp-editor td:nth-child(1) { min-width: 240px; }
+.cmp-editor td:nth-child(2) { min-width: 180px; }
+.cmp-editor td:nth-child(3) { min-width: 160px; }
+.cmp-editor td:nth-child(4),
+.cmp-editor td:nth-child(5) { width: 130px; }
+
+.cmp-acc {
+  white-space: nowrap;
+}
+
+.cmp-cuadre {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #7a5a00;
+  background: #fff8e1;
+  border-radius: 8px;
+}
+
+.cmp-cuadre--ok {
+  color: #1e6b3a;
+  background: #e8f6ee;
+}
+
+/* ===== Modal (copia local: los estilos de componente son encapsulados) ===== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(15, 23, 42, 0.45);
+  animation: fade-in 0.2s ease;
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 51;
+  display: flex;
+  flex-direction: column;
+  width: 760px;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 2rem);
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 60px rgba(0, 11, 80, 0.28);
+  overflow: hidden;
+  animation: modal-in 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal--ancho {
+  width: 1040px;
+}
+
+.modal__head {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.modal__head > div,
+.modal__head > .modal__title {
+  flex: 1;
+}
+
+.modal__title {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.modal__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.1rem 1.5rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.98); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@media (max-width: 720px) {
+  .cmp-cabecera {
+    grid-template-columns: 1fr;
+  }
+}

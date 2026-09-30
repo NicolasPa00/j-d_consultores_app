@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar, OrdenManualForm } from './models';
+import { Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar, OrdenManualForm } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -1081,5 +1081,44 @@ export class ApiService {
     return this.http.post<Wrap<ResumenImportCuentas>>(
       `${this.base}/contabilidad/cuentas/importar${queryString({ simular: simular ? 'true' : undefined })}`, fd,
     );
+  }
+
+  // ---- Fase B · B1-01 · Comprobantes y periodos (CNT-02, CNT-03) ----
+
+  listTiposComprobante(): Observable<Wrap<TipoComprobante[]>> {
+    return this.http.get<Wrap<TipoComprobante[]>>(`${this.base}/contabilidad/tipos-comprobante`);
+  }
+  listComprobantes(f: { tipo?: string; estado?: string; desde?: string; hasta?: string; q?: string } = {}): Observable<{ data: Comprobante[]; total: number }> {
+    return this.http.get<{ data: Comprobante[]; total: number }>(`${this.base}/contabilidad/comprobantes${queryString(f)}`);
+  }
+  getComprobante(id: string): Observable<Wrap<Comprobante>> {
+    return this.http.get<Wrap<Comprobante>>(`${this.base}/contabilidad/comprobantes/${id}`);
+  }
+  /** Nota interna (el único tipo manual). Con `contabilizar` queda numerada en el acto. */
+  createComprobante(body: { tipo: string; fecha: string; descripcion: string; lineas: Partial<LineaComprobanteForm>[]; contabilizar?: boolean }): Observable<Wrap<Comprobante>> {
+    return this.http.post<Wrap<Comprobante>>(`${this.base}/contabilidad/comprobantes`, body);
+  }
+  updateComprobante(id: string, body: { fecha: string; descripcion: string; lineas: Partial<LineaComprobanteForm>[] }): Observable<Wrap<Comprobante>> {
+    return this.http.put<Wrap<Comprobante>>(`${this.base}/contabilidad/comprobantes/${id}`, body);
+  }
+  contabilizarComprobante(id: string): Observable<Wrap<Comprobante>> {
+    return this.http.post<Wrap<Comprobante>>(`${this.base}/contabilidad/comprobantes/${id}/contabilizar`, {});
+  }
+  /** Lo contabilizado no se edita ni se borra: se anula con motivo. */
+  anularComprobante(id: string, motivo: string): Observable<Wrap<Comprobante>> {
+    return this.http.post<Wrap<Comprobante>>(`${this.base}/contabilidad/comprobantes/${id}/anular`, { motivo });
+  }
+  deleteComprobante(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/contabilidad/comprobantes/${id}`);
+  }
+  listPeriodos(anio: number): Observable<Wrap<{ anio: number; meses: PeriodoContable[] }>> {
+    return this.http.get<Wrap<{ anio: number; meses: PeriodoContable[] }>>(`${this.base}/contabilidad/periodos${queryString({ anio })}`);
+  }
+  cerrarPeriodo(anio: number, mes: number): Observable<Wrap<PeriodoContable>> {
+    return this.http.post<Wrap<PeriodoContable>>(`${this.base}/contabilidad/periodos/${anio}/${mes}/cerrar`, {});
+  }
+  /** Solo admin, con motivo. */
+  reabrirPeriodo(anio: number, mes: number, motivo: string): Observable<Wrap<PeriodoContable>> {
+    return this.http.post<Wrap<PeriodoContable>>(`${this.base}/contabilidad/periodos/${anio}/${mes}/reabrir`, { motivo });
   }
 }

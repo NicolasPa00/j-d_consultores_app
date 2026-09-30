@@ -1,0 +1,54 @@
+<div class="per-head">
+  <button type="button" class="icon-action" (click)="cambiarAnio(-1)" aria-label="Año anterior">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+  </button>
+  <strong class="per-anio">{{ anio() }}</strong>
+  <button type="button" class="icon-action" (click)="cambiarAnio(1)" aria-label="Año siguiente">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+  </button>
+  <p class="per-ayuda">Un mes cerrado ya no admite comprobantes ni anulaciones con su fecha.</p>
+</div>
+
+<div class="per-grid">
+  @for (p of meses(); track p.mes) {
+    <div class="card per-mes" [class.per-mes--cerrado]="p.estado === 'CERRADO'">
+      <div class="per-mes__top">
+        <strong>{{ nombresMes[p.mes - 1] }}</strong>
+        <span class="pill" [class]="p.estado === 'CERRADO' ? 'pill--muted' : 'pill--success'">{{ p.estado === 'CERRADO' ? 'Cerrado' : 'Abierto' }}</span>
+      </div>
+      <p class="per-mes__cifras">
+        {{ p.contabilizados }} {{ p.contabilizados === 1 ? 'contabilizado' : 'contabilizados' }}
+        @if (p.borradores) { · <span class="per-borr">{{ p.borradores }} en borrador</span> }
+      </p>
+      @if (p.estado === 'ABIERTO' && p.motivo_reapertura) {
+        <p class="per-motivo" [title]="p.motivo_reapertura">Reabierto: {{ p.motivo_reapertura }}</p>
+      }
+      @if (p.estado === 'ABIERTO' && puedeEditar()) {
+        <button type="button" class="btn btn--ghost btn--sm" (click)="cerrar(p)" [disabled]="trabajando() === p.mes || !!p.borradores"
+                [title]="p.borradores ? 'Contabilice o elimine sus borradores antes de cerrar' : ''">Cerrar mes</button>
+      } @else if (p.estado === 'CERRADO' && esAdmin()) {
+        <button type="button" class="btn btn--ghost btn--sm" (click)="empezarReabrir(p)" [disabled]="trabajando() === p.mes">Reabrir</button>
+      }
+    </div>
+  }
+</div>
+
+@if (reabriendo(); as p) {
+  <div class="modal-backdrop" (click)="reabriendo.set(null)"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="perTitle">
+    <header class="modal__head">
+      <h3 class="modal__title" id="perTitle">Reabrir {{ nombresMes[p.mes - 1].toLowerCase() }} de {{ anio() }}</h3>
+    </header>
+    <div class="modal__body">
+      <p class="per-ayuda">Reabrir un mes ya cerrado es excepcional: queda registrado quién lo hizo y por qué.</p>
+      <div class="form-field">
+        <label class="form-field__label" for="perMotivo">Motivo *</label>
+        <input id="perMotivo" class="form-control" type="text" [(ngModel)]="motivo" placeholder="p. ej. Faltó registrar la factura de un proveedor" />
+      </div>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--ghost" (click)="reabriendo.set(null)" [disabled]="trabajando() !== null">Cancelar</button>
+      <button type="button" class="btn btn--primary" (click)="confirmarReabrir()" [disabled]="trabajando() !== null">Reabrir mes</button>
+    </footer>
+  </div>
+}

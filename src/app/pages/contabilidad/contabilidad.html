@@ -2,11 +2,15 @@
   <div>
     <h2 class="page-head__title">Contabilidad</h2>
     <p class="page-head__sub">
-      Plan de cuentas · CNT-01 · {{ cuentas().length }} cuentas, {{ totalMovimiento() }} reciben movimiento
+      @switch (pestana()) {
+        @case ('plan') { Plan de cuentas · CNT-01 · {{ cuentas().length }} cuentas, {{ totalMovimiento() }} reciben movimiento }
+        @case ('comprobantes') { Libro diario · CNT-02 · comprobantes y notas internas }
+        @case ('periodos') { Periodos contables · CNT-03 · cierre mensual }
+      }
     </p>
   </div>
 
-  @if (puedeEditar()) {
+  @if (puedeEditar() && pestana() === 'plan') {
     <div class="cnt-head__actions">
       <button type="button" class="btn btn--ghost" (click)="openImportar()">Importar desde Excel</button>
       <button type="button" class="btn btn--primary" (click)="openNueva()">
@@ -19,6 +23,17 @@
   }
 </section>
 
+<div class="tabs" role="tablist">
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'plan'" (click)="pestana.set('plan')">Plan de cuentas</button>
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'comprobantes'" (click)="pestana.set('comprobantes')">Comprobantes</button>
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'periodos'" (click)="pestana.set('periodos')">Periodos</button>
+</div>
+
+@if (pestana() === 'comprobantes') {
+  <app-comprobantes [puedeEditar]="puedeEditar()" />
+} @else if (pestana() === 'periodos') {
+  <app-periodos [puedeEditar]="puedeEditar()" [esAdmin]="esAdmin()" />
+} @else {
 @if (porConfirmar()) {
   <p class="cnt-aviso">
     <strong>{{ porConfirmar() }} cuentas tienen el nombre «por confirmar».</strong>
@@ -152,6 +167,8 @@
     </table>
   </div>
 </div>
+
+}
 
 <!-- ============ MODAL · ALTA / EDICIÓN ============ -->
 @if (formOpen()) {

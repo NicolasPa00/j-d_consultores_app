@@ -6,6 +6,10 @@ import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
 import { CuentaContable, CuentaForm, NaturalezaCuenta, ResumenImportCuentas } from '../../core/models';
+import { ComprobantesComponent } from './comprobantes/comprobantes';
+import { PeriodosComponent } from './periodos/periodos';
+
+type Pestana = 'plan' | 'comprobantes' | 'periodos';
 
 /** Longitudes válidas del código (clase, grupo, cuenta, subcuenta, auxiliar, sub-auxiliar). */
 const LONGITUDES = [1, 2, 4, 6, 8, 10];
@@ -42,7 +46,7 @@ const FORM_VACIO: CuentaForm = {
  */
 @Component({
   selector: 'app-contabilidad',
-  imports: [FormsModule],
+  imports: [FormsModule, ComprobantesComponent, PeriodosComponent],
   templateUrl: './contabilidad.html',
   styleUrl: './contabilidad.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -65,6 +69,11 @@ export class ContabilidadComponent implements OnInit {
 
   /** Admin y contador escriben; el auditor consulta (mismo criterio que el servidor). */
   protected readonly puedeEditar = computed(() => ['admin', 'contador'].includes(this.auth.usuario()?.rol ?? ''));
+  /** Reabrir un mes cerrado es solo del administrador. */
+  protected readonly esAdmin = computed(() => this.auth.usuario()?.rol === 'admin');
+
+  /** B0-01 es el plan de cuentas; B1-01 añade el libro diario y los periodos. */
+  protected readonly pestana = signal<Pestana>('plan');
 
   protected readonly porCodigo = computed(() => new Map(this.cuentas().map((c) => [c.codigo, c])));
   protected readonly totalMovimiento = computed(() => this.cuentas().filter((c) => c.acepta_movimiento && c.activa).length);

@@ -1589,3 +1589,73 @@ export interface ResumenImportCuentas {
   simulado: boolean;
   total_plan: number;
 }
+
+// ---- Fase B · B1-01 · Comprobantes y periodos (CNT-02, CNT-03) ----
+
+export type EstadoComprobante = 'BORRADOR' | 'CONTABILIZADO' | 'ANULADO';
+
+export interface TipoComprobante {
+  id: string;
+  codigo: string;
+  nombre: string;
+  consecutivo_actual: number;
+  /** Se puede crear a mano (hoy solo NI); los demás los genera su documento. */
+  manual: boolean;
+  activo: boolean;
+}
+
+export interface MovimientoContable {
+  id: string;
+  linea: number;
+  cuenta_id: string;
+  cuenta_codigo: string;
+  cuenta_nombre: string;
+  tercero_id: string | null;
+  tercero_nombre: string | null;
+  tercero_documento: string | null;
+  debito: string;
+  credito: string;
+  base: string | null;
+  descripcion: string | null;
+  documento_cruce: string | null;
+}
+
+export interface Comprobante {
+  id: string;
+  tipo_codigo: string;
+  tipo_nombre: string;
+  tipo_manual: boolean;
+  numero: number | null;
+  /** "NI-12"; null mientras es borrador (el número se asigna al contabilizar). */
+  numero_completo: string | null;
+  fecha: string;
+  descripcion: string | null;
+  estado: EstadoComprobante;
+  origen_tipo: string | null;
+  origen_id: string | null;
+  total_debito: string;
+  total_credito: string;
+  motivo_anulacion: string | null;
+  creado_por_nombre: string | null;
+  n_movimientos?: number;
+  movimientos?: MovimientoContable[];
+}
+
+/** Línea del editor de notas internas (los importes viajan como texto). */
+export interface LineaComprobanteForm {
+  cuenta_id: string;
+  tercero_id: string;
+  debito: string;
+  credito: string;
+  descripcion: string;
+}
+
+export interface PeriodoContable {
+  mes: number;
+  estado: 'ABIERTO' | 'CERRADO';
+  cerrado_en: string | null;
+  reabierto_en: string | null;
+  motivo_reapertura: string | null;
+  contabilizados: number;
+  borradores: number;
+}

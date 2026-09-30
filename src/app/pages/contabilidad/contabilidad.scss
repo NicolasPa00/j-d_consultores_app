@@ -308,3 +308,19 @@
     width: 100%;
   }
 }
+
+/* ===== Pestañas (mismo aspecto que Facturación) ===== */
+.tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.tab {
+  padding: 0.5rem 0.95rem;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.tab:hover { color: var(--text-main); background: #f1f5fa; }
+.tab--active { color: var(--primary-color); background: rgba(45, 123, 200, 0.1); border-color: var(--accent-color); }
