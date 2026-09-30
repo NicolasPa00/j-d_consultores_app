@@ -116,6 +116,13 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/parametrizacion/parametrizacion').then((m) => m.ParametrizacionComponent),
       },
       {
+        // Fase B · B5-01 · Compras y gastos
+        path: 'compras',
+        canActivate: [permissionGuard],
+        data: { vista: 'compras' },
+        loadComponent: () => import('./pages/compras/compras').then((m) => m.ComprasComponent),
+      },
+      {
         // Fase B · B3-01 · Cartera: cuentas por cobrar y recibos de caja
         path: 'cartera',
         canActivate: [permissionGuard],

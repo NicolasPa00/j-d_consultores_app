@@ -49,12 +49,12 @@ export interface MeResponse {
 /** Vistas gestionables desde Configuración → Roles y permisos (= ítems del sidebar). */
 export type Vista =
   | 'dashboard' | 'importar' | 'ordenes' | 'informes' | 'precuentas' | 'empresas' | 'terceros'
-  | 'parametrizacion' | 'facturacion' | 'contabilidad' | 'cartera' | 'profesionales' | 'configuracion';
+  | 'parametrizacion' | 'facturacion' | 'contabilidad' | 'cartera' | 'compras' | 'profesionales' | 'configuracion';
 
 /** Catálogo completo de vistas. Es también el fallback cuando no hay permisos conocidos. */
 export const VISTAS: Vista[] = [
   'dashboard', 'importar', 'ordenes', 'informes', 'precuentas', 'empresas', 'terceros',
-  'parametrizacion', 'facturacion', 'contabilidad', 'cartera', 'profesionales', 'configuracion',
+  'parametrizacion', 'facturacion', 'contabilidad', 'cartera', 'compras', 'profesionales', 'configuracion',
 ];
 
 export interface PermisoRol {
@@ -1668,7 +1668,7 @@ export interface PeriodoContable {
 
 export interface ConceptoContable {
   concepto: string;
-  documento: 'FACTURA' | 'NOTA_CREDITO';
+  documento: 'FACTURA' | 'NOTA_CREDITO' | 'COMPRA';
   nombre: string;
   lado: 'D' | 'C';
 }
@@ -1736,10 +1736,11 @@ export interface AntiguedadCartera {
 }
 
 export interface MovimientoCartera {
-  origen_tipo: 'NOTA_CREDITO' | 'RECIBO_CAJA';
+  origen_tipo: 'NOTA_CREDITO' | 'RECIBO_CAJA' | 'EGRESO';
   fecha: string;
   valor_pagado: string;
   valor_retenciones: string;
+  valor_anticipo?: string;
   soporte: string | null;
 }
 
@@ -1783,4 +1784,81 @@ export interface AplicacionReciboForm {
   cartera_documento_id: string;
   valor_pagado: string;
   retenciones: { retencion_id: string; valor: string; base?: string }[];
+}
+
+// ---- Fase B · B5-01 + B4-01 · Compras, cuentas por pagar, anticipos y egresos ----
+
+export type TipoCompra = 'COMPRA' | 'SERVICIO' | 'SERVICIO_PROFESIONAL' | 'GASTO_INTERNO';
+
+export interface Compra {
+  id: string;
+  tipo: TipoCompra;
+  tercero_id?: string;
+  tercero_nombre: string;
+  numero_proveedor: string | null;
+  cufe?: string | null;
+  fecha: string;
+  forma_pago: 'CREDITO' | 'CONTADO';
+  vencimiento: string | null;
+  descripcion?: string | null;
+  subtotal?: string;
+  total_iva?: string;
+  total_retenciones?: string;
+  total_a_pagar: string;
+  estado: 'CONTABILIZADO' | 'ANULADO';
+  motivo_anulacion?: string | null;
+  comprobante_id?: string | null;
+  comprobante_numero: string | null;
+  cxp_id?: string | null;
+  cxp_saldo: string | null;
+  items?: { id: string; cuenta_codigo: string; cuenta_nombre: string; descripcion: string; valor: string; iva_pct: string; iva_valor: string }[];
+  retenciones?: { codigo: string; nombre: string; base: string; tarifa: string; valor: string }[];
+}
+
+export interface CompraForm {
+  tipo: TipoCompra;
+  tercero_id: string;
+  numero_proveedor: string;
+  cufe: string;
+  fecha: string;
+  forma_pago: 'CREDITO' | 'CONTADO';
+  vencimiento: string;
+  cuenta_pago_id: string;
+  descripcion: string;
+  items: { cuenta_id: string; descripcion: string; valor: string; iva_pct: string }[];
+  retenciones: { retencion_id: string; valor: string }[];
+}
+
+export interface AnticipoProveedor {
+  id: string;
+  tercero_id: string;
+  tercero_nombre: string;
+  fecha: string;
+  valor: string;
+  saldo: string;
+  estado: 'CONTABILIZADO' | 'ANULADO';
+  numero: string | null;
+}
+
+export interface Egreso {
+  id: string;
+  numero: string | null;
+  tercero_nombre: string;
+  fecha: string;
+  valor_pagado: string;
+  valor_anticipos: string;
+  estado: 'CONTABILIZADO' | 'ANULADO';
+  retenido?: string;
+  obligaciones?: string | null;
+  cuenta_banco_codigo?: string | null;
+  cuenta_banco_nombre?: string | null;
+  observaciones?: string | null;
+  motivo_anulacion?: string | null;
+  aplicaciones?: { id: string; numero: string; valor_pagado: string; valor_retenciones: string; valor_anticipo: string; anulada: boolean }[];
+}
+
+export interface PropuestaEgreso {
+  obligaciones: { id: string; numero: string; fecha: string; vencimiento: string; valor: string; saldo: string }[];
+  anticipos: AnticipoProveedor[];
+  anticipo_disponible: string;
 }

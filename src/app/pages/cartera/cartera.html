@@ -1,15 +1,24 @@
 <section class="page-head car-head">
   <div>
     <h2 class="page-head__title">Cartera</h2>
-    <p class="page-head__sub">Lo que deben los clientes · CXC-01..04 · cada factura validada abre su cuenta por cobrar</p>
+    <p class="page-head__sub">Lo que deben los clientes y lo que se debe a los proveedores · CXC y CXP · cada factura abre su cuenta sola</p>
   </div>
-  @if (puedeOperar()) {
+  @if (puedeOperar() && (pestana() === 'por-cobrar' || pestana() === 'recibos')) {
     <button type="button" class="btn btn--primary" (click)="nuevoRecibo()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
       Registrar recibo de caja
     </button>
   }
 </section>
+
+@if (conciliacionCxp(); as c) {
+  @if (!c.cuadra) {
+    <p class="car-alerta">
+      <strong>Las cuentas por pagar no cuadran con la contabilidad.</strong>
+      Por pagar {{ pesos(c.saldo_cartera) }} · cuentas de proveedores {{ pesos(c.saldo_libro) }} · diferencia {{ pesos(c.diferencia) }}.
+    </p>
+  }
+}
 
 @if (conciliacion(); as c) {
   @if (!c.cuadra) {
@@ -28,6 +37,8 @@
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'recibos'" (click)="pestana.set('recibos')">
     Recibos de caja <span class="tab__count">{{ recibos().length }}</span>
   </button>
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'por-pagar'" (click)="pestana.set('por-pagar')">Por pagar</button>
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'egresos'" (click)="pestana.set('egresos')">Egresos y anticipos</button>
 </div>
 
 <!-- ======================= POR COBRAR ======================= -->
@@ -110,6 +121,11 @@
     </div>
     <app-paginador [pag]="pagRecibos" etiqueta="recibos" />
   </div>
+}
+
+<!-- ======================= POR PAGAR / EGRESOS (B4-01) ======================= -->
+@if (pestana() === 'por-pagar' || pestana() === 'egresos') {
+  <app-pagos [vista]="pestana() === 'por-pagar' ? 'por-pagar' : 'egresos'" [puedeOperar]="puedeOperar()" (cambio)="cargarConciliacion()" />
 }
 
 <!-- ============ MODAL · ESTADO DE CUENTA ============ -->

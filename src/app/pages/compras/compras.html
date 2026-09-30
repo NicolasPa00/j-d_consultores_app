@@ -1,0 +1,230 @@
+<section class="page-head cp-head">
+  <div>
+    <h2 class="page-head__title">Compras y gastos</h2>
+    <p class="page-head__sub">Facturas de proveedores, servicios y gastos internos · CYG-01..03 · se contabilizan al registrarlas</p>
+  </div>
+  @if (puedeOperar()) {
+    <button type="button" class="btn btn--primary" (click)="nueva()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+      Registrar compra o gasto
+    </button>
+  }
+</section>
+
+<div class="cp-filtros">
+  <select class="form-control" [(ngModel)]="fTipo" (ngModelChange)="cargar()" aria-label="Tipo">
+    <option value="">Todos los tipos</option>
+    @for (t of tipos; track t) { <option [value]="t">{{ etiquetaTipo[t] }}</option> }
+  </select>
+  <label class="cp-fecha">Desde <input type="date" class="form-control" [(ngModel)]="fDesde" (change)="cargar()" /></label>
+  <label class="cp-fecha">Hasta <input type="date" class="form-control" [(ngModel)]="fHasta" (change)="cargar()" /></label>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr><th>Comprobante</th><th>Fecha</th><th>Proveedor</th><th>Tipo</th><th>Factura</th><th class="col-num">Total</th><th class="col-num">Por pagar</th><th>Estado</th></tr>
+      </thead>
+      <tbody>
+        @if (loading() && !compras().length) {
+          <tr><td colspan="8" class="cp-vacio">Cargando…</td></tr>
+        } @else if (!compras().length) {
+          <tr><td colspan="8" class="cp-vacio">Todavía no hay compras registradas.</td></tr>
+        }
+        @for (c of pag.visibles(); track c.id) {
+          <tr class="cp-fila" (click)="abrir(c)">
+            <td class="mono"><strong>{{ c.comprobante_numero }}</strong></td>
+            <td class="mono">{{ c.fecha }}</td>
+            <td>{{ c.tercero_nombre }}</td>
+            <td>{{ etiquetaTipo[c.tipo] }}</td>
+            <td class="mono">{{ c.numero_proveedor || '—' }}</td>
+            <td class="col-num mono">{{ pesos(c.total_a_pagar) }}</td>
+            <td class="col-num mono">{{ c.forma_pago === 'CONTADO' ? 'De contado' : pesos(c.cxp_saldo) }}</td>
+            <td><span class="pill" [class]="c.estado === 'ANULADO' ? 'pill--muted' : 'pill--success'">{{ c.estado === 'ANULADO' ? 'Anulada' : 'Contabilizada' }}</span></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <app-paginador [pag]="pag" etiqueta="compras" />
+</div>
+
+<!-- ============ MODAL · DETALLE ============ -->
+@if (detalle(); as c) {
+  <div class="modal-backdrop" (click)="detalle.set(null)"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cpDetTitle">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="cpDetTitle">{{ etiquetaTipo[c.tipo] }} {{ c.numero_proveedor ?? '' }}</h3>
+        <small class="cp-sub">{{ c.tercero_nombre }} · {{ c.fecha }} · {{ c.comprobante_numero }}
+          · {{ c.forma_pago === 'CONTADO' ? 'de contado' : 'a crédito, vence ' + c.vencimiento }}</small>
+      </div>
+      <span class="pill" [class]="c.estado === 'ANULADO' ? 'pill--muted' : 'pill--success'">{{ c.estado === 'ANULADO' ? 'Anulada' : 'Contabilizada' }}</span>
+    </header>
+    <div class="modal__body">
+      @if (c.motivo_anulacion) { <p class="cp-anulado">Anulada: {{ c.motivo_anulacion }}</p> }
+      <table class="table">
+        <thead><tr><th>Cuenta</th><th>Detalle</th><th class="col-num">Valor</th><th class="col-num">IVA</th></tr></thead>
+        <tbody>
+          @for (i of c.items ?? []; track i.id) {
+            <tr><td><span class="mono">{{ i.cuenta_codigo }}</span> <small class="cp-sub cp-inline">{{ i.cuenta_nombre }}</small></td><td>{{ i.descripcion }}</td>
+              <td class="col-num mono">{{ pesos(i.valor) }}</td><td class="col-num mono">{{ +i.iva_valor ? pesos(i.iva_valor) : '' }}</td></tr>
+          }
+        </tbody>
+      </table>
+      <div class="cp-totales">
+        <div><span>Subtotal</span><b>{{ pesos(c.subtotal) }}</b></div>
+        @if (+(c.total_iva ?? 0)) { <div><span>IVA descontable</span><b>{{ pesos(c.total_iva) }}</b></div> }
+        @for (r of c.retenciones ?? []; track r.codigo) { <div><span>{{ r.nombre }}</span><b>− {{ pesos(r.valor) }}</b></div> }
+        <div class="cp-totales__final"><span>Total a pagar</span><b>{{ pesos(c.total_a_pagar) }}</b></div>
+        @if (c.cxp_saldo != null) { <div><span>Saldo por pagar</span><b>{{ pesos(c.cxp_saldo) }}</b></div> }
+      </div>
+      @if (anulando()) {
+        <div class="form-field">
+          <label class="form-field__label" for="cpMotivo">Motivo de la anulación *</label>
+          <input id="cpMotivo" class="form-control" type="text" [(ngModel)]="motivo" placeholder="p. ej. Se registró con el proveedor equivocado" />
+          <p class="form-field__hint">Se anula su comprobante (conserva el número). Si ya tiene pagos, primero hay que anular el egreso.</p>
+        </div>
+      }
+    </div>
+    <footer class="modal__footer">
+      @if (puedeOperar() && c.estado === 'CONTABILIZADO') {
+        @if (anulando()) {
+          <button type="button" class="btn btn--ghost" (click)="anulando.set(false)" [disabled]="trabajando()">Cancelar</button>
+          <button type="button" class="btn btn--primary cp-btn-peligro" (click)="confirmarAnular(c)" [disabled]="trabajando()">Anular compra</button>
+        } @else {
+          <button type="button" class="btn btn--ghost cp-peligro" (click)="motivo = ''; anulando.set(true)">Anular</button>
+        }
+      }
+      <button type="button" class="btn btn--primary" (click)="detalle.set(null)" [disabled]="trabajando()">Cerrar</button>
+    </footer>
+  </div>
+}
+
+<!-- ============ MODAL · REGISTRAR ============ -->
+@if (formOpen()) {
+  <div class="modal-backdrop" (click)="cerrarForm()"></div>
+  <div class="modal modal--ancho" role="dialog" aria-modal="true" aria-labelledby="cpFormTitle">
+    <header class="modal__head">
+      <h3 class="modal__title" id="cpFormTitle">Registrar compra o gasto</h3>
+      <button type="button" class="icon-action" (click)="cerrarForm()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      <div class="cp-grid">
+        <div class="form-field">
+          <label class="form-field__label" for="cpTipo">Tipo *</label>
+          <select id="cpTipo" class="form-control" [(ngModel)]="draft.tipo">
+            @for (t of tipos; track t) { <option [value]="t">{{ etiquetaTipo[t] }}</option> }
+          </select>
+        </div>
+        <div class="form-field cp-grid__ancho">
+          <label class="form-field__label" for="cpProv">Proveedor *</label>
+          <select id="cpProv" class="form-control" [(ngModel)]="draft.tercero_id">
+            <option value="">Elija…</option>
+            @for (t of proveedores(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="cpNum">Factura del proveedor {{ draft.tipo === 'GASTO_INTERNO' ? '' : '*' }}</label>
+          <input id="cpNum" class="form-control mono" type="text" [(ngModel)]="draft.numero_proveedor" placeholder="p. ej. FE-4411" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="cpFecha">Fecha *</label>
+          <input id="cpFecha" class="form-control" type="date" [(ngModel)]="draft.fecha" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="cpForma">Forma de pago *</label>
+          <select id="cpForma" class="form-control" [(ngModel)]="draft.forma_pago">
+            <option value="CREDITO">A crédito (queda por pagar)</option>
+            <option value="CONTADO">De contado (ya se pagó)</option>
+          </select>
+        </div>
+        @if (draft.forma_pago === 'CREDITO') {
+          <div class="form-field">
+            <label class="form-field__label" for="cpVence">Vence *</label>
+            <input id="cpVence" class="form-control" type="date" [(ngModel)]="draft.vencimiento" />
+          </div>
+        } @else {
+          <div class="form-field">
+            <label class="form-field__label" for="cpPago">Pagado desde *</label>
+            <select id="cpPago" class="form-control" [(ngModel)]="draft.cuenta_pago_id">
+              <option value="">Elija…</option>
+              @for (c of cuentasPago(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
+            </select>
+          </div>
+        }
+        @if (draft.tipo !== 'GASTO_INTERNO') {
+          <div class="form-field cp-grid__ancho">
+            <label class="form-field__label" for="cpCufe">CUFE (si es factura electrónica)</label>
+            <input id="cpCufe" class="form-control mono" type="text" [(ngModel)]="draft.cufe" />
+          </div>
+        }
+      </div>
+
+      <div class="table-wrap">
+        <table class="table cp-items">
+          <thead><tr><th>Cuenta de gasto o costo</th><th>Detalle</th><th class="col-num">Valor (sin IVA)</th><th>IVA</th><th></th></tr></thead>
+          <tbody>
+            @for (it of items(); track $index; let i = $index) {
+              <tr>
+                <td>
+                  <select class="form-control" [ngModel]="it.cuenta_id" (ngModelChange)="cambiarItem(i, 'cuenta_id', $event)" [attr.aria-label]="'Cuenta del ítem ' + (i + 1)">
+                    <option value="">Elija…</option>
+                    @for (c of cuentasGasto(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
+                  </select>
+                </td>
+                <td><input type="text" class="form-control" [ngModel]="it.descripcion" (ngModelChange)="cambiarItem(i, 'descripcion', $event)" [attr.aria-label]="'Detalle del ítem ' + (i + 1)" /></td>
+                <td><input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="it.valor" (ngModelChange)="cambiarItem(i, 'valor', $event)" [attr.aria-label]="'Valor del ítem ' + (i + 1)" /></td>
+                <td>
+                  <select class="form-control" [ngModel]="it.iva_pct" (ngModelChange)="cambiarItem(i, 'iva_pct', $event)" [attr.aria-label]="'IVA del ítem ' + (i + 1)">
+                    <option value="0">Sin IVA</option><option value="5">5 %</option><option value="19">19 %</option>
+                  </select>
+                </td>
+                <td>
+                  <button type="button" class="icon-action" (click)="quitarItem(i)" [disabled]="items().length <= 1" [attr.aria-label]="'Quitar el ítem ' + (i + 1)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="cp-acciones">
+        <button type="button" class="btn btn--ghost btn--sm" (click)="agregarItem()">+ Agregar ítem</button>
+        <button type="button" class="btn btn--ghost btn--sm" (click)="agregarRetencion()" [disabled]="!retencionesCompra().length"
+                [title]="retencionesCompra().length ? '' : 'No hay retenciones de compra en Parametrización'">+ Retención que JD&amp;D le practica</button>
+      </div>
+
+      @for (r of retenciones(); track $index; let i = $index) {
+        <div class="cp-ret">
+          <select class="form-control" [ngModel]="r.retencion_id" (ngModelChange)="cambiarRetencion(i, 'retencion_id', $event)" aria-label="Retención">
+            <option value="">Elija la retención…</option>
+            @for (x of retencionesCompra(); track x.id) { <option [value]="x.id">{{ x.nombre }} ({{ +x.tarifa }} %)</option> }
+          </select>
+          <input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="r.valor" (ngModelChange)="cambiarRetencion(i, 'valor', $event)"
+                 [placeholder]="'Calculada: ' + pesosC(totales().detalleRet[i])" aria-label="Valor retenido" />
+          <button type="button" class="icon-action" (click)="quitarRetencion(i)" aria-label="Quitar la retención">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+      }
+
+      <div class="cp-totales">
+        <div><span>Subtotal</span><b>{{ pesosC(totales().subtotal) }}</b></div>
+        @if (totales().iva) { <div><span>IVA descontable</span><b>{{ pesosC(totales().iva) }}</b></div> }
+        @if (totales().retenido) { <div><span>Retenciones</span><b>− {{ pesosC(totales().retenido) }}</b></div> }
+        <div class="cp-totales__final"><span>{{ draft.forma_pago === 'CREDITO' ? 'Queda por pagar' : 'Pagado' }}</span><b>{{ pesosC(totales().total) }}</b></div>
+      </div>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--ghost" (click)="cerrarForm()" [disabled]="guardando()">Cancelar</button>
+      <button type="button" class="btn btn--primary" (click)="guardar()" [disabled]="guardando() || totales().total <= 0">
+        @if (guardando()) { <span class="spinner" aria-hidden="true"></span> Registrando… } @else { Registrar y contabilizar }
+      </button>
+    </footer>
+  </div>
+}

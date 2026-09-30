@@ -41,6 +41,7 @@ export class ReglasComponent implements OnInit {
   protected readonly faltantes = computed(() => this.conceptos().filter((c) => !this.generales().has(c.concepto)));
   protected readonly deFactura = computed(() => this.conceptos().filter((c) => c.documento === 'FACTURA'));
   protected readonly deNota = computed(() => this.conceptos().filter((c) => c.documento === 'NOTA_CREDITO'));
+  protected readonly deCompra = computed(() => this.conceptos().filter((c) => c.documento === 'COMPRA'));
   private readonly nombreConcepto = computed(() => new Map(this.conceptos().map((c) => [c.concepto, c.nombre])));
 
   // Alta de una regla específica.

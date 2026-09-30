@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar, OrdenManualForm } from './models';
+import { AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar, OrdenManualForm } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -1154,11 +1154,11 @@ export class ApiService {
   // ---- Fase B · B3-01 · Cartera y recibos de caja (CXC-01..04, CNT-05) ----
 
   /** CXC-03 · Antigüedad por cliente y edad a una fecha de corte. */
-  antiguedadCartera(corte?: string): Observable<Wrap<AntiguedadCartera>> {
-    return this.http.get<Wrap<AntiguedadCartera>>(`${this.base}/cartera/antiguedad${queryString({ corte })}`);
+  antiguedadCartera(corte?: string, tipo: 'CXC' | 'CXP' = 'CXC'): Observable<Wrap<AntiguedadCartera>> {
+    return this.http.get<Wrap<AntiguedadCartera>>(`${this.base}/cartera/antiguedad${queryString({ corte, tipo: tipo === 'CXP' ? 'CXP' : undefined })}`);
   }
-  antiguedadCarteraExcel(corte?: string): Observable<Blob> {
-    return this.http.get(`${this.base}/cartera/antiguedad.xlsx${queryString({ corte })}`, { responseType: 'blob' });
+  antiguedadCarteraExcel(corte?: string, tipo: 'CXC' | 'CXP' = 'CXC'): Observable<Blob> {
+    return this.http.get(`${this.base}/cartera/antiguedad.xlsx${queryString({ corte, tipo: tipo === 'CXP' ? 'CXP' : undefined })}`, { responseType: 'blob' });
   }
   documentosCartera(f: { tercero_id?: string; todos?: boolean; corte?: string } = {}): Observable<{ data: DocumentoCartera[]; total: number }> {
     return this.http.get<{ data: DocumentoCartera[]; total: number }>(
@@ -1166,15 +1166,15 @@ export class ApiService {
     );
   }
   /** CXC-04 · Estado de cuenta de un cliente. */
-  estadoCuenta(terceroId: string): Observable<Wrap<EstadoCuentaCliente>> {
-    return this.http.get<Wrap<EstadoCuentaCliente>>(`${this.base}/cartera/estado-cuenta/${terceroId}`);
+  estadoCuenta(terceroId: string, tipo: 'CXC' | 'CXP' = 'CXC'): Observable<Wrap<EstadoCuentaCliente>> {
+    return this.http.get<Wrap<EstadoCuentaCliente>>(`${this.base}/cartera/estado-cuenta/${terceroId}${queryString({ tipo: tipo === 'CXP' ? 'CXP' : undefined })}`);
   }
-  estadoCuentaExcel(terceroId: string): Observable<Blob> {
-    return this.http.get(`${this.base}/cartera/estado-cuenta/${terceroId}.xlsx`, { responseType: 'blob' });
+  estadoCuentaExcel(terceroId: string, tipo: 'CXC' | 'CXP' = 'CXC'): Observable<Blob> {
+    return this.http.get(`${this.base}/cartera/estado-cuenta/${terceroId}.xlsx${queryString({ tipo: tipo === 'CXP' ? 'CXP' : undefined })}`, { responseType: 'blob' });
   }
-  /** Cartera contra libro: deben cuadrar. */
-  conciliacionCartera(): Observable<Wrap<ConciliacionCartera>> {
-    return this.http.get<Wrap<ConciliacionCartera>>(`${this.base}/cartera/conciliacion`);
+  /** Cartera contra libro: deben cuadrar (por cobrar o por pagar). */
+  conciliacionCartera(tipo: 'CXC' | 'CXP' = 'CXC'): Observable<Wrap<ConciliacionCartera>> {
+    return this.http.get<Wrap<ConciliacionCartera>>(`${this.base}/cartera/conciliacion${queryString({ tipo: tipo === 'CXP' ? 'CXP' : undefined })}`);
   }
   propuestaRecibo(terceroId: string): Observable<Wrap<PropuestaRecibo>> {
     return this.http.get<Wrap<PropuestaRecibo>>(`${this.base}/cartera/propuesta/${terceroId}`);
@@ -1190,5 +1190,53 @@ export class ApiService {
   }
   anularRecibo(id: string, motivo: string): Observable<Wrap<ReciboCaja>> {
     return this.http.post<Wrap<ReciboCaja>>(`${this.base}/cartera/recibos/${id}/anular`, { motivo });
+  }
+
+  // ---- Fase B · B5-01 · Compras y gastos (CYG-01..03) ----
+
+  listCompras(f: { tercero_id?: string; desde?: string; hasta?: string; tipo?: string } = {}): Observable<{ data: Compra[]; total: number }> {
+    return this.http.get<{ data: Compra[]; total: number }>(`${this.base}/compras${queryString(f)}`);
+  }
+  getCompra(id: string): Observable<Wrap<Compra>> {
+    return this.http.get<Wrap<Compra>>(`${this.base}/compras/${id}`);
+  }
+  /** Registra y contabiliza (FC o CG); a crédito abre la cuenta por pagar. */
+  createCompra(body: Partial<CompraForm>): Observable<Wrap<Compra>> {
+    return this.http.post<Wrap<Compra>>(`${this.base}/compras`, body);
+  }
+  anularCompra(id: string, motivo: string): Observable<Wrap<Compra>> {
+    return this.http.post<Wrap<Compra>>(`${this.base}/compras/${id}/anular`, { motivo });
+  }
+
+  // ---- Fase B · B4-01 · Anticipos y egresos (CXP-01..04, CNT-04) ----
+
+  listAnticipos(f: { tercero_id?: string; con_saldo?: boolean } = {}): Observable<{ data: AnticipoProveedor[]; total: number }> {
+    return this.http.get<{ data: AnticipoProveedor[]; total: number }>(
+      `${this.base}/cartera/anticipos${queryString({ tercero_id: f.tercero_id, con_saldo: f.con_saldo ? 'true' : undefined })}`,
+    );
+  }
+  createAnticipo(body: { tercero_id: string; fecha: string; cuenta_banco_id: string; valor: string; observaciones?: string }): Observable<Wrap<AnticipoProveedor>> {
+    return this.http.post<Wrap<AnticipoProveedor>>(`${this.base}/cartera/anticipos`, body);
+  }
+  anularAnticipo(id: string, motivo: string): Observable<Wrap<AnticipoProveedor>> {
+    return this.http.post<Wrap<AnticipoProveedor>>(`${this.base}/cartera/anticipos/${id}/anular`, { motivo });
+  }
+  propuestaEgreso(terceroId: string): Observable<Wrap<PropuestaEgreso>> {
+    return this.http.get<Wrap<PropuestaEgreso>>(`${this.base}/cartera/propuesta-egreso/${terceroId}`);
+  }
+  listEgresos(f: { tercero_id?: string } = {}): Observable<{ data: Egreso[]; total: number }> {
+    return this.http.get<{ data: Egreso[]; total: number }>(`${this.base}/cartera/egresos${queryString(f)}`);
+  }
+  getEgreso(id: string): Observable<Wrap<Egreso>> {
+    return this.http.get<Wrap<Egreso>>(`${this.base}/cartera/egresos/${id}`);
+  }
+  createEgreso(body: {
+    tercero_id: string; fecha: string; cuenta_banco_id?: string; observaciones?: string;
+    aplicaciones: { cartera_documento_id: string; valor_pagado: string; valor_anticipo?: string; retenciones: { retencion_id: string; valor: string }[] }[];
+  }): Observable<Wrap<Egreso>> {
+    return this.http.post<Wrap<Egreso>>(`${this.base}/cartera/egresos`, body);
+  }
+  anularEgreso(id: string, motivo: string): Observable<Wrap<Egreso>> {
+    return this.http.post<Wrap<Egreso>>(`${this.base}/cartera/egresos/${id}/anular`, { motivo });
   }
 }

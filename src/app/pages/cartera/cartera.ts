@@ -12,8 +12,10 @@ import {
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 import { aCentavos } from '../contabilidad/comprobantes/comprobantes';
+import { PagosComponent } from './pagos/pagos';
 
-type Pestana = 'por-cobrar' | 'recibos';
+/** B4-01 añade lo que JD&D debe a sus proveedores (por pagar) y cómo les paga. */
+type Pestana = 'por-cobrar' | 'recibos' | 'por-pagar' | 'egresos';
 
 const PESOS = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 2 });
 const ETIQUETA_EDAD: Record<EdadCartera, string> = {
@@ -48,7 +50,7 @@ function hoyLocal(): string {
  */
 @Component({
   selector: 'app-cartera',
-  imports: [FormsModule, PaginadorComponent],
+  imports: [FormsModule, PaginadorComponent, PagosComponent],
   templateUrl: './cartera.html',
   styleUrl: './cartera.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -64,6 +66,7 @@ export class CarteraComponent implements OnInit {
   protected readonly puedeOperar = computed(() => ['admin', 'contador'].includes(this.auth.usuario()?.rol ?? ''));
 
   protected readonly conciliacion = signal<ConciliacionCartera | null>(null);
+  protected readonly conciliacionCxp = signal<ConciliacionCartera | null>(null);
 
   ngOnInit(): void {
     this.cargarAntiguedad();
@@ -79,8 +82,9 @@ export class CarteraComponent implements OnInit {
     return PESOS.format(c / 100);
   }
 
-  private cargarConciliacion(): void {
+  protected cargarConciliacion(): void {
     this.api.conciliacionCartera().subscribe({ next: (r) => this.conciliacion.set(r.data) });
+    this.api.conciliacionCartera('CXP').subscribe({ next: (r) => this.conciliacionCxp.set(r.data) });
   }
 
   private guardarArchivo(blob: Blob, nombre: string): void {

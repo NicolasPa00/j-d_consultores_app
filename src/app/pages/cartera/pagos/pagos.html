@@ -1,0 +1,303 @@
+<!-- ======================= POR PAGAR ======================= -->
+@if (vista() === 'por-pagar') {
+  <div class="pg-filtros">
+    <label class="pg-fecha">Corte <input type="date" class="form-control" [(ngModel)]="corte" (change)="cargarAntiguedad()" /></label>
+    <span class="pg-sep"></span>
+    <button type="button" class="btn btn--ghost btn--sm" (click)="exportarAntiguedad()">Exportar a Excel</button>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Proveedor</th><th class="col-num">Obligaciones</th>
+            @for (e of antiguedad()?.edades ?? []; track e) { <th class="col-num">{{ etiquetaEdad[e] }}</th> }
+            <th class="col-num">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (!antiguedad()?.clientes?.length) { <tr><td colspan="8" class="pg-vacio">No se le debe nada a ningún proveedor a esta fecha.</td></tr> }
+          @for (c of antiguedad()?.clientes ?? []; track c.tercero_id) {
+            <tr class="pg-fila" (click)="abrirEstado(c.tercero_id)" title="Ver el estado de cuenta">
+              <td><strong>{{ c.tercero_nombre }}</strong></td>
+              <td class="col-num">{{ c.documentos }}</td>
+              @for (e of antiguedad()!.edades; track e) {
+                <td class="col-num mono" [class.pg-vencido]="e !== 'POR_VENCER' && +c[e] > 0">{{ +c[e] ? pesos(c[e]) : '' }}</td>
+              }
+              <td class="col-num mono"><strong>{{ pesos(c.TOTAL) }}</strong></td>
+            </tr>
+          }
+        </tbody>
+        @if (antiguedad()?.clientes?.length) {
+          <tfoot>
+            <tr><td><strong>Total</strong></td><td></td>
+              @for (e of antiguedad()!.edades; track e) { <td class="col-num mono"><strong>{{ pesos(antiguedad()!.total[e]) }}</strong></td> }
+              <td class="col-num mono"><strong>{{ pesos(antiguedad()!.total.TOTAL) }}</strong></td></tr>
+          </tfoot>
+        }
+      </table>
+    </div>
+  </div>
+}
+
+<!-- ======================= EGRESOS Y ANTICIPOS ======================= -->
+@if (vista() === 'egresos') {
+  @if (puedeOperar()) {
+    <div class="pg-filtros">
+      <span class="pg-sep"></span>
+      <button type="button" class="btn btn--ghost" (click)="nuevoAnticipo()">Registrar anticipo</button>
+      <button type="button" class="btn btn--primary" (click)="nuevoEgreso()">Registrar egreso</button>
+    </div>
+  }
+  <div class="card">
+    <div class="card__head"><h3 class="card__title">Comprobantes de egreso</h3></div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Egreso</th><th>Fecha</th><th>Proveedor</th><th>Obligaciones</th><th class="col-num">Pagado</th><th class="col-num">Anticipo cruzado</th><th class="col-num">Retenido</th><th>Estado</th></tr></thead>
+        <tbody>
+          @if (!egresos().length) { <tr><td colspan="8" class="pg-vacio">Todavía no hay egresos.</td></tr> }
+          @for (e of pagEgresos.visibles(); track e.id) {
+            <tr class="pg-fila" (click)="abrirEgreso(e)">
+              <td class="mono"><strong>{{ e.numero }}</strong></td>
+              <td class="mono">{{ e.fecha }}</td>
+              <td>{{ e.tercero_nombre }}</td>
+              <td class="mono pg-lista">{{ e.obligaciones }}</td>
+              <td class="col-num mono">{{ pesos(e.valor_pagado) }}</td>
+              <td class="col-num mono">{{ +e.valor_anticipos ? pesos(e.valor_anticipos) : '' }}</td>
+              <td class="col-num mono">{{ +(e.retenido ?? 0) ? pesos(e.retenido) : '' }}</td>
+              <td><span class="pill" [class]="e.estado === 'ANULADO' ? 'pill--muted' : 'pill--success'">{{ e.estado === 'ANULADO' ? 'Anulado' : 'Contabilizado' }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <app-paginador [pag]="pagEgresos" etiqueta="egresos" />
+  </div>
+
+  <div class="card pg-anticipos">
+    <div class="card__head"><h3 class="card__title">Anticipos a proveedores</h3></div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Anticipo</th><th>Fecha</th><th>Proveedor</th><th class="col-num">Valor</th><th class="col-num">Por cruzar</th><th>Estado</th></tr></thead>
+        <tbody>
+          @if (!anticipos().length) { <tr><td colspan="6" class="pg-vacio">No hay anticipos.</td></tr> }
+          @for (a of anticipos(); track a.id) {
+            <tr>
+              <td class="mono"><strong>{{ a.numero }}</strong></td>
+              <td class="mono">{{ a.fecha }}</td>
+              <td>{{ a.tercero_nombre }}</td>
+              <td class="col-num mono">{{ pesos(a.valor) }}</td>
+              <td class="col-num mono">{{ pesos(a.saldo) }}</td>
+              <td><span class="pill" [class]="a.estado === 'ANULADO' ? 'pill--muted' : +a.saldo ? 'pill--warning' : 'pill--success'">
+                {{ a.estado === 'ANULADO' ? 'Anulado' : +a.saldo ? 'Por cruzar' : 'Cruzado' }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+<!-- ============ MODAL · ESTADO DE CUENTA DEL PROVEEDOR ============ -->
+@if (estado(); as e) {
+  <div class="modal-backdrop" (click)="estado.set(null)"></div>
+  <div class="modal modal--ancho" role="dialog" aria-modal="true" aria-labelledby="pgEcTitle">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="pgEcTitle">Estado de cuenta · {{ e.tercero.nombre }}</h3>
+        <small class="pg-sub">{{ e.tercero.numero_documento }} · se le debe {{ pesos(e.saldo) }}</small>
+      </div>
+    </header>
+    <div class="modal__body">
+      <table class="table">
+        <thead><tr><th>Fecha</th><th>Concepto</th><th>Vence</th><th class="col-num">Cargo</th><th class="col-num">Abono</th><th class="col-num">Saldo</th></tr></thead>
+        <tbody>
+          @for (d of e.documentos; track d.id) {
+            <tr class="pg-doc">
+              <td class="mono">{{ d.fecha }}</td><td><strong>Obligación {{ d.numero }}</strong></td><td class="mono">{{ d.vencimiento }}</td>
+              <td class="col-num mono">{{ pesos(d.valor) }}</td><td></td><td class="col-num mono"><strong>{{ pesos(d.saldo) }}</strong></td>
+            </tr>
+            @for (m of d.movimientos; track $index) {
+              <tr>
+                <td class="mono">{{ m.fecha }}</td>
+                <td class="pg-mov">Egreso {{ m.soporte }}
+                  @if (+m.valor_retenciones) { <small>(retenido {{ pesos(m.valor_retenciones) }})</small> }
+                  @if (+(m.valor_anticipo ?? 0)) { <small>(anticipo {{ pesos(m.valor_anticipo) }})</small> }</td>
+                <td></td><td></td>
+                <td class="col-num mono">{{ pesos(+m.valor_pagado + +m.valor_retenciones + +(m.valor_anticipo ?? 0)) }}</td><td></td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--ghost" (click)="exportarEstado(e)">Exportar a Excel</button>
+      <button type="button" class="btn btn--primary" (click)="estado.set(null)">Cerrar</button>
+    </footer>
+  </div>
+}
+
+<!-- ============ MODAL · DETALLE DEL EGRESO ============ -->
+@if (egreso(); as e) {
+  <div class="modal-backdrop" (click)="egreso.set(null)"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pgEgTitle">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="pgEgTitle">Egreso {{ e.numero }}</h3>
+        <small class="pg-sub">{{ e.tercero_nombre }} · {{ e.fecha }}{{ e.cuenta_banco_codigo ? ' · ' + e.cuenta_banco_codigo + ' ' + e.cuenta_banco_nombre : '' }}</small>
+      </div>
+      <span class="pill" [class]="e.estado === 'ANULADO' ? 'pill--muted' : 'pill--success'">{{ e.estado === 'ANULADO' ? 'Anulado' : 'Contabilizado' }}</span>
+    </header>
+    <div class="modal__body">
+      @if (e.motivo_anulacion) { <p class="pg-anulado">Anulado: {{ e.motivo_anulacion }}</p> }
+      <table class="table">
+        <thead><tr><th>Obligación</th><th class="col-num">Pagado</th><th class="col-num">Anticipo</th><th class="col-num">Retenido</th></tr></thead>
+        <tbody>
+          @for (a of e.aplicaciones ?? []; track a.id) {
+            <tr><td class="mono">{{ a.numero }}</td><td class="col-num mono">{{ pesos(a.valor_pagado) }}</td>
+              <td class="col-num mono">{{ +a.valor_anticipo ? pesos(a.valor_anticipo) : '' }}</td><td class="col-num mono">{{ +a.valor_retenciones ? pesos(a.valor_retenciones) : '' }}</td></tr>
+          }
+        </tbody>
+      </table>
+      @if (anulando()) {
+        <div class="form-field">
+          <label class="form-field__label" for="pgMotivo">Motivo de la anulación *</label>
+          <input id="pgMotivo" class="form-control" type="text" [(ngModel)]="motivo" placeholder="p. ej. Transferencia rechazada" />
+        </div>
+      }
+    </div>
+    <footer class="modal__footer">
+      @if (puedeOperar() && e.estado === 'CONTABILIZADO') {
+        @if (anulando()) {
+          <button type="button" class="btn btn--ghost" (click)="anulando.set(false)" [disabled]="trabajando()">Cancelar</button>
+          <button type="button" class="btn btn--primary pg-btn-peligro" (click)="confirmarAnular(e)" [disabled]="trabajando()">Anular egreso</button>
+        } @else {
+          <button type="button" class="btn btn--ghost pg-peligro" (click)="motivo = ''; anulando.set(true)">Anular</button>
+        }
+      }
+      <button type="button" class="btn btn--primary" (click)="egreso.set(null)" [disabled]="trabajando()">Cerrar</button>
+    </footer>
+  </div>
+}
+
+<!-- ============ MODAL · NUEVO ANTICIPO ============ -->
+@if (anticipoOpen()) {
+  <div class="modal-backdrop" (click)="anticipoOpen.set(false)"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pgAnTitle">
+    <header class="modal__head"><h3 class="modal__title" id="pgAnTitle">Registrar anticipo a un proveedor</h3></header>
+    <div class="modal__body">
+      <div class="form-field">
+        <label class="form-field__label" for="pgAnProv">Proveedor *</label>
+        <select id="pgAnProv" class="form-control" [(ngModel)]="aTercero">
+          <option value="">Elija…</option>
+          @for (t of proveedores(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
+        </select>
+      </div>
+      <div class="pg-dos">
+        <div class="form-field">
+          <label class="form-field__label" for="pgAnFecha">Fecha *</label>
+          <input id="pgAnFecha" type="date" class="form-control" [(ngModel)]="aFecha" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="pgAnValor">Valor *</label>
+          <input id="pgAnValor" type="text" inputmode="decimal" class="form-control mono" [(ngModel)]="aValor" />
+        </div>
+      </div>
+      <div class="form-field">
+        <label class="form-field__label" for="pgAnBanco">Sale del banco *</label>
+        <select id="pgAnBanco" class="form-control" [(ngModel)]="aBanco">
+          <option value="">Elija…</option>
+          @for (b of bancos(); track b.id) { <option [value]="b.id">{{ b.codigo }} · {{ b.nombre }}</option> }
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-field__label" for="pgAnObs">Observaciones</label>
+        <input id="pgAnObs" type="text" class="form-control" [(ngModel)]="aObs" />
+      </div>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--ghost" (click)="anticipoOpen.set(false)" [disabled]="trabajando()">Cancelar</button>
+      <button type="button" class="btn btn--primary" (click)="guardarAnticipo()" [disabled]="trabajando()">Registrar y contabilizar</button>
+    </footer>
+  </div>
+}
+
+<!-- ============ MODAL · NUEVO EGRESO ============ -->
+@if (egresoOpen()) {
+  <div class="modal-backdrop" (click)="egresoOpen.set(false)"></div>
+  <div class="modal modal--ancho" role="dialog" aria-modal="true" aria-labelledby="pgEgNTitle">
+    <header class="modal__head"><h3 class="modal__title" id="pgEgNTitle">Registrar egreso</h3></header>
+    <div class="modal__body">
+      <div class="pg-tres">
+        <div class="form-field">
+          <label class="form-field__label" for="pgEgProv">Proveedor *</label>
+          <select id="pgEgProv" class="form-control" [ngModel]="eTercero" (ngModelChange)="elegirProveedor($event)">
+            <option value="">Elija…</option>
+            @for (t of proveedores(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="pgEgFecha">Fecha *</label>
+          <input id="pgEgFecha" type="date" class="form-control" [(ngModel)]="eFecha" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="pgEgBanco">Sale del banco</label>
+          <select id="pgEgBanco" class="form-control" [(ngModel)]="eBanco">
+            <option value="">Elija…</option>
+            @for (b of bancos(); track b.id) { <option [value]="b.id">{{ b.codigo }} · {{ b.nombre }}</option> }
+          </select>
+        </div>
+      </div>
+      @if (eTercero && propuesta(); as p) {
+        @if (!filas().length) {
+          <p class="pg-vacio">A este proveedor no se le debe nada.</p>
+        } @else {
+          @if (+p.anticipo_disponible) {
+            <p class="pg-ayuda">Tiene <strong>{{ pesos(p.anticipo_disponible) }}</strong> en anticipos por cruzar: escriba en «Anticipo» cuánto se aplica a cada obligación.</p>
+          }
+          <div class="table-wrap">
+            <table class="table pg-editor">
+              <thead><tr><th></th><th>Obligación</th><th>Vence</th><th class="col-num">Saldo</th><th class="col-num">Pagado</th><th class="col-num">Anticipo</th><th>Retención</th><th class="col-num">Retenido</th></tr></thead>
+              <tbody>
+                @for (f of filas(); track f.id; let i = $index) {
+                  <tr [class.pg-marcada]="f.marcada">
+                    <td><input type="checkbox" [checked]="f.marcada" (change)="cambiarFila(i, 'marcada', $any($event.target).checked)" [attr.aria-label]="'Incluir ' + f.numero" /></td>
+                    <td class="mono">{{ f.numero }}</td>
+                    <td class="mono">{{ f.vencimiento }}</td>
+                    <td class="col-num mono">{{ pesos(f.saldo) }}</td>
+                    <td><input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="f.pagado" (ngModelChange)="cambiarFila(i, 'pagado', $event)" [disabled]="!f.marcada" [attr.aria-label]="'Pagado de ' + f.numero" /></td>
+                    <td><input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="f.anticipo" (ngModelChange)="cambiarFila(i, 'anticipo', $event)" [disabled]="!f.marcada || !+p.anticipo_disponible" [attr.aria-label]="'Anticipo de ' + f.numero" /></td>
+                    <td>
+                      <select class="form-control" [ngModel]="f.retencion_id" (ngModelChange)="cambiarFila(i, 'retencion_id', $event)" [disabled]="!f.marcada" [attr.aria-label]="'Retención de ' + f.numero">
+                        <option value="">Ninguna</option>
+                        @for (x of retencionesCompra(); track x.id) { <option [value]="x.id">{{ x.nombre }}</option> }
+                      </select>
+                    </td>
+                    <td><input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="f.retenido" (ngModelChange)="cambiarFila(i, 'retenido', $event)" [disabled]="!f.marcada" [attr.aria-label]="'Retenido de ' + f.numero" /></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p class="pg-cuadre" [class.pg-cuadre--mal]="totales().excedidas || totales().invalidas || totales().anticipo > totales().disponible">
+            @if (totales().invalidas) { Hay valores que no son números. }
+            @else if (totales().excedidas) { Lo pagado, cruzado y retenido supera el saldo de {{ totales().excedidas }} obligación(es). }
+            @else if (totales().anticipo > totales().disponible) { Se cruza más anticipo ({{ pesosC(totales().anticipo) }}) del disponible ({{ pesosC(totales().disponible) }}). }
+            @else { Sale del banco: <strong>{{ pesosC(totales().pagado) }}</strong> · anticipo {{ pesosC(totales().anticipo) }} · retenido {{ pesosC(totales().retenido) }}. }
+          </p>
+          <div class="form-field">
+            <label class="form-field__label" for="pgEgObs">Observaciones</label>
+            <input id="pgEgObs" type="text" class="form-control" [(ngModel)]="eObs" placeholder="p. ej. número de la transferencia" />
+          </div>
+        }
+      }
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--ghost" (click)="egresoOpen.set(false)" [disabled]="trabajando()">Cancelar</button>
+      <button type="button" class="btn btn--primary" (click)="guardarEgreso()" [disabled]="trabajando() || !totales().marcadas">
+        @if (trabajando()) { <span class="spinner" aria-hidden="true"></span> Registrando… } @else { Registrar y contabilizar }
+      </button>
+    </footer>
+  </div>
+}
