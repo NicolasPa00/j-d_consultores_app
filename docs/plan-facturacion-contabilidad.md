@@ -36,8 +36,14 @@
   función de trigger compartida por dos tablas hay que ramificar con `IF` anidados. (2) `ng serve` no siempre
   ve los archivos reescritos con Python: si la pantalla no cambia, `touch` al archivo. (3) La fecha por defecto
   de un formulario va en hora LOCAL: `toISOString()` de noche en Colombia ya es el día siguiente.
-- **Siguiente:** B2-01 (reglas de contabilización + contabilizar FV y NC, con backfill de lo emitido en la A).
-  El DS espera a A4-01.
+- **B2-01 hecha (30-sep):** reglas editables + asiento automático al validar (fuera de la transacción de la
+  validación: si falla, la factura sigue válida y queda pendiente con el motivo). Idéntico a Siigo en los tres
+  documentos del auxiliar. Reglas cargadas y backfill hecho en `jdd_dev`.
+- **Fallo de la Fase A corregido de paso (`0ccb7e7`):** `fecha_emision` salía en UTC (`toISOString`), así que una
+  factura emitida después de las 7 p. m. quedaba con fecha de mañana (y el último día del mes, en el periodo
+  siguiente). Ahora `hoyCO()` (`utils/formato.js`). Las 3 facturas de prueba afectadas se corrigieron en `jdd_dev`.
+  ⚠️ Los `CURRENT_DATE` de SQL siguen en UTC (base en UTC): revisar si alguno decide algo de negocio.
+- **Siguiente:** B3-01 (cartera por cobrar y recibos de caja; ReteICA al pagar con el supuesto de Q-12).
 
 ### ▶ 29-sep-2026 (noche) — PRIMER LOTE EN PRODUCCIÓN Y CARPETAS UNIFICADAS — leer esto primero
 
@@ -484,7 +490,7 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecha y verificada · ❓ espera 
 |---|---|---|---|---|
 | B0-01 | Plan de cuentas (CNT-01) | A0-10 | M | ✅ 29-sep (back `8b380bd`, front `841bdbe`): árbol por código, importador Excel con simulación, 181 cuentas sembradas en `jdd_dev` desde el auxiliar (24 «por confirmar»). La carga real espera ❓ Q-22 |
 | B1-01 | Motor de comprobantes: partida doble, periodos, consecutivos (CNT-02, 03) | B0-01 | L | ✅ 29-sep (back `817d8e2`, front `77f135e`): `scripts/verificar-comprobantes.mjs` 23 OK con ROLLBACK (incluye saltarse el servicio); editor de NI y periodos probados en el navegador |
-| B2-01 | Reglas de contabilización + contabilización automática de FV, NC y DS (CNT-13, FEL-18, DSP-04) | B1-01 | L | ⬜ |
+| B2-01 | Reglas de contabilización + contabilización automática de FV, NC y DS (CNT-13, FEL-18, DSP-04) | B1-01 | L | ✅ 30-sep FV y NC (back `7668707`): `verificar-contabilizacion.mjs` reproduce FV-1-809, FV-1-807 y NC-1-87 **igual que Siigo al centavo**; backfill de la Fase A hecho en `jdd_dev` (FV-1..4, NC-1). El DS espera a A4-01. ❓ Q-28 (autorretención en todas las ventas) |
 | B3-01 | Cuentas por cobrar y recibos de caja (CXC-01..04, CNT-05) | B2-01 | L | ❓ Q-12 |
 | B4-01 | Cuentas por pagar, egresos y anticipos (CXP-01..04, CNT-04) | B2-01 | L | ⬜ |
 | B5-01 | Compras, servicios y gastos internos (CYG-01..03) + carga masiva | B4-01 | L | ⬜ |
@@ -1902,6 +1908,7 @@ contradice el supuesto, abrir una tarea de ajuste en el tablero.
 | Q-20 | Fecha de corte para saldos iniciales y salida de Siigo (D-19) | — | B9-01 ⛔ |
 | Q-21 | ¿Cuál es la dirección correcta del emisor? (RUT, facturas y resolución dicen tres distintas, §3.1) | La del RUT | A0-09 |
 | Q-22 | Envíen el **PUC completo** exportado de Siigo y el balance de prueba por tercero (solo llegó el auxiliar de septiembre) | Se desarrolla con las 80 cuentas del auxiliar | B0-01 (carga real) |
+| Q-28 | ¿La autorretención (1,1 % del subtotal, 13551816/23657502) va en TODAS las ventas? En el auxiliar de septiembre la llevan las facturas a ARL y la del privado (FV-1-807); Orbita la aplica siempre con la retención AUTORRETENCION activa | Sí, en todas | B2-01 |
 | Q-23 | Siigo pone vencimiento = fecha de emisión en las facturas a crédito. ¿Cuál es el plazo real de pago de cada pagador? | 30 días | B3-01 (antigüedad) |
 | Q-24 | ¿Qué exige cada plataforma de ARL para radicar (un PDF, un ZIP, tamaño máximo, orden de los documentos)? Plantilla del paz y salvo | Un PDF único ≤ 10 MB | A6-01 |
 | Q-25 | Plantilla de descripción de línea: ¿de qué campo sale `{numero_autorizacion}` (Colmena) para cada orden? Hoy no hay ninguno extraído con ese nombre | Queda vacío en la descripción, editable a mano | A1-04 (cosmético) |
