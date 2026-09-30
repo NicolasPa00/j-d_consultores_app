@@ -1,0 +1,247 @@
+:host {
+  display: block;
+}
+
+.car-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.car-head .btn svg {
+  width: 17px;
+  height: 17px;
+}
+
+.car-alerta {
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.95rem;
+  font-size: 0.9rem;
+  color: #7a1f1f;
+  background: #fdecec;
+  border-left: 4px solid var(--danger);
+  border-radius: 0 8px 8px 0;
+}
+
+/* ===== Pestañas (mismo aspecto que Facturación) ===== */
+.tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.tab {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  padding: 0.55rem 1.1rem; font: inherit; font-size: 0.9rem; font-weight: 600;
+  color: var(--text-muted); background: transparent; border: 1px solid transparent;
+  border-radius: 999px; cursor: pointer;
+}
+.tab:hover { color: var(--text-main); background: #f1f5f9; }
+.tab--active { color: var(--primary-color); background: rgba(45, 123, 200, 0.1); border-color: var(--accent-color); }
+.tab__count { font-size: 0.75rem; padding: 0 0.45rem; border-radius: 999px; background: #e8eef6; color: var(--text-main); }
+
+.car-filtros {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.car-fecha {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.car-fecha .form-control {
+  width: auto;
+}
+
+.car-sep {
+  flex: 1;
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+}
+
+.col-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.car-fila {
+  cursor: pointer;
+}
+
+.car-vencido {
+  color: #9a3a00;
+  font-weight: 600;
+}
+
+.car-vacio {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.car-facturas {
+  max-width: 220px;
+  white-space: normal;
+  font-size: 0.82rem;
+}
+
+.car-sub {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.car-doc td {
+  background: #f7f9fc;
+}
+
+.car-mov {
+  padding-left: 1.6rem;
+  font-size: 0.86rem;
+}
+
+.car-mov small {
+  color: var(--text-muted);
+}
+
+.car-anulado {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.88rem;
+  color: #7a1f1f;
+  background: #fdecec;
+  border-radius: 8px;
+}
+
+.car-peligro {
+  margin-right: auto;
+  color: var(--danger);
+}
+
+.car-btn-peligro {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+/* ===== Nuevo recibo ===== */
+.car-cabecera {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.5fr;
+  gap: 1rem;
+}
+
+.car-ayuda {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+
+.car-editor .form-control {
+  padding: 0.4rem 0.55rem;
+  font-size: 0.86rem;
+}
+
+.car-editor td:nth-child(5),
+.car-editor td:nth-child(7) {
+  width: 140px;
+}
+
+.car-marcada td {
+  background: #f3f8ff;
+}
+
+.car-cuadre {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.9rem;
+  color: #1e4d7a;
+  background: #eef5fd;
+  border-radius: 8px;
+}
+
+.car-cuadre--mal {
+  color: #7a5a00;
+  background: #fff8e1;
+}
+
+/* ===== Modal (copia local: los estilos de componente son encapsulados) ===== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 51;
+  display: flex;
+  flex-direction: column;
+  width: 640px;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 2rem);
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 60px rgba(0, 11, 80, 0.28);
+  overflow: hidden;
+}
+
+.modal--ancho {
+  width: 1000px;
+}
+
+.modal__head {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.modal__head > div,
+.modal__head > .modal__title {
+  flex: 1;
+}
+
+.modal__title {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.modal__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.1rem 1.5rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 720px) {
+  .car-cabecera {
+    grid-template-columns: 1fr;
+  }
+}

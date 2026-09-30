@@ -116,6 +116,13 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/parametrizacion/parametrizacion').then((m) => m.ParametrizacionComponent),
       },
       {
+        // Fase B · B3-01 · Cartera: cuentas por cobrar y recibos de caja
+        path: 'cartera',
+        canActivate: [permissionGuard],
+        data: { vista: 'cartera' },
+        loadComponent: () => import('./pages/cartera/cartera').then((m) => m.CarteraComponent),
+      },
+      {
         // Fase B · B0-01 · Contabilidad: plan de cuentas (y, luego, comprobantes)
         path: 'contabilidad',
         canActivate: [permissionGuard],

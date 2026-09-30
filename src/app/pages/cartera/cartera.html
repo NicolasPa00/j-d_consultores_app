@@ -1,0 +1,297 @@
+<section class="page-head car-head">
+  <div>
+    <h2 class="page-head__title">Cartera</h2>
+    <p class="page-head__sub">Lo que deben los clientes · CXC-01..04 · cada factura validada abre su cuenta por cobrar</p>
+  </div>
+  @if (puedeOperar()) {
+    <button type="button" class="btn btn--primary" (click)="nuevoRecibo()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+      Registrar recibo de caja
+    </button>
+  }
+</section>
+
+@if (conciliacion(); as c) {
+  @if (!c.cuadra) {
+    <p class="car-alerta">
+      <strong>La cartera no cuadra con la contabilidad.</strong>
+      Cartera {{ pesos(c.saldo_cartera) }} · cuenta de clientes {{ pesos(c.saldo_libro) }} · diferencia {{ pesos(c.diferencia) }}.
+      Alguien registró a mano un movimiento contra clientes sin pasar por la cartera (o al revés).
+    </p>
+  }
+}
+
+<div class="tabs" role="tablist">
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'por-cobrar'" (click)="pestana.set('por-cobrar')">
+    Por cobrar <span class="tab__count">{{ antiguedad()?.clientes?.length ?? 0 }}</span>
+  </button>
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'recibos'" (click)="pestana.set('recibos')">
+    Recibos de caja <span class="tab__count">{{ recibos().length }}</span>
+  </button>
+</div>
+
+<!-- ======================= POR COBRAR ======================= -->
+@if (pestana() === 'por-cobrar') {
+  <div class="car-filtros">
+    <label class="car-fecha">Corte <input type="date" class="form-control" [(ngModel)]="corte" (change)="cargarAntiguedad()" /></label>
+    @if (conciliacion(); as c) {
+      @if (c.cuadra) { <span class="pill pill--success" title="El saldo de la cartera es igual al de la cuenta de clientes">Cuadra con la contabilidad</span> }
+    }
+    <span class="car-sep"></span>
+    <button type="button" class="btn btn--ghost btn--sm" (click)="exportarAntiguedad()">Exportar a Excel</button>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th class="col-num">Facturas</th>
+            @for (e of antiguedad()?.edades ?? []; track e) { <th class="col-num">{{ etiquetaEdad[e] }}</th> }
+            <th class="col-num">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (cargandoAntiguedad() && !antiguedad()) {
+            <tr><td colspan="8" class="car-vacio">Cargando…</td></tr>
+          } @else if (!antiguedad()?.clientes?.length) {
+            <tr><td colspan="8" class="car-vacio">Ningún cliente debe nada a esta fecha.</td></tr>
+          }
+          @for (c of antiguedad()?.clientes ?? []; track c.tercero_id) {
+            <tr class="car-fila" (click)="abrirEstado(c.tercero_id)" title="Ver el estado de cuenta">
+              <td><strong>{{ c.tercero_nombre }}</strong></td>
+              <td class="col-num">{{ c.documentos }}</td>
+              @for (e of antiguedad()!.edades; track e) {
+                <td class="col-num mono" [class.car-vencido]="e !== 'POR_VENCER' && +c[e] > 0">{{ +c[e] ? pesos(c[e]) : '' }}</td>
+              }
+              <td class="col-num mono"><strong>{{ pesos(c.TOTAL) }}</strong></td>
+            </tr>
+          }
+        </tbody>
+        @if (antiguedad()?.clientes?.length) {
+          <tfoot>
+            <tr>
+              <td><strong>Total</strong></td>
+              <td></td>
+              @for (e of antiguedad()!.edades; track e) { <td class="col-num mono"><strong>{{ pesos(antiguedad()!.total[e]) }}</strong></td> }
+              <td class="col-num mono"><strong>{{ pesos(antiguedad()!.total.TOTAL) }}</strong></td>
+            </tr>
+          </tfoot>
+        }
+      </table>
+    </div>
+  </div>
+}
+
+<!-- ======================= RECIBOS ======================= -->
+@if (pestana() === 'recibos') {
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Recibo</th><th>Fecha</th><th>Cliente</th><th>Facturas</th><th class="col-num">Consignado</th><th class="col-num">Retenido</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+          @if (!recibos().length) { <tr><td colspan="7" class="car-vacio">Todavía no hay recibos de caja.</td></tr> }
+          @for (r of pagRecibos.visibles(); track r.id) {
+            <tr class="car-fila" (click)="abrirRecibo(r)">
+              <td class="mono"><strong>{{ r.numero }}</strong></td>
+              <td class="mono">{{ r.fecha }}</td>
+              <td>{{ r.tercero_nombre }}</td>
+              <td class="mono car-facturas">{{ r.facturas }}</td>
+              <td class="col-num mono">{{ pesos(r.valor_consignado) }}</td>
+              <td class="col-num mono">{{ +(r.retenido ?? 0) ? pesos(r.retenido) : '' }}</td>
+              <td><span class="pill" [class]="r.estado === 'ANULADO' ? 'pill--muted' : 'pill--success'">{{ r.estado === 'ANULADO' ? 'Anulado' : 'Contabilizado' }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <app-paginador [pag]="pagRecibos" etiqueta="recibos" />
+  </div>
+}
+
+<!-- ============ MODAL · ESTADO DE CUENTA ============ -->
+@if (estado(); as e) {
+  <div class="modal-backdrop" (click)="estado.set(null)"></div>
+  <div class="modal modal--ancho" role="dialog" aria-modal="true" aria-labelledby="carEcTitle">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="carEcTitle">Estado de cuenta · {{ e.tercero.nombre }}</h3>
+        <small class="car-sub">{{ e.tercero.numero_documento }}{{ e.tercero.dv != null ? '-' + e.tercero.dv : '' }} · saldo {{ pesos(e.saldo) }}</small>
+      </div>
+      <button type="button" class="icon-action" (click)="estado.set(null)" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Fecha</th><th>Concepto</th><th>Vence</th><th class="col-num">Cargo</th><th class="col-num">Abono</th><th class="col-num">Saldo</th></tr></thead>
+          <tbody>
+            @for (d of e.documentos; track d.id) {
+              <tr class="car-doc">
+                <td class="mono">{{ d.fecha }}</td>
+                <td><strong>Factura {{ d.numero }}</strong>
+                  @if (+d.saldo > 0 && d.dias_vencido > 0) { <span class="pill pill--warning">vencida {{ d.dias_vencido }} d</span> }</td>
+                <td class="mono">{{ d.vencimiento }}</td>
+                <td class="col-num mono">{{ pesos(d.valor) }}</td>
+                <td></td>
+                <td class="col-num mono"><strong>{{ pesos(d.saldo) }}</strong></td>
+              </tr>
+              @for (m of d.movimientos; track $index) {
+                <tr>
+                  <td class="mono">{{ m.fecha }}</td>
+                  <td class="car-mov">{{ m.origen_tipo === 'NOTA_CREDITO' ? 'Nota crédito' : 'Recibo de caja' }} {{ m.soporte }}
+                    @if (+m.valor_retenciones) { <small>(retenido {{ pesos(m.valor_retenciones) }})</small> }</td>
+                  <td></td>
+                  <td></td>
+                  <td class="col-num mono">{{ pesos(+m.valor_pagado + +m.valor_retenciones) }}</td>
+                  <td></td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--ghost" (click)="exportarEstado(e)">Exportar a Excel</button>
+      <button type="button" class="btn btn--primary" (click)="estado.set(null)">Cerrar</button>
+    </footer>
+  </div>
+}
+
+<!-- ============ MODAL · DETALLE DEL RECIBO ============ -->
+@if (recibo(); as r) {
+  <div class="modal-backdrop" (click)="recibo.set(null)"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="carRcTitle">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="carRcTitle">Recibo {{ r.numero }}</h3>
+        <small class="car-sub">{{ r.tercero_nombre }} · {{ r.fecha }} · {{ r.cuenta_banco_codigo }} {{ r.cuenta_banco_nombre }}</small>
+      </div>
+      <span class="pill" [class]="r.estado === 'ANULADO' ? 'pill--muted' : 'pill--success'">{{ r.estado === 'ANULADO' ? 'Anulado' : 'Contabilizado' }}</span>
+    </header>
+    <div class="modal__body">
+      @if (r.motivo_anulacion) { <p class="car-anulado">Anulado: {{ r.motivo_anulacion }}</p> }
+      @if (r.observaciones) { <p class="car-sub">{{ r.observaciones }}</p> }
+      <table class="table">
+        <thead><tr><th>Factura</th><th class="col-num">Pagado</th><th>Retenido</th></tr></thead>
+        <tbody>
+          @for (a of r.aplicaciones ?? []; track a.id) {
+            <tr>
+              <td class="mono">{{ a.numero }}</td>
+              <td class="col-num mono">{{ pesos(a.valor_pagado) }}</td>
+              <td>@for (x of a.retenciones; track x.retencion) { <span>{{ x.nombre }}: {{ pesos(x.valor) }}</span> }</td>
+            </tr>
+          }
+        </tbody>
+        <tfoot><tr><td><strong>Consignado</strong></td><td class="col-num mono"><strong>{{ pesos(r.valor_consignado) }}</strong></td><td></td></tr></tfoot>
+      </table>
+      @if (anulando()) {
+        <div class="form-field">
+          <label class="form-field__label" for="carMotivo">Motivo de la anulación *</label>
+          <input id="carMotivo" class="form-control" type="text" [(ngModel)]="motivo" placeholder="p. ej. Consignación registrada dos veces" />
+          <p class="form-field__hint">Se anula su comprobante (conserva el número) y las facturas vuelven a tener su saldo.</p>
+        </div>
+      }
+    </div>
+    <footer class="modal__footer">
+      @if (puedeOperar() && r.estado === 'CONTABILIZADO') {
+        @if (anulando()) {
+          <button type="button" class="btn btn--ghost" (click)="anulando.set(false)" [disabled]="trabajando()">Cancelar</button>
+          <button type="button" class="btn btn--primary car-btn-peligro" (click)="confirmarAnular(r)" [disabled]="trabajando()">Anular recibo</button>
+        } @else {
+          <button type="button" class="btn btn--ghost car-peligro" (click)="motivo = ''; anulando.set(true)">Anular</button>
+        }
+      }
+      <button type="button" class="btn btn--primary" (click)="recibo.set(null)" [disabled]="trabajando()">Cerrar</button>
+    </footer>
+  </div>
+}
+
+<!-- ============ MODAL · NUEVO RECIBO ============ -->
+@if (formOpen()) {
+  <div class="modal-backdrop" (click)="cerrarForm()"></div>
+  <div class="modal modal--ancho" role="dialog" aria-modal="true" aria-labelledby="carNuevoTitle">
+    <header class="modal__head">
+      <h3 class="modal__title" id="carNuevoTitle">Registrar recibo de caja</h3>
+      <button type="button" class="icon-action" (click)="cerrarForm()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      <div class="car-cabecera">
+        <div class="form-field">
+          <label class="form-field__label" for="carCliente">Cliente que pagó *</label>
+          <select id="carCliente" class="form-control" [ngModel]="rCliente" (ngModelChange)="elegirCliente($event)">
+            <option value="">Elija…</option>
+            @for (t of clientes(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="carFecha">Fecha de la consignación *</label>
+          <input id="carFecha" type="date" class="form-control" [(ngModel)]="rFecha" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="carBanco">Banco *</label>
+          <select id="carBanco" class="form-control" [(ngModel)]="rBanco">
+            <option value="">Elija…</option>
+            @for (b of bancos(); track b.id) { <option [value]="b.id">{{ b.codigo }} · {{ b.nombre }}</option> }
+          </select>
+        </div>
+      </div>
+
+      @if (rCliente && propuesta()) {
+        @if (!filas().length) {
+          <p class="car-vacio">Este cliente no tiene facturas pendientes.</p>
+        } @else {
+          <p class="car-ayuda">
+            Marque las facturas que cubre la consignación. Lo que el pagador retuvo (ReteICA{{ propuesta()!.reteica ? ' ' + propuesta()!.reteica!.nombre : '' }})
+            no queda como saldo: va a la cuenta de esa retención. Se propone sobre el subtotal de cada factura; corríjalo si el soporte del pago dice otra cifra.
+          </p>
+          <div class="table-wrap">
+            <table class="table car-editor">
+              <thead><tr><th></th><th>Factura</th><th>Vence</th><th class="col-num">Saldo</th><th class="col-num">Pagado</th><th>Retención</th><th class="col-num">Retenido</th></tr></thead>
+              <tbody>
+                @for (f of filas(); track f.id; let i = $index) {
+                  <tr [class.car-marcada]="f.marcada">
+                    <td><input type="checkbox" [checked]="f.marcada" (change)="cambiarFila(i, 'marcada', $any($event.target).checked)" [attr.aria-label]="'Incluir ' + f.numero" /></td>
+                    <td class="mono">{{ f.numero }}</td>
+                    <td class="mono">{{ f.vencimiento }}</td>
+                    <td class="col-num mono">{{ pesos(f.saldo) }}</td>
+                    <td><input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="f.pagado" (ngModelChange)="cambiarFila(i, 'pagado', $event)" [disabled]="!f.marcada" [attr.aria-label]="'Pagado de ' + f.numero" /></td>
+                    <td>
+                      <select class="form-control" [ngModel]="f.retencion_id" (ngModelChange)="cambiarFila(i, 'retencion_id', $event)" [disabled]="!f.marcada" [attr.aria-label]="'Retención de ' + f.numero">
+                        <option value="">Ninguna</option>
+                        @for (x of retenciones(); track x.id) { <option [value]="x.id">{{ x.nombre }}</option> }
+                      </select>
+                    </td>
+                    <td><input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="f.retenido" (ngModelChange)="cambiarFila(i, 'retenido', $event)" [disabled]="!f.marcada" [attr.aria-label]="'Retenido de ' + f.numero" /></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p class="car-cuadre" [class.car-cuadre--mal]="totales().excedidas || totales().invalidas">
+            @if (totales().invalidas) { Hay valores que no son números. }
+            @else if (totales().excedidas) { Lo pagado más lo retenido supera el saldo de {{ totales().excedidas }} factura(s). }
+            @else { Consignado: <strong>{{ pesosC(totales().pagado) }}</strong> · retenido {{ pesosC(totales().retenido) }} · se cancelan {{ pesosC(totales().pagado + totales().retenido) }} de {{ totales().marcadas }} factura(s). }
+          </p>
+          <div class="form-field">
+            <label class="form-field__label" for="carObs">Observaciones</label>
+            <input id="carObs" type="text" class="form-control" [(ngModel)]="rObs" placeholder="p. ej. número de la transferencia" />
+          </div>
+        }
+      }
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--ghost" (click)="cerrarForm()" [disabled]="guardando()">Cancelar</button>
+      <button type="button" class="btn btn--primary" (click)="guardarRecibo()" [disabled]="guardando() || !totales().marcadas">
+        @if (guardando()) { <span class="spinner" aria-hidden="true"></span> Registrando… } @else { Registrar y contabilizar }
+      </button>
+    </footer>
+  </div>
+}

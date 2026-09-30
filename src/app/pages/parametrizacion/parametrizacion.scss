@@ -116,3 +116,6 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* B3-01 · La cuenta de la retención se elige en la misma fila. */
+.par-cuenta { min-width: 220px; padding: 0.35rem 0.5rem; font-size: 0.84rem; }

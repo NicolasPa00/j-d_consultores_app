@@ -5,7 +5,7 @@ import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
-import {
+import { CuentaContable,
   CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto,
   Retencion, ResolucionNumeracion, TarifaVenta, Tercero, TipoRetencion, TratamientoIva, UnidadTarifa,
 } from '../../core/models';
@@ -323,8 +323,31 @@ export class ParametrizacionComponent implements OnInit {
     return tipo === 'RETEICA' ? 'ninguno (se practica al pagar)' : tipo === 'RETEIVA' ? '05' : '06';
   }
 
+  /** B3-01 · Cuentas que reciben movimiento, para elegir adónde va cada retención. */
+  protected readonly cuentasMovimiento = signal<CuentaContable[]>([]);
+
+  /** Cambia la cuenta contable de una retención (se reenvía la ficha completa: así la valida el servidor). */
+  protected cambiarCuentaRetencion(r: Retencion, cuentaId: string): void {
+    this.api.updateRetencion(r.id, {
+      codigo: r.codigo, nombre: r.nombre, tipo: r.tipo, tarifa: r.tarifa, base_minima_uvt: r.base_minima_uvt,
+      aplica_a: r.aplica_a, factus_tributo_id: r.factus_tributo_id, cuenta_id: cuentaId || null,
+    }).subscribe({
+      next: (res) => {
+        this.retenciones.update((l) => l.map((x) => (x.id === res.data.id ? res.data : x)));
+        this.alerts.success('Cuenta de la retención guardada', `${r.codigo} → ${res.data.cuenta_codigo ?? 'sin cuenta'}`);
+      },
+      error: (err) => {
+        this.alerts.error('No se pudo guardar la cuenta', mensajeError(err, 'Intente de nuevo.'));
+        this.cargarImpuestos();
+      },
+    });
+  }
+
   private cargarImpuestos(): void {
     this.loadingImpuestos.set(true);
+    if (!this.cuentasMovimiento().length) {
+      this.api.listCuentas().subscribe({ next: (r) => this.cuentasMovimiento.set(r.data.filter((c) => c.acepta_movimiento && c.activa)) });
+    }
     this.api.listUvt().subscribe({ next: (r) => this.uvt.set(r.data) });
     this.api.listRetenciones().subscribe({
       next: (r) => { this.retenciones.set(r.data); this.loadingImpuestos.set(false); },

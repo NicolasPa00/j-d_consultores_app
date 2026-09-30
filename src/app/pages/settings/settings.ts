@@ -447,6 +447,7 @@ export class SettingsComponent implements OnInit {
     { clave: 'parametrizacion', label: 'Parametrización', hint: 'Fase A · emisor, productos, tarifas, retenciones y numeración' },
     { clave: 'facturacion', label: 'Facturación', hint: 'Finanzas · facturas electrónicas ante la DIAN' },
     { clave: 'contabilidad', label: 'Contabilidad', hint: 'Finanzas · plan de cuentas y comprobantes' },
+    { clave: 'cartera', label: 'Cartera', hint: 'Finanzas · cuentas por cobrar y recibos de caja' },
     { clave: 'profesionales', label: 'Profesionales', hint: 'Módulo 12 · asesores de campo' },
     { clave: 'configuracion', label: 'Configuración', hint: 'Perfil propio y ajustes' },
   ];

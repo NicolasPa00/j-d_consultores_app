@@ -49,12 +49,12 @@ export interface MeResponse {
 /** Vistas gestionables desde Configuración → Roles y permisos (= ítems del sidebar). */
 export type Vista =
   | 'dashboard' | 'importar' | 'ordenes' | 'informes' | 'precuentas' | 'empresas' | 'terceros'
-  | 'parametrizacion' | 'facturacion' | 'contabilidad' | 'profesionales' | 'configuracion';
+  | 'parametrizacion' | 'facturacion' | 'contabilidad' | 'cartera' | 'profesionales' | 'configuracion';
 
 /** Catálogo completo de vistas. Es también el fallback cuando no hay permisos conocidos. */
 export const VISTAS: Vista[] = [
   'dashboard', 'importar', 'ordenes', 'informes', 'precuentas', 'empresas', 'terceros',
-  'parametrizacion', 'facturacion', 'contabilidad', 'profesionales', 'configuracion',
+  'parametrizacion', 'facturacion', 'contabilidad', 'cartera', 'profesionales', 'configuracion',
 ];
 
 export interface PermisoRol {
@@ -1249,6 +1249,10 @@ export interface Retencion {
   aplica_a: 'VENTA' | 'COMPRA';
   factus_tributo_id: string | null;
   activa: boolean;
+  /** B3-01 · Cuenta donde va lo retenido (p. ej. la ReteICA que practica el cliente al pagar). */
+  cuenta_id?: string | null;
+  cuenta_codigo?: string | null;
+  cuenta_nombre?: string | null;
 }
 
 /** Espejo de `sst.condiciones_pagador`, con los nombres resueltos. */
@@ -1701,4 +1705,82 @@ export interface AsientoDocumento {
   descripcion: string;
   lineas: { linea: number; cuenta_codigo: string; cuenta_nombre: string; debito: string | null; credito: string | null; descripcion: string | null }[];
   totales: { debito: string; credito: string };
+}
+
+// ---- Fase B · B3-01 · Cartera y recibos de caja (CXC-01..04, CNT-05) ----
+
+export type EdadCartera = 'POR_VENCER' | 'D1_30' | 'D31_60' | 'D61_90' | 'MAS_90';
+
+export interface DocumentoCartera {
+  id: string;
+  tercero_id: string;
+  tercero_nombre: string;
+  documento_id: string | null;
+  numero: string;
+  fecha: string;
+  vencimiento: string;
+  valor: string;
+  saldo: string;
+  subtotal: string | null;
+  dias_vencido: number;
+  edad: EdadCartera;
+}
+
+export type FilaAntiguedad = { tercero_id: string; tercero_nombre: string; documentos: number } & Record<EdadCartera | 'TOTAL', string>;
+
+export interface AntiguedadCartera {
+  corte: string;
+  edades: EdadCartera[];
+  clientes: FilaAntiguedad[];
+  total: Record<EdadCartera | 'TOTAL', string>;
+}
+
+export interface MovimientoCartera {
+  origen_tipo: 'NOTA_CREDITO' | 'RECIBO_CAJA';
+  fecha: string;
+  valor_pagado: string;
+  valor_retenciones: string;
+  soporte: string | null;
+}
+
+export interface EstadoCuentaCliente {
+  tercero: { id: string; nombre: string; numero_documento: string; dv: number | null };
+  saldo: string;
+  documentos: (DocumentoCartera & { movimientos: MovimientoCartera[] })[];
+}
+
+export interface ConciliacionCartera {
+  saldo_libro: string;
+  saldo_cartera: string;
+  diferencia: string;
+  cuadra: boolean;
+}
+
+export interface PropuestaRecibo {
+  reteica: { id: string; codigo: string; nombre: string; tarifa: string; cuenta_id: string | null } | null;
+  facturas: (DocumentoCartera & { base_reteica: string; reteica_sugerida: string })[];
+}
+
+export interface ReciboCaja {
+  id: string;
+  numero: string | null;
+  tercero_id?: string;
+  tercero_nombre: string;
+  fecha: string;
+  valor_consignado: string;
+  estado: 'CONTABILIZADO' | 'ANULADO';
+  retenido?: string;
+  facturas?: string | null;
+  cuenta_banco_codigo?: string;
+  cuenta_banco_nombre?: string;
+  observaciones?: string | null;
+  motivo_anulacion?: string | null;
+  comprobante_id?: string | null;
+  aplicaciones?: { id: string; numero: string; valor_pagado: string; valor_retenciones: string; anulada: boolean; retenciones: { retencion: string; nombre: string; valor: string }[] }[];
+}
+
+export interface AplicacionReciboForm {
+  cartera_documento_id: string;
+  valor_pagado: string;
+  retenciones: { retencion_id: string; valor: string; base?: string }[];
 }

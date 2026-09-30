@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar, OrdenManualForm } from './models';
+import { AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar, OrdenManualForm } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -1149,5 +1149,46 @@ export class ApiService {
   /** Vista de contabilización de una factura o nota crédito (también de un borrador). */
   asientoDocumento(id: string): Observable<Wrap<AsientoDocumento>> {
     return this.http.get<Wrap<AsientoDocumento>>(`${this.base}/contabilidad/documentos/${id}/asiento`);
+  }
+
+  // ---- Fase B · B3-01 · Cartera y recibos de caja (CXC-01..04, CNT-05) ----
+
+  /** CXC-03 · Antigüedad por cliente y edad a una fecha de corte. */
+  antiguedadCartera(corte?: string): Observable<Wrap<AntiguedadCartera>> {
+    return this.http.get<Wrap<AntiguedadCartera>>(`${this.base}/cartera/antiguedad${queryString({ corte })}`);
+  }
+  antiguedadCarteraExcel(corte?: string): Observable<Blob> {
+    return this.http.get(`${this.base}/cartera/antiguedad.xlsx${queryString({ corte })}`, { responseType: 'blob' });
+  }
+  documentosCartera(f: { tercero_id?: string; todos?: boolean; corte?: string } = {}): Observable<{ data: DocumentoCartera[]; total: number }> {
+    return this.http.get<{ data: DocumentoCartera[]; total: number }>(
+      `${this.base}/cartera/documentos${queryString({ ...f, todos: f.todos ? 'true' : undefined })}`,
+    );
+  }
+  /** CXC-04 · Estado de cuenta de un cliente. */
+  estadoCuenta(terceroId: string): Observable<Wrap<EstadoCuentaCliente>> {
+    return this.http.get<Wrap<EstadoCuentaCliente>>(`${this.base}/cartera/estado-cuenta/${terceroId}`);
+  }
+  estadoCuentaExcel(terceroId: string): Observable<Blob> {
+    return this.http.get(`${this.base}/cartera/estado-cuenta/${terceroId}.xlsx`, { responseType: 'blob' });
+  }
+  /** Cartera contra libro: deben cuadrar. */
+  conciliacionCartera(): Observable<Wrap<ConciliacionCartera>> {
+    return this.http.get<Wrap<ConciliacionCartera>>(`${this.base}/cartera/conciliacion`);
+  }
+  propuestaRecibo(terceroId: string): Observable<Wrap<PropuestaRecibo>> {
+    return this.http.get<Wrap<PropuestaRecibo>>(`${this.base}/cartera/propuesta/${terceroId}`);
+  }
+  listRecibos(f: { tercero_id?: string; desde?: string; hasta?: string } = {}): Observable<{ data: ReciboCaja[]; total: number }> {
+    return this.http.get<{ data: ReciboCaja[]; total: number }>(`${this.base}/cartera/recibos${queryString(f)}`);
+  }
+  getRecibo(id: string): Observable<Wrap<ReciboCaja>> {
+    return this.http.get<Wrap<ReciboCaja>>(`${this.base}/cartera/recibos/${id}`);
+  }
+  createRecibo(body: { tercero_id: string; fecha: string; cuenta_banco_id: string; observaciones?: string; aplicaciones: AplicacionReciboForm[] }): Observable<Wrap<ReciboCaja>> {
+    return this.http.post<Wrap<ReciboCaja>>(`${this.base}/cartera/recibos`, body);
+  }
+  anularRecibo(id: string, motivo: string): Observable<Wrap<ReciboCaja>> {
+    return this.http.post<Wrap<ReciboCaja>>(`${this.base}/cartera/recibos/${id}/anular`, { motivo });
   }
 }

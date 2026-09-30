@@ -42,9 +42,9 @@ export const SISTEMAS: Sistema[] = [
   {
     id: 'finanzas',
     nombre: 'Finanzas',
-    descripcion: 'Facturación electrónica ante la DIAN, contabilidad, terceros y parametrización.',
-    llaves: ['facturacion', 'contabilidad', 'terceros', 'parametrizacion'],
-    menu: ['facturacion', 'contabilidad', 'terceros', 'parametrizacion', 'precuentas', 'informes', 'configuracion'],
+    descripcion: 'Facturación electrónica ante la DIAN, cartera, contabilidad, terceros y parametrización.',
+    llaves: ['facturacion', 'contabilidad', 'cartera', 'terceros', 'parametrizacion'],
+    menu: ['facturacion', 'cartera', 'contabilidad', 'terceros', 'parametrizacion', 'precuentas', 'informes', 'configuracion'],
   },
 ];
 
@@ -62,6 +62,7 @@ export const RUTA_DE_VISTA: Record<Vista, string> = {
   terceros: '/terceros',
   parametrizacion: '/parametrizacion',
   contabilidad: '/contabilidad',
+  cartera: '/cartera',
 };
 
 /** Vista a la que pertenece una URL ("/ordenes?os=…" → 'ordenes'), si alguna. */

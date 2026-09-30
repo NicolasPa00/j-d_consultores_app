@@ -226,7 +226,7 @@
     </div>
     <div class="card__body table-wrap">
       <table class="table">
-        <thead><tr><th>Código</th><th>Nombre</th><th>Tipo</th><th class="col-num">Tarifa</th><th>Aplica a</th><th>Código de tributo</th><th>Estado</th><th class="col-actions">Acciones</th></tr></thead>
+        <thead><tr><th>Código</th><th>Nombre</th><th>Tipo</th><th class="col-num">Tarifa</th><th>Aplica a</th><th>Código de tributo</th><th>Cuenta contable</th><th>Estado</th><th class="col-actions">Acciones</th></tr></thead>
         <tbody>
           @for (r of retenciones(); track r.id) {
             <tr>
@@ -236,6 +236,14 @@
               <td class="col-num mono">{{ tarifaRetencion(r) }}</td>
               <td>{{ r.aplica_a }}</td>
               <td class="mono">{{ r.factus_tributo_id || 'ninguno (al pagar)' }}</td>
+              <td>
+                <!-- B3-01 · Adónde va lo retenido al contabilizar un recibo de caja. -->
+                <select class="form-control par-cuenta" [ngModel]="r.cuenta_id ?? ''" (ngModelChange)="cambiarCuentaRetencion(r, $event)"
+                        [disabled]="!puedeEditar()" [attr.aria-label]="'Cuenta contable de ' + r.codigo">
+                  <option value="">— Sin cuenta —</option>
+                  @for (c of cuentasMovimiento(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
+                </select>
+              </td>
               <td><span class="pill" [class]="r.activa ? 'pill--success' : 'pill--muted'">{{ r.activa ? 'Activa' : 'Inactiva' }}</span></td>
               <td class="col-actions">
                 @if (puedeEditar()) {
@@ -244,7 +252,7 @@
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="8" class="table__empty">{{ loadingImpuestos() ? 'Cargando…' : 'Sin retenciones todavía.' }}</td></tr>
+            <tr><td colspan="9" class="table__empty">{{ loadingImpuestos() ? 'Cargando…' : 'Sin retenciones todavía.' }}</td></tr>
           }
         </tbody>
       </table>
