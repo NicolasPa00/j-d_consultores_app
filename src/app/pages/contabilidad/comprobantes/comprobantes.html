@@ -114,7 +114,7 @@
                   <td class="mono">{{ m.linea }}</td>
                   <td><span class="mono">{{ m.cuenta_codigo }}</span> <small class="cmp-sub">{{ m.cuenta_nombre }}</small></td>
                   <td>{{ m.tercero_nombre || '—' }}</td>
-                  <td>{{ m.descripcion || m.documento_cruce || '' }}</td>
+                  <td>{{ m.descripcion || m.documento_cruce || '' }}@if (m.centro_costo_codigo) { <small class="cmp-sub">CC {{ m.centro_costo_codigo }}</small> }</td>
                   <td class="col-num mono">{{ Number(m.debito) ? pesos(m.debito) : '' }}</td>
                   <td class="col-num mono">{{ Number(m.credito) ? pesos(m.credito) : '' }}</td>
                 </tr>
@@ -189,7 +189,7 @@
       <div class="table-wrap">
         <table class="table cmp-editor">
           <thead>
-            <tr><th>Cuenta</th><th>Tercero</th><th>Detalle</th><th class="col-num">Débito</th><th class="col-num">Crédito</th><th></th></tr>
+            <tr><th>Cuenta</th><th>Tercero</th>@if (centros().length) { <th>Centro de costo</th> }<th>Detalle</th><th class="col-num">Débito</th><th class="col-num">Crédito</th><th></th></tr>
           </thead>
           <tbody>
             @for (l of lineas(); track $index; let i = $index) {
@@ -207,6 +207,15 @@
                     @for (t of terceros(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
                   </select>
                 </td>
+                @if (centros().length) {
+                  <td>
+                    <select class="form-control" [class.form-control--error]="exigeCentro(l) && !l.centro_costo_id"
+                            [ngModel]="l.centro_costo_id" (ngModelChange)="cambiar(i, 'centro_costo_id', $event)" [attr.aria-label]="'Centro de costo de la línea ' + (i + 1)">
+                      <option value="">{{ exigeCentro(l) ? 'Obligatorio…' : '—' }}</option>
+                      @for (c of centros(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
+                    </select>
+                  </td>
+                }
                 <td><input type="text" class="form-control" [ngModel]="l.descripcion" (ngModelChange)="cambiar(i, 'descripcion', $event)" [attr.aria-label]="'Detalle de la línea ' + (i + 1)" /></td>
                 <td><input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="l.debito" (ngModelChange)="cambiar(i, 'debito', $event)" [attr.aria-label]="'Débito de la línea ' + (i + 1)" /></td>
                 <td><input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="l.credito" (ngModelChange)="cambiar(i, 'credito', $event)" [attr.aria-label]="'Crédito de la línea ' + (i + 1)" /></td>
@@ -225,7 +234,7 @@
           </tbody>
           <tfoot>
             <tr>
-              <td colspan="3">
+              <td [attr.colspan]="centros().length ? 4 : 3">
                 <button type="button" class="btn btn--ghost btn--sm" (click)="agregarLinea()">+ Agregar línea</button>
               </td>
               <td class="col-num mono cmp-total">{{ pesosCentavos(cuadre().debito) }}</td>

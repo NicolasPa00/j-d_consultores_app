@@ -1,0 +1,48 @@
+<p class="cc-ayuda">
+  Para ver los gastos por actividad (honorarios, transporte, materiales…). Se eligen en las líneas de las notas internas
+  y en las compras. Son obligatorios solo en las cuentas marcadas «Exige centro de costo» en el plan de cuentas.
+</p>
+
+@if (puedeEditar()) {
+  <div class="card cc-form">
+    <div class="card__body cc-form__fila">
+      <input class="form-control mono" type="text" [(ngModel)]="codigo" placeholder="Código (p. ej. TRANSP)" maxlength="20" aria-label="Código" />
+      <input class="form-control" type="text" [(ngModel)]="nombre" placeholder="Nombre (p. ej. Transporte a visitas)" aria-label="Nombre" />
+      @if (editando()) { <button type="button" class="btn btn--ghost" (click)="cancelar()" [disabled]="guardando()">Cancelar</button> }
+      <button type="button" class="btn btn--primary" (click)="guardar()" [disabled]="guardando()">{{ editando() ? 'Guardar cambios' : 'Crear centro de costo' }}</button>
+    </div>
+  </div>
+}
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Código</th><th>Nombre</th><th class="col-num">Movimientos</th><th>Estado</th>@if (puedeEditar()) { <th class="col-actions">Acciones</th> }</tr></thead>
+      <tbody>
+        @if (!centros().length) { <tr><td [attr.colspan]="puedeEditar() ? 5 : 4" class="cc-vacio">Todavía no hay centros de costo.</td></tr> }
+        @for (c of centros(); track c.id) {
+          <tr>
+            <td class="mono"><strong>{{ c.codigo }}</strong></td>
+            <td>{{ c.nombre }}</td>
+            <td class="col-num">{{ c.n_movimientos }}</td>
+            <td><span class="pill" [class]="c.activo ? 'pill--success' : 'pill--muted'">{{ c.activo ? 'Activo' : 'Inactivo' }}</span></td>
+            @if (puedeEditar()) {
+              <td class="col-actions">
+                <div class="row-actions">
+                  <button type="button" class="icon-action" (click)="editar(c)" [attr.aria-label]="'Editar ' + c.codigo" title="Editar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                  </button>
+                  <button type="button" class="icon-action" (click)="alternar(c)" [attr.aria-label]="(c.activo ? 'Inactivar ' : 'Activar ') + c.codigo" [title]="c.activo ? 'Inactivar' : 'Activar'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      @if (c.activo) { <circle cx="12" cy="12" r="9" /><path d="m5.6 5.6 12.8 12.8" /> } @else { <path d="M20 6 9 17l-5-5" /> }
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

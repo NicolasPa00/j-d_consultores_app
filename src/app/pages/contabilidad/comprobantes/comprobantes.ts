@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/api.service';
 import { mensajeError } from '../../../core/errores';
 import { AlertService } from '../../../core/alert.service';
-import { Comprobante, CuentaContable, DocumentoPendienteContabilizar, EstadoComprobante, LineaComprobanteForm, Tercero, TipoComprobante } from '../../../core/models';
+import { CentroCosto, Comprobante, CuentaContable, DocumentoPendienteContabilizar, EstadoComprobante, LineaComprobanteForm, Tercero, TipoComprobante } from '../../../core/models';
 import { paginar } from '../../../shared/paginacion';
 import { PaginadorComponent } from '../../../shared/paginador/paginador';
 
@@ -13,7 +13,7 @@ const ETIQUETA_ESTADO: Record<EstadoComprobante, string> = {
   BORRADOR: 'Borrador', CONTABILIZADO: 'Contabilizado', ANULADO: 'Anulado',
 };
 
-const LINEA_VACIA = (): LineaComprobanteForm => ({ cuenta_id: '', tercero_id: '', debito: '', credito: '', descripcion: '' });
+const LINEA_VACIA = (): LineaComprobanteForm => ({ cuenta_id: '', tercero_id: '', centro_costo_id: '', debito: '', credito: '', descripcion: '' });
 
 /**
  * Importe tecleado → centavos. Acepta la forma colombiana ("1.250.000,50") y la
@@ -224,6 +224,8 @@ export class ComprobantesComponent implements OnInit {
   protected readonly guardando = signal(false);
   protected readonly cuentasMovimiento = signal<CuentaContable[]>([]);
   protected readonly terceros = signal<Tercero[]>([]);
+  /** B8-01 · La columna solo aparece si hay centros de costo creados. */
+  protected readonly centros = signal<CentroCosto[]>([]);
   protected fecha = '';
   protected descripcion = '';
   protected readonly lineas = signal<LineaComprobanteForm[]>([]);
@@ -245,6 +247,10 @@ export class ComprobantesComponent implements OnInit {
     return { debito, credito, diferencia: debito - credito, invalidas };
   });
 
+  protected exigeCentro(l: LineaComprobanteForm): boolean {
+    return !!this.cuentaPorId().get(l.cuenta_id)?.exige_centro_costo;
+  }
+
   protected exigeTercero(l: LineaComprobanteForm): boolean {
     return !!this.cuentaPorId().get(l.cuenta_id)?.exige_tercero;
   }
@@ -257,6 +263,9 @@ export class ComprobantesComponent implements OnInit {
     }
     if (!this.terceros().length) {
       this.api.listTerceros().subscribe({ next: (r) => this.terceros.set(r.data.filter((t) => t.activo)) });
+    }
+    if (!this.centros().length) {
+      this.api.listCentrosCosto(true).subscribe({ next: (r) => this.centros.set(r.data) });
     }
   }
 
@@ -277,7 +286,7 @@ export class ComprobantesComponent implements OnInit {
     this.fecha = c.fecha;
     this.descripcion = c.descripcion ?? '';
     this.lineas.set((c.movimientos ?? []).map((m) => ({
-      cuenta_id: m.cuenta_id, tercero_id: m.tercero_id ?? '',
+      cuenta_id: m.cuenta_id, tercero_id: m.tercero_id ?? '', centro_costo_id: m.centro_costo_id ?? '',
       debito: Number(m.debito) ? m.debito : '', credito: Number(m.credito) ? m.credito : '',
       descripcion: m.descripcion ?? '',
     })));
@@ -329,7 +338,7 @@ export class ComprobantesComponent implements OnInit {
     const lineas = this.lineas()
       .filter((l) => l.cuenta_id || l.debito || l.credito)
       .map((l) => ({
-        cuenta_id: l.cuenta_id, tercero_id: l.tercero_id || undefined,
+        cuenta_id: l.cuenta_id, tercero_id: l.tercero_id || undefined, centro_costo_id: l.centro_costo_id || undefined,
         debito: aCentavos(l.debito) ? ((aCentavos(l.debito) as number) / 100).toFixed(2) : undefined,
         credito: aCentavos(l.credito) ? ((aCentavos(l.credito) as number) / 100).toFixed(2) : undefined,
         descripcion: l.descripcion.trim() || undefined,

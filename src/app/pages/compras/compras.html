@@ -156,6 +156,15 @@
             </select>
           </div>
         }
+        @if (centros().length) {
+          <div class="form-field">
+            <label class="form-field__label" for="cpCc">Centro de costo</label>
+            <select id="cpCc" class="form-control" [(ngModel)]="draft.centro_costo_id">
+              <option value="">—</option>
+              @for (c of centros(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
+            </select>
+          </div>
+        }
         @if (draft.tipo !== 'GASTO_INTERNO') {
           <div class="form-field cp-grid__ancho">
             <label class="form-field__label" for="cpCufe">CUFE (si es factura electrónica)</label>

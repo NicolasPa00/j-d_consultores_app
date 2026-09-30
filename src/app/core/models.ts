@@ -1617,6 +1617,8 @@ export interface MovimientoContable {
   tercero_id: string | null;
   tercero_nombre: string | null;
   tercero_documento: string | null;
+  centro_costo_id?: string | null;
+  centro_costo_codigo?: string | null;
   debito: string;
   credito: string;
   base: string | null;
@@ -1649,6 +1651,8 @@ export interface Comprobante {
 export interface LineaComprobanteForm {
   cuenta_id: string;
   tercero_id: string;
+  /** B8-01 · Opcional, salvo en las cuentas que lo exigen. */
+  centro_costo_id: string;
   debito: string;
   credito: string;
   descripcion: string;
@@ -1824,6 +1828,7 @@ export interface CompraForm {
   forma_pago: 'CREDITO' | 'CONTADO';
   vencimiento: string;
   cuenta_pago_id: string;
+  centro_costo_id: string;
   descripcion: string;
   items: { cuenta_id: string; descripcion: string; valor: string; iva_pct: string }[];
   retenciones: { retencion_id: string; valor: string }[];
@@ -1861,4 +1866,26 @@ export interface PropuestaEgreso {
   obligaciones: { id: string; numero: string; fecha: string; vencimiento: string; valor: string; saldo: string }[];
   anticipos: AnticipoProveedor[];
   anticipo_disponible: string;
+}
+
+// ---- Fase B · B8-01 · Centros de costo (CNT-09) y B10-01 · Cierre de año (CNT-12) ----
+
+export interface CentroCosto {
+  id: string;
+  codigo: string;
+  nombre: string;
+  activo: boolean;
+  n_movimientos: number;
+}
+
+export interface VistaPreviaCierre {
+  anio: number;
+  /** Número del CA si el año ya está cerrado. */
+  cerrado: string | null;
+  borradores: number;
+  diciembre_cerrado: boolean;
+  cuentas: number;
+  lineas: { codigo: string; nombre: string; debito: string | null; credito: string | null }[];
+  resultado: string;
+  tipo_resultado: 'UTILIDAD' | 'PERDIDA' | 'CERO';
 }

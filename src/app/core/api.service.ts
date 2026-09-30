@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar, OrdenManualForm } from './models';
+import { CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar, OrdenManualForm } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -1238,5 +1238,30 @@ export class ApiService {
   }
   anularEgreso(id: string, motivo: string): Observable<Wrap<Egreso>> {
     return this.http.post<Wrap<Egreso>>(`${this.base}/cartera/egresos/${id}/anular`, { motivo });
+  }
+
+  // ---- Fase B · B8-01 · Centros de costo (CNT-09) ----
+
+  listCentrosCosto(soloActivos = false): Observable<{ data: CentroCosto[]; total: number }> {
+    return this.http.get<{ data: CentroCosto[]; total: number }>(`${this.base}/contabilidad/centros-costo${queryString({ activos: soloActivos ? 'true' : undefined })}`);
+  }
+  createCentroCosto(body: { codigo: string; nombre: string }): Observable<Wrap<CentroCosto>> {
+    return this.http.post<Wrap<CentroCosto>>(`${this.base}/contabilidad/centros-costo`, body);
+  }
+  updateCentroCosto(id: string, body: { codigo: string; nombre: string }): Observable<Wrap<CentroCosto>> {
+    return this.http.put<Wrap<CentroCosto>>(`${this.base}/contabilidad/centros-costo/${id}`, body);
+  }
+  setCentroCostoActivo(id: string, activo: boolean): Observable<Wrap<CentroCosto>> {
+    return this.http.patch<Wrap<CentroCosto>>(`${this.base}/contabilidad/centros-costo/${id}/activo`, { activo });
+  }
+
+  // ---- Fase B · B10-01 · Cierre de año (CNT-12) ----
+
+  vistaPreviaCierre(anio: number): Observable<Wrap<VistaPreviaCierre>> {
+    return this.http.get<Wrap<VistaPreviaCierre>>(`${this.base}/contabilidad/cierre/${anio}`);
+  }
+  /** Irreversible (D-20). Solo admin. */
+  cerrarAnio(anio: number, body: { cuenta_utilidad_id: string; cuenta_perdida_id: string }): Observable<Wrap<{ comprobante: string; resultado: string; tipo_resultado: string }>> {
+    return this.http.post<Wrap<{ comprobante: string; resultado: string; tipo_resultado: string }>>(`${this.base}/contabilidad/cierre/${anio}`, body);
   }
 }

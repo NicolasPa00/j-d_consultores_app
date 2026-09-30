@@ -33,6 +33,74 @@
   }
 </div>
 
+<!-- ============ B10-01 · CIERRE DE AÑO ============ -->
+<div class="card per-cierre">
+  <div class="card__head per-cierre__head">
+    <h3 class="card__title">Cierre del año {{ anio() }}</h3>
+    <button type="button" class="btn btn--ghost btn--sm" (click)="revisarCierre()" [disabled]="cargandoPrevia()">
+      @if (cargandoPrevia()) { <span class="spinner" aria-hidden="true"></span> } Revisar el cierre
+    </button>
+  </div>
+  <div class="card__body">
+    @if (!previa()) {
+      <p class="per-ayuda per-ayuda--bloque">Cancela las cuentas de resultado (ingresos, gastos y costos) contra la utilidad o la pérdida del
+        ejercicio, al 31 de diciembre, y cierra los doce meses. Revíselo antes: se muestra qué se va a cancelar.</p>
+    } @else {
+      @if (previa(); as p) {
+        @if (p.cerrado) {
+          <p class="per-ok">El año {{ p.anio }} ya está cerrado ({{ p.cerrado }}). Un año cerrado no se reabre.</p>
+        } @else if (!p.cuentas) {
+          <p class="per-ayuda per-ayuda--bloque">No hay saldos en las cuentas de resultado de {{ p.anio }}: no hay nada que cerrar.</p>
+        } @else {
+          <p class="per-resultado">
+            {{ p.tipo_resultado === 'PERDIDA' ? 'Pérdida' : 'Utilidad' }} del ejercicio: <strong>{{ pesos(p.resultado) }}</strong> · {{ p.cuentas }} cuentas por cancelar.
+          </p>
+          @if (p.borradores) { <p class="per-aviso">Hay {{ p.borradores }} comprobante(s) en borrador en {{ p.anio }}: contabilícelos o elimínelos antes de cerrar.</p> }
+          @if (p.diciembre_cerrado) { <p class="per-aviso">Diciembre está cerrado: el cierre se registra el 31 de diciembre, así que hay que reabrirlo.</p> }
+          <div class="table-wrap per-cierre__tabla">
+            <table class="table">
+              <thead><tr><th>Cuenta</th><th class="col-num">Débito</th><th class="col-num">Crédito</th></tr></thead>
+              <tbody>
+                @for (l of p.lineas; track $index) {
+                  <tr><td><span class="mono">{{ l.codigo }}</span> {{ l.nombre }}</td><td class="col-num mono">{{ pesos(l.debito) }}</td><td class="col-num mono">{{ pesos(l.credito) }}</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (!cuentasPatrimonio().length) {
+            <p class="per-aviso">No hay cuentas de patrimonio (clase 3) en el plan: cree la de utilidad (3605…) y la de pérdida (3610…) del ejercicio.</p>
+          } @else {
+            <div class="per-cierre__cuentas">
+              <div class="form-field">
+                <label class="form-field__label" for="perUtil">Cuenta de utilidad del ejercicio</label>
+                <select id="perUtil" class="form-control" [(ngModel)]="cuentaUtilidad">
+                  <option value="">Elija…</option>
+                  @for (c of cuentasPatrimonio(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
+                </select>
+              </div>
+              <div class="form-field">
+                <label class="form-field__label" for="perPerd">Cuenta de pérdida del ejercicio</label>
+                <select id="perPerd" class="form-control" [(ngModel)]="cuentaPerdida">
+                  <option value="">Elija…</option>
+                  @for (c of cuentasPatrimonio(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
+                </select>
+              </div>
+            </div>
+          }
+          @if (esAdmin()) {
+            <button type="button" class="btn btn--primary per-btn-peligro" (click)="cerrarAnio(p)"
+                    [disabled]="cerrandoAnio() || !!p.borradores || p.diciembre_cerrado || !cuentasPatrimonio().length">
+              @if (cerrandoAnio()) { <span class="spinner" aria-hidden="true"></span> } Cerrar el año {{ p.anio }}
+            </button>
+          } @else {
+            <p class="per-ayuda per-ayuda--bloque">Solo el administrador puede cerrar el año.</p>
+          }
+        }
+      }
+    }
+  </div>
+</div>
+
 @if (reabriendo(); as p) {
   <div class="modal-backdrop" (click)="reabriendo.set(null)"></div>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="perTitle">

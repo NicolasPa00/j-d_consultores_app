@@ -126,3 +126,72 @@
   padding: 1rem 1.5rem;
   border-top: 1px solid var(--border-soft);
 }
+
+/* ===== B10-01 · Cierre de año ===== */
+.per-cierre {
+  margin-top: 1.25rem;
+}
+
+.per-cierre__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.per-ayuda--bloque {
+  margin: 0;
+}
+
+.per-resultado {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+}
+
+.per-ok {
+  margin: 0;
+  color: #1e6b3a;
+  font-weight: 600;
+}
+
+.per-aviso {
+  margin: 0 0 0.75rem;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.86rem;
+  color: #7a5a00;
+  background: #fff8e1;
+  border-radius: 8px;
+}
+
+.per-cierre__tabla {
+  max-height: 320px;
+  overflow-y: auto;
+  margin-bottom: 0.9rem;
+}
+
+.per-cierre__cuentas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.per-btn-peligro {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+}
+
+.col-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .per-cierre__cuentas {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,45 @@
+:host {
+  display: block;
+}
+
+.cc-ayuda {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.cc-form {
+  margin-bottom: 1rem;
+}
+
+.cc-form__fila {
+  display: grid;
+  grid-template-columns: 200px 1fr auto auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+}
+
+.col-num {
+  text-align: right;
+}
+
+.cc-vacio {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 720px) {
+  .cc-form__fila {
+    grid-template-columns: 1fr;
+  }
+}

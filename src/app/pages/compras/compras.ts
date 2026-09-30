@@ -4,7 +4,7 @@ import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
-import { Compra, CompraForm, CuentaContable, Retencion, Tercero, TipoCompra } from '../../core/models';
+import { CentroCosto, Compra, CompraForm, CuentaContable, Retencion, Tercero, TipoCompra } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 import { aCentavos } from '../contabilidad/comprobantes/comprobantes';
@@ -114,6 +114,7 @@ export class ComprasComponent implements OnInit {
   protected readonly proveedores = signal<Tercero[]>([]);
   protected readonly cuentas = signal<CuentaContable[]>([]);
   protected readonly retencionesCompra = signal<Retencion[]>([]);
+  protected readonly centros = signal<CentroCosto[]>([]);
   protected readonly cuentasPago = computed(() => this.cuentas().filter((c) => c.es_banco || c.codigo.startsWith('1105')));
   protected draft: Omit<CompraForm, 'items' | 'retenciones'> = this.cabeceraVacia();
   protected readonly items = signal<CompraForm['items']>([ITEM_VACIO()]);
@@ -121,7 +122,7 @@ export class ComprasComponent implements OnInit {
 
   private cabeceraVacia(): Omit<CompraForm, 'items' | 'retenciones'> {
     const hoy = hoyLocal();
-    return { tipo: 'COMPRA', tercero_id: '', numero_proveedor: '', cufe: '', fecha: hoy, forma_pago: 'CREDITO', vencimiento: hoy, cuenta_pago_id: '', descripcion: '' };
+    return { tipo: 'COMPRA', tercero_id: '', numero_proveedor: '', cufe: '', fecha: hoy, forma_pago: 'CREDITO', vencimiento: hoy, cuenta_pago_id: '', centro_costo_id: '', descripcion: '' };
   }
 
   /** Totales en vivo, en centavos, con la misma regla del servidor (retención al peso). */
@@ -163,6 +164,7 @@ export class ComprasComponent implements OnInit {
     if (!this.retencionesCompra().length) {
       this.api.listRetenciones(true).subscribe({ next: (r) => this.retencionesCompra.set(r.data.filter((x) => x.aplica_a === 'COMPRA')) });
     }
+    if (!this.centros().length) this.api.listCentrosCosto(true).subscribe({ next: (r) => this.centros.set(r.data) });
     this.formOpen.set(true);
   }
 
