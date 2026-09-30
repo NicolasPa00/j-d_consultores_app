@@ -22,6 +22,67 @@
 
 ## 0. Dónde retomar (leer SIEMPRE primero)
 
+### ▶▶ DÓNDE RETOMAR (cierre del 30-sep-2026) — LEER ESTO ANTES QUE NADA
+
+**Estado de las ramas.** Todo el trabajo está en **`fase-b-contabilidad`** (los dos repos), que contiene a
+`fase-a-facturacion` y esta a su vez lo desplegado el 29-sep. **Commiteado solo en local: no hay `push`** de las
+fases A (desde A3-01) ni B. Árboles limpios al cierre. Arrancar con `iniciar-local.bat` (respeta la rama actual).
+
+**Qué está hecho.** Fase A completa en lo construible (facturación electrónica, notas crédito, órdenes particulares).
+Fase B: B0-01 plan de cuentas · B1-01 comprobantes y periodos · B2-01 contabilización automática FV/NC (igual que
+Siigo al centavo) · B3-01 cartera y recibos de caja · B4-01 cuentas por pagar, anticipos y egresos · B5-01 compras
+y gastos con carga masiva por Excel · B8-01 centros de costo · B10-01 cierre de año. Tanda 0: T0-19 hecha.
+Pantallas nuevas: `/contabilidad` (Plan de cuentas · Comprobantes · Reglas · Centros de costo · Periodos y cierre),
+`/cartera` (Por cobrar · Recibos · Por pagar · Egresos y anticipos), `/compras`. Vistas nuevas en permisos:
+`contabilidad`, `cartera`, `compras`.
+
+**Qué falta (todo espera algo de afuera).**
+| Ficha | Espera |
+|---|---|
+| B6-01 provisiones y seguridad social | ❓ D-25: porcentajes de la contadora; la seguridad social necesita además la nómina (A5-01, ❓ Factus) |
+| B7-01 bancos y conciliación | un **extracto bancario real** (el formato depende del banco) |
+| B9-01 saldos iniciales | ⛔ Q-20 (fecha de corte + balance de prueba por tercero de Siigo) y respaldos automáticos (A0-02) |
+| B11-01 mes en paralelo con Siigo | todo lo anterior |
+| A4-01..03 documento soporte | ❓ Q-17 · al llegar: su CxP y el «Pagada» en `/precuentas` (B4-01) |
+| A5-01 nómina · A6-01 radicación | ❓ Factus · ❓ Q-24 |
+| T0-02 evaluación PSP-F-010 de Colmena | ⛔ el formato lo envía JD&D |
+
+**Qué pedirle a JD&D (una sola lista).** El PUC completo exportado de Siigo (Q-22; hoy hay 181 cuentas sembradas desde
+el auxiliar, 24 «por confirmar», y **no hay clase 3**: sin la cuenta de utilidad 3605 y la de pérdida 3610 el cierre de
+año no se puede ejecutar) · un extracto bancario de ejemplo · la fecha de corte y el balance de prueba por tercero
+(Q-20) · confirmar la autorretención del 1,1 % en todas las ventas (Q-28) · los porcentajes de provisiones (D-25) ·
+las tarifas de ReteICA de cada pagador (Q-12: en Colmena la sugerida no coincide con Siigo) · Q-17 y Q-24.
+⚠️ R-01: la resolución de facturación de JD&D vence el **11-oct-2026**.
+
+**Datos de `jdd_dev` (desarrollo) al cierre.** Todas las migraciones del 27 al 30-sep aplicadas. PUC de 181 cuentas,
+18 reglas contables, cuentas en las retenciones de venta, centro de costo TRANSP. Órdenes de prueba OS-2026-0006..0021
+(`sembrar-facturacion-demo.mjs`, `--limpiar` las borra). Comprobantes: FV-1..4 y NC-1 (backfill de la Fase A),
+RC-1, FC-1, FC-2, CG-1 y CE-1 de pruebas de pantalla, **todos anulados** salvo el backfill. Cartera por cobrar =
+libro (1.440.680,38); por pagar = 0.
+
+**Para desplegar (segundo lote).** Producción solo tiene de estas fechas `agr-y-tema`, `estado-arl`, `prefacturas`,
+`tarifa-por-tipo` y `observaciones-formatos`. Faltan, en este orden (el alfabético NO sirve: `documentos-electronicos`
+usa `terceros` y `retenciones`; **confirmarlo en el ensayo sobre `orbita_ensayo`** como el 29-sep):
+`2026-09-27-catalogos-dian` → `terceros` → `productos-tarifas` → `retenciones-condiciones` →
+`resoluciones-numeracion` → `emisor` → `parametrizacion-permiso` → `documentos-electronicos` →
+`2026-09-28-historial-cobro-documento` → `2026-09-29-vista-facturacion` → `ordenes-particulares` → `plan-de-cuentas`
+→ `comprobantes` → `2026-09-30-reglas-contables` → `cartera` → `compras-cxp` → `centros-costo`. Después:
+`sembrar-catalogos-dian.mjs`, importar el PUC real por la pantalla, «Cargar las del software contable actual» en
+Contabilidad → Reglas, y las variables `FACTUS_*` de **producción** (no las del sandbox). Volver a mostrar el icono de
+estado de facturación (`cobroHabilitado`). Antes: respaldo (método del 29-sep en `docs/despliegue-correcciones-26-sep.md`).
+
+**Verificación rápida al retomar** (todas con ROLLBACK, requieren el túnel): en `sst_ws`,
+`node --import tsx scripts/<x>.mjs` con `verificar-comprobantes`, `verificar-contabilizacion`, `verificar-cartera`,
+`verificar-compras`, `verificar-cierre-y-centros` (y las de la Fase A: `verificar-relacion-facturar`,
+`verificar-borrador-factura`, `verificar-orden-particular`). Todas en verde al cierre.
+
+**Trampas de esta sesión** (además de las del bloque de abajo): (1) vigilantes `node --watch` acumulados se disputan
+:4000 → errores intermitentes; cerrar los viejos. (2) `ng serve` puede pintar una plantilla vieja aunque el chunk
+servido sea el nuevo: reiniciar el frontend. (3) Un rechazo de validación del proveedor (400/422) ya NO es «error de
+red»: deja el documento RECHAZADO. (4) La base corre en UTC: «hoy» se calcula con `hoyCO()`; revisar los
+`CURRENT_DATE` de SQL si deciden algo de negocio. (5) Los scripts de verificación comparan residuos contra lo que ya
+había: `jdd_dev` ya no está vacía.
+
 ### ▶ 29-sep-2026 (madrugada) — EMPIEZA LA FASE B — leer esto primero
 
 - **Decisión del usuario:** la Fase A se da por cerrada en lo construible y se pasa a la B. Quedan en la A,
