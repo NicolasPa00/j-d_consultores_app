@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_ID, signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
-import { CentroCosto, Compra, CompraForm, CuentaContable, Retencion, Tercero, TipoCompra } from '../../core/models';
+import { ResumenImportCompras, CentroCosto, Compra, CompraForm, CuentaContable, Retencion, Tercero, TipoCompra } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 import { aCentavos } from '../contabilidad/comprobantes/comprobantes';
@@ -41,6 +42,7 @@ export class ComprasComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly alerts = inject(AlertService);
   private readonly auth = inject(AuthService);
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   protected readonly etiquetaTipo = ETIQUETA_TIPO_COMPRA;
   protected readonly tipos = Object.keys(ETIQUETA_TIPO_COMPRA) as TipoCompra[];
@@ -230,6 +232,64 @@ export class ComprasComponent implements OnInit {
       error: (err) => {
         this.guardando.set(false);
         this.alerts.error('No se pudo registrar la compra', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  // ---- Carga masiva por Excel ----
+  protected readonly importOpen = signal(false);
+  protected readonly importando = signal(false);
+  protected readonly archivo = signal<File | null>(null);
+  protected readonly resumen = signal<ResumenImportCompras | null>(null);
+
+  protected abrirImportar(): void {
+    this.archivo.set(null);
+    this.resumen.set(null);
+    this.importOpen.set(true);
+  }
+
+  protected descargarPlantilla(): void {
+    this.api.plantillaCompras().subscribe({
+      next: (b) => {
+        if (!this.isBrowser) return;
+        const url = URL.createObjectURL(b);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'plantilla-compras.xlsx';
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: (err) => this.alerts.error('No se pudo descargar la plantilla', mensajeError(err, 'Intente de nuevo.')),
+    });
+  }
+
+  protected elegirArchivo(ev: Event): void {
+    const f = (ev.target as HTMLInputElement).files?.[0] ?? null;
+    this.archivo.set(f);
+    this.resumen.set(null);
+    if (f) this.importar(true);
+  }
+
+  /** Siempre primero la revisión; se importa solo si no hay errores (todo o nada). */
+  protected importar(simular: boolean): void {
+    const f = this.archivo();
+    if (!f) return;
+    this.importando.set(true);
+    this.api.importarCompras(f, simular).subscribe({
+      next: (r) => {
+        this.importando.set(false);
+        this.resumen.set(r.data);
+        if (!simular && r.data.importadas) {
+          this.alerts.success(`${r.data.importadas} compras importadas y contabilizadas`, this.pesos(r.data.total));
+          this.importOpen.set(false);
+          this.cargar();
+        } else if (!simular && r.data.errores) {
+          this.alerts.warning('No se importó nada', 'Hay filas con errores: corríjalas en el Excel y vuelva a subirlo.');
+        }
+      },
+      error: (err) => {
+        this.importando.set(false);
+        this.alerts.error('No se pudo leer el Excel', mensajeError(err, 'Use la plantilla.'));
       },
     });
   }

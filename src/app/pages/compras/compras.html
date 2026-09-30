@@ -4,10 +4,13 @@
     <p class="page-head__sub">Facturas de proveedores, servicios y gastos internos · CYG-01..03 · se contabilizan al registrarlas</p>
   </div>
   @if (puedeOperar()) {
+    <div class="cp-head__acciones">
+    <button type="button" class="btn btn--ghost" (click)="abrirImportar()">Importar desde Excel</button>
     <button type="button" class="btn btn--primary" (click)="nueva()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
       Registrar compra o gasto
     </button>
+    </div>
   }
 </section>
 
@@ -233,6 +236,55 @@
       <button type="button" class="btn btn--ghost" (click)="cerrarForm()" [disabled]="guardando()">Cancelar</button>
       <button type="button" class="btn btn--primary" (click)="guardar()" [disabled]="guardando() || totales().total <= 0">
         @if (guardando()) { <span class="spinner" aria-hidden="true"></span> Registrando… } @else { Registrar y contabilizar }
+      </button>
+    </footer>
+  </div>
+}
+
+<!-- ============ MODAL · IMPORTAR DESDE EXCEL ============ -->
+@if (importOpen()) {
+  <div class="modal-backdrop" (click)="importando() ? null : importOpen.set(false)"></div>
+  <div class="modal modal--ancho" role="dialog" aria-modal="true" aria-labelledby="cpImpTitle">
+    <header class="modal__head"><h3 class="modal__title" id="cpImpTitle">Importar compras desde Excel</h3></header>
+    <div class="modal__body">
+      <p class="cp-sub cp-texto">
+        Una fila por ítem; las filas con el mismo proveedor y el mismo número de factura forman una sola compra. Primero se
+        revisa y no se guarda nada; se importa solo si <strong>todas</strong> las filas están bien, y cada compra queda
+        contabilizada igual que si se registrara a mano.
+      </p>
+      <div class="cp-acciones">
+        <button type="button" class="btn btn--ghost btn--sm" (click)="descargarPlantilla()">Descargar la plantilla</button>
+        <input type="file" class="form-control" accept=".xlsx,.xls" (change)="elegirArchivo($event)" [disabled]="importando()" aria-label="Excel de compras" />
+      </div>
+      @if (importando() && !resumen()) { <p class="cp-sub"><span class="spinner" aria-hidden="true"></span> Revisando el archivo…</p> }
+      @if (resumen(); as r) {
+        <p class="cp-resumen" [class.cp-resumen--mal]="r.errores">
+          {{ r.filas }} filas · {{ r.compras }} compras · {{ pesos(r.total) }} en las que están bien.
+          @if (r.errores) { <strong>{{ r.errores }} con errores: corríjalas en el Excel y vuelva a subirlo.</strong> } @else { Todo listo para importar. }
+        </p>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Filas</th><th>Proveedor</th><th>Factura</th><th class="col-num">Ítems</th><th class="col-num">Total</th><th>Resultado</th></tr></thead>
+            <tbody>
+              @for (x of r.resultados; track $index) {
+                <tr [class.cp-fila-mal]="x.error">
+                  <td class="mono">{{ x.filas.join(', ') }}</td>
+                  <td>{{ x.proveedor || '—' }}</td>
+                  <td class="mono">{{ x.factura || '—' }}</td>
+                  <td class="col-num">{{ x.items }}</td>
+                  <td class="col-num mono">{{ x.total ? pesos(x.total) : '' }}</td>
+                  <td>{{ x.error ? x.error : 'Bien' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--ghost" (click)="importOpen.set(false)" [disabled]="importando()">Cancelar</button>
+      <button type="button" class="btn btn--primary" (click)="importar(false)" [disabled]="importando() || !resumen() || !!resumen()!.errores">
+        @if (importando() && resumen()) { <span class="spinner" aria-hidden="true"></span> Importando… } @else { Importar y contabilizar }
       </button>
     </footer>
   </div>

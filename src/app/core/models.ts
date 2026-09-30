@@ -1889,3 +1889,14 @@ export interface VistaPreviaCierre {
   resultado: string;
   tipo_resultado: 'UTILIDAD' | 'PERDIDA' | 'CERO';
 }
+
+/** B5-01 · Resultado de revisar (o importar) un Excel de compras. */
+export interface ResumenImportCompras {
+  simulado: boolean;
+  importadas: number;
+  compras: number;
+  filas: number;
+  errores: number;
+  total: string;
+  resultados: { filas: number[]; proveedor: string | null; factura: string | null; items: number; total: string | null; comprobante?: string | null; error: string | null }[];
+}
