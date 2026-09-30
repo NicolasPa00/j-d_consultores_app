@@ -43,7 +43,13 @@
   factura emitida después de las 7 p. m. quedaba con fecha de mañana (y el último día del mes, en el periodo
   siguiente). Ahora `hoyCO()` (`utils/formato.js`). Las 3 facturas de prueba afectadas se corrigieron en `jdd_dev`.
   ⚠️ Los `CURRENT_DATE` de SQL siguen en UTC (base en UTC): revisar si alguno decide algo de negocio.
-- **Siguiente:** B3-01 (cartera por cobrar y recibos de caja; ReteICA al pagar con el supuesto de Q-12).
+- **B3-01 hecha (30-sep):** cada factura contabilizada abre su cuenta por cobrar (también las de contado, como
+  en Siigo) en la misma transacción del asiento; la NC baja la de su factura. Recibo de caja con lo retenido por
+  factura (ReteICA **y retefuente**: RC-1-105 muestra que un cliente puede retenerla al pagar) a la cuenta de cada
+  retención (`sst.retenciones.cuenta_id`, nueva; en Siigo la ReteICA va a la «Rete Ica N» de su tarifa, no a una por
+  cliente). Pantalla `/cartera` (vista nueva `cartera`). En `jdd_dev`: cartera sincronizada y un RC-1 de prueba anulado.
+- **Siguiente:** B4-01 (cuentas por pagar, egresos y anticipos). Ojo: el DS (A4-01) sigue bloqueado, así que la CxP
+  nacerá primero de las compras (B5-01) o a mano; decidir el orden al empezar.
 
 ### ▶ 29-sep-2026 (noche) — PRIMER LOTE EN PRODUCCIÓN Y CARPETAS UNIFICADAS — leer esto primero
 
@@ -491,7 +497,7 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecha y verificada · ❓ espera 
 | B0-01 | Plan de cuentas (CNT-01) | A0-10 | M | ✅ 29-sep (back `8b380bd`, front `841bdbe`): árbol por código, importador Excel con simulación, 181 cuentas sembradas en `jdd_dev` desde el auxiliar (24 «por confirmar»). La carga real espera ❓ Q-22 |
 | B1-01 | Motor de comprobantes: partida doble, periodos, consecutivos (CNT-02, 03) | B0-01 | L | ✅ 29-sep (back `817d8e2`, front `77f135e`): `scripts/verificar-comprobantes.mjs` 23 OK con ROLLBACK (incluye saltarse el servicio); editor de NI y periodos probados en el navegador |
 | B2-01 | Reglas de contabilización + contabilización automática de FV, NC y DS (CNT-13, FEL-18, DSP-04) | B1-01 | L | ✅ 30-sep FV y NC (back `7668707`): `verificar-contabilizacion.mjs` reproduce FV-1-809, FV-1-807 y NC-1-87 **igual que Siigo al centavo**; backfill de la Fase A hecho en `jdd_dev` (FV-1..4, NC-1). El DS espera a A4-01. ❓ Q-28 (autorretención en todas las ventas) |
-| B3-01 | Cuentas por cobrar y recibos de caja (CXC-01..04, CNT-05) | B2-01 | L | ❓ Q-12 |
+| B3-01 | Cuentas por cobrar y recibos de caja (CXC-01..04, CNT-05) | B2-01 | L | ✅ 30-sep (back `234c8bb`): `verificar-cartera.mjs` reproduce RC-1-101, RC-1-97 y RC-1-105 **igual que Siigo** (18 OK); ciclo recibo → anulación probado en la pantalla; conciliación cartera = libro. Tarifas de ReteICA editables (supuesto de Q-12) |
 | B4-01 | Cuentas por pagar, egresos y anticipos (CXP-01..04, CNT-04) | B2-01 | L | ⬜ |
 | B5-01 | Compras, servicios y gastos internos (CYG-01..03) + carga masiva | B4-01 | L | ⬜ |
 | B6-01 | Notas internas: provisiones y seguridad social (CNT-06, 08) | B1-01 | M | ❓ D-25 |
