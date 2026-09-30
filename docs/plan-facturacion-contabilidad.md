@@ -22,6 +22,23 @@
 
 ## 0. Dónde retomar (leer SIEMPRE primero)
 
+### ▶ 29-sep-2026 (madrugada) — EMPIEZA LA FASE B — leer esto primero
+
+- **Decisión del usuario:** la Fase A se da por cerrada en lo construible y se pasa a la B. Quedan en la A,
+  **bloqueadas y a propósito**: A4-01..03 (documento soporte, ❓ Q-17), A5-01 (nómina, ❓ Factus), A6-01
+  (radicación, ❓ Q-24) y A9-01 (cierre). T0-19 sigue pendiente (pequeña, sin bloqueo).
+- **Rama `fase-b-contabilidad`** en los dos repos, creada desde `fase-a-facturacion` (la B usa sus tablas),
+  **solo local, sin push**.
+- **Hecho:** B0-01 (plan de cuentas) y B1-01 (comprobantes, periodos, consecutivos). Migraciones
+  `2026-09-29-plan-de-cuentas.sql` y `2026-09-29-comprobantes.sql` **aplicadas en `jdd_dev`**; PUC de
+  desarrollo sembrado con `node --import tsx scripts/sembrar-puc-desde-auxiliar.mjs`.
+- **Trampas nuevas:** (1) en PL/pgSQL un `CASE`/`AND` que nombra `NEW.x`/`OLD.x` se evalúa entero: en una
+  función de trigger compartida por dos tablas hay que ramificar con `IF` anidados. (2) `ng serve` no siempre
+  ve los archivos reescritos con Python: si la pantalla no cambia, `touch` al archivo. (3) La fecha por defecto
+  de un formulario va en hora LOCAL: `toISOString()` de noche en Colombia ya es el día siguiente.
+- **Siguiente:** B2-01 (reglas de contabilización + contabilizar FV y NC, con backfill de lo emitido en la A).
+  El DS espera a A4-01.
+
 ### ▶ 29-sep-2026 (noche) — PRIMER LOTE EN PRODUCCIÓN Y CARPETAS UNIFICADAS — leer esto primero
 
 - **Producción:** el primer lote (Tanda 0 + vista previa de formatos) se desplegó el 29-sep a
@@ -465,8 +482,8 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecha y verificada · ❓ espera 
 
 | ID | Tarea | Depende | Tam. | Estado |
 |---|---|---|---|---|
-| B0-01 | Plan de cuentas (CNT-01) | A0-10 | M | ❓ Q-22 |
-| B1-01 | Motor de comprobantes: partida doble, periodos, consecutivos (CNT-02, 03) | B0-01 | L | ⬜ |
+| B0-01 | Plan de cuentas (CNT-01) | A0-10 | M | ✅ 29-sep (back `8b380bd`, front `841bdbe`): árbol por código, importador Excel con simulación, 181 cuentas sembradas en `jdd_dev` desde el auxiliar (24 «por confirmar»). La carga real espera ❓ Q-22 |
+| B1-01 | Motor de comprobantes: partida doble, periodos, consecutivos (CNT-02, 03) | B0-01 | L | ✅ 29-sep (back `817d8e2`, front `77f135e`): `scripts/verificar-comprobantes.mjs` 23 OK con ROLLBACK (incluye saltarse el servicio); editor de NI y periodos probados en el navegador |
 | B2-01 | Reglas de contabilización + contabilización automática de FV, NC y DS (CNT-13, FEL-18, DSP-04) | B1-01 | L | ⬜ |
 | B3-01 | Cuentas por cobrar y recibos de caja (CXC-01..04, CNT-05) | B2-01 | L | ❓ Q-12 |
 | B4-01 | Cuentas por pagar, egresos y anticipos (CXP-01..04, CNT-04) | B2-01 | L | ⬜ |
