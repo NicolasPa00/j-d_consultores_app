@@ -23,8 +23,9 @@
 > cuentas por pagar, anticipos y egresos, centros de costo y cierre de año; pantallas nuevas `/contabilidad`,
 > `/cartera`, `/compras`. **Todas las migraciones del 29/30-sep ya están en `jdd_dev`; producción NO tiene
 > ninguna** (A3-01 incluida). Falta: B6-01 (❓ D-25), B7-01 (extracto real), B9-01 ⛔, B11-01. Fallo de la
-> Fase A corregido: la fecha de emisión salía en UTC (`hoyCO()`). El detalle y las trampas nuevas, en el §0 de
-> `docs/plan-facturacion-contabilidad.md`.
+> Fase A corregido: la fecha de emisión salía en UTC (`hoyCO()`). **Retomar por el bloque «DÓNDE RETOMAR (cierre del
+> 30-sep-2026)» al principio del §0 de `docs/plan-facturacion-contabilidad.md`**: estado, qué pedirle a JD&D, datos de
+> `jdd_dev`, el orden de las 17 migraciones del segundo lote y las trampas nuevas.
 >
 > 🆕 **29-sep-2026 · A3-01 ÓRDENES PARTICULARES (sin ARL) construida en
 > `fase-a-facturacion`.** «Nueva orden manual» en `/ordenes` (solo admin) → la orden se factura
