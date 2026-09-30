@@ -38,11 +38,13 @@
   `jdd_dev`; `factus-humo` autentica contra el sandbox (siguiente FE: SETP 990021780); los
   endpoints de terceros, resoluciones, relación y borradores responden en local.
 - **A1-08 y A2-01 hechas** (29-sep; A1-08 con los subsistemas Operación/Finanzas). **A3-01 (órdenes para
-  privados) construida 🟨:** falta aplicar su migración en `jdd_dev` y probarla en la app (ver abajo).
+  privados) construida 🟨:** migración ya aplicada en `jdd_dev`; falta probarla en la app (ver abajo).
   Después: A4-01 espera Q-17; lo siguiente sin bloqueo es A6-01 ❓ o A9-01.
 - ⚠️ **R-01: la resolución de facturación de JD&D vence el 11-oct-2026.**
 
-#### ▶ A3-01 — CONSTRUIDA (29-sep, sesión siguiente); falta migrar `jdd_dev` y probar en la app
+#### ▶ A3-01 — CONSTRUIDA (29-sep, sesión siguiente); migración YA aplicada en `jdd_dev`; falta probar en la app
+
+- **29-sep (tarde): migración aplicada en `jdd_dev`.** Era la causa del 500 en Facturación → «Por facturar» y en `/api/drafts` (referencia NFGWW8). Tras aplicarla: `vw_ordenes_expandidas` = `ordenes_servicio` (5 = 5); `verificar-orden-particular`, `verificar-relacion-facturar` y `verificar-borrador-factura` en verde sin residuos. **Producción NO la tiene**: debe ir con el segundo lote.
 
 - **Hecho:** migración `sst_ws/db/migraciones/2026-09-29-ordenes-particulares.sql` (+ bloque al final de
   `schema.sql`; `vw_ordenes_expandidas` se MOVIÓ al final porque ahora cruza con `sst.terceros`),
@@ -60,6 +62,37 @@
 - **Decisiones tomadas con el supuesto de la ficha:** la orden particular no lleva formatos (ni las
   plantillas genéricas) y sus casillas de soporte son las por defecto; exactamente UN pagador por orden
   (`CHECK`); el pagador debe ser tercero cliente, activo y NO ARL; vencimiento obligatorio.
+
+#### ▶ Tres fallos hallados al probar con los datos de prueba (29-sep, noche) — corregidos, sin commitear
+
+1. **Una factura quedaba «Enviando» para siempre.** Un rechazo de validación del proveedor (HTTP 400/422)
+   se registraba como `ERROR_RED` y dejaba el documento en ENVIANDO; «Consultar estado» reenviaba lo
+   mismo sin fin. Ahora `registrarFallaDeEnvio` (`emision.service.js`, también en `notas.service.js`) lo
+   pasa a RECHAZADO con los mensajes, y se corrige por A1-07. Solo red/timeout/5xx/409 siguen en ENVIANDO.
+2. **Un centavo de redondeo.** Un valor fijo de orden repartido en horas ($350.000 / 3 h) salía
+   3 × 116.666,67 = 350.000,01 y el proveedor rechazaba («la suma de los detalles de pago no es igual al
+   total»). `cantidadYValorUnitario` ahora factura 1 unidad por el total cuando el valor hora no es exacto,
+   y la edición manual redondea el valor unitario al centavo ANTES de calcular.
+3. **Mención del proveedor en pantalla.** Regla del usuario: en ningún texto visible se nombra a Factus.
+   Se cambiaron los mensajes del backend («proveedor tecnológico» / «la DIAN»), tres textos del front
+   (Parametrización, Terceros) y el historial ya guardado en `jdd_dev`. Quedan a propósito: nombres de
+   archivos/clases/columnas (`factus_*`) y comentarios. **Fuera de nuestro control:** el PDF del sandbox
+   sale con la plantilla y el logo de Factus, y el correo que envía al validar es suyo.
+
+Además: el «No se pudo cargar lo pendiente por facturar» intermitente venía de **14 vigilantes
+`node --watch src/server.js` vivos desde el 27/28-sep** que reiniciaban a la vez con cada cambio y se
+disputaban :4000. Se cerraron todos menos el del arranque de hoy.
+
+#### ▶ Datos de prueba para Facturación (29-sep)
+
+`node --import tsx scripts/sembrar-facturacion-demo.mjs` (en `sst_ws`) siembra en `jdd_dev` 16 órdenes
+inventadas y FINALIZADAS (OS-2026-0006..0021) por el camino real (lote → borrador → `materializarOrden`),
+así que también salen en Órdenes. AXA: 4 facturables + 1 con ARL PENDIENTE. Colmena (sin tarifa): 2 con
+valor de la orden + 1 sin valor. Bolívar: prefactura **990610** (3 órdenes + 1 fila de otro proveedor),
+1 con prefactura 990611 no cargada, 1 PENDIENTE. Particulares: HOTEL MIRADOR DE GALERAS SAS (tarifa
+90.000/h) y Laura Martínez Rosero (persona natural). Todos los terceros con correo del desarrollador;
+además puso `escalappsystem@gmail.com` como correo de facturación de AXA y Colmena, que no tenían.
+`--limpiar` lo borra (se niega si alguna orden ya está en un documento de facturación).
 
 #### ▶ A3-01 — investigación previa (29-sep, noche)
 
@@ -420,7 +453,7 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecha y verificada · ❓ espera 
 | A1-07 | Rechazos, reenvíos y eventos DIAN (FEL-12, FEL-19) | A1-05 | M | ✅ 28-sep, probado en el sandbox real (ver bitácora) |
 | A1-08 | Pantalla de Facturación | A1-03..07 | L | ✅ 29-sep con los subsistemas Operación/Finanzas (selección al entrar, «Cambiar de sistema»); probado en navegador: crear y eliminar el borrador de la prefactura 170501. Emisión desde la pantalla sin probar (marcaría como facturadas las órdenes de prueba) |
 | A2-01 | Nota crédito (FEL-11) | A1-05 | M | ✅ 29-sep, probada en el SANDBOX real: SETP990021791 anulada con NC979; órdenes de vuelta a «Por facturar» (`scripts/verificar-nota-credito.mjs`). Hallado y corregido de paso: el número de Factus trae el prefijo y A1-05 lo duplicaba |
-| A3-01 | Órdenes manuales para privados (pagador sin ARL) | A0-05 | L | 🟨 29-sep código completo (back + front) y `scripts/verificar-orden-particular.mjs` en verde con ROLLBACK (29 comprobaciones). **Falta:** aplicar la migración `2026-09-29-ordenes-particulares.sql` en `jdd_dev`, re-correr las verificaciones de A1-03/A1-04 y probar en la app (alta → asignar → soportes → factura) + reimportar un AXA y un SIPAB |
+| A3-01 | Órdenes manuales para privados (pagador sin ARL) | A0-05 | L | 🟨 29-sep código completo (back + front) y `scripts/verificar-orden-particular.mjs` en verde con ROLLBACK (29 comprobaciones). Migración aplicada en `jdd_dev` y verificaciones de A1-03/A1-04 en verde (29-sep). **Falta:** probar en la app (alta → asignar → soportes → factura) + reimportar un AXA y un SIPAB |
 | A4-01 | Documento soporte desde la cuenta de cobro (DSP-01, CXP-05) | A1-02, A0-05 | L | ❓ Q-17 |
 | A4-02 | Documento soporte manual y carga masiva por Excel | A4-01 | M | ⬜ |
 | A4-03 | Nota de ajuste al documento soporte (DSP-03) | A4-01 | S | ⬜ |

@@ -202,7 +202,7 @@
         </div>
         <div>
           <dt>Responsabilidades fiscales</dt>
-          <dd>{{ t.responsabilidades_fiscales.length ? t.responsabilidades_fiscales.join(', ') : 'Sin indicar (Factus asume R-99-PN)' }}</dd>
+          <dd>{{ t.responsabilidades_fiscales.length ? t.responsabilidades_fiscales.join(', ') : 'Sin indicar (se asume R-99-PN)' }}</dd>
         </div>
         <!-- Enlaces: el tercero es a quién se factura; la empresa, dónde se ejecuta. -->
         @if (t.arls_enlazadas.length) {
@@ -480,7 +480,7 @@
             </label>
           }
         </div>
-        <p class="form-field__hint">Sin ninguna marcada, Factus asume R-99-PN (no responsable).</p>
+        <p class="form-field__hint">Sin ninguna marcada, se asume R-99-PN (no responsable).</p>
       </div>
 
       <h4 class="form-section">Roles *</h4>

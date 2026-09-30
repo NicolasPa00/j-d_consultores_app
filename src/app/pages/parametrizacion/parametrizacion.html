@@ -226,7 +226,7 @@
     </div>
     <div class="card__body table-wrap">
       <table class="table">
-        <thead><tr><th>Código</th><th>Nombre</th><th>Tipo</th><th class="col-num">Tarifa</th><th>Aplica a</th><th>Código Factus</th><th>Estado</th><th class="col-actions">Acciones</th></tr></thead>
+        <thead><tr><th>Código</th><th>Nombre</th><th>Tipo</th><th class="col-num">Tarifa</th><th>Aplica a</th><th>Código de tributo</th><th>Estado</th><th class="col-actions">Acciones</th></tr></thead>
         <tbody>
           @for (r of retenciones(); track r.id) {
             <tr>
@@ -329,7 +329,7 @@
     </div>
     <div class="card__body table-wrap">
       <table class="table">
-        <thead><tr><th>Código DIAN</th><th>Nombre</th><th>Id en Factus</th></tr></thead>
+        <thead><tr><th>Código DIAN</th><th>Nombre</th><th>Id del proveedor</th></tr></thead>
         <tbody>
           @for (i of catalogoActual(); track i.id) {
             <tr>
@@ -443,7 +443,7 @@
           <option value="RETEIVA">ReteIVA</option>
         </select>
       </div>
-      <p class="form-field__hint">Código de tributo en Factus: {{ codigoFactusDe(retencionDraft.tipo) }}.</p>
+      <p class="form-field__hint">Código de tributo para la factura electrónica: {{ codigoFactusDe(retencionDraft.tipo) }}.</p>
       <div class="form-field">
         <label class="form-field__label">Tarifa (%)</label>
         <input class="form-control" type="number" step="0.1" [(ngModel)]="retencionDraft.tarifa" name="rTarifa" />
