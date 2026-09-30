@@ -882,6 +882,8 @@ export class ValidationComponent implements OnInit, OnDestroy {
    * no se le enseña a quien recibiría un 403 al guardar.
    */
   protected readonly puedeCrearManual = computed(() => this.auth.usuario()?.rol === 'admin');
+  /** T0-19 · Cargar la prefactura es de admin y contador (el backend ya lo exige): a los demás ni se les ofrece. */
+  protected readonly puedeCargarPrefactura = computed(() => ['admin', 'contador'].includes(this.auth.usuario()?.rol ?? ''));
   protected readonly manualAbierto = signal(false);
   protected readonly manualGuardando = signal(false);
   /** Clientes que no son ARL: los únicos a los que se les abre una orden a mano. */

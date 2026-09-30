@@ -59,24 +59,26 @@
       }
     </select>
 
-    <!-- T0-09 · Cargar la prefactura de Bolívar (PDF) con IA: extrae, cruza
-         contra Orbita y abre el modal de previsualización. No escribe nada
-         hasta que se pulsa "Aplicar" dentro del modal. -->
-    <input
-      #prefacturaInput type="file" accept="application/pdf" style="display: none"
-      (change)="onPrefacturaFile($event)"
-    />
-    <button
-      type="button" class="btn btn--secondary btn--sm"
-      (click)="prefacturaInput.click()" [disabled]="prefacturaCargando()"
-    >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
-        <path d="M14 3v5h5" />
-        <path d="M12 11v6M9 14l3-3 3 3" />
-      </svg>
-      Cargar prefactura
-    </button>
+    @if (puedeCargarPrefactura()) {
+      <!-- T0-09 · Cargar la prefactura de Bolívar (PDF) con IA: extrae, cruza
+           contra Orbita y abre el modal de previsualización. No escribe nada
+           hasta que se pulsa "Aplicar" dentro del modal. -->
+      <input
+        #prefacturaInput type="file" accept="application/pdf" style="display: none"
+        (change)="onPrefacturaFile($event)"
+      />
+      <button
+        type="button" class="btn btn--secondary btn--sm"
+        (click)="prefacturaInput.click()" [disabled]="prefacturaCargando()"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+          <path d="M14 3v5h5" />
+          <path d="M12 11v6M9 14l3-3 3 3" />
+        </svg>
+        Cargar prefactura
+      </button>
+    }
 
     <!-- A3-01 · Orden de un cliente particular (sin ARL): no llega en ningún
          documento, así que se escribe a mano y entra en SIN PROGRAMAR. -->
