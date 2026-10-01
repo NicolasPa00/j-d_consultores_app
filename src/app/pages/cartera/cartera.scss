@@ -173,6 +173,7 @@
 /* 1-oct-2026 · El cliente/proveedor es la primera columna de todas las tablas de
    Cartera: sin mínimo, «COMPAÑIA DE SEGUROS BOLIVAR S A» dejaba la «A» sola en
    otra línea en cuanto las cifras pedían un poco más de ancho. */
-.table tbody td:first-child {
+/* Solo en los listados: en el editor del recibo la primera columna es el check. */
+.table:not(.car-editor) tbody td:first-child {
   min-width: 240px;
 }

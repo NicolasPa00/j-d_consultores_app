@@ -2044,7 +2044,7 @@
                 class="form-control"
                 type="text"
                 maxlength="300"
-                placeholder="Ej. Revisado contra la prefactura"
+                [placeholder]="esAxaArl(ordenCobro) ? 'Ej. Revisado contra la orden de AXA' : 'Ej. Revisado contra la prefactura'"
                 [(ngModel)]="cobroObsAprobacion"
                 name="cobroObsAprob"
               />

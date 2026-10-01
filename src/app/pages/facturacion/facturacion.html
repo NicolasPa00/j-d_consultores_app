@@ -100,7 +100,7 @@
                           <input type="checkbox" [checked]="estaMarcada(g, l)" (change)="alternarLinea(g, l)" [attr.aria-label]="'Marcar ' + (l.codigo || l.clave)" />
                         }
                       </td>
-                      <td class="td-id">
+                      <td class="td-id nowrap">
                         @if (g.prefactura) { {{ l.codigo_cronograma }}-{{ l.secuencia }} } @else { {{ l.numero_orden || '—' }} }
                         @if (l.codigo) { <small class="fac-sub">{{ l.codigo }}</small> }
                       </td>
