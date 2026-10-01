@@ -1,6 +1,12 @@
 # Despliegue del segundo lote (1-oct-2026)
 
-> **Estado:** PREPARADO, pendiente del visto bueno del usuario para ejecutar en producción.
+> ✅ **DESPLEGADO el 1-oct-2026 (~17:55 hora Colombia)**: `master` = `b232b50`, `main` = `57d5059`.
+> Las 19 migraciones OK en `orbita`; conteos intactos (154 órdenes, 6 usuarios, 15 profesionales,
+> 41 empresas, 2.299 borradores); build del frontend en 31 s; `orbita-api` y `orbita-web` activos;
+> catálogos DIAN sembrados (1.122 municipios) y 5 terceros (las 3 ARL enlazadas). Humo de solo
+> lectura: órdenes, dashboard, borradores, por facturar, pendientes, terceros, emisor, cuentas,
+> cartera, compras y notificaciones en 200; SSR de /login 17,2 kB; HTTPS 200. Sin errores en el log.
+> El push a GitHub lo hizo el usuario (el clasificador de Claude Code lo bloquea).
 > Guía para el cliente: `3-entregables-y-respaldos/entregas-cliente/2026-10-01-segundo-lote-de-cambios/`
 > (HTML + PDF). Runbook general del servidor: `despliegue-vultr.md`. Lote anterior:
 > `despliegue-correcciones-26-sep.md` (mismo método).

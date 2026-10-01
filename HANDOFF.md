@@ -16,6 +16,14 @@
 > servidor. **Lo último desplegado:** el Excel SIPAB de Bolívar dejó de leerse
 > cuando llegaba como `.xls` binario (ver §0 punto 2 y la Tanda 23 en §3).
 >
+> 🚀 **1-oct-2026 (noche) · SEGUNDO LOTE DESPLEGADO EN PRODUCCIÓN** (`master b232b50`, `main 57d5059`). Detalle, respaldo
+> y cómo revertir: **`docs/4-despliegue/despliegue-lote2.md`**. Guía para el cliente (16 cambios, HTML + PDF):
+> `3-entregables-y-respaldos/entregas-cliente/2026-10-01-segundo-lote-de-cambios/`. **El envío a la DIAN NO está activo**
+> (`emisionDian = false` en Facturación, `PROVEEDOR_VISIBLE = false` en Parametrización, sin `FACTUS_*` en el servidor):
+> entra en el **tercer lote** con el alta de JD&D. Pendiente en producción: PUC, reglas, productos, retenciones y empresa
+> emisora (datos de la contadora). Trampas: el clasificador bloquea `git push`/`ls-remote` (lo corre el usuario con `!`);
+> el usuario `orbita` no crea bases (`sudo -n -u postgres createdb -O orbita …` para ensayos).
+>
 > 🧩 **1-oct-2026 (tarde) · SEGUNDA TANDA DE JD&D — commiteada el 1-oct.** (1) **AXA sin prefactura:** su única aprobación es
 > «Aprobar cobro»; `cobro-orden.service.js` (`sincronizarArlAxa`) pone el estado ARL en APROBADO al aprobar y en PENDIENTE al
 > retirar o anular el visto bueno, con línea en `historial_estado_arl` (origen MANUAL). Bolívar y Colmena no cambian. ⚠️ El
