@@ -40,7 +40,7 @@ independiente, **$130.000 por 1 año**); cada bolsa dura 1 año desde la compra;
 su bolsa y puede dividirla en los paquetes (NIT) que desee"; **la bolsa más pequeña es de 10.000**;
 para más documentos, "escríbenos". No menciona RADIAN.
 
-**La contradicción:** `admin_ws/docs/facturacion-electronica.md` (§8.2-quater, §8.7, §8.8) y
+**La contradicción:** `admin_ws/docs/2-arquitectura/facturacion-electronica.md` (§8.2-quater, §8.7, §8.8) y
 `precios-y-planes.md` asumen que **la bolsa repartida se cobra a la lista pública de facturación**
 más $130.000 por NIT (respuesta P6 de la reunión del 14-sep: "no hay precios de aliado, aplica la
 misma lista pública"). La bolsa real cuesta bastante más:
@@ -113,14 +113,14 @@ consultar y no existe paquete mensual.
 ## 3. Lo que necesito que hagas
 
 1. **Localiza todo lo que use precios de bolsa.** Empieza por:
-   `admin_ws/docs/facturacion-electronica.md` (§8.2 lista de precios, §8.2-quater, §8.7, §8.8,
+   `admin_ws/docs/2-arquitectura/facturacion-electronica.md` (§8.2 lista de precios, §8.2-quater, §8.7, §8.8,
    la tabla de la línea ~1505 que dice "bolsa repartida, +$130.000/año por NIT" y la de ~1518
    con "$65.000"), `admin_ws/docs/precios-y-planes.md` (§2, §3 y la sección de la caja),
    `admin_ws/docs/ESTADO-Y-CONTINUACION.md` (líneas ~611-960) y
    `admin_ws/docs/proveedor-tecnologico-dian.md`. Busca también en la memoria de este proyecto:
    `project_proveedor_fe_y_precios.md`, `project_facturacion_electronica.md` y
    `project_fe_como_servicio_terceros.md`.
-2. **Agrega la lista de bolsa multifacturador a §8.2** de `facturacion-electronica.md`, junto con
+2. **Agrega la lista de bolsa multifacturador a §8.2** de `../2-arquitectura/facturacion-electronica.md`, junto con
    las tablas completas de RADIAN y nómina (hoy solo están los extremos).
 3. **No borres el razonamiento anterior.** En este proyecto los errores se dejan a la vista y se
    marcan (mira cómo se hizo con §8.2-ter y §8.2-quater). Marca lo desactualizado con un aviso

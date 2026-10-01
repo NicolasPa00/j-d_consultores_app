@@ -10,19 +10,19 @@
 > **Última actualización:** 19-sep-2026.
 >
 > ⚠️ **23-sep-2026: este documento tiene sucesor.** Llegó la lista de la contadora y
-> se volcó en [`requerimientos-facturacion-contabilidad-v2.md`](requerimientos-facturacion-contabilidad-v2.md),
+> se volcó en [`../1-requerimientos/requerimientos-facturacion-contabilidad-v2.md`](../1-requerimientos/requerimientos-facturacion-contabilidad-v2.md),
 > que pasa de 7 a 10 módulos (suma CXC, CXP y PAR) y agrega informes financieros y
 > eventos de la factura. **Los IDs de aquí se mantienen** en la v2. Este archivo se
 > conserva por el flujo real de Siigo y las fuentes; para el alcance vigente, leer la v2.
 >
-> **Por qué existe aparte de `docs/facturacion-electronica.md`:** ese documento
+> **Por qué existe aparte de `docs/2-arquitectura/facturacion-electronica.md`:** ese documento
 > analiza la integración de **Factus** para los documentos DIAN (factura,
 > documento soporte, nómina) y sigue vigente para eso. Pero la reunión del
 > 19-sep confirmó (§8.H, pregunta 22) que JD&D quiere **reemplazar Siigo por
 > completo**, lo que agrega un módulo entero de **contabilidad** que Factus no
 > cubre. Este documento es el borrador de ESE alcance más grande.
 >
-> **Contradice al FRS original a propósito:** `requerimientos-completos.txt` §1
+> **Contradice al FRS original a propósito:** `../1-requerimientos/requerimientos-completos.txt` §1
 > dice textualmente que **no** está en el alcance "la generación de facturación
 > electrónica DIAN (Mireya lo hace aparte)". Esta fase revierte esa exclusión
 > por decisión explícita del cliente — no es un error, es un cambio de alcance
@@ -36,7 +36,7 @@
    prestaciones sociales, provisión para conciliación bancaria, nota de
    contabilización de seguridad social).
 2. Reunión con JD&D y su contadora, 19-sep-2026 (respuestas volcadas en
-   `docs/facturacion-electronica.md` §8).
+   `docs/2-arquitectura/facturacion-electronica.md` §8).
 3. Capturas de pantalla del **Siigo real de JD&D** compartidas el 19-sep-2026
    (después de la reunión, mientras se espera el documento formal): el Excel
    que hoy arma la encargada de Orbita para la contadora, el documento de
@@ -89,7 +89,7 @@ marca **PENDIENTE** en vez de asumir.
 | FEL-04 | Debe emitir facturas electrónicas de venta con: consecutivo/prefijo DIAN, CUFE, QR, fechas de generación/expedición/vencimiento, receptor (NIT, razón social, dirección, teléfono, ciudad), ítems (código, descripción, cantidad, valor unitario, valor bruto, impuesto a cargo, impuesto de retención, valor total), total en letras, forma y medio de pago, observaciones. | Alta |
 | FEL-05 | Debe soportar facturas **sin IVA** (servicio SST a una ARL, exento) y **con IVA** (receptor privado), según el tipo de receptor — parametrizable por documento, no un valor fijo del sistema. | Alta |
 | FEL-06 | Debe permitir registrar/calcular la retención en la fuente que practica el pagador (se observó 11 % en varias facturas de las capturas). **PENDIENTE**: confirmar si aplica siempre sobre este tipo de servicio o depende del receptor — dos capturas de la misma sesión muestran cifras de retención que no cuadran entre sí para lo que parece ser la misma factura (posible desfase entre pantallas, no un patrón confirmado). No dar por buena una tarifa fija sin que la contadora la confirme. | Alta |
-| FEL-07 | El ICA debe quedar discriminado en la factura aunque el pagador no lo retenga (JD&D lo autoliquida aparte) — hallazgo ya confirmado en la reunión del 19-sep (`docs/facturacion-electronica.md` §8.D). | Media |
+| FEL-07 | El ICA debe quedar discriminado en la factura aunque el pagador no lo retenga (JD&D lo autoliquida aparte) — hallazgo ya confirmado en la reunión del 19-sep (`docs/2-arquitectura/facturacion-electronica.md` §8.D). | Media |
 | FEL-08 | Debe poder generar/adjuntar el **paz y salvo de seguridad social** (carta con firma del representante legal y fecha) como parte del paquete de envío a la ARL. | Media |
 | FEL-09 | Debe poder empaquetar (equivalente al comprimido actual) relación de actividades + formatos + prefacturas + paz y salvo, agrupado por ARL y periodo, listo para radicar. | Media |
 | FEL-10 | **Trazabilidad**: debe poder consultarse en cualquier momento el historial de documentos emitidos, su estado (generada / enviada a DIAN / aprobada / pagada / rechazada / anulada), a qué orden(es) de servicio corresponde cada uno, y descargar su XML/PDF. Pedido explícito del cliente en esta sesión. | Alta |
@@ -153,7 +153,7 @@ marca **PENDIENTE** en vez de asumir.
 
 ## 3. Preguntas nuevas para JD&D (sumar al guion de la próxima conversación)
 
-Estas no estaban en `docs/facturacion-electronica.md` §8 porque salieron de mirar
+Estas no estaban en `docs/2-arquitectura/facturacion-electronica.md` §8 porque salieron de mirar
 Siigo, no de la reunión:
 
 - **D-10** ¿Qué es exactamente el código "Estado de facturación" del Excel de

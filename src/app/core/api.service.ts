@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar, OrdenManualForm } from './models';
+import { ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar, OrdenManualForm, DetalleCobroOrden, ValoresCobroForm } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -43,7 +43,7 @@ export interface OrdenPortal {
   horas_asignadas: number;
   fecha_programada: string | null;
   estado: string;
-  casillas: { clave: CategoriaSoporte; etiqueta: string }[];
+  casillas: { clave: CategoriaSoporte; etiqueta: string; opcional?: boolean }[];
   /** VER-04 · Casillas devueltas para corregir; null = puede subir cualquiera. */
   soportes_rechazados: CategoriaSoporte[] | null;
   soportes_rechazo_motivo: string | null;
@@ -246,6 +246,13 @@ export class ApiService {
   viewSupport(supportId: string): Observable<Blob> {
     return this.http.get(`${this.base}/files/supports/${supportId}/view`, { responseType: 'blob' });
   }
+  /**
+   * 30-sep-2026 · Varios soportes de una orden en UN solo PDF, en el orden de
+   * `ids` (las fotos entran como páginas). Para radicar ante la ARL.
+   */
+  unirSoportes(ordenId: string, ids: string[]): Observable<Blob> {
+    return this.http.post(`${this.base}/files/supports/unir`, { orden_id: ordenId, ids }, { responseType: 'blob' });
+  }
   /** VER-02/03 · Aceptar los soportes: la OS pasa a EJECUTADA. */
   verifyOrder(orderId: string): Observable<Wrap<Orden>> {
     return this.http.post<Wrap<Orden>>(`${this.base}/orders/${orderId}/verify`, {});
@@ -283,6 +290,29 @@ export class ApiService {
   /** EST-03 · Log de auditoría de cambios de estado de la OS. */
   orderHistory(orderId: string): Observable<Wrap<HistorialEstado[]>> {
     return this.http.get<Wrap<HistorialEstado[]>>(`${this.base}/orders/${orderId}/history`);
+  }
+
+  // ---- Cobro de la orden: valores y aprobación de operación (30-sep-2026) ----
+  detalleCobro(orderId: string): Observable<Wrap<DetalleCobroOrden>> {
+    return this.http.get<Wrap<DetalleCobroOrden>>(`${this.base}/orders/${orderId}/cobro-detalle`);
+  }
+  /** Si la orden estaba aprobada y cambia el total, el servidor retira la aprobación. */
+  guardarValoresCobro(orderId: string, form: ValoresCobroForm): Observable<Wrap<DetalleCobroOrden>> {
+    return this.http.put<Wrap<DetalleCobroOrden>>(`${this.base}/orders/${orderId}/cobro-valores`, form);
+  }
+  aprobarCobro(orderId: string, observacion?: string): Observable<Wrap<DetalleCobroOrden>> {
+    return this.http.post<Wrap<DetalleCobroOrden>>(`${this.base}/orders/${orderId}/cobro-aprobacion`, { observacion });
+  }
+  retirarAprobacionCobro(orderId: string, observacion?: string): Observable<Wrap<DetalleCobroOrden>> {
+    return this.http.delete<Wrap<DetalleCobroOrden>>(`${this.base}/orders/${orderId}/cobro-aprobacion`, { body: { observacion } });
+  }
+  /** «Validado plataforma»: check a mano, no bloquea nada. */
+  marcarValidadoPlataforma(
+    orderId: string, validado: boolean,
+  ): Observable<Wrap<{ validado_plataforma_en: string | null; validado_plataforma_por_nombre: string | null }>> {
+    return this.http.patch<Wrap<{ validado_plataforma_en: string | null; validado_plataforma_por_nombre: string | null }>>(
+      `${this.base}/orders/${orderId}/validado-plataforma`, { validado },
+    );
   }
 
   // ---- Estado de facturación / cobro (ago-2026, petición 6) ----

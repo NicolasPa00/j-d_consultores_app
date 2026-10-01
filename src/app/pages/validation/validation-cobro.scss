@@ -1,0 +1,356 @@
+/*
+ * 30-sep-2026 · Estilos del modal de cobro, del ✓ «Validado plataforma» y de
+ * «Descargar en un solo PDF». Van en su propio archivo porque `validation.scss`
+ * ya roza el presupuesto `anyComponentStyle` de angular.json (trampa 20 del
+ * HANDOFF): mejor partir la hoja que volver a subir el tope.
+ */
+
+/* ============ 30-sep-2026 · Cobro de la orden y «Validado plataforma» ============ */
+
+/* La píldora de Cobro es el botón que abre el modal: se ve igual que antes,
+   solo que reacciona al cursor para que se note que se puede pulsar. */
+.pill--boton {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: filter 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover:not(:disabled) {
+    filter: brightness(0.94);
+    box-shadow: 0 0 0 2px rgba(45, 123, 200, 0.18);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--secondary-color);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+/* Debajo de la píldora: si operación ya dio el visto bueno al cobro. */
+.cobro-aprob {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+
+  &--ok {
+    color: var(--success);
+    font-weight: 600;
+  }
+}
+
+/* Estado ARL + el ✓ de «Validado plataforma», en la misma celda. */
+.arl-celda {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.validado {
+  display: inline-grid;
+  place-items: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  padding: 0;
+  /* Sin marcar tiene que leerse como una casilla VACÍA, no como un hueco: borde
+     sólido gris medio y el ✓ insinuado en gris claro (antes, borde punteado en
+     el gris de los separadores, que casi no se veía). */
+  border: 2px solid #94a3b8;
+  border-radius: 50%;
+  background: #fff;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+
+  svg {
+    width: 0.85rem;
+    height: 0.85rem;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: var(--success);
+    color: var(--success);
+  }
+
+  &--ok {
+    border: 2px solid var(--success);
+    background: var(--success);
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      color: #fff;
+      filter: brightness(0.92);
+    }
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+
+  /* Sin marcar y bloqueada (la orden aún no se ejecutó): punteada y apagada, para
+     que no se confunda con una casilla que sí se puede marcar. */
+  &:disabled:not(.validado--ok) {
+    border-style: dashed;
+    border-color: #cbd5e1;
+    background: #f8fafc;
+    color: transparent;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--secondary-color);
+    outline-offset: 2px;
+  }
+}
+
+/* El modal de cobro: más ancho que el diálogo «slim» (lleva una tabla de
+   comparación), pero sin la anchura fluida de los modales de tabla grande. */
+.modal--cobro {
+  width: min(640px, calc(100vw - 2rem));
+}
+
+.modal--cobro .modal__footer {
+  justify-content: flex-end;
+}
+
+.cobro__cargando {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-muted);
+}
+
+.cobro__aviso {
+  margin-bottom: 1rem;
+}
+
+.cobro__seccion {
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--border-soft, #e2e8f0);
+
+  &:first-of-type {
+    padding-top: 0;
+  }
+
+  &:last-of-type {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+}
+
+.cobro__titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.cobro__origen {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.cobro__fila-valor {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: 0.6rem;
+
+  .form-field {
+    margin: 0;
+  }
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+
+    .cobro__op {
+      display: none;
+    }
+  }
+}
+
+.cobro__op {
+  padding-bottom: 0.55rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.cobro__dato {
+  display: block;
+  padding: 0.5rem 0;
+  font-weight: 600;
+}
+
+.cobro__gastos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.6rem;
+
+  .form-field {
+    margin: 0;
+  }
+}
+
+.cobro__total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0.8rem 0 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-sm, 6px);
+  background: rgba(45, 123, 200, 0.07);
+
+  strong {
+    font-size: 1.05rem;
+  }
+}
+
+.cobro__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.7rem;
+}
+
+.cobro__pendiente {
+  font-size: 0.75rem;
+  color: var(--warning);
+  font-weight: 600;
+}
+
+.cobro__falta {
+  font-size: 0.75rem;
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.cobro__comparacion {
+  width: 100%;
+  font-size: 0.82rem;
+
+  .num {
+    text-align: right;
+  }
+}
+
+.cobro__difiere td {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.cobro__comparacion-total td {
+  font-weight: 700;
+}
+
+.cobro__estado {
+  margin: 0 0 0.6rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+
+  &--ok {
+    color: var(--success);
+  }
+}
+
+.cobro__historial {
+  margin-top: 0.8rem;
+}
+
+.cobro__manual {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* «Descargar en un solo PDF», bajo la lista de soportes del visor. */
+.unir {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border-soft, #e2e8f0);
+
+  > .btn svg {
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+.unir__ayuda {
+  margin: 0.6rem 0 0.4rem;
+}
+
+.unir__lista {
+  list-style: none;
+  margin: 0 0 0.7rem;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.unir__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border-soft, #e2e8f0);
+  border-radius: var(--radius-sm, 6px);
+
+  &--off {
+    opacity: 0.55;
+  }
+}
+
+.unir__check {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.45rem;
+  align-items: center;
+  min-width: 0;
+  cursor: pointer;
+
+  input {
+    grid-row: span 2;
+  }
+}
+
+.unir__nombre {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.unir__archivo {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unir__mover {
+  display: inline-flex;
+  gap: 0.15rem;
+
+  .icon-action {
+    width: 1.6rem;
+    height: 1.6rem;
+
+    svg {
+      width: 0.9rem;
+      height: 0.9rem;
+    }
+  }
+}

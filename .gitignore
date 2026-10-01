@@ -43,25 +43,17 @@ __screenshots__/
 .DS_Store
 Thumbs.db
 
-# Documentación: los ejemplos son documentos REALES de clientes (razones sociales,
-# NIT y hasta la seguridad social de una persona). La documentación escrita sí viaja;
-# estas dos carpetas se copian a mano entre equipos. Ver HANDOFF.md §2.
+# Documentos de ejemplo: desde el 30-sep-2026 viven FUERA del repo, en la raíz del
+# monorepo (`1-cliente-jdd/` = lo que entregó JD&D, documentos REALES de clientes;
+# `2-pruebas/` = lo que generamos nosotros). Ver `LEEME.md` de la raíz. Se siguen
+# ignorando las rutas viejas para que nadie vuelva a meterlos en docs/ por costumbre.
 /docs/OrdenesEjemplo/
 /docs/BasesDatosEjemplo/
-
-# docs/Formatos: lo que entregó el cliente el 22-ago-2026 con los formatos de
-# cada ARL. NO viaja por git — es material de referencia (y dos de sus archivos
-# son ejemplos diligenciados con datos reales de una empresa y la licencia de un
-# profesional). Se pasa a mano entre equipos, igual que las otras dos carpetas.
-#
-# Ojo: los formatos que la aplicación NECESITA para funcionar son otros y sí
-# están versionados, en `sst_ws/assets/formatos-arl/` — ahí van solo los que
-# están EN BLANCO, que son formularios públicos de la ARL.
 /docs/Formatos/
-
-# docs/OrdenesDemo: las órdenes de EJEMPLO que se proyectan en la demo de las
-# peticiones del 22-ago-2026. Sus datos son INVENTADOS —no hay nada real que
-# proteger—, pero son material de presentación y no de la aplicación, y se
-# regeneran en un segundo con `sst_ws/scripts/generar-ordenes-demo-peticiones.mjs`,
-# que sí viaja por git. Ver docs/OrdenesDemo/README.md.
 /docs/OrdenesDemo/
+/docs/**/*.pdf
+/docs/**/*.xlsx
+/docs/**/*.xls
+/docs/**/*.docx
+/docs/**/*.rar
+

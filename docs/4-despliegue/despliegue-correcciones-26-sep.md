@@ -7,7 +7,7 @@
 > 1. Lectura de producción: 153 órdenes (145 Bolívar), 0 facturadas, 0 FINALIZADAS, 0 tarifas
 >    por profesional → las migraciones no alteraban ningún dato existente.
 > 2. **Respaldo** (`~/respaldos/orbita-antes-lote1-20260929-1534.dump` + `storage-…tgz` en el
->    servidor; copia de la base en `respaldos-produccion/` del PC de desarrollo, fuera de git).
+>    servidor; copia de la base en `3-entregables-y-respaldos/respaldos-bd/` del PC de desarrollo, fuera de git).
 > 3. **Ensayo**: el respaldo restaurado en una base aparte (`orbita_ensayo`), las 5 migraciones
 >    aplicadas ahí, conteos idénticos antes/después; luego se borró.
 > 4. Migraciones en `orbita` (el código viejo sigue funcionando: son aditivas), después `git pull`
@@ -18,8 +18,8 @@
 > Para revertir: `git reset --hard 414d465` (front) / `bc10714` (back) en el servidor y
 > `pg_restore` del respaldo. Las migraciones solo añaden, así que basta con volver el código.
 >
-> Runbook general del servidor: `docs/despliegue-vultr.md`. Este documento solo
-> cubre lo propio de esta tanda. Tablero y fichas: `docs/plan-facturacion-contabilidad.md`
+> Runbook general del servidor: `docs/4-despliegue/despliegue-vultr.md`. Este documento solo
+> cubre lo propio de esta tanda. Tablero y fichas: `docs/3-planes/plan-facturacion-contabilidad.md`
 > §4 (vive completo en la rama `fase-a-facturacion`).
 
 ---
@@ -167,7 +167,7 @@ casos basta con volver el código.
 
 ## 5. Material de prueba (fuera de git)
 
-- Prefacturas de ejemplo: `DocFacturacion/PREFACTURAS/EJEMPLOS-PRUEBA/170501.pdf`
+- Prefacturas de ejemplo: `2-pruebas/prefacturas/bolivar/170501.pdf`
   (las 3 órdenes de prueba) y `170502.pdf` (una ya prefacturada + una que no existe).
 - En `jdd_dev`: OS-2026-0002/0003/0004 (Bolívar) FINALIZADAS con soportes de
   ejemplo, usadas para probar la carga de prefactura.

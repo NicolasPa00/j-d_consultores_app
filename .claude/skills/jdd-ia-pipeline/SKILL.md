@@ -5,7 +5,7 @@ description: Diseño e implementación del pipeline de IA de JD&D IA-Core — im
 
 # Pipeline de IA — JD&D IA-Core (M2 + M3)
 
-Flujo **asíncrono con humano en el bucle** para importar y validar OS. Lee primero la skill **jdd-context** y `../../../docs/04-pipeline-ia.md` (detalle completo + boceto de esquema).
+Flujo **asíncrono con humano en el bucle** para importar y validar OS. Lee primero la skill **jdd-context** y `../../../docs/2-arquitectura/04-pipeline-ia.md` (detalle completo + boceto de esquema).
 
 > **Actualizado 13-ago-2026.** Este pipeline **ya está construido y funcionando** de
 > punta a punta contra el backend real (M2 e IMP-01..07 cerrados): la nota anterior
@@ -45,7 +45,7 @@ La **extracción** de documentos del **producto** usa la **API de OpenAI** (`gpt
 
 - **SDK:** `@google/genai` (Node/TS) o `google-genai` (Python). Enterprise: **Vertex AI**.
 - **Modelos (uso auxiliar):** `gemini-2.5-pro` (resumen). `gemini-2.5-flash` (clasificación de ARL, búsqueda NL). **La extracción NO usa Gemini — usa OpenAI.**
-- **Salida estructurada:** `generationConfig` con `responseMimeType: "application/json"` + `responseSchema` (subconjunto de OpenAPI Schema). Devuelve `{value, confidence}` por campo (ver boceto en `../../../docs/04-pipeline-ia.md`).
+- **Salida estructurada:** `generationConfig` con `responseMimeType: "application/json"` + `responseSchema` (subconjunto de OpenAPI Schema). Devuelve `{value, confidence}` por campo (ver boceto en `../../../docs/2-arquitectura/04-pipeline-ia.md`).
 - **Documentos nativos:** PDF/imágenes directos (multimodal, incluye escaneados). Inline hasta ~20 MB; archivos grandes → **Files API** de Gemini.
 - **Lotes masivos:** modo **Batch** de Gemini (async, menor costo).
 - **API key:** `GEMINI_API_KEY` / `GOOGLE_API_KEY` por variable de entorno, nunca en código.

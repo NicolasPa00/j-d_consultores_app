@@ -652,7 +652,7 @@ El 2-sep-2026 se confirmó lo pendiente y la tanda del 22-ago se fusionó a
 `main`/`master` en los dos repos (avance rápido, sin conflictos). Producción
 clona la rama principal. *Lo que decía este apartado antes:* ambos repos estaban
 en `tanda-22-ago-formatos-y-viaticos`, con cambios sin confirmar: en el frontend `.gitignore`, `HANDOFF.md` y
-`docs/plan-peticiones-22-ago-2026.md`; en el backend, el script
+`docs/3-planes/plan-peticiones-22-ago-2026.md`; en el backend, el script
 `scripts/generar-ordenes-demo-peticiones.mjs` sin agregar. Hay que confirmarlos
 y fusionar antes de clonar en el servidor, o el despliegue sale con menos de lo
 que hay hecho.

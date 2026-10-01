@@ -6,7 +6,7 @@
 >
 > **Fuentes:**
 > - **Facturación:** lista del 11-sep-2026, tal como está transcrita en
->   `ADMIN_APP/admin_ws/docs/facturacion-electronica.md` §8.2.
+>   `ADMIN_APP/admin_ws/docs/2-arquitectura/facturacion-electronica.md` §8.2.
 > - **RADIAN y nómina:** dos imágenes de la lista de Factus que el usuario compartió el
 >   26-sep-2026 (sin fecha impresa). Sus extremos ($60.000 por 24 documentos hasta $900.000
 >   por 5.000 en RADIAN, y hasta $480.000 por 1.200 en nómina) **coinciden** con lo que

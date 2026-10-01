@@ -24,6 +24,11 @@ interface UploadSlot {
    * está bien; lo que no puede es reemplazarlo.
    */
   bloqueada: boolean;
+  /**
+   * Se puede enviar sin ella (el registro fotográfico, 30-sep-2026). Solo en la
+   * entrega inicial: si el administrador la devolvió, se pidió por algo.
+   */
+  opcional: boolean;
   /** Lo que ya hay cargado en esta casilla. */
   previos: ArchivoPrevio[];
 }
@@ -85,7 +90,7 @@ export class PortalComponent implements OnInit {
    * esto es para no descubrirlo después de subir.
    */
   protected readonly faltantes = computed(
-    () => this.slots().filter((s) => !s.bloqueada && !s.file),
+    () => this.slots().filter((s) => !s.bloqueada && !s.opcional && !s.file),
   );
 
   protected readonly puedeEnviar = computed(() => this.faltantes().length === 0);
@@ -130,8 +135,8 @@ export class PortalComponent implements OnInit {
       : ([
           { clave: 'acta', etiqueta: 'Acta de visita firmada' },
           { clave: 'asistencia', etiqueta: 'Lista de asistencia' },
-          { clave: 'evidencias', etiqueta: 'Registro fotográfico / evidencias' },
-        ] as { clave: CategoriaSoporte; etiqueta: string }[]);
+          { clave: 'evidencias', etiqueta: 'Registro fotográfico / evidencias', opcional: true },
+        ] as { clave: CategoriaSoporte; etiqueta: string; opcional?: boolean }[]);
     const devueltas = data.soportes_rechazados;
 
     return casillas.map((c) => ({
@@ -141,6 +146,7 @@ export class PortalComponent implements OnInit {
       file: null,
       // Sin rechazo pendiente, todas abiertas (es la carga normal de la visita).
       bloqueada: !!devueltas && !devueltas.includes(c.clave),
+      opcional: !!c.opcional && !devueltas?.length,
       previos: (data.soportes_cargados || [])
         .filter((f) => (f.categoria || 'otros') === c.clave)
         .map((f) => ({

@@ -15,7 +15,7 @@ Plataforma web interna para **JD&D Consultores** (SST, Colombia) que gestiona el
 
 ## ⚠️ ALCANCE VIGENTE (actualizado 15-ago-2026)
 
-La Fase 1 se entregó: la demo se presentó y **el cliente aprobó continuar el 27-jul-2026**. Estamos en **FASE 2** y el documento que manda es `../../../docs/requerimientos-completos.txt` (FRS v1.0, los 12 módulos). `req_fase_1.txt` era el recorte de la primera entrega y ya no aplica.
+La Fase 1 se entregó: la demo se presentó y **el cliente aprobó continuar el 27-jul-2026**. Estamos en **FASE 2** y el documento que manda es `../../../docs/1-requerimientos/requerimientos-completos.txt` (FRS v1.0, los 12 módulos). `req_fase_1.txt` era el recorte de la primera entrega y ya no aplica.
 
 - **La antigua prohibición de codificar M8/M9/RPT-03..07/CFG-02..05 quedó SIN EFECTO**: esos módulos son el trabajo de esta fase.
 - Terminados y funcionando contra el backend real: **los 12 módulos**, CFG-02/03/05 incluidos. Del FRS solo queda fuera **ASG-06 (WhatsApp)**, que el propio FRS deja en Fase 3 y declara omisible.
@@ -29,12 +29,12 @@ La Fase 1 se entregó: la demo se presentó y **el cliente aprobó continuar el 
 | Si vas a trabajar en... | Lee |
 |---|---|
 | Cualquier cosa (arranque de sesión) | `../../../docs/README.md` + este archivo |
-| Negocio, dominio SST, glosario, alcance | `../../../docs/01-negocio-y-alcance.md` |
-| Requerimientos, módulos, roles, fases | `../../../docs/02-frs-detallado.md` |
-| Base de datos / modelo relacional | `../../../docs/03-arquitectura-datos.md` → o la skill **jdd-backend-fase1** |
-| Extracción/validación con IA | `../../../docs/04-pipeline-ia.md` → o la skill **jdd-ia-pipeline** |
-| Frontend Angular | `../../../docs/05-frontend.md` + `../../../CLAUDE.md` (estado real por módulo) |
-| Autenticación, roles y permisos | `../../../docs/06-auth-y-seguridad.md` |
+| Negocio, dominio SST, glosario, alcance | `../../../docs/1-requerimientos/01-negocio-y-alcance.md` |
+| Requerimientos, módulos, roles, fases | `../../../docs/1-requerimientos/02-frs-detallado.md` |
+| Base de datos / modelo relacional | `../../../docs/2-arquitectura/03-arquitectura-datos.md` → o la skill **jdd-backend-fase1** |
+| Extracción/validación con IA | `../../../docs/2-arquitectura/04-pipeline-ia.md` → o la skill **jdd-ia-pipeline** |
+| Frontend Angular | `../../../docs/2-arquitectura/05-frontend.md` + `../../../CLAUDE.md` (estado real por módulo) |
+| Autenticación, roles y permisos | `../../../docs/2-arquitectura/06-auth-y-seguridad.md` |
 | Estado vivo del proyecto / retomar en otro equipo | `../../../HANDOFF.md` — **es la fuente de verdad del estado** |
 
 ## Resumen ejecutivo

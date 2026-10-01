@@ -26,7 +26,7 @@ Antes de conocer la lista de la contadora, con el alcance de la v1 (7 módulos):
 ## 2. Qué cambió en el alcance
 
 De 7 a **10 módulos**: 17 de los 33 ítems de la lista de la contadora son nuevos y 7 se
-ajustan (ver §3 de `requerimientos-facturacion-contabilidad-v2.md`). Además, la
+ajustan (ver §3 de `../1-requerimientos/requerimientos-facturacion-contabilidad-v2.md`). Además, la
 verificación del 23-sep en la documentación de Factus **cambió dos cosas**:
 
 - **Buena noticia:** emitir y consultar eventos ante la DIAN **sí es posible por API**,
@@ -36,7 +36,7 @@ verificación del 23-sep en la documentación de Factus **cambió dos cosas**:
 
 ## 3. Costos de terceros al año (Factus)
 
-Fuente: lista de precios del 11-sep-2026 (`ADMIN_APP/admin_ws/docs/facturacion-electronica.md`
+Fuente: lista de precios del 11-sep-2026 (`ADMIN_APP/admin_ws/docs/2-arquitectura/facturacion-electronica.md`
 §8.2). **Los tramos entre los extremos no los tenemos**; las cifras marcadas con ⚠️ son
 supuestos hasta que Factus responda las preguntas 5 y 6 (`preguntas-factus-cumplimiento.md`).
 

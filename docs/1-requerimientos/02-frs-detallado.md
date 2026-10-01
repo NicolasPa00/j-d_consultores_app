@@ -16,13 +16,13 @@ Especificación oficial de la plataforma de gestión de OS de JD&D Consultores. 
 
 En **Frontend Fase 1** solo se maquetan a fondo **Administrador** (acceso total) y **Profesional** (modo consulta: Dashboard con sus métricas + Informes solo lectura de sus OS).
 
-> La cuenta operativa del cliente (documento `1234567890`, correo `juanskpc@gmail.com`) es un **Administrador normal**: conserva todos los permisos de gestión de OS pero **no** administra usuarios. La gestión de usuarios internos es exclusiva del Administrador Maestro. Detalle completo en [`06-auth-y-seguridad.md`](06-auth-y-seguridad.md).
+> La cuenta operativa del cliente (documento `1234567890`, correo `juanskpc@gmail.com`) es un **Administrador normal**: conserva todos los permisos de gestión de OS pero **no** administra usuarios. La gestión de usuarios internos es exclusiva del Administrador Maestro. Detalle completo en [`../2-arquitectura/06-auth-y-seguridad.md`](../2-arquitectura/06-auth-y-seguridad.md).
 
 ---
 
 ## 🗺️ Fases del proyecto
 
-> **REGLA DE ORO (ESTRICTA):** Estamos en **FASE 1 (MVP Táctico)**. NO se codifica funcionalidad de Fase 2/3 hasta completar la persistencia real de Fase 1. Para módulos de fases posteriores, solo se dejan **costuras de datos** (ver [`03-arquitectura-datos.md`](03-arquitectura-datos.md)), nunca implementación.
+> **REGLA DE ORO (ESTRICTA):** Estamos en **FASE 1 (MVP Táctico)**. NO se codifica funcionalidad de Fase 2/3 hasta completar la persistencia real de Fase 1. Para módulos de fases posteriores, solo se dejan **costuras de datos** (ver [`../2-arquitectura/03-arquitectura-datos.md`](../2-arquitectura/03-arquitectura-datos.md)), nunca implementación.
 
 ### ✅ FASE 1 — MVP Táctico (foco actual)
 - **M1** Autenticación y Usuarios
@@ -52,7 +52,7 @@ En **Frontend Fase 1** solo se maquetan a fondo **Administrador** (acceso total)
 ### MÓDULO 1 — Autenticación y Usuarios `[FASE 1]`
 - **AUTH-01..05:** Login con **JWT**, logo corporativo (`#000b50`), recuperación de contraseña por correo, roles diferenciados, perfiles con especialidad.
 - **AUTH-03 (implementado):** recuperación con token criptográfico de un solo uso (SHA-256 en BD), expiración configurable, respuesta anti-enumeración y rate limiting.
-- **AUTH-06 (implementado):** auditoría de eventos de autenticación en `sst.eventos_autenticacion` y separación **Administrador Maestro** / administradores operativos. Ver [`06-auth-y-seguridad.md`](06-auth-y-seguridad.md).
+- **AUTH-06 (implementado):** auditoría de eventos de autenticación en `sst.eventos_autenticacion` y separación **Administrador Maestro** / administradores operativos. Ver [`../2-arquitectura/06-auth-y-seguridad.md`](../2-arquitectura/06-auth-y-seguridad.md).
 
 ### MÓDULO 2 — Importación de OS `[FASE 1 · CORE]`
 - **IMP-01/02:** Importar desde Excel (SIPAB — Bolívar) y PDF (AXA Colpatria y Colmena).

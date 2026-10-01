@@ -5,16 +5,72 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 30-sep-2026 (Fase B, ver el primer bloque 🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
+> **Última actualización:** 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
 > para lo último; el resto de esta cabecera es del 16-sep) — **🚀 EL SISTEMA ESTÁ EN
 > PRODUCCIÓN**
 > (desde el 2-sep-2026) y ya lo están usando clientes reales. ORBITA vive en
 > **https://orbita.jddconsultores.com**, sobre un VPS de Vultr en Miami
 > (`45.77.118.62`, Ubuntu 24.04, 1 vCPU / 2 GB). El tablero completo de la
 > subida —qué corre dónde, el runbook paso a paso y los riesgos abiertos— es
-> **`docs/despliegue-vultr.md`**, y es lo primero que hay que leer para tocar el
+> **`docs/4-despliegue/despliegue-vultr.md`**, y es lo primero que hay que leer para tocar el
 > servidor. **Lo último desplegado:** el Excel SIPAB de Bolívar dejó de leerse
 > cuando llegaba como `.xls` binario (ver §0 punto 2 y la Tanda 23 en §3).
+>
+> 🔧 **30-sep-2026 (prueba de punta a punta, primeras correcciones).** (a) «Validado plataforma» solo se
+> marca en órdenes EJECUTADA/FINALIZADA (servidor y pantalla); desmarcar se deja siempre. (b) El marcado
+> MANUAL de facturación (Siigo) del modal de cobro está APAGADO (`marcadoManualSiigo = false` en
+> validation.ts): JD&D no ha pedido migrar Siigo. (c) En Facturación → Por facturar, las filas de una
+> prefactura cuya orden NO está en Orbita ya no salen como "Lista": se ocultan y solo se cuentan
+> (`sin_orden`); la orden se busca también por cronograma+secuencia, así que una importada DESPUÉS de cargar
+> la prefactura aparece con el motivo "vuelva a cargar la prefactura". Prefactura de prueba nueva
+> `2-pruebas/prefacturas/bolivar/170601-demo-bolivar.pdf` (cuadra con `demo-bolivar-sipab.xlsx`; script
+> `sst_ws/scripts/generar-prefactura-demo.mjs`). Correo local: backend arrancado con `correo-pruebas.env`
+> (EscalApp, todo redirigido a escalappsystem@gmail.com).
+>
+> 🧹 **30-sep-2026 (cierre) · CARPETAS REORGANIZADAS Y `jdd_dev` LIMPIA PARA PROBAR DESDE CERO.**
+> - **Archivos de ejemplo FUERA de los repos**, en la raíz del monorepo: `1-cliente-jdd/` (de JD&D, solo
+>   lectura), `2-pruebas/` (nuestro, con un `LEEME.md` que trae el flujo completo de importar a contabilidad)
+>   y `3-entregables-y-respaldos/`. Mapa en `../LEEME.md`; qué se movió de dónde, en
+>   `3-entregables-y-respaldos/manifiesto-reorganizacion-2026-09-30.txt`.
+> - **`docs/` reordenada por propósito** (`1-requerimientos`, `2-arquitectura`, `3-planes`, `4-despliegue`,
+>   `5-guias`, `6-comercial-y-cliente`, `historico`) con `git mv`; todas las rutas que los citaban (HANDOFF,
+>   claude.md, skills, scripts, comentarios, memoria) se reescribieron. Índice nuevo en `docs/README.md`.
+> - ⚠️ `docs/Colpatria/orden_001.pdf` era una **orden REAL de AXA versionada en git**: sale del repo en este
+>   cambio, pero sigue en el historial de commits anteriores.
+> - **`jdd_dev` limpia**: se borraron órdenes, importaciones, soportes, prefacturas, facturas, comprobantes,
+>   cartera, compras, notificaciones, empresas y periodos; numeración contable a 0. Se conserva la
+>   configuración (usuarios, ARL, tipos de orden, profesionales, terceros, tarifas, PUC, reglas, productos,
+>   retenciones, resoluciones — su consecutivo NO se tocó: el sandbox del proveedor lleva el suyo). Respaldo
+>   previo: `~/respaldos/jdd_dev-antes-limpieza-20261001-0207.dump` en el VPS de desarrollo y copia en
+>   `3-entregables-y-respaldos/respaldos-bd/` (más el `storage/` local en zip; `sst_ws/storage` quedó vacío).
+> - Script nuevo `sst_ws/scripts/subir-soportes-ejemplo.mjs` (sube soportes de ejemplo por el portal;
+>   `--sin-foto`). Los generadores de órdenes ahora escriben en `2-pruebas/ordenes/`.
+> - Correcciones de UI: la lista del visor de soportes mide lo mismo que el visor (antes `max-height: 460px`
+>   fijo dejaba un hueco) y el ✓ de «Validado plataforma» sin marcar ahora se ve como casilla vacía.
+>
+> 🆕🆕🆕 **30-sep-2026 (noche) · SEIS PETICIONES DE JD&D ANTES DE SEGUIR CON LA CONTABILIDAD.**
+> Rama `fase-b-contabilidad`, **sin commitear**. Migración nueva
+> `sst_ws/db/migraciones/2026-09-30-validado-y-aprobacion-cobro.sql`, **aplicada en `jdd_dev`, no en producción**.
+> 1. **Registro fotográfico opcional** en el portal (`esOpcional()` en `soportes.service.js`): la entrega
+>    inicial ya no lo exige; si el administrador lo DEVUELVE en un rechazo, sí. El correo de asignación dice "(opcional)".
+> 2. **Descargar soportes en un solo PDF** (`POST /files/supports/unir`, ids en el orden elegido; las fotos
+>    entran como páginas carta). Panel "Descargar en un solo PDF" en el visor de Verificar soportes.
+> 3. **Buscar por cronograma** (y por OS / n.º de orden) en `/ordenes`.
+> 4. **«Validado plataforma»**: check a mano (`validado_plataforma_en/_por`), ✓ junto al estado ARL. No bloquea nada.
+> 5. **Prefacturas: SOLO Bolívar.** El lector (prompt, cruce por cronograma+secuencia, filtro `bol%var`) es de
+>    Bolívar y los 5 PDF de ejemplo también. **Colmena y AXA no tienen ejemplo**: pedidos a JD&D. Decidido con el
+>    usuario: en Colmena la orden se facturará **por partes** (acumula horas de varias prefacturas) — sin construir
+>    hasta tener el PDF. El cruce ahora compara `valor_a_facturar` con honorarios **+ gastos**.
+> 6. **Modal de cobro** (la píldora de la columna Cobro; el icono suelto de facturación se quitó): horas × valor hora
+>    (si falta, se PROPONE la tarifa de venta), gastos `cobro_*` (transporte, alojamiento, alimentación, tiempo
+>    muerto, material — nacen del SIPAB), comparación con la prefactura y **visto bueno de operación** (admin y
+>    administrativo). **Sin él la orden no es facturable** (`MOTIVOS.SIN_APROBACION_COBRO` en `relacion.service.js`);
+>    cambiar el total cae la aprobación; los gastos van como ítem aparte en la factura. El marcado manual (Siigo)
+>    vive dentro del modal y solo sin factura electrónica. Servicio: `sst_ws/src/modules/orders/cobro-orden.service.js`.
+> **Trampas:** `cobro_*` NO es `viaticos_valor` (eso se le paga al profesional); los estilos nuevos van en
+> `validation-cobro.scss` porque `validation.scss` roza el presupuesto (trampa 20); tras añadir un `styleUrls`, hay
+> que **reiniciar `ng serve`** o la hoja no carga. **Transición:** las órdenes ya en borradores/facturas no tienen
+> aprobación y no se pueden aprobar (están bloqueadas); las nuevas sí la necesitan.
 >
 > 🆕🆕 **30-sep-2026 (última sesión) · FASE B — CONTABILIDAD, CASI COMPLETA.** Rama
 > **`fase-b-contabilidad`** en los dos repos (creada desde `fase-a-facturacion`, **solo local, sin push**).
@@ -24,7 +80,7 @@
 > `/cartera`, `/compras`. **Todas las migraciones del 29/30-sep ya están en `jdd_dev`; producción NO tiene
 > ninguna** (A3-01 incluida). Falta: B6-01 (❓ D-25), B7-01 (extracto real), B9-01 ⛔, B11-01. Fallo de la
 > Fase A corregido: la fecha de emisión salía en UTC (`hoyCO()`). **Retomar por el bloque «DÓNDE RETOMAR (cierre del
-> 30-sep-2026)» al principio del §0 de `docs/plan-facturacion-contabilidad.md`**: estado, qué pedirle a JD&D, datos de
+> 30-sep-2026)» al principio del §0 de `docs/3-planes/plan-facturacion-contabilidad.md`**: estado, qué pedirle a JD&D, datos de
 > `jdd_dev`, el orden de las 17 migraciones del segundo lote y las trampas nuevas.
 >
 > 🆕 **29-sep-2026 · A3-01 ÓRDENES PARTICULARES (sin ARL) construida en
@@ -39,7 +95,7 @@
 > Rama `correcciones-26-sep` en los dos repos, subida a GitHub y **sin mezclar** a
 > `main`/`master`. Qué entra, los 4 cambios de comportamiento que JD&D debe conocer
 > antes (el estado ARL pasa a exigirse para facturar), las migraciones en orden y los
-> pasos exactos: **`docs/despliegue-correcciones-26-sep.md`**. El usuario avisa cuándo
+> pasos exactos: **`docs/4-despliegue/despliegue-correcciones-26-sep.md`**. El usuario avisa cuándo
 > se despliega. La facturación electrónica sigue aparte, en `fase-a-facturacion`
 > (worktrees `*-fase-a`, solo local). Arranque local para probar: `iniciar-local.bat`
 > en la raíz del monorepo (correo en consola; con `facturacion` usa los worktrees).
@@ -51,11 +107,11 @@
 > GitHub pero sin mezclar a la principal ni desplegar**. La facturación sigue en
 > `fase-a-facturacion` (worktrees `sst_ws-fase-a/` y `jdd_consultores_app-fase-a/`,
 > commiteada solo en local) y **ya lleva la Tanda 0 mezclada**. Cómo quedó cada carpeta y
-> qué sigue: §0 de `docs/plan-facturacion-contabilidad.md`, bloque del 29-sep. Lo que
+> qué sigue: §0 de `docs/3-planes/plan-facturacion-contabilidad.md`, bloque del 29-sep. Lo que
 > dice abajo de "NADA ESTÁ COMMITEADO" quedó superado.
 >
 > 🆕🆕🆕 **CIERRE DEL 27/28-sep-2026 — LEER PRIMERO el §0 de
-> `docs/plan-facturacion-contabilidad.md` ("ESTADO AL CIERRE").** En una noche, dos
+> `docs/3-planes/plan-facturacion-contabilidad.md` ("ESTADO AL CIERRE").** En una noche, dos
 > sesiones ejecutoras (dirigidas y verificadas por una tercera) construyeron casi toda
 > la Tanda 0 de correcciones y las fundaciones de la Fase A, **incluida la primera factura
 > validada en el sandbox de Factus**. **NADA ESTÁ COMMITEADO** (orden del usuario): el
@@ -85,13 +141,13 @@
 >   T0-19, T0-02 ⛔ y T0-17 pendientes.
 >
 > 🆕🆕 **27-sep-2026: EMPIEZA LA IMPLEMENTACIÓN — el tablero es
-> `docs/plan-facturacion-contabilidad.md`.** El usuario decidió construir ya, aunque la
+> `docs/3-planes/plan-facturacion-contabilidad.md`.** El usuario decidió construir ya, aunque la
 > cotización no está firmada (falta definir si se constituye una sociedad o se paga;
 > por eso el emisor/NIT va 100 % configurable). Orden: **Tanda 0** (17 correcciones de
 > Orbita que pidió el cliente: AGR y tema en el AT-031, estado ARL + n.º de prefactura,
 > carga de prefacturas con IA, sidebar plegable, estado con Guardar, valor al cambiar el
 > tipo…) → **Fase A** facturar → **B** contabilidad → **C** informes → **S** salida.
-> Hallazgos clave de los ejemplos reales (`DocFacturacion/` en la raíz, fuera de git) en
+> Hallazgos clave de los ejemplos reales (`1-cliente-jdd/` en la raíz, fuera de git) en
 > su §3: la **resolución FE vence el 11-oct-2026** (JD&D ya lo sabe), AXA lleva
 > **descuento del 2 %** (FE-811/812 se anularon por eso), los pagadores **sí retienen
 > ReteICA al pagar**, hay un **cuarto pagador (La Equidad)**, y el auxiliar de Siigo
@@ -114,13 +170,13 @@
 >   + 35 documentos soporte al mes), así que hay margen.
 > - **Selección del paquete de Factus: pendiente a propósito.** El usuario decidió
 >   posponerla hasta después del desarrollo — no es algo que se nos haya olvidado
->   preguntar. Cuando llegue el momento, `docs/factus-precios-paquetes.md` tiene las tres
+>   preguntar. Cuando llegue el momento, `docs/6-comercial-y-cliente/factus-precios-paquetes.md` tiene las tres
 >   listas completas (facturación, RADIAN, nómina) y la comparación paquete individual vs.
 >   bolsa; con el volumen real de ~600-1.000 documentos, la recomendación de esa sesión es
 >   **paquete individual de facturación (tramo 1.600, $220.000) + nómina (tramo 24,
 >   $60.000)**, y RADIAN solo si JD&D confirma que quiere gestionar ahí la aceptación de
 >   facturas de proveedores.
-> - Cotización entregable: **`docs/cotizacion-facturacion-contabilidad-jdd.html`**
+> - Cotización entregable: **`docs/6-comercial-y-cliente/cotizacion-facturacion-contabilidad-jdd.html`**
 >   (imprimible a PDF; no nombra a Factus ni a Siigo, igual que el PDF de requerimientos).
 > - **Nuevo en el alcance, viene de la reunión y no estaba en la v2:** órdenes manuales sin
 >   documento para clientes privados (cierra D-9), carga masiva por Excel de documentos
@@ -132,16 +188,16 @@
 >   `guia-reunion-jdd.md` §6.2), criterio de aceptación = balance de comprobación igual al
 >   del sistema actual tras un mes en paralelo, y respaldos previos a cargar saldos.
 > - El precio final ($5,7M + $1,2M) quedó **por debajo** de la reestimación interna previa
->   ($6,8M + $1,2M de `docs/precio-fase-facturacion-contabilidad.md`), que ahora es solo
+>   ($6,8M + $1,2M de `docs/6-comercial-y-cliente/precio-fase-facturacion-contabilidad.md`), que ahora es solo
 >   historial de cómo se llegó al número.
 > - **Costo de Factus para JD&D, con el paquete individual: $355.000 a $600.000 al año**
 >   (lo probable $370.000 a $430.000) — deja entre $600.000 y $845.000 de la anualidad de
 >   $1,2M para soporte. Detalle completo, con las cuatro listas de precios (facturación,
 >   RADIAN, nómina y la bolsa multifacturador que llegó después) en
->   **`docs/factus-precios-paquetes.md`** (interno). Esa sesión también encontró que
+>   **`docs/6-comercial-y-cliente/factus-precios-paquetes.md`** (interno). Esa sesión también encontró que
 >   **ADMIN_APP tiene las cuentas de la bolsa repartida subestimadas** (suponía que costaba
 >   igual que la lista pública de facturación, y no es así): se dejó un prompt listo en
->   `docs/prompt-escalapp-precios-bolsa-factus.md` para pasarlo a una sesión de ADMIN_APP,
+>   `docs/6-comercial-y-cliente/prompt-escalapp-precios-bolsa-factus.md` para pasarlo a una sesión de ADMIN_APP,
 >   sin usar todavía.
 > - **Sin código ni migraciones.** Lo próximo de esta iniciativa es que JD&D confirme la
 >   cotización; solo entonces entra el plan maestro de desarrollo, y al final de ese
@@ -240,10 +296,10 @@
 > paso JD&D sea el primer cliente real de la bolsa de documentos que EscalApp compre en
 > Factus. Todo el análisis —modelo comercial, gap del modelo de datos de Orbita,
 > decisiones pendientes y qué se puede adelantar ya— está en
-> **`docs/facturacion-electronica.md`**.
+> **`docs/2-arquitectura/facturacion-electronica.md`**.
 >
 > **19-sep-2026: reunión con JD&D y su contadora, respuestas volcadas en el propio
-> `docs/facturacion-electronica.md` §8.** Dos hallazgos que cambian el alcance:
+> `docs/2-arquitectura/facturacion-electronica.md` §8.** Dos hallazgos que cambian el alcance:
 > (1) el pagador **no siempre es una ARL** — hay facturas a empresas privadas
 > contratadas directo (ej. Alkosto), lo que rompe el supuesto de §3/§4 de que
 > `sst.arls` es la única fuente del receptor; (2) **CONFIRMADO (D-7): JD&D quiere
@@ -271,7 +327,7 @@
 >   modela el receptor de forma genérica (no asume ARL) por el hallazgo (1) de
 >   arriba.
 > - 🆕 **20-sep-2026: primer borrador de requerimientos de contabilidad completa**
->   (`docs/requerimientos-facturacion-contabilidad.md`), armado leyendo capturas
+>   (`docs/historico/requerimientos-facturacion-contabilidad.md`), armado leyendo capturas
 >   reales del Siigo de JD&D — plan de cuentas, comprobantes contables (una
 >   docena de tipos), compras y gastos, documento soporte, nómina, un módulo de
 >   activos/inventario con QR mencionado sin detalle, y dos reportes fiscales.
@@ -282,14 +338,14 @@
 >   `sst.ordenes_servicio.arl_id` es **`NOT NULL`** (`db/schema.sql:321`) — hoy
 >   es literalmente imposible representar en Orbita una orden sin ARL, así que
 >   el caso Alkosto no cabe en el modelo actual. Nueva decisión **D-9** en
->   `docs/facturacion-electronica.md` §5: ¿esas órdenes entran a Orbita (con
+>   `docs/2-arquitectura/facturacion-electronica.md` §5: ¿esas órdenes entran a Orbita (con
 >   `arl_id` nullable) o quedan fuera del ciclo de vida de la OS y solo tocan el
 >   módulo de FE como documento suelto?
 > - 🆕 **20-sep-2026, cierre de sesión — cuatro cosas nuevas:**
 >   1. **PDF de requerimientos generado para el cliente**:
 >      `C:\Users\nicol\Desktop\Requerimientos-Facturacion-Contabilidad-JDD.pdf`
 >      (4 páginas, script fuente en el scratchpad de esa sesión, no en el repo).
->      Es la versión LIMPIA de `docs/requerimientos-facturacion-contabilidad.md`
+>      Es la versión LIMPIA de `docs/historico/requerimientos-facturacion-contabilidad.md`
 >      — sin capturas, preguntas ni menciones a Factus o Siigo.
 >   2. **Precio propuesto para la fase de facturación+contabilidad: $2.300.000
 >      COP** (rango $2.000.000–$2.600.000), a la espera de que el usuario lo
@@ -297,15 +353,15 @@
 >   3. **Se accedió por primera vez al repo hermano `ADMIN_APP` en disco**
 >      (`C:\Users\nicol\Desktop\ADMIN_APP`, memoria de Claude Code en
 >      `C--Users-nicol-Desktop-ADMIN-APP`) para resolver D-8 con la fuente
->      primaria (`admin_ws/docs/facturacion-electronica.md`) en vez de solo la
+>      primaria (`admin_ws/docs/2-arquitectura/facturacion-electronica.md`) en vez de solo la
 >      memoria resumida. **Es un repo real y accesible desde esta máquina** —
 >      dejar de decir que "no está disponible en esta sesión" en futuras notas.
 >   4. **DECIDIDO: JD&D necesita comprar un paquete de nómina electrónica
 >      aparte** de la bolsa de facturación (no viene incluido). Ver
->      `docs/facturacion-electronica.md` §0 y D-8.
+>      `docs/2-arquitectura/facturacion-electronica.md` §0 y D-8.
 >
 > 🆕 **23-sep-2026: llegó el documento de la contadora de JD&D** (lista resumida de lo
->   que necesitan) y se volcó en **`docs/requerimientos-facturacion-contabilidad-v2.md`**,
+>   que necesitan) y se volcó en **`docs/1-requerimientos/requerimientos-facturacion-contabilidad-v2.md`**,
 >   que pasa a ser el alcance vigente de la iniciativa de facturación + contabilidad.
 >   Cambios: **10 módulos en vez de 7** (suma CXC, CXP y PAR), informes financieros
 >   (situación, resultados, balance de comprobación, libros auxiliares, movimiento por
@@ -317,17 +373,17 @@
 >   sobre 7 módulos y sigue sin confirmar; (3) verificar si el proveedor tecnológico
 >   expone eventos por API (D-15). Sigue sin código ni migraciones. Nada de esto tocó
 >   `db/schema.sql` ni producción.
->   **Mismo día, tres documentos más:** `docs/preguntas-jdd-cierre-alcance.md` (para
+>   **Mismo día, tres documentos más:** `docs/6-comercial-y-cliente/preguntas-jdd-cierre-alcance.md` (para
 >   la contadora, enviable; **versión corta de 10 preguntas** — la primera de ~45 se
 >   recortó porque muchas ya estaban respondidas y otras las decidimos nosotros; ver
->   v2 §5 para el rastro. **`docs/jdd.html` es una copia HTML de la versión larga y
->   quedó desactualizada**), `docs/preguntas-factus-cumplimiento.md` (**recortada a 10 preguntas tras revisar
+>   v2 §5 para el rastro. **`docs/historico/jdd.html` es una copia HTML de la versión larga y
+>   quedó desactualizada**), `docs/6-comercial-y-cliente/preguntas-factus-cumplimiento.md` (**recortada a 10 preguntas tras revisar
 >   toda la documentación de Factus en ADMIN_APP/EscalApp**: el contrato de alianza
 >   firmado el 22-sep, la reunión y los WhatsApp del 14/15/22-sep y las pruebas de
 >   sandbox; dejan resuelto que el paquete individual trae su certificado, que la
 >   asociación de rangos la hace el aliado, que hay `send_email` y descarga de XML/PDF)
 >   y
->   `docs/precio-fase-facturacion-contabilidad.md` (**interno**). **D-15 quedó resuelta
+>   `docs/6-comercial-y-cliente/precio-fase-facturacion-contabilidad.md` (**interno**). **D-15 quedó resuelta
 >   en lo esencial:** la doc pública de Factus API v2 SÍ tiene emitir eventos RADIAN
 >   (`PATCH /v2/receptions/bills/:id/radian/events/:tipo`), consultar los de nuestras
 >   facturas y cargar facturas de proveedores por CUFE — pero RADIAN es **bolsa aparte**
@@ -339,7 +395,7 @@
 >   míos (pesos de esfuerzo y costo de RADIAN) — **sin confirmar por el usuario**.
 >
 > 🆕 **25-sep-2026, víspera de la reunión con JD&D:** se revisó si las 10 preguntas
->   alcanzan y se escribió **`docs/guia-reunion-jdd.md`** (**interno**): veredicto,
+>   alcanzan y se escribió **`docs/6-comercial-y-cliente/guia-reunion-jdd.md`** (**interno**): veredicto,
 >   agenda, hoja de trampa por pregunta, 8 preguntas adicionales (A1-A5 alcance/precio:
 >   declaraciones y exógena, mínimo del día 1, bancos, cierres, lo que queda fuera;
 >   B1-B3 proceso: quién valida y cuánto tiempo tiene la contadora, paralelo con
@@ -357,7 +413,7 @@
 > solo desde el icono de la fila, el eje se queda en **dos** estados, su diálogo
 > es estrecho y los **viáticos se eligen de un catálogo** en vez de escribirse.
 > Lo que queda no es código: son las decisiones con el cliente
-> (`docs/plan-peticiones-22-ago-2026.md` §8) y ver la tanda funcionando dentro de
+> (`docs/3-planes/plan-peticiones-22-ago-2026.md` §8) y ver la tanda funcionando dentro de
 > la aplicación.
 >
 > **Fase 5 · la orden tiene un eje de FACTURACIÓN aparte del ciclo de vida.**
@@ -399,7 +455,7 @@
 > `valor_cobro_total`**, que es la columna generada que hace trazable la tarifa.
 > ⚠️ En el export real, `Valor Transporte` y `Valor Desplazamiento` traen **el
 > mismo dinero**, así que NO se suman las columnas: ver
-> `docs/plan-peticiones-22-ago-2026.md` §5.1. Migración
+> `docs/3-planes/plan-peticiones-22-ago-2026.md` §5.1. Migración
 > `2026-08-22-viaticos.sql` aplicada (**rehace cuatro vistas**).
 >
 > **Fase 2 · lo que se manda y lo que se pide dependen ahora de la ARL.** Una
@@ -418,7 +474,7 @@
 > reales de otra empresa, así que no se versiona), y el **catálogo de tipos de
 > orden no tiene "Asesoría"** — sin ella el corte de 16 h de AXA solo funciona
 > porque se dedujo del título de la orden. Detalle en
-> `docs/plan-peticiones-22-ago-2026.md` §4.6.
+> `docs/3-planes/plan-peticiones-22-ago-2026.md` §4.6.
 >
 > **Fase 1 · el AT-031 sale marcado.** El AT-031 de Bolívar sale con **el tipo de actividad
 > (A/T/C/E/M/O) y el presencial/virtual ya marcados**: la letra la trae el propio
@@ -431,13 +487,13 @@
 > **rehacer `vw_ordenes_expandidas`**, que congela su `SELECT o.*` al crearse y
 > sin lo cual el formato habría salido sin marcar y sin un solo error (trampa
 >   69). Falta **verlo dentro de la aplicación**. Detalle en
->   `docs/plan-peticiones-22-ago-2026.md` §3.1.
+>   `docs/3-planes/plan-peticiones-22-ago-2026.md` §3.1.
 >
 > De la reunión con el cliente del 22-ago-2026 salieron **seis
 > peticiones** (viáticos, tipo de actividad de Bolívar, profesional registrado y
 > suplente, presencial/virtual, matriz de formatos por ARL y estado de
 > facturación). Están mapeadas y repartidas en cinco fases en
-> **`docs/plan-peticiones-22-ago-2026.md`**, que es el tablero de esa tanda:
+> **`docs/3-planes/plan-peticiones-22-ago-2026.md`**, que es el tablero de esa tanda:
 > ahí van el estado de cada petición, las nueve decisiones pendientes con el
 > cliente y los hallazgos de la revisión. **Al cerrar cada fase hay que volcar
 > su resumen aquí, en §3, como una tanda más.** Nada de eso está construido
@@ -590,7 +646,7 @@
 
 ### 🚀 Dónde retomar (sesión del 2-sep-2026)
 
-**El sistema está desplegado.** Abre **`docs/despliegue-vultr.md`** antes que
+**El sistema está desplegado.** Abre **`docs/4-despliegue/despliegue-vultr.md`** antes que
 nada: ahí está el mapa del servidor, el runbook y los riesgos. Resumen del
 estado y de lo que sigue:
 
@@ -608,7 +664,7 @@ estado y de lo que sigue:
 
 1. 🔴 **Respaldos.** No hay ninguno. `pg_dump` diario + `tar` de `storage/`, con
    copia **fuera de la máquina**. Antes de que entre el primer dato real.
-   (`docs/despliegue-vultr.md` §7.1.)
+   (`docs/4-despliegue/despliegue-vultr.md` §7.1.)
 2. 🔴 **Empujar el commit que el servidor tiene aplicado a mano como parche:**
    `fix(ssr)` en el **frontend** (`angular.json`, `src/server.ts`). En el
    servidor: `git checkout -- angular.json src/server.ts && git pull && npm run build`.
@@ -678,7 +734,7 @@ estado y de lo que sigue:
 | **Tanda 8** · rechazo por documento | El administrador marca QUÉ se devuelve; el portal abre solo esa casilla, enseña lo ya enviado y **reemplaza** el archivo anterior | §3 + trampas 51-53 |
 | **Tanda 8** · importar sin gastar IA | Comprobación previa por huella del archivo y por número de orden en su texto: la orden repetida se aparta al elegirla | §3 + trampa 51 |
 | **Tanda 8** · avisos y tamaño | La campanita de soportes abre el visor de archivos (`&vista=soportes`); el máximo por archivo pasó de 25 MB a **4 MB** en importación y soportes | §3 |
-| **Despliegue** · producción (2-sep-2026) | ORBITA sale a **https://orbita.jddconsultores.com** sobre un VPS de Vultr en Miami. La base pasa de Neon a un **PostgreSQL local en el propio VPS**; la base de producción nace **vacía** (solo el Administrador Maestro) porque el cliente lo crea todo desde cero; los correos salen de la cuenta del cliente; la landing de Hostinger se queda intacta en el apex y `www`. Dos fallos silenciosos encontrados y corregidos | `docs/despliegue-vultr.md` + trampas 83-87 |
+| **Despliegue** · producción (2-sep-2026) | ORBITA sale a **https://orbita.jddconsultores.com** sobre un VPS de Vultr en Miami. La base pasa de Neon a un **PostgreSQL local en el propio VPS**; la base de producción nace **vacía** (solo el Administrador Maestro) porque el cliente lo crea todo desde cero; los correos salen de la cuenta del cliente; la landing de Hostinger se queda intacta en el apex y `www`. Dos fallos silenciosos encontrados y corregidos | `docs/4-despliegue/despliegue-vultr.md` + trampas 83-87 |
 | **Tanda 18** · logo ORBITA | La plataforma pasó a la marca **ORBITA · Gestión Inteligente**: tres piezas en `.webp` con fondo transparente (vertical, horizontal e isotipo) + `favicon.ico` de 16/32/48. El logo de JD&D **sigue en el repo**: es la marca de la empresa, no la del producto | §3 |
 | **Tanda 17** · media tanda sin guardar | El código OS-YYYY-NNNN se repartía con `count(*)+1` sin cerrojo: dos archivos confirmados en paralelo pedían el mismo número y la segunda orden moría con "duplicate key". Ahora va con `pg_advisory_xact_lock` por año y desde el MÁXIMO usado. El motivo del fallo se enseña en cristiano, no con el mensaje crudo del driver | §3 + trampa 67 |
 | **Tanda 16** · las 5 correcciones del 20-ago | Inicio navega a `/ordenes?os=<id>` en vez de abrir el drawer (y el drawer se fue); la hora del SIPAB se lee como hora; las horas que el documento no da son obligatorias y se escriben a mano; importar acumula archivos entre selecciones; el aviso de baja confianza se retira al corregir; cada campo del modal solo admite lo suyo (`shared/campos-orden.ts`) | §3 + trampas 64-66 |
@@ -707,7 +763,7 @@ estado y de lo que sigue:
 
 Eso significa **la tanda del 22-ago-2026**, y lo que hay que hacer es:
 
-1. Leer **`docs/plan-peticiones-22-ago-2026.md`**, empezando por su **§0 Dónde
+1. Leer **`docs/3-planes/plan-peticiones-22-ago-2026.md`**, empezando por su **§0 Dónde
    retomar** — ahí está qué toca ahora, qué comprobar antes de escribir código y
    qué hay que preguntarle al cliente.
 2. Volver aquí para el estado general del proyecto y las trampas conocidas (§6).
@@ -726,7 +782,7 @@ por cuál arrancar**:
 
 | # | Tarea | Tipo | Qué la bloquea |
 |---|---|---|---|
-| **1** | **Ver la tanda funcionando dentro de la app**, con las órdenes de demostración de la tanda 22 (`docs/OrdenesDemo/`, con su README) | operación | **no hay credenciales de administrador** para el asistente. Además hay que crear antes el **catálogo de viáticos** (nace vacío) y marcar los **registros ante Bolívar** |
+| **1** | **Ver la tanda funcionando dentro de la app**, con las órdenes de demostración de la tanda 22 (`2-pruebas/ordenes/`, con su README) | operación | **no hay credenciales de administrador** para el asistente. Además hay que crear antes el **catálogo de viáticos** (nace vacío) y marcar los **registros ante Bolívar** |
 | **2** | **Cerrar las decisiones abiertas con el cliente**: D-1 a D-5, D-9, D-10 y D-11, más las filas de "lo que hay que llevar al cliente" del §0 del plan | reunión | necesita al cliente. Ninguna bloquea el código, todas cambian el resultado |
 | **3** | **Arreglar el desorden de `db/schema.sql`**: `ALTER TABLE sst.borradores_extraccion …` aparece **sobre la línea 498** y la tabla se crea en la **678**, así que `npm run migrate` **sobre una base vacía moriría ahí**. Sobre la base existente no molesta | código | nada — es reordenar el archivo. Es el único trabajo de código pendiente de la tanda |
 
@@ -742,12 +798,12 @@ es la única que se puede hacer entera sin depender de nadie.
 | `jdd_consultores_app/HANDOFF.md` (este archivo) | ✅ sí | **Sí — fuente de verdad del estado** |
 | `jdd_consultores_app/CLAUDE.md` | ✅ sí | Sí (estado por módulo y convenciones) |
 | `jdd_consultores_app/.claude/skills/*` | ✅ sí | Sí — revisadas y alineadas con este archivo el 13-ago-2026 |
-| `jdd_consultores_app/docs/requerimientos-completos.txt` | ✅ sí | Sí — **FRS v1.0, el alcance contratado** |
-| `jdd_consultores_app/docs/req_fase_1.txt` | ✅ sí | **No** — era el recorte de la primera entrega. Se conserva solo como registro histórico. |
-| `jdd_consultores_app/docs/02-frs-detallado.md` | ✅ sí | Mismo sistema, pero con **otra numeración de módulos**. Ante duda mandan los `.txt`. |
+| `jdd_consultores_app/docs/1-requerimientos/requerimientos-completos.txt` | ✅ sí | Sí — **FRS v1.0, el alcance contratado** |
+| `jdd_consultores_app/docs/historico/req_fase_1.txt` | ✅ sí | **No** — era el recorte de la primera entrega. Se conserva solo como registro histórico. |
+| `jdd_consultores_app/docs/1-requerimientos/02-frs-detallado.md` | ✅ sí | Mismo sistema, pero con **otra numeración de módulos**. Ante duda mandan los `.txt`. |
 | `jdd_consultores_app/docs/{Ordenes,BasesDatos}Ejemplo/` | ❌ no (`.gitignore`) | Documentos **reales** de clientes; se pasan a mano entre equipos (ver §2). Los que empiezan por `ejemplo-` son **generados y con datos inventados** (ver §2, punto 8). |
-| `jdd_consultores_app/docs/Formatos/` | ❌ no (`.gitignore`) | Los formatos que entregó el cliente el 22-ago-2026, por ARL y por tipo de actividad. Material de **referencia**: dos de ellos son ejemplos diligenciados con datos reales. Los que la app necesita están **en blanco y versionados** en `sst_ws/assets/formatos-arl/`. Se pasa a mano. |
-| `jdd_consultores_app/docs/plan-peticiones-22-ago-2026.md` | ✅ sí | **Sí — el tablero de la tanda en curso**: qué se construyó, qué falta y las decisiones pendientes con el cliente. |
+| `1-cliente-jdd/formatos-arl/` (raíz) | ❌ no (fuera del repo) | Los formatos que entregó el cliente el 22-ago-2026, por ARL y por tipo de actividad. Material de **referencia**: dos de ellos son ejemplos diligenciados con datos reales. Los que la app necesita están **en blanco y versionados** en `sst_ws/assets/formatos-arl/`. Se pasa a mano. |
+| `jdd_consultores_app/docs/3-planes/plan-peticiones-22-ago-2026.md` | ✅ sí | **Sí — el tablero de la tanda en curso**: qué se construyó, qué falta y las decisiones pendientes con el cliente. |
 
 **Desde el 13-ago-2026 ya no hay documentación de proyecto fuera de git.** `docs/` y
 `.claude/skills/` colgaban de la raíz del monorepo, que no es un repo, así que cada
@@ -787,21 +843,22 @@ Dos repos git independientes (la raíz del monorepo no lo es):
    pero normalmente no hace falta.
 5. Levantar: `cd sst_ws && npm run dev` (**:4000**) y
    `cd jdd_consultores_app && npm start` (**:4001**).
-6. **Los documentos de ejemplo NO vienen por git.** `docs/OrdenesEjemplo/` (PDFs de
-   las tres ARL, ~23 MB) y `docs/BasesDatosEjemplo/` (los Excel de programación)
-   están en `.gitignore` porque son documentos reales de clientes: razones sociales,
-   NIT y hasta la seguridad social de una persona. No sirven para desarrollar, solo
-   para probar la extracción con archivos de verdad. Si los necesitas, cópialos a
-   mano desde otro equipo a `jdd_consultores_app/docs/`; **no los commitees**.
-7. **`docs/Formatos/` tampoco viaja** (`.gitignore`, desde el 22-ago-2026): son
+6. **Los documentos de ejemplo NO vienen por git.** Desde el 30-sep-2026 viven en la
+   RAÍZ del monorepo, fuera de los dos repos (mapa en `LEEME.md` de la raíz):
+   `1-cliente-jdd/` (lo que entregó JD&D: órdenes reales, formatos, facturas de
+   Siigo, prefacturas; documentos reales de clientes con razones sociales, NIT y
+   hasta la seguridad social de una persona) y `2-pruebas/` (lo que generamos
+   nosotros). Si los necesitas en otro equipo, copia esas carpetas a mano;
+   **nunca dentro de un repo**.
+7. **`1-cliente-jdd/formatos-arl/` tampoco viaja** (desde el 22-ago-2026): son
    los formatos que entregó el cliente por ARL y tipo de actividad, material de
    REFERENCIA, y dos de ellos son ejemplos diligenciados con datos reales. **No
    hace falta para trabajar**: los formatos que la aplicación usa están en blanco
    y sí versionados, en `sst_ws/assets/formatos-arl/`.
 8. **Órdenes de ejemplo con datos inventados:**
    `cd sst_ws && node --import tsx scripts/generar-ordenes-ejemplo.mjs`.
-   Escribe 8 PDF con el formato de AXA Colpatria en `docs/OrdenesEjemplo/Colpatria/`
-   y 2 Excel SIPAB de Bolívar en `docs/BasesDatosEjemplo/`, todos con el prefijo
+   Escribe 8 PDF con el formato de AXA Colpatria en `2-pruebas/ordenes/axa/`
+   y 2 Excel SIPAB de Bolívar en `2-pruebas/ordenes/bolivar/`, todos con el prefijo
    `ejemplo-`. Sirven para probar Importar sin tener los documentos reales, que
    no viajan por git. **Ninguna empresa, NIT, persona ni correo de esos archivos
    existe**: por eso sí se pueden compartir y enseñar en una demo.
@@ -914,7 +971,7 @@ vista porque lo usan los porcentajes por ARL.
 
 **La tabla de estado de este archivo venía con los rangos truncados** (`AUTH-01..04`,
 `ASG-01..07`, `SUP-01..05`…), heredados del recorte de la Fase 1. El FRS de
-`docs/requerimientos-completos.txt` tiene más requisitos por módulo, y los que
+`docs/1-requerimientos/requerimientos-completos.txt` tiene más requisitos por módulo, y los que
 sobresalían del rango nunca se habían mirado. Al auditarlos uno a uno:
 
 - Ya estaban hechos, solo sin rastrear: **AUTH-05** (perfil con teléfono y
@@ -1688,7 +1745,7 @@ hay confirmación explícita, se avisa de que hay que avisar por otro medio.
 donde cada una dispara UNA rama concreta de las seis peticiones.
 
 **Qué hay y dónde.** `sst_ws/scripts/generar-ordenes-demo-peticiones.mjs`
-(nuevo, sí viaja por git) genera en `docs/OrdenesDemo/` —carpeta **ignorada**,
+(nuevo, sí viaja por git) genera en `2-pruebas/ordenes/` —carpeta **ignorada**,
 como las otras tres de ejemplo— :
 
 | Archivo | Qué demuestra |
@@ -1737,7 +1794,7 @@ peticiones a medias y no por culpa de las órdenes:
 ### Tanda 21 (23-ago-2026): el cliente recorta la tanda anterior
 
 Cuatro correcciones sobre lo que se acababa de entregar. El detalle está en
-**`docs/plan-peticiones-22-ago-2026.md` §10**; lo que hay que saber sin abrirlo:
+**`docs/3-planes/plan-peticiones-22-ago-2026.md` §10**; lo que hay que saber sin abrirlo:
 
 1. **El estado de cobro se cambia SOLO desde el icono de facturación de la
    fila**, en `/ordenes`, y solo en las FINALIZADAS. Se retiraron la casilla por
@@ -1774,7 +1831,7 @@ Migración: `db/migraciones/2026-08-23-tipos-viatico-y-cobro-binario.sql`,
 
 Cierra la tanda de peticiones del 22-ago-2026. El tablero completo, con lo que
 se construyó archivo por archivo y lo que se verificó, está en
-**`docs/plan-peticiones-22-ago-2026.md` §6.3 y §7.1**. Aquí va lo que hay que
+**`docs/3-planes/plan-peticiones-22-ago-2026.md` §6.3 y §7.1**. Aquí va lo que hay que
 saber sin abrirlo.
 
 #### F4 · Los formatos pueden salir a nombre de otro profesional
@@ -2021,7 +2078,7 @@ en la aplicación**; conviene actualizar `CLAUDE.md`, que lo daba por vivo.
 > campanita y se reutiliza tal cual.
 
 **2. La "Hora Programada" del SIPAB se leía como una fecha imposible.** En
-`docs/OrdenesEjemplo/Bolivar/orden1.xlsx` —el formato con el que trabaja el
+`1-cliente-jdd/ordenes-reales/bolivar/orden1.xlsx` —el formato con el que trabaja el
 cliente— las columnas de hora salían en el modal de revisión como
 **`1899-12-30`**. No era un dato corrupto: Excel no tiene tipo "hora" y guarda las
 horas sueltas como una fecha en su día cero (30-dic-1899); la vista previa las
@@ -2261,7 +2318,7 @@ Cuentas de cobro → año y mes → *Generar* congela la cifra y emite el docume
 *Enviar* se lo manda al profesional.
 ### Tanda 13 (19-ago-2026): el SIPAB de Bolívar se leía mal (y no se veía)
 
-Llegó a `docs/OrdenesEjemplo/Bolivar/ordenes Arl Bolivar desde sipab.xlsx` el
+Llegó a `1-cliente-jdd/ordenes-reales/bolivar/ordenes Arl Bolivar desde sipab.xlsx` el
 **export real de SIPAB**: 99 órdenes, 41 columnas. Es el archivo con el que va a
 trabajar el cliente, así que se pasó por el mismo parser del pipeline campo por
 campo. Cuatro cosas salían mal, y ninguna daba error:
@@ -2366,7 +2423,7 @@ trampa 88.
 Verificado en local contra el archivo real (331 filas, 41 columnas) con
 `node --import tsx scripts/verificar-sipab.mjs "<ruta al .xls>"`: pasó de 0 a
 **331/331 órdenes extraídas**, y los dos Excel sintéticos de
-`docs/BasesDatosEjemplo/` siguen en 100 % (cero regresión en el camino
+`1-cliente-jdd/ordenes-reales/` siguen en 100 % (cero regresión en el camino
 `.xlsx`, que no se tocó). `npm run typecheck` limpio.
 
 Qué cambió (`sst_ws`): nueva dependencia `xlsx` (SheetJS, la única de las dos
@@ -3005,7 +3062,7 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
     FRS llega a ASG-08, `SUP-01..05` cuando llega a SUP-07…), así que tres
     requisitos llevaban meses sin construir mientras el módulo figuraba en ✅.
     Al dar un módulo por cerrado, contar los requisitos **en
-    `docs/requerimientos-completos.txt`**, no en esta tabla.
+    `docs/1-requerimientos/requerimientos-completos.txt`**, no en esta tabla.
 12. **La matriz de `permisos_rol` estaba corrupta en la BD compartida**: el rol
     admin tenía `importar`, `ordenes` e `informes` en FALSE y el profesional en
     TRUE — es decir, la asistente administrativa no veía el núcleo del producto.
@@ -3080,7 +3137,7 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
     "Bolívar 99%".** `runExtraction` manda al parser determinista todo lo que sea
     `.xlsx`, y `parseExcelSipab` solo cuenta una fila si trae cronograma o
     secuencia; además lee **únicamente `worksheets[0]`**. Probado con los Excel
-    de programación de Colmena y AXA de `docs/BasesDatosEjemplo/`: 0 órdenes las
+    de programación de Colmena y AXA de `1-cliente-jdd/ordenes-reales/`: 0 órdenes las
     dos (en el de AXA la primera hoja se llama "LINK" y tiene 3 columnas). Ya se
     avisa con un mensaje que lo explica, pero la clasificación sigue mintiendo:
     el "Bolívar 99%" es por formato de archivo, no por contenido.
@@ -3631,6 +3688,34 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
     "hora suelta" (Excel las guarda en su día cero, 30-dic-1899): SheetJS no
     resuelve ese día cero de forma estable entre zonas horarias, así que la
     hora se lee del **texto renderizado** ("8:00"), no del objeto `Date`.
+89. **Añadir una hoja a `styleUrls` de un componente NO la carga en el `ng serve`
+    que ya estaba corriendo** (30-sep-2026). `ng build` la incluía y la app en
+    :4001 seguía pintando el modal sin esos estilos. Tras cambiar los metadatos
+    de un componente (`styleUrls`, `templateUrl`), **reiniciar el frontend**.
+    Además: `validation.scss` roza el presupuesto `anyComponentStyle` (trampa 20),
+    por eso lo nuevo del modal de cobro va en `validation-cobro.scss`.
+90. **Comillas invertidas dentro de un comentario SQL de un template string de JS
+    rompen el módulo.** Un comentario como `` -- `numero` ya trae el prefijo `` dentro de
+    `` `SELECT …` `` cierra el template: `SyntaxError` al cargar, y el backend
+    `--watch` se cae entero (todas las rutas responden ECONNREFUSED). `node
+    --check` sí lo detecta: correrlo SIEMPRE después de editar SQL embebido.
+91. **Una lista que debe medir lo mismo que la columna vecina no lleva un
+    `max-height` fijo.** El visor de soportes tenía `max-height: 460px` (el alto
+    MÍNIMO del visor) y el visor crece a 60vh: hueco en blanco debajo. Solución:
+    `align-self: stretch` + `contain: size` (el contenido no estira la fila; la
+    lista ocupa lo que pone el visor y hace scroll dentro). En una sola columna
+    hay que quitar el `contain` o la lista mide 0.
+92. **Las filas de una prefactura sin orden en Orbita NO son facturables**
+    (30-sep-2026). Antes salían "Lista" porque "Bolívar paga lo que dice su
+    prefactura", pero eso cobraba trabajo que Orbita no ejecutó. Ahora se ocultan
+    (`sin_orden`) y la orden se busca también por cronograma+secuencia: una
+    importada DESPUÉS aparece con el motivo "vuelva a cargar la prefactura" —la
+    aprobación ARL solo se aplica a órdenes FINALIZADAS en el momento de cargarla.
+93. **`viaticos_valor` y `cobro_*` son dineros opuestos.** `viaticos_valor` (y
+    `valor_cobro_total`, `valor_hora_cobro`) es lo que se le PAGA al profesional
+    en su cuenta de cobro; `cobro_transporte/alojamiento/alimentacion/tiempo_muerto/material`
+    y `valor_unitario/valor_total` son lo que se le COBRA a la ARL. Los nombres
+    se parecen; no mezclarlos.
 
 ## 7. Cómo mantener este archivo
 

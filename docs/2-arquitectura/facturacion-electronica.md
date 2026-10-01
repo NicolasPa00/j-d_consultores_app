@@ -15,7 +15,7 @@
 ## 0. Dónde retomar (leer esto primero)
 
 0. 🆕 **23-sep-2026: llegó la lista de la contadora y el alcance vigente es
-   `docs/requerimientos-facturacion-contabilidad-v2.md`, no la v1 del punto 1.**
+   `docs/1-requerimientos/requerimientos-facturacion-contabilidad-v2.md`, no la v1 del punto 1.**
    Pasa de 7 a 10 módulos (suma cuentas por cobrar, por pagar y parametrización) y
    agrega informes financieros, saldos iniciales, cierre de año, eventos de la
    factura y aceptación de facturas de proveedores. **La propuesta formal y el PDF
@@ -24,7 +24,7 @@
    emitir y consultar eventos por API (D-15 de la v2). Los puntos 1-8 de abajo siguen
    siendo ciertos salvo donde la v2 los contradiga.
 1. **Documento vivo de requerimientos, ya con PDF entregable (v1):**
-   `docs/requerimientos-facturacion-contabilidad.md` tiene el borrador completo (módulos
+   `docs/historico/requerimientos-facturacion-contabilidad.md` tiene el borrador completo (módulos
    FEL, DSP, NOM, CNT, CYG, ACT, RPC) y un PDF limpio para el cliente ya generado en
    `C:\Users\nicol\Desktop\Requerimientos-Facturacion-Contabilidad-JDD.pdf` (sin capturas,
    preguntas ni menciones a Factus/Siigo — solo requerimientos). **Sigue siendo un
@@ -63,7 +63,7 @@
 
 ## 1. Qué es esto y por qué no es solo "una integración"
 
-Hasta ahora, en `docs/01-negocio-y-alcance.md`, la facturación electrónica DIAN estaba
+Hasta ahora, en `docs/1-requerimientos/01-negocio-y-alcance.md`, la facturación electrónica DIAN estaba
 **explícitamente fuera de alcance** de todo el proyecto Orbita. Esto la trae de vuelta,
 pero no como un módulo más del FRS contratado: es una **línea de negocio nueva y aparte**,
 decidida el 17-sep-2026.
@@ -115,7 +115,7 @@ Repasado directamente contra el esquema y el código de `sst_ws`, no de memoria:
   varias órdenes de la misma ARL en una sola factura, en cuyo caso el número real de
   documentos DIAN es menor que el número de OS finalizadas.
 - El bloque **"Facturación a la ARL"** del detalle de la orden (ver
-  `docs/plan-peticiones-22-ago-2026.md`) confirma quién es el pagador: **la ARL**
+  `docs/3-planes/plan-peticiones-22-ago-2026.md`) confirma quién es el pagador: **la ARL**
   (Bolívar, AXA Colpatria, Colmena), no la empresa afiliada donde se ejecuta la visita.
   La cifra que se factura es `valor_total` — lo que se le cobra a la ARL —, distinta de
   lo que Orbita le paga al profesional (eso es **Cuentas de cobro**, M9, un flujo interno
@@ -197,7 +197,7 @@ Repasado directamente contra el esquema y el código de `sst_ws`, no de memoria:
 | D-5 | ¿Se rediseña M13 para que `FACTURADA` dispare la emisión real, o se deja el marcado manual y la emisión real vive en una pantalla aparte? | Conversación de producto con JD&D |
 | D-6 | ¿Bolsa comprada por EscalApp (varios NIT, empieza con JD&D) o paquete individual solo para JD&D? | Cuántos clientes de este tipo (integración de FE a terceros) se esperan además de JD&D en el corto plazo |
 | D-7 🆕 | **¿El alcance es solo los documentos electrónicos DIAN (factura, documento soporte, nómina), o también el módulo contable de Siigo** (comprobantes de egreso, recibos de caja, provisiones, conciliación bancaria)? | Confirmar mañana con la contadora — ver §8.H. Cambia el tamaño del proyecto por completo |
-| D-8 | ~~¿Factus (o el mismo contrato/bolsa) emite también **documento soporte** y **nómina electrónica**, o son productos/tramos aparte de la factura de venta?~~ **Respondida (fuente: análisis de Factus del lado de EscalApp, `admin_ws/docs/facturacion-electronica.md`, 02/11-sep-2026):** factura de venta + documento soporte + notas crédito/débito + nota de ajuste comparten **la misma bolsa** de "Facturación electrónica". **Nómina electrónica es un producto aparte**, con su propia bolsa y tabla de precios — no consume nada de la bolsa de facturación. ⚠️ Ese análisis es previo al acuerdo de aliado/bolsa-multi-NIT cerrado el 14-sep-2026 con Factus; reconfirmar que sigue aplicando igual bajo esas condiciones antes de cotizarle a JD&D. | — |
+| D-8 | ~~¿Factus (o el mismo contrato/bolsa) emite también **documento soporte** y **nómina electrónica**, o son productos/tramos aparte de la factura de venta?~~ **Respondida (fuente: análisis de Factus del lado de EscalApp, `admin_ws/docs/2-arquitectura/facturacion-electronica.md`, 02/11-sep-2026):** factura de venta + documento soporte + notas crédito/débito + nota de ajuste comparten **la misma bolsa** de "Facturación electrónica". **Nómina electrónica es un producto aparte**, con su propia bolsa y tabla de precios — no consume nada de la bolsa de facturación. ⚠️ Ese análisis es previo al acuerdo de aliado/bolsa-multi-NIT cerrado el 14-sep-2026 con Factus; reconfirmar que sigue aplicando igual bajo esas condiciones antes de cotizarle a JD&D. | — |
 | D-9 🆕 | Las órdenes a **clientes privados** (ej. Alkosto) que no pasan por ninguna ARL, ¿deben modelarse dentro de Orbita como un nuevo tipo de orden (`arl_id` pasaría a ser nullable), o quedan fuera del ciclo de vida de la OS y solo entran al módulo de FE como un documento suelto? | Conversación de producto con JD&D — no depende del volumen ni del precio |
 
 ## 6. Qué se reutiliza de EscalApp y qué no

@@ -1445,9 +1445,15 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  max-height: 460px;
   overflow-y: auto;
   padding-right: 0.25rem;
+  /* Mide lo mismo que el visor, no un alto fijo. Antes era `max-height: 460px`
+     (el alto MÍNIMO del visor), pero el visor crece hasta 60vh: en un monitor
+     normal la lista se cortaba a media altura y dejaba un hueco en blanco
+     debajo. `contain: size` hace que su contenido no estire la fila; con
+     `align-self: stretch` ocupa el alto que pone el visor y hace scroll dentro. */
+  align-self: stretch;
+  contain: size;
 }
 
 /* ===== Soportes dentro del detalle ===== */
@@ -1663,6 +1669,9 @@
   }
 
   .verify__list {
+    /* Apilada, el visor ya no está al lado para dar el alto: vuelve a medirse
+       por su contenido, acotada. */
+    contain: none;
     max-height: 200px;
   }
 

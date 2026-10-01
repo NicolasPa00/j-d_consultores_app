@@ -227,6 +227,10 @@ export interface Borrador {
   /** Eje de facturación de la OS (ago-2026): columna, pastilla y filtro. */
   os_estado_cobro?: EstadoCobro | null;
   os_cobro_numero_factura?: string | null;
+  /** 30-sep-2026 · «Validado plataforma» (check a mano) y visto bueno del cobro. */
+  os_validado_plataforma_en?: string | null;
+  os_validado_plataforma_por?: string | null;
+  os_cobro_aprobado_en?: string | null;
   /**
    * A3-01 · Orden de un cliente PARTICULAR (sin ARL): el tercero que la paga.
    * NULL en las órdenes de ARL. `pagador_nombre` va donde las demás llevan la ARL.
@@ -282,6 +286,8 @@ export type CategoriaSoporte = 'acta' | 'asistencia' | 'evidencias' | 'informe' 
 export interface CasillaSoporte {
   clave: CategoriaSoporte;
   etiqueta: string;
+  /** Se ofrece pero no se exige en la entrega inicial (el registro fotográfico, 30-sep-2026). */
+  opcional?: boolean;
 }
 
 export interface ArchivoSoporte {
@@ -402,6 +408,67 @@ export interface PrevisualizacionPrefactura {
   nombre_archivo: string;
   /** No es un bloqueo: cargar de nuevo no duplica nada y se puede volver a aplicar. */
   ya_cargada: { cargada_en: string; cargada_por: string | null } | null;
+}
+
+// ---- Cobro de la orden (30-sep-2026) ----
+/** Los gastos que se le cobran al pagador, en el orden en que se enseñan. */
+export type ClaveGasto = 'transporte' | 'alojamiento' | 'alimentacion' | 'tiempo_muerto' | 'material';
+export const GASTOS_COBRO: { clave: ClaveGasto; etiqueta: string }[] = [
+  { clave: 'transporte', etiqueta: 'Transporte' },
+  { clave: 'alojamiento', etiqueta: 'Alojamiento' },
+  { clave: 'alimentacion', etiqueta: 'Alimentación' },
+  { clave: 'tiempo_muerto', etiqueta: 'Tiempo muerto' },
+  { clave: 'material', etiqueta: 'Material' },
+];
+
+/**
+ * Lo que devuelve `GET /orders/:id/cobro-detalle`. Honorarios = horas × valor
+ * hora; total = honorarios + gastos. `precio_sugerido` es la tarifa de venta del
+ * pagador cuando la orden no tiene valor hora: se propone, no se guarda sola.
+ */
+export interface DetalleCobroOrden {
+  orden_id: string;
+  codigo: string;
+  estado: EstadoOrden;
+  pagador: string | null;
+  particular: boolean;
+  horas: number | null;
+  valor_hora: number | null;
+  honorarios: number | null;
+  gastos: Record<ClaveGasto, number>;
+  total_gastos: number;
+  total: number | null;
+  precio_sugerido: { valor: number; unidad: 'HORA' | 'UNIDAD'; origen: 'TARIFA' } | null;
+  gastos_del_sipab: boolean;
+  prefactura: {
+    numero: string;
+    fecha_corte: string | null;
+    honorarios: number | null;
+    gastos: Record<ClaveGasto, number>;
+    total: number | null;
+    diferencias: (ClaveGasto | 'honorarios')[];
+    cuadra: boolean;
+  } | null;
+  aprobacion: { en: string; por: string | null; total: number | null } | null;
+  factura_electronica: { id: string; estado: string; numero: string | null } | null;
+  estado_cobro: EstadoCobro | null;
+  cobro_numero_factura: string | null;
+  /** Por qué ya no se pueden cambiar valores ni aprobación (está en una factura). */
+  bloqueada: string | null;
+  historial: {
+    id: string;
+    accion: 'APROBADA' | 'RETIRADA' | 'ANULADA_POR_CAMBIO';
+    total: string | number | null;
+    observacion: string | null;
+    creado_en: string;
+    usuario_nombre: string | null;
+  }[];
+}
+
+export interface ValoresCobroForm {
+  valor_hora?: number | null;
+  valor_actividad?: number | null;
+  gastos: Partial<Record<ClaveGasto, number | null>>;
 }
 
 /** Entrada del historial del eje de cobro: quién lo movió, cuándo y por qué. */
@@ -1428,6 +1495,8 @@ export interface GrupoPorFacturar {
   sin_prefactura?: boolean;
   lineas: LineaPorFacturar[];
   n_facturables: number;
+  /** Filas de la prefactura cuya orden NO está en Orbita: no se listan ni se facturan (30-sep-2026). */
+  sin_orden?: number;
   total_marcadas?: number;
 }
 

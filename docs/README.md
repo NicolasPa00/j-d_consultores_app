@@ -1,42 +1,73 @@
-# 📚 Documentación Maestra — JD&D IA-Core
+# 📚 Documentación — ORBITA (JD&D)
 
-Este directorio es la **fuente de verdad** del proyecto de la plataforma interna de gestión de Órdenes de Servicio (OS) de **JD&D Consultores en Sistemas de Gestión** (Colombia). Cualquier decisión técnica —frontend, backend, base de datos o integración de IA— debe ser coherente con estos documentos.
+Documentación **escrita** del proyecto. Desde el 30-sep-2026 está ordenada por
+propósito; los archivos de ejemplo (órdenes, formatos, facturas, prefacturas)
+**no viven aquí**: están en la raíz del monorepo, fuera de git (ver
+`../../LEEME.md`).
 
-> **Cómo usar esta carpeta:** Léela al inicio de cada sesión de trabajo. Las skills en `.claude/skills/` cargan estos documentos automáticamente cuando son relevantes.
+> **¿Por dónde empiezo?** Por `../HANDOFF.md` (estado vivo del proyecto) y, si la
+> tarea es de facturación o contabilidad, por el §0 de
+> `3-planes/plan-facturacion-contabilidad.md`. Lo de esta carpeta es referencia.
 
-## Índice
+## Mapa
 
-| Documento | Contenido |
+| Carpeta | Qué hay | Vigente |
+|---|---|---|
+| [`1-requerimientos/`](1-requerimientos/) | Qué hay que construir | ✅ |
+| [`2-arquitectura/`](2-arquitectura/) | Cómo está construido | ✅ (con fechas) |
+| [`3-planes/`](3-planes/) | Tableros de ejecución, ficha por ficha | ✅ uno activo |
+| [`4-despliegue/`](4-despliegue/) | Producción: servidor, runbooks, lotes | ✅ |
+| [`5-guias/`](5-guias/) | Guías de uso para personas | ✅ |
+| [`6-comercial-y-cliente/`](6-comercial-y-cliente/) | Cotización, precios, preguntas para JD&D y para el proveedor | Interno |
+| [`historico/`](historico/) | Lo que ya NO manda; se guarda por trazabilidad | ❌ |
+
+## 1-requerimientos — qué hay que construir
+
+| Documento | Para qué |
 |---|---|
-| [`01-negocio-y-alcance.md`](01-negocio-y-alcance.md) | Cliente, problema, solución, ARLs, glosario SST, alcance y fuera de alcance |
-| [`02-frs-detallado.md`](02-frs-detallado.md) | Especificación de Requerimientos Funcionales completa (12 módulos), roles, y el mapa de fases |
-| [`03-arquitectura-datos.md`](03-arquitectura-datos.md) | Modelo de datos relacional Fase 1 + costuras (seams) hacia Fase 2 |
-| [`04-pipeline-ia.md`](04-pipeline-ia.md) | Pipeline de importación y validación con IA (Módulos 2 y 3). Motor principal de extracción = **OpenAI**; Gemini queda solo en componentes auxiliares (PENDIENTE DE MIGRACIÓN) |
-| [`05-frontend.md`](05-frontend.md) | Estado del frontend Angular (mock Fase 1), design system y convenciones |
-| [`06-auth-y-seguridad.md`](06-auth-y-seguridad.md) | Modelo de cuentas (Administrador Maestro vs. operativos), recuperación de contraseña, auditoría y costuras de auth robusta |
-| [`despliegue-vultr.md`](despliegue-vultr.md) | Producción: VPS de Vultr, runbook, riesgos abiertos |
-| [`plan-peticiones-22-ago-2026.md`](plan-peticiones-22-ago-2026.md) | Tablero de la tanda de peticiones del cliente del 22-ago-2026 |
-| [`plan-facturacion-contabilidad.md`](plan-facturacion-contabilidad.md) | 🆕 **Tablero de ejecución (27-sep-2026).** Tanda 0 de correcciones de Orbita + fases A/B/C/S de facturación y contabilidad, con fichas por tarea para el modelo ejecutor, hallazgos de los ejemplos reales de JD&D y preguntas abiertas con su supuesto por defecto |
-| [`facturacion-electronica.md`](facturacion-electronica.md) | 🆕 Orbita como proveedor de facturación electrónica DIAN de JD&D. Alcance creció el 19-sep-2026: JD&D confirmó que quiere reemplazar Siigo por completo (contabilidad incluida, no solo DIAN) |
-| [`requerimientos-facturacion-contabilidad.md`](requerimientos-facturacion-contabilidad.md) | Borrador v1 (19/20-sep-2026) de esa fase, armado con capturas de Siigo — 7 módulos. Conserva el flujo real y las fuentes; el alcance vigente es la v2. El PDF del escritorio sale de esta versión |
-| [`requerimientos-facturacion-contabilidad-v2.md`](requerimientos-facturacion-contabilidad-v2.md) | 🆕 **Vigente (23-sep-2026).** Incorpora la lista de la contadora: 10 módulos (suma cuentas por cobrar, por pagar y parametrización), informes financieros, eventos de la factura y aceptación de facturas de proveedores. Trazabilidad ítem por ítem y preguntas D-15 a D-28 |
-| [`preguntas-jdd-cierre-alcance.md`](preguntas-jdd-cierre-alcance.md) | 🆕 **Versión corta**: 10 preguntas indispensables para JD&D y su contadora, más la lista de documentos a pedir. Se puede enviar tal cual. El rastro de las demás está en la v2 §5 |
-| [`preguntas-factus-cumplimiento.md`](preguntas-factus-cumplimiento.md) | 🆕 **Versión corta**: 10 preguntas para Factus. Trae lo que Factus ya respondió (por escrito, en contrato y en reunión) y lo que documenta su API, para no repreguntar. La sección 3 se puede enviar |
-| [`precio-fase-facturacion-contabilidad.md`](precio-fase-facturacion-contabilidad.md) | 🆕 **Interno.** Reestimación de precio con la lista de la contadora, sobre el plan de $4,5M + $1M/año o $1,8M/año |
+| [`requerimientos-completos.txt`](1-requerimientos/requerimientos-completos.txt) | **FRS v1.0, los 12 módulos de la plataforma operativa.** Ante duda, manda este. |
+| [`02-frs-detallado.md`](1-requerimientos/02-frs-detallado.md) | El mismo sistema en markdown, con OTRA numeración de módulos. |
+| [`01-negocio-y-alcance.md`](1-requerimientos/01-negocio-y-alcance.md) | Cliente, ARL, glosario SST. |
+| [`requerimientos-facturacion-contabilidad-v2.md`](1-requerimientos/requerimientos-facturacion-contabilidad-v2.md) | **Alcance vigente de facturación electrónica + contabilidad** (10 módulos, lista de la contadora). |
 
-## ⚠️ Regla de Oro (leer siempre)
+## 2-arquitectura — cómo está construido
 
-Nos encontramos **exclusivamente en FASE 1 (MVP Táctico)**. Está **prohibido** codificar funcionalidad de Fase 2 o Fase 3 hasta completar la persistencia real de la Fase 1. Ver detalle en [`02-frs-detallado.md`](02-frs-detallado.md#-fases-del-proyecto) → Fases del Proyecto.
+| Documento | Para qué |
+|---|---|
+| [`03-arquitectura-datos.md`](2-arquitectura/03-arquitectura-datos.md) | Modelo de datos (escrito en jul-2026; el esquema real es `sst_ws/db/schema.sql`). |
+| [`04-pipeline-ia.md`](2-arquitectura/04-pipeline-ia.md) | Importación y extracción con IA (OpenAI). |
+| [`05-frontend.md`](2-arquitectura/05-frontend.md) | Frontend Angular, design system (escrito para la maqueta; el mapa vigente está en `../CLAUDE.md` §3). |
+| [`06-auth-y-seguridad.md`](2-arquitectura/06-auth-y-seguridad.md) | Cuentas, recuperación de contraseña, auditoría. |
+| [`facturacion-electronica.md`](2-arquitectura/facturacion-electronica.md) | Orbita como emisor de facturación electrónica DIAN. |
+| [`sistema-visual-inventario.md`](2-arquitectura/sistema-visual-inventario.md) | 🆕 Diagnóstico del sistema visual (30-sep-2026) antes de estandarizar estilos. |
 
-## Stack objetivo (Fase 1)
+## 3-planes — tableros de ejecución
 
-- **Frontend:** Angular 21 (standalone, Signals, `OnPush`) — ya existe como maqueta interactiva. Ver [`05-frontend.md`](05-frontend.md).
-- **Backend:** Node.js o .NET (por decidir) — vivirá en este mismo directorio raíz.
-- **Base de datos:** PostgreSQL (preferido sobre MySQL por JSONB y constraints parciales).
-- **Auth:** JWT + contraseñas hasheadas (bcrypt/argon2).
-- **Almacenamiento:** AWS S3 (o compatible) para archivos originales y soportes.
-- **IA del producto · MOTOR PRINCIPAL de extracción:** **API de OpenAI** (`gpt-4o-mini`) con **Structured Outputs** (esquema Zod) para extraer los campos de las OS desde el texto del PDF. El Excel SIPAB es parsing determinista.
-- **IA del producto · AUXILIAR (PENDIENTE DE MIGRACIÓN):** **API de Google Gemini** (`gemini-2.5-pro` / `gemini-2.5-flash`) solo para clasificación de ARL, resumen ejecutivo y búsqueda en lenguaje natural. **No** participa en la extracción. El OCR de escaneados queda pendiente.
-- **NFR:** Web responsive, tiempo de respuesta < 2s.
+| Documento | Estado |
+|---|---|
+| [`plan-facturacion-contabilidad.md`](3-planes/plan-facturacion-contabilidad.md) | **ACTIVO.** Tanda 0 + fases A/B/C de facturación y contabilidad. Su §0 dice dónde retomar. |
+| [`plan-peticiones-22-ago-2026.md`](3-planes/plan-peticiones-22-ago-2026.md) | Cerrado (tanda de peticiones del 22-ago). |
 
-> 🤖 **Claude ≠ producto.** Claude / Claude Code es la herramienta con la que **desarrollamos** el sistema. El motor de IA que corre **dentro del producto** para la **extracción** de documentos es **OpenAI**; Gemini solo queda en componentes auxiliares pendientes de migrar. No confundir.
+## 4-despliegue — producción
+
+| Documento | Para qué |
+|---|---|
+| [`despliegue-vultr.md`](4-despliegue/despliegue-vultr.md) | **Leer antes de tocar el servidor.** Qué corre dónde, runbook, riesgos. |
+| [`despliegue-correcciones-26-sep.md`](4-despliegue/despliegue-correcciones-26-sep.md) | Guía del primer lote (desplegado el 29-sep-2026). |
+
+## 5-guias — para personas
+
+| Documento | Para qué |
+|---|---|
+| [`guia-carga-soportes.md`](5-guias/guia-carga-soportes.md) | Cómo sube el profesional los soportes desde el móvil. |
+
+## 6-comercial-y-cliente — interno
+
+Cotización aceptada, precios del proveedor tecnológico, y las preguntas para JD&D
+y para el proveedor. **No se le envía al cliente tal cual** salvo lo que el propio
+documento marque como enviable.
+
+## historico — ya no manda
+
+`req_fase_1.txt` (recorte de la primera entrega), `requerimientos-facturacion-contabilidad.md`
+(borrador v1, superado por la v2) y `jdd.html` (cuestionario de cierre de alcance de julio).

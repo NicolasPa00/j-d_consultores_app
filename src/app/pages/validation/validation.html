@@ -15,7 +15,7 @@
       <input
         class="ord-search__input"
         type="text"
-        placeholder="Buscar por empresa, ARL o NIT…"
+        placeholder="Buscar por empresa, ARL, NIT, cronograma u OS…"
         [ngModel]="query()"
         (ngModelChange)="buscar($event)"
       />
@@ -173,12 +173,30 @@
                 <!-- A3-01 · Cliente particular: no hay ARL que apruebe. -->
                 <span class="venc__none" title="Orden de un cliente particular">No aplica</span>
               } @else if (order.osId) {
-                <span
-                  class="pill"
-                  [class]="pillArl(order.estadoArl)"
-                  [attr.title]="order.numeroPrefactura ? 'Prefactura ' + order.numeroPrefactura : null"
-                >
-                  {{ order.estadoArl === 'APROBADO' ? 'Aprobado' : 'Pendiente' }}
+                <span class="arl-celda">
+                  <span
+                    class="pill"
+                    [class]="pillArl(order.estadoArl)"
+                    [attr.title]="order.numeroPrefactura ? 'Prefactura ' + order.numeroPrefactura : null"
+                  >
+                    {{ order.estadoArl === 'APROBADO' ? 'Aprobado' : 'Pendiente' }}
+                  </span>
+                  <!-- 30-sep-2026 · «Validado plataforma»: check a mano, distinto
+                       del estado ARL (ese lo pone la prefactura). No bloquea nada. -->
+                  <button
+                    type="button"
+                    class="validado"
+                    [class.validado--ok]="order.validadoPlataformaEn"
+                    [disabled]="!puedeMarcarValidado(order) || validandoPlataforma() === order.osId"
+                    (click)="toggleValidadoPlataforma(order)"
+                    [attr.aria-pressed]="!!order.validadoPlataformaEn"
+                    [attr.aria-label]="tituloValidado(order)"
+                    [title]="tituloValidado(order)"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="m6 12.5 4 4 8-9" />
+                    </svg>
+                  </button>
                 </span>
               } @else {
                 <span class="venc__none">—</span>
@@ -188,11 +206,26 @@
                  no hay nada que facturar hasta que la orden existe. -->
             <td>
               @if (order.osId) {
-                <!-- Solo el estado. El número de factura se consulta en el
-                     detalle de la orden y en el modal de facturación. -->
-                <span class="pill" [class]="pillCobro(order.estadoCobro)">
+                <!-- 30-sep-2026 · La píldora es el botón: abre el modal de cobro
+                     (valores, prefactura, visto bueno de operación y, si no hay
+                     factura electrónica, el marcado manual). Debajo, en las
+                     finalizadas sin facturar, si operación ya aprobó el cobro:
+                     sin ese visto bueno la orden no pasa a Facturación. -->
+                <button
+                  type="button"
+                  class="pill pill--boton"
+                  [class]="pillCobro(order.estadoCobro)"
+                  [disabled]="order.disabled"
+                  (click)="openCobro(order)"
+                  [title]="'Cobro de la orden · ' + (order.estadoCobro || 'NO FACTURADA')"
+                >
                   {{ order.estadoCobro || 'NO FACTURADA' }}
-                </span>
+                </button>
+                @if (order.osEstado === 'FINALIZADA' && order.estadoCobro !== 'FACTURADA') {
+                  <span class="cobro-aprob" [class.cobro-aprob--ok]="order.cobroAprobadoEn">
+                    {{ order.cobroAprobadoEn ? 'Aprobado' : 'Por aprobar' }}
+                  </span>
+                }
               } @else {
                 <span class="venc__none">—</span>
               }
@@ -245,29 +278,6 @@
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M21.4 11.05 12.25 20.2a5.5 5.5 0 0 1-7.78-7.78l9.2-9.19a3.5 3.5 0 1 1 4.95 4.95l-9.2 9.19a1.5 1.5 0 0 1-2.12-2.12l8.49-8.48" />
-                      </svg>
-                    </button>
-                  }
-                  <!-- Estado de facturación. Es el ÚNICO sitio desde el que se
-                       cambia (23-ago-2026): ni el detalle ni la edición lo
-                       ofrecen. Solo aparece en las FINALIZADAS, que es donde
-                       arranca el eje — antes del cierre no hay nada que
-                       facturarle a la ARL y el servidor lo rechazaría. -->
-                  <!-- 29-sep · Oculto hasta el segundo lote de cambios (pedido del
-                       usuario): el modal sigue en el código, se enciende con
-                       `cobroHabilitado` en validation.ts. -->
-                  @if (cobroHabilitado && puedeCobrar(order)) {
-                    <button
-                      type="button"
-                      class="icon-action"
-                      (click)="openCobro(order)"
-                      aria-label="Cambiar estado de facturación"
-                      [title]="'Facturación · ' + (order.estadoCobro || 'NO FACTURADA')"
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <rect x="2" y="6" width="20" height="12" rx="2" />
-                        <circle cx="12" cy="12" r="2.6" />
-                        <path d="M6 12h.01M18 12h.01" />
                       </svg>
                     </button>
                   }
@@ -785,13 +795,13 @@
               <p class="cobro-card__dato">Factura <strong class="mono">{{ order.cobroNumeroFactura }}</strong></p>
             }
 
-            <!-- Aquí SOLO se consulta. El estado se cambia desde el icono de
-                 facturación de la fila, en la bandeja, y desde ningún otro
-                 sitio (23-ago-2026): un único camino evita que la orden se
+            <!-- Aquí SOLO se consulta. Los valores, el visto bueno y el estado se
+                 cambian desde la píldora de la columna Cobro, en la bandeja, y
+                 desde ningún otro sitio: un único camino evita que la orden se
                  marque sin querer mientras se está corrigiendo otra cosa. -->
             @if (puedeCobrar(order)) {
               <p class="card__hint">
-                El estado se cambia desde el icono de facturación de la fila, en el listado.
+                Los valores, la aprobación y el estado se gestionan desde la píldora de la columna Cobro, en el listado.
               </p>
             } @else {
               <!-- El eje arranca en FINALIZADA: antes del cierre no hay nada que
@@ -1511,6 +1521,62 @@
             }
           </p>
         }
+
+        <!-- 30-sep-2026 · Varios soportes en UN solo PDF, para radicar ante la
+             ARL. Quien descarga elige cuáles y en qué orden; las fotos entran
+             como páginas. -->
+        @if (supports().length > 1) {
+          <div class="unir">
+            <button
+              type="button"
+              class="btn btn--secondary btn--block"
+              [attr.aria-expanded]="unirAbierto()"
+              (click)="unirAbierto.set(!unirAbierto())"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3v12m0 0 4-4m-4 4-4-4" />
+                <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+              </svg>
+              Descargar en un solo PDF
+            </button>
+            @if (unirAbierto()) {
+              <p class="card__hint unir__ayuda">Marque los documentos y ordénelos con las flechas.</p>
+              <ol class="unir__lista">
+                @for (item of unirLista(); track item.id; let i = $index, primero = $first, ultimo = $last) {
+                  @if (soportePorId(item.id); as s) {
+                    <li class="unir__item" [class.unir__item--off]="!item.marcado">
+                      <label class="unir__check">
+                        <input type="checkbox" [checked]="item.marcado" (change)="toggleUnir(item.id)" />
+                        <span class="unir__nombre">{{ etiquetaSoporte(s) }}</span>
+                        <span class="unir__archivo">{{ nombreSoporte(s) }}</span>
+                      </label>
+                      <span class="unir__mover">
+                        <button type="button" class="icon-action" [disabled]="primero" (click)="moverUnir(i, -1)" aria-label="Subir">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6" /></svg>
+                        </button>
+                        <button type="button" class="icon-action" [disabled]="ultimo" (click)="moverUnir(i, 1)" aria-label="Bajar">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                        </button>
+                      </span>
+                    </li>
+                  }
+                }
+              </ol>
+              <button
+                type="button"
+                class="btn btn--primary btn--block"
+                [disabled]="!unirMarcados() || unirDescargando()"
+                (click)="descargarUnidos()"
+              >
+                @if (unirDescargando()) {
+                  <span class="spinner" aria-hidden="true"></span> Uniendo…
+                } @else {
+                  Descargar PDF ({{ unirMarcados() }} {{ unirMarcados() === 1 ? 'documento' : 'documentos' }})
+                }
+              </button>
+            }
+          </div>
+        }
       </div>
 
       <!-- ---- Visor: se revisa dentro de la plataforma, sin descargar ---- -->
@@ -1564,7 +1630,9 @@
               <span class="reject-cat__text">
                 <span class="reject-cat__name">{{ cat.etiqueta }}</span>
                 <span class="reject-cat__meta">
-                  @if (cat.archivos === 0) {
+                  @if (cat.archivos === 0 && cat.opcional) {
+                    Sin archivo — era opcional; si lo marca, tendrá que subirlo
+                  } @else if (cat.archivos === 0) {
                     Sin archivo — no lo envió
                   } @else if (cat.archivos === 1) {
                     1 archivo · se reemplaza al subir el nuevo
@@ -1653,21 +1721,24 @@
   </div>
 }
 
-<!-- ============ MODAL: ESTADO DE FACTURACIÓN / COBRO ============
-     Un eje INDEPENDIENTE del ciclo de vida de la OS: una orden FINALIZADA puede
-     estar sin facturar o facturada. Se cambia de UNA en una, desde el icono de
-     la fila: es el único camino.
+<!-- ============ MODAL: COBRO DE LA ORDEN (30-sep-2026) ============
+     Se abre desde la píldora de la columna Cobro. Reúne lo que antes no miraba
+     nadie: cuánto se le cobra al pagador (horas × valor hora + los gastos que
+     trae el SIPAB), si cuadra con la prefactura y el VISTO BUENO de operación.
+     Sin ese visto bueno la orden no pasa a Facturación ni a la contabilidad,
+     aunque la prefactura esté cargada.
 
-     Va con `modal--slim`: son tres campos, y el ancho normal (que crece con la
-     pantalla) los dejaba estirados de lado a lado en un monitor grande. -->
+     El marcado manual de lo facturado por fuera (Siigo) sigue aquí, pero solo
+     cuando la orden NO tiene factura electrónica: en esa, FACTURADA y el número
+     los puso Orbita y se corrigen con una nota crédito. -->
 @if (cobroOrden(); as ordenCobro) {
   <div class="modal-backdrop" (click)="closeCobro()"></div>
-  <div class="modal modal--slim" role="dialog" aria-modal="true" aria-labelledby="cobroTitle">
+  <div class="modal modal--cobro" role="dialog" aria-modal="true" aria-labelledby="cobroTitle">
     <header class="modal__head">
       <div>
-        <h3 class="modal__title" id="cobroTitle">Estado de facturación</h3>
+        <h3 class="modal__title" id="cobroTitle">Cobro de la orden</h3>
         <p class="modal__sub">
-          {{ ordenCobro.osCode || ordenCobro.company }}
+          {{ ordenCobro.osCode || ordenCobro.company }} · {{ ordenCobro.arl }}
         </p>
       </div>
       <button type="button" class="icon-action" (click)="closeCobro()" aria-label="Cerrar">
@@ -1678,65 +1749,313 @@
     </header>
 
     <div class="modal__body">
-      <div class="form-field">
-        <label class="form-field__label" for="cobroEstado">Nuevo estado *</label>
-        <select
-          id="cobroEstado"
-          class="form-control"
-          [ngModel]="cobroEstado()"
-          (ngModelChange)="cobroEstado.set($event)"
-          name="cobroEstado"
-        >
-          @for (e of estadosCobro; track e) {
-            <option [value]="e">{{ e }}</option>
+      @if (cobroCargando() && !cobroDetalle()) {
+        <p class="cobro__cargando"><span class="spinner" aria-hidden="true"></span> Cargando el cobro…</p>
+      } @else if (cobroDetalle(); as d) {
+        @if (d.bloqueada) {
+          <div class="alert alert--info cobro__aviso">{{ d.bloqueada }}</div>
+        }
+
+        <!-- 1 · Valor de la orden -->
+        <section class="cobro__seccion">
+          <h4 class="cobro__titulo">Valor de la orden</h4>
+          @if (d.horas) {
+            <div class="cobro__fila-valor">
+              <div class="form-field">
+                <span class="form-field__label">Horas</span>
+                <span class="cobro__dato mono">{{ d.horas }}</span>
+              </div>
+              <span class="cobro__op" aria-hidden="true">×</span>
+              <div class="form-field">
+                <label class="form-field__label" for="cobroValorHora">Valor hora</label>
+                <input
+                  id="cobroValorHora"
+                  class="form-control mono"
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputmode="decimal"
+                  [disabled]="!!d.bloqueada || !puedeEditarCobro()"
+                  [ngModel]="cobroValorHora()"
+                  (ngModelChange)="cobroValorHora.set(importeONulo($event))"
+                  name="cobroValorHora"
+                />
+              </div>
+              <span class="cobro__op" aria-hidden="true">=</span>
+              <div class="form-field">
+                <span class="form-field__label">Honorarios</span>
+                <span class="cobro__dato mono">{{ cobroHonorariosForm() != null ? pesos(cobroHonorariosForm()) : '—' }}</span>
+              </div>
+            </div>
+          } @else {
+            <div class="form-field">
+              <label class="form-field__label" for="cobroValorAct">Valor de la actividad</label>
+              <input
+                id="cobroValorAct"
+                class="form-control mono"
+                type="number"
+                min="0"
+                step="1"
+                inputmode="decimal"
+                [disabled]="!!d.bloqueada || !puedeEditarCobro()"
+                [ngModel]="cobroValorActividad()"
+                (ngModelChange)="cobroValorActividad.set(importeONulo($event))"
+                name="cobroValorAct"
+              />
+            </div>
           }
-        </select>
-      </div>
+          @if (!d.bloqueada && d.valor_hora == null && d.precio_sugerido) {
+            <p class="card__hint">
+              La orden no traía precio: se propone la tarifa de venta del pagador
+              ({{ pesos(d.precio_sugerido.valor) }} {{ d.precio_sugerido.unidad === 'HORA' ? 'por hora' : 'por actividad' }}).
+              No cuenta hasta que se guarde.
+            </p>
+          } @else if (!d.bloqueada && d.valor_hora == null && d.honorarios == null) {
+            <p class="card__hint cobro__falta">
+              La orden no trae precio y el pagador no tiene tarifa de venta: escríbalo para poder aprobarlo.
+            </p>
+          }
+        </section>
 
-      <div class="form-field">
-        <label class="form-field__label" for="cobroFactura">
-          Número de factura {{ cobroEstado() === 'FACTURADA' ? '*' : '(opcional)' }}
-        </label>
-        <!-- Es el dato por el que se busca una orden cuando la ARL pregunta, así
-             que se exige justo en el estado que lo produce: sin él quedaría una
-             tabla llena de "FACTURADA" sin decir con qué factura. -->
-        <input
-          id="cobroFactura"
-          class="form-control"
-          type="text"
-          maxlength="60"
-          placeholder="Ej. FV-2026-0451"
-          [(ngModel)]="cobroFactura"
-          name="cobroFactura"
-        />
-      </div>
+        <!-- 2 · Gastos que se le cobran al pagador -->
+        <section class="cobro__seccion">
+          <h4 class="cobro__titulo">
+            Gastos
+            @if (d.gastos_del_sipab) { <span class="cobro__origen">del Excel SIPAB</span> }
+          </h4>
+          <div class="cobro__gastos">
+            @for (g of gastosCobro; track g.clave) {
+              <div class="form-field">
+                <label class="form-field__label" [for]="'gasto-' + g.clave">{{ g.etiqueta }}</label>
+                <input
+                  [id]="'gasto-' + g.clave"
+                  class="form-control mono"
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputmode="decimal"
+                  [disabled]="!!d.bloqueada || !puedeEditarCobro()"
+                  [ngModel]="cobroGastos()[g.clave]"
+                  (ngModelChange)="setGastoCobro(g.clave, $event)"
+                  [name]="'gasto-' + g.clave"
+                />
+              </div>
+            }
+          </div>
+          <p class="cobro__total">
+            <span>Total a cobrar</span>
+            <strong class="mono">{{ cobroTotalForm() != null ? pesos(cobroTotalForm()) : '—' }}</strong>
+          </p>
+          @if (!d.bloqueada && puedeEditarCobro()) {
+            <div class="cobro__acciones">
+              <button
+                type="button"
+                class="btn btn--secondary"
+                [disabled]="!cobroSinGuardar() || cobroGuardandoValores()"
+                (click)="guardarValoresCobro()"
+              >
+                {{ cobroGuardandoValores() ? 'Guardando…' : 'Guardar valores' }}
+              </button>
+              @if (cobroSinGuardar()) {
+                <span class="cobro__pendiente">Cambios sin guardar</span>
+              }
+            </div>
+          }
+        </section>
 
-      <div class="form-field">
-        <label class="form-field__label" for="cobroObs">Observación (opcional)</label>
-        <textarea
-          id="cobroObs"
-          class="form-control"
-          rows="3"
-          maxlength="300"
-          placeholder="Qué se radicó, ante quién, con qué radicado…"
-          [(ngModel)]="cobroObservacion"
-          name="cobroObs"
-        ></textarea>
-      </div>
+        <!-- 3 · Comparación con la prefactura (si ya se cargó) -->
+        @if (d.prefactura; as pf) {
+          <section class="cobro__seccion">
+            <h4 class="cobro__titulo">
+              Prefactura {{ pf.numero }}
+              <span class="pill" [class]="pf.cuadra ? 'pill--success' : 'pill--danger'">{{ pf.cuadra ? 'Cuadra' : 'No cuadra' }}</span>
+            </h4>
+            <table class="table cobro__comparacion">
+              <thead>
+                <tr><th>Concepto</th><th class="num">Orbita</th><th class="num">Prefactura</th></tr>
+              </thead>
+              <tbody>
+                <tr [class.cobro__difiere]="difierePrefactura('honorarios')">
+                  <td>Honorarios</td>
+                  <td class="num mono">{{ d.honorarios != null ? pesos(d.honorarios) : '—' }}</td>
+                  <td class="num mono">{{ pf.honorarios != null ? pesos(pf.honorarios) : '—' }}</td>
+                </tr>
+                @for (g of gastosCobro; track g.clave) {
+                  @if (d.gastos[g.clave] || pf.gastos[g.clave]) {
+                    <tr [class.cobro__difiere]="difierePrefactura(g.clave)">
+                      <td>{{ g.etiqueta }}</td>
+                      <td class="num mono">{{ pesos(d.gastos[g.clave]) }}</td>
+                      <td class="num mono">{{ pesos(pf.gastos[g.clave]) }}</td>
+                    </tr>
+                  }
+                }
+                <tr class="cobro__comparacion-total" [class.cobro__difiere]="!pf.cuadra">
+                  <td>Total</td>
+                  <td class="num mono">{{ d.total != null ? pesos(d.total) : '—' }}</td>
+                  <td class="num mono">{{ pf.total != null ? pesos(pf.total) : '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="card__hint">La comparación es con lo guardado: los cambios sin guardar no cuentan.</p>
+          </section>
+        }
+
+        <!-- 4 · Visto bueno de operación -->
+        <section class="cobro__seccion">
+          <h4 class="cobro__titulo">Aprobación de operación</h4>
+          @if (d.aprobacion; as ap) {
+            <p class="cobro__estado cobro__estado--ok">
+              Aprobado por {{ ap.por || '—' }} el {{ fechaHoraCobro(ap.en) }} por <strong class="mono">{{ pesos(ap.total) }}</strong>.
+              La orden ya puede facturarse.
+            </p>
+          } @else if (d.bloqueada) {
+            <p class="cobro__estado">
+              Sin aprobación registrada: la orden entró a facturación antes de que existiera este paso.
+            </p>
+          } @else {
+            <p class="cobro__estado">
+              Pendiente. Sin esta aprobación la orden no pasa a Facturación ni a la contabilidad.
+              @if (d.estado !== 'FINALIZADA') { Se aprueba cuando la orden esté FINALIZADA. }
+            </p>
+          }
+          @if (!d.bloqueada && puedeAprobarCobro()) {
+            <div class="form-field">
+              <label class="form-field__label" for="cobroObsAprob">Observación (opcional)</label>
+              <input
+                id="cobroObsAprob"
+                class="form-control"
+                type="text"
+                maxlength="300"
+                placeholder="Ej. Revisado contra la prefactura"
+                [(ngModel)]="cobroObsAprobacion"
+                name="cobroObsAprob"
+              />
+            </div>
+            <div class="cobro__acciones">
+              @if (d.aprobacion) {
+                <button type="button" class="btn btn--ghost" [disabled]="cobroGuardandoValores()" (click)="retirarAprobacionCobro()">
+                  Retirar aprobación
+                </button>
+              } @else {
+                <button
+                  type="button"
+                  class="btn btn--primary"
+                  [disabled]="cobroGuardandoValores() || cobroSinGuardar() || d.estado !== 'FINALIZADA' || d.total == null"
+                  (click)="aprobarCobro()"
+                >
+                  Aprobar cobro
+                </button>
+                @if (cobroSinGuardar()) {
+                  <span class="cobro__pendiente">Guarde los valores antes de aprobar</span>
+                } @else if (d.prefactura && !d.prefactura.cuadra) {
+                  <span class="cobro__falta">No cuadra con la prefactura</span>
+                }
+              }
+            </div>
+          }
+          @if (d.historial.length) {
+            <ol class="timeline cobro__historial">
+              @for (h of d.historial; track h.id) {
+                <li class="timeline__item">
+                  <span class="timeline__dot" aria-hidden="true"></span>
+                  <div class="timeline__body">
+                    <p class="timeline__head">
+                      {{ accionAprobacion(h.accion) }}
+                      @if (h.total != null) { · <span class="mono">{{ pesos(+h.total) }}</span> }
+                    </p>
+                    <p class="timeline__meta">
+                      {{ fechaHoraCobro(h.creado_en) }} · {{ h.usuario_nombre || 'Sistema' }}
+                      @if (h.observacion) { · {{ h.observacion }} }
+                    </p>
+                  </div>
+                </li>
+              }
+            </ol>
+          }
+        </section>
+
+        <!-- 5 · Facturación -->
+        <section class="cobro__seccion">
+          <h4 class="cobro__titulo">Facturación</h4>
+          @if (d.factura_electronica; as fe) {
+            <p class="cobro__estado">
+              @if (fe.estado === 'VALIDADO') {
+                Facturada electrónicamente con <strong class="mono">{{ fe.numero }}</strong>.
+              } @else {
+                Está en una factura electrónica en estado {{ fe.estado }}.
+              }
+              Se gestiona desde Facturación.
+            </p>
+          } @else if (d.estado !== 'FINALIZADA') {
+            <p class="cobro__estado">El estado de cobro solo se mueve cuando la orden está FINALIZADA.</p>
+          } @else if (marcadoManualSiigo && puedeMarcarManual()) {
+            <!-- APAGADO (30-sep-2026): ver `marcadoManualSiigo` en validation.ts. -->
+            <p class="card__hint">
+              Solo para lo facturado por fuera de Orbita (Siigo). Lo facturado electrónicamente se marca solo.
+            </p>
+            <div class="cobro__manual">
+              <div class="form-field">
+                <label class="form-field__label" for="cobroEstado">Estado</label>
+                <select
+                  id="cobroEstado"
+                  class="form-control"
+                  [ngModel]="cobroEstado()"
+                  (ngModelChange)="cobroEstado.set($event)"
+                  name="cobroEstado"
+                >
+                  @for (e of estadosCobro; track e) {
+                    <option [value]="e">{{ e }}</option>
+                  }
+                </select>
+              </div>
+              <div class="form-field">
+                <!-- Es el dato por el que se busca una orden cuando la ARL pregunta,
+                     así que se exige justo en el estado que lo produce. -->
+                <label class="form-field__label" for="cobroFactura">
+                  Número de factura {{ cobroEstado() === 'FACTURADA' ? '*' : '(opcional)' }}
+                </label>
+                <input
+                  id="cobroFactura"
+                  class="form-control"
+                  type="text"
+                  maxlength="60"
+                  placeholder="Ej. FV-2026-0451"
+                  [(ngModel)]="cobroFactura"
+                  name="cobroFactura"
+                />
+              </div>
+            </div>
+            <div class="form-field">
+              <label class="form-field__label" for="cobroObs">Observación (opcional)</label>
+              <textarea
+                id="cobroObs"
+                class="form-control"
+                rows="2"
+                maxlength="300"
+                placeholder="Qué se radicó, ante quién, con qué radicado…"
+                [(ngModel)]="cobroObservacion"
+                name="cobroObs"
+              ></textarea>
+            </div>
+            <div class="cobro__acciones">
+              <button type="button" class="btn btn--secondary" [disabled]="cobroSaving()" (click)="guardarCobro()">
+                {{ cobroSaving() ? 'Guardando…' : 'Guardar estado' }}
+              </button>
+            </div>
+          } @else {
+            <p class="cobro__estado">
+              {{ d.estado_cobro || 'NO FACTURADA' }}
+              @if (d.cobro_numero_factura) { · factura <span class="mono">{{ d.cobro_numero_factura }}</span> }
+            </p>
+          }
+        </section>
+      }
     </div>
 
     <footer class="modal__footer">
       <div class="modal__footer-actions">
-        <button type="button" class="btn btn--ghost" (click)="closeCobro()" [disabled]="cobroSaving()">
-          Cancelar
-        </button>
-        <button type="button" class="btn btn--primary" [disabled]="cobroSaving()" (click)="guardarCobro()">
-          @if (cobroSaving()) {
-            <span class="spinner" aria-hidden="true"></span>
-            Guardando…
-          } @else {
-            Guardar
-          }
+        <button type="button" class="btn btn--ghost" (click)="closeCobro()" [disabled]="cobroSaving() || cobroGuardandoValores()">
+          Cerrar
         </button>
       </div>
     </footer>

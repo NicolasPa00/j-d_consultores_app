@@ -283,6 +283,12 @@
   vertical-align: middle;
 }
 
+/* Opcional no es un aviso: va en gris para no competir con lo que sí falta. */
+.slot__tag--opcional {
+  color: var(--text-muted);
+  background: rgba(100, 116, 139, 0.12);
+}
+
 /* Lo ya enviado, colgando de su casilla. */
 .previos {
   list-style: none;

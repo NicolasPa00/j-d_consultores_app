@@ -5,7 +5,7 @@
 >
 > **Escrita el 25-sep-2026**, la víspera de la reunión. Se apoya en
 > [`preguntas-jdd-cierre-alcance.md`](preguntas-jdd-cierre-alcance.md) (las 10 preguntas
-> que sí se envían) y en [`requerimientos-facturacion-contabilidad-v2.md`](requerimientos-facturacion-contabilidad-v2.md).
+> que sí se envían) y en [`../1-requerimientos/requerimientos-facturacion-contabilidad-v2.md`](../1-requerimientos/requerimientos-facturacion-contabilidad-v2.md).
 >
 > **Advertencia de método:** ni Nicolás ni yo somos contadores. Todo lo tributario o
 > contable de aquí (definiciones, asientos, grupos NIIF, tarifas) es **conocimiento
@@ -274,7 +274,7 @@ decisión: la última palabra es de Nicolás.
    esto ya está razonado en `precio-fase-facturacion-contabilidad.md` §7.
 4. **Nómina y aceptación de facturas de proveedores:** ¿van **incluidas** en la anualidad o
    las compra JD&D aparte? (§7.1 del precio.) Elegir una y no dejarlo abierto.
-5. **Respaldos.** Hoy **no existen** (`docs/despliegue-vultr.md`). Poner una fecha para
+5. **Respaldos.** Hoy **no existen** (`docs/4-despliegue/despliegue-vultr.md`). Poner una fecha para
    tenerlos **antes** de cargar saldos contables. Es una respuesta que nos van a pedir.
 6. **Factus.** ¿Ya se enviaron las 10 preguntas? Las respuestas a 5 y 6 cierran el costo de
    terceros; sin ellas el costo de RADIAN sigue siendo un supuesto nuestro.

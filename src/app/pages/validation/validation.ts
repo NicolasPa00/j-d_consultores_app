@@ -10,7 +10,7 @@ import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
-import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, EstadoArl, ESTADOS_ARL, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, TipoViatico, CasillaEditable, FilaPrefactura, FormatoPrevio, FranjaVisita, HistorialCobro, HistorialEstado, HistorialEstadoArl, Ocupacion, Orden, OrdenManualForm, Plantilla, PrevisualizacionPrefactura, Profesional, RegistroArl, ResultadoCrucePrefactura, Tercero } from '../../core/models';
+import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, ClaveGasto, DetalleCobroOrden, GASTOS_COBRO, EstadoArl, ESTADOS_ARL, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, TipoViatico, CasillaEditable, FilaPrefactura, FormatoPrevio, FranjaVisita, HistorialCobro, HistorialEstado, HistorialEstadoArl, Ocupacion, Orden, OrdenManualForm, Plantilla, PrevisualizacionPrefactura, Profesional, RegistroArl, ResultadoCrucePrefactura, Tercero } from '../../core/models';
 import { aIsoFecha, fechaLocal } from '../../core/fechas';
 import {
   ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, opcionesDeCampo,
@@ -182,7 +182,7 @@ interface BloqueAgenda {
   selector: 'app-validation',
   imports: [FormsModule, PaginadorComponent],
   templateUrl: './validation.html',
-  styleUrl: './validation.scss',
+  styleUrls: ['./validation.scss', './validation-cobro.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ValidationComponent implements OnInit, OnDestroy {
@@ -254,6 +254,19 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected cobroFactura = '';
   protected cobroObservacion = '';
   protected readonly cobroSaving = signal(false);
+  // ---- Cobro de la orden: valores y aprobación (30-sep-2026) ----
+  protected readonly cobroDetalle = signal<DetalleCobroOrden | null>(null);
+  protected readonly cobroCargando = signal(false);
+  protected readonly cobroGuardandoValores = signal(false);
+  protected readonly cobroValorHora = signal<number | null>(null);
+  protected readonly cobroValorActividad = signal<number | null>(null);
+  protected readonly cobroGastos = signal<Record<ClaveGasto, number>>(
+    { transporte: 0, alojamiento: 0, alimentacion: 0, tiempo_muerto: 0, material: 0 },
+  );
+  protected cobroObsAprobacion = '';
+  protected readonly gastosCobro = GASTOS_COBRO;
+  /** osId de la fila cuyo ✓ de «Validado plataforma» se está guardando. */
+  protected readonly validandoPlataforma = signal<string | null>(null);
   /** Historial del eje de cobro de la orden abierta en el detalle. */
   protected readonly historialCobro = signal<HistorialCobro[]>([]);
 
@@ -476,11 +489,16 @@ export class ValidationComponent implements OnInit, OnDestroy {
       // así que quedan fuera en cuanto se filtra por él.
       if (cobro && (o.estadoCobro ?? null) !== cobro) return false;
       if (!q) return true;
-      return (
-        o.company.toLowerCase().includes(q) ||
-        o.arl.toLowerCase().includes(q) ||
-        o.fields.nit.value.toLowerCase().includes(q)
-      );
+      // El cronograma (30-sep-2026) es por lo que pregunta Bolívar y lo que trae
+      // la prefactura; la OS y el n.º de orden, por lo que preguntan AXA y Colmena.
+      return [
+        o.company,
+        o.arl,
+        o.fields.nit.value,
+        o.fields.codigoCronograma.value,
+        o.fields.numeroOrden?.value,
+        o.osCode,
+      ].some((v) => String(v ?? '').toLowerCase().includes(q));
     });
   });
 
@@ -867,15 +885,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
     return h.creado_en ? new Date(h.creado_en).toLocaleString('es-CO') : '—';
   }
 
-  /**
-   * Icono de "Estado de facturación" (modal para marcar FACTURADA) en cada fila.
-   * APAGADO desde el 29-sep-2026: entra con el segundo lote de cambios, junto con
-   * la facturación. El modal y su lógica se conservan; para volver a mostrarlo
-   * basta con poner `true`. En producción nunca se había usado (0 órdenes
-   * facturadas al 29-sep), así que ocultarlo no le quita nada a nadie.
-   */
-  protected readonly cobroHabilitado = false;
-
   // ================= A3-01 · Alta manual de una orden particular =================
   /**
    * Solo el administrador crea órdenes (el backend también lo exige): el botón
@@ -1108,24 +1117,261 @@ export class ValidationComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Abre el diálogo de marcado para UNA orden.
+   * Abre el modal de COBRO de una orden (30-sep-2026): valores, comparación con
+   * la prefactura, visto bueno de operación y —solo si no hay factura
+   * electrónica— el marcado manual de lo facturado por fuera (Siigo).
    *
-   * El estado que propone es el CONTRARIO al que tiene: con dos estados, abrir
-   * sobre el actual dejaría el botón diciendo "Marcar como NO FACTURADA" sobre
-   * una orden sin facturar, que no es lo que nadie viene a hacer. El desplegable
-   * sigue ofreciendo los dos, para poder deshacer.
+   * Para el marcado manual propone el estado CONTRARIO al que tiene: con dos
+   * estados, abrir sobre el actual dejaría el botón diciendo "Marcar como NO
+   * FACTURADA" sobre una orden sin facturar.
    */
   protected openCobro(o: ServiceOrder): void {
-    if (!this.puedeCobrar(o)) return;
+    if (!o.osId || o.disabled) return;
     this.cobroEstado.set(o.estadoCobro === 'FACTURADA' ? 'NO FACTURADA' : 'FACTURADA');
     this.cobroFactura = o.cobroNumeroFactura ?? '';
     this.cobroObservacion = '';
+    this.cobroObsAprobacion = '';
+    this.cobroDetalle.set(null);
     this.cobroOrden.set(o);
+    this.cargarDetalleCobro(o.osId);
   }
 
   protected closeCobro(): void {
-    if (this.cobroSaving()) return;
+    if (this.cobroSaving() || this.cobroGuardandoValores()) return;
     this.cobroOrden.set(null);
+    this.cobroDetalle.set(null);
+  }
+
+  private cargarDetalleCobro(osId: string): void {
+    this.cobroCargando.set(true);
+    this.api.detalleCobro(osId).subscribe({
+      next: (r) => {
+        this.cobroCargando.set(false);
+        this.aplicarDetalleCobro(r.data);
+      },
+      error: (err) => {
+        this.cobroCargando.set(false);
+        this.cobroOrden.set(null);
+        this.alerts.error('No se pudo abrir el cobro de la orden', mensajeError(err, 'Inténtelo de nuevo.'));
+      },
+    });
+  }
+
+  /**
+   * Carga el formulario con lo que dice el servidor. Si la orden no tiene valor
+   * hora se PROPONE la tarifa de venta del pagador: queda escrita en el campo,
+   * pero no cuenta hasta que alguien la guarda (el aviso lo dice).
+   */
+  private aplicarDetalleCobro(d: DetalleCobroOrden): void {
+    this.cobroDetalle.set(d);
+    // En una orden ya facturada no se sugiere nada: lo que vale es lo facturado.
+    const sugerido = d.bloqueada ? null : d.precio_sugerido;
+    this.cobroValorHora.set(d.valor_hora ?? (sugerido?.unidad === 'HORA' ? sugerido.valor : null));
+    this.cobroValorActividad.set(
+      d.horas ? null : (d.honorarios ?? (sugerido?.unidad === 'UNIDAD' ? sugerido.valor : null)),
+    );
+    this.cobroGastos.set({ ...d.gastos });
+    // La fila de la tabla refleja el visto bueno sin recargar la bandeja.
+    this.orders.update((list) =>
+      list.map((o) => (o.osId === d.orden_id ? { ...o, cobroAprobadoEn: d.aprobacion?.en ?? null } : o)),
+    );
+  }
+
+  /** Honorarios con lo que hay escrito en el formulario (aún sin guardar). */
+  protected readonly cobroHonorariosForm = computed(() => {
+    const d = this.cobroDetalle();
+    if (!d) return null;
+    if (d.horas) {
+      const vh = this.cobroValorHora();
+      return vh != null ? Math.round(d.horas * vh * 100) / 100 : null;
+    }
+    return this.cobroValorActividad();
+  });
+
+  protected readonly cobroTotalGastosForm = computed(() =>
+    Object.values(this.cobroGastos()).reduce((s, v) => s + (Number(v) || 0), 0),
+  );
+
+  protected readonly cobroTotalForm = computed(() => {
+    const h = this.cobroHonorariosForm();
+    return h == null ? null : Math.round((h + this.cobroTotalGastosForm()) * 100) / 100;
+  });
+
+  /** ¿El formulario dice algo distinto de lo guardado? Aprobar exige guardar antes. */
+  protected readonly cobroSinGuardar = computed(() => {
+    const d = this.cobroDetalle();
+    if (!d) return false;
+    const distinto = (a: number | null | undefined, b: number | null | undefined) =>
+      Math.abs((Number(a) || 0) - (Number(b) || 0)) >= 0.01 || (a == null) !== (b == null);
+    if (d.horas ? distinto(this.cobroValorHora(), d.valor_hora) : distinto(this.cobroValorActividad(), d.honorarios)) {
+      return true;
+    }
+    const g = this.cobroGastos();
+    return GASTOS_COBRO.some((x) => Math.abs((Number(g[x.clave]) || 0) - (d.gastos[x.clave] || 0)) >= 0.01);
+  });
+
+  /** Operación aprueba (admin y administrativo, decisión del 30-sep-2026). */
+  protected readonly puedeAprobarCobro = computed(() =>
+    ['admin', 'administrativo'].includes(this.auth.usuario()?.rol ?? ''),
+  );
+  protected readonly puedeEditarCobro = computed(() =>
+    ['admin', 'administrativo', 'contador'].includes(this.auth.usuario()?.rol ?? ''),
+  );
+  /**
+   * Marcado MANUAL de FACTURADA + número de factura, para lo facturado por fuera
+   * de Orbita (Siigo). APAGADO el 30-sep-2026 a pedido del usuario: JD&D no ha
+   * pedido migrar los datos de Siigo, así que por ahora solo se factura desde
+   * Orbita. El formulario y `guardarCobro()` siguen en el código: basta con
+   * poner `true`. El endpoint `PATCH /orders/cobro` sigue existiendo.
+   */
+  protected readonly marcadoManualSiigo = false;
+
+  /** El marcado manual (Siigo) sigue siendo de admin y contador, como el endpoint. */
+  protected readonly puedeMarcarManual = computed(() =>
+    ['admin', 'contador'].includes(this.auth.usuario()?.rol ?? ''),
+  );
+
+  protected setGastoCobro(clave: ClaveGasto, valor: string | number | null): void {
+    const n = valor === '' || valor == null ? 0 : Number(valor);
+    this.cobroGastos.update((g) => ({ ...g, [clave]: Number.isFinite(n) && n >= 0 ? n : 0 }));
+  }
+
+  protected importeONulo(valor: string | number | null): number | null {
+    if (valor === '' || valor == null) return null;
+    const n = Number(valor);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  }
+
+  protected guardarValoresCobro(): void {
+    const d = this.cobroDetalle();
+    if (!d || this.cobroGuardandoValores()) return;
+    this.cobroGuardandoValores.set(true);
+    this.api.guardarValoresCobro(d.orden_id, {
+      valor_hora: d.horas ? this.cobroValorHora() : null,
+      valor_actividad: d.horas ? null : this.cobroValorActividad(),
+      gastos: { ...this.cobroGastos() },
+    }).subscribe({
+      next: (r) => {
+        this.cobroGuardandoValores.set(false);
+        const seCayo = !!d.aprobacion && !r.data.aprobacion;
+        this.aplicarDetalleCobro(r.data);
+        if (seCayo) {
+          this.alerts.warning(
+            'Valores guardados · la aprobación se retiró',
+            'El total cambió respecto a lo aprobado: operación tiene que volver a aprobarlo.',
+          );
+        } else {
+          this.alerts.success('Valores guardados', `${d.codigo}: total ${this.pesos(r.data.total ?? 0)}.`);
+        }
+      },
+      error: (err) => {
+        this.cobroGuardandoValores.set(false);
+        this.alerts.error('No se pudieron guardar los valores', mensajeError(err, 'Revise los importes.'));
+      },
+    });
+  }
+
+  protected aprobarCobro(): void {
+    const d = this.cobroDetalle();
+    if (!d || this.cobroGuardandoValores()) return;
+    this.cobroGuardandoValores.set(true);
+    this.api.aprobarCobro(d.orden_id, this.cobroObsAprobacion.trim() || undefined).subscribe({
+      next: (r) => {
+        this.cobroGuardandoValores.set(false);
+        this.cobroObsAprobacion = '';
+        this.aplicarDetalleCobro(r.data);
+        this.alerts.success('Cobro aprobado', `${d.codigo} ya puede facturarse y pasar a la contabilidad.`);
+      },
+      error: (err) => {
+        this.cobroGuardandoValores.set(false);
+        this.alerts.error('No se pudo aprobar', mensajeError(err, 'Inténtelo de nuevo.'));
+      },
+    });
+  }
+
+  protected async retirarAprobacionCobro(): Promise<void> {
+    const d = this.cobroDetalle();
+    if (!d || this.cobroGuardandoValores()) return;
+    const ok = await this.alerts.confirm({
+      title: 'Retirar la aprobación',
+      message: `${d.codigo} dejará de aparecer como facturable hasta que se vuelva a aprobar.`,
+      confirmText: 'Retirar',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    this.cobroGuardandoValores.set(true);
+    this.api.retirarAprobacionCobro(d.orden_id, this.cobroObsAprobacion.trim() || undefined).subscribe({
+      next: (r) => {
+        this.cobroGuardandoValores.set(false);
+        this.cobroObsAprobacion = '';
+        this.aplicarDetalleCobro(r.data);
+        this.alerts.success('Aprobación retirada', `${d.codigo} vuelve a estar pendiente de aprobación.`);
+      },
+      error: (err) => {
+        this.cobroGuardandoValores.set(false);
+        this.alerts.error('No se pudo retirar la aprobación', mensajeError(err, 'Inténtelo de nuevo.'));
+      },
+    });
+  }
+
+  protected fechaHoraCobro(iso: string | null | undefined): string {
+    return iso ? new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+  }
+
+  /** ¿La celda de la prefactura difiere de lo de Orbita? (se marca en rojo). */
+  protected difierePrefactura(clave: ClaveGasto | 'honorarios'): boolean {
+    return !!this.cobroDetalle()?.prefactura?.diferencias.includes(clave);
+  }
+
+  protected accionAprobacion(a: 'APROBADA' | 'RETIRADA' | 'ANULADA_POR_CAMBIO'): string {
+    return a === 'APROBADA' ? 'Aprobado' : a === 'RETIRADA' ? 'Aprobación retirada' : 'Aprobación anulada por cambio de valores';
+  }
+
+  // ================= «Validado plataforma» (30-sep-2026) =================
+  /** Quién puede marcarlo: los mismos que corrigen valores. */
+  protected readonly puedeValidarPlataforma = this.puedeEditarCobro;
+
+  /**
+   * Solo se marca sobre órdenes ya ejecutadas (EJECUTADA o FINALIZADA): antes no
+   * hay nada que la ARL pueda ver en su plataforma. Desmarcar sí se deja siempre,
+   * para poder corregir. El servidor aplica la misma regla.
+   */
+  protected puedeMarcarValidado(o: ServiceOrder): boolean {
+    if (!this.puedeValidarPlataforma()) return false;
+    return !!o.validadoPlataformaEn || o.osEstado === 'EJECUTADA' || o.osEstado === 'FINALIZADA';
+  }
+
+  protected tituloValidado(o: ServiceOrder): string {
+    if (!o.validadoPlataformaEn) {
+      if (!this.puedeValidarPlataforma()) return 'Sin validar en plataforma';
+      return this.puedeMarcarValidado(o)
+        ? 'Marcar como validada en la plataforma de la ARL'
+        : 'Se valida en plataforma cuando la orden esté ejecutada';
+    }
+    const cuando = new Date(o.validadoPlataformaEn).toLocaleDateString('es-CO');
+    return `Validada en plataforma${o.validadoPlataformaPor ? ' por ' + o.validadoPlataformaPor : ''} el ${cuando}`;
+  }
+
+  protected toggleValidadoPlataforma(o: ServiceOrder): void {
+    if (!o.osId || !this.puedeMarcarValidado(o) || this.validandoPlataforma()) return;
+    const validado = !o.validadoPlataformaEn;
+    this.validandoPlataforma.set(o.osId);
+    this.api.marcarValidadoPlataforma(o.osId, validado).subscribe({
+      next: (r) => {
+        this.validandoPlataforma.set(null);
+        this.orders.update((list) =>
+          list.map((x) =>
+            x.osId === o.osId
+              ? { ...x, validadoPlataformaEn: r.data.validado_plataforma_en, validadoPlataformaPor: r.data.validado_plataforma_por_nombre }
+              : x,
+          ),
+        );
+      },
+      error: (err) => {
+        this.validandoPlataforma.set(null);
+        this.alerts.error('No se pudo marcar la orden', mensajeError(err, 'Inténtelo de nuevo.'));
+      },
+    });
   }
 
   protected guardarCobro(): void {
@@ -1149,7 +1395,9 @@ export class ValidationComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (r) => {
         this.cobroSaving.set(false);
-        this.cobroOrden.set(null);
+        // El modal sigue abierto (ahora también lleva valores y aprobación): se
+        // refresca para que diga el estado nuevo.
+        this.cargarDetalleCobro(orden.osId!);
         // La tabla se actualiza en el acto y solo en lo que cambió: el servidor
         // dice cuál movió, y una que rechace tiene que seguir viéndose como
         // estaba o el aviso de "quedó fuera" no cuadraría con la pantalla.
@@ -2771,6 +3019,10 @@ export class ValidationComponent implements OnInit, OnDestroy {
         this.supports.set(r.data);
         this.casillasOrden.set(r.casillas ?? []);
         this.loadingSupports.set(false);
+        // Para «Descargar en un solo PDF»: todos marcados, en el orden de
+        // revisión (acta, asistencia, evidencias), que el servidor ya devuelve.
+        this.unirLista.set(r.data.map((s) => ({ id: s.id, marcado: true })));
+        this.unirAbierto.set(false);
         // Abrir el primero ahorra un clic: casi siempre es el acta firmada. Si
         // se entró pulsando un archivo concreto del detalle, manda ese.
         const inicial = r.data.find((s) => s.id === abrirId) ?? r.data[0];
@@ -2783,10 +3035,70 @@ export class ValidationComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ---- Descargar varios soportes en un solo PDF (30-sep-2026) ----
+  /**
+   * Qué documentos van y en qué orden. Es una lista aparte de `supports()` porque
+   * el orden lo decide quien descarga (la ARL a veces pide la asistencia antes
+   * que el acta) y no tiene por qué ser el de revisión.
+   */
+  protected readonly unirLista = signal<{ id: string; marcado: boolean }[]>([]);
+  protected readonly unirAbierto = signal(false);
+  protected readonly unirDescargando = signal(false);
+  protected readonly unirMarcados = computed(() => this.unirLista().filter((x) => x.marcado).length);
+
+  protected soportePorId(id: string): ArchivoSoporte | undefined {
+    return this.supports().find((s) => s.id === id);
+  }
+
+  protected toggleUnir(id: string): void {
+    this.unirLista.update((l) => l.map((x) => (x.id === id ? { ...x, marcado: !x.marcado } : x)));
+  }
+
+  protected moverUnir(i: number, delta: -1 | 1): void {
+    this.unirLista.update((l) => {
+      const j = i + delta;
+      if (j < 0 || j >= l.length) return l;
+      const copia = [...l];
+      [copia[i], copia[j]] = [copia[j], copia[i]];
+      return copia;
+    });
+  }
+
+  protected descargarUnidos(): void {
+    const order = this.verifyOrder();
+    const ids = this.unirLista().filter((x) => x.marcado).map((x) => x.id);
+    if (!order?.osId || !ids.length || this.unirDescargando() || !this.isBrowser) return;
+    this.unirDescargando.set(true);
+    this.api.unirSoportes(order.osId, ids).subscribe({
+      next: (blob) => {
+        this.unirDescargando.set(false);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${order.osCode || 'orden'}-soportes.pdf`;
+        a.click();
+        // Se libera después: revocarla en el mismo tick cancela la descarga en Firefox.
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      },
+      error: async (err) => {
+        this.unirDescargando.set(false);
+        // La respuesta pedida es un Blob: el mensaje del servidor viene dentro.
+        let detalle = 'No se pudieron unir los documentos.';
+        try {
+          const texto = err?.error instanceof Blob ? await err.error.text() : '';
+          detalle = JSON.parse(texto)?.error || detalle;
+        } catch { /* se queda el mensaje genérico */ }
+        this.alerts.error('No se pudo generar el PDF', detalle);
+      },
+    });
+  }
+
   protected closeVerify(): void {
     if (this.deciding()) return;
     this.verifyId.set(null);
     this.supports.set([]);
+    this.unirLista.set([]);
+    this.unirAbierto.set(false);
     this.selectedSupportId.set(null);
     this.rejectMode.set(false);
     this.rejectMotivo = '';
@@ -2886,12 +3198,13 @@ export class ValidationComponent implements OnInit, OnDestroy {
     const casillas = this.casillasOrden().length
       ? this.casillasOrden()
       : (['acta', 'asistencia', 'evidencias'] as CategoriaSoporte[])
-          .map((clave) => ({ clave, etiqueta: ETIQUETAS_SOPORTE[clave] }));
-    const filas = casillas.map((c) => ({
+          .map((clave) => ({ clave, etiqueta: ETIQUETAS_SOPORTE[clave], opcional: clave === 'evidencias' }));
+    const filas: CategoriaRechazo[] = casillas.map((c) => ({
       clave: c.clave,
       etiqueta: c.etiqueta,
       archivos: conteo.get(c.clave) ?? 0,
       marcada: false,
+      opcional: !!c.opcional,
     }));
     if (conteo.get('otros')) {
       filas.push({
@@ -3194,6 +3507,8 @@ interface CategoriaRechazo {
   /** Cuántos archivos hay hoy; 0 significa que el profesional no lo subió. */
   archivos: number;
   marcada: boolean;
+  /** No se exigía en la entrega (registro fotográfico): vacía no es una falta. */
+  opcional?: boolean;
 }
 
 const ETIQUETAS_SOPORTE: Record<string, string> = {
@@ -3343,6 +3658,9 @@ function toServiceOrder(b: Borrador): ServiceOrder {
     estadoArl: b.os_estado_arl ?? null,
     numeroPrefactura: b.os_numero_prefactura ?? null,
     cobroNumeroFactura: b.os_cobro_numero_factura ?? null,
+    validadoPlataformaEn: b.os_validado_plataforma_en ?? null,
+    validadoPlataformaPor: b.os_validado_plataforma_por ?? null,
+    cobroAprobadoEn: b.os_cobro_aprobado_en ?? null,
     tipoViaticoId: b.tipo_viatico_id ?? null,
     tipoViatico: b.tipo_viatico ?? null,
     // El importe de la ORDEN, no el vigente del catálogo: mientras el borrador

@@ -130,7 +130,8 @@
             archivos anteriores para ver qué fue lo que envió.
           } @else {
             Adjunte los formatos firmados en PDF o fotos de la visita realizada.
-            <strong>Los tres documentos se envían juntos</strong>, en un solo envío.
+            <strong>Los documentos obligatorios se envían juntos</strong>, en un solo envío;
+            los marcados como opcionales puede omitirlos.
           }
         </p>
 
@@ -169,6 +170,8 @@
                       {{ slot.label }}
                       @if (enSubsanacion()) {
                         <span class="slot__tag">Por corregir</span>
+                      } @else if (slot.opcional) {
+                        <span class="slot__tag slot__tag--opcional">Opcional</span>
                       }
                     </span>
                     @if (slot.fileName) {

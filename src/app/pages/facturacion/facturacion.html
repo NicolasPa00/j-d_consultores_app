@@ -61,7 +61,12 @@
               @if (g.prefactura) {
                 <span><b>Prefactura {{ g.prefactura.numero }}</b>
                   @if (g.prefactura.fecha_corte) { · corte {{ fecha(g.prefactura.fecha_corte) }} }
-                  · total {{ pesos(g.prefactura.valor_total) }}</span>
+                  · total {{ pesos(g.prefactura.valor_total) }}
+                  @if (g.sin_orden) {
+                    <span class="fac-grupo__sin-orden" title="Se listan cuando la orden se importe en Orbita">
+                      · {{ g.sin_orden }} {{ g.sin_orden === 1 ? 'fila no está' : 'filas no están' }} en Orbita
+                    </span>
+                  }</span>
               } @else if (g.sin_prefactura) {
                 <span><b>Sin prefactura cargada</b> · se habilitan al cargar la prefactura en Órdenes</span>
               } @else {

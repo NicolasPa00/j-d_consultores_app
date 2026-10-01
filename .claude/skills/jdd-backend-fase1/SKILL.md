@@ -5,7 +5,7 @@ description: Guía para construir el BACKEND del sistema JD&D IA-Core (Node 20 +
 
 # Backend — JD&D IA-Core (`sst_ws/`)
 
-Guía operativa del backend. Lee primero la skill **jdd-context** y `../../../docs/03-arquitectura-datos.md`.
+Guía operativa del backend. Lee primero la skill **jdd-context** y `../../../docs/2-arquitectura/03-arquitectura-datos.md`.
 
 > **Revisada el 15-ago-2026 (Fase 2).** El nombre de la skill conserva "fase1" por compatibilidad, pero la restricción de alcance ya no existe: se puede construir cualquier módulo del FRS. Las menciones a "Fase 1" más abajo son históricas (describen qué tablas nacieron entonces), no un límite de alcance.
 >
@@ -31,7 +31,7 @@ Guía operativa del backend. Lee primero la skill **jdd-context** y `../../../do
 
 Alrededor de la agenda del profesional hay dos tablas que el documento de diseño no nombra: **`sst.ocupaciones_profesional`** (franjas en que NO está disponible; las pinta el modal de asignación) y **`sst.franjas_visita`** (en qué tramos se ejecuta una OS, ver la regla ASG-02 más abajo).
 
-**Detalle completo de columnas y costuras Fase 2:** `../../../docs/03-arquitectura-datos.md`. **La verdad de lo que hay en producción es `db/schema.sql`.**
+**Detalle completo de columnas y costuras Fase 2:** `../../../docs/2-arquitectura/03-arquitectura-datos.md`. **La verdad de lo que hay en producción es `db/schema.sql`.**
 
 ## Reglas de dominio críticas (no negociables)
 

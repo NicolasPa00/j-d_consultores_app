@@ -1,7 +1,7 @@
 # Requerimientos v2 — Facturación electrónica y Contabilidad (lista de la contadora)
 
 > **Estado: borrador de trabajo, versión 2.** Reemplaza como referencia vigente a
-> [`requerimientos-facturacion-contabilidad.md`](requerimientos-facturacion-contabilidad.md)
+> [`../historico/requerimientos-facturacion-contabilidad.md`](../historico/requerimientos-facturacion-contabilidad.md)
 > (v1, 19/20-sep-2026, armada leyendo capturas de Siigo). La v1 se conserva porque
 > tiene el flujo real de Siigo y las fuentes; **los IDs de esa versión se mantienen**
 > y aquí solo se agregan, ajustan o reubican.
@@ -53,13 +53,13 @@
 ### FEL — Facturación electrónica (extiende M13 del FRS original)
 
 Las filas FEL-01 a FEL-10 y FEL-12 **no cambian** respecto a la v1
-(`requerimientos-facturacion-contabilidad.md` §2). Se listan aquí solo las que se
+(`../historico/requerimientos-facturacion-contabilidad.md` §2). Se listan aquí solo las que se
 ajustan y las nuevas.
 
 | ID | Requerimiento | Origen | Prioridad |
 |---|---|---|---|
 | FEL-01..10, 12 | Sin cambio (relación a facturar, agrupación, documento de actividades, factura con CUFE/QR, con y sin IVA, retención, ICA discriminado, paz y salvo, paquete de radicación, trazabilidad, rechazos y reenvíos). | Sin cambio | — |
-| FEL-11 | **Nota crédito electrónica** sobre una factura de venta ya emitida, con su **causal** (devolución, anulación, rebaja/descuento, ajuste de precio) y referencia a la factura original. En la v1 esta fila se llamaba "nota de ajuste"; en términos DIAN la **nota de ajuste** pertenece al documento soporte (ver DSP-03) y la factura de venta se corrige con **nota crédito** (o nota débito). La contadora pide explícitamente nota crédito. **Nota débito: no fue pedida** — no se construye salvo que la pidan. **PENDIENTE**: con qué frecuencia y por qué motivo pasa hoy (pregunta 20 de `facturacion-electronica.md` §8.G, sin respuesta). ⚠️ **Hallazgo 23-sep:** la documentación pública de Factus dice que tras emitirse el evento de **aceptación (expresa o tácita)** "ya no será posible generar otros eventos ni crear notas crédito" sobre esa factura. Si aplica a todas las causales, una factura aceptada por la ARL ya no se puede anular con nota crédito. Se pregunta primero a Factus (pregunta 2); **a JD&D solo se le pregunta después**, si la respuesta confirma la restricción (no está en la lista corta de `preguntas-jdd-cierre-alcance.md`). | Ajustado | Alta |
+| FEL-11 | **Nota crédito electrónica** sobre una factura de venta ya emitida, con su **causal** (devolución, anulación, rebaja/descuento, ajuste de precio) y referencia a la factura original. En la v1 esta fila se llamaba "nota de ajuste"; en términos DIAN la **nota de ajuste** pertenece al documento soporte (ver DSP-03) y la factura de venta se corrige con **nota crédito** (o nota débito). La contadora pide explícitamente nota crédito. **Nota débito: no fue pedida** — no se construye salvo que la pidan. **PENDIENTE**: con qué frecuencia y por qué motivo pasa hoy (pregunta 20 de `../2-arquitectura/facturacion-electronica.md` §8.G, sin respuesta). ⚠️ **Hallazgo 23-sep:** la documentación pública de Factus dice que tras emitirse el evento de **aceptación (expresa o tácita)** "ya no será posible generar otros eventos ni crear notas crédito" sobre esa factura. Si aplica a todas las causales, una factura aceptada por la ARL ya no se puede anular con nota crédito. Se pregunta primero a Factus (pregunta 2); **a JD&D solo se le pregunta después**, si la respuesta confirma la restricción (no está en la lista corta de `../6-comercial-y-cliente/preguntas-jdd-cierre-alcance.md`). | Ajustado | Alta |
 | FEL-13 | **Numeración de facturación**: registrar y administrar las **resoluciones de facturación** (número de resolución, prefijo, rango autorizado, consecutivo actual, fecha de vigencia) y alertar antes de que se agote el rango o venza. **Ya se sabe (Factus):** la asociación de rangos a cada usuario la hace **el aliado por API** (contrato, cláusula SEGUNDA) y `GET /v2/numbering-ranges` devuelve prefijo, desde, hasta, actual, resolución, fechas y `is_expired`, con lo que se calcula el aviso. **Pendiente (Factus, pregunta 8):** reutilizar la resolución actual de Siigo y continuar el consecutivo. | Nuevo (pregunta 9 del guion pasa a requerimiento) | Alta |
 | FEL-14 | **Certificado digital**: llevar el control del certificado con el que se firman los documentos (vigencia, alerta de vencimiento). **Resuelto en lo esencial (Factus, por escrito el 14-sep):** el **paquete individual trae su propio certificado digital**, sin costo aparte, y Factus hace la habilitación. Lo único que hace JD&D es mandar la documentación del certificado **dentro de los 8 días calendario** siguientes a la compra (T&C §f.11); si no, el año del paquete corre igual. No hace falta reutilizar el certificado de Siigo, y **Orbita no custodia ninguna llave**. El requerimiento se reduce a **avisar del vencimiento del paquete** (que bloquea la cuenta, T&C §f.9) y del trámite de los 8 días. | Nuevo | Baja |
 | FEL-15 | **Catálogo de productos y servicios** con su tratamiento de IVA: **gravados, exentos y excluidos** (tres categorías distintas, no un solo "sin IVA"). Cada línea de la factura sale de este catálogo. Reemplaza el "parametrizable por documento" de FEL-05: ahora el tratamiento vive en el producto y el documento lo hereda. **PENDIENTE (D-17)**: en la reunión se dijo que las facturas a ARL son "exentas por norma"; la contadora distingue exento de excluido y tributariamente no son lo mismo (cambia qué se declara). Confirmar cuál es el caso real de cada servicio. | Nuevo | Alta |
@@ -80,7 +80,7 @@ ajustan y las nuevas.
 ### NOM — Nómina electrónica
 
 Sin cambio: NOM-01 a NOM-04 igual que en la v1. (Sigue siendo producto aparte de la
-bolsa de facturación del proveedor tecnológico; ver D-8 en `facturacion-electronica.md`.)
+bolsa de facturación del proveedor tecnológico; ver D-8 en `../2-arquitectura/facturacion-electronica.md`.)
 Lo que la contadora agrega sobre nómina cae en contabilidad: ver CNT-06 y CNT-08.
 
 ### CNT — Contabilidad general
@@ -97,7 +97,7 @@ CNT-01 a CNT-07 y CNT-09 **no cambian** respecto a la v1. Ajustes y nuevos:
 | CNT-10 | **Se traslada a PAR-03** (registro de terceros). Mismo contenido. | Reubicado | — |
 | CNT-11 | **Saldos iniciales**: cargar el saldo de cada cuenta y, donde aplique, **por tercero**, a una fecha de corte, como comprobante propio. Es la pieza que hace posible migrar desde Siigo sin perder el historial contable. En la v1 solo aparecía como un tipo de comprobante en la lista. **PENDIENTE (D-19)**: fecha de corte y si sale del balance de prueba de Siigo (lo natural) o se digita. | Nuevo | Alta |
 | CNT-12 | **Cierre de año**: proceso que cancela las cuentas de resultado (ingresos, gastos, costos) contra la cuenta de resultado del ejercicio, genera su comprobante y deja el año cerrado sin más movimiento. En la v1 solo era un tipo de comprobante. **PENDIENTE (D-20)**: quién lo ejecuta, si hay cierres de años anteriores que cargar y si se necesita reabrir un periodo cerrado. | Nuevo | Alta |
-| CNT-13 | Toda factura de venta, documento soporte, nota crédito, compra y nómina emitida **genera su comprobante contable de forma automática** (no lo digita la contadora). Es la pregunta 24 del guion (§8.H de `facturacion-electronica.md`), que sigue **sin respuesta**: ¿automático o a mano? Se deja aquí como propuesta para que se responda. | Inferido | Alta |
+| CNT-13 | Toda factura de venta, documento soporte, nota crédito, compra y nómina emitida **genera su comprobante contable de forma automática** (no lo digita la contadora). Es la pregunta 24 del guion (§8.H de `../2-arquitectura/facturacion-electronica.md`), que sigue **sin respuesta**: ¿automático o a mano? Se deja aquí como propuesta para que se responda. | Inferido | Alta |
 
 ### CYG — Compras y gastos
 
@@ -144,7 +144,7 @@ CNT-01 a CNT-07 y CNT-09 **no cambian** respecto a la v1. Ajustes y nuevos:
 |---|---|---|---|
 | PAR-01 | **Países y ciudades**: catálogo con los códigos que exige la DIAN (país, departamento, municipio DANE). Los usan terceros, facturas y documentos soporte. | Nuevo | Alta |
 | PAR-02 | **Formas de pago** (contado/crédito) y **medios de pago** (efectivo, transferencia, cheque, etc.), con su código DIAN. Alimenta FEL-17, el recibo de caja y el comprobante de egreso. | Nuevo | Alta |
-| PAR-03 | **Registro de terceros** (antes CNT-10): un solo catálogo para clientes, proveedores, empleados y ARL, con tipo de persona, tipo de documento, NIT + dígito de verificación, responsabilidades fiscales, dirección, ciudad y correo de facturación. Reutilizable por FEL, DSP, CYG, CXC, CXP y CNT. Hoy `sst.arls` solo tiene nombre y `sst.empresas` es la empresa **donde se ejecuta** el servicio, no el pagador: este catálogo es el que cierra ese hueco (ver §3 de `facturacion-electronica.md`, y D-9 sobre `arl_id NOT NULL`). | Ajustado (reubicado) | Alta |
+| PAR-03 | **Registro de terceros** (antes CNT-10): un solo catálogo para clientes, proveedores, empleados y ARL, con tipo de persona, tipo de documento, NIT + dígito de verificación, responsabilidades fiscales, dirección, ciudad y correo de facturación. Reutilizable por FEL, DSP, CYG, CXC, CXP y CNT. Hoy `sst.arls` solo tiene nombre y `sst.empresas` es la empresa **donde se ejecuta** el servicio, no el pagador: este catálogo es el que cierra ese hueco (ver §3 de `../2-arquitectura/facturacion-electronica.md`, y D-9 sobre `arl_id NOT NULL`). | Ajustado (reubicado) | Alta |
 | PAR-04 | Catálogo de productos y servicios: ver **FEL-15**. Se referencia aquí porque la contadora lo lista bajo facturación, pero es parametrización. | Nuevo | — |
 
 ### RPC — Reportes contables y fiscales
@@ -246,7 +246,7 @@ Esto va antes de que JD&D confirme la propuesta actual:
      posibles** por la API de Factus, pero RADIAN es una bolsa aparte con costo propio.
    
    La reestimación con números está en
-   [`precio-fase-facturacion-contabilidad.md`](precio-fase-facturacion-contabilidad.md)
+   [`../6-comercial-y-cliente/precio-fase-facturacion-contabilidad.md`](../6-comercial-y-cliente/precio-fase-facturacion-contabilidad.md)
    (interno, no va al cliente). **Sigue sin confirmar por el usuario.**
 3. **El plan maestro de ejecución** que el usuario prepara en paralelo debe
    contemplar los 10 módulos, no los 7.
@@ -260,7 +260,7 @@ proveedores, tarifa de retención); D-13 se refina con D-16.
   **Resuelta en lo esencial el 23-sep-2026** con la documentación pública de Factus:
   **sí** emitir (CYG-05) y **sí** consultar (FEL-19). Quedan las preguntas finas
   (consumo de bolsa RADIAN, llegada de facturas, alcance de los eventos), todas en
-  [`preguntas-factus-cumplimiento.md`](preguntas-factus-cumplimiento.md).
+  [`../6-comercial-y-cliente/preguntas-factus-cumplimiento.md`](../6-comercial-y-cliente/preguntas-factus-cumplimiento.md).
 - **D-16** Facturas de proveedores recibidas: ¿cuántas al mes y por qué canal llegan
   hoy (correo, portal, Siigo)?
 - **D-17** Productos: ¿qué servicios factura JD&D y con qué tratamiento cada uno
@@ -290,7 +290,7 @@ proveedores, tarifa de retención); D-13 se refina con D-16.
 ### Cómo se resuelve cada una (decidido el 23-sep-2026)
 
 Para no abrumar a JD&D, **solo 10 preguntas van al cliente**
-([`preguntas-jdd-cierre-alcance.md`](preguntas-jdd-cierre-alcance.md)). Las demás se
+([`../6-comercial-y-cliente/preguntas-jdd-cierre-alcance.md`](../6-comercial-y-cliente/preguntas-jdd-cierre-alcance.md)). Las demás se
 cierran así. Las filas "criterio por defecto" son **decisiones mías provisionales**:
 si el cliente pide otra cosa, se cambia sin costo de diseño.
 

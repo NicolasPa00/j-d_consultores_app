@@ -69,6 +69,11 @@ export interface ServiceOrder {
   estadoArl?: EstadoArl | null;
   numeroPrefactura?: string | null;
   cobroNumeroFactura?: string | null;
+  /** 30-sep-2026 · «Validado plataforma»: check a mano, con quién lo marcó. */
+  validadoPlataformaEn?: string | null;
+  validadoPlataformaPor?: string | null;
+  /** 30-sep-2026 · Visto bueno de operación al cobro: sin él no pasa a Facturación. */
+  cobroAprobadoEn?: string | null;
   // ---- Viáticos (ago-2026) ----
   /**
    * La categoría elegida y su nombre; null en las dos = "No aplica", que es el

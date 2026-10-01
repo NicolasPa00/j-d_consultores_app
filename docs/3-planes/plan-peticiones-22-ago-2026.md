@@ -28,7 +28,7 @@ las seis peticiones —las seis letras, presencial/virtual, las tres formas de
 viáticos, el corte de 16 horas de AXA, el suplente y el lote de facturación— y
 un `README.md` con el guion de la presentación y las **dos cosas que hay que
 dejar creadas antes** (el catálogo de viáticos, que nace vacío, y los registros
-ante Bolívar). Salen en `docs/OrdenesDemo/`, que está en `.gitignore`; el
+ante Bolívar). Salen en `2-pruebas/ordenes/`, que está en `.gitignore`; el
 generador sí viaja. Los datos son inventados. Las columnas de "qué formatos" y
 "qué soportes" del README **se las pregunta a `entrega-arl.service.js`**, así que
 no se desfasan si mañana cambia una regla.
@@ -98,7 +98,7 @@ F5  █████               media   · eje nuevo, independiente del ciclo 
 
 ## 2. Lo que ya existe y sirve (hallazgos de la revisión)
 
-Antes de diseñar nada se revisaron los formatos nuevos de `docs/Formatos/`, el
+Antes de diseñar nada se revisaron los formatos nuevos de `1-cliente-jdd/formatos-arl/`, el
 extractor del SIPAB y los assets ya cargados. **Media petición ya está en la
 casa**, y conviene saberlo antes de presupuestar.
 
@@ -107,7 +107,7 @@ casa**, y conviene saberlo antes de presupuestar.
 `services/extraction.service.js` (`SIPAB_HEADERS`, líneas 37-77) **ya lee** estas
 columnas y hoy las tira:
 
-| Columna del SIPAB | Hoy | Valores reales (comprobados en `docs/BasesDatosEjemplo/base_datos_bolivar.xlsx`) |
+| Columna del SIPAB | Hoy | Valores reales (comprobados en `1-cliente-jdd/ordenes-reales/bolivar/base_datos_bolivar.xlsx`) |
 |---|---|---|
 | `Tipo Servicio` | va a `metadatos_extraccion.sipab.tipo_servicio` y no se usa | **`"C"`, `"T"`, `"A"`** ← la letra de la petición 2 |
 | `Autoriza Viaticos` | descartada (`null`) | **`"S"` / `"N"`** ← el interruptor de la petición 1 |
@@ -120,7 +120,7 @@ dejar de tirarlos. Para AXA y Colmena sí se escriben a mano.
 
 ### 2.2 El comunicado de Bolívar fija dos reglas que nadie mencionó
 
-`docs/Formatos/Bolivar/CAPACITACIONES/SOLO PARA APLICA COMO GUIA-…COMUNICADO
+`1-cliente-jdd/formatos-arl/Bolivar/CAPACITACIONES/SOLO PARA APLICA COMO GUIA-…COMUNICADO
 ACTUALIZACIÓN AT 031 Y AT 028.pdf` (SNPARL-40035219-2025, obligatorio desde el
 10-sep-2025) dice literalmente:
 
@@ -141,7 +141,7 @@ alimentación y logísticos: solo AT-031).
 
 ### 2.3 Casi todos los formatos "nuevos" ya estaban cargados
 
-Se comparó por hash lo que hay en `docs/Formatos/` contra
+Se comparó por hash lo que hay en `1-cliente-jdd/formatos-arl/` contra
 `sst_ws/assets/formatos-arl/`:
 
 | Carpeta nueva | Contiene | ¿Está ya en `assets/`? |
@@ -1029,7 +1029,7 @@ Ninguna bloquea empezar; todas cambian el resultado.
 4. **Datos reales.** El `.env` apunta a una Neon y a un Gmail reales. Probar sobre
    órdenes desechables propias y borrarlas al terminar.
 5. **Los ejemplos diligenciados llevan nombres, cédulas y firmas de personas
-   reales.** No se versionan (`docs/OrdenesEjemplo/` y `docs/BasesDatosEjemplo/`
+   reales.** No se versionan (`1-cliente-jdd/ordenes-reales/` y `1-cliente-jdd/ordenes-reales/`
    ya están fuera de git a propósito). El informe de Bolívar hay que vaciarlo
    antes de meterlo en `assets/`.
 6. **F2 toca el portal público**, que es lo único que ve un profesional en campo

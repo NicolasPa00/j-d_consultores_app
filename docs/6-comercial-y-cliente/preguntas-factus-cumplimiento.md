@@ -10,7 +10,7 @@
 > interna.
 >
 > **Fuentes revisadas** (todas del lado de EscalApp salvo la última):
-> - `ADMIN_APP/admin_ws/docs/facturacion-electronica.md` §8.2 a §8.9 (lista de precios,
+> - `ADMIN_APP/admin_ws/docs/2-arquitectura/facturacion-electronica.md` §8.2 a §8.9 (lista de precios,
 >   T&C, respuestas por correo del 12-sep, reunión del 14-sep, chat de WhatsApp del 14 y
 >   22-sep, correo de cierre, pruebas en sandbox).
 > - `ADMIN_APP/Factus/Acuerdo-alianza-factus-2026-EscalApp.docx` (contrato de alianza
@@ -173,6 +173,6 @@ partida (solo sandbox; nunca contra producción, porque quema consecutivos):
 - **Las preguntas 5, 6 y 7** cierran el costo de terceros para el precio (ver
   `precio-fase-facturacion-contabilidad.md`).
 - Cada respuesta se anota aquí y se pasa a la fila correspondiente de
-  `requerimientos-facturacion-contabilidad-v2.md`.
+  `../1-requerimientos/requerimientos-facturacion-contabilidad-v2.md`.
 - Nada de esto autoriza todavía altas ni compras ante Factus: sigue pendiente que JD&D
   confirme el alcance y el precio.
