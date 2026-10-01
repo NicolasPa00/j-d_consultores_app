@@ -61,7 +61,10 @@
             <!-- ASG · Ante qué ARL está registrado. Se ve en el listado porque
                  es lo que decide quién puede figurar en los formatos de una
                  orden: sin la columna habría que abrir ficha por ficha. -->
-            <td class="registros">
+            <!-- El flex va en un div DENTRO de la celda: puesto en el <td> lo
+                 sacaba del modelo de tabla y la fila se descuadraba. -->
+            <td>
+              <div class="registros">
               @for (reg of pro.registros; track reg.arl_id) {
                 <span
                   class="pill"
@@ -73,6 +76,7 @@
               } @empty {
                 <span class="registros__sin">Sin registro</span>
               }
+              </div>
             </td>
             <!-- ENC-05 · Las dos cifras juntas: el trabajo cerrado arriba y cómo
                  lo califican debajo. Separarlas invitaba a leer un 5,0 de una
@@ -272,7 +276,7 @@
     </form>
 
     <footer class="modal__footer">
-      <button type="button" class="btn btn--ghost" (click)="closeModal()" [disabled]="saving()">Cancelar</button>
+      <button type="button" class="btn btn--close" (click)="closeModal()" [disabled]="saving()">Cancelar</button>
       <button type="button" class="btn btn--primary" [disabled]="saving() || !isValid()" (click)="save()">
         @if (saving()) {
           <span class="spinner" aria-hidden="true"></span>
@@ -292,7 +296,7 @@
      contestar no es una calificación. -->
 @if (ratingsOpen() && ratingsProf(); as pro) {
   <div class="modal-backdrop" (click)="closeRatings()"></div>
-  <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="ratingsTitle">
+  <div class="modal modal--xl" role="dialog" aria-modal="true" aria-labelledby="ratingsTitle">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="ratingsTitle">Calificaciones de {{ pro.name }}</h3>
@@ -367,7 +371,7 @@
         Las encuestas son opcionales: el cliente puede no responderlas, así que el promedio
         se calcula solo sobre las {{ ratings().length }} recibidas.
       </span>
-      <button type="button" class="btn btn--ghost" (click)="closeRatings()">Cerrar</button>
+      <button type="button" class="btn btn--close" (click)="closeRatings()">Cerrar</button>
     </footer>
   </div>
 }
@@ -458,7 +462,7 @@
         registro, no una fila vacía.
       </span>
       <div class="modal__footer-actions">
-        <button type="button" class="btn btn--ghost" (click)="closeRegistros()" [disabled]="registrosSaving()">
+        <button type="button" class="btn btn--close" (click)="closeRegistros()" [disabled]="registrosSaving()">
           Cancelar
         </button>
         <button

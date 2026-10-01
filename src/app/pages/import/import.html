@@ -235,7 +235,6 @@
       <table class="table preview__table">
         <thead>
           <tr>
-            <th class="col-num">#</th>
             <th>Identidad</th>
             <th>NIT</th>
             <th>Razón Social</th>
@@ -256,7 +255,6 @@
         <tbody>
           @for (row of pag.visibles(); track row.id; let i = $index) {
             <tr>
-              <td class="col-num mono">{{ pag.desde() + i }}</td>
               <td class="mono">{{ row.identidad }}</td>
               <td class="mono">{{ row.nit }}</td>
               <td>
@@ -274,7 +272,7 @@
               <td>
                 {{ row.arl }}
                 @if (row.arlConfidence) {
-                  <span class="pill" [class]="pillClass(row.arlConfidence)" title="Confianza de la clasificación de ARL">
+                  <span class="pill pill--metric" [class]="pillClass(row.arlConfidence)" title="Confianza de la clasificación de ARL">
                     {{ row.arlConfidence }}%
                   </span>
                 }
@@ -295,7 +293,7 @@
               </td>
               <td class="mono">{{ row.hours }}</td>
               <td>
-                <span class="pill" [class]="pillClass(row.confidence)">{{ row.confidence }}%</span>
+                <span class="pill pill--metric" [class]="pillClass(row.confidence)">{{ row.confidence }}%</span>
               </td>
               @if (variosArchivos()) {
                 <td class="cell-file" [title]="row.lote.nombre">{{ row.lote.nombre }}</td>
@@ -339,7 +337,7 @@
             </tr>
           } @empty {
             <tr>
-              <td [attr.colspan]="variosArchivos() ? 10 : 9" class="table__empty">
+              <td [attr.colspan]="variosArchivos() ? 9 : 8" class="table__empty">
                 @if (duplicadas().length) {
                   Todas las órdenes de los archivos ya existían: no queda ninguna por guardar.
                 } @else {
@@ -361,7 +359,7 @@
           Elíjalo en cada fila: de él sale el valor hora con el que se cobra.
         } @else if (pendientesObligatorios().length; as faltan) {
           <strong>{{ faltan }} orden(es) incompletas.</strong>
-          Diligencie la fecha de vencimiento y las horas en cada una para poder guardar.
+          Faltan datos obligatorios ({{ nombresFaltantes(pendientesObligatorios()[0]) }}{{ faltan > 1 ? '…' : '' }}): ábralas con el lápiz para poder guardar.
         } @else {
           {{ confirmableCount() }} orden(es) se enviarán a Órdenes.
         }
@@ -391,7 +389,7 @@
 <!-- ===== MODAL: revisión / corrección de una orden ===== -->
 @if (detailOrder(); as order) {
   <div class="modal-backdrop" (click)="closeDetail()"></div>
-  <div class="modal modal--split" role="dialog" aria-modal="true" aria-labelledby="reviewTitle">
+  <div class="modal modal--full modal--split" role="dialog" aria-modal="true" aria-labelledby="reviewTitle">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="reviewTitle">Revisión de orden</h3>
@@ -468,7 +466,7 @@
       <div class="card ai-form">
         <div class="card__head">
           <span class="card__title">Datos extraídos</span>
-          <span class="pill" [class]="pillClass(order.confidence)">{{ order.confidence }}% Confianza</span>
+          <span class="pill pill--metric" [class]="pillClass(order.confidence)">{{ order.confidence }}% Confianza</span>
         </div>
 
         <div class="card__body">
@@ -557,7 +555,7 @@
               <div class="field" [class.field--full]="item.span === 'full'">
                 <div class="field__labelrow">
                   <label class="form-field__label">{{ item.label }}</label>
-                  <span class="conf-badge pill" [class]="pillClass(confianzaDe(item))">{{ confianzaDe(item) }}%</span>
+                  <span class="conf-badge pill pill--metric" [class]="pillClass(confianzaDe(item))">{{ confianzaDe(item) }}%</span>
                 </div>
 
                 @if (item.type === 'textarea') {
@@ -629,7 +627,7 @@
         Los campos corregidos a mano quedan con <strong>100%</strong> de confianza.
       </span>
       <div class="modal__footer-actions">
-        <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="closeDetail()">
+        <button type="button" class="btn btn--close" [disabled]="saving()" (click)="closeDetail()">
           Cancelar
         </button>
         <button type="button" class="btn btn--primary" [disabled]="saving()" (click)="saveDetail()">

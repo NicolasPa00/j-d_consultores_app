@@ -8,7 +8,7 @@
     <div class="card__body cc-form__fila">
       <input class="form-control mono" type="text" [(ngModel)]="codigo" placeholder="Código (p. ej. TRANSP)" maxlength="20" aria-label="Código" />
       <input class="form-control" type="text" [(ngModel)]="nombre" placeholder="Nombre (p. ej. Transporte a visitas)" aria-label="Nombre" />
-      @if (editando()) { <button type="button" class="btn btn--ghost" (click)="cancelar()" [disabled]="guardando()">Cancelar</button> }
+      @if (editando()) { <button type="button" class="btn btn--close" (click)="cancelar()" [disabled]="guardando()">Cancelar</button> }
       <button type="button" class="btn btn--primary" (click)="guardar()" [disabled]="guardando()">{{ editando() ? 'Guardar cambios' : 'Crear centro de costo' }}</button>
     </div>
   </div>

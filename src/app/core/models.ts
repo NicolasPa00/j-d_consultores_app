@@ -231,6 +231,8 @@ export interface Borrador {
   os_validado_plataforma_en?: string | null;
   os_validado_plataforma_por?: string | null;
   os_cobro_aprobado_en?: string | null;
+  /** 1-oct-2026 · N.º de radicado ante Bolívar (a mano). */
+  os_numero_radicado?: string | null;
   /**
    * A3-01 · Orden de un cliente PARTICULAR (sin ARL): el tercero que la paga.
    * NULL en las órdenes de ARL. `pagador_nombre` va donde las demás llevan la ARL.

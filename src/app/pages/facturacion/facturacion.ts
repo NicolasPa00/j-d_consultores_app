@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, OnInit, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../core/api.service';
+import { PESOS } from '../../core/dinero';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
 import { mensajeError } from '../../core/errores';
@@ -19,9 +21,6 @@ type Pestana = 'por-facturar' | 'borradores' | 'emitidas' | 'notas';
 /** Estados que caben en «Emitidas»: todo lo que ya salió (o intentó salir) a la DIAN. */
 const ESTADOS_EMITIDAS = 'VALIDADO,RECHAZADO,ENVIANDO,ANULADO';
 
-const PESOS = new Intl.NumberFormat('es-CO', {
-  style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 2,
-});
 
 /**
  * A1-08 · Pantalla de Facturación (sistema Finanzas).
@@ -39,6 +38,13 @@ const PESOS = new Intl.NumberFormat('es-CO', {
  * Leer: admin, contador y auditor. Operar (crear, emitir, reenviar…): admin y
  * contador — el servidor lo exige igual; aquí solo se ocultan los botones.
  */
+/** 1-oct-2026 · Un paso de la barra de progreso del documento electrónico. */
+interface PasoDocumento {
+  etiqueta: string;
+  estado: 'hecho' | 'actual' | 'error' | 'pendiente';
+  fecha: string | null;
+}
+
 @Component({
   selector: 'app-facturacion',
   imports: [FormsModule, RouterLink, PaginadorComponent],
@@ -51,6 +57,11 @@ export class FacturacionComponent implements OnInit {
   private readonly alerts = inject(AlertService);
   private readonly auth = inject(AuthService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  private readonly sanitizer = inject(DomSanitizer);
+  /** 1-oct-2026 · Visor del PDF del documento (sin descargarlo). */
+  protected readonly pdfVisto = signal<SafeResourceUrl | null>(null);
+  protected readonly pdfTitulo = signal('');
+  private pdfObjeto: string | null = null;
 
   protected readonly pestana = signal<Pestana>('por-facturar');
   protected readonly puedeOperar = computed(() => ['admin', 'contador'].includes(this.auth.usuario()?.rol ?? ''));
@@ -271,7 +282,46 @@ export class FacturacionComponent implements OnInit {
 
   protected cerrar(): void {
     if (this.accion()) return;
+    this.cerrarPdf();
     this.detalle.set(null);
+  }
+
+  /** Abre el PDF del documento en un visor, sin descargarlo. */
+  protected verPdf(): void {
+    const d = this.detalle();
+    if (!d || !this.isBrowser) return;
+    this.accion.set('ver');
+    this.api.archivoFactura(d.id, 'pdf').subscribe({
+      next: (blob) => {
+        this.accion.set(null);
+        this.cerrarPdf();
+        // El servidor puede mandarlo como octet-stream: se fuerza el tipo para
+        // que el navegador lo pinte en vez de ofrecer guardarlo.
+        this.pdfObjeto = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+        this.pdfTitulo.set(`${this.esNota(d) ? 'Nota crédito' : 'Factura'} ${this.numeroDe(d)}`);
+        this.pdfVisto.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.pdfObjeto));
+      },
+      error: (err) => {
+        this.accion.set(null);
+        this.alerts.error('No se pudo abrir el PDF', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  protected cerrarPdf(): void {
+    if (this.pdfObjeto && this.isBrowser) URL.revokeObjectURL(this.pdfObjeto);
+    this.pdfObjeto = null;
+    this.pdfVisto.set(null);
+  }
+
+  /** Copia el CUFE/CUDE: es lo que piden la ARL y la DIAN para ubicar el documento. */
+  protected copiarCufe(d: DetalleFactura): void {
+    if (!this.isBrowser || !d.cufe) return;
+    const nombre = this.esNota(d) ? 'CUDE' : 'CUFE';
+    navigator.clipboard.writeText(d.cufe).then(
+      () => this.alerts.success(`${nombre} copiado`, 'Ya puede pegarlo donde lo necesite.'),
+      () => this.alerts.error(`No se pudo copiar el ${nombre}`, 'Selecciónelo y cópielo a mano.'),
+    );
   }
 
   private refrescarDetalle(): void {
@@ -490,6 +540,66 @@ export class FacturacionComponent implements OnInit {
         this.alerts.error('No se pudo armar la contabilización', mensajeError(err, 'Revise las reglas en Contabilidad.'));
       },
     });
+  }
+
+  /**
+   * 1-oct-2026 · Pasos del documento, arriba del modal (como la barra de Siigo,
+   * con lo nuestro). Salen del estado y de los eventos que ya se guardan:
+   * ENVIANDO, VALIDADO, RECHAZADO, CORREO_ENVIADO, CONTABILIZACION_PENDIENTE.
+   * «Enviada al cliente» queda hecha al validarse porque el proveedor manda su
+   * propio correo al emitir (`send_email`, A1-06); el reenvío de ORBITA suma la
+   * fecha más reciente.
+   */
+  protected pasosDe(d: DetalleFactura): PasoDocumento[] {
+    const ultimo = (codigo: string): string | null =>
+      [...d.eventos].reverse().find((e) => e.codigo === codigo)?.fecha ?? null;
+    const enviada = d.estado !== 'BORRADOR';
+    const validada = d.estado === 'VALIDADO' || d.estado === 'ANULADO';
+    const sinContabilizar = d.eventos.some((e) => e.codigo === 'CONTABILIZACION_PENDIENTE');
+    return [
+      { etiqueta: d.estado === 'BORRADOR' ? 'Borrador guardado' : 'Borrador creado', estado: 'hecho', fecha: ultimo('CREADO') },
+      {
+        etiqueta: 'Enviada a la DIAN',
+        estado: enviada ? 'hecho' : 'pendiente',
+        fecha: ultimo('ENVIANDO'),
+      },
+      {
+        etiqueta: d.estado === 'RECHAZADO' ? 'Rechazada por la DIAN' : 'Validada por la DIAN',
+        estado: validada ? 'hecho' : d.estado === 'RECHAZADO' ? 'error' : d.estado === 'ENVIANDO' ? 'actual' : 'pendiente',
+        fecha: ultimo(validada ? 'VALIDADO' : 'RECHAZADO'),
+      },
+      {
+        etiqueta: 'Enviada al cliente',
+        estado: validada ? 'hecho' : 'pendiente',
+        fecha: ultimo('CORREO_ENVIADO') ?? (validada ? ultimo('VALIDADO') : null),
+      },
+      {
+        etiqueta: sinContabilizar ? 'Contabilidad pendiente' : 'Contabilizada',
+        estado: !validada ? 'pendiente' : sinContabilizar ? 'error' : 'hecho',
+        fecha: validada && !sinContabilizar ? ultimo('VALIDADO') : null,
+      },
+    ];
+  }
+
+  /** El aviso bajo la barra: dónde está el documento y qué sigue. */
+  protected avisoDe(d: DetalleFactura): { tono: 'ok' | 'info' | 'warning' | 'error' | 'muted'; texto: string } {
+    const nombre = this.esNota(d) ? 'La nota crédito' : 'La factura';
+    switch (d.estado) {
+      case 'BORRADOR':
+        return { tono: 'info', texto: `${nombre} está guardada como borrador. Revise el cálculo y emítala ante la DIAN.` };
+      case 'ENVIANDO':
+        return { tono: 'warning', texto: 'Enviada a la DIAN; todavía no responde. Use «Consultar estado» en unos minutos: no se vuelve a emitir.' };
+      case 'RECHAZADO':
+        return { tono: 'error', texto: 'La DIAN la rechazó. Corrija el origen (tercero, parametrización u orden) y use «Corregir y reemitir».' };
+      case 'ANULADO':
+        return { tono: 'muted', texto: `${nombre} quedó anulada con una nota crédito; sus órdenes volvieron a «Por facturar».` };
+      default: {
+        const pendiente = d.eventos.some((e) => e.codigo === 'CONTABILIZACION_PENDIENTE');
+        return pendiente
+          ? { tono: 'warning', texto: `${nombre} está validada y enviada al cliente, pero su asiento contable quedó pendiente.` }
+          : { tono: 'ok', texto: `${nombre} está validada por la DIAN, enviada al correo de facturación del cliente y contabilizada.` };
+      }
+    }
   }
 
   protected etiquetaEvento(codigo: string): string {

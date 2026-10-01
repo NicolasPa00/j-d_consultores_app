@@ -16,7 +16,7 @@ import {
   ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, opcionesDeCampo,
   problemaCampo, tecleoCampo,
 } from '../../shared/campos-orden';
-import { OpcionCampo, esBolivar, etiquetaEmpresa, etiquetaTipoActividadArl, pistaTipoActividadArl } from '../../core/bolivar';
+import { OpcionCampo, esAxa, esBolivar, etiquetaEmpresa, etiquetaTipoActividadArl, pistaTipoActividadArl } from '../../core/bolivar';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
@@ -247,7 +247,8 @@ export class ValidationComponent implements OnInit, OnDestroy {
    * desde la edición: hay un solo camino, y es el icono.
    */
   protected readonly estadosCobro = ESTADOS_COBRO;
-  protected readonly filtroCobro = signal<EstadoCobro | ''>('');
+  /** 1-oct-2026 · El filtro de Cobro es por el visto bueno (aprobado/pendiente), como la columna. */
+  protected readonly filtroCobro = signal<'APROBADO' | 'PENDIENTE' | ''>('');
   /** La orden que se está marcando; null = el diálogo está cerrado. */
   protected readonly cobroOrden = signal<ServiceOrder | null>(null);
   protected readonly cobroEstado = signal<EstadoCobro>('FACTURADA');
@@ -267,6 +268,10 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected readonly gastosCobro = GASTOS_COBRO;
   /** osId de la fila cuyo ✓ de «Validado plataforma» se está guardando. */
   protected readonly validandoPlataforma = signal<string | null>(null);
+  /** 1-oct-2026 · Orden cuyo n.º de radicado (Bolívar) se está editando. */
+  protected readonly radicadoOrden = signal<ServiceOrder | null>(null);
+  protected readonly radicadoGuardando = signal(false);
+  protected radicadoTexto = '';
   /** Historial del eje de cobro de la orden abierta en el detalle. */
   protected readonly historialCobro = signal<HistorialCobro[]>([]);
 
@@ -487,7 +492,11 @@ export class ValidationComponent implements OnInit, OnDestroy {
       // se hace desde aquí es "qué está finalizado y sin radicar", que son los
       // dos ejes a la vez. Las órdenes sin OS todavía no tienen estado de cobro,
       // así que quedan fuera en cuanto se filtra por él.
-      if (cobro && (o.estadoCobro ?? null) !== cobro) return false;
+      if (cobro) {
+        // Una orden sin OS todavía no tiene cobro que aprobar.
+        if (!o.osId) return false;
+        if ((cobro === 'APROBADO') !== !!o.cobroAprobadoEn) return false;
+      }
       if (!q) return true;
       // El cronograma (30-sep-2026) es por lo que pregunta Bolívar y lo que trae
       // la prefactura; la OS y el n.º de orden, por lo que preguntan AXA y Colmena.
@@ -497,7 +506,10 @@ export class ValidationComponent implements OnInit, OnDestroy {
         o.fields.nit.value,
         o.fields.codigoCronograma.value,
         o.fields.numeroOrden?.value,
+        // AXA lo enseña sin espacios ("71-0001146755") y el PDF lo trae con ellos.
+        String(o.fields.numeroOrden?.value ?? '').replace(/\s+/g, ''),
         o.osCode,
+        o.numeroRadicado,
       ].some((v) => String(v ?? '').toLowerCase().includes(q));
     });
   });
@@ -826,7 +838,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
   }
 
   protected filtrarCobro(valor: string): void {
-    this.filtroCobro.set((valor || '') as EstadoCobro | '');
+    this.filtroCobro.set((valor === 'APROBADO' || valor === 'PENDIENTE') ? valor : '');
     this.pag.reiniciar();
   }
 
@@ -873,10 +885,15 @@ export class ValidationComponent implements OnInit, OnDestroy {
    * Bolívar. Mismo texto en la fila de la tabla y en el título del detalle.
    */
   protected nombreOrden(o: ServiceOrder): string {
-    return etiquetaEmpresa(o.company, o.arl, o.fields.codigoCronograma.value, o.fields.secuencia.value);
+    return etiquetaEmpresa(o.company, o.arl, o.fields.codigoCronograma.value, o.fields.secuencia.value, o.fields.numeroOrden?.value);
   }
 
   /** El n.º de prefactura (código SIPAB) solo existe en Bolívar. */
+  /** 1-oct-2026 · AXA no envía prefactura: el modal de cobro lo explica. */
+  protected esAxaArl(o: ServiceOrder): boolean {
+    return esAxa(o.arl);
+  }
+
   protected esBolivarArl(o: ServiceOrder): boolean {
     return esBolivar(o.arl);
   }
@@ -1172,8 +1189,14 @@ export class ValidationComponent implements OnInit, OnDestroy {
     );
     this.cobroGastos.set({ ...d.gastos });
     // La fila de la tabla refleja el visto bueno sin recargar la bandeja.
+    // En AXA el visto bueno ES la aprobación de la ARL (no hay prefactura): el
+    // servidor mueve el estado ARL con él, y la fila lo enseña igual.
     this.orders.update((list) =>
-      list.map((o) => (o.osId === d.orden_id ? { ...o, cobroAprobadoEn: d.aprobacion?.en ?? null } : o)),
+      list.map((o) => {
+        if (o.osId !== d.orden_id) return o;
+        const arl = esAxa(o.arl) ? { estadoArl: (d.aprobacion ? 'APROBADO' : 'PENDIENTE') as EstadoArl } : {};
+        return { ...o, cobroAprobadoEn: d.aprobacion?.en ?? null, ...arl };
+      }),
     );
   }
 
@@ -1374,6 +1397,46 @@ export class ValidationComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ================= N.º de radicado ante Bolívar (1-oct-2026) =================
+  protected abrirRadicado(o: ServiceOrder): void {
+    if (!o.osId || !this.puedeEditarCobro()) return;
+    this.radicadoTexto = o.numeroRadicado ?? '';
+    this.radicadoOrden.set(o);
+    // `autofocus` no actúa en un modal que Angular inserta después de cargar la
+    // página: sin esto lo tecleado se perdía y un Enter guardaba el campo vacío.
+    if (this.isBrowser) {
+      setTimeout(() => (document.getElementById('radicadoInput') as HTMLInputElement | null)?.select());
+    }
+  }
+
+  protected cerrarRadicado(): void {
+    if (this.radicadoGuardando()) return;
+    this.radicadoOrden.set(null);
+  }
+
+  protected guardarRadicado(): void {
+    const o = this.radicadoOrden();
+    if (!o?.osId || this.radicadoGuardando()) return;
+    this.radicadoGuardando.set(true);
+    this.api.guardarRadicado(o.osId, this.radicadoTexto.trim()).subscribe({
+      next: (r) => {
+        this.radicadoGuardando.set(false);
+        this.orders.update((list) =>
+          list.map((x) => (x.osId === o.osId ? { ...x, numeroRadicado: r.data.numero_radicado } : x)),
+        );
+        this.radicadoOrden.set(null);
+        this.alerts.success(
+          r.data.numero_radicado ? 'Radicado guardado' : 'Radicado quitado',
+          r.data.numero_radicado ? `${o.osCode}: radicado ${r.data.numero_radicado}.` : `${o.osCode} ya no tiene radicado.`,
+        );
+      },
+      error: (err) => {
+        this.radicadoGuardando.set(false);
+        this.alerts.error('No se pudo guardar el radicado', mensajeError(err, 'Inténtelo de nuevo.'));
+      },
+    });
+  }
+
   protected guardarCobro(): void {
     const orden = this.cobroOrden();
     if (!orden?.osId || this.cobroSaving()) return;
@@ -1469,12 +1532,14 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected pillEstado(estado?: string | null): string {
     switch (estado) {
       case 'PROGRAMADA': return 'pill--info';
-      // EJECUTADA es trabajo entregado pero SIN revisar: pide una acción del
-      // administrador, así que no puede verse igual de "terminado" que el
-      // cierre. El verde se reserva para FINALIZADA.
-      case 'EJECUTADA': return 'pill--warning';
+      // 30-sep-2026 · EJECUTADA va en verde como FINALIZADA (lineamientos de
+      // estilo de JD&D). Antes iba en ámbar a propósito —es trabajo entregado
+      // SIN revisar, pide una acción del administrador—; si se quiere volver a
+      // distinguir, basta con devolverla a 'pill--warning'.
+      case 'EJECUTADA': return 'pill--success';
       case 'FINALIZADA': return 'pill--success';
-      default: return 'pill--muted'; // SIN PROGRAMAR
+      // 30-sep-2026 · SIN PROGRAMAR en ámbar: es lo pendiente (lineamientos de JD&D).
+      default: return 'pill--warning'; // SIN PROGRAMAR
     }
   }
 
@@ -3661,6 +3726,7 @@ function toServiceOrder(b: Borrador): ServiceOrder {
     validadoPlataformaEn: b.os_validado_plataforma_en ?? null,
     validadoPlataformaPor: b.os_validado_plataforma_por ?? null,
     cobroAprobadoEn: b.os_cobro_aprobado_en ?? null,
+    numeroRadicado: b.os_numero_radicado ?? null,
     tipoViaticoId: b.tipo_viatico_id ?? null,
     tipoViatico: b.tipo_viatico ?? null,
     // El importe de la ORDEN, no el vigente del catálogo: mientras el borrador

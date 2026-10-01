@@ -62,7 +62,7 @@
       </thead>
       <tbody>
         @for (t of pag.visibles(); track t.id) {
-          <tr class="ter-row" (click)="openDetalle(t)">
+          <tr>
             <td>
               <div class="who">
                 <span class="who__avatar" aria-hidden="true">{{ t.nombre.charAt(0) }}</span>
@@ -147,7 +147,7 @@
 <!-- ============ MODAL · FICHA ============ -->
 @if (detalle(); as t) {
   <div class="modal-backdrop" (click)="closeDetalle()"></div>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="fichaTitle">
+  <div class="modal modal--lg" role="dialog" aria-modal="true" aria-labelledby="fichaTitle">
     <header class="modal__head">
       <h3 class="modal__title" id="fichaTitle">{{ t.nombre }}</h3>
       <button type="button" class="icon-action" (click)="closeDetalle()" aria-label="Cerrar">
@@ -277,7 +277,7 @@
               <p class="form-field__hint">Variables disponibles (A1-04): {{ variablesDescripcion.join(' ') }}</p>
             </div>
             <div class="par-form__footer">
-              <button type="button" class="btn btn--ghost" [disabled]="savingCondicion()" (click)="closeEditarCondicion()">Cancelar</button>
+              <button type="button" class="btn btn--close" [disabled]="savingCondicion()" (click)="closeEditarCondicion()">Cancelar</button>
               <button type="button" class="btn btn--primary" [disabled]="savingCondicion()" (click)="guardarCondicion()">
                 {{ savingCondicion() ? 'Guardando…' : 'Guardar condiciones' }}
               </button>
@@ -338,7 +338,7 @@
 <!-- ============ MODAL · FORMULARIO ============ -->
 @if (formOpen()) {
   <div class="modal-backdrop" (click)="closeForm()"></div>
-  <div class="modal modal--form" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+  <div class="modal modal--lg" role="dialog" aria-modal="true" aria-labelledby="formTitle">
     <header class="modal__head">
       <h3 class="modal__title" id="formTitle">
         {{ editingId() ? 'Editar tercero' : profesionalId() ? 'Nuevo tercero · profesional' : 'Nuevo tercero' }}
@@ -426,7 +426,7 @@
         <input id="tComercial" class="form-control" type="text" [(ngModel)]="draft.nombre_comercial" name="comercial" />
       </div>
 
-      <h4 class="form-section">Ubicación y contacto</h4>
+      <h4 class="section-head"><span class="section-tag">Ubicación y contacto</span></h4>
       <div class="form-field">
         <label class="form-field__label" for="tDireccion">Dirección</label>
         <input id="tDireccion" class="form-control" type="text" [(ngModel)]="draft.direccion" name="direccion" />
@@ -462,7 +462,7 @@
         </div>
       </div>
 
-      <h4 class="form-section">Datos fiscales</h4>
+      <h4 class="section-head"><span class="section-tag">Datos fiscales</span></h4>
       <div class="form-field">
         <label class="form-field__label" for="tRegimen">Régimen</label>
         <select id="tRegimen" class="form-control" [(ngModel)]="draft.regimen" name="regimen">
@@ -483,7 +483,7 @@
         <p class="form-field__hint">Sin ninguna marcada, se asume R-99-PN (no responsable).</p>
       </div>
 
-      <h4 class="form-section">Roles *</h4>
+      <h4 class="section-head"><span class="section-tag">Roles *</span></h4>
       <div class="ter-checks">
         <label class="ter-check"><input type="checkbox" [(ngModel)]="draft.es_cliente" name="esCliente" /> Cliente</label>
         <label class="ter-check"><input type="checkbox" [(ngModel)]="draft.es_proveedor" name="esProveedor" /> Proveedor</label>
@@ -493,7 +493,7 @@
     </form>
 
     <footer class="modal__footer">
-      <button type="button" class="btn btn--ghost" (click)="closeForm()" [disabled]="saving()">Cancelar</button>
+      <button type="button" class="btn btn--close" (click)="closeForm()" [disabled]="saving()">Cancelar</button>
       <button type="button" class="btn btn--primary" [disabled]="saving() || !isValid()" (click)="save()">
         @if (saving()) {
           <span class="spinner" aria-hidden="true"></span>

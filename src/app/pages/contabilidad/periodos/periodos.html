@@ -88,7 +88,7 @@
             </div>
           }
           @if (esAdmin()) {
-            <button type="button" class="btn btn--primary per-btn-peligro" (click)="cerrarAnio(p)"
+            <button type="button" class="btn btn--danger" (click)="cerrarAnio(p)"
                     [disabled]="cerrandoAnio() || !!p.borradores || p.diciembre_cerrado || !cuentasPatrimonio().length">
               @if (cerrandoAnio()) { <span class="spinner" aria-hidden="true"></span> } Cerrar el año {{ p.anio }}
             </button>
@@ -103,7 +103,7 @@
 
 @if (reabriendo(); as p) {
   <div class="modal-backdrop" (click)="reabriendo.set(null)"></div>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="perTitle">
+  <div class="modal modal--sm" role="dialog" aria-modal="true" aria-labelledby="perTitle">
     <header class="modal__head">
       <h3 class="modal__title" id="perTitle">Reabrir {{ nombresMes[p.mes - 1].toLowerCase() }} de {{ anio() }}</h3>
     </header>
@@ -115,7 +115,7 @@
       </div>
     </div>
     <footer class="modal__footer">
-      <button type="button" class="btn btn--ghost" (click)="reabriendo.set(null)" [disabled]="trabajando() !== null">Cancelar</button>
+      <button type="button" class="btn btn--close" (click)="reabriendo.set(null)" [disabled]="trabajando() !== null">Cancelar</button>
       <button type="button" class="btn btn--primary" (click)="confirmarReabrir()" [disabled]="trabajando() !== null">Reabrir mes</button>
     </footer>
   </div>

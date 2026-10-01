@@ -345,7 +345,7 @@
 <!-- ==================== MODAL DETALLE ==================== -->
 @if (detalle(); as pc) {
   <div class="modal-backdrop" (click)="cerrarDetalle()"></div>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pcTitle">
+  <div class="modal modal--lg" role="dialog" aria-modal="true" aria-labelledby="pcTitle">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="pcTitle">Cuenta de cobro · {{ periodoLargo(pc.periodo) }}</h3>
@@ -463,7 +463,7 @@
     </div>
 
     <footer class="modal__footer">
-      <button type="button" class="btn btn--ghost" (click)="cerrarDetalle()">Cerrar</button>
+      <button type="button" class="btn btn--close" (click)="cerrarDetalle()">Cerrar</button>
       <button type="button" class="btn btn--ghost" (click)="verPdfDe(pc.id)">Ver documento</button>
     </footer>
   </div>

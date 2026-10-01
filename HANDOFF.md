@@ -5,7 +5,7 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
+> **Última actualización:** 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
 > para lo último; el resto de esta cabecera es del 16-sep) — **🚀 EL SISTEMA ESTÁ EN
 > PRODUCCIÓN**
 > (desde el 2-sep-2026) y ya lo están usando clientes reales. ORBITA vive en
@@ -15,6 +15,121 @@
 > **`docs/4-despliegue/despliegue-vultr.md`**, y es lo primero que hay que leer para tocar el
 > servidor. **Lo último desplegado:** el Excel SIPAB de Bolívar dejó de leerse
 > cuando llegaba como `.xls` binario (ver §0 punto 2 y la Tanda 23 en §3).
+>
+> 🧩 **1-oct-2026 (tarde) · SEGUNDA TANDA DE JD&D — commiteada el 1-oct.** (1) **AXA sin prefactura:** su única aprobación es
+> «Aprobar cobro»; `cobro-orden.service.js` (`sincronizarArlAxa`) pone el estado ARL en APROBADO al aprobar y en PENDIENTE al
+> retirar o anular el visto bueno, con línea en `historial_estado_arl` (origen MANUAL). Bolívar y Colmena no cambian. ⚠️ El
+> backend corría con `npm start` (sin watch) durante la prueba del usuario: hay que reiniciarlo para que tome este cambio.
+> (2) **Revisar formatos:** la lista de documentos queda fija y solo `.vista-formatos__campos` hace scroll. (3) **Columna Cobro**
+> = visto bueno: el botón dice APROBADO/PENDIENTE (ya no FACTURADA/NO FACTURADA ni la línea «Aprobado/Por aprobar») y el radicado
+> se lee «RADICADO ####»; el filtro pasó a «Cobro aprobado / pendiente». (4) Facturación: pestaña **«Pendientes»** (antes
+> Borradores). (5) **Ninguna fila de tabla abre nada al pulsarla**: en Terceros, Empresas, Cartera (2), Pagos (2), Compras,
+> Comprobantes, Inicio y Facturación (3) se abre solo con su botón Ver/Revisar (columna de ojo nueva donde no había); se
+> retiraron las clases que solo ponían `cursor: pointer`. (6) **Modal de Cobro** rediseñado: `modal--xl`, dos columnas
+> (`.cobro__layout`: valor, gastos y facturación a la izquierda; prefactura y aprobación a la derecha), cada sección en panel
+> propio y la comparación con la prefactura con la tabla estándar (`table-wrap` + `table`, total en `tfoot`). En AXA avisa que
+> el visto bueno es la aprobación ante la ARL. Backend reiniciado con el cambio de AXA. (7) **Modal del documento electrónico**
+> (Facturación): `modal--xl`, **barra de pasos arriba** como la de Siigo (`pasosDe()`: Borrador → Enviada a la DIAN → Validada
+> (roja si RECHAZADO) → Enviada al cliente → Contabilizada (roja si CONTABILIZACION_PENDIENTE), con fecha de cada evento) y un
+> aviso de estado (`avisoDe()`); dos columnas (documento | reenvío, contabilización, historial vertical) y el asiento a todo el
+> ancho debajo. (8) **Global:** `.modal__body > * { flex-shrink: 0 }` — una `.table-wrap` directa en el cuerpo de un modal se
+> aplastaba a ~90 px con scroll propio (la tabla de ítems de la factura); ahora hace scroll el cuerpo. (9) Ajustes al modal
+> del documento: columna derecha = reenvío → **historial en acordeón cerrado** (`<details class="fac-acordeon">`) →
+> contabilización al final; **copiar CUFE/CUDE** con un ícono (`copiarCufe`, portapapeles); **«Ver factura/nota»** abre el PDF
+> en un visor encima (`verPdf()`: el mismo `archivoFactura(id,'pdf')` como blob → object URL; se revoca al cerrar).
+>
+> 🔍 **1-oct-2026 · AUDITORÍA DE DISEÑO (todo el sistema, 1366×768 y 390 px) — commiteada el 1-oct.** Revisión con un script
+> (celdas rotas, desbordes, botones sin nombre) + capturas de las 15 pantallas internas, 3 públicas y 8 modales.
+> Corregido: (1) **Profesionales**: `<td class="registros">` tenía `display:flex` y sacaba la celda del modelo de tabla → el flex va
+> en un `div` interior (regla: NUNCA `display` en un `td`/`th`). (2) **Órdenes** a 1366: razón social en 4-5 líneas y tabla 24 px
+> más ancha que su caja → encabezado «Estado ARL/Plataforma» en dos líneas (`th--wrap`), `min-width` 210 px en la razón social y
+> relleno lateral 0.5rem; cabe exacta (1005/1005). (3) Global: `.btn` no parte su texto; `.table td.mono` no se parte (teléfonos,
+> códigos OS, montos; `mono--wrap` para excepciones). (4) **`tfoot`** global (antes solo en Cuentas de cobro): los totales de
+> Cartera/Pagos/Comprobantes/Facturación salían con relleno de 1 px y descuadrados. (5) **Pesos** con `core/dinero.ts`: entero sin
+> decimales, con centavos siempre 2 («$ 2.103.701,9» → «,90») en Cartera, Pagos, Compras, Facturación y Periodos.
+> (6) **Terceros**: el selector de roles heredaba `width:100%` y partía la cabecera en 3 filas. (7) **Menú de Finanzas** no cabía a
+> 768 px de alto: pistas en una línea con «…» y menú compacto en `max-height: 820px`. (8) **Nueva orden manual**: rejilla sin
+> espacio entre filas. (9) **Registrar compra**: valor e IVA de los ítems aplastados (`width` → `min-width`). (10) Portal de
+> soportes y cuenta de cobro con enlace inválido: «Gestión SST ·»/«Empresa: —» y tarjeta vacía. (11) Cartera: mínimo de 240 px al
+> cliente. **Recomendado, no hecho:** en celular (≤820 px) el menú queda como franja de 76 px (de diseño, T0-14) y le quita ~20 %
+> del ancho; el contador de la campanita va a 10 px.
+>
+> 🛠️ **1-oct-2026 · CINCO ARREGLOS PEDIDOS POR JD&D — commiteados el 1-oct, probados en el navegador contra `jdd_dev`.**
+> (1) **NIT de AXA manual:** la orden de AXA no trae el NIT del cliente y la IA tomaba el de JD&D (901203812, el del bloque
+> «Señores»). `runExtraction` lo deja vacío para AXA (`esAxa()` nuevo en `utils/bolivar.js` y `core/bolivar.ts`), la vista
+> previa lo pide como obligatorio y `materializarOrden` rechaza confirmar una OS de AXA sin NIT. ⚠️ **En producción las órdenes
+> de AXA ya cargadas pueden tener el NIT de JD&D y estar enlazadas a una misma ficha de empresa** (el maestro se resuelve por
+> NIT): revisar y corregir con el cliente. (2) **AXA con `(número de orden)`** tras la razón social, como Bolívar:
+> `etiquetaEmpresa(…, numeroOrden)` quita los espacios del guion ("71-0001146755"); el buscador también lo encuentra sin espacios.
+> (3) Columna **«Estado ARL/Plataforma»**. (4) **Botón de Cobro** con borde, sin fondo y con ícono de factura (`.cobro-btn` en
+> `validation-cobro.scss`; ya no usa `.pill`). (5) **N.º de radicado (solo Bolívar)** bajo el botón de Cobro («+ Radicado» /
+> «Rad. …»), modal pequeño, `PATCH /orders/:id/radicado` (admin, administrativo, contador), columnas `numero_radicado(_en/_por)`
+> — migración **`2026-10-01-numero-radicado.sql` aplicada en `jdd_dev`, NO en producción**; se busca desde el buscador. Se eligió
+> bajo el botón y no como columna: solo lo usa Bolívar y la tabla ya no cabe a 1366 px. De paso: el pie de Importar ya nombra el
+> campo que falta. Datos de prueba que quedaron en `jdd_dev`: AXA `71-0002200301` (SIN PROGRAMAR) y radicado `2026-555123` en
+> OS-2026-0002. Trampa nueva: escribir `\b` desde un heredoc de Python lo convierte en retroceso (0x08); revisar con `od -c`.
+>
+> 🧪 **1-oct-2026 · PRUEBA DE PUNTA A PUNTA COMPLETA (navegador, `jdd_dev` + sandbox).** Lote `demo-bolivar-sipab.xlsx`:
+> importar → asignar (agenda) → soportes (1 por el portal, 4 con `subir-soportes-ejemplo.mjs`) → aceptar → prefactura 170601
+> (cuadra $2.956.386) → cobro aprobado (5 cuadran, 1380903 con gastos) → factura **SETP990022106 VALIDADA** ($2.363.710;
+> RF-HON 11 % −$260.008,1; neto $2.103.701,9) → **FV-2** contabilizado y cuadrado ($2.389.710,81) → Cartera «cuadra con la
+> contabilidad» → las 6 órdenes FACTURADAS. PDF/XML y «unir soportes» (3 págs.) responden 200.
+> **Arreglado** (`sst_ws/src/services/dedup.service.js`, commiteado el 1-oct): un SIPAB que ya dejó ALGUNA orden quedaba apartado entero
+> por la huella del archivo (la regla «todas las filas» del Excel nunca corría) → ahora el Excel se compara fila a fila primero.
+> **Hallazgos pendientes:** (1) «Procesar de todos modos» no fuerza: `POST /imports` repite el chequeo y devuelve 409.
+> (2) El pie de Importar dice «falta vencimiento y horas» cuando falta la **modalidad**. (3) Bolívar sin regla de formatos para
+> *servicio especializado* y *otros* (se envía el juego base). (4) Factura sale **de contado** con vencimiento el mismo día →
+> la cartera la marca vencida al día siguiente: configurar el plazo de Bolívar en Terceros. (5) PDF del proveedor sin retención,
+> neto ni nº de prefactura (plantilla pendiente). (6) Para la contadora: ¿retención 11 % también sobre gastos reembolsables?;
+> la autorretención 1,1 % va a 13551816 «…industria y comercio» (cuenta «por confirmar»). (7) Totales con un decimal
+> («$2.103.701,9») y el código de producto «2» sin etiqueta en el borrador. (8) 10 borradores PENDIENTE_REVISION huérfanos
+> de importaciones anteriores (no se ven en ninguna pantalla).
+>
+> 🧾 **1-oct-2026 · ALTA DE JD&D EN EL PROVEEDOR DE FACTURACIÓN (en curso).** Decidido: **paquetes individuales**,
+> comprando ahora **solo facturación 1.600 ($220.000, trae certificado)**; nómina 24 cuando el módulo vaya a
+> producción y RADIAN en la Fase C (tramo pendiente de volumen y de cómo cuenta el consumo). Documentos para
+> `activacion@factus.com.co`: RUT ✅ y cámara de comercio ✅ (expedida 26-sep, vale hasta ~26-oct) en
+> `1-cliente-jdd/contabilidad-siigo/empresa/`; cédula del representante ✅ (`1-cliente-jdd/2. CEDULA JOSE LUIS GUACAS.pdf`);
+> **falta el logo**; el comprobante de compra lo generamos nosotros. Antes de pagar, confirmar el precio de 1.600 y que
+> nómina/RADIAN se compran aparte. Al comprar corren **8 días** para la documentación del certificado.
+> **Q-21 resuelta:** dirección del emisor = la del RUT (`CR 26 N 19 07 O 103`). Resolución vence el 11-oct (R-01).
+>
+> 🎨 **30-sep/1-oct-2026 · FASE DE ESTILOS VISUALES Y ESTANDARIZACIÓN — commiteada el 1-oct (aprobada por el usuario).**
+> **Para retomar:** (1) arrancar el front con `npx ng serve --port 4001` (el de la sesión anterior se reinició
+> desde Claude Code y puede no seguir vivo); (2) la extensión Claude in Chrome ya conecta; (3) siguientes
+> candidatos, en este orden: **rejilla de campos de formulario** estándar (en el detalle de la orden los campos
+> cortos ocupan todo el ancho), revisar en vivo los modales de Facturación/Compras/Importar (necesitan datos),
+> pestañas, estado vacío y KPI globales (ver «Orden sugerido» del inventario).
+> Base segura: commits `cd351b4` (front) y `a76f213` (back); TODO lo visual de abajo está solo en el árbol
+> de trabajo del front (`git checkout -- . && git clean -fd public/` lo deshace). Detalle técnico y tokens:
+> **`docs/2-arquitectura/sistema-visual-inventario.md`**. Pedidos aplicados, en orden:
+> 1. **Login + Recuperar/Restablecer + Selector de sistema** con la identidad de JD&D: tokens globales
+>    (`--primary-color #000b4f`, `--primary-hover`, `--gradient-brand`, `--radius-card 16px`,
+>    `--radius-control 8px`, inputs `#f9fafb/#e5e7eb` con anillo navy, `.chip`), clases `.brand-screen`,
+>    `.btn--outline-light`, `.btn--lg`, `.card--interactive`, `.link-cta`. Logos para fondo oscuro nuevos:
+>    `public/logo-orbita-claro.webp` y `logo-orbita-horizontal-claro.webp` (texto blanco, órbita a color).
+> 2. **Menú lateral** (ítem activo sutil con indicador de 4 px; el logo se queda en ORBITA horizontal, decidido),
+>    **KPI** como componente global `.kpi-card--{primary|info|warning|success|neutral}`.
+> 3. **Tabla corporativa** global: cabecera navy `#000b4f`, cebra `#f4f7fc`, hover `#e0e7ff`, celda principal
+>    (`.who__name`, `.td-id`) en navy 600, badges `--badge-*` vibrantes (SIN PROGRAMAR ámbar, PROGRAMADA sky,
+>    EJECUTADA y FINALIZADA verde). Cuatro vistas dejaron de redefinir la tabla.
+> 4. **Sin columna `#`** en ninguna tabla y **sin caja exterior** en las tablas con título (`:has()`).
+> 5. **Cabecera de tabla variante B** (1-oct, elegida en vivo): `--table-head-bg #eef2fb`, texto `#000b4f`,
+>    `--table-head-rule` 2 px navy, cebra `#fafbfe`. Reemplaza la cabecera navy sólida. **Hover**: `#f5f7fd`, solo
+>    fondo (con `#eef2ff` se confundía con la cabecera; el usuario descartó el indicador navy a la izquierda).
+> 6. **Paginador POR FUERA de la tabla** (1-oct): ya no es una fila más; la tarjeta que envuelve tabla +
+>    `app-paginador` deja de ser caja (`:has()` en styles.scss) y el `.pager` perdió su borde superior.
+> 7. **Modal estándar + botones** (1-oct): UN armazón global en styles.scss (`--modal-*`); las 14 hojas que lo
+>    copiaban ya no lo tienen (−1.300 líneas; el aviso de presupuesto de validation.scss desapareció). Cinco anchos
+>    por contenido: `--sm` 480 · (sin clase) 640 · `--lg` 880 · `--xl` 1200 · `--full` 1600; se quitaron `--ancho`,
+>    `--form`, `--wide`, `--slim`, `--agenda`, `--cobro`. Cabecera con tinte de tabla + línea navy 2 px, sin filete
+>    degradado ni desenfoque. Las `.card` dentro de `.modal__body` son SECCIONES PLANAS con etiqueta navy de punta
+>    redondeada (`.section-tag`; `.section-head` para subtítulos sueltos de formulario). Botones: Cerrar/Cancelar
+>    `.btn--close` (rojo tenue), destructivos `.btn--danger` (rojo oscuro relleno; se quitaron los `*-peligro`
+>    locales). La confirmación (`alert-host`) usa los mismos tokens. Parametrización tenía 3 modales SIN estilo:
+>    ahora toman el global.
+> La extensión Claude in Chrome YA conecta (1-oct); el plan B de capturas sigue en
+> `2-pruebas/herramientas-capturas/` (puppeteer-core). **El usuario quiere hacer commit de lo visual cuando le guste.**
 >
 > 🔧 **30-sep-2026 (prueba de punta a punta, primeras correcciones).** (a) «Validado plataforma» solo se
 > marca en órdenes EJECUTADA/FINALIZADA (servidor y pantalla); desmarcar se deja siempre. (b) El marcado

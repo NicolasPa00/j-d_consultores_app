@@ -80,7 +80,7 @@
     <h3 class="al-dialog__title" id="alDialogTitle">{{ req.title }}</h3>
     <p class="al-dialog__msg">{{ req.message }}</p>
     <div class="al-dialog__actions">
-      <button type="button" class="btn btn--ghost" (click)="alert.cancelConfirm()">{{ req.cancelText }}</button>
+      <button type="button" class="btn btn--close" (click)="alert.cancelConfirm()">{{ req.cancelText }}</button>
       <button
         type="button"
         class="btn"

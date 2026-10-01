@@ -4,7 +4,7 @@
     <div class="login__brand-inner">
       <div class="brand-logo">
         <img
-          src="logo-orbita.webp"
+          src="logo-orbita-claro.webp"
           alt="ORBITA · Gestión Inteligente"
         />
       </div>
@@ -22,10 +22,10 @@
 
       <!-- Formulario con autenticación real (JWT) -->
       <form class="login-form" (ngSubmit)="submit()">
-        <label class="field">
-          <span class="field__label">Documento de identidad</span>
+        <label class="form-field">
+          <span class="form-field__label">Documento de identidad</span>
           <input
-            class="field__input"
+            class="form-control"
             type="text"
             name="documento"
             inputmode="numeric"
@@ -35,11 +35,11 @@
           />
         </label>
 
-        <label class="field">
-          <span class="field__label">Contraseña</span>
-          <span class="field__wrap">
+        <label class="form-field">
+          <span class="form-field__label">Contraseña</span>
+          <span class="field-wrap">
             <input
-              class="field__input field__input--with-action"
+              class="form-control form-control--with-action"
               [type]="showPassword() ? 'text' : 'password'"
               name="password"
               placeholder="••••••••"
@@ -48,7 +48,7 @@
             />
             <button
               type="button"
-              class="field__toggle"
+              class="field-toggle"
               (click)="togglePassword()"
               [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
               [title]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
@@ -86,7 +86,7 @@
 
         <a class="login-card__forgot" routerLink="/recuperar">¿Olvidó su contraseña?</a>
 
-        <button class="btn-primary" type="submit" [disabled]="loading()">
+        <button class="btn btn--primary btn--block btn--lg" type="submit" [disabled]="loading()">
           {{ loading() ? 'Ingresando…' : 'Ingresar' }}
         </button>
       </form>

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
+import { PESOS } from '../../core/dinero';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
@@ -17,7 +18,6 @@ import { PagosComponent } from './pagos/pagos';
 /** B4-01 añade lo que JD&D debe a sus proveedores (por pagar) y cómo les paga. */
 type Pestana = 'por-cobrar' | 'recibos' | 'por-pagar' | 'egresos';
 
-const PESOS = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 2 });
 const ETIQUETA_EDAD: Record<EdadCartera, string> = {
   POR_VENCER: 'Por vencer', D1_30: '1 a 30 días', D31_60: '31 a 60', D61_90: '61 a 90', MAS_90: 'Más de 90',
 };

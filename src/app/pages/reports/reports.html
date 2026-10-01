@@ -258,7 +258,7 @@
         <tbody>
           @for (o of pagOrdenes.visibles(); track o.id) {
             <tr>
-              <td class="mono">{{ o.codigo || '—' }}</td>
+              <td class="mono td-id">{{ o.codigo || '—' }}</td>
               <td>{{ nombreOrden(o) }}</td>
               <td>{{ o.arl_nombre || '—' }}</td>
               <td class="mono">{{ o.nit_nic || '—' }}</td>
@@ -267,7 +267,7 @@
                 <span class="estado-pill" [class]="'tone-' + estadoTone(o.estado)">{{ o.estado }}</span>
               </td>
               <td>
-                <span class="pill" [class]="pillClass(confidenceOf(o))">{{ confidenceOf(o) }}%</span>
+                <span class="pill pill--metric" [class]="pillClass(confidenceOf(o))">{{ confidenceOf(o) }}%</span>
               </td>
               <td class="col-actions">
                 <button type="button" class="icon-action" (click)="openSummary(o)" aria-label="Ver resumen" title="Generar resumen">
@@ -807,7 +807,7 @@
           <tbody>
             @for (o of pagCobro.visibles(); track o.id) {
               <tr>
-                <td class="mono">{{ o.codigo || '—' }}</td>
+                <td class="mono td-id">{{ o.codigo || '—' }}</td>
                 <td><span class="pill" [class]="pillCobro(o.estado_cobro)">{{ o.estado_cobro }}</span></td>
                 <td class="mono">{{ o.cobro_numero_factura || '—' }}</td>
                 <td>{{ o.arl_nombre || '—' }}</td>
@@ -866,7 +866,7 @@
     </div>
 
     <footer class="modal__footer">
-      <button type="button" class="btn btn--ghost" (click)="closeSummary()">Cerrar</button>
+      <button type="button" class="btn btn--close" (click)="closeSummary()">Cerrar</button>
       <button type="button" class="btn btn--primary" [disabled]="summaryLoading() || !summaryText().length" (click)="printSummary()">
         Imprimir / PDF
       </button>

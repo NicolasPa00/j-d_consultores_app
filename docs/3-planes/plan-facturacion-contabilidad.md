@@ -569,7 +569,7 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecha y verificada · ❓ espera 
 | A0-06 | Productos y servicios + tarifas de venta por pagador | A0-05 | M | ✅ 27-sep (local; tratamiento IVA sigue en Q-14) |
 | A0-07 | Retenciones, autorretención, UVT y descuento comercial por pagador | A0-05 | M | ✅ 27-sep (local; UVT vacía a propósito: la carga la contadora) |
 | A0-08 | Resoluciones de numeración (FEL-13) | A0-03 | M | ✅ 27-sep backend (sincroniza con sandbox; alertas probadas); pantalla en A0-10 |
-| A0-09 | Ficha del emisor + vigencia del paquete/certificado (FEL-14) | A0-04 | S | ✅ 27-sep backend (+ GET /parametros/catalogos); pantalla en A0-10; dirección sigue en Q-21 |
+| A0-09 | Ficha del emisor + vigencia del paquete/certificado (FEL-14) | A0-04 | S | ✅ 27-sep backend (+ GET /parametros/catalogos); pantalla en A0-10; dirección resuelta (Q-21, 1-oct: la del RUT) |
 | A0-10 | Pantalla de Parametrización + permisos + menú | A0-05..09 | M | ✅ 27-sep (local; el encabezado "Finanzas" se hace al juntar con T0-14) |
 | A1-01 | Esquema de documentos electrónicos | A0-10 | M | ✅ 27-sep (local; triggers que impiden dos facturas VALIDADO sobre la misma orden) |
 | A1-02 | Adaptador Factus: factura de venta | A1-01 | L | ✅ 27-sep (FE-775 y FE-781 validadas en sandbox con CUFE; `calculo.js` cuadra al centavo) |
@@ -644,7 +644,7 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecha y verificada · ❓ espera 
 | NIT | 901203812 · DV **4** | RUT |
 | Tipo | Persona jurídica, régimen ordinario | RUT |
 | Municipio | Pasto, Nariño (DANE 52001) | RUT |
-| Dirección | ⚠️ **Tres versiones distintas** (ver Q-21): RUT `CR 26 N 19 07 O 103`; facturas de Siigo `Carrera 26 No 19-03 Oficina 103`; establecimiento en la resolución `CR 26 N 19 07 OF 201` | RUT, FE-775, resolución |
+| Dirección | ✅ **`CR 26 N 19 07 O 103` (la del RUT)**: JD&D dijo el 1-oct-2026 que se use la que aparece en la DIAN (Q-21). Descartadas: facturas de Siigo `Carrera 26 No 19-03 Oficina 103`; establecimiento en la resolución `CR 26 N 19 07 OF 201` | RUT, FE-775, resolución |
 | Correo | gerencia.djdconsultores@gmail.com | RUT, facturas |
 | Teléfonos | 3144768516 (facturas), 3046401209 (RUT) | |
 | CIIU | 7020 principal; 8551 secundaria; otras 6201, 7490 | RUT |
@@ -1553,11 +1553,11 @@ Q-23), `formato_descripcion` (plantilla de texto de la línea, ver A1-04).
   números. Revisarlo una vez al día (mirar cómo se programa hoy el aviso de CFG-05).
 - **Las resoluciones reales de §3.2 NO se siembran** (R-01).
 
-### A0-09 · Ficha del emisor + vencimiento del paquete (FEL-14) · S · ❓ Q-21
+### A0-09 · Ficha del emisor + vencimiento del paquete (FEL-14) · S · Q-21 resuelta
 
 `sst.emisor` con una sola fila (restricción `CHECK (id = 1)` o equivalente). Formulario
 en `/parametrizacion` → "Empresa emisora". Se precarga con §3.1 **por pantalla, no por
-semilla**, salvo la dirección (Q-21: preguntar cuál; supuesto: la del RUT). Campos de
+semilla**, salvo la dirección (Q-21 resuelta el 1-oct-2026: la del RUT, `CR 26 N 19 07 O 103`). Campos de
 vigencia: `paquete_proveedor_vence` y `documentos_certificado_enviados_en`; alertas por
 la campanita a 30 y 7 días. Orbita **no custodia certificado ni llave** (lo trae el
 paquete de Factus).
@@ -2010,7 +2010,7 @@ contradice el supuesto, abrir una tarea de ajuste en el tablero.
 | Q-17 | ¿Los ~35 DS salen de las cuentas de cobro de los asesores? (D-27) | Sí (lo respalda el auxiliar) | A4-01 |
 | Q-19 | Grupo NIIF, comparativo y formato de los estados financieros (D-21) | Grupo 2 sin comparativo | C5-01 |
 | Q-20 | Fecha de corte para saldos iniciales y salida de Siigo (D-19) | — | B9-01 ⛔ |
-| Q-21 | ¿Cuál es la dirección correcta del emisor? (RUT, facturas y resolución dicen tres distintas, §3.1) | La del RUT | A0-09 |
+| Q-21 | ¿Cuál es la dirección correcta del emisor? (RUT, facturas y resolución dicen tres distintas, §3.1) | ✅ **Resuelta 1-oct-2026:** la del RUT (`CR 26 N 19 07 O 103`), JD&D dijo «la que aparece en la DIAN» | A0-09 |
 | Q-22 | Envíen el **PUC completo** exportado de Siigo y el balance de prueba por tercero (solo llegó el auxiliar de septiembre) | Se desarrolla con las 80 cuentas del auxiliar | B0-01 (carga real) |
 | Q-28 | ¿La autorretención (1,1 % del subtotal, 13551816/23657502) va en TODAS las ventas? En el auxiliar de septiembre la llevan las facturas a ARL y la del privado (FV-1-807); Orbita la aplica siempre con la retención AUTORRETENCION activa | Sí, en todas | B2-01 |
 | Q-23 | Siigo pone vencimiento = fecha de emisión en las facturas a crédito. ¿Cuál es el plazo real de pago de cada pagador? | 30 días | B3-01 (antigüedad) |

@@ -2,91 +2,7 @@
   display: block;
 }
 
-/* ---- KPIs ---- */
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.25rem;
-  margin-bottom: 1.75rem;
-}
-
-.kpi-card {
-  background: var(--surface);
-  border-radius: 12px;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
-  padding: 1.4rem 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
-}
-
-.kpi-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 28px -4px rgba(15, 23, 42, 0.1);
-}
-
-.kpi-card__info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-  min-width: 0;
-}
-
-.kpi-card__label {
-  font-size: 0.8rem;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.kpi-card__value {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--text-main);
-  line-height: 1;
-}
-
-.kpi-card--warning .kpi-card__value {
-  color: var(--warning);
-}
-
-.kpi-card__icon {
-  width: 48px;
-  height: 48px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* El icono es un SVG de trazo (como los del sidebar), no un emoji: hereda el
-   color del acento de la tarjeta en vez de traer el suyo propio. */
-.kpi-card__icon svg {
-  width: 22px;
-  height: 22px;
-}
-
-.kpi-card--blue .kpi-card__icon {
-  background: rgba(45, 123, 200, 0.1);
-  color: var(--secondary-color);
-}
-
-.kpi-card--cyan .kpi-card__icon {
-  background: rgba(136, 178, 232, 0.18);
-  color: var(--primary-color);
-}
-
-.kpi-card--warning .kpi-card__icon {
-  background: rgba(245, 158, 11, 0.1);
-  color: var(--warning);
-}
-
-.kpi-card--slate .kpi-card__icon {
-  background: rgba(100, 116, 139, 0.1);
-  color: #64748b;
-}
+/* ---- KPIs: `.kpi-grid` / `.kpi-card` son globales (styles.scss, 30-sep-2026) ---- */
 
 /* ---- Panel / Tabla ---- */
 .panel {
@@ -223,24 +139,7 @@
   font-size: 0.9rem;
 }
 
-.table tbody td {
-  padding: 0.9rem 1.1rem;
-  border-bottom: 1px solid var(--border-soft);
-  color: var(--text-main);
-  vertical-align: middle;
-}
-
-.table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.table tbody tr:hover {
-  background: #f8fafc;
-}
-
-.row-clickable {
-  cursor: pointer;
-}
+/* Tabla: la global de styles.scss (estandarizada el 30-sep-2026); aquí ya no se redefine. */
 
 /**
  * ASG-08 · Fila de una orden que el profesional todavía tiene que atender.

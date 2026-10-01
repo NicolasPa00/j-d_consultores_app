@@ -203,7 +203,6 @@
     <table class="table">
       <thead>
         <tr>
-          <th class="col-num">#</th>
           <th>NIT</th>
           <th>Razón social</th>
           <th>ARL</th>
@@ -211,13 +210,13 @@
           <th>Fecha de vencimiento</th>
           <th>Confianza</th>
           <th>Estado</th>
+          <th class="col-actions"></th>
         </tr>
       </thead>
       <tbody>
-        <!-- Al pulsar una fila se abre esa orden en Órdenes (`/ordenes?os=<id>`). -->
+        <!-- El ojo abre esa orden en Órdenes (`/ordenes?os=<id>`); la fila no es clicable (1-oct-2026). -->
         @for (order of recentOrders(); track order.id; let i = $index) {
-          <tr class="row-clickable" (click)="openOrder(order)">
-            <td class="col-num mono">{{ i + 1 }}</td>
+          <tr>
             <td class="mono">{{ order.nit }}</td>
             <td>
               <div class="who__text">
@@ -246,11 +245,12 @@
               }
             </td>
             <td>
-              <span class="pill" [class]="pillClass(order.confidence)">{{ order.confidence }}%</span>
+              <span class="pill pill--metric" [class]="pillClass(order.confidence)">{{ order.confidence }}%</span>
             </td>
             <td>
               <span class="pill" [class]="pillEstado(order.status)">{{ order.status }}</span>
             </td>
+            <td class="col-actions"><button type="button" class="icon-action" (click)="openOrder(order)" aria-label="Ver la orden" title="Ver la orden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
           </tr>
         } @empty {
           <tr>

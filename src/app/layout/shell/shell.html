@@ -108,7 +108,7 @@
           </span>
           <span class="nav-link__text">
             {{ item.label }}
-            <small class="nav-link__hint">{{ item.hint }}</small>
+            <small class="nav-link__hint" [title]="item.hint">{{ item.hint }}</small>
           </span>
         </a>
       }

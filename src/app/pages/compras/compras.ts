@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
+import { PESOS } from '../../core/dinero';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
@@ -10,7 +11,6 @@ import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 import { aCentavos } from '../contabilidad/comprobantes/comprobantes';
 
-const PESOS = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
 export const ETIQUETA_TIPO_COMPRA: Record<TipoCompra, string> = {
   COMPRA: 'Compra', SERVICIO: 'Servicio', SERVICIO_PROFESIONAL: 'Servicio profesional', GASTO_INTERNO: 'Gasto interno',

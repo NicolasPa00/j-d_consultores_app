@@ -7,19 +7,41 @@
 
 /* ============ 30-sep-2026 · Cobro de la orden y «Validado plataforma» ============ */
 
-/* La píldora de Cobro es el botón que abre el modal: se ve igual que antes,
-   solo que reacciona al cursor para que se note que se puede pulsar. */
-.pill--boton {
-  border: 0;
+/* 1-oct-2026 · El estado de Cobro es el botón que abre el modal. Como píldora
+   rellena se leía como una etiqueta más y nadie lo pulsaba: ahora es un botón
+   con borde, sin fondo y con el ícono de factura. El color dice el estado. */
+.cobro-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.22rem 0.6rem;
+  border: 1.5px solid #94a3b8;
+  border-radius: var(--radius-sm, 6px);
+  background: transparent;
+  color: #475569;
   cursor: pointer;
   font: inherit;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  transition: filter 0.15s ease, box-shadow 0.15s ease;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+
+  svg {
+    width: 0.95rem;
+    height: 0.95rem;
+    flex-shrink: 0;
+  }
+
+  &--ok {
+    border-color: var(--success);
+    color: var(--success);
+  }
 
   &:hover:not(:disabled) {
-    filter: brightness(0.94);
-    box-shadow: 0 0 0 2px rgba(45, 123, 200, 0.18);
+    border-color: var(--secondary-color);
+    color: var(--secondary-color);
+    box-shadow: 0 0 0 2px rgba(45, 123, 200, 0.15);
   }
 
   &:focus-visible {
@@ -29,6 +51,43 @@
 
   &:disabled {
     cursor: default;
+    opacity: 0.55;
+  }
+}
+
+/* 1-oct-2026 · N.º de radicado ante Bolívar, bajo el botón de Cobro. */
+.radicado {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--secondary-color);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-align: left;
+
+  &--vacio {
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  &:hover:not(:disabled) {
+    text-decoration: underline;
+  }
+
+  &:disabled {
+    cursor: default;
+    text-decoration: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--secondary-color);
+    outline-offset: 2px;
   }
 }
 
@@ -106,19 +165,7 @@
     outline: 2px solid var(--secondary-color);
     outline-offset: 2px;
   }
-}
-
-/* El modal de cobro: más ancho que el diálogo «slim» (lleva una tabla de
-   comparación), pero sin la anchura fluida de los modales de tabla grande. */
-.modal--cobro {
-  width: min(640px, calc(100vw - 2rem));
-}
-
-.modal--cobro .modal__footer {
-  justify-content: flex-end;
-}
-
-.cobro__cargando {
+}.cobro__cargando {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -129,18 +176,31 @@
   margin-bottom: 1rem;
 }
 
+/* 1-oct-2026 · Dos columnas: captura a la izquierda, decisión a la derecha.
+   Cada sección es un panel propio en vez de bloques separados por una raya. */
+.cobro__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+
+  @media (max-width: 900px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.cobro__col {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
 .cobro__seccion {
-  padding: 0.9rem 0;
-  border-bottom: 1px solid var(--border-soft, #e2e8f0);
-
-  &:first-of-type {
-    padding-top: 0;
-  }
-
-  &:last-of-type {
-    border-bottom: 0;
-    padding-bottom: 0;
-  }
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border-soft, #e2e8f0);
+  border-radius: var(--radius-md, 10px);
+  background: var(--card-bg, #fff);
 }
 
 .cobro__titulo {
@@ -234,22 +294,9 @@
   font-weight: 600;
 }
 
-.cobro__comparacion {
-  width: 100%;
-  font-size: 0.82rem;
-
-  .num {
-    text-align: right;
-  }
-}
-
 .cobro__difiere td {
   color: var(--danger);
   background: rgba(239, 68, 68, 0.06);
-}
-
-.cobro__comparacion-total td {
-  font-weight: 700;
 }
 
 .cobro__estado {

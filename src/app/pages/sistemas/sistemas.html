@@ -1,7 +1,7 @@
-<main class="sistemas">
+<main class="brand-screen sistemas">
   <header class="sistemas__cabecera">
-    <img class="sistemas__logo" src="logo-orbita-horizontal.webp" alt="ORBITA · Gestión Inteligente" />
-    <button type="button" class="sistemas__salir" (click)="logout()">Cerrar sesión</button>
+    <img class="sistemas__logo" src="logo-orbita-horizontal-claro.webp" alt="ORBITA · Gestión Inteligente" />
+    <button type="button" class="btn btn--outline-light sistemas__salir" (click)="logout()">Cerrar sesión</button>
   </header>
 
   <section class="sistemas__cuerpo">
@@ -11,7 +11,7 @@
 
     <div class="sistemas__tarjetas">
       @for (s of opciones(); track s.id) {
-        <button type="button" class="tarjeta" [class.tarjeta--finanzas]="s.id === 'finanzas'" (click)="elegir(s.id)">
+        <button type="button" class="card card--interactive tarjeta" [class.tarjeta--finanzas]="s.id === 'finanzas'" (click)="elegir(s.id)">
           <span class="tarjeta__icono" aria-hidden="true">
             @if (s.id === 'operacion') {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -26,12 +26,12 @@
           </span>
           <span class="tarjeta__nombre">{{ s.nombre }}</span>
           <span class="tarjeta__descripcion">{{ s.descripcion }}</span>
-          <span class="tarjeta__pantallas">
+          <span class="chip-list tarjeta__pantallas">
             @for (p of s.pantallas; track p) {
-              <span class="tarjeta__pantalla">{{ p }}</span>
+              <span class="chip">{{ p }}</span>
             }
           </span>
-          <span class="tarjeta__entrar">Entrar a {{ s.nombre }} →</span>
+          <span class="link-cta tarjeta__entrar">Entrar a {{ s.nombre }} <span aria-hidden="true">→</span></span>
         </button>
       }
     </div>

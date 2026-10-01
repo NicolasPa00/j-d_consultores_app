@@ -125,14 +125,24 @@ export function pistaTipoActividadArl(arlNombre: string | null | undefined): str
  * tabla de `/ordenes`, "Órdenes recientes" del dashboard, el detalle de la orden
  * y las exportaciones de `/informes` (que además llevan "Cronograma" y
  * "Secuencia" como columnas separadas, para poder filtrar el Excel).
+ *
+ * 1-oct-2026 · AXA Colpatria también, con su número de orden ("EXTERNA NÚMERO:
+ * 71 - 0001146755" → "EMPRESA (71-0001146755)"), a pedido del cliente. Colmena
+ * sigue sin paréntesis: no lo pidieron.
  */
 export function etiquetaEmpresa(
   empresaNombre: string | null | undefined,
   arlNombre: string | null | undefined,
   codigoCronograma: string | null | undefined,
   secuencia: string | null | undefined,
+  numeroOrden?: string | null,
 ): string {
   const nombre = String(empresaNombre ?? '').trim() || '—';
+  if (carpetaArl(arlNombre) === 'colpatria') {
+    // El PDF lo trae con espacios alrededor del guion ("71 - 0001146755").
+    const numero = String(numeroOrden ?? '').trim().replace(/\s*-\s*/g, '-');
+    return numero ? `${nombre} (${numero})` : nombre;
+  }
   const cron = String(codigoCronograma ?? '').trim();
   const sec = String(secuencia ?? '').trim();
   if (!esBolivar(arlNombre) || !cron || !sec) return nombre;
@@ -147,4 +157,10 @@ export function esBolivar(arlNombre: string | null | undefined): boolean {
   return String(arlNombre ?? '')
     .normalize('NFD').replace(/[̀-ͯ]/g, '')
     .toLowerCase().includes('bolivar');
+}
+
+/** ¿Esta ARL es AXA Colpatria? Espejo de `esAxa` en `sst_ws/src/utils/bolivar.js`. */
+export function esAxa(arlNombre: string | null | undefined): boolean {
+  const slug = String(arlNombre ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  return slug.includes('colpatria') || /(^|[^a-z])axa([^a-z]|$)/.test(slug);
 }

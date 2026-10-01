@@ -6,8 +6,11 @@
 
     <div class="pc__head">
       <span class="pill pill--info">Cuenta de cobro</span>
-      <h1 class="pc__title">{{ info()?.periodo_largo || '' }}</h1>
-      <p class="pc__prof">{{ info()?.profesional_nombre || '' }}</p>
+      <!-- Sin cuenta (enlace inválido) la tarjeta quedaba vacía: título genérico. -->
+      <h1 class="pc__title">{{ info()?.periodo_largo || 'Pago a profesionales' }}</h1>
+      @if (info()?.profesional_nombre) {
+        <p class="pc__prof">{{ info()?.profesional_nombre }}</p>
+      }
     </div>
 
     @if (loading()) {

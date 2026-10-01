@@ -54,7 +54,7 @@
       </thead>
       <tbody>
         @for (emp of pag.visibles(); track emp.id) {
-          <tr class="emp-row" (click)="openDetalle(emp)">
+          <tr>
             <td>
               <div class="who">
                 <span class="who__avatar" aria-hidden="true">{{ emp.nombre.charAt(0) }}</span>
@@ -146,7 +146,7 @@
 <!-- ============ MODAL · FICHA ============ -->
 @if (detalle(); as emp) {
   <div class="modal-backdrop" (click)="closeDetalle()"></div>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="fichaTitle">
+  <div class="modal modal--lg" role="dialog" aria-modal="true" aria-labelledby="fichaTitle">
     <header class="modal__head">
       <h3 class="modal__title" id="fichaTitle">{{ emp.nombre }}</h3>
       <button type="button" class="icon-action" (click)="closeDetalle()" aria-label="Cerrar">
@@ -251,7 +251,7 @@
 <!-- ============ MODAL · FORMULARIO ============ -->
 @if (formOpen()) {
   <div class="modal-backdrop" (click)="closeForm()"></div>
-  <div class="modal modal--form" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+  <div class="modal modal--lg" role="dialog" aria-modal="true" aria-labelledby="formTitle">
     <header class="modal__head">
       <h3 class="modal__title" id="formTitle">
         {{ editingId() ? 'Editar empresa' : 'Nueva empresa' }}
@@ -305,7 +305,7 @@
         </div>
       </div>
 
-      <h4 class="form-section">Contacto administrativo</h4>
+      <h4 class="section-head"><span class="section-tag">Contacto administrativo</span></h4>
       <div class="form-row">
         <div class="form-field">
           <label class="form-field__label" for="eCtoNombre">Nombre</label>
@@ -327,7 +327,7 @@
         </div>
       </div>
 
-      <h4 class="form-section">Responsable de SST</h4>
+      <h4 class="section-head"><span class="section-tag">Responsable de SST</span></h4>
       <div class="form-field">
         <label class="form-field__label" for="eSstNombre">Nombre</label>
         <input id="eSstNombre" class="form-control" type="text" [(ngModel)]="draft.contacto_sst_nombre" name="sstNombre" />
@@ -350,7 +350,7 @@
     </form>
 
     <footer class="modal__footer">
-      <button type="button" class="btn btn--ghost" (click)="closeForm()" [disabled]="saving()">Cancelar</button>
+      <button type="button" class="btn btn--close" (click)="closeForm()" [disabled]="saving()">Cancelar</button>
       <button type="button" class="btn btn--primary" [disabled]="saving() || !isValid()" (click)="save()">
         @if (saving()) {
           <span class="spinner" aria-hidden="true"></span>

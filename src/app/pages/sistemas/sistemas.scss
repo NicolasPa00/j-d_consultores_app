@@ -1,108 +1,93 @@
+/*
+ * Selector de sistema ("¿En qué sistema va a trabajar?").
+ *
+ * 30-sep-2026 · Identidad corporativa de JD&D: el fondo es `.brand-screen`, el
+ * botón de salir `.btn--outline-light`, las tarjetas `.card.card--interactive`,
+ * las funcionalidades `.chip` y el "Entrar a…" `.link-cta` (todo en
+ * styles.scss). Aquí solo queda la disposición propia de esta pantalla.
+ */
 :host {
   display: block;
 }
 
-// Mismo degradado de marca que el panel izquierdo del login: es la continuación
-// del inicio de sesión, no una pantalla más de la aplicación.
 .sistemas {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(160deg, #000b50 0%, #163a8c 55%, #2d7bc8 100%);
-  color: #fff;
 }
 
+/* ---- Cabecera: logo a la izquierda, salir a la derecha ---- */
 .sistemas__cabecera {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 32px;
+  gap: 1rem;
+  padding: 1.25rem 2rem;
 }
 
+/* Versión para fondo oscuro: texto blanco y la órbita con sus colores (antes
+   se pasaba todo a blanco con un filtro y la órbita perdía el color). */
 .sistemas__logo {
-  height: 40px;
-  // El lockup horizontal es oscuro: sobre el degradado se pasa a blanco.
-  filter: brightness(0) invert(1);
+  height: 42px;
+  width: auto;
 }
 
 .sistemas__salir {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  color: #fff;
-  border-radius: var(--radius-sm, 8px);
-  padding: 8px 14px;
-  cursor: pointer;
-  font: inherit;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.12);
-  }
+  padding: 0.55rem 1rem;
+  font-weight: 500;
 }
 
+/* ---- Cuerpo ---- */
 .sistemas__cuerpo {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px 16px 48px;
+  padding: 1.5rem 1rem 3rem;
   text-align: center;
 }
 
 .sistemas__saludo {
   margin: 0;
-  opacity: 0.85;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .sistemas__titulo {
-  // Explícito: el h1 global es oscuro y sobre el degradado no se leía.
-  color: #fff;
-  margin: 6px 0 8px;
+  // Explícito: el h1 global es oscuro y sobre el degradado no se leería.
+  margin: 0.4rem 0 0.5rem;
+  color: #ffffff;
   font-size: 1.9rem;
   font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .sistemas__sub {
-  margin: 0 0 32px;
-  opacity: 0.8;
+  margin: 0 0 2rem;
+  color: rgba(255, 255, 255, 0.72);
   font-size: 0.95rem;
 }
 
 .sistemas__tarjetas {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 340px));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 360px));
+  gap: 1.5rem;
   justify-content: center;
   width: 100%;
-  max-width: 760px;
+  max-width: 800px;
 }
 
+/* ---- Tarjeta de sistema (sobre `.card.card--interactive`) ---- */
 .tarjeta {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
+  gap: 0.75rem;
+  padding: 2rem;
   text-align: left;
-  padding: 24px;
-  background: #fff;
-  color: var(--text-main, #1f2937);
-  border: 0;
-  border-radius: var(--radius-lg, 16px);
-  box-shadow: 0 12px 32px rgba(0, 11, 80, 0.28);
-  cursor: pointer;
+  color: var(--text-main);
   font: inherit;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-
-  &:hover,
-  &:focus-visible {
-    transform: translateY(-3px);
-    box-shadow: 0 18px 40px rgba(0, 11, 80, 0.35);
-    outline: none;
-  }
-
-  &:focus-visible {
-    box-shadow: 0 0 0 3px #88b2e8, 0 18px 40px rgba(0, 11, 80, 0.35);
-  }
+  border: 0;
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.4);
 }
 
 .tarjeta__icono {
@@ -111,8 +96,8 @@
   display: grid;
   place-items: center;
   border-radius: 12px;
-  background: #e8f0fb;
-  color: #163a8c;
+  background: rgba(0, 11, 79, 0.07);
+  color: var(--primary-color);
 
   svg {
     width: 26px;
@@ -120,59 +105,58 @@
   }
 }
 
+// Finanzas conserva su acento verde para distinguirse de un vistazo.
 .tarjeta--finanzas .tarjeta__icono {
-  background: #e3f6ee;
-  color: #1f7a55;
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
 }
 
 .tarjeta__nombre {
   font-size: 1.3rem;
   font-weight: 700;
-  color: #000b50;
+  color: var(--primary-color);
 }
 
 .tarjeta__descripcion {
   font-size: 0.9rem;
-  color: var(--text-muted, #5b6675);
-  line-height: 1.45;
-}
-
-.tarjeta__pantallas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.tarjeta__pantalla {
-  font-size: 0.75rem;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: #f1f4f8;
-  color: #3b4656;
+  line-height: 1.5;
+  color: var(--text-muted);
 }
 
 .tarjeta__entrar {
   margin-top: auto;
-  padding-top: 6px;
-  font-weight: 600;
-  color: #2d7bc8;
+  padding-top: 0.5rem;
+  transition: color 0.2s ease;
+}
+
+.tarjeta:hover .tarjeta__entrar {
+  color: var(--primary-hover);
 }
 
 .sistemas__recordar {
-  margin-top: 28px;
+  margin-top: 1.75rem;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
   font-size: 0.9rem;
-  opacity: 0.9;
+  color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
 }
 
 @media (max-width: 600px) {
   .sistemas__cabecera {
-    padding: 16px;
+    padding: 1rem;
   }
+
+  .sistemas__logo {
+    height: 34px;
+  }
+
   .sistemas__titulo {
     font-size: 1.5rem;
+  }
+
+  .tarjeta {
+    padding: 1.5rem;
   }
 }

@@ -38,9 +38,8 @@
         aria-label="Filtrar por estado de cobro"
       >
         <option value="">Cobro · todos</option>
-        @for (e of estadosCobro; track e) {
-          <option [value]="e">{{ e }}</option>
-        }
+        <option value="APROBADO">Cobro aprobado</option>
+        <option value="PENDIENTE">Cobro pendiente</option>
       </select>
     }
 
@@ -115,13 +114,12 @@
     <table class="table ord-table">
       <thead>
         <tr>
-          <th class="col-num">#</th>
           <th>Razón social</th>
           <th>ARL</th>
           <th>Horas</th>
           <th>Vencimiento</th>
           <th>Estado</th>
-          <th>Estado ARL</th>
+          <th class="th--wrap">Estado ARL/<br />Plataforma</th>
           <th>Cobro</th>
           <th class="col-actions">Opciones</th>
         </tr>
@@ -129,7 +127,6 @@
       <tbody>
         @for (order of pag.visibles(); track order.id; let i = $index) {
           <tr>
-            <td class="col-num mono">{{ pag.desde() + i }}</td>
             <!-- T0-06 · El NIT bajaba en su propia columna; a 1366-1440 px no
                  dejaba sitio para Opciones sin scroll. Va como subtítulo de la
                  razón social: se sigue viendo entero, solo que en una línea
@@ -211,20 +208,42 @@
                      factura electrónica, el marcado manual). Debajo, en las
                      finalizadas sin facturar, si operación ya aprobó el cobro:
                      sin ese visto bueno la orden no pasa a Facturación. -->
+                <!-- 1-oct-2026 · La columna habla solo del COBRO (visto bueno de
+                     operación): Aprobado / Pendiente. Si está facturada se ve en
+                     el modal y en Facturación, no aquí. -->
                 <button
                   type="button"
-                  class="pill pill--boton"
-                  [class]="pillCobro(order.estadoCobro)"
+                  class="cobro-btn"
+                  [class.cobro-btn--ok]="order.cobroAprobadoEn"
                   [disabled]="order.disabled"
                   (click)="openCobro(order)"
-                  [title]="'Cobro de la orden · ' + (order.estadoCobro || 'NO FACTURADA')"
+                  [title]="'Abrir el cobro de la orden · ' + (order.cobroAprobadoEn ? 'aprobado' : 'pendiente de aprobación')"
                 >
-                  {{ order.estadoCobro || 'NO FACTURADA' }}
+                  <!-- Ícono de factura: dice que es un botón que abre el cobro. -->
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M6 2h12v20l-3-2-3 2-3-2-3 2z" />
+                    <path d="M9 7h6M9 11h6M9 15h4" />
+                  </svg>
+                  {{ order.cobroAprobadoEn ? 'APROBADO' : 'PENDIENTE' }}
                 </button>
-                @if (order.osEstado === 'FINALIZADA' && order.estadoCobro !== 'FACTURADA') {
-                  <span class="cobro-aprob" [class.cobro-aprob--ok]="order.cobroAprobadoEn">
-                    {{ order.cobroAprobadoEn ? 'Aprobado' : 'Por aprobar' }}
-                  </span>
+                <!-- 1-oct-2026 · N.º de radicado ante Bolívar. Va aquí y no en una
+                     columna propia: solo lo usa Bolívar (la columna quedaría vacía
+                     en AXA y Colmena) y la tabla ya no cabe sin scroll a 1366 px. -->
+                @if (esBolivarArl(order)) {
+                  <button
+                    type="button"
+                    class="radicado"
+                    [class.radicado--vacio]="!order.numeroRadicado"
+                    [disabled]="!puedeEditarCobro()"
+                    (click)="abrirRadicado(order)"
+                    [title]="order.numeroRadicado ? 'N.º de radicado ante Bolívar · pulse para cambiarlo' : 'Agregar el n.º de radicado ante Bolívar'"
+                  >
+                    @if (order.numeroRadicado) {
+                      RADICADO {{ order.numeroRadicado }}
+                    } @else if (puedeEditarCobro()) {
+                      + Radicado
+                    }
+                  </button>
                 }
               } @else {
                 <span class="venc__none">—</span>
@@ -320,7 +339,7 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="9" class="table__empty">
+            <td colspan="8" class="table__empty">
               @if (loading()) {
                 Cargando órdenes…
               } @else if (query()) {
@@ -349,7 +368,7 @@
 <!-- ============ MODAL: DETALLE / EDICIÓN ============ -->
 @if (detailOrder(); as order) {
   <div class="modal-backdrop" (click)="closeDetail()"></div>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+  <div class="modal modal--xl" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="detailTitle">
@@ -914,7 +933,7 @@
         }
       </span>
       <div class="modal__footer-actions">
-        <button type="button" class="btn btn--ghost" (click)="closeDetail()" [disabled]="saving()">
+        <button type="button" class="btn btn--close" (click)="closeDetail()" [disabled]="saving()">
           Cerrar
         </button>
         @if (editMode()) {
@@ -937,7 +956,7 @@
 <!-- ============ MODAL: ASIGNAR PROFESIONAL ============ -->
 @if (assignOrder(); as order) {
   <div class="modal-backdrop" (click)="closeAssign()"></div>
-  <div class="modal modal--wide modal--agenda" role="dialog" aria-modal="true" aria-labelledby="assignTitle">
+  <div class="modal modal--full" role="dialog" aria-modal="true" aria-labelledby="assignTitle">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="assignTitle">
@@ -981,6 +1000,11 @@
               </button>
             }
           </div>
+
+          <!-- 1-oct-2026 · Solo esta parte se desplaza: la lista de documentos de
+               arriba queda fija para cambiar de PDF sin perder de vista los
+               botones mientras se llenan las casillas. -->
+          <div class="vista-formatos__campos">
 
           @if (formatoEnVisor(); as fv) {
             @if (fv.editables.length) {
@@ -1060,6 +1084,7 @@
           } @else {
             <p class="vista-formatos__ayuda">Estos formatos no tienen casilla de observaciones.</p>
           }
+          </div>
         </aside>
 
         <section class="vista-formatos__visor">
@@ -1423,7 +1448,7 @@
             }
           </button>
         } @else {
-          <button type="button" class="btn btn--ghost" (click)="closeAssign()" [disabled]="assigning() || previsualizando()">Cancelar</button>
+          <button type="button" class="btn btn--close" (click)="closeAssign()" [disabled]="assigning() || previsualizando()">Cancelar</button>
           <!-- ASG-02 · Basta con haber elegido profesional. Exigir además la visita
                completa dejaba sin salida el caso de cambiar de asesor en una orden
                de muchas horas: había que repartirlas todas antes de poder guardar
@@ -1465,7 +1490,7 @@
 <!-- ============ MODAL: VERIFICACIÓN DE SOPORTES (M7) ============ -->
 @if (verifyOrder(); as order) {
   <div class="modal-backdrop" (click)="closeVerify()"></div>
-  <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="verifyTitle">
+  <div class="modal modal--full" role="dialog" aria-modal="true" aria-labelledby="verifyTitle">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="verifyTitle">
@@ -1691,7 +1716,7 @@
                  cerrar no decide nada, rechazar devuelve la orden al profesional
                  y aceptar la da por buena. Cuando "Rechazar" y "Cerrar" eran los
                  dos un botón gris, se confundían. -->
-            <button type="button" class="btn btn--ghost" (click)="closeVerify()" [disabled]="deciding()">
+            <button type="button" class="btn btn--close" (click)="closeVerify()" [disabled]="deciding()">
               Cerrar
             </button>
             <button type="button" class="btn btn--danger" (click)="startReject()" [disabled]="deciding() || !supports().length">
@@ -1714,7 +1739,7 @@
             </button>
           }
         } @else {
-          <button type="button" class="btn btn--ghost" (click)="closeVerify()">Cerrar</button>
+          <button type="button" class="btn btn--close" (click)="closeVerify()">Cerrar</button>
         }
       </div>
     </footer>
@@ -1733,7 +1758,11 @@
      los puso Orbita y se corrigen con una nota crédito. -->
 @if (cobroOrden(); as ordenCobro) {
   <div class="modal-backdrop" (click)="closeCobro()"></div>
-  <div class="modal modal--cobro" role="dialog" aria-modal="true" aria-labelledby="cobroTitle">
+  <!-- 1-oct-2026 · Ancho y en dos columnas: a la izquierda lo que se captura
+       (valor y gastos), a la derecha lo que se decide con eso (prefactura,
+       aprobación, facturación). En una sola columna estrecha había que bajar
+       tres pantallas para aprobar. -->
+  <div class="modal modal--xl" role="dialog" aria-modal="true" aria-labelledby="cobroTitle">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="cobroTitle">Cobro de la orden</h3>
@@ -1756,6 +1785,8 @@
           <div class="alert alert--info cobro__aviso">{{ d.bloqueada }}</div>
         }
 
+        <div class="cobro__layout">
+        <div class="cobro__col">
         <!-- 1 · Valor de la orden -->
         <section class="cobro__seccion">
           <h4 class="cobro__titulo">Valor de la orden</h4>
@@ -1863,116 +1894,6 @@
           }
         </section>
 
-        <!-- 3 · Comparación con la prefactura (si ya se cargó) -->
-        @if (d.prefactura; as pf) {
-          <section class="cobro__seccion">
-            <h4 class="cobro__titulo">
-              Prefactura {{ pf.numero }}
-              <span class="pill" [class]="pf.cuadra ? 'pill--success' : 'pill--danger'">{{ pf.cuadra ? 'Cuadra' : 'No cuadra' }}</span>
-            </h4>
-            <table class="table cobro__comparacion">
-              <thead>
-                <tr><th>Concepto</th><th class="num">Orbita</th><th class="num">Prefactura</th></tr>
-              </thead>
-              <tbody>
-                <tr [class.cobro__difiere]="difierePrefactura('honorarios')">
-                  <td>Honorarios</td>
-                  <td class="num mono">{{ d.honorarios != null ? pesos(d.honorarios) : '—' }}</td>
-                  <td class="num mono">{{ pf.honorarios != null ? pesos(pf.honorarios) : '—' }}</td>
-                </tr>
-                @for (g of gastosCobro; track g.clave) {
-                  @if (d.gastos[g.clave] || pf.gastos[g.clave]) {
-                    <tr [class.cobro__difiere]="difierePrefactura(g.clave)">
-                      <td>{{ g.etiqueta }}</td>
-                      <td class="num mono">{{ pesos(d.gastos[g.clave]) }}</td>
-                      <td class="num mono">{{ pesos(pf.gastos[g.clave]) }}</td>
-                    </tr>
-                  }
-                }
-                <tr class="cobro__comparacion-total" [class.cobro__difiere]="!pf.cuadra">
-                  <td>Total</td>
-                  <td class="num mono">{{ d.total != null ? pesos(d.total) : '—' }}</td>
-                  <td class="num mono">{{ pf.total != null ? pesos(pf.total) : '—' }}</td>
-                </tr>
-              </tbody>
-            </table>
-            <p class="card__hint">La comparación es con lo guardado: los cambios sin guardar no cuentan.</p>
-          </section>
-        }
-
-        <!-- 4 · Visto bueno de operación -->
-        <section class="cobro__seccion">
-          <h4 class="cobro__titulo">Aprobación de operación</h4>
-          @if (d.aprobacion; as ap) {
-            <p class="cobro__estado cobro__estado--ok">
-              Aprobado por {{ ap.por || '—' }} el {{ fechaHoraCobro(ap.en) }} por <strong class="mono">{{ pesos(ap.total) }}</strong>.
-              La orden ya puede facturarse.
-            </p>
-          } @else if (d.bloqueada) {
-            <p class="cobro__estado">
-              Sin aprobación registrada: la orden entró a facturación antes de que existiera este paso.
-            </p>
-          } @else {
-            <p class="cobro__estado">
-              Pendiente. Sin esta aprobación la orden no pasa a Facturación ni a la contabilidad.
-              @if (d.estado !== 'FINALIZADA') { Se aprueba cuando la orden esté FINALIZADA. }
-            </p>
-          }
-          @if (!d.bloqueada && puedeAprobarCobro()) {
-            <div class="form-field">
-              <label class="form-field__label" for="cobroObsAprob">Observación (opcional)</label>
-              <input
-                id="cobroObsAprob"
-                class="form-control"
-                type="text"
-                maxlength="300"
-                placeholder="Ej. Revisado contra la prefactura"
-                [(ngModel)]="cobroObsAprobacion"
-                name="cobroObsAprob"
-              />
-            </div>
-            <div class="cobro__acciones">
-              @if (d.aprobacion) {
-                <button type="button" class="btn btn--ghost" [disabled]="cobroGuardandoValores()" (click)="retirarAprobacionCobro()">
-                  Retirar aprobación
-                </button>
-              } @else {
-                <button
-                  type="button"
-                  class="btn btn--primary"
-                  [disabled]="cobroGuardandoValores() || cobroSinGuardar() || d.estado !== 'FINALIZADA' || d.total == null"
-                  (click)="aprobarCobro()"
-                >
-                  Aprobar cobro
-                </button>
-                @if (cobroSinGuardar()) {
-                  <span class="cobro__pendiente">Guarde los valores antes de aprobar</span>
-                } @else if (d.prefactura && !d.prefactura.cuadra) {
-                  <span class="cobro__falta">No cuadra con la prefactura</span>
-                }
-              }
-            </div>
-          }
-          @if (d.historial.length) {
-            <ol class="timeline cobro__historial">
-              @for (h of d.historial; track h.id) {
-                <li class="timeline__item">
-                  <span class="timeline__dot" aria-hidden="true"></span>
-                  <div class="timeline__body">
-                    <p class="timeline__head">
-                      {{ accionAprobacion(h.accion) }}
-                      @if (h.total != null) { · <span class="mono">{{ pesos(+h.total) }}</span> }
-                    </p>
-                    <p class="timeline__meta">
-                      {{ fechaHoraCobro(h.creado_en) }} · {{ h.usuario_nombre || 'Sistema' }}
-                      @if (h.observacion) { · {{ h.observacion }} }
-                    </p>
-                  </div>
-                </li>
-              }
-            </ol>
-          }
-        </section>
 
         <!-- 5 · Facturación -->
         <section class="cobro__seccion">
@@ -2049,12 +1970,136 @@
             </p>
           }
         </section>
+        </div>
+
+        <div class="cobro__col">
+        <!-- 3 · Comparación con la prefactura (si ya se cargó) -->
+        @if (d.prefactura; as pf) {
+          <section class="cobro__seccion">
+            <h4 class="cobro__titulo">
+              Prefactura {{ pf.numero }}
+              <span class="pill" [class]="pf.cuadra ? 'pill--success' : 'pill--danger'">{{ pf.cuadra ? 'Cuadra' : 'No cuadra' }}</span>
+            </h4>
+            <!-- Tabla estándar del sistema (table-wrap + table, total en tfoot). -->
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr><th>Concepto</th><th class="col-num">Orbita</th><th class="col-num">Prefactura</th></tr>
+                </thead>
+                <tbody>
+                  <tr [class.cobro__difiere]="difierePrefactura('honorarios')">
+                    <td>Honorarios</td>
+                    <td class="col-num mono">{{ d.honorarios != null ? pesos(d.honorarios) : '—' }}</td>
+                    <td class="col-num mono">{{ pf.honorarios != null ? pesos(pf.honorarios) : '—' }}</td>
+                  </tr>
+                  @for (g of gastosCobro; track g.clave) {
+                    @if (d.gastos[g.clave] || pf.gastos[g.clave]) {
+                      <tr [class.cobro__difiere]="difierePrefactura(g.clave)">
+                        <td>{{ g.etiqueta }}</td>
+                        <td class="col-num mono">{{ pesos(d.gastos[g.clave]) }}</td>
+                        <td class="col-num mono">{{ pesos(pf.gastos[g.clave]) }}</td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+                <tfoot>
+                  <tr [class.cobro__difiere]="!pf.cuadra">
+                    <td>Total</td>
+                    <td class="col-num mono">{{ d.total != null ? pesos(d.total) : '—' }}</td>
+                    <td class="col-num mono">{{ pf.total != null ? pesos(pf.total) : '—' }}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+            <p class="card__hint">La comparación es con lo guardado: los cambios sin guardar no cuentan.</p>
+          </section>
+        }
+
+        <!-- 4 · Visto bueno de operación -->
+        <section class="cobro__seccion">
+          <h4 class="cobro__titulo">Aprobación de operación</h4>
+          @if (esAxaArl(ordenCobro)) {
+            <p class="card__hint">AXA no envía prefactura: este visto bueno deja la orden aprobada ante la ARL.</p>
+          }
+          @if (d.aprobacion; as ap) {
+            <p class="cobro__estado cobro__estado--ok">
+              Aprobado por {{ ap.por || '—' }} el {{ fechaHoraCobro(ap.en) }} por <strong class="mono">{{ pesos(ap.total) }}</strong>.
+              La orden ya puede facturarse.
+            </p>
+          } @else if (d.bloqueada) {
+            <p class="cobro__estado">
+              Sin aprobación registrada: la orden entró a facturación antes de que existiera este paso.
+            </p>
+          } @else {
+            <p class="cobro__estado">
+              Pendiente. Sin esta aprobación la orden no pasa a Facturación ni a la contabilidad.
+              @if (d.estado !== 'FINALIZADA') { Se aprueba cuando la orden esté FINALIZADA. }
+            </p>
+          }
+          @if (!d.bloqueada && puedeAprobarCobro()) {
+            <div class="form-field">
+              <label class="form-field__label" for="cobroObsAprob">Observación (opcional)</label>
+              <input
+                id="cobroObsAprob"
+                class="form-control"
+                type="text"
+                maxlength="300"
+                placeholder="Ej. Revisado contra la prefactura"
+                [(ngModel)]="cobroObsAprobacion"
+                name="cobroObsAprob"
+              />
+            </div>
+            <div class="cobro__acciones">
+              @if (d.aprobacion) {
+                <button type="button" class="btn btn--ghost" [disabled]="cobroGuardandoValores()" (click)="retirarAprobacionCobro()">
+                  Retirar aprobación
+                </button>
+              } @else {
+                <button
+                  type="button"
+                  class="btn btn--primary"
+                  [disabled]="cobroGuardandoValores() || cobroSinGuardar() || d.estado !== 'FINALIZADA' || d.total == null"
+                  (click)="aprobarCobro()"
+                >
+                  Aprobar cobro
+                </button>
+                @if (cobroSinGuardar()) {
+                  <span class="cobro__pendiente">Guarde los valores antes de aprobar</span>
+                } @else if (d.prefactura && !d.prefactura.cuadra) {
+                  <span class="cobro__falta">No cuadra con la prefactura</span>
+                }
+              }
+            </div>
+          }
+          @if (d.historial.length) {
+            <ol class="timeline cobro__historial">
+              @for (h of d.historial; track h.id) {
+                <li class="timeline__item">
+                  <span class="timeline__dot" aria-hidden="true"></span>
+                  <div class="timeline__body">
+                    <p class="timeline__head">
+                      {{ accionAprobacion(h.accion) }}
+                      @if (h.total != null) { · <span class="mono">{{ pesos(+h.total) }}</span> }
+                    </p>
+                    <p class="timeline__meta">
+                      {{ fechaHoraCobro(h.creado_en) }} · {{ h.usuario_nombre || 'Sistema' }}
+                      @if (h.observacion) { · {{ h.observacion }} }
+                    </p>
+                  </div>
+                </li>
+              }
+            </ol>
+          }
+        </section>
+
+        </div>
+        </div>
       }
     </div>
 
     <footer class="modal__footer">
       <div class="modal__footer-actions">
-        <button type="button" class="btn btn--ghost" (click)="closeCobro()" [disabled]="cobroSaving() || cobroGuardandoValores()">
+        <button type="button" class="btn btn--close" (click)="closeCobro()" [disabled]="cobroSaving() || cobroGuardandoValores()">
           Cerrar
         </button>
       </div>
@@ -2072,7 +2117,7 @@
      modal da paso al de la previsualización. -->
 @if (prefacturaCargando()) {
   <div class="modal-backdrop"></div>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="prefacturaCargaTitle" aria-busy="true">
+  <div class="modal modal--sm" role="dialog" aria-modal="true" aria-labelledby="prefacturaCargaTitle" aria-busy="true">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="prefacturaCargaTitle">Cargando prefactura</h3>
@@ -2090,7 +2135,7 @@
     <footer class="modal__footer">
       <span class="modal__status"></span>
       <div class="modal__footer-actions">
-        <button type="button" class="btn btn--ghost" (click)="cancelarLecturaPrefactura()">Cancelar</button>
+        <button type="button" class="btn btn--close" (click)="cancelarLecturaPrefactura()">Cancelar</button>
       </div>
     </footer>
   </div>
@@ -2098,7 +2143,7 @@
 
 @if (prefacturaPreview(); as pf) {
   <div class="modal-backdrop" (click)="cerrarPrefactura()"></div>
-  <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="prefacturaTitle">
+  <div class="modal modal--xl" role="dialog" aria-modal="true" aria-labelledby="prefacturaTitle">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="prefacturaTitle">Prefactura {{ pf.numero_prefactura }}</h3>
@@ -2192,7 +2237,7 @@
     <footer class="modal__footer">
       <span class="modal__status">{{ pf.nombre_archivo }}</span>
       <div class="modal__footer-actions">
-        <button type="button" class="btn btn--ghost" (click)="cerrarPrefactura()" [disabled]="prefacturaAplicando()">
+        <button type="button" class="btn btn--close" (click)="cerrarPrefactura()" [disabled]="prefacturaAplicando()">
           Cerrar
         </button>
         <button
@@ -2219,7 +2264,7 @@
      cliente (con IVA). -->
 @if (manualAbierto()) {
   <div class="modal-backdrop" (click)="cerrarManual()"></div>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="manualTitle">
+  <div class="modal modal--lg" role="dialog" aria-modal="true" aria-labelledby="manualTitle">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="manualTitle">Nueva orden manual</h3>
@@ -2349,13 +2394,56 @@
     <footer class="modal__footer">
       <span class="modal__status">Entra en SIN PROGRAMAR</span>
       <div class="modal__footer-actions">
-        <button type="button" class="btn btn--ghost" (click)="cerrarManual()" [disabled]="manualGuardando()">Cancelar</button>
+        <button type="button" class="btn btn--close" (click)="cerrarManual()" [disabled]="manualGuardando()">Cancelar</button>
         <button type="button" class="btn btn--primary" (click)="guardarManual()" [disabled]="manualGuardando() || clientesCargando()">
           @if (manualGuardando()) {
             <span class="spinner" aria-hidden="true"></span> Creando…
           } @else {
             Crear orden
           }
+        </button>
+      </div>
+    </footer>
+  </div>
+}
+
+<!-- 1-oct-2026 · N.º de radicado ante Bolívar (se abre desde la columna Cobro). -->
+@if (radicadoOrden(); as ro) {
+  <div class="modal-backdrop" (click)="cerrarRadicado()"></div>
+  <div class="modal modal--sm" role="dialog" aria-modal="true" aria-labelledby="radicadoTitle">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="radicadoTitle">N.º de radicado</h3>
+        <p class="modal__sub">{{ ro.osCode }} · {{ nombreOrden(ro) }}</p>
+      </div>
+      <button type="button" class="icon-action" (click)="cerrarRadicado()" aria-label="Cerrar" [disabled]="radicadoGuardando()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M6 6l12 12M18 6 6 18" />
+        </svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      <label class="form-field">
+        <span class="form-field__label">Radicado ante Bolívar</span>
+        <input
+          class="form-control mono"
+          type="text"
+          maxlength="40"
+          placeholder="Ej. 2026-123456"
+          [(ngModel)]="radicadoTexto"
+          name="radicadoTexto"
+          id="radicadoInput"
+          (keydown.enter)="guardarRadicado()"
+        />
+      </label>
+      <p class="modal__sub">Déjelo vacío y guarde para quitarlo.</p>
+    </div>
+    <footer class="modal__footer">
+      <span class="modal__status"></span>
+      <div class="modal__footer-actions">
+        <button type="button" class="btn btn--close" (click)="cerrarRadicado()" [disabled]="radicadoGuardando()">Cancelar</button>
+        <button type="button" class="btn btn--primary" (click)="guardarRadicado()" [disabled]="radicadoGuardando()">
+          {{ radicadoGuardando() ? 'Guardando…' : 'Guardar' }}
         </button>
       </div>
     </footer>

@@ -20,6 +20,8 @@
 .ord-head__actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 0.75rem;
 }
 
@@ -122,23 +124,7 @@
   font-size: 0.9rem;
 }
 
-.table tbody td {
-  padding: 0.8rem 1.1rem;
-  border-bottom: 1px solid var(--border-soft);
-  vertical-align: middle;
-}
-
-.table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.table tbody tr {
-  transition: background 0.15s ease;
-}
-
-.table tbody tr:hover {
-  background: #f8fafc;
-}
+/* Tabla: la global de styles.scss (estandarizada el 30-sep-2026); aquí ya no se redefine. */
 
 .table__empty {
   padding: 2rem 1rem !important;
@@ -158,7 +144,15 @@
    ("SIN PROGRAMAR", "NO FACTURADA") y los iconos de la última columna. */
 .ord-table th,
 .ord-table td {
-  padding: 0.75rem 0.6rem;
+  /* 1-oct-2026 · 0.5rem a los lados (antes 0.6): con el botón de Cobro y el
+     encabezado «Estado ARL/Plataforma» la tabla se pasaba 24 px a 1366. */
+  padding: 0.75rem 0.5rem;
+}
+
+/* 1-oct-2026 · La razón social se partía en 4-5 líneas a 1366 px: las demás
+   columnas no ceden (encabezados sin salto) y ella absorbía todo el recorte. */
+.ord-table td:first-child {
+  min-width: 210px;
 }
 
 /* Los pills de estado ("SIN PROGRAMAR", "NO FACTURADA"…) son el otro tramo
@@ -283,142 +277,13 @@
   color: var(--danger);
   border-color: rgba(239, 68, 68, 0.4);
   background: rgba(239, 68, 68, 0.08);
-}
-
-/* ===== Modal ===== */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  background: rgba(15, 23, 42, 0.45);
-  animation: fade-in 0.2s ease;
-}
-
-/* Ancho fluido: crece con la pantalla en vez de quedarse en un valor fijo.
-   En un monitor de 27" un modal de 720 px se ve perdido en el centro, y en un
-   portátil de 13" uno de 1200 px no cabe. El término en `vw` da la escala y el
-   tope evita líneas de texto interminables en pantallas muy anchas. */
-.modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 51;
-  display: flex;
-  flex-direction: column;
-  width: min(calc(420px + 38vw), 1400px, calc(100vw - 2rem));
-  max-width: calc(100vw - 2rem);
-  max-height: calc(100vh - 2rem);
-  background: var(--surface);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 24px 60px rgba(0, 11, 80, 0.28);
-  animation: modal-in 0.24s cubic-bezier(0.16, 1, 0.3, 1);
-  overflow: hidden;
-}
-
-/* Con dos columnas (lista + panel) el reparto necesita más sitio. */
-.modal--wide {
-  width: min(calc(460px + 46vw), 1700px, calc(100vw - 2rem));
-}
-
-/* Un formulario CORTO no debe crecer con la pantalla.
-   El ancho fluido de `.modal` es el correcto para lo que tiene dos columnas o
-   una tabla, pero el diálogo de facturación son tres campos: en un monitor de
-   27" quedaba un desplegable de mil trescientos píxeles con "FACTURADA" dentro.
-   Ancho fijo y modesto, con el tope de siempre para que quepa en un móvil. */
-.modal--slim {
-  width: min(460px, calc(100vw - 2rem));
-}
-
-/* Su pie no lleva la leyenda de la izquierda, y `space-between` con un solo
-   hijo dejaría los botones pegados al borde izquierdo. */
-.modal--slim .modal__footer {
-  justify-content: flex-end;
-}
-
-/* La agenda necesita ancho: siete días por debajo de ~90 px por columna dejan
-   de ser legibles y la rejilla se pondría a scrollear en horizontal. */
-.modal--agenda {
-  width: min(calc(520px + 48vw), 1800px, calc(100vw - 2rem));
-}
-
-.modal__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.modal__title {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--text-main);
-}
-
-.modal__sub {
-  margin: 0.2rem 0 0;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
-.modal__head-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex-shrink: 0;
-}
-
-.modal__body {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  padding: 1.5rem;
-}
-
-.modal__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.1rem 1.5rem;
-  border-top: 1px solid var(--border-soft);
-}
-
-.modal__status {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-}
-
-.modal__status strong {
-  color: var(--secondary-color);
-  letter-spacing: 0.03em;
-}
-
-.modal__footer-actions {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.btn--sm {
-  padding: 0.45rem 0.8rem;
-  font-size: 0.82rem;
-}
-
-.btn--sm svg,
-.modal__head-actions .btn svg {
-  width: 15px;
-  height: 15px;
-}
-
-/* ===== Detalle (dentro del modal) ===== */
+}/* ===== Detalle (dentro del modal) ===== */
 /* Documento en fila compacta (arriba del detalle) */
 .doc-row {
   display: flex;
   align-items: center;
   gap: 0.85rem;
   padding: 0.7rem 0.9rem;
-  margin-bottom: 1.25rem;
   background: #f8fafc;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
@@ -820,26 +685,6 @@
 @keyframes spin {
   to {
     transform: rotate(360deg);
-  }
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes modal-in {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -48%) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
   }
 }
 
@@ -1900,8 +1745,10 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  overflow-y: auto;
+  /* 1-oct-2026 · El panel ya no se desplaza entero: título y lista de
+     documentos quedan fijos y solo `__campos` hace scroll. */
   max-height: 70vh;
+  min-height: 0;
 }
 
 .vista-formatos__lista {
@@ -1909,6 +1756,19 @@
   flex-direction: column;
   gap: 6px;
   margin-bottom: 8px;
+  flex: none;
+}
+
+.vista-formatos__campos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  border-top: 1px solid var(--border-soft);
+  padding-top: 10px;
 }
 
 .vista-formatos__item {
@@ -1997,7 +1857,9 @@
 .manual-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0 16px;
+  /* 1-oct-2026 · Sin espacio entre filas cada etiqueta quedaba pegada al campo
+     de arriba (`.form-field` no trae margen inferior). */
+  gap: 14px 16px;
   margin-bottom: 12px;
 
   &__ancho { grid-column: 1 / -1; }

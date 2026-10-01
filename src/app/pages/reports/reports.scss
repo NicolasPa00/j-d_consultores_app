@@ -3,7 +3,6 @@
 }
 
 /* Pill neutro (Inactivo) + tonos de estado */
-.pill--muted { background: #eef2f7; color: var(--text-muted); }
 .tone-slate { --tone: #64748b; }
 .tone-blue { --tone: var(--secondary-color); }
 .tone-amber { --tone: var(--warning); }
@@ -76,12 +75,6 @@
   padding-bottom: 0.5rem;
   font-size: 0.85rem;
 }
-
-.btn--sm {
-  padding: 0.45rem 0.8rem;
-  font-size: 0.82rem;
-}
-
 /* ===== Filtros por ARL / estado (multiselección) =====
    Botones de dos estados en vez de un <select>: se ve de un vistazo qué está
    marcado y se pueden combinar varios sin abrir ningún desplegable. */
@@ -157,14 +150,7 @@
   font-size: 0.9rem;
 }
 
-.table tbody td {
-  padding: 0.75rem 1.1rem;
-  border-bottom: 1px solid var(--border-soft);
-  vertical-align: middle;
-}
-
-.table tbody tr:last-child td { border-bottom: none; }
-.table tbody tr:hover { background: #f8fafc; }
+/* Tabla: la global de styles.scss (estandarizada el 30-sep-2026); aquí ya no se redefine. */
 
 .table__empty {
   padding: 2rem 1rem !important;
@@ -210,18 +196,26 @@
   color: var(--text-main);
 }
 
-/* Pill de estado */
+/* Pill de estado: misma forma y paleta que la `.pill` global (30-sep-2026); aquí
+   solo se traducen los tonos que usan las plantillas de Informes. */
 .estado-pill {
   display: inline-flex;
   align-items: center;
-  padding: 0.2rem 0.6rem;
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--badge-neutral-border);
   border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--tone, #64748b);
-  background: color-mix(in srgb, var(--tone, #64748b) 14%, transparent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  color: var(--badge-neutral-text);
+  background: var(--badge-neutral-bg);
 }
+
+.estado-pill.tone-green { color: var(--badge-success-text); background: var(--badge-success-bg); border-color: var(--badge-success-border); }
+.estado-pill.tone-blue  { color: var(--badge-info-text);    background: var(--badge-info-bg);    border-color: var(--badge-info-border); }
+.estado-pill.tone-amber { color: var(--badge-warning-text); background: var(--badge-warning-bg); border-color: var(--badge-warning-border); }
+.estado-pill.tone-red   { color: var(--badge-danger-text);  background: var(--badge-danger-bg);  border-color: var(--badge-danger-border); }
 
 /* Botón de icono en fila */
 .icon-action {
@@ -244,71 +238,7 @@
   background: #f1f5f9;
   color: var(--secondary-color);
   border-color: var(--accent-color);
-}
-
-/* ===== Modal resumen ===== */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  background: rgba(15, 23, 42, 0.45);
-  animation: fade-in 0.2s ease;
-}
-
-.modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 51;
-  display: flex;
-  flex-direction: column;
-  width: 620px;
-  max-width: calc(100vw - 2rem);
-  max-height: calc(100vh - 2rem);
-  background: var(--surface);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 24px 60px rgba(0, 11, 80, 0.28);
-  overflow: hidden;
-  animation: modal-in 0.24s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.modal__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.modal__title {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--text-main);
-}
-
-.modal__sub {
-  margin: 0.2rem 0 0;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
-.modal__body {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  padding: 1.5rem;
-}
-
-.modal__footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1.1rem 1.5rem;
-  border-top: 1px solid var(--border-soft);
-}
-
-.summary__p {
+}.summary__p {
   margin: 0 0 0.9rem;
   font-size: 0.92rem;
   line-height: 1.6;
@@ -333,14 +263,6 @@
 }
 
 .btn[disabled] { opacity: 0.6; cursor: not-allowed; }
-
-/* ===== Animaciones ===== */
-@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-
-@keyframes modal-in {
-  from { opacity: 0; transform: translate(-50%, -48%) scale(0.98); }
-  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-}
 
 @keyframes shimmer {
   from { background-position: 100% 0; }

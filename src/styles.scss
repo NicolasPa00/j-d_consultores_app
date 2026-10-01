@@ -5,7 +5,8 @@
 
 :root {
   /* Paleta corporativa */
-  --primary-color: #000b50;   /* Azul Marino Profundo (Logo) */
+  --primary-color: #000b4f;   /* Azul Marino Profundo · identidad JD&D (30-sep-2026) */
+  --primary-hover: #1a2b70;   /* Hover de todo lo que va en color primario */
   --secondary-color: #2d7bc8; /* Azul Enfoque / Rey */
   --accent-color: #88b2e8;    /* Celeste de apoyo / ondas */
 
@@ -30,6 +31,85 @@
   --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
   --shadow-elevated: 0 10px 30px rgba(0, 11, 80, 0.12);
   --font-base: 'Segoe UI', Roboto, Arial, sans-serif;
+
+  /* ---- Identidad corporativa JD&D (30-sep-2026) ----
+     Lineamientos del cliente para estandarizar las vistas. Todo lo nuevo se
+     escribe contra ESTOS tokens, no con valores sueltos: el inventario del
+     30-sep contó 60 tonos de color distintos escritos a mano. */
+  --gradient-brand: linear-gradient(135deg, #030e2e 0%, #081e3d 100%); /* fondo de pantallas de marca */
+  --card-bg: #ffffff;
+  --radius-card: 16px;        /* tarjetas */
+  --radius-control: 8px;      /* inputs y botones */
+  --radius-chip: 6px;         /* chips / etiquetas */
+  --input-bg: #f9fafb;
+  --input-border: #e5e7eb;
+  --focus-ring: 0 0 0 3px rgba(0, 11, 79, 0.14);
+  --chip-bg: #f3f4f6;
+  --chip-text: #374151;
+  --fs-xs: 0.75rem;           /* 12px: chips, notas al pie */
+  --shadow-card-hover: 0 22px 44px -12px rgba(0, 0, 0, 0.45);
+
+  /* ---- Estados y tablas (30-sep-2026, segundo pedido) ----
+     Esquemas accesibles fondo/texto/borde (escala Tailwind) para TODOS los
+     estados de la app. Las píldoras y los KPI los leen de aquí. */
+  --text-strong: #0f172a;
+  --state-success-bg: #ecfdf5;  --state-success-text: #047857;  --state-success-border: #a7f3d0;  --state-success-strong: #059669;
+  --state-info-bg: #eff6ff;     --state-info-text: #1d4ed8;     --state-info-border: #bfdbfe;     --state-info-strong: #2563eb;
+  --state-neutral-bg: #f1f5f9;  --state-neutral-text: #334155;  --state-neutral-border: #e2e8f0;  --state-neutral-strong: #475569;
+  --state-warning-bg: #fffbeb;  --state-warning-text: #b45309;  --state-warning-border: #fde68a;  --state-warning-strong: #d97706;
+  --state-danger-bg: #fef2f2;   --state-danger-text: #b91c1c;   --state-danger-border: #fecaca;   --state-danger-strong: #dc2626;
+  /* Tabla corporativa (30-sep-2026, tercer pedido; 1-oct variante B): cabecera
+     clara con tinte azul, texto navy y línea inferior navy de 2 px (la cabecera
+     navy sólida contrastaba demasiado); cebra muy suave. El hover NO usa el
+     tinte de la cabecera (se confundían): solo un fondo casi blanco. */
+  --table-head-bg: #eef2fb;
+  --table-head-text: #000b4f;
+  --table-head-rule: 2px solid var(--primary-color);
+  --table-row-border: #e2e8f0;
+  --table-row-alt: #fafbfe;
+  --table-row-hover: #f5f7fd;
+  --table-radius: 12px;
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --table-card-border: rgba(226, 232, 240, 0.8);
+
+  /* Badges de estado ("chips vibrantes"): fondo semisaturado (-100), texto
+     oscuro (-800/-900) y borde visible (-300). Son APARTE de --state-*, que son
+     los fondos suaves del menú y de los KPI. */
+  --badge-success-bg: #d1fae5;  --badge-success-text: #065f46;  --badge-success-border: #6ee7b7;
+  --badge-warning-bg: #fef3c7;  --badge-warning-text: #78350f;  --badge-warning-border: #fcd34d;
+  --badge-info-bg: #e0f2fe;     --badge-info-text: #0c4a6e;     --badge-info-border: #7dd3fc;
+  --badge-danger-bg: #fee2e2;   --badge-danger-text: #991b1b;   --badge-danger-border: #fca5a5;
+  --badge-neutral-bg: #f1f5f9;  --badge-neutral-text: #334155;  --badge-neutral-border: #cbd5e1;
+
+  /* Modales (1-oct-2026): un solo armazón global. Cabecera con el mismo tinte
+     de la tabla y la misma línea navy; cuerpo blanco y plano; cinco anchos que
+     se eligen por el CONTENIDO, no por la pantalla que abre el modal. */
+  --modal-backdrop: rgba(0, 11, 79, 0.45);
+  --modal-radius: var(--radius-card);
+  --modal-shadow: 0 24px 48px -12px rgba(0, 11, 79, 0.3);
+  --modal-head-bg: var(--table-head-bg);
+  --modal-head-rule: var(--table-head-rule);
+  --modal-divider: #e2e8f0;
+  --modal-pad-x: 1.5rem;
+  --modal-w-sm: 480px;    /* confirmaciones y formularios de 1-3 campos */
+  --modal-w-md: 640px;    /* formulario de una columna (por defecto) */
+  --modal-w-lg: 880px;    /* formulario de dos columnas o ficha de detalle */
+  --modal-w-xl: 1200px;   /* detalle con tablas de líneas */
+  --modal-w-full: 1600px; /* visores lado a lado y agenda */
+
+  /* Subtítulo de sección dentro de un modal: etiqueta navy con punta redondeada. */
+  --section-tag-bg: var(--primary-color);
+  --section-tag-text: #ffffff;
+  --section-tag-h: 28px;
+
+  /* Botones (1-oct-2026): Cerrar/Cancelar en rojo TENUE (sale sin hacer nada);
+     las acciones destructivas en rojo sólido y más oscuro, para no confundirse. */
+  --btn-close-bg: #fdf1f0;
+  --btn-close-text: #b42318;
+  --btn-close-border: #f4c7c3;
+  --btn-close-hover-bg: #fbe2df;
+  --btn-danger-bg: #b91c1c;
+  --btn-danger-hover: #991b1b;
 }
 
 * {
@@ -95,9 +175,9 @@ h4 {
 
 /* ---- Tarjeta / panel ---- */
 .card {
-  background: var(--surface);
+  background: var(--card-bg);
   border: 1px solid var(--border-soft);
-  border-radius: 12px;
+  border-radius: var(--radius-card);
   box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
 }
 
@@ -136,9 +216,12 @@ h4 {
   font-size: 0.9rem;
   font-weight: 600;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   cursor: pointer;
   text-decoration: none;
+  /* 1-oct-2026 · Un botón partido en dos líneas («Cargar / prefactura») se lee
+     como dos cosas: si no cabe, que baje entero a la fila siguiente. */
+  white-space: nowrap;
   transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.05s ease;
 }
 
@@ -161,7 +244,36 @@ h4 {
 }
 
 .btn--primary:hover {
-  background: #0a1a73;
+  background: var(--primary-hover);
+}
+
+.btn--primary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Botón de contorno sobre un fondo OSCURO (cabeceras de las pantallas de marca:
+   "Cerrar sesión" del selector de sistema). */
+.btn--outline-light {
+  background: transparent;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.btn--outline-light:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.7);
+}
+
+.btn--outline-light:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+/* Botón alto, para la acción única de una tarjeta de formulario ("Ingresar"). */
+.btn--lg {
+  padding: 0.85rem 1.25rem;
+  font-size: 0.98rem;
 }
 
 .btn--secondary {
@@ -184,21 +296,48 @@ h4 {
 }
 
 /**
- * Acción destructiva o de rechazo. Existe porque "Rechazar" no puede parecerse
- * a "Cancelar": los dos iban de `.btn--ghost` y en el visor de soportes se
- * confundía el botón que devuelve la orden al profesional con el que solo
- * cierra la ventana. El contorno rojo lo separa sin gritar tanto como un botón
- * relleno, que competiría con la acción principal.
+ * Acción destructiva o de rechazo (Anular, Eliminar, Rechazar). Existe porque
+ * "Rechazar" no puede parecerse a "Cancelar". Desde el 1-oct-2026 va RELLENA en
+ * rojo oscuro: Cancelar/Cerrar pasaron a rojo tenue (`.btn--close`) y un
+ * contorno rojo se habría confundido con ellos.
  */
 .btn--danger {
-  background: var(--surface);
-  color: var(--danger);
-  border-color: var(--danger);
+  background: var(--btn-danger-bg);
+  color: #ffffff;
+  border-color: var(--btn-danger-bg);
 }
 
 .btn--danger:hover {
-  background: var(--danger);
-  color: #ffffff;
+  background: var(--btn-danger-hover);
+  border-color: var(--btn-danger-hover);
+}
+
+/* Cerrar / Cancelar (1-oct-2026): rojo tenue. Sale de la ventana sin hacer
+   nada, así que no compite con la acción principal (navy) ni se confunde con
+   una destructiva (rojo sólido). */
+.btn--close {
+  background: var(--btn-close-bg);
+  color: var(--btn-close-text);
+  border-color: var(--btn-close-border);
+}
+
+.btn--close:hover {
+  background: var(--btn-close-hover-bg);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn--sm {
+  padding: 0.45rem 0.8rem;
+  font-size: 0.82rem;
+}
+
+.btn--sm svg {
+  width: 15px;
+  height: 15px;
 }
 
 .btn--block {
@@ -224,9 +363,9 @@ h4 {
   font-family: inherit;
   font-size: 0.92rem;
   color: var(--text-main);
-  background: #f8fafc;
-  border: 1px solid var(--border-soft);
-  border-radius: 10px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-control);
   transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 
@@ -237,8 +376,8 @@ h4 {
 .form-control:focus {
   outline: none;
   background: var(--surface);
-  border-color: var(--secondary-color);
-  box-shadow: 0 0 0 3px rgba(45, 123, 200, 0.15);
+  border-color: var(--primary-color);
+  box-shadow: var(--focus-ring);
 }
 
 .form-control:disabled {
@@ -269,40 +408,65 @@ h4 {
 }
 
 /* ---- Píldoras / badges ---- */
+/* Píldora de ESTADO (30-sep-2026): fondo tenue + texto oscuro + borde suave, los
+   tres del mismo tono, para que se lea igual en cualquier tabla. Sin variante
+   cae en neutro. Para cifras (porcentajes, confianza) va con `.pill--metric`. */
 .pill {
   display: inline-flex;
   align-items: center;
-  padding: 0.25rem 0.7rem;
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--badge-neutral-border);
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
+  line-height: 1.4;
   white-space: nowrap;
+  color: var(--badge-neutral-text);
+  background: var(--badge-neutral-bg);
 }
 
 .pill--info {
-  background: rgba(45, 123, 200, 0.12);
-  color: var(--secondary-color);
+  background: var(--badge-info-bg);
+  color: var(--badge-info-text);
+  border-color: var(--badge-info-border);
 }
 
 .pill--success {
-  background: rgba(16, 185, 129, 0.12);
-  color: var(--success);
+  background: var(--badge-success-bg);
+  color: var(--badge-success-text);
+  border-color: var(--badge-success-border);
 }
 
 .pill--warning {
-  background: rgba(245, 158, 11, 0.12);
-  color: var(--warning);
+  background: var(--badge-warning-bg);
+  color: var(--badge-warning-text);
+  border-color: var(--badge-warning-border);
 }
 
 .pill--danger {
-  background: rgba(239, 68, 68, 0.12);
-  color: var(--danger);
+  background: var(--badge-danger-bg);
+  color: var(--badge-danger-text);
+  border-color: var(--badge-danger-border);
 }
+
+/* Cifra (porcentaje, confianza): compacta, sin borde y peso medio, para que no
+   compita con la píldora de estado de la misma fila. */
+.pill--metric {
+  padding: 0.12rem 0.5rem;
+  border-color: transparent;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.pill--metric.pill--success { color: var(--state-success-strong); background: var(--state-success-bg); }
+.pill--metric.pill--warning { color: var(--state-warning-strong); background: var(--state-warning-bg); }
+.pill--metric.pill--danger  { color: var(--state-danger-strong);  background: var(--state-danger-bg); }
 
 /* ===== Helpers globales añadidos para vistas conectadas al backend ===== */
 .pill--muted {
-  background: rgba(100, 116, 139, 0.14);
-  color: var(--text-muted);
+  background: var(--badge-neutral-bg);
+  color: var(--badge-neutral-text);
+  border-color: var(--badge-neutral-border);
 }
 
 /* Spinner reutilizable (botones en estado de carga) */
@@ -421,9 +585,50 @@ h4 {
    Estructura común a TODAS las tablas de la app (contenedor con scroll
    horizontal, tipografía, celdas y estado vacío). Las vistas ya no deben
    redeclararla: basta con `.table-wrap > .table`. */
+/* Contenedor de tabla = tarjeta blanca con sombra proyectada y esquinas de
+   12 px (30-sep-2026). `overflow` recorta la cabecera azul a ese radio y deja el
+   scroll horizontal de las tablas anchas. */
 .table-wrap {
   width: 100%;
-  overflow-x: auto;
+  overflow: auto;
+  background: var(--card-bg);
+  border: 1px solid var(--table-card-border);
+  border-radius: var(--table-radius);
+  box-shadow: var(--shadow-md);
+}
+
+/* Tabla suelta dentro de una tarjeta (sin título encima, p. ej. /ordenes): la
+   tarjeta ES el contenedor. Se le pasa el aspecto y la envoltura interior se
+   aplana, para no dibujar una caja dentro de otra. */
+.card:has(> .table-wrap:first-child) {
+  overflow: hidden;
+  border-color: var(--table-card-border);
+  border-radius: var(--table-radius);
+  box-shadow: var(--shadow-md);
+}
+
+.card > .table-wrap:first-child {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Tabla con paginador (1-oct-2026): el paginador va POR FUERA de la tabla, sobre
+   el fondo de la página, no como una fila más. La tarjeta que envuelve tabla y
+   paginador deja de ser caja, y la tabla vuelve a ser la tarjeta. Las reglas
+   repiten `.card:has(> .table-wrap:first-child)` para ganarle en especificidad. */
+.card:has(> .table-wrap:first-child):has(> .table-wrap + app-paginador) {
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.card:has(> .table-wrap:first-child) > .table-wrap:first-child:has(+ app-paginador) {
+  border: 1px solid var(--table-card-border);
+  border-radius: var(--table-radius);
+  box-shadow: var(--shadow-md);
 }
 
 .table {
@@ -432,10 +637,25 @@ h4 {
   font-size: 0.9rem;
 }
 
+/* Tabla estándar (30-sep-2026): cabecera neutra clara, filas con aire, divisor
+   sutil y hover suave. Las vistas NO la redefinen (antes cuatro lo hacían). */
 .table tbody td {
-  padding: 0.8rem 1.1rem;
-  border-bottom: 1px solid var(--border-soft);
+  padding: 0.875rem 1rem;
+  color: var(--text-main);
+  border-bottom: 1px solid var(--table-row-border);
   vertical-align: middle;
+}
+
+/* Identificador / nombre principal de la fila: azul corporativo y semibold.
+   `.who__name` es el nombre con avatar (órdenes, profesionales, empresas…);
+   `.td-id` marca la celda principal en las tablas que no lo usan. */
+/* `td` en el selector: le gana a la regla `.who__name` que cada vista trae en
+   su propia hoja (las de componente cargan después y empatarían). */
+.table td .who__name,
+.table td.td-id,
+.table td .td-id {
+  color: var(--primary-color);
+  font-weight: 600;
 }
 
 .table tbody tr:last-child td {
@@ -452,63 +672,101 @@ h4 {
 }
 
 .table thead th {
-  background: #eef3fb;
-  color: var(--primary-color);
-  border-bottom: 2px solid rgba(45, 123, 200, 0.28);
+  background: var(--table-head-bg);
+  color: var(--table-head-text);
+  border-bottom: var(--table-head-rule);
   text-align: left;
-  font-weight: 700;
-  font-size: 12px;
+  font-weight: 600;
+  font-size: var(--fs-xs);
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  padding: 0.85rem 1.1rem;
+  padding: 0.75rem 1rem;
   white-space: nowrap;
 }
 
-/* --- Tabla debajo de un bloque de título (card__head / panel__head) ---
-   Sin separación, la banda azul del thead se pega al encabezado y ambos se
-   leen como un solo bloque. Aquí la tabla se mete hacia dentro del contenedor
-   y su cabecera se redondea, de modo que se aprecie como un elemento propio. */
+/* Fila de totales (1-oct-2026). Vivía solo en Cuentas de cobro: en Cartera,
+   Pagos, Comprobantes y Facturación el <tfoot> salía con el relleno de 1 px del
+   navegador, pegado al borde y descuadrado frente a las columnas. Mismo relleno
+   que el cuerpo para que las cifras caigan bajo su encabezado. */
+.table tfoot td {
+  padding: 0.875rem 1rem;
+  border-top: 2px solid var(--border-soft);
+  font-weight: 700;
+  color: var(--text-main);
+  vertical-align: middle;
+}
+
+/* Encabezado largo que puede ir en dos líneas (con <br>) sin ensanchar la columna. */
+.table thead th.th--wrap {
+  white-space: normal;
+  line-height: 1.3;
+}
+
+/* Datos que no se parten: teléfonos, códigos OS, montos. Las celdas `.mono`
+   de las tablas son justamente eso, así que no se parten nunca (1-oct-2026:
+   «+57 300 111 / 2233» y «OS-2026- / 0008» salían en dos líneas a 1366 px). */
+.nowrap,
+.table td.mono {
+  white-space: nowrap;
+}
+
+.table td.mono.mono--wrap {
+  white-space: normal;
+}
+
+/* --- Tabla con título encima (card__head / panel__head) ---
+   30-sep-2026: SIN contenedor exterior. Antes la tarjeta envolvía el título y,
+   dentro, la tabla como otra tarjeta con margen (caja dentro de caja, y la tabla
+   se salía por la derecha). Ahora la tarjeta exterior desaparece: el título y
+   sus acciones quedan como encabezado de sección sobre el fondo, y la tabla es
+   la ÚNICA tarjeta. El `:has()` lo aplica solo donde el título va pegado a la
+   tabla; una tarjeta con título y otro contenido (gráficos, formularios) no cambia. */
+.card:has(> .card__head + .table-wrap),
+.panel:has(> .panel__head + .table-wrap) {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.card:has(> .card__head + .table-wrap) > .card__head,
+.panel:has(> .panel__head + .table-wrap) > .panel__head {
+  align-items: center;
+  padding: 0 0 0.75rem;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
 .card__head + .table-wrap,
 .panel__head + .table-wrap {
-  padding: 1rem;
+  width: 100%;
+  margin: 0;
 }
 
-/* El redondeo del thead necesita `separate` (con `collapse` no se aplica).
-   El selector es más específico que el `.table` de cada vista, que usa collapse. */
-.card__head + .table-wrap .table,
-.panel__head + .table-wrap .table {
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-.card__head + .table-wrap .table thead th:first-child {
-  border-top-left-radius: var(--radius-sm);
-}
-
-.card__head + .table-wrap .table thead th:last-child {
-  border-top-right-radius: var(--radius-sm);
-}
-
-.panel__head + .table-wrap .table thead th:first-child {
-  border-top-left-radius: var(--radius-sm);
-}
-
-.panel__head + .table-wrap .table thead th:last-child {
-  border-top-right-radius: var(--radius-sm);
-}
-
-/* Con `separate` la última fila conserva su línea; se quita para cerrar limpio. */
-.card__head + .table-wrap .table tbody tr:last-child td,
-.panel__head + .table-wrap .table tbody tr:last-child td {
-  border-bottom: none;
+/* Dos tablas seguidas en el mismo bloque (Informes → "Por ARL y por mes"): sin
+   la caja exterior quedarían pegadas una a la otra. */
+.table-wrap + .table-wrap {
+  margin-top: 1rem;
 }
 
 .table tbody tr {
-  transition: background 0.15s ease;
+  background: var(--card-bg);
+  transition: background-color 0.15s ease;
+}
+
+/* Cebra: impares blancas, pares con tinte azul tenue. */
+.table tbody tr:nth-child(even) {
+  background: var(--table-row-alt);
 }
 
 .table tbody tr:hover {
-  background: rgba(45, 123, 200, 0.045);
+  background: var(--table-row-hover);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 /* --- Columna de acciones por fila ---
@@ -577,8 +835,7 @@ h4 {
   background: rgba(239, 68, 68, 0.08);
 }
 
-/* --- Cabeceras de modales, drawers y cards --- */
-.modal__head,
+/* --- Cabeceras de drawers --- */
 .drawer__head {
   background: #f4f8fd;
   border-bottom: 1px solid rgba(45, 123, 200, 0.22);
@@ -591,19 +848,8 @@ h4 {
   color: var(--primary-color);
 }
 
-/* Filete de marca: horizontal arriba en modales, vertical al costado en los
-   drawers laterales (que ocupan todo el alto de la pantalla). */
-.modal::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-  z-index: 2;
-}
-
+/* Filete de marca vertical al costado de los drawers laterales. Los modales
+   lo perdieron el 1-oct-2026: su cabecera ya lleva la línea navy. */
 .drawer::before {
   content: '';
   position: absolute;
@@ -613,6 +859,283 @@ h4 {
   width: 3px;
   background: linear-gradient(180deg, var(--primary-color), var(--secondary-color));
   z-index: 2;
+}
+
+/* ============================================================
+   MODAL ESTÁNDAR (1-oct-2026)
+   Un solo armazón para toda la app; las pantallas solo eligen el tamaño
+   (`.modal--sm|lg|xl|full`; sin clase = mediano) y ponen el contenido.
+     .modal-backdrop + .modal
+       .modal__head   (.modal__title, .modal__sub, .modal__head-actions, ✕)
+       .modal__body   (las `.card` de dentro son SECCIONES planas con etiqueta)
+       .modal__footer (.modal__status a la izquierda; botones a la derecha:
+                       Cancelar/Cerrar `.btn--close`, acción `.btn--primary`)
+   No redeclarar nada de esto en las hojas de cada pantalla.
+   ============================================================ */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--modal-backdrop);
+  animation: modal-fade-in 0.2s ease;
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 51;
+  display: flex;
+  flex-direction: column;
+  width: min(var(--modal-w-md), calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  background: var(--surface);
+  border-radius: var(--modal-radius);
+  box-shadow: var(--modal-shadow);
+  overflow: hidden;
+  animation: modal-in 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal--sm { width: min(var(--modal-w-sm), calc(100vw - 2rem)); }
+.modal--lg { width: min(var(--modal-w-lg), calc(100vw - 2rem)); }
+.modal--xl { width: min(var(--modal-w-xl), calc(100vw - 2rem)); }
+.modal--full { width: min(var(--modal-w-full), calc(100vw - 2rem)); }
+
+.modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem var(--modal-pad-x);
+  background: var(--modal-head-bg);
+  border-bottom: var(--modal-head-rule);
+}
+
+.modal__head > div,
+.modal__head > .modal__title {
+  flex: 1;
+  min-width: 0;
+}
+
+.modal__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.modal__sub {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.modal__head > .modal__head-actions {
+  flex: 0 0 auto;
+}
+
+.modal__head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+.modal__head-actions .btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* La ✕ de la cabecera avisa en rojo tenue al pasar el puntero, igual que Cerrar. */
+.modal__head .icon-action[aria-label='Cerrar']:hover {
+  background: var(--btn-close-bg);
+  color: var(--btn-close-text);
+  border-color: var(--btn-close-border);
+}
+
+.modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: var(--modal-pad-x);
+}
+
+/* 1-oct-2026 · Lo que va dentro del cuerpo no se encoge: el que hace scroll es
+   el cuerpo. Sin esto, una `.table-wrap` (overflow: auto) directamente aquí se
+   aplastaba a ~90 px con su propia barra cuando el contenido no cabía (la tabla
+   de ítems del detalle de factura). */
+.modal__body > * {
+  flex-shrink: 0;
+}
+
+.modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1rem var(--modal-pad-x);
+  border-top: 1px solid var(--modal-divider);
+}
+
+/* Leyenda de estado del pie: va a la izquierda y empuja los botones. */
+.modal__status {
+  margin-right: auto;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.modal__status strong {
+  color: var(--primary-color);
+  letter-spacing: 0.03em;
+}
+
+.modal__footer-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* --- Secciones dentro del modal ---
+   Una `.card` directa del cuerpo NO es una caja: es una sección plana. Su
+   título es una etiqueta navy con punta redondeada, seguida de una línea fina
+   que llega hasta la píldora de estado de la derecha (si la hay). Así el
+   contenido aprovecha todo el ancho y los subtítulos se ven de lejos. */
+.modal__body:has(> .card) {
+  gap: 1.75rem;
+}
+
+.modal__body > .card {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.modal__body > .card > .card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.modal__body > .card > .card__head::after {
+  content: '';
+  order: 1;
+  flex: 1;
+  height: 1px;
+  background: var(--modal-divider);
+}
+
+.modal__body > .card > .card__head > :not(.card__title) {
+  order: 2;
+}
+
+.modal__body > .card > .card__body {
+  padding: 0;
+}
+
+/* Sección plegable (acordeón, p. ej. "Historial de estados"): la misma
+   etiqueta y la misma línea; el chevrón queda al final de la línea. */
+.modal__body > .card > .acordeon__cabecera {
+  gap: 0.75rem;
+  padding: 0;
+}
+
+.modal__body > .card > .acordeon__cabecera:hover {
+  background: none;
+}
+
+.modal__body > .card > .acordeon__cabecera::after {
+  content: '';
+  order: 1;
+  flex: 1;
+  height: 1px;
+  background: var(--modal-divider);
+}
+
+.modal__body > .card > .acordeon__cabecera > svg {
+  order: 2;
+}
+
+.modal__body > .card > .acordeon__cabecera + .card__body {
+  margin-top: 1rem;
+}
+
+/* Subtítulo de sección suelto (dentro de un formulario o de un detalle):
+   <h4 class="section-head"><span class="section-tag">Datos fiscales</span></h4>
+   La misma etiqueta y la misma línea que las secciones del modal. */
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0 0;
+}
+
+.section-head::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--modal-divider);
+}
+
+/* Etiqueta de sección. La punta es un cuadrado girado 45° con las esquinas
+   redondeadas: queda como una flecha suave, no como un pico. */
+.section-tag,
+.modal__body > .card > .acordeon__cabecera .card__title,
+.modal__body > .card > .card__head > .card__title {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: var(--section-tag-h);
+  margin-right: calc(var(--section-tag-h) / 2);
+  padding: 0 0.4rem 0 0.85rem;
+  background: var(--section-tag-bg);
+  color: var(--section-tag-text);
+  border-radius: 6px 0 0 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.section-tag::after,
+.modal__body > .card > .acordeon__cabecera .card__title::after,
+.modal__body > .card > .card__head > .card__title::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: calc(var(--section-tag-h) * -0.35);
+  width: calc(var(--section-tag-h) * 0.72);
+  height: calc(var(--section-tag-h) * 0.72);
+  background: inherit;
+  border-radius: 2px 6px 2px 6px;
+  transform: translateY(-50%) rotate(45deg);
+  z-index: -1;
+}
+
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.98); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
 /* Cabecera de las cards: acompaña con un tinte apenas perceptible */
@@ -660,4 +1183,154 @@ h4 {
 .field-toggle svg {
   width: 18px;
   height: 18px;
+}
+
+/* =====================================================================
+   Componentes de identidad (30-sep-2026)
+   Nacieron con el Login y el Selector de sistema, pero son globales a
+   propósito: cualquier vista los reutiliza en vez de redefinirlos.
+   ===================================================================== */
+
+/* Pantalla de marca: el degradado corporativo a pantalla completa. */
+.brand-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--gradient-brand);
+  color: #ffffff;
+}
+
+/* Chip: etiqueta pequeña y neutra (funcionalidades, categorías, filtros
+   aplicados). No es un estado: para estados está `.pill`. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--chip-text);
+  background: var(--chip-bg);
+  border-radius: var(--radius-chip);
+  white-space: nowrap;
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* Tarjeta que se pulsa entera (selector de sistema y similares): se eleva al
+   pasar el cursor. Va con `.card` o con su propio fondo. */
+.card--interactive {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card--interactive:hover,
+.card--interactive:focus-visible {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
+  outline: none;
+}
+
+.card--interactive:focus-visible {
+  box-shadow: 0 0 0 3px var(--accent-color), var(--shadow-card-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card--interactive,
+  .card--interactive:hover {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* Enlace de acción en color primario ("Entrar a Operación →"). */
+.link-cta {
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+/* ---- Tarjeta de métrica (KPI) · 30-sep-2026 ----
+   Borde superior de 3 px con el color del estado, cifra grande en
+   `--text-strong` e icono en un círculo tenue. Acentos: --primary (totales),
+   --info, --warning (pendientes), --success (ejecutadas), --neutral. */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.75rem;
+}
+
+.kpi-card {
+  --kpi-accent: var(--primary-color);
+  --kpi-icon-bg: var(--state-info-bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.35rem 1.5rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border-soft);
+  border-top: 3px solid var(--kpi-accent);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px -4px rgba(15, 23, 42, 0.1);
+}
+
+.kpi-card--primary { --kpi-accent: var(--primary-color);        --kpi-icon-bg: var(--state-info-bg); }
+.kpi-card--info    { --kpi-accent: var(--state-info-strong);    --kpi-icon-bg: var(--state-info-bg); }
+.kpi-card--warning { --kpi-accent: var(--state-warning-strong); --kpi-icon-bg: var(--state-warning-bg); }
+.kpi-card--success { --kpi-accent: var(--state-success-strong); --kpi-icon-bg: var(--state-success-bg); }
+.kpi-card--neutral { --kpi-accent: var(--state-neutral-strong); --kpi-icon-bg: var(--state-neutral-bg); }
+
+.kpi-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.kpi-card__label {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.kpi-card__value {
+  font-size: 1.875rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-card__icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--kpi-icon-bg);
+  color: var(--kpi-accent);
+}
+
+.kpi-card__icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kpi-card,
+  .kpi-card:hover {
+    transition: none;
+    transform: none;
+  }
 }

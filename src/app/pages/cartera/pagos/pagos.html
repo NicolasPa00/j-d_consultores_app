@@ -13,18 +13,20 @@
             <th>Proveedor</th><th class="col-num">Obligaciones</th>
             @for (e of antiguedad()?.edades ?? []; track e) { <th class="col-num">{{ etiquetaEdad[e] }}</th> }
             <th class="col-num">Total</th>
+            <th class="col-actions"></th>
           </tr>
         </thead>
         <tbody>
-          @if (!antiguedad()?.clientes?.length) { <tr><td colspan="8" class="pg-vacio">No se le debe nada a ningún proveedor a esta fecha.</td></tr> }
+          @if (!antiguedad()?.clientes?.length) { <tr><td colspan="9" class="pg-vacio">No se le debe nada a ningún proveedor a esta fecha.</td></tr> }
           @for (c of antiguedad()?.clientes ?? []; track c.tercero_id) {
-            <tr class="pg-fila" (click)="abrirEstado(c.tercero_id)" title="Ver el estado de cuenta">
+            <tr>
               <td><strong>{{ c.tercero_nombre }}</strong></td>
               <td class="col-num">{{ c.documentos }}</td>
               @for (e of antiguedad()!.edades; track e) {
                 <td class="col-num mono" [class.pg-vencido]="e !== 'POR_VENCER' && +c[e] > 0">{{ +c[e] ? pesos(c[e]) : '' }}</td>
               }
               <td class="col-num mono"><strong>{{ pesos(c.TOTAL) }}</strong></td>
+              <td class="col-actions"><button type="button" class="icon-action" (click)="abrirEstado(c.tercero_id)" aria-label="Ver el estado de cuenta" title="Ver el estado de cuenta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
             </tr>
           }
         </tbody>
@@ -32,7 +34,7 @@
           <tfoot>
             <tr><td><strong>Total</strong></td><td></td>
               @for (e of antiguedad()!.edades; track e) { <td class="col-num mono"><strong>{{ pesos(antiguedad()!.total[e]) }}</strong></td> }
-              <td class="col-num mono"><strong>{{ pesos(antiguedad()!.total.TOTAL) }}</strong></td></tr>
+              <td class="col-num mono"><strong>{{ pesos(antiguedad()!.total.TOTAL) }}</strong></td><td></td></tr>
           </tfoot>
         }
       </table>
@@ -53,11 +55,11 @@
     <div class="card__head"><h3 class="card__title">Comprobantes de egreso</h3></div>
     <div class="table-wrap">
       <table class="table">
-        <thead><tr><th>Egreso</th><th>Fecha</th><th>Proveedor</th><th>Obligaciones</th><th class="col-num">Pagado</th><th class="col-num">Anticipo cruzado</th><th class="col-num">Retenido</th><th>Estado</th></tr></thead>
+        <thead><tr><th>Egreso</th><th>Fecha</th><th>Proveedor</th><th>Obligaciones</th><th class="col-num">Pagado</th><th class="col-num">Anticipo cruzado</th><th class="col-num">Retenido</th><th>Estado</th><th class="col-actions"></th></tr></thead>
         <tbody>
-          @if (!egresos().length) { <tr><td colspan="8" class="pg-vacio">Todavía no hay egresos.</td></tr> }
+          @if (!egresos().length) { <tr><td colspan="9" class="pg-vacio">Todavía no hay egresos.</td></tr> }
           @for (e of pagEgresos.visibles(); track e.id) {
-            <tr class="pg-fila" (click)="abrirEgreso(e)">
+            <tr>
               <td class="mono"><strong>{{ e.numero }}</strong></td>
               <td class="mono">{{ e.fecha }}</td>
               <td>{{ e.tercero_nombre }}</td>
@@ -66,6 +68,7 @@
               <td class="col-num mono">{{ +e.valor_anticipos ? pesos(e.valor_anticipos) : '' }}</td>
               <td class="col-num mono">{{ +(e.retenido ?? 0) ? pesos(e.retenido) : '' }}</td>
               <td><span class="pill" [class]="e.estado === 'ANULADO' ? 'pill--muted' : 'pill--success'">{{ e.estado === 'ANULADO' ? 'Anulado' : 'Contabilizado' }}</span></td>
+              <td class="col-actions"><button type="button" class="icon-action" (click)="abrirEgreso(e)" aria-label="Ver el egreso" title="Ver el egreso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
             </tr>
           }
         </tbody>
@@ -101,7 +104,7 @@
 <!-- ============ MODAL · ESTADO DE CUENTA DEL PROVEEDOR ============ -->
 @if (estado(); as e) {
   <div class="modal-backdrop" (click)="estado.set(null)"></div>
-  <div class="modal modal--ancho" role="dialog" aria-modal="true" aria-labelledby="pgEcTitle">
+  <div class="modal modal--xl" role="dialog" aria-modal="true" aria-labelledby="pgEcTitle">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="pgEcTitle">Estado de cuenta · {{ e.tercero.nombre }}</h3>
@@ -133,7 +136,7 @@
     </div>
     <footer class="modal__footer">
       <button type="button" class="btn btn--ghost" (click)="exportarEstado(e)">Exportar a Excel</button>
-      <button type="button" class="btn btn--primary" (click)="estado.set(null)">Cerrar</button>
+      <button type="button" class="btn btn--close" (click)="estado.set(null)">Cerrar</button>
     </footer>
   </div>
 }
@@ -170,13 +173,13 @@
     <footer class="modal__footer">
       @if (puedeOperar() && e.estado === 'CONTABILIZADO') {
         @if (anulando()) {
-          <button type="button" class="btn btn--ghost" (click)="anulando.set(false)" [disabled]="trabajando()">Cancelar</button>
-          <button type="button" class="btn btn--primary pg-btn-peligro" (click)="confirmarAnular(e)" [disabled]="trabajando()">Anular egreso</button>
+          <button type="button" class="btn btn--close" (click)="anulando.set(false)" [disabled]="trabajando()">Cancelar</button>
+          <button type="button" class="btn btn--danger" (click)="confirmarAnular(e)" [disabled]="trabajando()">Anular egreso</button>
         } @else {
-          <button type="button" class="btn btn--ghost pg-peligro" (click)="motivo = ''; anulando.set(true)">Anular</button>
+          <button type="button" class="btn btn--danger pg-peligro" (click)="motivo = ''; anulando.set(true)">Anular</button>
         }
       }
-      <button type="button" class="btn btn--primary" (click)="egreso.set(null)" [disabled]="trabajando()">Cerrar</button>
+      <button type="button" class="btn btn--close" (click)="egreso.set(null)" [disabled]="trabajando()">Cerrar</button>
     </footer>
   </div>
 }
@@ -217,7 +220,7 @@
       </div>
     </div>
     <footer class="modal__footer">
-      <button type="button" class="btn btn--ghost" (click)="anticipoOpen.set(false)" [disabled]="trabajando()">Cancelar</button>
+      <button type="button" class="btn btn--close" (click)="anticipoOpen.set(false)" [disabled]="trabajando()">Cancelar</button>
       <button type="button" class="btn btn--primary" (click)="guardarAnticipo()" [disabled]="trabajando()">Registrar y contabilizar</button>
     </footer>
   </div>
@@ -226,7 +229,7 @@
 <!-- ============ MODAL · NUEVO EGRESO ============ -->
 @if (egresoOpen()) {
   <div class="modal-backdrop" (click)="egresoOpen.set(false)"></div>
-  <div class="modal modal--ancho" role="dialog" aria-modal="true" aria-labelledby="pgEgNTitle">
+  <div class="modal modal--lg" role="dialog" aria-modal="true" aria-labelledby="pgEgNTitle">
     <header class="modal__head"><h3 class="modal__title" id="pgEgNTitle">Registrar egreso</h3></header>
     <div class="modal__body">
       <div class="pg-tres">
@@ -294,7 +297,7 @@
       }
     </div>
     <footer class="modal__footer">
-      <button type="button" class="btn btn--ghost" (click)="egresoOpen.set(false)" [disabled]="trabajando()">Cancelar</button>
+      <button type="button" class="btn btn--close" (click)="egresoOpen.set(false)" [disabled]="trabajando()">Cancelar</button>
       <button type="button" class="btn btn--primary" (click)="guardarEgreso()" [disabled]="trabajando() || !totales().marcadas">
         @if (trabajando()) { <span class="spinner" aria-hidden="true"></span> Registrando… } @else { Registrar y contabilizar }
       </button>

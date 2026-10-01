@@ -389,7 +389,7 @@
       </div>
     </div>
     <footer class="modal__footer">
-      <button type="button" class="btn btn--ghost" (click)="closeFormProducto()">Cancelar</button>
+      <button type="button" class="btn btn--close" (click)="closeFormProducto()">Cancelar</button>
       <button type="button" class="btn btn--primary" [disabled]="savingProducto()" (click)="guardarProducto()">{{ savingProducto() ? 'Guardando…' : 'Guardar' }}</button>
     </footer>
   </div>
@@ -428,7 +428,7 @@
       <div class="form-field"><label class="form-field__label">Vigente desde</label><input class="form-control" type="date" [(ngModel)]="tarifaDraft.vigente_desde" name="tVigente" /></div>
     </div>
     <footer class="modal__footer">
-      <button type="button" class="btn btn--ghost" (click)="closeFormTarifa()">Cancelar</button>
+      <button type="button" class="btn btn--close" (click)="closeFormTarifa()">Cancelar</button>
       <button type="button" class="btn btn--primary" [disabled]="savingTarifa()" (click)="guardarTarifa()">{{ savingTarifa() ? 'Guardando…' : 'Guardar' }}</button>
     </footer>
   </div>
@@ -468,7 +468,7 @@
       </div>
     </div>
     <footer class="modal__footer">
-      <button type="button" class="btn btn--ghost" (click)="closeFormRetencion()">Cancelar</button>
+      <button type="button" class="btn btn--close" (click)="closeFormRetencion()">Cancelar</button>
       <button type="button" class="btn btn--primary" [disabled]="savingRetencion()" (click)="guardarRetencion()">{{ savingRetencion() ? 'Guardando…' : 'Guardar' }}</button>
     </footer>
   </div>

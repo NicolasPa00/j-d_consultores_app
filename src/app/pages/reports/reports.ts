@@ -475,9 +475,10 @@ export class ReportsComponent implements OnInit {
 
   protected estadoTone(estado: string): string {
     switch (estado) {
+      case 'SIN PROGRAMAR': return 'amber'; // 30-sep-2026: ámbar, como en las demás tablas
       case 'PROGRAMADA': return 'blue';
       case 'EN VERIFICACIÓN': return 'amber';
-      case 'EJECUTADA': return 'amber';
+      case 'EJECUTADA': return 'green'; // 30-sep-2026: verde, como en las demás tablas
       case 'FINALIZADA': return 'green';
       case 'CANCELADA': return 'red';
       default: return 'slate';
@@ -524,7 +525,7 @@ export class ReportsComponent implements OnInit {
    * paréntesis dentro del texto no se puede filtrar por ellas).
    */
   protected nombreOrden(o: Orden): string {
-    return etiquetaEmpresa(o.empresa_nombre, o.arl_nombre, o.codigo_cronograma, o.secuencia);
+    return etiquetaEmpresa(o.empresa_nombre, o.arl_nombre, o.codigo_cronograma, o.secuencia, o.numero_orden);
   }
 
   protected exportExcel(): void {

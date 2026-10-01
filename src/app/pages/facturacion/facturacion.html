@@ -16,7 +16,7 @@
     Por facturar <span class="tab__count">{{ totalFacturables() }}</span>
   </button>
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'borradores'" (click)="cambiarPestana('borradores')">
-    Borradores <span class="tab__count">{{ borradores().length }}</span>
+    Pendientes <span class="tab__count">{{ borradores().length }}</span>
   </button>
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'emitidas'" (click)="cambiarPestana('emitidas')">
     Emitidas <span class="tab__count">{{ emitidas().length }}</span>
@@ -100,7 +100,7 @@
                           <input type="checkbox" [checked]="estaMarcada(g, l)" (change)="alternarLinea(g, l)" [attr.aria-label]="'Marcar ' + (l.codigo || l.clave)" />
                         }
                       </td>
-                      <td>
+                      <td class="td-id">
                         @if (g.prefactura) { {{ l.codigo_cronograma }}-{{ l.secuencia }} } @else { {{ l.numero_orden || '—' }} }
                         @if (l.codigo) { <small class="fac-sub">{{ l.codigo }}</small> }
                       </td>
@@ -155,23 +155,23 @@
         </thead>
         <tbody>
           @for (d of pagBorradores.visibles(); track d.id) {
-            <tr class="fac-clic" (click)="abrir(d.id)">
+            <tr>
               <td>{{ d.tercero_nombre }}</td>
               <td><small>{{ d.reference_code }}</small></td>
               <td>{{ d.numero_prefactura || '—' }}</td>
               <td>{{ fechaHora(d.creado_en) }}</td>
               <td class="num">{{ pesos(d.total_a_pagar) }}</td>
-              <td class="col-actions"><button type="button" class="btn btn--ghost btn--sm">Revisar</button></td>
+              <td class="col-actions"><button type="button" class="btn btn--ghost btn--sm" (click)="abrir(d.id)">Revisar</button></td>
             </tr>
           } @empty {
             <tr><td colspan="6" class="table__empty">
-              @if (cargandoListas()) { Cargando… } @else { No hay borradores. Se crean desde «Por facturar». }
+              @if (cargandoListas()) { Cargando… } @else { No hay facturas pendientes de emitir. Se crean desde «Por facturar». }
             </td></tr>
           }
         </tbody>
       </table>
     </div>
-    <app-paginador [pag]="pagBorradores" etiqueta="borradores" />
+    <app-paginador [pag]="pagBorradores" etiqueta="pendientes" />
   </div>
 }
 
@@ -194,14 +194,14 @@
         </thead>
         <tbody>
           @for (d of pagEmitidas.visibles(); track d.id) {
-            <tr class="fac-clic" (click)="abrir(d.id)">
+            <tr>
               <td><b>{{ numeroDe(d) }}</b></td>
               <td>{{ d.tercero_nombre }}</td>
               <td>{{ fecha(d.fecha_emision) }}</td>
               <td>{{ fecha(d.fecha_vencimiento) }}</td>
               <td class="num">{{ pesos(d.total_a_pagar) }}</td>
               <td><span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
-              <td class="col-actions"><button type="button" class="btn btn--ghost btn--sm">Ver</button></td>
+              <td class="col-actions"><button type="button" class="btn btn--ghost btn--sm" (click)="abrir(d.id)">Ver</button></td>
             </tr>
           } @empty {
             <tr><td colspan="7" class="table__empty">
@@ -225,14 +225,14 @@
         </thead>
         <tbody>
           @for (d of pagNotas.visibles(); track d.id) {
-            <tr class="fac-clic" (click)="abrir(d.id)">
+            <tr>
               <td><b>{{ d.numero ? numeroDe(d) : d.reference_code }}</b></td>
               <td>{{ referenciaDe(d) }}</td>
               <td>{{ d.tercero_nombre }}</td>
               <td><span class="fac-motivo">{{ nombreCausal(d.causal) }}</span></td>
               <td class="num">{{ pesos(d.total_a_pagar) }}</td>
               <td><span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
-              <td class="col-actions"><button type="button" class="btn btn--ghost btn--sm">Ver</button></td>
+              <td class="col-actions"><button type="button" class="btn btn--ghost btn--sm" (click)="abrir(d.id)">Ver</button></td>
             </tr>
           } @empty {
             <tr><td colspan="7" class="table__empty">
@@ -253,7 +253,10 @@
 }
 @if (detalle(); as d) {
   <div class="modal-backdrop" (click)="cerrar()"></div>
-  <div class="modal modal--factura" role="dialog" aria-modal="true" aria-labelledby="facTitulo">
+  <!-- 1-oct-2026 · Ancho, con la barra de pasos arriba y dos columnas: el
+       documento (datos, detalle, totales) a la izquierda y lo que se hace con él
+       (reenviar, contabilización, historial) a la derecha. -->
+  <div class="modal modal--xl modal--factura" role="dialog" aria-modal="true" aria-labelledby="facTitulo">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="facTitulo">
@@ -277,27 +280,54 @@
     </header>
 
     <div class="modal__body">
-      @if (d.estado === 'RECHAZADO' && erroresDe(d).length) {
-        <div class="alert alert--error" role="alert">
-          <div class="alert__body">
-            <p class="alert__title">La DIAN rechazó esta factura</p>
-            <ul class="fac-errores">@for (e of erroresDe(d); track $index) { <li>{{ e }}</li> }</ul>
-            <p class="alert__detail">Corrija el origen (tercero, parametrización u orden) y use «Corregir y reemitir».</p>
+      <!-- Barra de pasos (como la de Siigo) + aviso de dónde está y qué sigue. -->
+      <section class="fac-progreso">
+        <ol class="fac-pasos">
+          @for (p of pasosDe(d); track $index) {
+            <li class="fac-paso" [class]="'fac-paso fac-paso--' + p.estado">
+              <span class="fac-paso__punto" aria-hidden="true">
+                @if (p.estado === 'hecho') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 12.5 4 4 8-9" /></svg>
+                } @else if (p.estado === 'error') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M7 7l10 10M17 7 7 17" /></svg>
+                }
+              </span>
+              <span class="fac-paso__etiqueta">{{ p.etiqueta }}</span>
+              @if (p.fecha) { <span class="fac-paso__fecha">{{ fechaHora(p.fecha) }}</span> }
+            </li>
+          }
+        </ol>
+        @if (avisoDe(d); as av) {
+          <div class="fac-aviso" [class]="'fac-aviso fac-aviso--' + av.tono" role="status">
+            <p>{{ av.texto }}</p>
+            @if (d.estado === 'RECHAZADO' && erroresDe(d).length) {
+              <ul class="fac-errores">@for (e of erroresDe(d); track $index) { <li>{{ e }}</li> }</ul>
+            }
           </div>
-        </div>
-      }
-      @if (d.estado === 'ENVIANDO') {
-        <div class="alert alert--info">
-          <div class="alert__body">La DIAN todavía no responde. Use «Consultar estado» en unos minutos; no se vuelve a emitir.</div>
-        </div>
-      }
+        }
+      </section>
 
+      <div class="fac-layout">
+      <div class="fac-col">
       <div class="fac-datos">
         <div><span>Emisión</span><b>{{ d.fecha_emision ? fecha(d.fecha_emision) : 'al emitir' }}</b></div>
         <div><span>Vencimiento</span><b>{{ fecha(d.fecha_vencimiento) }}</b></div>
         <div><span>Forma de pago</span><b>{{ d.forma_pago_nombre || '—' }}</b></div>
         <div><span>Medio de pago</span><b>{{ d.medio_pago_nombre || '—' }}</b></div>
-        @if (d.cufe) { <div class="fac-datos__ancho"><span>{{ esNota(d) ? 'CUDE' : 'CUFE' }}</span><b class="fac-cufe">{{ d.cufe }}</b></div> }
+        @if (d.cufe) {
+          <div class="fac-datos__ancho">
+            <span>{{ esNota(d) ? 'CUDE' : 'CUFE' }}</span>
+            <div class="fac-cufe-fila">
+              <b class="fac-cufe">{{ d.cufe }}</b>
+              <button type="button" class="icon-action fac-copiar" (click)="copiarCufe(d)"
+                      [attr.aria-label]="'Copiar el ' + (esNota(d) ? 'CUDE' : 'CUFE')" [title]="'Copiar el ' + (esNota(d) ? 'CUDE' : 'CUFE')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h9" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        }
       </div>
 
       <div class="table-wrap">
@@ -329,9 +359,51 @@
       </div>
 
       @if (d.observaciones) { <p class="fac-obs"><b>Observaciones:</b> {{ d.observaciones }}</p> }
+      </div>
+
+      <div class="fac-col">
+      <!-- El reenvío con el correo de ORBITA está probado para facturas; en las
+           notas crédito queda el correo que Factus envía al validarlas. -->
+      @if (d.estado === 'VALIDADO' && puedeOperar() && !esNota(d)) {
+        <div class="fac-panel">
+          <h4 class="fac-panel__titulo">Reenviar al cliente (PDF + XML)</h4>
+          <div class="fac-reenvio">
+            <label class="form-field">
+              <input class="form-control" type="email" aria-label="Correo al que se reenvía" placeholder="Vacío = correo de facturación del tercero"
+                     [ngModel]="correoReenvio()" (ngModelChange)="correoReenvio.set($event)" />
+            </label>
+            <button type="button" class="btn btn--ghost" (click)="reenviar()" [disabled]="!!accion()">
+              @if (accion() === 'reenviar') { <span class="spinner" aria-hidden="true"></span> } Reenviar
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Historial completo, cerrado por defecto: la barra de pasos de arriba ya
+           dice dónde está el documento; esto es para quien quiera el detalle. -->
+      @if (d.eventos.length) {
+        <details class="fac-panel fac-acordeon">
+          <summary class="fac-acordeon__titulo">
+            Historial <span class="fac-acordeon__cuenta">{{ d.eventos.length }} evento(s)</span>
+          </summary>
+          <ol class="fac-historial">
+            @for (e of d.eventos; track $index) {
+              <li class="fac-historial__item">
+                <span class="fac-historial__punto" aria-hidden="true"></span>
+                <div>
+                  <p class="fac-historial__titulo">{{ etiquetaEvento(e.codigo) }}</p>
+                  <p class="fac-historial__meta">{{ fechaHora(e.fecha) }}</p>
+                  @if (e.descripcion) { <p class="fac-historial__desc">{{ e.descripcion }}</p> }
+                </div>
+              </li>
+            }
+          </ol>
+        </details>
+      }
 
       <!-- B2-01 · Vista de contabilización (la cotización la promete en el detalle del documento) -->
-      <div class="fac-asiento">
+      <div class="fac-panel fac-asiento">
+        <h4 class="fac-panel__titulo">Contabilización</h4>
         <button type="button" class="btn btn--ghost btn--sm" (click)="verAsiento(d)" [disabled]="cargandoAsiento()">
           @if (cargandoAsiento()) { <span class="spinner" aria-hidden="true"></span> }
           {{ asiento() ? 'Ocultar contabilización' : 'Ver contabilización' }}
@@ -341,41 +413,41 @@
             @if (d.estado === 'BORRADOR') { Vista previa: así quedará el asiento cuando la DIAN valide el documento. }
             @else { Asiento {{ a.tipo_comprobante }} del {{ fecha(a.fecha) }}. }
           </p>
-          <table class="table fac-asiento__tabla">
-            <thead><tr><th>Cuenta</th><th>Detalle</th><th class="col-num">Débito</th><th class="col-num">Crédito</th></tr></thead>
-            <tbody>
-              @for (l of a.lineas; track l.linea) {
-                <tr>
-                  <td><span class="mono">{{ l.cuenta_codigo }}</span> <small>{{ l.cuenta_nombre }}</small></td>
-                  <td><small>{{ l.descripcion || '' }}</small></td>
-                  <td class="col-num mono">{{ l.debito ? pesos(l.debito) : '' }}</td>
-                  <td class="col-num mono">{{ l.credito ? pesos(l.credito) : '' }}</td>
-                </tr>
-              }
-            </tbody>
-            <tfoot>
-              <tr><td colspan="2"><b>Totales</b></td><td class="col-num mono"><b>{{ pesos(a.totales.debito) }}</b></td><td class="col-num mono"><b>{{ pesos(a.totales.credito) }}</b></td></tr>
-            </tfoot>
-          </table>
         }
       </div>
 
-      @if (d.eventos.length) {
-        <div>
-          <p class="fac-seccion">Línea de tiempo</p>
-          <ol class="fac-eventos">
-            @for (e of d.eventos; track $index) {
-              <li><span class="fac-eventos__fecha">{{ fechaHora(e.fecha) }}</span> <b>{{ etiquetaEvento(e.codigo) }}</b>
-                @if (e.descripcion) { · {{ e.descripcion }} }</li>
-            }
-          </ol>
+      </div>
+      </div>
+
+      <!-- El asiento va a todo el ancho: en la columna derecha no cabían sus cuatro columnas. -->
+      @if (asiento(); as a) {
+        <div class="fac-panel">
+          <h4 class="fac-panel__titulo">Asiento contable</h4>
+          <div class="table-wrap">
+            <table class="table fac-asiento__tabla">
+              <thead><tr><th>Cuenta</th><th>Detalle</th><th class="col-num">Débito</th><th class="col-num">Crédito</th></tr></thead>
+              <tbody>
+                @for (l of a.lineas; track l.linea) {
+                  <tr>
+                    <td><span class="mono">{{ l.cuenta_codigo }}</span> <small>{{ l.cuenta_nombre }}</small></td>
+                    <td><small>{{ l.descripcion || '' }}</small></td>
+                    <td class="col-num mono">{{ l.debito ? pesos(l.debito) : '' }}</td>
+                    <td class="col-num mono">{{ l.credito ? pesos(l.credito) : '' }}</td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot>
+                <tr><td colspan="2">Totales</td><td class="col-num mono">{{ pesos(a.totales.debito) }}</td><td class="col-num mono">{{ pesos(a.totales.credito) }}</td></tr>
+              </tfoot>
+            </table>
+          </div>
         </div>
       }
 
       <!-- A2-01 · Nota crédito sobre una factura validada -->
       @if (!esNota(d) && d.estado === 'VALIDADO' && puedeOperar() && formNota()) {
         <div class="fac-nota">
-          <p class="fac-seccion">Nueva nota crédito</p>
+          <h4 class="section-head"><span class="section-tag">Nueva nota crédito</span></h4>
           <label class="form-field">
             <span class="form-label">Causal (DIAN)</span>
             <select class="form-control" [ngModel]="causalNota()" (ngModelChange)="causalNota.set($event)">
@@ -411,7 +483,7 @@
             <input class="form-control" type="text" maxlength="500" [ngModel]="obsNota()" (ngModelChange)="obsNota.set($event)" />
           </label>
           <div class="fac-nota__acciones">
-            <button type="button" class="btn btn--ghost" (click)="formNota.set(false)" [disabled]="!!accion()">Cancelar</button>
+            <button type="button" class="btn btn--close" (click)="formNota.set(false)" [disabled]="!!accion()">Cancelar</button>
             <button type="button" class="btn btn--primary" (click)="crearNota()" [disabled]="!causalNota() || !!accion()">
               @if (accion() === 'nota') { <span class="spinner" aria-hidden="true"></span> } Crear nota crédito
             </button>
@@ -419,23 +491,14 @@
         </div>
       }
 
-      <!-- El reenvío con el correo de ORBITA está probado para facturas; en las
-           notas crédito queda el correo que Factus envía al validarlas. -->
-      @if (d.estado === 'VALIDADO' && puedeOperar() && !esNota(d)) {
-        <div class="fac-reenvio">
-          <label class="form-field">
-            <span class="form-label">Reenviar al cliente (PDF + XML)</span>
-            <input class="form-control" type="email" placeholder="Vacío = correo de facturación del tercero"
-                   [ngModel]="correoReenvio()" (ngModelChange)="correoReenvio.set($event)" />
-          </label>
-          <button type="button" class="btn btn--ghost" (click)="reenviar()" [disabled]="!!accion()">
-            @if (accion() === 'reenviar') { <span class="spinner" aria-hidden="true"></span> } Reenviar
-          </button>
-        </div>
-      }
     </div>
 
     <footer class="modal__footer fac-pie">
+      @if (d.estado === 'VALIDADO' || d.estado === 'ANULADO') {
+        <button type="button" class="btn btn--secondary" (click)="verPdf()" [disabled]="!!accion() || !d.pdf_path">
+          @if (accion() === 'ver') { <span class="spinner" aria-hidden="true"></span> } Ver {{ esNota(d) ? 'nota' : 'factura' }}
+        </button>
+      }
       @if (d.estado === 'VALIDADO') {
         <button type="button" class="btn btn--ghost" (click)="descargar('pdf')" [disabled]="!!accion() || !d.pdf_path">PDF</button>
         <button type="button" class="btn btn--ghost" (click)="descargar('xml')" [disabled]="!!accion() || !d.xml_path">XML</button>
@@ -472,7 +535,27 @@
           }
         }
       }
-      <button type="button" class="btn btn--ghost" (click)="cerrar()" [disabled]="!!accion()">Cerrar</button>
+      <button type="button" class="btn btn--close" (click)="cerrar()" [disabled]="!!accion()">Cerrar</button>
     </footer>
+  </div>
+}
+
+<!-- 1-oct-2026 · Visor del PDF sin descargarlo: se pide el mismo archivo que
+     «PDF» y se muestra aquí, encima del detalle. -->
+@if (pdfVisto(); as url) {
+  <div class="modal-backdrop fac-visor-fondo" (click)="cerrarPdf()"></div>
+  <div class="modal modal--full fac-visor" role="dialog" aria-modal="true" aria-labelledby="facVisorTitulo">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="facVisorTitulo">{{ pdfTitulo() }}</h3>
+        <p class="modal__sub">Vista previa · el archivo no se descarga</p>
+      </div>
+      <button type="button" class="icon-action" (click)="cerrarPdf()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+    <div class="modal__body fac-visor__cuerpo">
+      <iframe [src]="url" [title]="pdfTitulo()"></iframe>
+    </div>
   </div>
 }

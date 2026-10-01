@@ -54,18 +54,19 @@
           <th class="col-num">Débitos</th>
           <th class="col-num">Créditos</th>
           <th>Estado</th>
+          <th class="col-actions"></th>
         </tr>
       </thead>
       <tbody>
         @if (loading() && !comprobantes().length) {
-          <tr><td colspan="6" class="cmp-vacio">Cargando…</td></tr>
+          <tr><td colspan="7" class="cmp-vacio">Cargando…</td></tr>
         } @else if (!comprobantes().length) {
-          <tr><td colspan="6" class="cmp-vacio">No hay comprobantes con esos filtros.</td></tr>
+          <tr><td colspan="7" class="cmp-vacio">No hay comprobantes con esos filtros.</td></tr>
         }
         @for (c of pag.visibles(); track c.id) {
-          <tr class="cmp-fila" (click)="abrir(c)">
+          <tr>
             <td>
-              <strong class="mono">{{ c.numero_completo ?? c.tipo_codigo + ' · borrador' }}</strong>
+              <strong class="mono td-id">{{ c.numero_completo ?? c.tipo_codigo + ' · borrador' }}</strong>
               <small class="cmp-sub">{{ c.tipo_nombre }}</small>
             </td>
             <td class="mono">{{ c.fecha }}</td>
@@ -73,6 +74,7 @@
             <td class="col-num mono">{{ pesos(c.total_debito) }}</td>
             <td class="col-num mono">{{ pesos(c.total_credito) }}</td>
             <td><span class="pill" [class]="tonoEstado(c.estado)">{{ etiquetaEstado[c.estado] }}</span></td>
+            <td class="col-actions"><button type="button" class="icon-action" (click)="abrir(c)" aria-label="Ver el comprobante" title="Ver el comprobante"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
           </tr>
         }
       </tbody>
@@ -84,7 +86,7 @@
 <!-- ============ MODAL · DETALLE ============ -->
 @if (detalle(); as c) {
   <div class="modal-backdrop" (click)="cerrarDetalle()"></div>
-  <div class="modal modal--ancho" role="dialog" aria-modal="true" aria-labelledby="cmpTitle">
+  <div class="modal modal--xl" role="dialog" aria-modal="true" aria-labelledby="cmpTitle">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="cmpTitle">{{ c.numero_completo ?? 'Borrador de ' + c.tipo_nombre.toLowerCase() }}</h3>
@@ -106,12 +108,11 @@
         <div class="table-wrap">
           <table class="table cmp-mov">
             <thead>
-              <tr><th>#</th><th>Cuenta</th><th>Tercero</th><th>Detalle</th><th class="col-num">Débito</th><th class="col-num">Crédito</th></tr>
+              <tr><th>Cuenta</th><th>Tercero</th><th>Detalle</th><th class="col-num">Débito</th><th class="col-num">Crédito</th></tr>
             </thead>
             <tbody>
               @for (m of c.movimientos ?? []; track m.id) {
                 <tr>
-                  <td class="mono">{{ m.linea }}</td>
                   <td><span class="mono">{{ m.cuenta_codigo }}</span> <small class="cmp-sub">{{ m.cuenta_nombre }}</small></td>
                   <td>{{ m.tercero_nombre || '—' }}</td>
                   <td>{{ m.descripcion || m.documento_cruce || '' }}@if (m.centro_costo_codigo) { <small class="cmp-sub">CC {{ m.centro_costo_codigo }}</small> }</td>
@@ -122,7 +123,7 @@
             </tbody>
             <tfoot>
               <tr>
-                <td colspan="4" class="cmp-total">Totales</td>
+                <td colspan="3" class="cmp-total">Totales</td>
                 <td class="col-num mono cmp-total">{{ pesos(c.total_debito) }}</td>
                 <td class="col-num mono cmp-total">{{ pesos(c.total_credito) }}</td>
               </tr>
@@ -142,19 +143,19 @@
     @if (puedeEditar() && !cargandoDetalle()) {
       <footer class="modal__footer">
         @if (c.estado === 'BORRADOR') {
-          <button type="button" class="btn btn--ghost cmp-peligro" (click)="eliminar(c)" [disabled]="accionando()">Eliminar</button>
+          <button type="button" class="btn btn--danger cmp-peligro" (click)="eliminar(c)" [disabled]="accionando()">Eliminar</button>
           <button type="button" class="btn btn--ghost" (click)="editarBorrador(c)" [disabled]="accionando()">Editar</button>
           <button type="button" class="btn btn--primary" (click)="contabilizar(c)" [disabled]="accionando()">
             @if (accionando()) { <span class="spinner" aria-hidden="true"></span> } Contabilizar
           </button>
         } @else if (c.estado === 'CONTABILIZADO' && !c.origen_tipo) {
           @if (anulando()) {
-            <button type="button" class="btn btn--ghost" (click)="anulando.set(false)" [disabled]="accionando()">Cancelar</button>
-            <button type="button" class="btn btn--primary cmp-btn-peligro" (click)="confirmarAnular(c)" [disabled]="accionando()">
+            <button type="button" class="btn btn--close" (click)="anulando.set(false)" [disabled]="accionando()">Cancelar</button>
+            <button type="button" class="btn btn--danger" (click)="confirmarAnular(c)" [disabled]="accionando()">
               @if (accionando()) { <span class="spinner" aria-hidden="true"></span> } Anular comprobante
             </button>
           } @else {
-            <button type="button" class="btn btn--ghost cmp-peligro" (click)="empezarAnular()">Anular</button>
+            <button type="button" class="btn btn--danger cmp-peligro" (click)="empezarAnular()">Anular</button>
           }
         } @else if (c.estado === 'CONTABILIZADO') {
           <p class="cmp-sub">Lo generó un documento: se anula desde ese documento.</p>
@@ -167,7 +168,7 @@
 <!-- ============ MODAL · EDITOR DE NOTA INTERNA ============ -->
 @if (editorOpen()) {
   <div class="modal-backdrop" (click)="cerrarEditor()"></div>
-  <div class="modal modal--ancho" role="dialog" aria-modal="true" aria-labelledby="cmpEdTitle">
+  <div class="modal modal--xl" role="dialog" aria-modal="true" aria-labelledby="cmpEdTitle">
     <header class="modal__head">
       <h3 class="modal__title" id="cmpEdTitle">{{ editandoId() ? 'Editar borrador' : 'Nueva nota interna' }}</h3>
       <button type="button" class="icon-action" (click)="cerrarEditor()" aria-label="Cerrar">
@@ -258,7 +259,7 @@
       </p>
     </div>
     <footer class="modal__footer">
-      <button type="button" class="btn btn--ghost" (click)="cerrarEditor()" [disabled]="guardando()">Cancelar</button>
+      <button type="button" class="btn btn--close" (click)="cerrarEditor()" [disabled]="guardando()">Cancelar</button>
       <button type="button" class="btn btn--ghost" (click)="guardar(false)" [disabled]="guardando()">Guardar borrador</button>
       <button type="button" class="btn btn--primary" (click)="guardar(true)" [disabled]="guardando() || !!cuadre().diferencia || !cuadre().debito">
         @if (guardando()) { <span class="spinner" aria-hidden="true"></span> Guardando… } @else { Guardar y contabilizar }

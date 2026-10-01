@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, input, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/api.service';
+import { PESOS } from '../../../core/dinero';
 import { mensajeError } from '../../../core/errores';
 import { AlertService } from '../../../core/alert.service';
 import { CuentaContable, PeriodoContable, VistaPreviaCierre } from '../../../core/models';
@@ -97,7 +98,7 @@ export class PeriodosComponent implements OnInit {
   }
 
   protected pesos(v: string | null): string {
-    return v == null ? '' : new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 2 }).format(Number(v));
+    return v == null ? '' : PESOS.format(Number(v));
   }
 
   protected cargar(): void {

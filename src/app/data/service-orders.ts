@@ -74,6 +74,8 @@ export interface ServiceOrder {
   validadoPlataformaPor?: string | null;
   /** 30-sep-2026 · Visto bueno de operación al cobro: sin él no pasa a Facturación. */
   cobroAprobadoEn?: string | null;
+  /** 1-oct-2026 · N.º de radicado ante Bolívar, bajo el botón de Cobro. */
+  numeroRadicado?: string | null;
   // ---- Viáticos (ago-2026) ----
   /**
    * La categoría elegida y su nombre; null en las dos = "No aplica", que es el

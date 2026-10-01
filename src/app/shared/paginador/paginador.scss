@@ -1,5 +1,7 @@
 /* Pie de paginación. Comparte tokens con el design system de styles.scss para
-   que se vea igual dentro de una `.card`, de un `.panel` o de un modal. */
+   que se vea igual dentro de una `.card`, de un `.panel` o de un modal.
+   1-oct-2026: va POR FUERA de la tabla (sin borde superior ni relleno lateral
+   de fila); styles.scss quita la caja de la tarjeta que envuelve ambos. */
 :host {
   display: block;
 }
@@ -10,8 +12,7 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.6rem 1rem;
-  padding: 0.7rem 1.1rem;
-  border-top: 1px solid var(--border-soft);
+  padding: 0.75rem 0.25rem 0;
   font-size: 0.8rem;
   color: var(--text-muted);
 }

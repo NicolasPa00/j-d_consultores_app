@@ -23,7 +23,8 @@ interface Kpi {
   label: string;
   value: string;
   icon: KpiIcon;
-  accent: 'blue' | 'cyan' | 'warning' | 'slate';
+  /** Acento semántico de `.kpi-card--*` (styles.scss): color del borde superior y del icono. */
+  accent: 'primary' | 'info' | 'warning' | 'success' | 'neutral';
 }
 
 /** Cómo se pinta la fecha de vencimiento de una orden (igual que en Órdenes). */
@@ -69,6 +70,8 @@ interface WorkOrder {
   /** T0-06 · Solo en Bolívar: de aquí sale el `(cronograma-secuencia)` del nombre. */
   codigoCronograma: string | null;
   secuencia: string | null;
+  /** Solo en AXA: de aquí sale su `(número de orden)`. */
+  numeroOrden: string | null;
   nit: string;
   arl: string;
   hours: number;
@@ -152,11 +155,11 @@ export class DashboardComponent implements OnInit {
     const todas = this.misOrdenes();
     const cuenta = (estado: string) => todas.filter((o) => o.estado === estado).length;
     return [
-      { label: 'Programadas', value: String(cuenta('PROGRAMADA')), icon: 'calendar', accent: 'blue' },
+      { label: 'Programadas', value: String(cuenta('PROGRAMADA')), icon: 'calendar', accent: 'info' },
       // "Ejecutadas" suma las finalizadas: el KPI mide trabajo hecho, y una
       // orden revisada no deja de estarlo. La distinción se ve en la bandeja.
-      { label: 'Ejecutadas', value: String(cuenta('EJECUTADA') + cuenta('FINALIZADA')), icon: 'check', accent: 'slate' },
-      { label: 'Horas asignadas', value: String(todas.reduce((s, o) => s + o.horas, 0)), icon: 'clock', accent: 'cyan' },
+      { label: 'Ejecutadas', value: String(cuenta('EJECUTADA') + cuenta('FINALIZADA')), icon: 'check', accent: 'success' },
+      { label: 'Horas asignadas', value: String(todas.reduce((s, o) => s + o.horas, 0)), icon: 'clock', accent: 'neutral' },
     ];
   });
 
@@ -237,12 +240,12 @@ export class DashboardComponent implements OnInit {
       this.dashData.set(r.data);
       const k = r.data.kpis;
       this.kpis.set([
-        { label: 'Total Órdenes', value: String(k.total_ordenes ?? 0), icon: 'orders', accent: 'blue' },
-        { label: 'Programadas', value: String(k.programadas ?? 0), icon: 'calendar', accent: 'cyan' },
+        { label: 'Total Órdenes', value: String(k.total_ordenes ?? 0), icon: 'orders', accent: 'primary' },
+        { label: 'Programadas', value: String(k.programadas ?? 0), icon: 'calendar', accent: 'info' },
         { label: 'Órdenes sin programar', value: String(k.sin_programar ?? 0), icon: 'clock', accent: 'warning' },
         // RPT-01 pide las ejecutadas DEL MES; el acumulado histórico sigue
         // disponible en Informes y en el porcentaje por ARL de más abajo.
-        { label: 'Ejecutadas este mes', value: String(k.ejecutadas_mes ?? 0), icon: 'check', accent: 'slate' },
+        { label: 'Ejecutadas este mes', value: String(k.ejecutadas_mes ?? 0), icon: 'check', accent: 'success' },
       ]);
     });
   }
@@ -260,7 +263,7 @@ export class DashboardComponent implements OnInit {
    */
   /** T0-06 · La razón social con `(cronograma-secuencia)` al lado, solo en Bolívar. */
   protected nombreOrden(order: WorkOrder): string {
-    return etiquetaEmpresa(order.client, order.arl, order.codigoCronograma, order.secuencia);
+    return etiquetaEmpresa(order.client, order.arl, order.codigoCronograma, order.secuencia, order.numeroOrden);
   }
 
   protected openOrder(order: WorkOrder): void {
@@ -280,9 +283,11 @@ export class DashboardComponent implements OnInit {
   protected pillEstado(estado?: string | null): string {
     switch (estado) {
       case 'PROGRAMADA': return 'pill--info';
-      case 'EJECUTADA': return 'pill--warning';
+      // 30-sep-2026 · EJECUTADA y FINALIZADA en verde (lineamientos de JD&D).
+      case 'EJECUTADA': return 'pill--success';
       case 'FINALIZADA': return 'pill--success';
-      default: return 'pill--muted'; // SIN PROGRAMAR
+      // 30-sep-2026 · SIN PROGRAMAR en ámbar: es lo pendiente (lineamientos de JD&D).
+      default: return 'pill--warning'; // SIN PROGRAMAR
     }
   }
 }
@@ -350,6 +355,7 @@ function toWorkOrder(o: Orden): WorkOrder {
     client: o.empresa_nombre || '—',
     codigoCronograma: o.codigo_cronograma ?? null,
     secuencia: o.secuencia ?? null,
+    numeroOrden: o.numero_orden ?? null,
     nit: o.nit_nic || '—',
     arl: o.arl_nombre || '—',
     hours: Number(o.horas_asignadas ?? 0),

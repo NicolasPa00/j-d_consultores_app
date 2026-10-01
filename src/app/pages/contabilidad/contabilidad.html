@@ -181,7 +181,7 @@
 <!-- ============ MODAL · ALTA / EDICIÓN ============ -->
 @if (formOpen()) {
   <div class="modal-backdrop" (click)="closeForm()"></div>
-  <div class="modal modal--form" role="dialog" aria-modal="true" aria-labelledby="cntFormTitle">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cntFormTitle">
     <header class="modal__head">
       <h3 class="modal__title" id="cntFormTitle">{{ editando() ? 'Editar cuenta ' + editando()!.codigo : 'Nueva cuenta' }}</h3>
       <button type="button" class="icon-action" (click)="closeForm()" aria-label="Cerrar">
@@ -264,7 +264,7 @@
       </div>
 
       <footer class="modal__footer">
-        <button type="button" class="btn btn--ghost" (click)="closeForm()" [disabled]="saving()">Cancelar</button>
+        <button type="button" class="btn btn--close" (click)="closeForm()" [disabled]="saving()">Cancelar</button>
         <button type="submit" class="btn btn--primary" [disabled]="saving() || (!editando() && padreDelDraft().estado !== 'ok' && padreDelDraft().estado !== 'clase')">
           @if (saving()) { <span class="spinner" aria-hidden="true"></span> Guardando… } @else { {{ editando() ? 'Guardar' : 'Crear cuenta' }} }
         </button>
@@ -276,7 +276,7 @@
 <!-- ============ MODAL · IMPORTAR ============ -->
 @if (importOpen()) {
   <div class="modal-backdrop" (click)="closeImportar()"></div>
-  <div class="modal modal--form" role="dialog" aria-modal="true" aria-labelledby="cntImpTitle">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cntImpTitle">
     <header class="modal__head">
       <h3 class="modal__title" id="cntImpTitle">Importar plan de cuentas</h3>
       <button type="button" class="icon-action" (click)="closeImportar()" aria-label="Cerrar">
@@ -324,7 +324,7 @@
       }
     </div>
     <footer class="modal__footer">
-      <button type="button" class="btn btn--ghost" (click)="closeImportar()" [disabled]="importando()">Cancelar</button>
+      <button type="button" class="btn btn--close" (click)="closeImportar()" [disabled]="importando()">Cancelar</button>
       <button type="button" class="btn btn--primary" (click)="importar(false)"
               [disabled]="importando() || !resumen() || (!resumen()!.creadas && !resumen()!.actualizadas)">
         @if (importando() && resumen()) { <span class="spinner" aria-hidden="true"></span> Importando… } @else { Importar }

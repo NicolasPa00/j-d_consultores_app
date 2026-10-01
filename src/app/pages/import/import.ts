@@ -11,7 +11,7 @@ import {
   ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, opcionesDeCampo,
   problemaCampo, tecleoCampo,
 } from '../../shared/campos-orden';
-import { OpcionCampo, esBolivar, etiquetaTipoActividadArl, pistaTipoActividadArl } from '../../core/bolivar';
+import { OpcionCampo, esAxa, esBolivar, etiquetaTipoActividadArl, pistaTipoActividadArl } from '../../core/bolivar';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
@@ -1243,6 +1243,13 @@ function buildFields(m: MetadatosExtraccion, arl: string | null): PreviewField[]
   }
 
   push('nit_nic', 'NIT', m.nit_nic);
+  // 1-oct-2026 · La orden de AXA no trae el NIT del cliente (el único impreso es
+  // el de JD&D), así que llega vacío y lo escribe quien revisa.
+  if (esAxa(arl)) {
+    const nit = rows[rows.length - 1];
+    nit.required = true;
+    nit.requiredHint = 'Campo obligatorio — las órdenes de AXA no traen el NIT de la empresa: escríbalo.';
+  }
   // Las horas son obligatorias: de ellas salen las franjas de la visita y el
   // valor que se le paga al profesional. El SIPAB de Bolívar solo las trae
   // cuando mide la actividad en HORAS —"Hora Programada" es la hora de INICIO,

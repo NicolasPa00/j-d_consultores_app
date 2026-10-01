@@ -8,8 +8,11 @@
     <!-- Encabezado de la orden -->
     <div class="portal__head">
       <span class="pill pill--info">{{ info()?.codigo || 'Orden de Servicio' }}</span>
-      <h1 class="portal__title">Gestión SST · {{ info()?.arl_nombre || '' }}</h1>
-      <p class="portal__company">Empresa: {{ info()?.empresa_nombre || '—' }}</p>
+      <!-- Sin orden (enlace inválido) no se pinta «Gestión SST ·» ni «Empresa: —». -->
+      <h1 class="portal__title">Gestión SST{{ info()?.arl_nombre ? ' · ' + info()?.arl_nombre : '' }}</h1>
+      @if (info()?.empresa_nombre) {
+        <p class="portal__company">Empresa: {{ info()?.empresa_nombre }}</p>
+      }
     </div>
 
     @if (error(); as msg) {

@@ -315,6 +315,13 @@ export class ApiService {
     );
   }
 
+  /** 1-oct-2026 · N.º de radicado ante Bolívar. Vacío lo borra. */
+  guardarRadicado(orderId: string, numeroRadicado: string): Observable<Wrap<{ numero_radicado: string | null }>> {
+    return this.http.patch<Wrap<{ numero_radicado: string | null }>>(
+      `${this.base}/orders/${orderId}/radicado`, { numero_radicado: numeroRadicado },
+    );
+  }
+
   // ---- Estado de facturación / cobro (ago-2026, petición 6) ----
   /**
    * Marca el estado de cobro de VARIAS órdenes de una vez.

@@ -145,11 +145,20 @@
   text-decoration: none;
 }
 
-/* Ítem activo: píldora sólida en azul de marca */
+/* Ítem activo (30-sep-2026, lineamientos de JD&D): sutil en vez del recuadro
+   azul macizo. Fondo azul tenue, texto en azul corporativo a 600 y un indicador
+   vertical de 4 px a la izquierda. El indicador es una sombra interior y no un
+   `border-left`: así el texto no se desplaza 4 px al activarse el ítem. */
 .nav-link--active,
 .nav-link--active:hover {
-  background: #000b50;
-  color: #ffffff;
+  background: var(--state-info-bg);
+  color: var(--primary-color);
+  box-shadow: inset 4px 0 0 var(--primary-color);
+  border-radius: 4px var(--radius-control) var(--radius-control) 4px;
+}
+
+.nav-link--active .nav-link__text {
+  font-weight: 600;
 }
 
 .nav-link__icon {
@@ -169,6 +178,7 @@
 .nav-link__text {
   display: flex;
   flex-direction: column;
+  min-width: 0; /* deja que la pista se recorte con «…» en vez de ensanchar */
   font-size: 0.9rem;
   font-weight: 500;
 }
@@ -179,10 +189,28 @@
   font-weight: 400;
   line-height: 1.25;
   color: #94a3b8;
+  /* 1-oct-2026 · En Finanzas varias pistas ocupaban dos líneas y el menú no
+     cabía a 768 px de alto («Configuración» quedaba cortada): una sola línea. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Pantallas bajas (portátil de 768 px con la barra del navegador): menos aire
+   entre ítems para que los nueve de Finanzas quepan sin scroll. */
+@media (max-height: 820px) {
+  .sidebar__nav {
+    padding: 14px 16px;
+    gap: 2px;
+  }
+
+  .nav-link {
+    padding: 0.55rem 0.85rem;
+  }
 }
 
 .nav-link--active .nav-link__hint {
-  color: rgba(255, 255, 255, 0.75);
+  color: #64748b;
 }
 
 .sidebar__footer {

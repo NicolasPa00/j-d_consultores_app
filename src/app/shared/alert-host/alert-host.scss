@@ -103,8 +103,7 @@
   position: fixed;
   inset: 0;
   z-index: 90;
-  background: rgba(0, 11, 80, 0.45);
-  backdrop-filter: blur(2px);
+  background: var(--modal-backdrop);
   animation: al-fade 0.2s ease;
 }
 
@@ -119,25 +118,10 @@
   padding: 1.75rem 1.75rem 1.4rem;
   text-align: center;
   background: var(--surface);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 26px 64px rgba(0, 11, 80, 0.32);
+  border-radius: var(--modal-radius);
+  box-shadow: var(--modal-shadow);
   animation: al-pop 0.24s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
-}
-
-/* Filete superior de marca, igual que en el resto de modales */
-.al-dialog::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-}
-
-.al-dialog--danger::before {
-  background: linear-gradient(90deg, #8f2431, #c0485a);
 }
 
 .al-dialog__icon {
@@ -148,8 +132,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  color: var(--secondary-color);
-  background: rgba(45, 123, 200, 0.12);
+  color: var(--primary-color);
+  background: var(--modal-head-bg);
 }
 
 .al-dialog__icon svg {
@@ -158,15 +142,15 @@
 }
 
 .al-dialog--danger .al-dialog__icon {
-  color: var(--danger);
-  background: rgba(239, 68, 68, 0.12);
+  color: var(--btn-close-text);
+  background: var(--btn-close-bg);
 }
 
 .al-dialog__title {
   margin: 0;
   font-size: 1.2rem;
   font-weight: 700;
-  color: var(--text-main);
+  color: var(--primary-color);
 }
 
 .al-dialog__msg {
@@ -184,18 +168,6 @@
 
 .al-dialog__actions .btn {
   min-width: 120px;
-}
-
-/* Botón destructivo (para el diálogo en tono peligro) */
-.btn--danger {
-  color: #ffffff;
-  background: var(--danger);
-  border: 1px solid var(--danger);
-}
-
-.btn--danger:hover {
-  background: #dc2626;
-  border-color: #dc2626;
 }
 
 /* ===== Animaciones ===== */

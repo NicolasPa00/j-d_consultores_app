@@ -470,7 +470,7 @@
           }
 
           <div class="profile-form__actions">
-            <button type="button" class="btn btn--ghost" (click)="closeUserForm()">Cancelar</button>
+            <button type="button" class="btn btn--close" (click)="closeUserForm()">Cancelar</button>
             <button type="submit" class="btn btn--primary" [disabled]="savingUser() || !!documentoDuplicado()">
               {{ savingUser() ? 'Guardando…' : (editing === 'nuevo' ? 'Crear usuario' : 'Guardar cambios') }}
             </button>
@@ -658,7 +658,7 @@
             </label>
 
             <div class="profile-form__actions">
-              <button type="button" class="btn btn--ghost" (click)="closePlantillaForm()">Cancelar</button>
+              <button type="button" class="btn btn--close" (click)="closePlantillaForm()">Cancelar</button>
               <button type="submit" class="btn btn--primary" [disabled]="savingPlantilla()">
                 {{ savingPlantilla() ? 'Guardando…' : (editando === 'nuevo' ? 'Crear formato' : 'Guardar cambios') }}
               </button>

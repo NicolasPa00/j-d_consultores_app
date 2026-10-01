@@ -72,61 +72,9 @@
 .btn[disabled] {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-/* Modal (copia local: los estilos de componente son encapsulados). */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  background: rgba(15, 23, 42, 0.45);
-}
-
-.modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 51;
-  display: flex;
-  flex-direction: column;
-  width: 520px;
-  max-width: calc(100vw - 2rem);
-  background: var(--surface);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 24px 60px rgba(0, 11, 80, 0.28);
-  overflow: hidden;
-}
-
-.modal__head {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.modal__title {
-  font-size: 1.1rem;
-  font-weight: 700;
-}
-
-.modal__body {
-  padding: 1.25rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-}
-
-.modal__body .per-ayuda {
+}.modal__body .per-ayuda {
   margin: 0;
 }
-
-.modal__footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid var(--border-soft);
-}
-
 /* ===== B10-01 · Cierre de año ===== */
 .per-cierre {
   margin-top: 1.25rem;
@@ -176,10 +124,6 @@
   margin-bottom: 0.9rem;
 }
 
-.per-btn-peligro {
-  background: var(--danger);
-  border-color: var(--danger);
-}
 
 .mono {
   font-variant-numeric: tabular-nums;
