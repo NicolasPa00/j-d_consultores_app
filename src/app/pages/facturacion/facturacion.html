@@ -3,7 +3,7 @@
     <h2 class="page-head__title">Facturación</h2>
     <p class="page-head__sub">Facturas electrónicas ante la DIAN · por pagador y a partir de las órdenes finalizadas</p>
   </div>
-  @if (puedeOperar()) {
+  @if (puedeOperar() && emisionDian) {
     <button type="button" class="btn btn--ghost" (click)="actualizarEventos()" [disabled]="actualizandoEventos()"
             title="Consulta a la DIAN los eventos (acuse, aceptación, reclamo) de las facturas de los últimos 60 días">
       @if (actualizandoEventos()) { <span class="spinner" aria-hidden="true"></span> Consultando… } @else { Actualizar eventos DIAN }
@@ -18,12 +18,15 @@
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'borradores'" (click)="cambiarPestana('borradores')">
     Pendientes <span class="tab__count">{{ borradores().length }}</span>
   </button>
-  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'emitidas'" (click)="cambiarPestana('emitidas')">
-    Emitidas <span class="tab__count">{{ emitidas().length }}</span>
-  </button>
-  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'notas'" (click)="cambiarPestana('notas')">
-    Notas crédito <span class="tab__count">{{ notas().length }}</span>
-  </button>
+  <!-- Emitidas y notas crédito existen cuando se envía a la DIAN (`emisionDian`). -->
+  @if (emisionDian) {
+    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'emitidas'" (click)="cambiarPestana('emitidas')">
+      Emitidas <span class="tab__count">{{ emitidas().length }}</span>
+    </button>
+    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'notas'" (click)="cambiarPestana('notas')">
+      Notas crédito <span class="tab__count">{{ notas().length }}</span>
+    </button>
+  }
 </div>
 
 <!-- ======================= POR FACTURAR ======================= -->
@@ -364,7 +367,7 @@
       <div class="fac-col">
       <!-- El reenvío con el correo de ORBITA está probado para facturas; en las
            notas crédito queda el correo que Factus envía al validarlas. -->
-      @if (d.estado === 'VALIDADO' && puedeOperar() && !esNota(d)) {
+      @if (emisionDian && d.estado === 'VALIDADO' && puedeOperar() && !esNota(d)) {
         <div class="fac-panel">
           <h4 class="fac-panel__titulo">Reenviar al cliente (PDF + XML)</h4>
           <div class="fac-reenvio">
@@ -445,7 +448,7 @@
       }
 
       <!-- A2-01 · Nota crédito sobre una factura validada -->
-      @if (!esNota(d) && d.estado === 'VALIDADO' && puedeOperar() && formNota()) {
+      @if (emisionDian && !esNota(d) && d.estado === 'VALIDADO' && puedeOperar() && formNota()) {
         <div class="fac-nota">
           <h4 class="section-head"><span class="section-tag">Nueva nota crédito</span></h4>
           <label class="form-field">
@@ -504,7 +507,10 @@
         <button type="button" class="btn btn--ghost" (click)="descargar('xml')" [disabled]="!!accion() || !d.xml_path">XML</button>
       }
       <span class="fac-pie__espacio"></span>
-      @if (puedeOperar()) {
+      @if (puedeOperar() && !emisionDian && d.estado === 'BORRADOR') {
+        <button type="button" class="btn btn--danger" (click)="eliminar()" [disabled]="!!accion()">Eliminar borrador</button>
+      }
+      @if (puedeOperar() && emisionDian) {
         @switch (d.estado) {
           @case ('BORRADOR') {
             <button type="button" class="btn btn--danger" (click)="eliminar()" [disabled]="!!accion()">Eliminar borrador</button>

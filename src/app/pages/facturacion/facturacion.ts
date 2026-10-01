@@ -57,6 +57,16 @@ export class FacturacionComponent implements OnInit {
   private readonly alerts = inject(AlertService);
   private readonly auth = inject(AuthService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  /**
+   * 1-oct-2026 · APAGADO para el 2.º lote (decisión del usuario): todo lo que
+   * habla con la DIAN a través del proveedor tecnológico —emitir, consultar
+   * estado, corregir y reemitir, eventos, notas crédito, aceptación tácita,
+   * reenviar— entra en el TERCER lote, cuando JD&D esté dado de alta. Mientras
+   * tanto se pueden preparar facturas (Pendientes) pero no enviarlas. Para
+   * activarlo basta con ponerlo en `true`: el código está completo y probado
+   * contra el sandbox.
+   */
+  protected readonly emisionDian: boolean = false;
   private readonly sanitizer = inject(DomSanitizer);
   /** 1-oct-2026 · Visor del PDF del documento (sin descargarlo). */
   protected readonly pdfVisto = signal<SafeResourceUrl | null>(null);
@@ -586,7 +596,9 @@ export class FacturacionComponent implements OnInit {
     const nombre = this.esNota(d) ? 'La nota crédito' : 'La factura';
     switch (d.estado) {
       case 'BORRADOR':
-        return { tono: 'info', texto: `${nombre} está guardada como borrador. Revise el cálculo y emítala ante la DIAN.` };
+        return this.emisionDian
+          ? { tono: 'info', texto: `${nombre} está guardada como borrador. Revise el cálculo y emítala ante la DIAN.` }
+          : { tono: 'info', texto: `${nombre} quedó preparada. El envío a la DIAN se habilitará en el próximo lote de cambios.` };
       case 'ENVIANDO':
         return { tono: 'warning', texto: 'Enviada a la DIAN; todavía no responde. Use «Consultar estado» en unos minutos: no se vuelve a emitir.' };
       case 'RECHAZADO':

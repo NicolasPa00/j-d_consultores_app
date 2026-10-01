@@ -41,6 +41,14 @@ const CATALOGOS_CONSULTA: { clave: string; label: string }[] = [
  * impuestos y retenciones (A0-07), numeración (A0-08) y catálogos DIAN (A0-04)
  * de solo lectura. Una sola pantalla con pestañas, como Cuentas de cobro.
  */
+/**
+ * 1-oct-2026 · Apagado para el 2.º lote: la conexión con el proveedor tecnológico
+ * (estado, ambiente, paquete, sincronizar numeración, ids del proveedor) se
+ * muestra en el TERCER lote, con la emisión ante la DIAN (`emisionDian` en
+ * Facturación).
+ */
+const PROVEEDOR_VISIBLE: boolean = false;
+
 @Component({
   selector: 'app-parametrizacion',
   imports: [FormsModule],
@@ -49,6 +57,7 @@ const CATALOGOS_CONSULTA: { clave: string; label: string }[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ParametrizacionComponent implements OnInit {
+  protected readonly proveedorVisible: boolean = PROVEEDOR_VISIBLE;
   private readonly api = inject(ApiService);
   private readonly alerts = inject(AlertService);
   private readonly auth = inject(AuthService);

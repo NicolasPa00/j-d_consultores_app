@@ -1,6 +1,6 @@
 <section class="page-head">
   <h2 class="page-head__title">Parametrización</h2>
-  <p class="page-head__sub">Fase A · lo que alimenta la facturación electrónica: emisor, productos, tarifas, retenciones y numeración.</p>
+  <p class="page-head__sub">Lo que alimenta la facturación electrónica: emisor, productos, tarifas, retenciones y numeración.</p>
 </section>
 
 <div class="tabs" role="tablist">
@@ -18,7 +18,7 @@
       @if (loadingEmisor()) {
         <p class="ficha-vacio">Cargando…</p>
       } @else {
-        @if (proveedor(); as p) {
+        @if (proveedorVisible && proveedor(); as p) {
           @if (p.aviso) {
             <p class="par-aviso">{{ p.aviso }}</p>
           } @else if (!p.configurado) {
@@ -94,6 +94,7 @@
               <label class="form-field__label" for="eCiiu">CIIU principal</label>
               <input id="eCiiu" class="form-control" type="text" [(ngModel)]="emisorForm.ciiu_principal" name="eCiiu" [disabled]="!puedeEditar()" placeholder="7020" />
             </div>
+            @if (proveedorVisible) {
             <div class="form-field">
               <label class="form-field__label" for="eAmbiente">Ambiente declarado</label>
               <select id="eAmbiente" class="form-control" [(ngModel)]="emisorForm.ambiente" name="eAmbiente" [disabled]="!puedeEditar()">
@@ -101,7 +102,9 @@
                 <option value="PRODUCCION">Producción</option>
               </select>
             </div>
+            }
           </div>
+          @if (proveedorVisible) {
           <div class="form-row">
             <div class="form-field">
               <label class="form-field__label" for="eVencePaquete">Vence el paquete del proveedor</label>
@@ -112,6 +115,7 @@
               <input id="eCertEnviados" class="form-control" type="date" [(ngModel)]="emisorForm.documentos_certificado_enviados_en" name="eCertEnviados" [disabled]="!puedeEditar()" />
             </div>
           </div>
+          }
         </form>
 
         @if (puedeEditar()) {
@@ -286,7 +290,7 @@
   <div class="card">
     <div class="card__head">
       <h3 class="card__title">Resoluciones de numeración</h3>
-      @if (puedeEditar()) {
+      @if (puedeEditar() && proveedorVisible) {
         <button type="button" class="btn btn--primary btn--sm" [disabled]="sincronizando()" (click)="sincronizarResoluciones()">
           {{ sincronizando() ? 'Sincronizando…' : 'Sincronizar con el proveedor' }}
         </button>
@@ -337,13 +341,13 @@
     </div>
     <div class="card__body table-wrap">
       <table class="table">
-        <thead><tr><th>Código DIAN</th><th>Nombre</th><th>Id del proveedor</th></tr></thead>
+        <thead><tr><th>Código DIAN</th><th>Nombre</th>@if (proveedorVisible) { <th>Id del proveedor</th> }</tr></thead>
         <tbody>
           @for (i of catalogoActual(); track i.id) {
             <tr>
               <td class="mono">{{ i.codigo_dian }}</td>
               <td>{{ i.nombre }}@if (i.departamento_nombre) { <small> · {{ i.departamento_nombre }}</small> }</td>
-              <td class="mono">{{ i.factus_id || '—' }}</td>
+              @if (proveedorVisible) { <td class="mono">{{ i.factus_id || '—' }}</td> }
             </tr>
           } @empty {
             <tr><td colspan="3" class="table__empty">{{ loadingCatalogo() ? 'Cargando…' : 'Sin resultados.' }}</td></tr>
