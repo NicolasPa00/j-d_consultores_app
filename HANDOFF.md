@@ -24,6 +24,11 @@
 > menú viven en UNA `ng-template #icono` del shell. Escritorio sin cambios. Además, tras una auditoría visual
 > externa: ajustes de Informes contables y Activos fijos (ver commits `d157fce` y `421e22f`). **Decidido por el
 > usuario:** los botones Cancelar/Cerrar siguen en rojo tenue.
+> **Propuestas de la auditoría, una por una (2-oct):** ✅ 2 barra inferior · ✅ 3 título según el sistema y pestaña del
+> navegador por pantalla (`core/titulo.ts`) · ❌ 4 nombres de las cuentas «(por confirmar)» (se resuelve con el PUC
+> real) · ✅ 5 «Nuevo activo» en la cabecera · ✅ 6 selector con búsqueda (`shared/selector-busqueda/`: tercero de
+> Informes contables, proveedor y cuentas de Nuevo activo) · ✅ 7 «Tipo de activo» que precarga vida útil (tasas
+> fiscales máximas) y cuentas (grupos del PUC); es sugerencia, la contadora confirma.
 >
 > 📊 **2-oct-2026 · FASE C CONSTRUIDA (rama `fase-c-informes`, los dos repos, commiteada en local, sin push).**
 > Pantalla **`/informes-contables`** (menú de Finanzas, vista `informes_contables`: admin, contador, auditor) con seis
