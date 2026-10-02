@@ -5,7 +5,7 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 2-oct-2026: **empieza la Fase C** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
+> **Última actualización:** 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
 > para lo último; el resto de esta cabecera es del 16-sep) — **🚀 EL SISTEMA ESTÁ EN
 > PRODUCCIÓN**
 > (desde el 2-sep-2026) y ya lo están usando clientes reales. ORBITA vive en
@@ -16,15 +16,31 @@
 > servidor. **Lo último desplegado:** el Excel SIPAB de Bolívar dejó de leerse
 > cuando llegaba como `.xls` binario (ver §0 punto 2 y la Tanda 23 en §3).
 >
-> 📊 **2-oct-2026 · FASE C — C1-01 BALANCE DE COMPROBACIÓN y C2-01 AUXILIAR POR CUENTA, hechos.** Rama
-> **`fase-c-informes`** (los dos repos, commiteada en local, sin push). Pantalla **`/informes-contables`** en el menú de
-> Finanzas (vista `informes_contables`: admin, contador y auditor; migración `2026-10-02-informes-contables-permiso.sql`
-> aplicada en `jdd_dev`, **no en producción**). Saldos como débito − crédito, igual que Siigo; «Ver» en una fila del
-> balance abre su auxiliar con las mismas fechas; Excel con importes numéricos y encabezado de empresa; PDF por
-> `core/imprimir.ts` (compartido con `/informes`). Verificado: `scripts/verificar-informes-contables.mjs` (30 OK, con
-> ROLLBACK) y en el navegador. Detalle y siguiente paso: bloque del 2-oct en el §0 de `docs/3-planes/plan-facturacion-contabilidad.md`.
-> Trampa: en `jdd_dev` no hay ficha del emisor, así que el Excel sale sin las líneas de razón social y NIT (en
-> producción sí salen).
+> 📊 **2-oct-2026 · FASE C CONSTRUIDA (rama `fase-c-informes`, los dos repos, commiteada en local, sin push).**
+> Pantalla **`/informes-contables`** (menú de Finanzas, vista `informes_contables`: admin, contador, auditor) con seis
+> pestañas: **Balance de comprobación** (C1-01, niveles del PUC, «Ver» → auxiliar), **Movimiento por cuenta** (C2-01,
+> columnas de `puc.xlsx` + saldo corrido), **Por tercero** (C3-01, general/detallado), **Libros auxiliares** (C4-01: IVA,
+> retenciones por prefijo del PUC con su base, y CxC/CxP por tercero con las cuentas `es_cartera`), **Ventas por
+> cliente** (C6-01, facturas − notas crédito ante la DIAN) y **Estados financieros** (C5-01, **formato provisional**:
+> renglones = grupo del PUC hasta que la contadora defina los suyos; ya se asignan en el Plan de cuentas). Todo exporta
+> a Excel (números de verdad, encabezado de empresa) y PDF (`core/imprimir.ts`, compartido con `/informes`). Saldos
+> como débito − crédito, igual que Siigo. En **Contabilidad → Activos fijos** (C7-01): ficha con sus tres cuentas,
+> depreciación en línea recta (comprobante DP mensual, en orden, revertir la última) y **QR** que abre
+> `/contabilidad?activo=<id>`. Verificación con ROLLBACK: `scripts/verificar-informes-contables.mjs` (53 OK) y
+> `scripts/verificar-activos-fijos.mjs` (31 OK). Migraciones `2026-10-02-informes-contables-permiso.sql` y
+> `2026-10-02-activos-fijos.sql` **aplicadas en `jdd_dev`, NO en producción**; el backend tiene una **dependencia nueva
+> (`qrcode`)**: al desplegar, `npm install`. Arreglos de la prueba del 1-oct: «Procesar de todos modos» ya fuerza
+> (`forzar=true`, sin probar de punta a punta para no gastar IA) y el código de producto del borrador sale «Cód. N».
+> **Respaldos automáticos (A0-02): script listo, sin instalar** — `sst_ws/scripts/servidor/respaldo-diario.sh` +
+> `docs/4-despliegue/respaldos-automaticos.md`; falta decidir la copia fuera de la máquina. Detalle: bloque del 2-oct
+> en el §0 de `docs/3-planes/plan-facturacion-contabilidad.md`.
+> **Trampas nuevas:** (1) Python en Windows lee el código por stdin en cp1252: un heredoc con «—» o tildes en una
+> cadena de `assert` falla; escribir el script a un archivo. (2) `withTransaction` hace COMMIT: nunca «prestarle» el
+> cliente de una prueba con ROLLBACK; los servicios nuevos aceptan `{ client }`. (3) Al expirar el comando que lanzó
+> un servidor en segundo plano, el proceso puede seguir vivo (el túnel) o quedar huérfano y morir en el siguiente
+> reinicio de `--watch` (el backend): comprobar el puerto antes de relanzar. (4) La extensión de Chrome se
+> desconectó tras un `/login` con otra cuenta; plan B: puppeteer desde `2-pruebas/herramientas-capturas/`.
+> (5) En `jdd_dev` no hay ficha del emisor: el Excel sale sin razón social ni NIT (en producción sí).
 >
 > 🚀 **1-oct-2026 (noche) · SEGUNDO LOTE DESPLEGADO EN PRODUCCIÓN** (`master b232b50`, `main 57d5059`). Detalle, respaldo
 > y cómo revertir: **`docs/4-despliegue/despliegue-lote2.md`**. Guía para el cliente (16 cambios, HTML + PDF):
