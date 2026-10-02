@@ -1,3 +1,79 @@
+<!-- Íconos del menú, una sola vez: los usan la barra lateral, la barra inferior
+     del celular y la hoja «Más». -->
+<ng-template #icono let-icon>
+  @switch (icon) {
+    @case ('home') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 10.5 12 3l9 7.5" />
+        <path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" />
+        <path d="M9.5 21v-6h5v6" />
+      </svg>
+    }
+    @case ('import') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+        <path d="M12 11v6" />
+        <path d="m9 14 3 3 3-3" />
+      </svg>
+    }
+    @case ('ai') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="6" y="6" width="12" height="12" rx="2" />
+        <path d="M9.5 10.5h5v3h-5z" />
+        <path d="M9 3v2M15 3v2M9 19v2M15 19v2M3 9h2M3 15h2M19 9h2M19 15h2" />
+      </svg>
+    }
+    @case ('reports') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+        <path d="M14 3v5h5" />
+        <path d="M9 13h6M9 17h6" />
+      </svg>
+    }
+    @case ('invoice') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 2h12v20l-3-2-3 2-3-2-3 2Z" />
+        <path d="M9 7h6M9 11h6M9 15h4" />
+      </svg>
+    }
+    @case ('ledger') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3Z" />
+        <path d="M4 17a3 3 0 0 1 3-3h11M8 8h6M8 11h4" />
+      </svg>
+    }
+    @case ('money') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2.5" y="6" width="19" height="12" rx="2" />
+        <circle cx="12" cy="12" r="2.5" />
+        <path d="M6 10v4M18 10v4" />
+      </svg>
+    }
+    @case ('building') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16" />
+        <path d="M14 9h4a2 2 0 0 1 2 2v10" />
+        <path d="M3 21h18" />
+        <path d="M7.5 7h3M7.5 11h3M7.5 15h3M17 13v.01M17 17v.01" />
+      </svg>
+    }
+    @case ('people') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1" />
+        <circle cx="9.5" cy="8" r="3" />
+        <path d="M21 19v-1a4 4 0 0 0-3-3.85" />
+        <path d="M16 5.15A3 3 0 0 1 16 11" />
+      </svg>
+    }
+    @case ('settings') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+      </svg>
+    }
+  }
+</ng-template>
+
 <div class="layout">
   <!-- T0-14 · Fondo oscuro del menú móvil: solo existe mientras el panel está
        abierto, y cerrarlo (tocar fuera) es la forma obvia de descartarlo. -->
@@ -34,77 +110,7 @@
           (click)="cerrarMenuMovil()"
         >
           <span class="nav-link__icon" aria-hidden="true">
-            @switch (item.icon) {
-              @case ('home') {
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M3 10.5 12 3l9 7.5" />
-                  <path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" />
-                  <path d="M9.5 21v-6h5v6" />
-                </svg>
-              }
-              @case ('import') {
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
-                  <path d="M12 11v6" />
-                  <path d="m9 14 3 3 3-3" />
-                </svg>
-              }
-              @case ('ai') {
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="6" y="6" width="12" height="12" rx="2" />
-                  <path d="M9.5 10.5h5v3h-5z" />
-                  <path d="M9 3v2M15 3v2M9 19v2M15 19v2M3 9h2M3 15h2M19 9h2M19 15h2" />
-                </svg>
-              }
-              @case ('reports') {
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
-                  <path d="M14 3v5h5" />
-                  <path d="M9 13h6M9 17h6" />
-                </svg>
-              }
-              @case ('invoice') {
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M6 2h12v20l-3-2-3 2-3-2-3 2Z" />
-                  <path d="M9 7h6M9 11h6M9 15h4" />
-                </svg>
-              }
-              @case ('ledger') {
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3Z" />
-                  <path d="M4 17a3 3 0 0 1 3-3h11M8 8h6M8 11h4" />
-                </svg>
-              }
-              @case ('money') {
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="2.5" y="6" width="19" height="12" rx="2" />
-                  <circle cx="12" cy="12" r="2.5" />
-                  <path d="M6 10v4M18 10v4" />
-                </svg>
-              }
-              @case ('building') {
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16" />
-                  <path d="M14 9h4a2 2 0 0 1 2 2v10" />
-                  <path d="M3 21h18" />
-                  <path d="M7.5 7h3M7.5 11h3M7.5 15h3M17 13v.01M17 17v.01" />
-                </svg>
-              }
-              @case ('people') {
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1" />
-                  <circle cx="9.5" cy="8" r="3" />
-                  <path d="M21 19v-1a4 4 0 0 0-3-3.85" />
-                  <path d="M16 5.15A3 3 0 0 1 16 11" />
-                </svg>
-              }
-              @case ('settings') {
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
-                </svg>
-              }
-            }
+            <ng-container [ngTemplateOutlet]="icono" [ngTemplateOutletContext]="{ $implicit: item.icon }" />
           </span>
           <span class="nav-link__text">
             {{ item.label }}
@@ -132,6 +138,8 @@
   <div class="main">
     <!-- ---- NAVBAR ---- -->
     <header class="navbar">
+      <!-- Celular: el isotipo hace de marca, porque la barra lateral no se ve. -->
+      <img class="navbar__isotipo" src="logo-orbita-isotipo.webp" alt="ORBITA" />
       <!-- T0-14 · Alterna el sidebar ancho ↔ colapsado en escritorio; en móvil
            (≤820 px, donde el sidebar ya está estrecho) abre el menú completo
            encima, como un panel. -->
@@ -181,4 +189,50 @@
       <router-outlet />
     </main>
   </div>
+
+  <!-- ============ CELULAR · BARRA INFERIOR (2-oct-2026, aprobada por el usuario) ============
+       Cuatro módulos fijos del sistema activo + «Más» con el resto. Reemplaza al riel
+       lateral de iconos, que se comía ~80 px del ancho y cortaba el título de la barra. -->
+  <nav class="bottom-nav" aria-label="Módulos">
+    @for (item of fijosMovil(); track item.vista) {
+      <a class="bottom-nav__item" [routerLink]="item.route" routerLinkActive="bottom-nav__item--activo" (click)="cerrarMas()">
+        <span class="bottom-nav__icono" aria-hidden="true"><ng-container [ngTemplateOutlet]="icono" [ngTemplateOutletContext]="{ $implicit: item.icon }" /></span>
+        <span class="bottom-nav__texto">{{ item.corto }}</span>
+      </a>
+    }
+    <button type="button" class="bottom-nav__item" [class.bottom-nav__item--activo]="masAbierto() || enModuloDeMas()" (click)="alternarMas()" [attr.aria-expanded]="masAbierto()" aria-haspopup="dialog">
+      <span class="bottom-nav__icono" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" /></svg>
+      </span>
+      <span class="bottom-nav__texto">Más</span>
+    </button>
+  </nav>
+
+  @if (masAbierto()) {
+    <div class="hoja-mas__fondo" (click)="cerrarMas()"></div>
+    <div class="hoja-mas" role="dialog" aria-modal="true" aria-label="Más módulos">
+      <span class="hoja-mas__asa" aria-hidden="true"></span>
+      <p class="hoja-mas__titulo">{{ sistemas.activo().nombre }}</p>
+      <div class="hoja-mas__grid">
+        @for (item of restoMovil(); track item.vista) {
+          <a class="hoja-mas__item" [routerLink]="item.route" routerLinkActive="hoja-mas__item--activo" (click)="cerrarMas()">
+            <span class="hoja-mas__icono" aria-hidden="true"><ng-container [ngTemplateOutlet]="icono" [ngTemplateOutletContext]="{ $implicit: item.icon }" /></span>
+            <span>{{ item.label }}</span>
+          </a>
+        }
+      </div>
+      <div class="hoja-mas__pie">
+        @if (sistemas.variosSistemas()) {
+          <button type="button" class="hoja-mas__accion" (click)="cerrarMas(); cambiarSistema()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3" /></svg>
+            Cambiar de sistema
+          </button>
+        }
+        <button type="button" class="hoja-mas__accion hoja-mas__accion--salir" (click)="cerrarMas(); logout()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /></svg>
+          Cerrar sesión
+        </button>
+      </div>
+    </div>
+  }
 </div>

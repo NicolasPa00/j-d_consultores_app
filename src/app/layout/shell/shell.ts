@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnInit, PLATFORM_ID, computed, inject, signal } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser, NgTemplateOutlet } from '@angular/common';
 import { NavigationEnd, RouterLink, RouterLinkActive, RouterOutlet, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
@@ -13,7 +13,19 @@ import { NotificationsComponent } from '../notifications/notifications';
 const SIDEBAR_KEY = 'sst_sidebar_colapsado';
 const ANCHO_MOVIL = 820;
 
+/**
+ * Los cuatro módulos fijos de la barra inferior del celular, por sistema (aprobados
+ * por el usuario el 2-oct-2026). El resto va en «Más». Si el rol no ve alguno, se
+ * completa con los siguientes del menú.
+ */
+const FIJOS_MOVIL: Record<string, Vista[]> = {
+  operacion: ['dashboard', 'ordenes', 'importar', 'profesionales'],
+  finanzas: ['facturacion', 'cartera', 'contabilidad', 'informes_contables'],
+};
+
 interface NavItem {
+  /** Rótulo de la barra inferior del celular (cabe en ~70 px). */
+  corto?: string;
   icon: string;
   label: string;
   /** Descripción corta de lo que hace la sección (se muestra bajo el título). */
@@ -30,26 +42,26 @@ interface NavItem {
  * en tres palabras qué se hace ahí.
  */
 const NAV_ITEMS: NavItem[] = [
-  { icon: 'home', label: 'Inicio', hint: 'Resumen del día', route: '/dashboard', vista: 'dashboard' },
-  { icon: 'import', label: 'Importar Archivos', hint: 'Cargar órdenes de la ARL', route: '/importar', vista: 'importar' },
-  { icon: 'ai', label: 'Órdenes', hint: 'Programar y hacer seguimiento', route: '/ordenes', vista: 'ordenes' },
-  { icon: 'people', label: 'Profesionales', hint: 'Asesores y calificación', route: '/profesionales', vista: 'profesionales' },
-  { icon: 'money', label: 'Cuentas de cobro', hint: 'Pago a profesionales', route: '/precuentas', vista: 'precuentas' },
-  { icon: 'building', label: 'Empresas', hint: 'Clientes y contactos', route: '/empresas', vista: 'empresas' },
-  { icon: 'invoice', label: 'Facturación', hint: 'Facturas electrónicas DIAN', route: '/facturacion', vista: 'facturacion' },
-  { icon: 'money', label: 'Cartera', hint: 'Lo que deben los clientes y sus pagos', route: '/cartera', vista: 'cartera' },
-  { icon: 'invoice', label: 'Compras y gastos', hint: 'Facturas de proveedores y gastos', route: '/compras', vista: 'compras' },
-  { icon: 'ledger', label: 'Contabilidad', hint: 'Plan de cuentas y comprobantes', route: '/contabilidad', vista: 'contabilidad' },
-  { icon: 'reports', label: 'Informes contables', hint: 'Balance de prueba y auxiliares', route: '/informes-contables', vista: 'informes_contables' },
-  { icon: 'people', label: 'Terceros', hint: 'A quién se factura o se paga', route: '/terceros', vista: 'terceros' },
-  { icon: 'settings', label: 'Parametrización', hint: 'Emisor, tarifas y numeración', route: '/parametrizacion', vista: 'parametrizacion' },
-  { icon: 'reports', label: 'Informes y Resúmenes', hint: 'Indicadores y exportaciones', route: '/informes', vista: 'informes' },
-  { icon: 'settings', label: 'Configuración', hint: 'Cuenta y ajustes', route: '/configuracion', vista: 'configuracion' },
+  { icon: 'home', label: 'Inicio', hint: 'Resumen del día', route: '/dashboard', vista: 'dashboard', corto: 'Inicio' },
+  { icon: 'import', label: 'Importar Archivos', hint: 'Cargar órdenes de la ARL', route: '/importar', vista: 'importar', corto: 'Importar' },
+  { icon: 'ai', label: 'Órdenes', hint: 'Programar y hacer seguimiento', route: '/ordenes', vista: 'ordenes', corto: 'Órdenes' },
+  { icon: 'people', label: 'Profesionales', hint: 'Asesores y calificación', route: '/profesionales', vista: 'profesionales', corto: 'Profesionales' },
+  { icon: 'money', label: 'Cuentas de cobro', hint: 'Pago a profesionales', route: '/precuentas', vista: 'precuentas', corto: 'Cobros' },
+  { icon: 'building', label: 'Empresas', hint: 'Clientes y contactos', route: '/empresas', vista: 'empresas', corto: 'Empresas' },
+  { icon: 'invoice', label: 'Facturación', hint: 'Facturas electrónicas DIAN', route: '/facturacion', vista: 'facturacion', corto: 'Facturación' },
+  { icon: 'money', label: 'Cartera', hint: 'Lo que deben los clientes y sus pagos', route: '/cartera', vista: 'cartera', corto: 'Cartera' },
+  { icon: 'invoice', label: 'Compras y gastos', hint: 'Facturas de proveedores y gastos', route: '/compras', vista: 'compras', corto: 'Compras' },
+  { icon: 'ledger', label: 'Contabilidad', hint: 'Plan de cuentas y comprobantes', route: '/contabilidad', vista: 'contabilidad', corto: 'Contabilidad' },
+  { icon: 'reports', label: 'Informes contables', hint: 'Balance de prueba y auxiliares', route: '/informes-contables', vista: 'informes_contables', corto: 'Informes' },
+  { icon: 'people', label: 'Terceros', hint: 'A quién se factura o se paga', route: '/terceros', vista: 'terceros', corto: 'Terceros' },
+  { icon: 'settings', label: 'Parametrización', hint: 'Emisor, tarifas y numeración', route: '/parametrizacion', vista: 'parametrizacion', corto: 'Parámetros' },
+  { icon: 'reports', label: 'Informes y Resúmenes', hint: 'Indicadores y exportaciones', route: '/informes', vista: 'informes', corto: 'Resúmenes' },
+  { icon: 'settings', label: 'Configuración', hint: 'Cuenta y ajustes', route: '/configuracion', vista: 'configuracion', corto: 'Ajustes' },
 ];
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, NotificationsComponent],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, NotificationsComponent, NgTemplateOutlet],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -68,7 +80,10 @@ export class ShellComponent implements OnInit {
     this.sistemas.sincronizarConUrl(this.router.url);
     this.router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd), takeUntilDestroyed())
-      .subscribe((e) => this.sistemas.sincronizarConUrl(e.urlAfterRedirects));
+      .subscribe((e) => {
+        this.sistemas.sincronizarConUrl(e.urlAfterRedirects);
+        this.urlActual.set(e.urlAfterRedirects);
+      });
   }
 
   /** «Cambiar de sistema»: vuelve a la selección y olvida la elección recordada. */
@@ -141,6 +156,38 @@ export class ShellComponent implements OnInit {
   protected logout(): void {
     this.auth.logout();
     this.router.navigateByUrl('/login');
+  }
+
+  // ---- Celular: barra inferior y hoja «Más» ----
+
+  protected readonly masAbierto = signal(false);
+  private readonly urlActual = signal(this.router.url);
+
+  protected readonly fijosMovil = computed<NavItem[]>(() => {
+    const items = this.navItems();
+    const preferidos = FIJOS_MOVIL[this.sistemas.activo().id] ?? [];
+    const fijos = preferidos.map((v) => items.find((i) => i.vista === v)).filter((i): i is NavItem => !!i);
+    for (const i of items) {
+      if (fijos.length >= 4) break;
+      if (!fijos.includes(i)) fijos.push(i);
+    }
+    return fijos.slice(0, 4);
+  });
+
+  protected readonly restoMovil = computed<NavItem[]>(() => this.navItems().filter((i) => !this.fijosMovil().includes(i)));
+
+  /** «Más» se marca activo cuando la pantalla abierta es uno de sus módulos. */
+  protected readonly enModuloDeMas = computed(() => {
+    const ruta = '/' + (this.urlActual().split(/[?#]/)[0].split('/')[1] ?? '');
+    return this.restoMovil().some((i) => i.route === ruta);
+  });
+
+  protected alternarMas(): void {
+    this.masAbierto.update((v) => !v);
+  }
+
+  protected cerrarMas(): void {
+    if (this.masAbierto()) this.masAbierto.set(false);
   }
 
   /**

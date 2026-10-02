@@ -16,6 +16,15 @@
 > servidor. **Lo último desplegado:** el Excel SIPAB de Bolívar dejó de leerse
 > cuando llegaba como `.xls` binario (ver §0 punto 2 y la Tanda 23 en §3).
 >
+> 📱 **2-oct-2026 (noche) · CELULAR CON BARRA INFERIOR (aprobada por el usuario).** A ≤820 px desaparece el riel
+> lateral de iconos y el menú pasa a una barra inferior fija: 4 módulos fijos por sistema (`FIJOS_MOVIL` en
+> `layout/shell/shell.ts`: Operación = Inicio, Órdenes, Importar, Profesionales; Finanzas = Facturación, Cartera,
+> Contabilidad, Informes contables) + «Más», una hoja desde abajo con el resto, «Cambiar de sistema» y «Cerrar sesión».
+> La barra superior en celular queda con isotipo, sistema, campanita y avatar (sin el título largo). Los íconos del
+> menú viven en UNA `ng-template #icono` del shell. Escritorio sin cambios. Además, tras una auditoría visual
+> externa: ajustes de Informes contables y Activos fijos (ver commits `d157fce` y `421e22f`). **Decidido por el
+> usuario:** los botones Cancelar/Cerrar siguen en rojo tenue.
+>
 > 📊 **2-oct-2026 · FASE C CONSTRUIDA (rama `fase-c-informes`, los dos repos, commiteada en local, sin push).**
 > Pantalla **`/informes-contables`** (menú de Finanzas, vista `informes_contables`: admin, contador, auditor) con seis
 > pestañas: **Balance de comprobación** (C1-01, niveles del PUC, «Ver» → auxiliar), **Movimiento por cuenta** (C2-01,
