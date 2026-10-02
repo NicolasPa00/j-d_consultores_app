@@ -1,0 +1,303 @@
+import { ChangeDetectionStrategy, Component, computed, inject, input, OnDestroy, OnInit, PLATFORM_ID, signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
+import { ApiService } from '../../../core/api.service';
+import { AlertService } from '../../../core/alert.service';
+import { mensajeError } from '../../../core/errores';
+import { PESOS } from '../../../core/dinero';
+import { escapeHtml, imprimirHtml } from '../../../core/imprimir';
+import {
+  ActivoFijo, ActivoFijoForm, CentroCosto, CorridaDepreciacion, CuentaContable, FichaActivoFijo, Tercero, VistaPreviaDepreciacion,
+} from '../../../core/models';
+import { paginar } from '../../../shared/paginacion';
+import { PaginadorComponent } from '../../../shared/paginador/paginador';
+
+const FORM_VACIO: ActivoFijoForm = {
+  descripcion: '', serial: '', ubicacion: '', responsable: '', proveedor_id: '', fecha_compra: '', valor_compra: '',
+  valor_residual: '', vida_util_meses: null, inicio_depreciacion: '', cuenta_activo_id: '', cuenta_depreciacion_id: '',
+  cuenta_gasto_id: '', centro_costo_id: '', observaciones: '',
+};
+
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+/**
+ * C7-01 (ACT-01..03) · Activos fijos: registro, depreciación mensual en línea
+ * recta (comprobante DP automático) y QR por activo que abre su ficha.
+ *
+ * Registrar el activo no genera asiento (la compra ya entró por Compras); lo que
+ * se contabiliza aquí es la depreciación, mes a mes y en orden. Las tres cuentas
+ * (activo, depreciación acumulada y gasto) las elige la contadora en cada ficha.
+ */
+@Component({
+  selector: 'app-activos',
+  imports: [FormsModule, PaginadorComponent],
+  templateUrl: './activos.html',
+  styleUrl: './activos.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class ActivosComponent implements OnInit, OnDestroy {
+  private readonly api = inject(ApiService);
+  private readonly alerts = inject(AlertService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+
+  readonly puedeEditar = input(false);
+
+  protected readonly activos = signal<ActivoFijo[]>([]);
+  protected readonly pag = paginar(this.activos);
+  protected readonly corridas = signal<CorridaDepreciacion[]>([]);
+  protected readonly cuentas = signal<CuentaContable[]>([]);
+  protected readonly centros = signal<CentroCosto[]>([]);
+  protected readonly proveedores = signal<Tercero[]>([]);
+  protected readonly cargando = signal(false);
+
+  /** Solo cuentas que reciben movimiento; el activo suele ir en la clase 1 y el gasto en la 5. */
+  protected readonly cuentasMovimiento = computed(() => this.cuentas().filter((c) => c.acepta_movimiento && c.activa));
+  protected readonly cuentasActivo = computed(() => this.cuentasMovimiento().filter((c) => c.codigo.startsWith('1')));
+  protected readonly cuentasGasto = computed(() => this.cuentasMovimiento().filter((c) => /^[57]/.test(c.codigo)));
+
+  protected readonly totales = computed(() => {
+    let costo = 0;
+    let acumulada = 0;
+    for (const a of this.activos()) { costo += Number(a.valor_compra); acumulada += Number(a.depreciacion_acumulada); }
+    return { costo, acumulada, libros: costo - acumulada };
+  });
+
+  ngOnInit(): void {
+    this.cargar();
+    this.api.listCuentas().subscribe({ next: (r) => this.cuentas.set(r.data), error: () => this.cuentas.set([]) });
+    this.api.listCentrosCosto(true).subscribe({ next: (r) => this.centros.set(r.data), error: () => this.centros.set([]) });
+    this.api.listTerceros().subscribe({
+      next: (r) => this.proveedores.set(r.data.filter((t) => t.es_proveedor).sort((a, b) => a.nombre.localeCompare(b.nombre))),
+      error: () => this.proveedores.set([]),
+    });
+    const hoy = new Date();
+    this.mesDepreciar = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+    // ACT-03 · El QR de la etiqueta trae ?activo=<id>: se abre su ficha.
+    const id = this.route.snapshot.queryParamMap.get('activo');
+    if (id) this.abrir(id);
+  }
+
+  ngOnDestroy(): void {
+    this.soltarQr();
+  }
+
+  protected cargar(): void {
+    this.cargando.set(true);
+    this.api.listActivosFijos().subscribe({
+      next: (r) => { this.cargando.set(false); this.activos.set(r.data); },
+      error: (err) => { this.cargando.set(false); this.alerts.error('No se pudieron cargar los activos', mensajeError(err, 'Intente de nuevo.')); },
+    });
+    this.api.listDepreciaciones().subscribe({ next: (r) => this.corridas.set(r.data), error: () => this.corridas.set([]) });
+  }
+
+  protected pesos(v: string | number | null | undefined): string {
+    return PESOS.format(Number(v) || 0);
+  }
+
+  protected fecha(iso: string | null): string {
+    if (!iso) return '—';
+    const [a, m, d] = iso.slice(0, 10).split('-');
+    return `${d}/${m}/${a}`;
+  }
+
+  /** «Responsable · ubicación» bajo la descripción, con lo que haya. */
+  protected dondeEsta(a: ActivoFijo): string {
+    return [a.responsable, a.ubicacion].filter((x) => !!x).join(' · ');
+  }
+
+  protected nombreMes(anio: number, mes: number): string {
+    return `${MESES[mes - 1]} ${anio}`;
+  }
+
+  // ---- Ficha ----
+
+  protected readonly ficha = signal<FichaActivoFijo | null>(null);
+  protected readonly qrUrl = signal<string | null>(null);
+
+  protected abrir(id: string): void {
+    this.api.getActivoFijo(id).subscribe({
+      next: (r) => {
+        this.ficha.set(r.data);
+        if (!this.isBrowser) return;
+        this.soltarQr();
+        this.api.qrActivoFijo(id).subscribe({ next: (b) => this.qrUrl.set(URL.createObjectURL(b)), error: () => this.qrUrl.set(null) });
+      },
+      error: (err) => this.alerts.error('No se pudo abrir el activo', mensajeError(err, 'Intente de nuevo.')),
+    });
+  }
+
+  protected cerrarFicha(): void {
+    this.ficha.set(null);
+    this.soltarQr();
+  }
+
+  private soltarQr(): void {
+    const u = this.qrUrl();
+    if (u && this.isBrowser) URL.revokeObjectURL(u);
+    this.qrUrl.set(null);
+  }
+
+  /** Etiqueta para pegar en el activo: código, descripción y el QR que abre la ficha. */
+  protected imprimirEtiqueta(a: FichaActivoFijo): void {
+    if (!this.isBrowser || !this.qrUrl()) return;
+    // El blob del QR no se ve dentro del iframe de impresión: se pasa como data URL.
+    fetch(this.qrUrl()!).then((r) => r.blob()).then((b) => new Promise<string>((ok) => {
+      const fr = new FileReader();
+      fr.onload = () => ok(String(fr.result));
+      fr.readAsDataURL(b);
+    })).then((dataUrl) => {
+      imprimirHtml(
+        `Etiqueta ${a.codigo}`,
+        `<div class="etq"><img src="${dataUrl}" alt="QR ${escapeHtml(a.codigo)}" /><div><p class="cod">${escapeHtml(a.codigo)}</p>` +
+        `<p class="desc">${escapeHtml(a.descripcion)}</p>${a.serial ? `<p class="meta">Serial ${escapeHtml(a.serial)}</p>` : ''}` +
+        `<p class="meta">JD&amp;D Consultores · Activo fijo</p></div></div>`,
+        `.etq { display: flex; gap: 14px; align-items: center; border: 1px dashed #94a3b8; padding: 12px; width: 9cm; }
+         .etq img { width: 3.2cm; height: 3.2cm; }
+         .cod { font-size: 20px; font-weight: 700; color: #000b50; margin: 0; }
+         .desc { font-size: 12px; margin: 4px 0; }`,
+      );
+    });
+  }
+
+  // ---- Alta y edición ----
+
+  protected readonly formOpen = signal(false);
+  protected readonly editandoId = signal<string | null>(null);
+  /** Con depreciación registrada solo se edita lo descriptivo (el backend lo exige igual). */
+  protected readonly bloqueado = signal(false);
+  protected readonly guardando = signal(false);
+  protected form: ActivoFijoForm = { ...FORM_VACIO };
+
+  protected nuevo(): void {
+    this.form = { ...FORM_VACIO };
+    this.editandoId.set(null);
+    this.bloqueado.set(false);
+    this.formOpen.set(true);
+  }
+
+  protected editar(a: FichaActivoFijo): void {
+    this.form = {
+      descripcion: a.descripcion, serial: a.serial ?? '', ubicacion: a.ubicacion ?? '', responsable: a.responsable ?? '',
+      proveedor_id: a.proveedor_id ?? '', fecha_compra: a.fecha_compra, valor_compra: a.valor_compra, valor_residual: a.valor_residual,
+      vida_util_meses: a.vida_util_meses, inicio_depreciacion: a.inicio_depreciacion, cuenta_activo_id: a.cuenta_activo_id,
+      cuenta_depreciacion_id: a.cuenta_depreciacion_id, cuenta_gasto_id: a.cuenta_gasto_id, centro_costo_id: a.centro_costo_id ?? '',
+      observaciones: a.observaciones ?? '',
+    };
+    this.editandoId.set(a.id);
+    this.bloqueado.set(a.cuotas_registradas > 0);
+    this.ficha.set(null);
+    this.formOpen.set(true);
+  }
+
+  protected cerrarForm(): void {
+    if (this.guardando()) return;
+    this.formOpen.set(false);
+  }
+
+  /** Cuota mensual estimada mientras se llena el formulario (el backend la recalcula en centavos). */
+  protected cuotaEstimada(): number | null {
+    const valor = Number(this.form.valor_compra);
+    const vida = Number(this.form.vida_util_meses);
+    if (!valor || !vida) return null;
+    return (valor - (Number(this.form.valor_residual) || 0)) / vida;
+  }
+
+  protected guardar(): void {
+    const f = this.form;
+    if (!f.descripcion.trim() || !f.fecha_compra || !f.valor_compra || !f.vida_util_meses) {
+      this.alerts.warning('Faltan datos', 'Descripción, fecha y valor de compra y vida útil son obligatorios.');
+      return;
+    }
+    if (!f.cuenta_activo_id || !f.cuenta_depreciacion_id || !f.cuenta_gasto_id) {
+      this.alerts.warning('Faltan las cuentas', 'Elija la cuenta del activo, la de depreciación acumulada y la del gasto.');
+      return;
+    }
+    const body: Partial<ActivoFijoForm> = { ...f, inicio_depreciacion: f.inicio_depreciacion || '' };
+    if (!body.inicio_depreciacion) delete body.inicio_depreciacion;
+    const id = this.editandoId();
+    this.guardando.set(true);
+    (id ? this.api.updateActivoFijo(id, body) : this.api.createActivoFijo(body)).subscribe({
+      next: (r) => {
+        this.guardando.set(false);
+        this.formOpen.set(false);
+        this.alerts.success(id ? 'Activo actualizado' : 'Activo registrado', `${r.data.codigo} · ${r.data.descripcion}`);
+        this.cargar();
+        this.abrir(r.data.id);
+      },
+      error: (err) => { this.guardando.set(false); this.alerts.error('No se pudo guardar el activo', mensajeError(err, 'Revise los datos.')); },
+    });
+  }
+
+  protected async eliminar(a: FichaActivoFijo): Promise<void> {
+    const ok = await this.alerts.confirm({
+      title: `Eliminar ${a.codigo}`, message: `Se borra «${a.descripcion}». Solo es posible porque todavía no tiene depreciación registrada.`,
+      confirmText: 'Eliminar', tone: 'danger',
+    });
+    if (!ok) return;
+    this.api.deleteActivoFijo(a.id).subscribe({
+      next: () => { this.alerts.success('Activo eliminado', a.codigo); this.cerrarFicha(); this.cargar(); },
+      error: (err) => this.alerts.error('No se pudo eliminar', mensajeError(err, 'Intente de nuevo.')),
+    });
+  }
+
+  // ---- Depreciación mensual (ACT-02) ----
+
+  protected mesDepreciar = '';
+  protected readonly previa = signal<VistaPreviaDepreciacion | null>(null);
+  protected readonly depreciando = signal(false);
+
+  private anioMes(): { anio: number; mes: number } | null {
+    const m = /^(\d{4})-(\d{2})$/.exec(this.mesDepreciar);
+    return m ? { anio: Number(m[1]), mes: Number(m[2]) } : null;
+  }
+
+  protected verPrevia(): void {
+    const am = this.anioMes();
+    if (!am) { this.alerts.warning('Elija el mes'); return; }
+    this.api.vistaPreviaDepreciacion(am.anio, am.mes).subscribe({
+      next: (r) => this.previa.set(r.data),
+      error: (err) => this.alerts.error('No se pudo calcular', mensajeError(err, 'Intente de nuevo.')),
+    });
+  }
+
+  protected depreciar(): void {
+    const p = this.previa();
+    if (!p) return;
+    this.depreciando.set(true);
+    this.api.depreciarMes(p.anio, p.mes).subscribe({
+      next: (r) => {
+        this.depreciando.set(false);
+        this.previa.set(null);
+        this.alerts.success('Depreciación contabilizada', `${r.data.comprobante} · ${r.data.activos} activo(s) · ${this.pesos(r.data.total)}`);
+        this.cargar();
+      },
+      error: (err) => { this.depreciando.set(false); this.alerts.error('No se pudo depreciar', mensajeError(err, 'Intente de nuevo.')); },
+    });
+  }
+
+  protected readonly revirtiendo = signal<CorridaDepreciacion | null>(null);
+  protected motivoReversion = '';
+
+  protected empezarRevertir(c: CorridaDepreciacion): void {
+    this.motivoReversion = '';
+    this.revirtiendo.set(c);
+  }
+
+  protected confirmarRevertir(): void {
+    const c = this.revirtiendo();
+    if (!c) return;
+    if (this.motivoReversion.trim().length < 5) { this.alerts.warning('Escriba el motivo', 'Queda en el comprobante anulado.'); return; }
+    this.depreciando.set(true);
+    this.api.revertirDepreciacion(c.anio, c.mes, this.motivoReversion.trim()).subscribe({
+      next: () => {
+        this.depreciando.set(false);
+        this.revirtiendo.set(null);
+        this.alerts.success('Depreciación revertida', `${this.nombreMes(c.anio, c.mes)}: su comprobante quedó anulado y el mes se puede volver a correr.`);
+        this.cargar();
+      },
+      error: (err) => { this.depreciando.set(false); this.alerts.error('No se pudo revertir', mensajeError(err, 'Intente de nuevo.')); },
+    });
+  }
+}

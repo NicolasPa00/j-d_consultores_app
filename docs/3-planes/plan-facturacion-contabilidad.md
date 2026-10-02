@@ -45,6 +45,18 @@ reglas: así entran también las cuentas que la contadora cree a mano. El script
 **C6-01 hecho** (ventas por cliente desde `documentos_electronicos`: VALIDADO o ANULADO, las notas crédito restan;
 en `jdd_dev` el neto coincide con el ingreso del libro, 1.132.676 − 592.676 de devolución = 540.000).
 
+**C7-01 hecho** (activos fijos). Pestaña en Contabilidad, no vista nueva: el QR abre `/contabilidad?activo=<id>`.
+Registrar el activo no genera asiento (la compra va por Compras); la depreciación sí: un DP por mes al último
+día, D gasto / C depreciación acumulada, con las cuentas de cada ficha. Los meses van en orden; un activo
+registrado tarde se pone al día en la siguiente corrida; solo se revierte la última. Lo visto en el navegador:
+alta, validación de cuenta que exige tercero, ficha, QR y tabla proyectada (el activo de prueba se borró). **No
+visto en el navegador:** abrir la ficha desde el enlace del QR (la extensión de Chrome se desconectó; probado
+por API).
+
+**PARA DESPLEGAR LA FASE C** (además del 3.er lote): migraciones `2026-10-02-informes-contables-permiso.sql` y
+`2026-10-02-activos-fijos.sql`, y **`npm install` en el backend** (dependencia nueva `qrcode`). La vista nueva
+`informes_contables` aparece en Roles y permisos con el mismo reparto que Contabilidad.
+
 ### ▶▶▶ 30-sep-2026 (noche) — LO MÁS RECIENTE: peticiones de JD&D, base limpia y prueba de punta a punta
 
 Encima de lo de abajo (que sigue valiendo), en `fase-b-contabilidad` y **SIN COMMITEAR** en los dos repos:
@@ -638,7 +650,7 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecha y verificada · ❓ espera 
 | C4-01 | Libros auxiliares de IVA, CxC y CxP (RPC-08, RPC-02) | B3-01, B4-01 | M | ✅ 2-oct: pestaña «Libros auxiliares»: IVA, retefuente, ReteIVA, ReteICA o todos (por prefijo del PUC, con la base gravable) y CxC/CxP por tercero (cuentas `es_cartera`); el CxC cuadra con Cartera |
 | C5-01 | Estado de situación financiera y de resultados (RPC-04, 05) | C1-01 | L | ❓ Q-19 |
 | C6-01 | Ventas por cliente + exportación común Excel/PDF (RPC-01, 03) | C1-01 | S | ✅ 2-oct: pestaña «Ventas por cliente» (facturas − notas crédito ante la DIAN, detalle por cliente); exportación común = `core/imprimir.ts` (PDF, también en `/informes`) + `informes-contables/excel.js` (Excel con números). ❓ RPC-01 no lo pidió la contadora: confirmar si lo quieren |
-| C7-01 | Activos fijos, depreciación y QR (ACT-01..03) | B1-01 | L | ⬜ |
+| C7-01 | Activos fijos, depreciación y QR (ACT-01..03) | B1-01 | L | ✅ 2-oct: pestaña «Activos fijos» en Contabilidad; ficha con las tres cuentas elegidas del PUC, línea recta en centavos, DP mensual en orden (con puesta al día), revertir la última corrida, QR → `/contabilidad?activo=<id>` e impresión de etiqueta; `verificar-activos-fijos.mjs` 31 OK. Migración `2026-10-02-activos-fijos.sql` en `jdd_dev`. ❓ supuesto: deprecia desde el mes siguiente a la compra (editable) |
 | C8-01 | Recepción de facturas de proveedores y eventos RADIAN (CYG-04, 05) | B5-01 | L | ❓ Factus |
 
 ### Fase S — Salida a producción

@@ -1,0 +1,329 @@
+<!-- ============ RESUMEN Y ACCIONES ============ -->
+<div class="af-resumen">
+  <div class="kpi-card kpi-card--primary"><div class="kpi-card__info"><span class="kpi-card__label">Costo de los activos</span><strong class="kpi-card__value">{{ pesos(totales().costo) }}</strong></div></div>
+  <div class="kpi-card kpi-card--warning"><div class="kpi-card__info"><span class="kpi-card__label">Depreciación acumulada</span><strong class="kpi-card__value">{{ pesos(totales().acumulada) }}</strong></div></div>
+  <div class="kpi-card kpi-card--success"><div class="kpi-card__info"><span class="kpi-card__label">Valor en libros</span><strong class="kpi-card__value">{{ pesos(totales().libros) }}</strong></div></div>
+  @if (puedeEditar()) {
+    <span class="af-sep"></span>
+    <button type="button" class="btn btn--primary" (click)="nuevo()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+      Nuevo activo
+    </button>
+  }
+</div>
+
+<!-- ============ DEPRECIACIÓN MENSUAL ============ -->
+<section class="card af-dep">
+  <div class="af-dep__fila">
+    <div>
+      <h3 class="af-titulo">Depreciación mensual</h3>
+      <p class="af-sub">Línea recta. Un comprobante DP al último día del mes; los meses van en orden y un activo registrado tarde se pone al día solo.</p>
+    </div>
+    @if (puedeEditar()) {
+      <div class="af-dep__accion">
+        <label class="af-campo">Mes <input type="month" class="form-control" [(ngModel)]="mesDepreciar" (change)="previa.set(null)" /></label>
+        <button type="button" class="btn btn--ghost" (click)="verPrevia()">Ver qué se deprecia</button>
+      </div>
+    }
+  </div>
+
+  @if (previa(); as p) {
+    <div class="af-previa">
+      @if (p.activos.length) {
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Activo</th><th>Cuotas</th><th class="col-num">Valor</th></tr></thead>
+            <tbody>
+              @for (a of p.activos; track a.activo_id) {
+                <tr>
+                  <td><span class="mono">{{ a.codigo }}</span> · {{ a.descripcion }}</td>
+                  <td>{{ a.cuotas === 1 ? 'Cuota ' + a.desde_cuota : 'Cuotas ' + a.desde_cuota + ' a ' + a.hasta_cuota + ' (se pone al día)' }}</td>
+                  <td class="col-num mono">{{ pesos(a.valor) }}</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot><tr><td colspan="2">Total del DP del {{ fecha(p.fecha) }}</td><td class="col-num mono">{{ pesos(p.total) }}</td></tr></tfoot>
+          </table>
+        </div>
+        <div class="af-previa__pie">
+          <button type="button" class="btn btn--close" (click)="previa.set(null)">Cancelar</button>
+          <button type="button" class="btn btn--primary" (click)="depreciar()" [disabled]="depreciando() || p.ya_depreciado">
+            @if (depreciando()) { <span class="spinner" aria-hidden="true"></span> } Contabilizar la depreciación de {{ nombreMes(p.anio, p.mes) }}
+          </button>
+        </div>
+      } @else {
+        <p class="af-sub">No hay nada que depreciar en {{ nombreMes(p.anio, p.mes) }}.</p>
+      }
+    </div>
+  }
+
+  @if (corridas().length) {
+    <div class="table-wrap af-corridas">
+      <table class="table">
+        <thead><tr><th>Mes</th><th>Comprobante</th><th class="col-num">Activos</th><th class="col-num">Total</th><th class="col-actions" aria-label="Acciones"></th></tr></thead>
+        <tbody>
+          @for (c of corridas(); track c.id; let primero = $first) {
+            <tr>
+              <td>{{ nombreMes(c.anio, c.mes) }}</td>
+              <td class="mono">{{ c.comprobante || '—' }}</td>
+              <td class="col-num mono">{{ c.activos }}</td>
+              <td class="col-num mono">{{ pesos(c.total) }}</td>
+              <td class="col-actions">
+                @if (primero && puedeEditar()) {
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="empezarRevertir(c)" title="Anula su comprobante; el mes se puede volver a correr">Revertir</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<!-- ============ LISTADO ============ -->
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Descripción</th>
+        <th>Compra</th>
+        <th class="col-num">Costo</th>
+        <th class="col-num">Depreciación acumulada</th>
+        <th class="col-num">Valor en libros</th>
+        <th>Cuotas</th>
+        <th class="col-actions" aria-label="Acciones"></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (a of pag.visibles(); track a.id) {
+        <tr>
+          <td class="td-id mono">{{ a.codigo }}</td>
+          <td><div class="af-desc"><span>{{ a.descripcion }}</span>@if (a.responsable || a.ubicacion) { <small class="af-sub">{{ dondeEsta(a) }}</small> }</div></td>
+          <td class="mono">{{ fecha(a.fecha_compra) }}</td>
+          <td class="col-num mono">{{ pesos(a.valor_compra) }}</td>
+          <td class="col-num mono">{{ pesos(a.depreciacion_acumulada) }}</td>
+          <td class="col-num mono">{{ pesos(a.valor_en_libros) }}</td>
+          <td>
+            @if (a.totalmente_depreciado) { <span class="pill pill--muted">Depreciado</span> }
+            @else { <span class="mono">{{ a.cuotas_registradas }} / {{ a.vida_util_meses }}</span> }
+          </td>
+          <td class="col-actions">
+            <button type="button" class="icon-action" (click)="abrir(a.id)" [attr.aria-label]="'Ver ' + a.codigo" title="Ver la ficha">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg>
+            </button>
+          </td>
+        </tr>
+      } @empty {
+        <tr><td class="table__empty" colspan="8">{{ cargando() ? 'Cargando…' : 'Aún no hay activos fijos registrados.' }}</td></tr>
+      }
+    </tbody>
+  </table>
+</div>
+<app-paginador [pag]="pag" etiqueta="activos" />
+
+<!-- ============ MODAL · FICHA ============ -->
+@if (ficha(); as a) {
+  <div class="modal-backdrop" (click)="cerrarFicha()"></div>
+  <div class="modal modal--xl" role="dialog" aria-modal="true" aria-labelledby="afFichaTitle">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="afFichaTitle">{{ a.codigo }} · {{ a.descripcion }}</h3>
+        <small class="af-sub">Comprado el {{ fecha(a.fecha_compra) }}{{ a.proveedor_nombre ? ' a ' + a.proveedor_nombre : '' }}</small>
+      </div>
+      <button type="button" class="icon-action" (click)="cerrarFicha()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      <div class="af-ficha">
+        <section class="card">
+          <span class="section-tag">Datos</span>
+          <dl class="af-datos">
+            <dt>Costo</dt><dd class="mono">{{ pesos(a.valor_compra) }}</dd>
+            <dt>Valor residual</dt><dd class="mono">{{ pesos(a.valor_residual) }}</dd>
+            <dt>Vida útil</dt><dd>{{ a.vida_util_meses }} meses · cuota {{ pesos(a.cuota_mensual) }}</dd>
+            <dt>Deprecia desde</dt><dd>{{ fecha(a.inicio_depreciacion) }}</dd>
+            <dt>Acumulada</dt><dd class="mono">{{ pesos(a.depreciacion_acumulada) }} ({{ a.cuotas_registradas }} de {{ a.vida_util_meses }})</dd>
+            <dt>Valor en libros</dt><dd class="mono"><strong>{{ pesos(a.valor_en_libros) }}</strong></dd>
+            <dt>Cuenta del activo</dt><dd><span class="mono">{{ a.cuenta_activo_codigo }}</span> {{ a.cuenta_activo_nombre }}</dd>
+            <dt>Depreciación acumulada</dt><dd><span class="mono">{{ a.cuenta_depreciacion_codigo }}</span> {{ a.cuenta_depreciacion_nombre }}</dd>
+            <dt>Gasto</dt><dd><span class="mono">{{ a.cuenta_gasto_codigo }}</span> {{ a.cuenta_gasto_nombre }}{{ a.centro_costo_codigo ? ' · CC ' + a.centro_costo_codigo : '' }}</dd>
+            @if (a.serial) { <dt>Serial</dt><dd class="mono">{{ a.serial }}</dd> }
+            @if (a.responsable) { <dt>Responsable</dt><dd>{{ a.responsable }}</dd> }
+            @if (a.ubicacion) { <dt>Ubicación</dt><dd>{{ a.ubicacion }}</dd> }
+            @if (a.observaciones) { <dt>Observaciones</dt><dd>{{ a.observaciones }}</dd> }
+          </dl>
+        </section>
+        <section class="card af-qr">
+          <span class="section-tag">Etiqueta</span>
+          @if (qrUrl(); as q) { <img [src]="q" [alt]="'Código QR de ' + a.codigo" width="180" height="180" /> }
+          <p class="mono af-qr__cod">{{ a.codigo }}</p>
+          <p class="af-sub">El QR abre esta ficha en ORBITA (pide iniciar sesión).</p>
+          <button type="button" class="btn btn--ghost btn--sm" (click)="imprimirEtiqueta(a)" [disabled]="!qrUrl()">Imprimir etiqueta</button>
+        </section>
+      </div>
+
+      <section class="card">
+        <span class="section-tag">Tabla de depreciación</span>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Cuota</th><th>Mes</th><th class="col-num">Valor</th><th class="col-num">Acumulada</th><th class="col-num">Valor en libros</th><th>Estado</th></tr></thead>
+            <tbody>
+              @for (t of a.tabla; track t.cuota) {
+                <tr [class.af-proyectada]="!t.registrada">
+                  <td class="mono">{{ t.cuota }}</td>
+                  <td>{{ nombreMes(t.anio, t.mes) }}</td>
+                  <td class="col-num mono">{{ pesos(t.valor) }}</td>
+                  <td class="col-num mono">{{ pesos(t.acumulada) }}</td>
+                  <td class="col-num mono">{{ pesos(t.valor_en_libros) }}</td>
+                  <td>@if (t.registrada) { <span class="pill pill--success">{{ t.comprobante || 'Registrada' }}</span> } @else { <span class="af-sub">Proyectada</span> }</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--close" (click)="cerrarFicha()">Cerrar</button>
+      @if (puedeEditar()) {
+        @if (!a.cuotas_registradas) {
+          <button type="button" class="btn btn--danger" (click)="eliminar(a)">Eliminar</button>
+        }
+        <button type="button" class="btn btn--primary" (click)="editar(a)">Editar</button>
+      }
+    </footer>
+  </div>
+}
+
+<!-- ============ MODAL · ALTA / EDICIÓN ============ -->
+@if (formOpen()) {
+  <div class="modal-backdrop" (click)="cerrarForm()"></div>
+  <div class="modal modal--lg" role="dialog" aria-modal="true" aria-labelledby="afFormTitle">
+    <header class="modal__head">
+      <h3 class="modal__title" id="afFormTitle">{{ editandoId() ? 'Editar activo fijo' : 'Nuevo activo fijo' }}</h3>
+      <button type="button" class="icon-action" (click)="cerrarForm()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      @if (bloqueado()) {
+        <p class="af-aviso">Este activo ya tiene depreciación registrada: el valor, la vida útil, las fechas y las cuentas del activo ya no se cambian.</p>
+      } @else {
+        <p class="af-sub">Registrar el activo no genera asiento: la compra ya entró por Compras y gastos. Aquí solo se contabiliza la depreciación.</p>
+      }
+      <div class="af-grid">
+        <div class="form-field af-grid__ancho">
+          <label class="form-field__label" for="afDesc">Descripción *</label>
+          <input id="afDesc" class="form-control" [(ngModel)]="form.descripcion" placeholder="Ej. Portátil Lenovo ThinkPad" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="afFecha">Fecha de compra *</label>
+          <input id="afFecha" type="date" class="form-control" [(ngModel)]="form.fecha_compra" [disabled]="bloqueado()" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="afProv">Proveedor</label>
+          <select id="afProv" class="form-control" [(ngModel)]="form.proveedor_id">
+            <option value="">—</option>
+            @for (t of proveedores(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="afValor">Costo *</label>
+          <input id="afValor" class="form-control" inputmode="decimal" [(ngModel)]="form.valor_compra" [disabled]="bloqueado()" placeholder="0" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="afResidual">Valor residual</label>
+          <input id="afResidual" class="form-control" inputmode="decimal" [(ngModel)]="form.valor_residual" [disabled]="bloqueado()" placeholder="0" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="afVida">Vida útil (meses) *</label>
+          <input id="afVida" type="number" min="1" max="1200" class="form-control" [(ngModel)]="form.vida_util_meses" [disabled]="bloqueado()" />
+          @if (cuotaEstimada(); as c) { <p class="form-field__hint">Cuota mensual ≈ {{ pesos(c) }}</p> }
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="afInicio">Deprecia desde</label>
+          <input id="afInicio" type="date" class="form-control" [(ngModel)]="form.inicio_depreciacion" [disabled]="bloqueado()" />
+          <p class="form-field__hint">Vacío = el mes siguiente a la compra. Se toma el mes, siempre desde el día 1.</p>
+        </div>
+        <div class="form-field af-grid__ancho">
+          <label class="form-field__label" for="afCtaAct">Cuenta del activo *</label>
+          <select id="afCtaAct" class="form-control" [(ngModel)]="form.cuenta_activo_id" [disabled]="bloqueado()">
+            <option value="">Elija…</option>
+            @for (c of cuentasActivo(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
+          </select>
+        </div>
+        <div class="form-field af-grid__ancho">
+          <label class="form-field__label" for="afCtaDep">Cuenta de depreciación acumulada *</label>
+          <select id="afCtaDep" class="form-control" [(ngModel)]="form.cuenta_depreciacion_id" [disabled]="bloqueado()">
+            <option value="">Elija…</option>
+            @for (c of cuentasActivo(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
+          </select>
+        </div>
+        <div class="form-field af-grid__ancho">
+          <label class="form-field__label" for="afCtaGasto">Cuenta del gasto por depreciación *</label>
+          <select id="afCtaGasto" class="form-control" [(ngModel)]="form.cuenta_gasto_id">
+            <option value="">Elija…</option>
+            @for (c of cuentasGasto(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
+          </select>
+        </div>
+        @if (centros().length) {
+          <div class="form-field">
+            <label class="form-field__label" for="afCentro">Centro de costo</label>
+            <select id="afCentro" class="form-control" [(ngModel)]="form.centro_costo_id">
+              <option value="">—</option>
+              @for (c of centros(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
+            </select>
+          </div>
+        }
+        <div class="form-field">
+          <label class="form-field__label" for="afSerial">Serial</label>
+          <input id="afSerial" class="form-control" [(ngModel)]="form.serial" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="afResp">Responsable</label>
+          <input id="afResp" class="form-control" [(ngModel)]="form.responsable" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="afUbic">Ubicación</label>
+          <input id="afUbic" class="form-control" [(ngModel)]="form.ubicacion" />
+        </div>
+        <div class="form-field af-grid__ancho">
+          <label class="form-field__label" for="afObs">Observaciones</label>
+          <input id="afObs" class="form-control" [(ngModel)]="form.observaciones" />
+        </div>
+      </div>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--close" (click)="cerrarForm()" [disabled]="guardando()">Cancelar</button>
+      <button type="button" class="btn btn--primary" (click)="guardar()" [disabled]="guardando()">
+        @if (guardando()) { <span class="spinner" aria-hidden="true"></span> } Guardar
+      </button>
+    </footer>
+  </div>
+}
+
+<!-- ============ MODAL · REVERTIR ============ -->
+@if (revirtiendo(); as c) {
+  <div class="modal-backdrop" (click)="revirtiendo.set(null)"></div>
+  <div class="modal modal--sm" role="dialog" aria-modal="true" aria-labelledby="afRevTitle">
+    <header class="modal__head">
+      <h3 class="modal__title" id="afRevTitle">Revertir la depreciación de {{ nombreMes(c.anio, c.mes) }}</h3>
+    </header>
+    <div class="modal__body">
+      <p>Se anula {{ c.comprobante }} y se borran sus cuotas; el mes se puede volver a correr.</p>
+      <div class="form-field">
+        <label class="form-field__label" for="afMotivo">Motivo *</label>
+        <input id="afMotivo" class="form-control" [(ngModel)]="motivoReversion" placeholder="Qué pasó y cómo se corrige" />
+      </div>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--close" (click)="revirtiendo.set(null)" [disabled]="depreciando()">Cancelar</button>
+      <button type="button" class="btn btn--danger" (click)="confirmarRevertir()" [disabled]="depreciando()">
+        @if (depreciando()) { <span class="spinner" aria-hidden="true"></span> } Revertir
+      </button>
+    </footer>
+  </div>
+}

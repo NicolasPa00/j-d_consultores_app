@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { AuxiliarPorCuenta, BalanceComprobacion, FiltrosInformeContable, InformePorTercero, LibroAuxiliar, VentasPorCliente, ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar, OrdenManualForm, DetalleCobroOrden, ValoresCobroForm } from './models';
+import { ActivoFijo, ActivoFijoForm, CorridaDepreciacion, FichaActivoFijo, VistaPreviaDepreciacion, AuxiliarPorCuenta, BalanceComprobacion, FiltrosInformeContable, InformePorTercero, LibroAuxiliar, VentasPorCliente, ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar, OrdenManualForm, DetalleCobroOrden, ValoresCobroForm } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -1305,6 +1305,42 @@ export class ApiService {
   /** Irreversible (D-20). Solo admin. */
   cerrarAnio(anio: number, body: { cuenta_utilidad_id: string; cuenta_perdida_id: string }): Observable<Wrap<{ comprobante: string; resultado: string; tipo_resultado: string }>> {
     return this.http.post<Wrap<{ comprobante: string; resultado: string; tipo_resultado: string }>>(`${this.base}/contabilidad/cierre/${anio}`, body);
+  }
+
+  // ---- Fase C · C7-01 · Activos fijos y depreciación (ACT-01..03) ----
+
+  listActivosFijos(): Observable<{ data: ActivoFijo[]; total: number }> {
+    return this.http.get<{ data: ActivoFijo[]; total: number }>(`${this.base}/contabilidad/activos`);
+  }
+  getActivoFijo(id: string): Observable<Wrap<FichaActivoFijo>> {
+    return this.http.get<Wrap<FichaActivoFijo>>(`${this.base}/contabilidad/activos/${id}`);
+  }
+  /** ACT-03 · El QR de la etiqueta (PNG). */
+  qrActivoFijo(id: string): Observable<Blob> {
+    return this.http.get(`${this.base}/contabilidad/activos/${id}/qr.png`, { responseType: 'blob' });
+  }
+  createActivoFijo(body: Partial<ActivoFijoForm>): Observable<Wrap<FichaActivoFijo>> {
+    return this.http.post<Wrap<FichaActivoFijo>>(`${this.base}/contabilidad/activos`, body);
+  }
+  updateActivoFijo(id: string, body: Partial<ActivoFijoForm>): Observable<Wrap<FichaActivoFijo>> {
+    return this.http.put<Wrap<FichaActivoFijo>>(`${this.base}/contabilidad/activos/${id}`, body);
+  }
+  deleteActivoFijo(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/contabilidad/activos/${id}`);
+  }
+  listDepreciaciones(): Observable<Wrap<CorridaDepreciacion[]>> {
+    return this.http.get<Wrap<CorridaDepreciacion[]>>(`${this.base}/contabilidad/depreciaciones`);
+  }
+  vistaPreviaDepreciacion(anio: number, mes: number): Observable<Wrap<VistaPreviaDepreciacion>> {
+    return this.http.get<Wrap<VistaPreviaDepreciacion>>(`${this.base}/contabilidad/depreciaciones/${anio}/${mes}`);
+  }
+  /** ACT-02 · Contabiliza la depreciación del mes (comprobante DP). */
+  depreciarMes(anio: number, mes: number): Observable<Wrap<{ comprobante: string; activos: number; total: string }>> {
+    return this.http.post<Wrap<{ comprobante: string; activos: number; total: string }>>(`${this.base}/contabilidad/depreciaciones/${anio}/${mes}`, {});
+  }
+  /** Solo la última: anula su DP y el mes se puede volver a correr. */
+  revertirDepreciacion(anio: number, mes: number, motivo: string): Observable<Wrap<{ revertido: boolean }>> {
+    return this.http.post<Wrap<{ revertido: boolean }>>(`${this.base}/contabilidad/depreciaciones/${anio}/${mes}/revertir`, { motivo });
   }
 
   // ---- Fase C · Informes contables ----

@@ -7,6 +7,7 @@
         @case ('comprobantes') { Libro diario · CNT-02 · comprobantes y notas internas }
         @case ('reglas') { Reglas de contabilización · CNT-13 · qué cuenta usa cada concepto }
         @case ('centros') { Centros de costo · CNT-09 · gastos por actividad }
+        @case ('activos') { Activos fijos · ACT-01..03 · registro, depreciación mensual y QR }
         @case ('periodos') { Periodos contables · CNT-03 y CNT-12 · cierre mensual y de año }
       }
     </p>
@@ -30,6 +31,7 @@
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'comprobantes'" (click)="pestana.set('comprobantes')">Comprobantes</button>
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'reglas'" (click)="pestana.set('reglas')">Reglas</button>
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'centros'" (click)="pestana.set('centros')">Centros de costo</button>
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'activos'" (click)="pestana.set('activos')">Activos fijos</button>
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'periodos'" (click)="pestana.set('periodos')">Periodos y cierre</button>
 </div>
 
@@ -39,6 +41,8 @@
   <app-reglas [puedeEditar]="puedeEditar()" />
 } @else if (pestana() === 'centros') {
   <app-centros [puedeEditar]="puedeEditar()" />
+} @else if (pestana() === 'activos') {
+  <app-activos [puedeEditar]="puedeEditar()" />
 } @else if (pestana() === 'periodos') {
   <app-periodos [puedeEditar]="puedeEditar()" [esAdmin]="esAdmin()" />
 } @else {

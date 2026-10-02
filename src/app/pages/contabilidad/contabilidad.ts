@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
@@ -10,8 +11,9 @@ import { ComprobantesComponent } from './comprobantes/comprobantes';
 import { PeriodosComponent } from './periodos/periodos';
 import { ReglasComponent } from './reglas/reglas';
 import { CentrosComponent } from './centros/centros';
+import { ActivosComponent } from './activos/activos';
 
-type Pestana = 'plan' | 'comprobantes' | 'reglas' | 'centros' | 'periodos';
+type Pestana = 'plan' | 'comprobantes' | 'reglas' | 'centros' | 'activos' | 'periodos';
 
 /** Longitudes válidas del código (clase, grupo, cuenta, subcuenta, auxiliar, sub-auxiliar). */
 const LONGITUDES = [1, 2, 4, 6, 8, 10];
@@ -48,7 +50,7 @@ const FORM_VACIO: CuentaForm = {
  */
 @Component({
   selector: 'app-contabilidad',
-  imports: [FormsModule, ComprobantesComponent, PeriodosComponent, ReglasComponent, CentrosComponent],
+  imports: [FormsModule, ComprobantesComponent, PeriodosComponent, ReglasComponent, CentrosComponent, ActivosComponent],
   templateUrl: './contabilidad.html',
   styleUrl: './contabilidad.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -58,6 +60,7 @@ export class ContabilidadComponent implements OnInit {
   private readonly alerts = inject(AlertService);
   private readonly auth = inject(AuthService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly nombreNivel = NOMBRE_NIVEL;
 
@@ -111,6 +114,8 @@ export class ContabilidadComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    // C7-01 · El QR de un activo fijo trae ?activo=<id>: se entra directo a su pestaña.
+    if (this.route.snapshot.queryParamMap.get('activo')) this.pestana.set('activos');
     this.cargar();
   }
 

@@ -2131,3 +2131,98 @@ export interface VentasPorCliente {
   clientes: VentaCliente[];
   totales: ImportesVenta & { facturas: number; notas: number };
 }
+
+// ---- Fase C · C7-01 · Activos fijos y depreciación ----
+
+export interface ActivoFijo {
+  id: string;
+  /** AF-0001: lo que va en la etiqueta con el QR. */
+  codigo: string;
+  descripcion: string;
+  serial: string | null;
+  ubicacion: string | null;
+  responsable: string | null;
+  proveedor_id: string | null;
+  proveedor_nombre: string | null;
+  fecha_compra: string;
+  valor_compra: string;
+  valor_residual: string;
+  vida_util_meses: number;
+  /** Primer mes que se deprecia (día 1). */
+  inicio_depreciacion: string;
+  cuenta_activo_id: string;
+  cuenta_activo_codigo: string;
+  cuenta_activo_nombre: string;
+  cuenta_depreciacion_id: string;
+  cuenta_depreciacion_codigo: string;
+  cuenta_depreciacion_nombre: string;
+  cuenta_gasto_id: string;
+  cuenta_gasto_codigo: string;
+  cuenta_gasto_nombre: string;
+  centro_costo_id: string | null;
+  centro_costo_codigo: string | null;
+  observaciones: string | null;
+  depreciacion_acumulada: string;
+  valor_en_libros: string;
+  cuota_mensual: string;
+  cuotas_registradas: number;
+  totalmente_depreciado: boolean;
+  /** "AAAA-MM" del último mes depreciado. */
+  ultimo_mes_depreciado: string | null;
+}
+
+export interface CuotaDepreciacion {
+  cuota: number;
+  anio: number;
+  mes: number;
+  valor: string;
+  acumulada: string;
+  valor_en_libros: string;
+  /** false = proyectada (todavía no se ha corrido ese mes). */
+  registrada: boolean;
+  comprobante_id: string | null;
+  comprobante: string | null;
+}
+
+export interface FichaActivoFijo extends ActivoFijo {
+  tabla: CuotaDepreciacion[];
+  url_ficha: string;
+}
+
+export interface ActivoFijoForm {
+  descripcion: string;
+  serial: string;
+  ubicacion: string;
+  responsable: string;
+  proveedor_id: string;
+  fecha_compra: string;
+  valor_compra: string;
+  valor_residual: string;
+  vida_util_meses: number | null;
+  inicio_depreciacion: string;
+  cuenta_activo_id: string;
+  cuenta_depreciacion_id: string;
+  cuenta_gasto_id: string;
+  centro_costo_id: string;
+  observaciones: string;
+}
+
+export interface CorridaDepreciacion {
+  id: string;
+  anio: number;
+  mes: number;
+  total: string;
+  comprobante_id: string | null;
+  comprobante: string | null;
+  activos: number;
+  creado_en: string;
+}
+
+export interface VistaPreviaDepreciacion {
+  anio: number;
+  mes: number;
+  fecha: string;
+  ya_depreciado: boolean;
+  activos: { activo_id: string; codigo: string; descripcion: string; cuotas: number; desde_cuota: number; hasta_cuota: number; valor: string }[];
+  total: string;
+}
