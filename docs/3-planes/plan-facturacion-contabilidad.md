@@ -37,6 +37,11 @@ tercero o centro **no se exige el cuadre**; el Excel lleva importes como número
 scripts/verificar-informes-contables.mjs` (30 OK). **Siguiente:** C3-01 (tercero general y detallado) y C4-01
 (libros de IVA, CxC y CxP), que reutilizan `leerFiltros`/`condicionesMovimiento` de `balance.service.js`.
 
+**Mismo día, más tarde: C3-01 y C4-01 hechos.** El auxiliar, el informe por tercero y los libros salen de un
+solo núcleo (`libroAgrupado` en `auxiliar.service.js`, por cuenta o por tercero + cuenta). Los libros de
+impuestos toman las cuentas por **prefijo del PUC** (2408, 2365/135515, 2367/135517, 2368/135518), no de las
+reglas: así entran también las cuentas que la contadora cree a mano. El script de verificación pasó a 46 OK.
+
 ### ▶▶▶ 30-sep-2026 (noche) — LO MÁS RECIENTE: peticiones de JD&D, base limpia y prueba de punta a punta
 
 Encima de lo de abajo (que sigue valiendo), en `fase-b-contabilidad` y **SIN COMMITEAR** en los dos repos:
@@ -626,8 +631,8 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecha y verificada · ❓ espera 
 |---|---|---|---|---|
 | C1-01 | Balance de comprobación (RPC-06) | B1-01 | M | ✅ 2-oct (rama `fase-c-informes`): `/informes-contables`, niveles del PUC, filtros de cuenta/tercero/centro, sin el cierre de año, Excel con números y PDF; `verificar-informes-contables.mjs` 30 OK con ROLLBACK; visto en el navegador |
 | C2-01 | Movimiento general por cuenta — auxiliar (RPC-09) | B1-01 | M | ✅ 2-oct: mismas columnas que `puc.xlsx` + saldo corrido, «Ver» desde el balance, comprobante de solo lectura; mismo script y navegador |
-| C3-01 | Tercero general y detallado (RPC-10) | B1-01 | M | ⬜ |
-| C4-01 | Libros auxiliares de IVA, CxC y CxP (RPC-08, RPC-02) | B3-01, B4-01 | M | ⬜ |
+| C3-01 | Tercero general y detallado (RPC-10) | B1-01 | M | ✅ 2-oct: pestaña «Por tercero» (general/detallado, «solo con tercero», ojo → detalle); `verificar-informes-contables.mjs` y navegador |
+| C4-01 | Libros auxiliares de IVA, CxC y CxP (RPC-08, RPC-02) | B3-01, B4-01 | M | ✅ 2-oct: pestaña «Libros auxiliares»: IVA, retefuente, ReteIVA, ReteICA o todos (por prefijo del PUC, con la base gravable) y CxC/CxP por tercero (cuentas `es_cartera`); el CxC cuadra con Cartera |
 | C5-01 | Estado de situación financiera y de resultados (RPC-04, 05) | C1-01 | L | ❓ Q-19 |
 | C6-01 | Ventas por cliente + exportación común Excel/PDF (RPC-01, 03) | C1-01 | S | ⬜ |
 | C7-01 | Activos fijos, depreciación y QR (ACT-01..03) | B1-01 | L | ⬜ |

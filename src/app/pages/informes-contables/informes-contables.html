@@ -1,10 +1,7 @@
 <section class="page-head ic-head">
   <div>
     <h2 class="page-head__title">Informes contables</h2>
-    <p class="page-head__sub">
-      @if (pestana() === 'balance') { Balance de comprobación · RPC-06 · saldo inicial, débitos, créditos y saldo final por cuenta }
-      @else { Movimiento por cuenta · RPC-09 · libro auxiliar con su comprobante de origen }
-    </p>
+    <p class="page-head__sub">{{ subtitulo[pestana()] }}</p>
   </div>
   <div class="ic-head__actions">
     <button type="button" class="btn btn--ghost" (click)="exportarPdf()" [disabled]="cargando()">PDF</button>
@@ -17,6 +14,8 @@
 <div class="tabs" role="tablist">
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'balance'" (click)="cambiarPestana('balance')">Balance de comprobación</button>
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'auxiliar'" (click)="cambiarPestana('auxiliar')">Movimiento por cuenta</button>
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'terceros'" (click)="cambiarPestana('terceros')">Por tercero</button>
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'libros'" (click)="cambiarPestana('libros')">Libros auxiliares</button>
 </div>
 
 <!-- ============ FILTROS (comunes) ============ -->
@@ -29,12 +28,25 @@
       <button type="button" class="btn btn--ghost btn--sm" (click)="elegirPeriodo('mes-anterior')">Mes anterior</button>
       <button type="button" class="btn btn--ghost btn--sm" (click)="elegirPeriodo('anio')">Año en curso</button>
     </div>
+    @if (pestana() === 'terceros') {
+      <div class="ic-modo" role="radiogroup" aria-label="Vista">
+        <label><input type="radio" name="modo" value="general" [(ngModel)]="modoTercero" (change)="consultar()" /> General</label>
+        <label><input type="radio" name="modo" value="detallado" [(ngModel)]="modoTercero" (change)="consultar()" /> Detallado</label>
+      </div>
+    }
   </div>
   <div class="ic-filtros__fila">
     @if (pestana() === 'balance') {
       <label class="ic-campo">Nivel
         <select class="form-control" name="nivel" [(ngModel)]="nivel">
           @for (n of niveles; track n.valor) { <option [ngValue]="n.valor">{{ n.nombre }}</option> }
+        </select>
+      </label>
+    }
+    @if (pestana() === 'libros') {
+      <label class="ic-campo">Libro
+        <select class="form-control" name="libro" [(ngModel)]="libro" (change)="consultar()">
+          @for (l of libros; track l.valor) { <option [ngValue]="l.valor">{{ l.nombre }}</option> }
         </select>
       </label>
     }
@@ -58,6 +70,11 @@
     <label class="ic-check" title="El comprobante de cierre (CA) deja en cero las cuentas de resultado al 31 de diciembre">
       <input type="checkbox" name="sinCierre" [(ngModel)]="sinCierre" /> Sin el cierre de año
     </label>
+    @if (pestana() === 'terceros') {
+      <label class="ic-check" title="Aparta las líneas sin tercero: bancos, impuestos por pagar y demás contrapartidas">
+        <input type="checkbox" name="soloConTercero" [(ngModel)]="soloConTercero" /> Solo con tercero
+      </label>
+    }
     <span class="ic-sep"></span>
     <button type="button" class="btn btn--ghost" (click)="limpiarFiltros()">Limpiar</button>
     <button type="submit" class="btn btn--primary" [disabled]="cargando()">
@@ -65,6 +82,151 @@
     </button>
   </div>
 </form>
+
+<!-- ============ PLANTILLAS COMPARTIDAS ============ -->
+
+<!-- Una cuenta con sus movimientos y saldo corrido: auxiliar, tercero detallado y libros. -->
+<ng-template #tplCuenta let-c let-clave="clave" let-conBase="conBase" let-titulo="titulo">
+  <tbody>
+    <tr class="ic-cuenta-fila">
+      <td [attr.colspan]="conBase ? 5 : 4">
+        <button type="button" class="ic-plegar" (click)="plegar(clave)" [attr.aria-expanded]="!plegadas().has(clave)" [attr.aria-label]="(plegadas().has(clave) ? 'Desplegar ' : 'Plegar ') + c.codigo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" [class.ic-plegar--cerrado]="plegadas().has(clave)"><path d="m6 9 6 6 6-6" /></svg>
+        </button>
+        {{ titulo }}
+      </td>
+      <td colspan="2" class="col-num ic-sub">Saldo inicial</td>
+      <td class="col-num mono" [class.ic-neg]="negativo(c.saldo_inicial)">{{ pesos(c.saldo_inicial) }}</td>
+    </tr>
+    @if (!plegadas().has(clave)) {
+      @for (m of c.movimientos ?? []; track $index) {
+        <tr>
+          <td class="mono">{{ fecha(m.fecha) }}</td>
+          <td>
+            <div class="ic-cmp">
+              <span class="mono">{{ m.comprobante }}</span>
+              <button type="button" class="icon-action" (click)="abrirComprobante(m.comprobante_id)" [attr.aria-label]="'Ver el comprobante ' + m.comprobante" title="Ver el comprobante">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg>
+              </button>
+            </div>
+          </td>
+          <td>{{ m.tercero_nombre || '—' }}</td>
+          <td>{{ m.descripcion || '' }}@if (cruceAparte(m)) { <small class="ic-sub"> · {{ m.documento_cruce }}</small> }</td>
+          @if (conBase) { <td class="col-num mono">{{ pesosOVacio(m.base) }}</td> }
+          <td class="col-num mono">{{ pesosOVacio(m.debito) }}</td>
+          <td class="col-num mono">{{ pesosOVacio(m.credito) }}</td>
+          <td class="col-num mono" [class.ic-neg]="negativo(m.saldo)">{{ pesos(m.saldo) }}</td>
+        </tr>
+      } @empty {
+        <tr><td [attr.colspan]="conBase ? 8 : 7" class="ic-sub">Sin movimientos en el periodo: solo arrastra su saldo.</td></tr>
+      }
+    }
+    <tr class="ic-total-cuenta">
+      <td [attr.colspan]="conBase ? 5 : 4">Total {{ c.codigo }}</td>
+      <td class="col-num mono">{{ pesos(c.debito) }}</td>
+      <td class="col-num mono">{{ pesos(c.credito) }}</td>
+      <td class="col-num mono" [class.ic-neg]="negativo(c.saldo_final)">{{ pesos(c.saldo_final) }}</td>
+    </tr>
+  </tbody>
+</ng-template>
+
+<!-- Encabezado de las tablas de movimientos. -->
+<ng-template #tplCabeceraMov let-conBase="conBase">
+  <thead>
+    <tr>
+      <th>Fecha</th>
+      <th>Comprobante</th>
+      <th>Tercero</th>
+      <th>Detalle</th>
+      @if (conBase) { <th class="col-num" title="Base gravable de la línea">Base</th> }
+      <th class="col-num">Débito</th>
+      <th class="col-num">Crédito</th>
+      <th class="col-num">Saldo</th>
+    </tr>
+  </thead>
+</ng-template>
+
+<!-- Terceros con sus cuentas: general (una fila por cuenta) o detallado (con movimientos). -->
+<ng-template #tplTerceros let-lista let-totales="totales" let-detallado="detallado">
+  <div class="table-wrap">
+    <table class="table ic-tabla ic-aux">
+      @if (detallado) {
+        <ng-container [ngTemplateOutlet]="tplCabeceraMov" [ngTemplateOutletContext]="{ conBase: false }" />
+      } @else {
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Cuenta</th>
+            <th class="col-num">Saldo inicial</th>
+            <th class="col-num">Débito</th>
+            <th class="col-num">Crédito</th>
+            <th class="col-num">Saldo final</th>
+          </tr>
+        </thead>
+      }
+      @for (t of lista; track t.tercero_id ?? 'sin') {
+        <tbody>
+          <tr class="ic-tercero-fila">
+            <td [attr.colspan]="detallado ? 7 : 6">
+              <div class="ic-tercero">
+                <button type="button" class="ic-plegar" (click)="plegar(claveTercero(t))" [attr.aria-expanded]="!plegadas().has(claveTercero(t))" [attr.aria-label]="(plegadas().has(claveTercero(t)) ? 'Desplegar ' : 'Plegar ') + t.nombre">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" [class.ic-plegar--cerrado]="plegadas().has(claveTercero(t))"><path d="m6 9 6 6 6-6" /></svg>
+                </button>
+                <span class="ic-tercero__nombre">{{ t.nombre }}</span>
+                @if (t.documento) { <span class="mono ic-tercero__doc">{{ t.documento }}</span> }
+                <span class="ic-sep"></span>
+                <span class="mono" [class.ic-neg-claro]="negativo(t.totales.saldo_final)">Saldo {{ pesos(t.totales.saldo_final) }}</span>
+                @if (!detallado && t.tercero_id) {
+                  <button type="button" class="icon-action ic-tercero__ver" (click)="verTercero(t)" [attr.aria-label]="'Ver el detalle de ' + t.nombre" title="Ver el detalle del tercero">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg>
+                  </button>
+                }
+              </div>
+            </td>
+          </tr>
+        </tbody>
+        @if (!plegadas().has(claveTercero(t))) {
+          @if (detallado) {
+            @for (c of t.cuentas; track c.cuenta_id) {
+              <ng-container [ngTemplateOutlet]="tplCuenta"
+                [ngTemplateOutletContext]="{ $implicit: c, clave: claveTercero(t) + ':' + c.cuenta_id, conBase: false, titulo: c.codigo + ' · ' + c.nombre }" />
+            }
+          } @else {
+            <tbody>
+              @for (c of t.cuentas; track c.cuenta_id) {
+                <tr>
+                  <td class="mono">{{ c.codigo }}</td>
+                  <td>{{ c.nombre }}</td>
+                  <td class="col-num mono" [class.ic-neg]="negativo(c.saldo_inicial)">{{ pesos(c.saldo_inicial) }}</td>
+                  <td class="col-num mono">{{ pesosOVacio(c.debito) }}</td>
+                  <td class="col-num mono">{{ pesosOVacio(c.credito) }}</td>
+                  <td class="col-num mono" [class.ic-neg]="negativo(c.saldo_final)">{{ pesos(c.saldo_final) }}</td>
+                </tr>
+              }
+            </tbody>
+          }
+        }
+      } @empty {
+        <tbody><tr><td class="table__empty" [attr.colspan]="detallado ? 7 : 6">No hay movimientos contabilizados en este periodo con esos filtros.</td></tr></tbody>
+      }
+      @if (lista.length) {
+        <tfoot>
+          <tr>
+            @if (detallado) {
+              <td colspan="4">Total general</td>
+            } @else {
+              <td colspan="2">Total general</td>
+              <td class="col-num mono">{{ pesos(totales.saldo_inicial) }}</td>
+            }
+            <td class="col-num mono">{{ pesos(totales.debito) }}</td>
+            <td class="col-num mono">{{ pesos(totales.credito) }}</td>
+            <td class="col-num mono">{{ pesos(totales.saldo_final) }}</td>
+          </tr>
+        </tfoot>
+      }
+    </table>
+  </div>
+</ng-template>
 
 <!-- ============ BALANCE DE COMPROBACIÓN ============ -->
 @if (pestana() === 'balance') {
@@ -139,61 +301,11 @@
       <span class="pill pill--info">{{ a.cuentas.length }} cuenta(s) · {{ a.n_movimientos }} movimiento(s)</span>
       <small class="ic-nota">El saldo de cada línea es el saldo corrido de la cuenta. Use el ícono del comprobante para ver el asiento completo.</small>
     </div>
-
     <div class="table-wrap">
       <table class="table ic-tabla ic-aux">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Comprobante</th>
-            <th>Tercero</th>
-            <th>Detalle</th>
-            <th class="col-num">Débito</th>
-            <th class="col-num">Crédito</th>
-            <th class="col-num">Saldo</th>
-          </tr>
-        </thead>
+        <ng-container [ngTemplateOutlet]="tplCabeceraMov" [ngTemplateOutletContext]="{ conBase: false }" />
         @for (c of a.cuentas; track c.cuenta_id) {
-          <tbody>
-            <tr class="ic-cuenta-fila">
-              <td colspan="4">
-                <button type="button" class="ic-plegar" (click)="plegar(c.cuenta_id)" [attr.aria-expanded]="!plegadas().has(c.cuenta_id)" [attr.aria-label]="(plegadas().has(c.cuenta_id) ? 'Desplegar ' : 'Plegar ') + c.codigo">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" [class.ic-plegar--cerrado]="plegadas().has(c.cuenta_id)"><path d="m6 9 6 6 6-6" /></svg>
-                </button>
-                <span class="mono">{{ c.codigo }}</span> · {{ c.nombre }}
-              </td>
-              <td colspan="2" class="col-num ic-sub">Saldo inicial</td>
-              <td class="col-num mono" [class.ic-neg]="negativo(c.saldo_inicial)">{{ pesos(c.saldo_inicial) }}</td>
-            </tr>
-            @if (!plegadas().has(c.cuenta_id)) {
-              @for (m of c.movimientos; track $index) {
-                <tr>
-                  <td class="mono">{{ fecha(m.fecha) }}</td>
-                  <td>
-                    <div class="ic-cmp">
-                      <span class="mono">{{ m.comprobante }}</span>
-                      <button type="button" class="icon-action" (click)="abrirComprobante(m.comprobante_id)" [attr.aria-label]="'Ver el comprobante ' + m.comprobante" title="Ver el comprobante">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg>
-                      </button>
-                    </div>
-                  </td>
-                  <td>{{ m.tercero_nombre || '—' }}</td>
-                  <td>{{ m.descripcion || '' }}@if (m.documento_cruce && !(m.descripcion || '').includes(m.documento_cruce)) { <small class="ic-sub"> · {{ m.documento_cruce }}</small> }</td>
-                  <td class="col-num mono">{{ pesosOVacio(m.debito) }}</td>
-                  <td class="col-num mono">{{ pesosOVacio(m.credito) }}</td>
-                  <td class="col-num mono" [class.ic-neg]="negativo(m.saldo)">{{ pesos(m.saldo) }}</td>
-                </tr>
-              } @empty {
-                <tr><td colspan="7" class="ic-sub">Sin movimientos en el periodo: solo arrastra su saldo.</td></tr>
-              }
-            }
-            <tr class="ic-total-cuenta">
-              <td colspan="4">Total {{ c.codigo }}</td>
-              <td class="col-num mono">{{ pesos(c.debito) }}</td>
-              <td class="col-num mono">{{ pesos(c.credito) }}</td>
-              <td class="col-num mono" [class.ic-neg]="negativo(c.saldo_final)">{{ pesos(c.saldo_final) }}</td>
-            </tr>
-          </tbody>
+          <ng-container [ngTemplateOutlet]="tplCuenta" [ngTemplateOutletContext]="{ $implicit: c, clave: c.cuenta_id, conBase: false, titulo: c.codigo + ' · ' + c.nombre }" />
         } @empty {
           <tbody><tr><td class="table__empty" colspan="7">No hay movimientos contabilizados en este periodo con esos filtros.</td></tr></tbody>
         }
@@ -211,6 +323,61 @@
     </div>
   } @else if (cargando()) {
     <p class="ic-vacio">Armando el auxiliar…</p>
+  }
+}
+
+<!-- ============ POR TERCERO ============ -->
+@if (pestana() === 'terceros') {
+  @if (porTercero(); as r) {
+    <div class="ic-estado">
+      <span class="pill pill--info">{{ r.terceros.length }} tercero(s){{ r.n_movimientos != null ? ' · ' + r.n_movimientos + ' movimiento(s)' : '' }}</span>
+      <small class="ic-nota">
+        @if (r.filtros.modo === 'detallado') { Cada movimiento con su comprobante y el saldo corrido del tercero en esa cuenta. }
+        @else { Saldo de cada tercero por cuenta. El ojo abre su detalle. }
+      </small>
+    </div>
+    <ng-container [ngTemplateOutlet]="tplTerceros" [ngTemplateOutletContext]="{ $implicit: r.terceros, totales: r.totales, detallado: r.filtros.modo === 'detallado' }" />
+  } @else if (cargando()) {
+    <p class="ic-vacio">Agrupando por tercero…</p>
+  }
+}
+
+<!-- ============ LIBROS AUXILIARES ============ -->
+@if (pestana() === 'libros') {
+  @if (libroDatos(); as l) {
+    <div class="ic-estado">
+      <span class="pill pill--info">{{ l.libro_nombre }} · {{ l.n_movimientos }} movimiento(s)</span>
+      <small class="ic-nota">
+        @if (l.agrupado_por === 'tercero') { La cartera se lee por cliente o proveedor, con el saldo corrido de cada uno. }
+        @else { Las cuentas salen del plan de cuentas (PUC): 2408 IVA, 2365/135515 retención en la fuente, 2367/135517 ReteIVA y 2368/135518 ReteICA. }
+      </small>
+    </div>
+    @if (l.agrupado_por === 'tercero') {
+      <ng-container [ngTemplateOutlet]="tplTerceros" [ngTemplateOutletContext]="{ $implicit: l.terceros ?? [], totales: l.totales, detallado: true }" />
+    } @else {
+      <div class="table-wrap">
+        <table class="table ic-tabla ic-aux">
+          <ng-container [ngTemplateOutlet]="tplCabeceraMov" [ngTemplateOutletContext]="{ conBase: true }" />
+          @for (c of l.cuentas ?? []; track c.cuenta_id) {
+            <ng-container [ngTemplateOutlet]="tplCuenta" [ngTemplateOutletContext]="{ $implicit: c, clave: c.cuenta_id, conBase: true, titulo: c.codigo + ' · ' + c.nombre }" />
+          } @empty {
+            <tbody><tr><td class="table__empty" colspan="8">No hay movimientos de este libro en el periodo.</td></tr></tbody>
+          }
+          @if (l.cuentas?.length) {
+            <tfoot>
+              <tr>
+                <td colspan="5">Total general</td>
+                <td class="col-num mono">{{ pesos(l.totales.debito) }}</td>
+                <td class="col-num mono">{{ pesos(l.totales.credito) }}</td>
+                <td class="col-num mono">{{ pesos(l.totales.saldo_final) }}</td>
+              </tr>
+            </tfoot>
+          }
+        </table>
+      </div>
+    }
+  } @else if (cargando()) {
+    <p class="ic-vacio">Armando el libro…</p>
   }
 }
 

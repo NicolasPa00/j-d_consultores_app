@@ -1984,6 +1984,12 @@ export interface FiltrosInformeContable {
   centro_costo_id?: string;
   /** Excluir el comprobante de cierre de año (CA). */
   sin_cierre?: boolean;
+  /** C3-01 · general (saldos) o detallado (con movimientos). */
+  modo?: 'general' | 'detallado';
+  /** C3-01 · apartar las líneas sin tercero (bancos, impuestos por pagar…). */
+  solo_con_tercero?: boolean;
+  /** C4-01 · qué libro auxiliar. */
+  libro?: LibroAuxiliarClave;
   /** Solo el balance: 1 clase, 2 grupo, 4 cuenta, 6 subcuenta, 10 auxiliar. */
   nivel?: number;
 }
@@ -2046,6 +2052,49 @@ export interface CuentaAuxiliar extends TotalesInformeContable {
 export interface AuxiliarPorCuenta {
   filtros: FiltrosInformeContable;
   cuentas: CuentaAuxiliar[];
+  totales: TotalesInformeContable;
+  n_movimientos: number;
+}
+
+export interface MovimientoAuxiliarConBase extends MovimientoAuxiliar {
+  /** Base gravable de la línea, cuando es un impuesto o una retención. */
+  base?: string | null;
+}
+
+/** C3-01 · Cuenta de un tercero; en el modo general no trae movimientos. */
+export interface CuentaDeTercero extends TotalesInformeContable {
+  cuenta_id: string;
+  codigo: string;
+  nombre: string;
+  movimientos?: MovimientoAuxiliarConBase[];
+}
+
+export interface TerceroInforme {
+  /** null = las líneas sin tercero (van al final). */
+  tercero_id: string | null;
+  nombre: string;
+  documento: string | null;
+  cuentas: CuentaDeTercero[];
+  totales: TotalesInformeContable;
+}
+
+export interface InformePorTercero {
+  filtros: FiltrosInformeContable;
+  terceros: TerceroInforme[];
+  totales: TotalesInformeContable;
+  n_movimientos?: number;
+}
+
+export type LibroAuxiliarClave = 'IVA' | 'RETEFUENTE' | 'RETEIVA' | 'RETEICA' | 'IMPUESTOS' | 'CXC' | 'CXP';
+
+/** C4-01 · Impuestos agrupados por cuenta; cartera (CxC/CxP) por tercero. */
+export interface LibroAuxiliar {
+  libro: LibroAuxiliarClave;
+  libro_nombre: string;
+  agrupado_por: 'cuenta' | 'tercero';
+  filtros: FiltrosInformeContable;
+  cuentas?: CuentaAuxiliar[];
+  terceros?: TerceroInforme[];
   totales: TotalesInformeContable;
   n_movimientos: number;
 }
