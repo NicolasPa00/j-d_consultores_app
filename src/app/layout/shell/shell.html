@@ -156,10 +156,12 @@
       </button>
 
       <div class="navbar__title">
-        <h1 class="navbar__title-main">Sistema de Gestión de Seguridad y Salud en el Trabajo</h1>
+        <!-- El título dice en qué sistema se está (aprobado el 2-oct-2026): antes decía
+             «Sistema de Gestión de Seguridad y Salud en el Trabajo» también en Finanzas. -->
+        <h1 class="navbar__title-main">ORBITA · {{ sistemas.activo().nombre }}</h1>
         <span class="navbar__title-sub">
           JD&amp;D Consultores ·
-          {{ sistemas.activo().id === 'finanzas' ? 'Finanzas · Facturación y contabilidad' : 'Operación · Gestión de Órdenes de Servicio' }}
+          {{ sistemas.activo().id === 'finanzas' ? 'Facturación y contabilidad' : 'Gestión de órdenes de servicio SST' }}
         </span>
       </div>
 
