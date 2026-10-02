@@ -154,3 +154,14 @@
 
 /* Ventas por cliente (C6-01): las facturas, sangradas bajo su cliente. */
 .ic-doc-venta { padding-left: 2.4rem !important; }
+
+/* Estados financieros (C5-01). */
+.ic-provisional {
+  margin: 0 0 0.75rem;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.84rem;
+  color: var(--state-warning-strong, #92400e);
+  background: var(--state-warning-bg, #fef3c7);
+  border-radius: 8px;
+}
+.ic-estado-fin { max-width: 60rem; }

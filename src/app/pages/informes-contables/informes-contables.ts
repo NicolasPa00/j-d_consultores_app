@@ -10,10 +10,10 @@ import { escapeHtml, imprimirHtml } from '../../core/imprimir';
 import {
   AuxiliarPorCuenta, BalanceComprobacion, CentroCosto, Comprobante, CuentaDeTercero, FiltrosInformeContable,
   InformePorTercero, LibroAuxiliar, LibroAuxiliarClave, MovimientoAuxiliarConBase, Tercero, TerceroInforme,
-  TotalesInformeContable, VentasPorCliente,
+  TotalesInformeContable, VentasPorCliente, EstadoSituacionFinanciera, EstadoResultados, SeccionEstado,
 } from '../../core/models';
 
-type Pestana = 'balance' | 'auxiliar' | 'terceros' | 'libros' | 'ventas';
+type Pestana = 'balance' | 'auxiliar' | 'terceros' | 'libros' | 'ventas' | 'estados';
 
 /** Niveles del PUC que se pueden pedir en el balance (el backend acepta los mismos). */
 const NIVELES = [
@@ -41,6 +41,7 @@ const SUBTITULO: Record<Pestana, string> = {
   terceros: 'Por tercero · RPC-10 · saldo por tercero y cuenta, o cada movimiento con su comprobante',
   libros: 'Libros auxiliares · RPC-08 y RPC-02 · impuestos, cuentas por cobrar y por pagar con saldo corrido',
   ventas: 'Ventas por cliente · RPC-01 · lo facturado ante la DIAN, con las notas crédito restando',
+  estados: 'Estados financieros · RPC-04 y RPC-05 · situación financiera a una fecha y resultados de un periodo',
 };
 
 const dosDigitos = (n: number) => String(n).padStart(2, '0');
@@ -100,6 +101,11 @@ export class InformesContablesComponent implements OnInit {
   protected readonly porTercero = signal<InformePorTercero | null>(null);
   protected readonly libroDatos = signal<LibroAuxiliar | null>(null);
   protected readonly ventas = signal<VentasPorCliente | null>(null);
+  // C5-01
+  protected estado: 'situacion' | 'resultados' = 'situacion';
+  protected comparativo = false;
+  protected readonly situacion = signal<EstadoSituacionFinanciera | null>(null);
+  protected readonly resultados = signal<EstadoResultados | null>(null);
 
   /** Bloques plegados (cuenta o tercero): con muchos se leen por partes. */
   protected readonly plegadas = signal<Set<string>>(new Set());
@@ -189,6 +195,14 @@ export class InformesContablesComponent implements OnInit {
       case 'ventas':
         this.api.ventasPorCliente(f).subscribe({ next: (r) => { listo(); this.ventas.set(r.data); }, error });
         break;
+      case 'estados':
+        // La situación financiera es a una fecha: el corte es «Hasta».
+        if (this.estado === 'situacion') {
+          this.api.estadoSituacion(this.hasta, this.comparativo).subscribe({ next: (r) => { listo(); this.situacion.set(r.data); }, error });
+        } else {
+          this.api.estadoResultados(this.desde, this.hasta, this.comparativo).subscribe({ next: (r) => { listo(); this.resultados.set(r.data); }, error });
+        }
+        break;
     }
   }
 
@@ -209,6 +223,11 @@ export class InformesContablesComponent implements OnInit {
     this.terceroId = t.tercero_id;
     this.modoTercero = 'detallado';
     this.consultar();
+  }
+
+  /** Cuenta, centro de costo y cierre son filtros del libro: las ventas y los estados financieros no los usan. */
+  protected usaFiltrosDelLibro(): boolean {
+    return this.pestana() !== 'ventas' && this.pestana() !== 'estados';
   }
 
   protected plegar(clave: string): void {
@@ -273,13 +292,17 @@ export class InformesContablesComponent implements OnInit {
         : p === 'auxiliar' ? this.api.auxiliarPorCuentaXlsx(f)
           : p === 'terceros' ? this.api.informePorTerceroXlsx(f)
             : p === 'ventas' ? this.api.ventasPorClienteXlsx(f)
-              : this.api.libroAuxiliarXlsx(f);
+              : p === 'estados' ? (this.estado === 'situacion'
+                ? this.api.estadoSituacionXlsx(this.hasta, this.comparativo)
+                : this.api.estadoResultadosXlsx(this.desde, this.hasta, this.comparativo))
+                : this.api.libroAuxiliarXlsx(f);
     const nombre =
       p === 'balance' ? 'balance-de-comprobacion'
         : p === 'auxiliar' ? 'auxiliar'
           : p === 'terceros' ? `terceros-${this.modoTercero}`
             : p === 'ventas' ? 'ventas-por-cliente'
-              : `libro-${this.libro.toLowerCase()}`;
+              : p === 'estados' ? (this.estado === 'situacion' ? 'estado-situacion-financiera' : 'estado-resultados')
+                : `libro-${this.libro.toLowerCase()}`;
     this.exportando.set(true);
     peticion.subscribe({
       next: (blob) => {
@@ -311,6 +334,10 @@ export class InformesContablesComponent implements OnInit {
     if (t) partes.push(`Tercero: ${t.nombre}`);
     const c = this.centros().find((x) => x.id === this.centroId);
     if (c) partes.push(`Centro de costo: ${c.codigo}`);
+    if (p === 'estados') {
+      return this.estado === 'situacion' ? `Al ${this.fecha(this.hasta)}${this.comparativo ? ' · comparativo con el año anterior' : ''}`
+        : `Del ${this.fecha(this.desde)} al ${this.fecha(this.hasta)} · sin el cierre de año${this.comparativo ? ' · comparativo con el año anterior' : ''}`;
+    }
     if (this.sinCierre) partes.push('Sin el cierre de año');
     if (p === 'terceros' && this.soloConTercero) partes.push('Solo movimientos con tercero');
     return partes.join(' · ');
@@ -369,6 +396,29 @@ export class InformesContablesComponent implements OnInit {
       const detallado = r.filtros.modo === 'detallado';
       titulo = `Movimiento por tercero (${detallado ? 'detallado' : 'general'})`;
       tabla = tablaTerceros(r.terceros, r.totales, detallado);
+    } else if (p === 'estados') {
+      const e = this.estado === 'situacion' ? this.situacion() : this.resultados();
+      if (!e) { sinDatos(); return; }
+      const comp = this.estado === 'situacion' ? !!this.situacion()?.corte_anterior : !!this.resultados()?.desde_anterior;
+      const v = (x: string | undefined) => `<td class="n">${escapeHtml(this.pesos(x ?? '0'))}</td>`;
+      const filasSec = (s: SeccionEstado) => `<tr class="cta"><td colspan="${comp ? 3 : 2}">${escapeHtml(s.nombre)}</td></tr>` +
+        s.renglones.map((r) => `<tr><td style="padding-left:24px">${r.grupo ? escapeHtml(r.grupo) + ' · ' : ''}${escapeHtml(r.nombre)}</td>${v(r.valor)}${comp ? v(r.anterior) : ''}</tr>`).join('') +
+        `<tr class="b"><td>Total ${escapeHtml(s.nombre.toLowerCase())}</td>${v(s.total)}${comp ? v(s.total_anterior) : ''}</tr>`;
+      let pieFilas: [string, string | undefined, string | undefined][];
+      if (this.estado === 'situacion') {
+        const s = this.situacion()!;
+        titulo = 'Estado de situación financiera';
+        pieFilas = [['Resultado del ejercicio', s.resultado_ejercicio, s.resultado_ejercicio_anterior], ['Total activo', s.total_activo, s.total_activo_anterior],
+          ['Total pasivo + patrimonio + resultado', s.total_pasivo_patrimonio, s.total_pasivo_patrimonio_anterior]];
+      } else {
+        const r = this.resultados()!;
+        titulo = 'Estado de resultados';
+        pieFilas = [['Utilidad bruta', r.utilidad_bruta, r.utilidad_bruta_anterior], ['Utilidad (pérdida) del periodo', r.utilidad, r.utilidad_anterior]];
+      }
+      tabla = `<table><thead><tr><th>Concepto</th><th class="n">${this.estado === 'situacion' ? 'Al corte' : 'Periodo'}</th>${comp ? '<th class="n">Año anterior</th>' : ''}</tr></thead><tbody>` +
+        e.secciones.map(filasSec).join('') + `</tbody><tfoot>` +
+        pieFilas.map(([t, a, b]) => `<tr class="b"><td>${escapeHtml(t)}</td>${v(a)}${comp ? v(b) : ''}</tr>`).join('') + `</tfoot></table>` +
+        `<p class="meta">Formato provisional: los renglones son los grupos del PUC hasta que la contadora defina los suyos.</p>`;
     } else if (p === 'ventas') {
       const v = this.ventas();
       if (!v?.clientes.length) { sinDatos(); return; }

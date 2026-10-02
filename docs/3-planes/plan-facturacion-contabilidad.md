@@ -57,6 +57,15 @@ por API).
 `2026-10-02-activos-fijos.sql`, y **`npm install` en el backend** (dependencia nueva `qrcode`). La vista nueva
 `informes_contables` aparece en Roles y permisos con el mismo reparto que Contabilidad.
 
+**C5-01 con formato provisional.** Estado de situación financiera a un corte (activo = pasivo + patrimonio +
+resultado del ejercicio, este último = clases 4-7 aún sin cerrar) y estado de resultados de un periodo (sin el
+CA), con comparativo del año anterior. Mientras la contadora no defina sus renglones, cada cuenta va por su grupo
+del PUC; el formulario de cuentas ya tiene los campos «Renglón». **No es definitivo hasta Q-19 / D-21.**
+
+**Arreglos de la prueba del 1-oct, hechos este día:** «Procesar de todos modos» ya fuerza (`forzar=true`;
+no probado de punta a punta: gastaría una extracción con IA) y el código de producto del borrador sale como
+«Cód. N». El del pie de Importar ya estaba hecho desde el 1-oct.
+
 ### ▶▶▶ 30-sep-2026 (noche) — LO MÁS RECIENTE: peticiones de JD&D, base limpia y prueba de punta a punta
 
 Encima de lo de abajo (que sigue valiendo), en `fase-b-contabilidad` y **SIN COMMITEAR** en los dos repos:
@@ -648,7 +657,7 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecha y verificada · ❓ espera 
 | C2-01 | Movimiento general por cuenta — auxiliar (RPC-09) | B1-01 | M | ✅ 2-oct: mismas columnas que `puc.xlsx` + saldo corrido, «Ver» desde el balance, comprobante de solo lectura; mismo script y navegador |
 | C3-01 | Tercero general y detallado (RPC-10) | B1-01 | M | ✅ 2-oct: pestaña «Por tercero» (general/detallado, «solo con tercero», ojo → detalle); `verificar-informes-contables.mjs` y navegador |
 | C4-01 | Libros auxiliares de IVA, CxC y CxP (RPC-08, RPC-02) | B3-01, B4-01 | M | ✅ 2-oct: pestaña «Libros auxiliares»: IVA, retefuente, ReteIVA, ReteICA o todos (por prefijo del PUC, con la base gravable) y CxC/CxP por tercero (cuentas `es_cartera`); el CxC cuadra con Cartera |
-| C5-01 | Estado de situación financiera y de resultados (RPC-04, 05) | C1-01 | L | ❓ Q-19 |
+| C5-01 | Estado de situación financiera y de resultados (RPC-04, 05) | C1-01 | L | 🟨 2-oct: construido con **formato provisional** (pestaña «Estados financieros»): renglones = grupo del PUC o el `renglon_esf`/`renglon_er` de la cuenta o un ancestro (ahora editables en el Plan de cuentas); comparativo con el año anterior; el ER excluye el CA. 53 OK. ❓ Q-19/D-21: formato y grupo NIIF de la contadora |
 | C6-01 | Ventas por cliente + exportación común Excel/PDF (RPC-01, 03) | C1-01 | S | ✅ 2-oct: pestaña «Ventas por cliente» (facturas − notas crédito ante la DIAN, detalle por cliente); exportación común = `core/imprimir.ts` (PDF, también en `/informes`) + `informes-contables/excel.js` (Excel con números). ❓ RPC-01 no lo pidió la contadora: confirmar si lo quieren |
 | C7-01 | Activos fijos, depreciación y QR (ACT-01..03) | B1-01 | L | ✅ 2-oct: pestaña «Activos fijos» en Contabilidad; ficha con las tres cuentas elegidas del PUC, línea recta en centavos, DP mensual en orden (con puesta al día), revertir la última corrida, QR → `/contabilidad?activo=<id>` e impresión de etiqueta; `verificar-activos-fijos.mjs` 31 OK. Migración `2026-10-02-activos-fijos.sql` en `jdd_dev`. ❓ supuesto: deprecia desde el mes siguiente a la compra (editable) |
 | C8-01 | Recepción de facturas de proveedores y eventos RADIAN (CYG-04, 05) | B5-01 | L | ❓ Factus |

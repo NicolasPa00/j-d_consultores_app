@@ -17,6 +17,7 @@
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'terceros'" (click)="cambiarPestana('terceros')">Por tercero</button>
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'libros'" (click)="cambiarPestana('libros')">Libros auxiliares</button>
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'ventas'" (click)="cambiarPestana('ventas')">Ventas por cliente</button>
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'estados'" (click)="cambiarPestana('estados')">Estados financieros</button>
 </div>
 
 <!-- ============ FILTROS (comunes) ============ -->
@@ -29,6 +30,13 @@
       <button type="button" class="btn btn--ghost btn--sm" (click)="elegirPeriodo('mes-anterior')">Mes anterior</button>
       <button type="button" class="btn btn--ghost btn--sm" (click)="elegirPeriodo('anio')">Año en curso</button>
     </div>
+    @if (pestana() === 'estados') {
+      <div class="ic-modo" role="radiogroup" aria-label="Estado">
+        <label><input type="radio" name="estado" value="situacion" [(ngModel)]="estado" (change)="consultar()" /> Situación financiera (al «Hasta»)</label>
+        <label><input type="radio" name="estado" value="resultados" [(ngModel)]="estado" (change)="consultar()" /> Resultados</label>
+      </div>
+      <label class="ic-check"><input type="checkbox" name="comparativo" [(ngModel)]="comparativo" (change)="consultar()" /> Comparar con el año anterior</label>
+    }
     @if (pestana() === 'terceros') {
       <div class="ic-modo" role="radiogroup" aria-label="Vista">
         <label><input type="radio" name="modo" value="general" [(ngModel)]="modoTercero" (change)="consultar()" /> General</label>
@@ -51,18 +59,20 @@
         </select>
       </label>
     }
-    @if (pestana() !== 'ventas') {
+    @if (usaFiltrosDelLibro()) {
     <label class="ic-campo">Cuenta
       <input type="text" class="form-control ic-cuenta" name="cuenta" [(ngModel)]="cuenta" inputmode="numeric" placeholder="Ej. 1305" title="Código o comienzo del código: 1305 trae toda esa rama" />
     </label>
     }
+    @if (pestana() !== 'estados') {
     <label class="ic-campo ic-campo--ancho">Tercero
       <select class="form-control" name="tercero" [(ngModel)]="terceroId">
         <option value="">Todos</option>
         @for (t of terceros(); track t.id) { <option [value]="t.id">{{ t.nombre }} · {{ t.numero_documento }}</option> }
       </select>
     </label>
-    @if (centros().length && pestana() !== 'ventas') {
+    }
+    @if (centros().length && usaFiltrosDelLibro()) {
       <label class="ic-campo">Centro de costo
         <select class="form-control" name="centro" [(ngModel)]="centroId">
           <option value="">Todos</option>
@@ -70,7 +80,7 @@
         </select>
       </label>
     }
-    @if (pestana() !== 'ventas') {
+    @if (usaFiltrosDelLibro()) {
       <label class="ic-check" title="El comprobante de cierre (CA) deja en cero las cuentas de resultado al 31 de diciembre">
         <input type="checkbox" name="sinCierre" [(ngModel)]="sinCierre" /> Sin el cierre de año
       </label>
@@ -383,6 +393,69 @@
     }
   } @else if (cargando()) {
     <p class="ic-vacio">Armando el libro…</p>
+  }
+}
+
+<!-- ============ ESTADOS FINANCIEROS (formato provisional) ============ -->
+@if (pestana() === 'estados') {
+  <p class="ic-provisional">
+    <strong>Formato provisional.</strong> Los renglones son los grupos del plan de cuentas hasta que la contadora defina los suyos
+    (se asignan a cada cuenta en Contabilidad → Plan de cuentas, campos «Renglón»). El grupo NIIF de JD&amp;D también está por confirmar.
+  </p>
+  @let comp = estado === 'situacion' ? !!situacion()?.corte_anterior : !!resultados()?.desde_anterior;
+  @let e = estado === 'situacion' ? situacion() : resultados();
+  @if (e) {
+    @if (estado === 'situacion' && situacion(); as s) {
+      <div class="ic-estado">
+        @if (s.cuadra) { <span class="pill pill--success">Activo = pasivo + patrimonio + resultado</span> }
+        @else { <span class="pill pill--danger">No cuadra: revise el balance de comprobación</span> }
+        <small class="ic-nota">Al {{ fecha(s.corte) }}. El resultado del ejercicio es lo que aún no trasladó el cierre de año.</small>
+      </div>
+    } @else if (resultados(); as r) {
+      <div class="ic-estado"><small class="ic-nota">Del {{ fecha(r.desde) }} al {{ fecha(r.hasta) }}, sin el comprobante de cierre de año.</small></div>
+    }
+    <div class="table-wrap ic-estado-fin">
+      <table class="table ic-tabla ic-aux">
+        <thead>
+          <tr>
+            <th>Concepto</th>
+            <th class="col-num">{{ estado === 'situacion' ? 'Al corte' : 'Periodo' }}</th>
+            @if (comp) { <th class="col-num">Año anterior</th> }
+          </tr>
+        </thead>
+        @for (s of e.secciones; track s.clave) {
+          <tbody>
+            <tr class="ic-cuenta-fila"><td [attr.colspan]="comp ? 3 : 2">{{ s.nombre }}</td></tr>
+            @for (r of s.renglones; track r.nombre) {
+              <tr>
+                <td class="ic-doc-venta">@if (r.grupo) { <span class="mono ic-sub">{{ r.grupo }}</span> } {{ r.nombre }}</td>
+                <td class="col-num mono" [class.ic-neg]="negativo(r.valor)">{{ pesos(r.valor) }}</td>
+                @if (comp) { <td class="col-num mono">{{ pesos(r.anterior) }}</td> }
+              </tr>
+            } @empty {
+              <tr><td [attr.colspan]="comp ? 3 : 2" class="ic-sub ic-doc-venta">Sin saldos.</td></tr>
+            }
+            <tr class="ic-total-cuenta">
+              <td>Total {{ s.nombre.toLowerCase() }}</td>
+              <td class="col-num mono">{{ pesos(s.total) }}</td>
+              @if (comp) { <td class="col-num mono">{{ pesos(s.total_anterior) }}</td> }
+            </tr>
+          </tbody>
+        }
+        <tfoot>
+          @if (estado === 'situacion' && situacion(); as s) {
+            <tr><td>Resultado del ejercicio</td><td class="col-num mono" [class.ic-neg]="negativo(s.resultado_ejercicio)">{{ pesos(s.resultado_ejercicio) }}</td>@if (comp) { <td class="col-num mono">{{ pesos(s.resultado_ejercicio_anterior) }}</td> }</tr>
+            <tr><td>Total activo</td><td class="col-num mono">{{ pesos(s.total_activo) }}</td>@if (comp) { <td class="col-num mono">{{ pesos(s.total_activo_anterior) }}</td> }</tr>
+            <tr><td>Total pasivo + patrimonio + resultado</td><td class="col-num mono">{{ pesos(s.total_pasivo_patrimonio) }}</td>@if (comp) { <td class="col-num mono">{{ pesos(s.total_pasivo_patrimonio_anterior) }}</td> }</tr>
+          } @else if (resultados(); as r) {
+            <tr><td>Utilidad bruta</td><td class="col-num mono" [class.ic-neg]="negativo(r.utilidad_bruta)">{{ pesos(r.utilidad_bruta) }}</td>@if (comp) { <td class="col-num mono">{{ pesos(r.utilidad_bruta_anterior) }}</td> }</tr>
+            <tr><td>Utilidad (pérdida) del periodo</td><td class="col-num mono" [class.ic-neg]="negativo(r.utilidad)">{{ pesos(r.utilidad) }}</td>@if (comp) { <td class="col-num mono">{{ pesos(r.utilidad_anterior) }}</td> }</tr>
+          }
+        </tfoot>
+      </table>
+    </div>
+  } @else if (cargando()) {
+    <p class="ic-vacio">Armando el estado…</p>
   }
 }
 

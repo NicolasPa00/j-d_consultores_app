@@ -267,6 +267,21 @@
         <p class="form-field__hint">Su saldo se compara con el de la cartera para avisar si no cuadran.</p>
       </div>
 
+      <!-- C5-01 · Lo define la contadora; lo hereda todo lo que cuelga de esta cuenta. -->
+      @if (draft.codigo.startsWith('1') || draft.codigo.startsWith('2') || draft.codigo.startsWith('3')) {
+        <div class="form-field">
+          <label class="form-field__label" for="cEsf">Renglón en el estado de situación financiera</label>
+          <input id="cEsf" class="form-control" type="text" [(ngModel)]="draft.renglon_esf" name="esf" placeholder="Vacío = el grupo del PUC" />
+          <p class="form-field__hint">Lo heredan sus subcuentas. Ej.: «Efectivo y equivalentes al efectivo».</p>
+        </div>
+      } @else if (draft.codigo && '4567'.includes(draft.codigo[0])) {
+        <div class="form-field">
+          <label class="form-field__label" for="cEr">Renglón en el estado de resultados</label>
+          <input id="cEr" class="form-control" type="text" [(ngModel)]="draft.renglon_er" name="er" placeholder="Vacío = el grupo del PUC" />
+          <p class="form-field__hint">Lo heredan sus subcuentas. Ej.: «Ingresos de actividades ordinarias».</p>
+        </div>
+      }
+
       <footer class="modal__footer">
         <button type="button" class="btn btn--close" (click)="closeForm()" [disabled]="saving()">Cancelar</button>
         <button type="submit" class="btn btn--primary" [disabled]="saving() || (!editando() && padreDelDraft().estado !== 'ok' && padreDelDraft().estado !== 'clase')">

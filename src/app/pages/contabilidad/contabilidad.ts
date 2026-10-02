@@ -35,7 +35,7 @@ function longitudHija(codigo: string): number | null {
 
 const FORM_VACIO: CuentaForm = {
   codigo: '', nombre: '', naturaleza: 'DEBITO', acepta_movimiento: true,
-  exige_tercero: false, exige_centro_costo: false, es_cartera: '', es_banco: false,
+  exige_tercero: false, exige_centro_costo: false, es_cartera: '', es_banco: false, renglon_esf: '', renglon_er: '',
 };
 
 /**
@@ -217,6 +217,7 @@ export class ContabilidadComponent implements OnInit {
       codigo: c.codigo, nombre: c.nombre, naturaleza: c.naturaleza, acepta_movimiento: c.acepta_movimiento,
       exige_tercero: c.exige_tercero, exige_centro_costo: c.exige_centro_costo,
       es_cartera: c.es_cartera ?? '', es_banco: c.es_banco,
+      renglon_esf: c.renglon_esf ?? '', renglon_er: c.renglon_er ?? '',
     };
     this.codigoDraft.set(c.codigo);
     this.formOpen.set(true);

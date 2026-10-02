@@ -1651,6 +1651,9 @@ export interface CuentaForm {
   exige_centro_costo: boolean;
   es_cartera: '' | 'CXC' | 'CXP';
   es_banco: boolean;
+  /** C5-01 · Renglón en los estados financieros; vacío = el grupo del PUC (formato provisional). */
+  renglon_esf: string;
+  renglon_er: string;
 }
 
 /** Resultado de importar (o simular la importación de) un PUC en Excel. */
@@ -2225,4 +2228,48 @@ export interface VistaPreviaDepreciacion {
   ya_depreciado: boolean;
   activos: { activo_id: string; codigo: string; descripcion: string; cuotas: number; desde_cuota: number; hasta_cuota: number; valor: string }[];
   total: string;
+}
+
+/** C5-01 · Renglón de un estado financiero (valores como se presentan, no débito − crédito). */
+export interface RenglonEstado {
+  nombre: string;
+  /** Grupo del PUC cuando el renglón es el provisional (sin renglón definido). */
+  grupo: string | null;
+  valor: string;
+  anterior?: string;
+}
+
+export interface SeccionEstado {
+  clave: string;
+  nombre: string;
+  renglones: RenglonEstado[];
+  total: string;
+  total_anterior?: string;
+}
+
+export interface EstadoSituacionFinanciera {
+  formato_provisional: boolean;
+  corte: string;
+  corte_anterior: string | null;
+  secciones: SeccionEstado[];
+  resultado_ejercicio: string;
+  resultado_ejercicio_anterior?: string;
+  total_activo: string;
+  total_pasivo_patrimonio: string;
+  total_activo_anterior?: string;
+  total_pasivo_patrimonio_anterior?: string;
+  cuadra: boolean;
+}
+
+export interface EstadoResultados {
+  formato_provisional: boolean;
+  desde: string;
+  hasta: string;
+  desde_anterior?: string;
+  hasta_anterior?: string;
+  secciones: SeccionEstado[];
+  utilidad_bruta: string;
+  utilidad: string;
+  utilidad_bruta_anterior?: string;
+  utilidad_anterior?: string;
 }
