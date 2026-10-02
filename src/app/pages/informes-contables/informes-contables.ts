@@ -10,10 +10,10 @@ import { escapeHtml, imprimirHtml } from '../../core/imprimir';
 import {
   AuxiliarPorCuenta, BalanceComprobacion, CentroCosto, Comprobante, CuentaDeTercero, FiltrosInformeContable,
   InformePorTercero, LibroAuxiliar, LibroAuxiliarClave, MovimientoAuxiliarConBase, Tercero, TerceroInforme,
-  TotalesInformeContable,
+  TotalesInformeContable, VentasPorCliente,
 } from '../../core/models';
 
-type Pestana = 'balance' | 'auxiliar' | 'terceros' | 'libros';
+type Pestana = 'balance' | 'auxiliar' | 'terceros' | 'libros' | 'ventas';
 
 /** Niveles del PUC que se pueden pedir en el balance (el backend acepta los mismos). */
 const NIVELES = [
@@ -40,6 +40,7 @@ const SUBTITULO: Record<Pestana, string> = {
   auxiliar: 'Movimiento por cuenta · RPC-09 · libro auxiliar con su comprobante de origen',
   terceros: 'Por tercero · RPC-10 · saldo por tercero y cuenta, o cada movimiento con su comprobante',
   libros: 'Libros auxiliares · RPC-08 y RPC-02 · impuestos, cuentas por cobrar y por pagar con saldo corrido',
+  ventas: 'Ventas por cliente · RPC-01 · lo facturado ante la DIAN, con las notas crédito restando',
 };
 
 const dosDigitos = (n: number) => String(n).padStart(2, '0');
@@ -98,6 +99,7 @@ export class InformesContablesComponent implements OnInit {
   protected readonly auxiliar = signal<AuxiliarPorCuenta | null>(null);
   protected readonly porTercero = signal<InformePorTercero | null>(null);
   protected readonly libroDatos = signal<LibroAuxiliar | null>(null);
+  protected readonly ventas = signal<VentasPorCliente | null>(null);
 
   /** Bloques plegados (cuenta o tercero): con muchos se leen por partes. */
   protected readonly plegadas = signal<Set<string>>(new Set());
@@ -184,6 +186,9 @@ export class InformesContablesComponent implements OnInit {
       case 'libros':
         this.api.libroAuxiliar(f).subscribe({ next: (r) => { listo(); this.libroDatos.set(r.data); }, error });
         break;
+      case 'ventas':
+        this.api.ventasPorCliente(f).subscribe({ next: (r) => { listo(); this.ventas.set(r.data); }, error });
+        break;
     }
   }
 
@@ -267,12 +272,14 @@ export class InformesContablesComponent implements OnInit {
       p === 'balance' ? this.api.balanceComprobacionXlsx(f)
         : p === 'auxiliar' ? this.api.auxiliarPorCuentaXlsx(f)
           : p === 'terceros' ? this.api.informePorTerceroXlsx(f)
-            : this.api.libroAuxiliarXlsx(f);
+            : p === 'ventas' ? this.api.ventasPorClienteXlsx(f)
+              : this.api.libroAuxiliarXlsx(f);
     const nombre =
       p === 'balance' ? 'balance-de-comprobacion'
         : p === 'auxiliar' ? 'auxiliar'
           : p === 'terceros' ? `terceros-${this.modoTercero}`
-            : `libro-${this.libro.toLowerCase()}`;
+            : p === 'ventas' ? 'ventas-por-cliente'
+              : `libro-${this.libro.toLowerCase()}`;
     this.exportando.set(true);
     peticion.subscribe({
       next: (blob) => {
@@ -362,6 +369,16 @@ export class InformesContablesComponent implements OnInit {
       const detallado = r.filtros.modo === 'detallado';
       titulo = `Movimiento por tercero (${detallado ? 'detallado' : 'general'})`;
       tabla = tablaTerceros(r.terceros, r.totales, detallado);
+    } else if (p === 'ventas') {
+      const v = this.ventas();
+      if (!v?.clientes.length) { sinDatos(); return; }
+      titulo = 'Ventas por cliente';
+      const importes = (x: { subtotal: string; total_iva: string; total_retenciones: string; total_a_pagar: string }) =>
+        saldo(x.subtotal) + saldo(x.total_iva) + saldo(x.total_retenciones) + saldo(x.total_a_pagar);
+      tabla = `<table><thead><tr><th>Cliente / documento</th><th>Fecha</th><th class="n">Facturas</th><th class="n">Notas</th><th class="n">Subtotal</th><th class="n">IVA</th><th class="n">Retenciones</th><th class="n">Total</th></tr></thead><tbody>` +
+        v.clientes.map((c) => `<tr class="cta"><td>${escapeHtml(c.nombre)}${c.documento ? ' · ' + escapeHtml(c.documento) : ''}</td><td></td><td class="n">${c.facturas}</td><td class="n">${c.notas}</td>${importes(c)}</tr>` +
+          c.documentos.map((d) => `<tr><td>${d.tipo === 'NOTA_CREDITO' ? 'Nota crédito ' : 'Factura '}${escapeHtml(d.numero ?? '')}${d.referencia ? ' (de ' + escapeHtml(d.referencia) + ')' : ''}</td><td>${escapeHtml(this.fecha(d.fecha))}</td><td></td><td></td>${importes(d)}</tr>`).join('')).join('') +
+        `</tbody><tfoot><tr class="b"><td>Total</td><td></td><td class="n">${v.totales.facturas}</td><td class="n">${v.totales.notas}</td>${importes(v.totales)}</tr></tfoot></table>`;
     } else {
       const l = this.libroDatos();
       if (!l || !(l.cuentas?.length || l.terceros?.length)) { sinDatos(); return; }

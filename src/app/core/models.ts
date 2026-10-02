@@ -2098,3 +2098,36 @@ export interface LibroAuxiliar {
   totales: TotalesInformeContable;
   n_movimientos: number;
 }
+
+/** C6-01 · Importes de ventas: las notas crédito llegan en negativo. */
+export interface ImportesVenta {
+  subtotal: string;
+  total_iva: string;
+  total_retenciones: string;
+  total_a_pagar: string;
+}
+
+export interface DocumentoVenta extends ImportesVenta {
+  id: string;
+  tipo: 'FACTURA' | 'NOTA_CREDITO';
+  estado: string;
+  numero: string | null;
+  fecha: string;
+  /** Factura que anula una nota crédito. */
+  referencia: string | null;
+}
+
+export interface VentaCliente extends ImportesVenta {
+  tercero_id: string;
+  nombre: string;
+  documento: string | null;
+  facturas: number;
+  notas: number;
+  documentos: DocumentoVenta[];
+}
+
+export interface VentasPorCliente {
+  filtros: { desde: string; hasta: string };
+  clientes: VentaCliente[];
+  totales: ImportesVenta & { facturas: number; notas: number };
+}

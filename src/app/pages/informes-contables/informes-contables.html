@@ -16,6 +16,7 @@
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'auxiliar'" (click)="cambiarPestana('auxiliar')">Movimiento por cuenta</button>
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'terceros'" (click)="cambiarPestana('terceros')">Por tercero</button>
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'libros'" (click)="cambiarPestana('libros')">Libros auxiliares</button>
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'ventas'" (click)="cambiarPestana('ventas')">Ventas por cliente</button>
 </div>
 
 <!-- ============ FILTROS (comunes) ============ -->
@@ -50,16 +51,18 @@
         </select>
       </label>
     }
+    @if (pestana() !== 'ventas') {
     <label class="ic-campo">Cuenta
       <input type="text" class="form-control ic-cuenta" name="cuenta" [(ngModel)]="cuenta" inputmode="numeric" placeholder="Ej. 1305" title="Código o comienzo del código: 1305 trae toda esa rama" />
     </label>
+    }
     <label class="ic-campo ic-campo--ancho">Tercero
       <select class="form-control" name="tercero" [(ngModel)]="terceroId">
         <option value="">Todos</option>
         @for (t of terceros(); track t.id) { <option [value]="t.id">{{ t.nombre }} · {{ t.numero_documento }}</option> }
       </select>
     </label>
-    @if (centros().length) {
+    @if (centros().length && pestana() !== 'ventas') {
       <label class="ic-campo">Centro de costo
         <select class="form-control" name="centro" [(ngModel)]="centroId">
           <option value="">Todos</option>
@@ -67,9 +70,11 @@
         </select>
       </label>
     }
-    <label class="ic-check" title="El comprobante de cierre (CA) deja en cero las cuentas de resultado al 31 de diciembre">
-      <input type="checkbox" name="sinCierre" [(ngModel)]="sinCierre" /> Sin el cierre de año
-    </label>
+    @if (pestana() !== 'ventas') {
+      <label class="ic-check" title="El comprobante de cierre (CA) deja en cero las cuentas de resultado al 31 de diciembre">
+        <input type="checkbox" name="sinCierre" [(ngModel)]="sinCierre" /> Sin el cierre de año
+      </label>
+    }
     @if (pestana() === 'terceros') {
       <label class="ic-check" title="Aparta las líneas sin tercero: bancos, impuestos por pagar y demás contrapartidas">
         <input type="checkbox" name="soloConTercero" [(ngModel)]="soloConTercero" /> Solo con tercero
@@ -378,6 +383,83 @@
     }
   } @else if (cargando()) {
     <p class="ic-vacio">Armando el libro…</p>
+  }
+}
+
+<!-- ============ VENTAS POR CLIENTE ============ -->
+@if (pestana() === 'ventas') {
+  @if (ventas(); as v) {
+    <div class="ic-estado">
+      <span class="pill pill--info">{{ v.clientes.length }} cliente(s) · {{ v.totales.facturas }} factura(s) · {{ v.totales.notas }} nota(s) crédito</span>
+      <small class="ic-nota">Facturas y notas crédito ante la DIAN por fecha de emisión; las notas restan. Ordenado de mayor a menor venta.</small>
+    </div>
+    <div class="table-wrap">
+      <table class="table ic-tabla ic-aux">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Fecha</th>
+            <th class="col-num">Facturas</th>
+            <th class="col-num">Notas</th>
+            <th class="col-num">Subtotal</th>
+            <th class="col-num">IVA</th>
+            <th class="col-num">Retenciones</th>
+            <th class="col-num">Total</th>
+          </tr>
+        </thead>
+        @for (c of v.clientes; track c.tercero_id) {
+          <tbody>
+            <tr class="ic-cuenta-fila">
+              <td>
+                <button type="button" class="ic-plegar" (click)="plegar('v:' + c.tercero_id)" [attr.aria-expanded]="plegadas().has('v:' + c.tercero_id)" [attr.aria-label]="(plegadas().has('v:' + c.tercero_id) ? 'Ocultar las facturas de ' : 'Ver las facturas de ') + c.nombre">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" [class.ic-plegar--cerrado]="!plegadas().has('v:' + c.tercero_id)"><path d="m6 9 6 6 6-6" /></svg>
+                </button>
+                {{ c.nombre }} @if (c.documento) { <small class="ic-sub mono">{{ c.documento }}</small> }
+              </td>
+              <td></td>
+              <td class="col-num mono">{{ c.facturas }}</td>
+              <td class="col-num mono">{{ c.notas || '' }}</td>
+              <td class="col-num mono">{{ pesos(c.subtotal) }}</td>
+              <td class="col-num mono">{{ pesosOVacio(c.total_iva) }}</td>
+              <td class="col-num mono">{{ pesosOVacio(c.total_retenciones) }}</td>
+              <td class="col-num mono">{{ pesos(c.total_a_pagar) }}</td>
+            </tr>
+            <!-- Aquí el detalle arranca plegado: el informe se lee primero por cliente. -->
+            @if (plegadas().has('v:' + c.tercero_id)) {
+              @for (d of c.documentos; track d.id) {
+                <tr>
+                  <td class="ic-doc-venta">{{ d.tipo === 'NOTA_CREDITO' ? 'Nota crédito' : 'Factura' }} <span class="mono">{{ d.numero }}</span>@if (d.referencia) { <small class="ic-sub"> · anula {{ d.referencia }}</small> }</td>
+                  <td class="mono">{{ fecha(d.fecha) }}</td>
+                  <td></td>
+                  <td></td>
+                  <td class="col-num mono" [class.ic-neg]="negativo(d.subtotal)">{{ pesos(d.subtotal) }}</td>
+                  <td class="col-num mono">{{ pesosOVacio(d.total_iva) }}</td>
+                  <td class="col-num mono">{{ pesosOVacio(d.total_retenciones) }}</td>
+                  <td class="col-num mono" [class.ic-neg]="negativo(d.total_a_pagar)">{{ pesos(d.total_a_pagar) }}</td>
+                </tr>
+              }
+            }
+          </tbody>
+        } @empty {
+          <tbody><tr><td class="table__empty" colspan="8">No hay facturas emitidas en este periodo.</td></tr></tbody>
+        }
+        @if (v.clientes.length) {
+          <tfoot>
+            <tr>
+              <td colspan="2">Total</td>
+              <td class="col-num mono">{{ v.totales.facturas }}</td>
+              <td class="col-num mono">{{ v.totales.notas }}</td>
+              <td class="col-num mono">{{ pesos(v.totales.subtotal) }}</td>
+              <td class="col-num mono">{{ pesos(v.totales.total_iva) }}</td>
+              <td class="col-num mono">{{ pesos(v.totales.total_retenciones) }}</td>
+              <td class="col-num mono">{{ pesos(v.totales.total_a_pagar) }}</td>
+            </tr>
+          </tfoot>
+        }
+      </table>
+    </div>
+  } @else if (cargando()) {
+    <p class="ic-vacio">Sumando las ventas…</p>
   }
 }
 
