@@ -17,7 +17,7 @@
   <div class="af-dep__fila">
     <div>
       <h3 class="af-titulo">Depreciación mensual</h3>
-      <p class="af-sub">Línea recta. Un comprobante DP al último día del mes; los meses van en orden y un activo registrado tarde se pone al día solo.</p>
+      <p class="af-sub">Se calcula en línea recta y se contabiliza al último día de cada mes. Los meses van en orden; si registra un activo tarde, sus meses pendientes entran en la siguiente depreciación.</p>
     </div>
     @if (puedeEditar()) {
       <div class="af-dep__accion">
@@ -116,7 +116,18 @@
           </td>
         </tr>
       } @empty {
-        <tr><td class="table__empty" colspan="8">{{ cargando() ? 'Cargando…' : 'Aún no hay activos fijos registrados.' }}</td></tr>
+        <tr>
+          <td class="table__empty" colspan="8">
+            @if (cargando()) { Cargando… } @else {
+              <div class="af-vacio">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></svg>
+                <p>Aún no hay activos fijos registrados.</p>
+                <p class="af-sub">Registre computadores, muebles o vehículos para llevar su depreciación mes a mes.</p>
+                @if (puedeEditar()) { <button type="button" class="btn btn--primary btn--sm" (click)="nuevo()">Registrar el primer activo</button> }
+              </div>
+            }
+          </td>
+        </tr>
       }
     </tbody>
   </table>
@@ -226,17 +237,17 @@
         <div class="form-field">
           <label class="form-field__label" for="afProv">Proveedor</label>
           <select id="afProv" class="form-control" [(ngModel)]="form.proveedor_id">
-            <option value="">—</option>
+            <option value="">Sin proveedor</option>
             @for (t of proveedores(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
           </select>
         </div>
         <div class="form-field">
           <label class="form-field__label" for="afValor">Costo *</label>
-          <input id="afValor" class="form-control" inputmode="decimal" [(ngModel)]="form.valor_compra" [disabled]="bloqueado()" placeholder="0" />
+          <input id="afValor" class="form-control" inputmode="decimal" [(ngModel)]="form.valor_compra" [disabled]="bloqueado()" placeholder="$" />
         </div>
         <div class="form-field">
           <label class="form-field__label" for="afResidual">Valor residual</label>
-          <input id="afResidual" class="form-control" inputmode="decimal" [(ngModel)]="form.valor_residual" [disabled]="bloqueado()" placeholder="0" />
+          <input id="afResidual" class="form-control" inputmode="decimal" [(ngModel)]="form.valor_residual" [disabled]="bloqueado()" placeholder="$ (opcional)" />
         </div>
         <div class="form-field">
           <label class="form-field__label" for="afVida">Vida útil (meses) *</label>
@@ -246,26 +257,26 @@
         <div class="form-field">
           <label class="form-field__label" for="afInicio">Deprecia desde</label>
           <input id="afInicio" type="date" class="form-control" [(ngModel)]="form.inicio_depreciacion" [disabled]="bloqueado()" />
-          <p class="form-field__hint">Vacío = el mes siguiente a la compra. Se toma el mes, siempre desde el día 1.</p>
+          <p class="form-field__hint">Si lo deja vacío, empieza a depreciarse el mes siguiente a la compra.</p>
         </div>
         <div class="form-field af-grid__ancho">
           <label class="form-field__label" for="afCtaAct">Cuenta del activo *</label>
           <select id="afCtaAct" class="form-control" [(ngModel)]="form.cuenta_activo_id" [disabled]="bloqueado()">
-            <option value="">Elija…</option>
+            <option value="">Elija una cuenta…</option>
             @for (c of cuentasActivo(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
           </select>
         </div>
         <div class="form-field af-grid__ancho">
           <label class="form-field__label" for="afCtaDep">Cuenta de depreciación acumulada *</label>
           <select id="afCtaDep" class="form-control" [(ngModel)]="form.cuenta_depreciacion_id" [disabled]="bloqueado()">
-            <option value="">Elija…</option>
+            <option value="">Elija una cuenta…</option>
             @for (c of cuentasActivo(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
           </select>
         </div>
         <div class="form-field af-grid__ancho">
           <label class="form-field__label" for="afCtaGasto">Cuenta del gasto por depreciación *</label>
           <select id="afCtaGasto" class="form-control" [(ngModel)]="form.cuenta_gasto_id">
-            <option value="">Elija…</option>
+            <option value="">Elija una cuenta…</option>
             @for (c of cuentasGasto(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
           </select>
         </div>
@@ -273,7 +284,7 @@
           <div class="form-field">
             <label class="form-field__label" for="afCentro">Centro de costo</label>
             <select id="afCentro" class="form-control" [(ngModel)]="form.centro_costo_id">
-              <option value="">—</option>
+              <option value="">Sin centro de costo</option>
               @for (c of centros(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
             </select>
           </div>

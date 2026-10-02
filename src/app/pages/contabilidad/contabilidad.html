@@ -3,12 +3,12 @@
     <h2 class="page-head__title">Contabilidad</h2>
     <p class="page-head__sub">
       @switch (pestana()) {
-        @case ('plan') { Plan de cuentas · CNT-01 · {{ cuentas().length }} cuentas, {{ totalMovimiento() }} reciben movimiento }
-        @case ('comprobantes') { Libro diario · CNT-02 · comprobantes y notas internas }
-        @case ('reglas') { Reglas de contabilización · CNT-13 · qué cuenta usa cada concepto }
-        @case ('centros') { Centros de costo · CNT-09 · gastos por actividad }
-        @case ('activos') { Activos fijos · ACT-01..03 · registro, depreciación mensual y QR }
-        @case ('periodos') { Periodos contables · CNT-03 y CNT-12 · cierre mensual y de año }
+        @case ('plan') { Plan de cuentas · {{ cuentas().length }} cuentas, {{ totalMovimiento() }} reciben movimiento }
+        @case ('comprobantes') { Libro diario · comprobantes y notas internas }
+        @case ('reglas') { Reglas de contabilización · qué cuenta usa cada concepto }
+        @case ('centros') { Centros de costo · gastos por actividad }
+        @case ('activos') { Activos fijos · registro, depreciación mensual y etiqueta con QR }
+        @case ('periodos') { Periodos contables · cierre mensual y de año }
       }
     </p>
   </div>

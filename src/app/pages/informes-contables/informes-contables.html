@@ -4,14 +4,14 @@
     <p class="page-head__sub">{{ subtitulo[pestana()] }}</p>
   </div>
   <div class="ic-head__actions">
-    <button type="button" class="btn btn--ghost" (click)="exportarPdf()" [disabled]="cargando()">PDF</button>
+    <button type="button" class="btn btn--ghost" (click)="exportarPdf()" [disabled]="cargando()">Exportar a PDF</button>
     <button type="button" class="btn btn--ghost" (click)="exportarExcel()" [disabled]="cargando() || exportando()">
-      @if (exportando()) { <span class="spinner" aria-hidden="true"></span> } Excel
+      @if (exportando()) { <span class="spinner" aria-hidden="true"></span> } Exportar a Excel
     </button>
   </div>
 </section>
 
-<div class="tabs" role="tablist">
+<div class="tabs ic-tabs" role="tablist">
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'balance'" (click)="cambiarPestana('balance')">Balance de comprobación</button>
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'auxiliar'" (click)="cambiarPestana('auxiliar')">Movimiento por cuenta</button>
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'terceros'" (click)="cambiarPestana('terceros')">Por tercero</button>
@@ -23,19 +23,11 @@
 <!-- ============ FILTROS (comunes) ============ -->
 <form class="card ic-filtros" (ngSubmit)="consultar()">
   <div class="ic-filtros__fila">
-    <label class="ic-campo">Desde <input type="date" class="form-control" name="desde" [(ngModel)]="desde" /></label>
-    <label class="ic-campo">Hasta <input type="date" class="form-control" name="hasta" [(ngModel)]="hasta" /></label>
-    <div class="ic-rapidos" role="group" aria-label="Periodos rápidos">
-      <button type="button" class="btn btn--ghost btn--sm" (click)="elegirPeriodo('mes')">Este mes</button>
-      <button type="button" class="btn btn--ghost btn--sm" (click)="elegirPeriodo('mes-anterior')">Mes anterior</button>
-      <button type="button" class="btn btn--ghost btn--sm" (click)="elegirPeriodo('anio')">Año en curso</button>
-    </div>
     @if (pestana() === 'estados') {
       <div class="ic-modo" role="radiogroup" aria-label="Estado">
-        <label><input type="radio" name="estado" value="situacion" [(ngModel)]="estado" (change)="consultar()" /> Situación financiera (al «Hasta»)</label>
+        <label><input type="radio" name="estado" value="situacion" [(ngModel)]="estado" (change)="consultar()" /> Situación financiera</label>
         <label><input type="radio" name="estado" value="resultados" [(ngModel)]="estado" (change)="consultar()" /> Resultados</label>
       </div>
-      <label class="ic-check"><input type="checkbox" name="comparativo" [(ngModel)]="comparativo" (change)="consultar()" /> Comparar con el año anterior</label>
     }
     @if (pestana() === 'terceros') {
       <div class="ic-modo" role="radiogroup" aria-label="Vista">
@@ -43,6 +35,16 @@
         <label><input type="radio" name="modo" value="detallado" [(ngModel)]="modoTercero" (change)="consultar()" /> Detallado</label>
       </div>
     }
+    <!-- La situación financiera es a una fecha: solo pide el corte. -->
+    @if (!(pestana() === 'estados' && estado === 'situacion')) {
+      <label class="ic-campo">Desde <input type="date" class="form-control" name="desde" [(ngModel)]="desde" /></label>
+    }
+    <label class="ic-campo">{{ pestana() === 'estados' && estado === 'situacion' ? 'Fecha de corte' : 'Hasta' }} <input type="date" class="form-control" name="hasta" [(ngModel)]="hasta" /></label>
+    <div class="ic-rapidos" role="group" aria-label="Periodos rápidos">
+      <button type="button" class="btn btn--ghost btn--sm" (click)="elegirPeriodo('mes')">Este mes</button>
+      <button type="button" class="btn btn--ghost btn--sm" (click)="elegirPeriodo('mes-anterior')">Mes anterior</button>
+      <button type="button" class="btn btn--ghost btn--sm" (click)="elegirPeriodo('anio')">Año en curso</button>
+    </div>
   </div>
   <div class="ic-filtros__fila">
     @if (pestana() === 'balance') {
@@ -60,17 +62,17 @@
       </label>
     }
     @if (usaFiltrosDelLibro()) {
-    <label class="ic-campo">Cuenta
-      <input type="text" class="form-control ic-cuenta" name="cuenta" [(ngModel)]="cuenta" inputmode="numeric" placeholder="Ej. 1305" title="Código o comienzo del código: 1305 trae toda esa rama" />
-    </label>
+      <label class="ic-campo">Cuenta
+        <input type="text" class="form-control ic-cuenta" name="cuenta" [(ngModel)]="cuenta" inputmode="numeric" placeholder="Ej. 1305" title="Código o comienzo del código: 1305 trae toda esa rama" />
+      </label>
     }
     @if (pestana() !== 'estados') {
-    <label class="ic-campo ic-campo--ancho">Tercero
-      <select class="form-control" name="tercero" [(ngModel)]="terceroId">
-        <option value="">Todos</option>
-        @for (t of terceros(); track t.id) { <option [value]="t.id">{{ t.nombre }} · {{ t.numero_documento }}</option> }
-      </select>
-    </label>
+      <label class="ic-campo ic-campo--ancho">Tercero
+        <select class="form-control" name="tercero" [(ngModel)]="terceroId">
+          <option value="">Todos</option>
+          @for (t of terceros(); track t.id) { <option [value]="t.id">{{ t.nombre }} · {{ t.numero_documento }}</option> }
+        </select>
+      </label>
     }
     @if (centros().length && usaFiltrosDelLibro()) {
       <label class="ic-campo">Centro de costo
@@ -80,15 +82,21 @@
         </select>
       </label>
     }
+  </div>
+  <!-- Mismo pie en todas las pestañas: las casillas a la izquierda, Limpiar · Consultar a la derecha. -->
+  <div class="ic-filtros__acciones">
     @if (usaFiltrosDelLibro()) {
-      <label class="ic-check" title="El comprobante de cierre (CA) deja en cero las cuentas de resultado al 31 de diciembre">
+      <label class="ic-check" title="El cierre de año deja en cero los ingresos, gastos y costos al 31 de diciembre">
         <input type="checkbox" name="sinCierre" [(ngModel)]="sinCierre" /> Sin el cierre de año
       </label>
     }
     @if (pestana() === 'terceros') {
-      <label class="ic-check" title="Aparta las líneas sin tercero: bancos, impuestos por pagar y demás contrapartidas">
-        <input type="checkbox" name="soloConTercero" [(ngModel)]="soloConTercero" /> Solo con tercero
+      <label class="ic-check" title="Deja fuera bancos, impuestos por pagar y demás contrapartidas que no llevan tercero">
+        <input type="checkbox" name="soloConTercero" [(ngModel)]="soloConTercero" /> Solo movimientos con tercero
       </label>
+    }
+    @if (pestana() === 'estados') {
+      <label class="ic-check"><input type="checkbox" name="comparativo" [(ngModel)]="comparativo" (change)="consultar()" /> Comparar con el año anterior</label>
     }
     <span class="ic-sep"></span>
     <button type="button" class="btn btn--ghost" (click)="limpiarFiltros()">Limpiar</button>
@@ -98,13 +106,26 @@
   </div>
 </form>
 
+<!-- Los filtros se comparten entre pestañas: se dejan a la vista para que un informe vacío no engañe. -->
+@if (filtrosActivos().length) {
+  <div class="ic-activos" aria-label="Filtros aplicados">
+    <span class="ic-sub">Filtrado por:</span>
+    @for (f of filtrosActivos(); track f.clave) {
+      <span class="ic-chip">{{ f.texto }}
+        <button type="button" (click)="quitarFiltro(f.clave)" [attr.aria-label]="'Quitar el filtro ' + f.texto">✕</button>
+      </span>
+    }
+    <button type="button" class="ic-link" (click)="limpiarFiltros()">Quitar todos</button>
+  </div>
+}
+
 <!-- ============ PLANTILLAS COMPARTIDAS ============ -->
 
 <!-- Una cuenta con sus movimientos y saldo corrido: auxiliar, tercero detallado y libros. -->
-<ng-template #tplCuenta let-c let-clave="clave" let-conBase="conBase" let-titulo="titulo">
+<ng-template #tplCuenta let-c let-clave="clave" let-conBase="conBase" let-titulo="titulo" let-conTercero="conTercero" let-anidada="anidada">
   <tbody>
-    <tr class="ic-cuenta-fila">
-      <td [attr.colspan]="conBase ? 5 : 4">
+    <tr class="ic-cuenta-fila" [class.ic-cuenta-fila--anidada]="anidada">
+      <td [attr.colspan]="(conBase ? 1 : 0) + (conTercero ? 4 : 3)">
         <button type="button" class="ic-plegar" (click)="plegar(clave)" [attr.aria-expanded]="!plegadas().has(clave)" [attr.aria-label]="(plegadas().has(clave) ? 'Desplegar ' : 'Plegar ') + c.codigo">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" [class.ic-plegar--cerrado]="plegadas().has(clave)"><path d="m6 9 6 6 6-6" /></svg>
         </button>
@@ -125,38 +146,38 @@
               </button>
             </div>
           </td>
-          <td>{{ m.tercero_nombre || '—' }}</td>
-          <td>{{ m.descripcion || '' }}@if (cruceAparte(m)) { <small class="ic-sub"> · {{ m.documento_cruce }}</small> }</td>
+          @if (conTercero) { <td>{{ m.tercero_nombre || '—' }}</td> }
+          <td>{{ detalleCorto(m) }}@if (cruceAparte(m)) { <small class="ic-sub"> · {{ m.documento_cruce }}</small> }</td>
           @if (conBase) { <td class="col-num mono">{{ pesosOVacio(m.base) }}</td> }
           <td class="col-num mono">{{ pesosOVacio(m.debito) }}</td>
           <td class="col-num mono">{{ pesosOVacio(m.credito) }}</td>
           <td class="col-num mono" [class.ic-neg]="negativo(m.saldo)">{{ pesos(m.saldo) }}</td>
         </tr>
       } @empty {
-        <tr><td [attr.colspan]="conBase ? 8 : 7" class="ic-sub">Sin movimientos en el periodo: solo arrastra su saldo.</td></tr>
+        <tr><td [attr.colspan]="(conBase ? 1 : 0) + (conTercero ? 7 : 6)" class="ic-sub">Sin movimientos en el periodo: solo arrastra su saldo.</td></tr>
       }
     }
     <tr class="ic-total-cuenta">
-      <td [attr.colspan]="conBase ? 5 : 4">Total {{ c.codigo }}</td>
-      <td class="col-num mono">{{ pesos(c.debito) }}</td>
-      <td class="col-num mono">{{ pesos(c.credito) }}</td>
+      <td [attr.colspan]="(conBase ? 1 : 0) + (conTercero ? 4 : 3)">Total {{ c.codigo }}</td>
+      <td class="col-num mono">{{ pesosOVacio(c.debito) }}</td>
+      <td class="col-num mono">{{ pesosOVacio(c.credito) }}</td>
       <td class="col-num mono" [class.ic-neg]="negativo(c.saldo_final)">{{ pesos(c.saldo_final) }}</td>
     </tr>
   </tbody>
 </ng-template>
 
 <!-- Encabezado de las tablas de movimientos. -->
-<ng-template #tplCabeceraMov let-conBase="conBase">
+<ng-template #tplCabeceraMov let-conBase="conBase" let-conTercero="conTercero">
   <thead>
     <tr>
-      <th>Fecha</th>
-      <th>Comprobante</th>
-      <th>Tercero</th>
+      <th class="ic-c-fecha">Fecha</th>
+      <th class="ic-c-cmp">Comprobante</th>
+      @if (conTercero) { <th class="ic-c-ter">Tercero</th> }
       <th>Detalle</th>
-      @if (conBase) { <th class="col-num" title="Base gravable de la línea">Base</th> }
-      <th class="col-num">Débito</th>
-      <th class="col-num">Crédito</th>
-      <th class="col-num">Saldo</th>
+      @if (conBase) { <th class="col-num ic-c-num" title="Base gravable de la línea">Base</th> }
+      <th class="col-num ic-c-num">Débito</th>
+      <th class="col-num ic-c-num">Crédito</th>
+      <th class="col-num ic-c-num">Saldo</th>
     </tr>
   </thead>
 </ng-template>
@@ -164,9 +185,9 @@
 <!-- Terceros con sus cuentas: general (una fila por cuenta) o detallado (con movimientos). -->
 <ng-template #tplTerceros let-lista let-totales="totales" let-detallado="detallado">
   <div class="table-wrap">
-    <table class="table ic-tabla ic-aux">
+    <table class="table ic-tabla ic-aux" [class.ic-mov]="detallado">
       @if (detallado) {
-        <ng-container [ngTemplateOutlet]="tplCabeceraMov" [ngTemplateOutletContext]="{ conBase: false }" />
+        <ng-container [ngTemplateOutlet]="tplCabeceraMov" [ngTemplateOutletContext]="{ conBase: false, conTercero: false }" />
       } @else {
         <thead>
           <tr>
@@ -182,7 +203,7 @@
       @for (t of lista; track t.tercero_id ?? 'sin') {
         <tbody>
           <tr class="ic-tercero-fila">
-            <td [attr.colspan]="detallado ? 7 : 6">
+            <td [attr.colspan]="6">
               <div class="ic-tercero">
                 <button type="button" class="ic-plegar" (click)="plegar(claveTercero(t))" [attr.aria-expanded]="!plegadas().has(claveTercero(t))" [attr.aria-label]="(plegadas().has(claveTercero(t)) ? 'Desplegar ' : 'Plegar ') + t.nombre">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" [class.ic-plegar--cerrado]="plegadas().has(claveTercero(t))"><path d="m6 9 6 6 6-6" /></svg>
@@ -190,7 +211,7 @@
                 <span class="ic-tercero__nombre">{{ t.nombre }}</span>
                 @if (t.documento) { <span class="mono ic-tercero__doc">{{ t.documento }}</span> }
                 <span class="ic-sep"></span>
-                <span class="mono" [class.ic-neg-claro]="negativo(t.totales.saldo_final)">Saldo {{ pesos(t.totales.saldo_final) }}</span>
+                <span class="mono">Saldo {{ pesos(t.totales.saldo_final) }}</span>
                 @if (!detallado && t.tercero_id) {
                   <button type="button" class="icon-action ic-tercero__ver" (click)="verTercero(t)" [attr.aria-label]="'Ver el detalle de ' + t.nombre" title="Ver el detalle del tercero">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg>
@@ -204,7 +225,7 @@
           @if (detallado) {
             @for (c of t.cuentas; track c.cuenta_id) {
               <ng-container [ngTemplateOutlet]="tplCuenta"
-                [ngTemplateOutletContext]="{ $implicit: c, clave: claveTercero(t) + ':' + c.cuenta_id, conBase: false, titulo: c.codigo + ' · ' + c.nombre }" />
+                [ngTemplateOutletContext]="{ $implicit: c, clave: claveTercero(t) + ':' + c.cuenta_id, conBase: false, conTercero: false, anidada: true, titulo: c.codigo + ' · ' + c.nombre }" />
             }
           } @else {
             <tbody>
@@ -222,19 +243,19 @@
           }
         }
       } @empty {
-        <tbody><tr><td class="table__empty" [attr.colspan]="detallado ? 7 : 6">No hay movimientos contabilizados en este periodo con esos filtros.</td></tr></tbody>
+        <tbody><tr><td class="table__empty" colspan="6">{{ vacio('No hay movimientos contabilizados en este periodo.') }}</td></tr></tbody>
       }
       @if (lista.length) {
         <tfoot>
           <tr>
             @if (detallado) {
-              <td colspan="4">Total general</td>
+              <td colspan="3">Total general</td>
             } @else {
               <td colspan="2">Total general</td>
               <td class="col-num mono">{{ pesos(totales.saldo_inicial) }}</td>
             }
-            <td class="col-num mono">{{ pesos(totales.debito) }}</td>
-            <td class="col-num mono">{{ pesos(totales.credito) }}</td>
+            <td class="col-num mono">{{ pesosOVacio(totales.debito) }}</td>
+            <td class="col-num mono">{{ pesosOVacio(totales.credito) }}</td>
             <td class="col-num mono">{{ pesos(totales.saldo_final) }}</td>
           </tr>
         </tfoot>
@@ -286,7 +307,7 @@
               </td>
             </tr>
           } @empty {
-            <tr><td class="table__empty" colspan="7">No hay movimientos contabilizados en este periodo con esos filtros.</td></tr>
+            <tr><td class="table__empty" colspan="7">{{ vacio('No hay movimientos contabilizados en este periodo.') }}</td></tr>
           }
         </tbody>
         @if (b.filas.length) {
@@ -295,8 +316,8 @@
               <td></td>
               <td>Total</td>
               <td class="col-num mono">{{ pesos(b.totales.saldo_inicial) }}</td>
-              <td class="col-num mono">{{ pesos(b.totales.debito) }}</td>
-              <td class="col-num mono">{{ pesos(b.totales.credito) }}</td>
+              <td class="col-num mono">{{ pesosOVacio(b.totales.debito) }}</td>
+              <td class="col-num mono">{{ pesosOVacio(b.totales.credito) }}</td>
               <td class="col-num mono">{{ pesos(b.totales.saldo_final) }}</td>
               <td></td>
             </tr>
@@ -313,23 +334,23 @@
 @if (pestana() === 'auxiliar') {
   @if (auxiliar(); as a) {
     <div class="ic-estado">
-      <span class="pill pill--info">{{ a.cuentas.length }} cuenta(s) · {{ a.n_movimientos }} movimiento(s)</span>
+      <span class="pill pill--info">{{ plural(a.cuentas.length, 'cuenta', 'cuentas') }} · {{ plural(a.n_movimientos, 'movimiento', 'movimientos') }}</span>
       <small class="ic-nota">El saldo de cada línea es el saldo corrido de la cuenta. Use el ícono del comprobante para ver el asiento completo.</small>
     </div>
     <div class="table-wrap">
-      <table class="table ic-tabla ic-aux">
-        <ng-container [ngTemplateOutlet]="tplCabeceraMov" [ngTemplateOutletContext]="{ conBase: false }" />
+      <table class="table ic-tabla ic-aux ic-mov">
+        <ng-container [ngTemplateOutlet]="tplCabeceraMov" [ngTemplateOutletContext]="{ conBase: false, conTercero: true }" />
         @for (c of a.cuentas; track c.cuenta_id) {
-          <ng-container [ngTemplateOutlet]="tplCuenta" [ngTemplateOutletContext]="{ $implicit: c, clave: c.cuenta_id, conBase: false, titulo: c.codigo + ' · ' + c.nombre }" />
+          <ng-container [ngTemplateOutlet]="tplCuenta" [ngTemplateOutletContext]="{ $implicit: c, clave: c.cuenta_id, conBase: false, conTercero: true, titulo: c.codigo + ' · ' + c.nombre }" />
         } @empty {
-          <tbody><tr><td class="table__empty" colspan="7">No hay movimientos contabilizados en este periodo con esos filtros.</td></tr></tbody>
+          <tbody><tr><td class="table__empty" colspan="7">{{ vacio('No hay movimientos contabilizados en este periodo.') }}</td></tr></tbody>
         }
         @if (a.cuentas.length) {
           <tfoot>
             <tr>
               <td colspan="4">Total general</td>
-              <td class="col-num mono">{{ pesos(a.totales.debito) }}</td>
-              <td class="col-num mono">{{ pesos(a.totales.credito) }}</td>
+              <td class="col-num mono">{{ pesosOVacio(a.totales.debito) }}</td>
+              <td class="col-num mono">{{ pesosOVacio(a.totales.credito) }}</td>
               <td class="col-num mono">{{ pesos(a.totales.saldo_final) }}</td>
             </tr>
           </tfoot>
@@ -345,7 +366,7 @@
 @if (pestana() === 'terceros') {
   @if (porTercero(); as r) {
     <div class="ic-estado">
-      <span class="pill pill--info">{{ r.terceros.length }} tercero(s){{ r.n_movimientos != null ? ' · ' + r.n_movimientos + ' movimiento(s)' : '' }}</span>
+      <span class="pill pill--info">{{ plural(r.terceros.length, 'tercero', 'terceros') }}{{ r.n_movimientos != null ? ' · ' + plural(r.n_movimientos, 'movimiento', 'movimientos') : '' }}</span>
       <small class="ic-nota">
         @if (r.filtros.modo === 'detallado') { Cada movimiento con su comprobante y el saldo corrido del tercero en esa cuenta. }
         @else { Saldo de cada tercero por cuenta. El ojo abre su detalle. }
@@ -361,29 +382,29 @@
 @if (pestana() === 'libros') {
   @if (libroDatos(); as l) {
     <div class="ic-estado">
-      <span class="pill pill--info">{{ l.libro_nombre }} · {{ l.n_movimientos }} movimiento(s)</span>
+      <span class="pill pill--info">{{ l.libro_nombre }} · {{ plural(l.n_movimientos, 'movimiento', 'movimientos') }}</span>
       <small class="ic-nota">
         @if (l.agrupado_por === 'tercero') { La cartera se lee por cliente o proveedor, con el saldo corrido de cada uno. }
-        @else { Las cuentas salen del plan de cuentas (PUC): 2408 IVA, 2365/135515 retención en la fuente, 2367/135517 ReteIVA y 2368/135518 ReteICA. }
+        @else { Incluye las cuentas de ese impuesto en el plan de cuentas: las que se pagan a la DIAN y las que le retuvieron a JD&amp;D. }
       </small>
     </div>
     @if (l.agrupado_por === 'tercero') {
       <ng-container [ngTemplateOutlet]="tplTerceros" [ngTemplateOutletContext]="{ $implicit: l.terceros ?? [], totales: l.totales, detallado: true }" />
     } @else {
       <div class="table-wrap">
-        <table class="table ic-tabla ic-aux">
-          <ng-container [ngTemplateOutlet]="tplCabeceraMov" [ngTemplateOutletContext]="{ conBase: true }" />
+        <table class="table ic-tabla ic-aux ic-mov ic-mov--base">
+          <ng-container [ngTemplateOutlet]="tplCabeceraMov" [ngTemplateOutletContext]="{ conBase: true, conTercero: true }" />
           @for (c of l.cuentas ?? []; track c.cuenta_id) {
-            <ng-container [ngTemplateOutlet]="tplCuenta" [ngTemplateOutletContext]="{ $implicit: c, clave: c.cuenta_id, conBase: true, titulo: c.codigo + ' · ' + c.nombre }" />
+            <ng-container [ngTemplateOutlet]="tplCuenta" [ngTemplateOutletContext]="{ $implicit: c, clave: c.cuenta_id, conBase: true, conTercero: true, titulo: c.codigo + ' · ' + c.nombre }" />
           } @empty {
-            <tbody><tr><td class="table__empty" colspan="8">No hay movimientos de este libro en el periodo.</td></tr></tbody>
+            <tbody><tr><td class="table__empty" colspan="8">{{ vacio('No hay movimientos de este libro en el periodo.') }}</td></tr></tbody>
           }
           @if (l.cuentas?.length) {
             <tfoot>
               <tr>
                 <td colspan="5">Total general</td>
-                <td class="col-num mono">{{ pesos(l.totales.debito) }}</td>
-                <td class="col-num mono">{{ pesos(l.totales.credito) }}</td>
+                <td class="col-num mono">{{ pesosOVacio(l.totales.debito) }}</td>
+                <td class="col-num mono">{{ pesosOVacio(l.totales.credito) }}</td>
                 <td class="col-num mono">{{ pesos(l.totales.saldo_final) }}</td>
               </tr>
             </tfoot>
@@ -399,8 +420,8 @@
 <!-- ============ ESTADOS FINANCIEROS (formato provisional) ============ -->
 @if (pestana() === 'estados') {
   <p class="ic-provisional">
-    <strong>Formato provisional.</strong> Los renglones son los grupos del plan de cuentas hasta que la contadora defina los suyos
-    (se asignan a cada cuenta en Contabilidad → Plan de cuentas, campos «Renglón»). El grupo NIIF de JD&amp;D también está por confirmar.
+    <strong>Formato provisional.</strong> Por ahora cada línea agrupa las cuentas como en el plan de cuentas. Cuando la
+    contadora defina su formato, se ajusta desde Contabilidad → Plan de cuentas, sin cambiar este informe.
   </p>
   @let comp = estado === 'situacion' ? !!situacion()?.corte_anterior : !!resultados()?.desde_anterior;
   @let e = estado === 'situacion' ? situacion() : resultados();
@@ -414,42 +435,61 @@
     } @else if (resultados(); as r) {
       <div class="ic-estado"><small class="ic-nota">Del {{ fecha(r.desde) }} al {{ fecha(r.hasta) }}, sin el comprobante de cierre de año.</small></div>
     }
-    <div class="table-wrap ic-estado-fin">
+    <!-- Celdas de una fila: valor, y con comparativo, año anterior y variación. -->
+    <ng-template #tplCifras let-v let-ant="ant" let-resultado="resultado">
+      <td class="col-num mono" [class.ic-perdida]="resultado && negativo(v)">{{ pesos(v) }}</td>
+      @if (comp) {
+        <td class="col-num mono" [class.ic-perdida]="resultado && negativo(ant)">{{ pesos(ant) }}</td>
+        <td class="col-num mono ic-var">{{ pesos(variacion(v, ant)) }}</td>
+        <td class="col-num mono ic-var">{{ variacionPct(v, ant) }}</td>
+      }
+    </ng-template>
+    <div class="table-wrap">
       <table class="table ic-tabla ic-aux">
         <thead>
           <tr>
             <th>Concepto</th>
-            <th class="col-num">{{ estado === 'situacion' ? 'Al corte' : 'Periodo' }}</th>
-            @if (comp) { <th class="col-num">Año anterior</th> }
+            @if (estado === 'situacion' && situacion(); as s) {
+              <th class="col-num">{{ etiquetaPeriodo(null, s.corte) }}</th>
+              @if (comp) { <th class="col-num">{{ etiquetaPeriodo(null, s.corte_anterior) }}</th> }
+            } @else if (resultados(); as r) {
+              <th class="col-num">{{ etiquetaPeriodo(r.desde, r.hasta) }}</th>
+              @if (comp) { <th class="col-num">{{ etiquetaPeriodo(r.desde_anterior, r.hasta_anterior) }}</th> }
+            }
+            @if (comp) { <th class="col-num">Variación</th><th class="col-num">%</th> }
           </tr>
         </thead>
         @for (s of e.secciones; track s.clave) {
           <tbody>
-            <tr class="ic-cuenta-fila"><td [attr.colspan]="comp ? 3 : 2">{{ s.nombre }}</td></tr>
+            <tr class="ic-cuenta-fila"><td [attr.colspan]="comp ? 5 : 2">{{ s.nombre }}</td></tr>
             @for (r of s.renglones; track r.nombre) {
               <tr>
                 <td class="ic-doc-venta">@if (r.grupo) { <span class="mono ic-sub">{{ r.grupo }}</span> } {{ r.nombre }}</td>
-                <td class="col-num mono" [class.ic-neg]="negativo(r.valor)">{{ pesos(r.valor) }}</td>
-                @if (comp) { <td class="col-num mono">{{ pesos(r.anterior) }}</td> }
+                <ng-container [ngTemplateOutlet]="tplCifras" [ngTemplateOutletContext]="{ $implicit: r.valor, ant: r.anterior }" />
               </tr>
             } @empty {
-              <tr><td [attr.colspan]="comp ? 3 : 2" class="ic-sub ic-doc-venta">Sin saldos.</td></tr>
+              <tr><td [attr.colspan]="comp ? 5 : 2" class="ic-sub ic-doc-venta">Sin saldos.</td></tr>
             }
             <tr class="ic-total-cuenta">
               <td>Total {{ s.nombre.toLowerCase() }}</td>
-              <td class="col-num mono">{{ pesos(s.total) }}</td>
-              @if (comp) { <td class="col-num mono">{{ pesos(s.total_anterior) }}</td> }
+              <ng-container [ngTemplateOutlet]="tplCifras" [ngTemplateOutletContext]="{ $implicit: s.total, ant: s.total_anterior }" />
             </tr>
+            <!-- La utilidad bruta va entre los costos y los gastos (ingresos − costos). -->
+            @if (s.clave === 'COSTOS' && resultados(); as r) {
+              <tr class="ic-subtotal">
+                <td>Utilidad bruta</td>
+                <ng-container [ngTemplateOutlet]="tplCifras" [ngTemplateOutletContext]="{ $implicit: r.utilidad_bruta, ant: r.utilidad_bruta_anterior, resultado: true }" />
+              </tr>
+            }
           </tbody>
         }
         <tfoot>
           @if (estado === 'situacion' && situacion(); as s) {
-            <tr><td>Resultado del ejercicio</td><td class="col-num mono" [class.ic-neg]="negativo(s.resultado_ejercicio)">{{ pesos(s.resultado_ejercicio) }}</td>@if (comp) { <td class="col-num mono">{{ pesos(s.resultado_ejercicio_anterior) }}</td> }</tr>
-            <tr><td>Total activo</td><td class="col-num mono">{{ pesos(s.total_activo) }}</td>@if (comp) { <td class="col-num mono">{{ pesos(s.total_activo_anterior) }}</td> }</tr>
-            <tr><td>Total pasivo + patrimonio + resultado</td><td class="col-num mono">{{ pesos(s.total_pasivo_patrimonio) }}</td>@if (comp) { <td class="col-num mono">{{ pesos(s.total_pasivo_patrimonio_anterior) }}</td> }</tr>
+            <tr><td>Resultado del ejercicio</td><ng-container [ngTemplateOutlet]="tplCifras" [ngTemplateOutletContext]="{ $implicit: s.resultado_ejercicio, ant: s.resultado_ejercicio_anterior, resultado: true }" /></tr>
+            <tr><td>Total activo</td><ng-container [ngTemplateOutlet]="tplCifras" [ngTemplateOutletContext]="{ $implicit: s.total_activo, ant: s.total_activo_anterior }" /></tr>
+            <tr><td>Total pasivo + patrimonio + resultado</td><ng-container [ngTemplateOutlet]="tplCifras" [ngTemplateOutletContext]="{ $implicit: s.total_pasivo_patrimonio, ant: s.total_pasivo_patrimonio_anterior }" /></tr>
           } @else if (resultados(); as r) {
-            <tr><td>Utilidad bruta</td><td class="col-num mono" [class.ic-neg]="negativo(r.utilidad_bruta)">{{ pesos(r.utilidad_bruta) }}</td>@if (comp) { <td class="col-num mono">{{ pesos(r.utilidad_bruta_anterior) }}</td> }</tr>
-            <tr><td>Utilidad (pérdida) del periodo</td><td class="col-num mono" [class.ic-neg]="negativo(r.utilidad)">{{ pesos(r.utilidad) }}</td>@if (comp) { <td class="col-num mono">{{ pesos(r.utilidad_anterior) }}</td> }</tr>
+            <tr><td>Utilidad (pérdida) del periodo</td><ng-container [ngTemplateOutlet]="tplCifras" [ngTemplateOutletContext]="{ $implicit: r.utilidad, ant: r.utilidad_anterior, resultado: true }" /></tr>
           }
         </tfoot>
       </table>
@@ -463,7 +503,7 @@
 @if (pestana() === 'ventas') {
   @if (ventas(); as v) {
     <div class="ic-estado">
-      <span class="pill pill--info">{{ v.clientes.length }} cliente(s) · {{ v.totales.facturas }} factura(s) · {{ v.totales.notas }} nota(s) crédito</span>
+      <span class="pill pill--info">{{ plural(v.clientes.length, 'cliente', 'clientes') }} · {{ plural(v.totales.facturas, 'factura', 'facturas') }} · {{ plural(v.totales.notas, 'nota crédito', 'notas crédito') }}</span>
       <small class="ic-nota">Facturas y notas crédito ante la DIAN por fecha de emisión; las notas restan. Ordenado de mayor a menor venta.</small>
     </div>
     <div class="table-wrap">
@@ -514,7 +554,7 @@
             }
           </tbody>
         } @empty {
-          <tbody><tr><td class="table__empty" colspan="8">No hay facturas emitidas en este periodo.</td></tr></tbody>
+          <tbody><tr><td class="table__empty" colspan="8">{{ vacio('No hay facturas emitidas en este periodo.') }}</td></tr></tbody>
         }
         @if (v.clientes.length) {
           <tfoot>
@@ -523,8 +563,8 @@
               <td class="col-num mono">{{ v.totales.facturas }}</td>
               <td class="col-num mono">{{ v.totales.notas }}</td>
               <td class="col-num mono">{{ pesos(v.totales.subtotal) }}</td>
-              <td class="col-num mono">{{ pesos(v.totales.total_iva) }}</td>
-              <td class="col-num mono">{{ pesos(v.totales.total_retenciones) }}</td>
+              <td class="col-num mono">{{ pesosOVacio(v.totales.total_iva) }}</td>
+              <td class="col-num mono">{{ pesosOVacio(v.totales.total_retenciones) }}</td>
               <td class="col-num mono">{{ pesos(v.totales.total_a_pagar) }}</td>
             </tr>
           </tfoot>

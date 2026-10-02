@@ -5,7 +5,6 @@ import { Observable } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { AlertService } from '../../core/alert.service';
 import { mensajeError } from '../../core/errores';
-import { PESOS } from '../../core/dinero';
 import { escapeHtml, imprimirHtml } from '../../core/imprimir';
 import {
   AuxiliarPorCuenta, BalanceComprobacion, CentroCosto, Comprobante, CuentaDeTercero, FiltrosInformeContable,
@@ -36,13 +35,20 @@ const LIBROS: { valor: LibroAuxiliarClave; nombre: string }[] = [
 ];
 
 const SUBTITULO: Record<Pestana, string> = {
-  balance: 'Balance de comprobación · RPC-06 · saldo inicial, débitos, créditos y saldo final por cuenta',
-  auxiliar: 'Movimiento por cuenta · RPC-09 · libro auxiliar con su comprobante de origen',
-  terceros: 'Por tercero · RPC-10 · saldo por tercero y cuenta, o cada movimiento con su comprobante',
-  libros: 'Libros auxiliares · RPC-08 y RPC-02 · impuestos, cuentas por cobrar y por pagar con saldo corrido',
-  ventas: 'Ventas por cliente · RPC-01 · lo facturado ante la DIAN, con las notas crédito restando',
-  estados: 'Estados financieros · RPC-04 y RPC-05 · situación financiera a una fecha y resultados de un periodo',
+  balance: 'Balance de comprobación · saldo inicial, débitos, créditos y saldo final por cuenta',
+  auxiliar: 'Movimiento por cuenta · libro auxiliar con su comprobante de origen',
+  terceros: 'Por tercero · saldo por tercero y cuenta, o cada movimiento con su comprobante',
+  libros: 'Libros auxiliares · impuestos, cuentas por cobrar y por pagar con saldo corrido',
+  ventas: 'Ventas por cliente · lo facturado ante la DIAN, con las notas crédito restando',
+  estados: 'Estados financieros · situación financiera a una fecha y resultados de un periodo',
 };
+
+/**
+ * En los informes contables las cifras llevan SIEMPRE dos decimales: en una
+ * columna de saldos, «$ 648.540» junto a «$ 1.247.735,44» no se deja comparar
+ * (el resto del sistema quita los decimales de los enteros; aquí no).
+ */
+const PESOS_2 = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const dosDigitos = (n: number) => String(n).padStart(2, '0');
 const iso = (d: Date) => `${d.getFullYear()}-${dosDigitos(d.getMonth() + 1)}-${dosDigitos(d.getDate())}`;
@@ -117,7 +123,9 @@ export class InformesContablesComponent implements OnInit {
       error: () => this.terceros.set([]),
     });
     this.api.listCentrosCosto().subscribe({ next: (r) => this.centros.set(r.data), error: () => this.centros.set([]) });
-    this.consultar();
+    // Solo en el navegador: en el render del servidor no hay sesión, y su 401 se
+    // reenviaba al cliente como «Su sesión no está activa» en la primera carga.
+    if (this.isBrowser) this.consultar();
   }
 
   // ---- Periodos rápidos ----
@@ -144,6 +152,42 @@ export class InformesContablesComponent implements OnInit {
   protected cambiarPestana(p: Pestana): void {
     this.pestana.set(p);
     this.consultar();
+  }
+
+  /** Los filtros que aplican a la pestaña y están puestos (se muestran como chips con ✕). */
+  protected filtrosActivos(): { clave: 'cuenta' | 'tercero' | 'centro' | 'cierre' | 'conTercero'; texto: string }[] {
+    const lista: { clave: 'cuenta' | 'tercero' | 'centro' | 'cierre' | 'conTercero'; texto: string }[] = [];
+    const libro = this.usaFiltrosDelLibro();
+    if (libro && this.cuenta.trim()) lista.push({ clave: 'cuenta', texto: `Cuenta ${this.cuenta.trim()}` });
+    if (this.pestana() !== 'estados' && this.terceroId) {
+      const t = this.terceros().find((x) => x.id === this.terceroId);
+      lista.push({ clave: 'tercero', texto: t ? t.nombre : 'Un tercero' });
+    }
+    if (libro && this.centroId) {
+      const c = this.centros().find((x) => x.id === this.centroId);
+      lista.push({ clave: 'centro', texto: `Centro ${c?.codigo ?? ''}`.trim() });
+    }
+    if (libro && this.sinCierre) lista.push({ clave: 'cierre', texto: 'Sin el cierre de año' });
+    return lista;
+  }
+
+  protected quitarFiltro(clave: 'cuenta' | 'tercero' | 'centro' | 'cierre' | 'conTercero'): void {
+    if (clave === 'cuenta') this.cuenta = '';
+    if (clave === 'tercero') this.terceroId = '';
+    if (clave === 'centro') this.centroId = '';
+    if (clave === 'cierre') this.sinCierre = false;
+    this.consultar();
+  }
+
+  /** Texto del estado vacío: si hay filtros, que se note que pueden ser la causa. */
+  protected vacio(sinFiltros: string): string {
+    return this.filtrosActivos().length ? 'No hay resultados con los filtros actuales.' : sinFiltros;
+  }
+
+  /** «1 cuenta», «2 cuentas». */
+  protected plural(n: number | null | undefined, uno: string, varios: string): string {
+    const v = n ?? 0;
+    return `${v} ${v === 1 ? uno : varios}`;
   }
 
   protected limpiarFiltros(): void {
@@ -243,7 +287,36 @@ export class InformesContablesComponent implements OnInit {
   // ---- Presentación ----
 
   protected pesos(v: string | number | null | undefined): string {
-    return PESOS.format(Number(v) || 0);
+    return PESOS_2.format(Number(v) || 0);
+  }
+
+  /**
+   * El detalle sin el tercero al final: la contabilización escribe «Factura de
+   * venta X · CLIENTE», y el cliente ya está en su columna o en el encabezado.
+   */
+  protected detalleCorto(m: MovimientoAuxiliarConBase): string {
+    const d = m.descripcion ?? '';
+    const t = m.tercero_nombre;
+    return t && d.endsWith(` · ${t}`) ? d.slice(0, -(t.length + 3)) : d;
+  }
+
+  /** Comparativo: diferencia en pesos y en porcentaje sobre el año anterior. */
+  protected variacion(actual: string | undefined, anterior: string | undefined): number {
+    return (Number(actual) || 0) - (Number(anterior) || 0);
+  }
+
+  protected variacionPct(actual: string | undefined, anterior: string | undefined): string {
+    const ant = Number(anterior) || 0;
+    if (!ant) return '—';
+    const pct = (this.variacion(actual, anterior) / Math.abs(ant)) * 100;
+    return `${pct > 0 ? '+' : ''}${pct.toLocaleString('es-CO', { maximumFractionDigits: 1 })} %`;
+  }
+
+  /** «2026 (01/01–02/10)»: qué periodo es cada columna del comparativo. */
+  protected etiquetaPeriodo(desde: string | null | undefined, hasta: string | null | undefined): string {
+    if (!hasta) return '';
+    const corto = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+    return desde ? `${hasta.slice(0, 4)} (${corto(desde)}–${corto(hasta)})` : `Al ${this.fecha(hasta)}`;
   }
 
   /** Débitos y créditos en cero se dejan en blanco: así se lee el balance de Siigo. */
@@ -404,7 +477,7 @@ export class InformesContablesComponent implements OnInit {
       const filasSec = (s: SeccionEstado) => `<tr class="cta"><td colspan="${comp ? 3 : 2}">${escapeHtml(s.nombre)}</td></tr>` +
         s.renglones.map((r) => `<tr><td style="padding-left:24px">${r.grupo ? escapeHtml(r.grupo) + ' · ' : ''}${escapeHtml(r.nombre)}</td>${v(r.valor)}${comp ? v(r.anterior) : ''}</tr>`).join('') +
         `<tr class="b"><td>Total ${escapeHtml(s.nombre.toLowerCase())}</td>${v(s.total)}${comp ? v(s.total_anterior) : ''}</tr>`;
-      let pieFilas: [string, string | undefined, string | undefined][];
+      let pieFilas: [string, string | undefined, string | undefined][] = [];
       if (this.estado === 'situacion') {
         const s = this.situacion()!;
         titulo = 'Estado de situación financiera';
@@ -415,8 +488,11 @@ export class InformesContablesComponent implements OnInit {
         titulo = 'Estado de resultados';
         pieFilas = [['Utilidad bruta', r.utilidad_bruta, r.utilidad_bruta_anterior], ['Utilidad (pérdida) del periodo', r.utilidad, r.utilidad_anterior]];
       }
+      const brutaPdf = this.estado === 'resultados'
+        ? `<tr class="b"><td>Utilidad bruta</td>${v(this.resultados()!.utilidad_bruta)}${comp ? v(this.resultados()!.utilidad_bruta_anterior) : ''}</tr>` : '';
+      if (this.estado === 'resultados') pieFilas = pieFilas.filter(([t]) => t !== 'Utilidad bruta');
       tabla = `<table><thead><tr><th>Concepto</th><th class="n">${this.estado === 'situacion' ? 'Al corte' : 'Periodo'}</th>${comp ? '<th class="n">Año anterior</th>' : ''}</tr></thead><tbody>` +
-        e.secciones.map(filasSec).join('') + `</tbody><tfoot>` +
+        e.secciones.map((sec) => filasSec(sec) + (sec.clave === 'COSTOS' ? brutaPdf : '')).join('') + `</tbody><tfoot>` +
         pieFilas.map(([t, a, b]) => `<tr class="b"><td>${escapeHtml(t)}</td>${v(a)}${comp ? v(b) : ''}</tr>`).join('') + `</tfoot></table>` +
         `<p class="meta">Formato provisional: los renglones son los grupos del PUC hasta que la contadora defina los suyos.</p>`;
     } else if (p === 'ventas') {

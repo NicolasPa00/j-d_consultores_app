@@ -64,6 +64,44 @@
   padding-bottom: 0.55rem;
 }
 .ic-sep { flex: 1; }
+.ic-filtros__acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-soft);
+  .ic-check { padding-bottom: 0; }
+}
+
+/* Filtros aplicados, a la vista sobre el informe. */
+.ic-activos { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin: -0.25rem 0 0.75rem; }
+.ic-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.3rem 0.2rem 0.65rem;
+  font-size: 0.8rem;
+  color: var(--primary-color);
+  background: rgba(45, 123, 200, 0.1);
+  border: 1px solid var(--accent-color);
+  border-radius: 999px;
+
+  button { border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 0.75rem; padding: 0 0.3rem; }
+}
+.ic-link { border: 0; background: transparent; color: var(--secondary-color); font-size: 0.8rem; cursor: pointer; text-decoration: underline; }
+
+/* Celular: pestañas en una sola fila con scroll y campos a todo el ancho. */
+@media (max-width: 820px) {
+  .ic-tabs { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 0.25rem; }
+  .ic-tabs .tab { white-space: nowrap; }
+}
+@media (max-width: 640px) {
+  .ic-campo, .ic-campo--ancho { width: 100%; }
+  .ic-campo .form-control, .ic-campo--ancho .form-control, .ic-cuenta { width: 100% !important; min-width: 0 !important; max-width: none; }
+  .ic-head__actions { width: 100%; flex-wrap: wrap; }
+  .ic-head__actions .btn { flex: 1 1 9rem; }
+}
 
 /* ===== Estado y notas ===== */
 .ic-estado {
@@ -80,7 +118,38 @@
 /* ===== Tablas ===== */
 .ic-tabla .col-num { text-align: right; white-space: nowrap; }
 .ic-tabla td.col-actions { width: 3rem; text-align: center; }
-.ic-neg { color: #9f1239; }
+/* El signo menos basta: en los libros un saldo crédito es normal (ingresos, IVA por
+   pagar), y en rojo se leía como error. El rojo queda para la pérdida. */
+.ic-neg { color: inherit; }
+.ic-perdida { color: #9f1239; }
+.ic-var { color: var(--text-muted); }
+.ic-aux tbody tr.ic-subtotal td { font-weight: 700; border-top: 1px solid var(--border-soft); }
+
+/* Filas más bajas que en el resto del sistema: un informe se lee entero. */
+.ic-tabla tbody td, .ic-tabla tfoot td { padding: 0.5rem 0.75rem; }
+
+/* Escritorio: el encabezado queda fijo al bajar (la página hace scroll en .content).
+   En celular la caja conserva su scroll horizontal y el encabezado no se fija. */
+@media (min-width: 821px) {
+  .table-wrap:has(> .ic-tabla) { overflow: visible; }
+  /* .content tiene 112 px de relleno arriba y la barra superior (fija) mide 72: con
+     -40 px el encabezado queda justo debajo de la barra, sin filas asomando encima. */
+  .ic-tabla thead th { position: sticky; top: -40px; z-index: 2; }
+}
+
+/* Tablas de movimientos: anchos fijos, así plegar o abrir un bloque no corre las columnas. */
+.ic-mov { table-layout: fixed; }
+/* Lo justo para «$ 1.170.081,64» y «FV-1 + ojo»; el detalle se queda con el resto.
+   Con la columna Base (libros de impuestos) el tercero se angosta para que quepa a 1366 px. */
+.ic-mov th.ic-c-fecha { width: 6.5rem; }
+.ic-mov th.ic-c-cmp { width: 7.75rem; }
+.ic-mov th.ic-c-ter { width: 13rem; }
+.ic-mov th.ic-c-num { width: 8.5rem; }
+.ic-mov--base th.ic-c-ter { width: 9.5rem; }
+.ic-mov--base th.ic-c-num { width: 7.5rem; }
+.ic-mov--base td { font-size: 0.86rem; }
+.ic-mov td.col-num, .ic-mov th.col-num { padding-left: 0.5rem; padding-right: 0.5rem; }
+.ic-mov td { overflow-wrap: break-word; }
 
 /* Sangría por nivel del PUC: clase, grupo, cuenta, subcuenta, auxiliar. */
 .ic-nombre[data-nivel='2'] { padding-left: 0.9rem; }
@@ -135,11 +204,19 @@
   label { display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer; }
 }
 
-/* Cabecera de cada tercero: el bloque más alto de la jerarquía, en navy sólido. */
+/* Un solo estilo de grupo para todos los informes (tono de la cabecera de tabla);
+   el nivel 2 —la cuenta dentro de un tercero— va más claro y sangrado. */
 .ic-aux tbody tr.ic-tercero-fila td {
-  background: var(--primary-color);
-  color: #fff;
+  background: var(--table-head-bg, #eef2fb);
+  color: var(--primary-color);
   font-weight: 700;
+  font-size: 0.95rem;
+  border-top: 2px solid var(--primary-color);
+}
+.ic-aux tbody tr.ic-cuenta-fila.ic-cuenta-fila--anidada td {
+  background: #f7f9fd;
+  font-weight: 600;
+  padding-left: 1.75rem;
 }
 .ic-tercero {
   display: flex;
@@ -149,8 +226,7 @@
 }
 .ic-tercero__doc { font-weight: 400; opacity: 0.8; }
 .ic-tercero .ic-sep { flex: 1; }
-.ic-tercero__ver { color: #fff; border-color: rgba(255, 255, 255, 0.4); background: transparent; }
-.ic-neg-claro { color: #fecdd3; }
+
 
 /* Ventas por cliente (C6-01): las facturas, sangradas bajo su cliente. */
 .ic-doc-venta { padding-left: 2.4rem !important; }
@@ -164,4 +240,3 @@
   background: var(--state-warning-bg, #fef3c7);
   border-radius: 8px;
 }
-.ic-estado-fin { max-width: 60rem; }
