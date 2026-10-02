@@ -796,9 +796,11 @@ export class ApiService {
    * orden contra su documento de origen. Para varios archivos se llama una vez
    * por archivo (ver `ImportComponent`), no se agrupan en un lote común.
    */
-  uploadImport(file: File): Observable<{ message: string; batch: { id: string; estado: string } }> {
+  /** `forzar`: el usuario eligió «Procesar de todos modos» un archivo que la comprobación previa apartó. */
+  uploadImport(file: File, forzar = false): Observable<{ message: string; batch: { id: string; estado: string } }> {
     const fd = new FormData();
     fd.append('file', file);
+    if (forzar) fd.append('forzar', 'true');
     return this.http.post<{ message: string; batch: { id: string; estado: string } }>(`${this.base}/imports`, fd);
   }
   /**

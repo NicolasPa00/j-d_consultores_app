@@ -227,6 +227,8 @@ export class ImportComponent implements OnInit, OnDestroy {
    * parezca a otra no puede quedar fuera del sistema sin salida.
    */
   private apartados = new Map<string, File>();
+  /** Los que el usuario devolvió con «Procesar de todos modos»: se suben con `forzar`. */
+  private forzados = new Set<string>();
 
   protected readonly detailOrder = computed(
     () => this.previewRows().find((r) => r.id === this.detailId()) ?? null,
@@ -429,6 +431,7 @@ export class ImportComponent implements OnInit, OnDestroy {
 
   /** Saca UN archivo de la tanda sin tocar el resto de la selección. */
   protected quitarArchivo(nombre: string): void {
+    this.forzados.delete(nombre);
     if (this.processing()) return;
     this.selectedFiles = this.selectedFiles.filter((f) => f.name !== nombre);
     this.fileNames.set(this.selectedFiles.map((f) => f.name));
@@ -521,6 +524,7 @@ export class ImportComponent implements OnInit, OnDestroy {
     const file = this.apartados.get(archivo);
     if (!file) return;
     this.apartados.delete(archivo);
+    this.forzados.add(file.name);
     this.selectedFiles = [...this.selectedFiles, file];
     this.fileNames.set(this.selectedFiles.map((f) => f.name));
     this.duplicadas.update((list) => list.filter((d) => !(d.previa && d.archivo === archivo)));
@@ -532,6 +536,7 @@ export class ImportComponent implements OnInit, OnDestroy {
     this.selectedFiles = [];
     this.fileNames.set([]);
     this.apartados.clear();
+    this.forzados.clear();
     this.fallos.set([]);
     this.duplicadas.update((list) => list.filter((d) => !d.previa));
   }
@@ -571,7 +576,7 @@ export class ImportComponent implements OnInit, OnDestroy {
     };
 
     for (const file of archivos) {
-      this.api.uploadImport(file).subscribe({
+      this.api.uploadImport(file, this.forzados.has(file.name)).subscribe({
         next: (res) => this.pollBatch(res.batch.id, file.name, 0, terminarUno),
         error: (err) => {
           // 409 = el servidor reconoció la orden como ya cargada y no gastó IA.
@@ -676,6 +681,7 @@ export class ImportComponent implements OnInit, OnDestroy {
   /** Cierra la tanda: decide qué mostrar y avisa de lo que se descartó. */
   private terminarTanda(): void {
     this.processing.set(false);
+    this.forzados.clear();
     this.progreso.set(null);
     this.detailId.set(null);
     this.pag.reiniciar();   // tanda nueva, se empieza por la primera página

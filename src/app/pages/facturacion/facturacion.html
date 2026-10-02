@@ -339,7 +339,7 @@
           <tbody>
             @for (it of d.items; track it.id) {
               <tr>
-                <td>{{ it.descripcion }} @if (it.codigo) { <small class="fac-sub">{{ it.codigo }}</small> }</td>
+                <td>{{ it.descripcion }} @if (it.codigo) { <small class="fac-sub" title="Código del producto en Parametrización">Cód. {{ it.codigo }}</small> }</td>
                 <td class="num">{{ +it.cantidad }}</td>
                 <td class="num">{{ pesos(it.valor_unitario) }}</td>
                 <td class="num">{{ it.iva_pct ? it.iva_pct + ' %' : 'Excluido' }}</td>
