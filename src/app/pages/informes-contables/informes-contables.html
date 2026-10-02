@@ -79,12 +79,10 @@
       </label>
     }
     @if (pestana() !== 'estados') {
-      <label class="ic-campo ic-campo--ancho">Tercero
-        <select class="form-control" name="tercero" [(ngModel)]="terceroId">
-          <option value="">Todos</option>
-          @for (t of terceros(); track t.id) { <option [value]="t.id">{{ t.nombre }} · {{ t.numero_documento }}</option> }
-        </select>
-      </label>
+      <div class="ic-campo ic-campo--ancho">
+        <label for="icTercero">Tercero</label>
+        <app-selector-busqueda idCampo="icTercero" [opciones]="opcionesTerceros()" [(valor)]="terceroId" textoVacio="Todos" placeholder="Nombre o NIT…" />
+      </div>
     }
     @if (centros().length && usaFiltrosDelLibro()) {
       <label class="ic-campo">Centro de costo

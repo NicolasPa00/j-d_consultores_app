@@ -1,0 +1,41 @@
+<div class="sb" [class.sb--abierto]="abierto()">
+  <svg class="sb__lupa" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+  <input
+    class="form-control sb__campo"
+    type="text"
+    role="combobox"
+    autocomplete="off"
+    [attr.id]="idCampo()"
+    [attr.aria-expanded]="abierto()"
+    [value]="texto()"
+    [placeholder]="seleccionada()?.texto || placeholder()"
+    [disabled]="deshabilitado()"
+    (focus)="abrir()"
+    (click)="abierto() || abrir()"
+    (input)="escribir($any($event.target).value)"
+    (keydown)="tecla($event)"
+  />
+  <svg class="sb__flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+
+  @if (abierto()) {
+    <ul class="sb__lista" role="listbox">
+      @if (textoVacio(); as vacio) {
+        <li role="option" class="sb__opcion sb__opcion--vacio" [class.sb__opcion--resaltada]="resaltado() === 0"
+            [attr.aria-selected]="!valor()" (mousedown)="$event.preventDefault(); elegir('')">{{ vacio }}</li>
+      }
+      @for (o of filtradas(); track o.valor; let i = $index) {
+        <li role="option" class="sb__opcion"
+            [class.sb__opcion--resaltada]="resaltado() === i + (textoVacio() ? 1 : 0)"
+            [class.sb__opcion--elegida]="o.valor === valor()"
+            [attr.aria-selected]="o.valor === valor()"
+            (mousedown)="$event.preventDefault(); elegir(o.valor)">
+          <span>@for (p of trozos(o.texto); track $index) {@if (p.coincide) {<mark>{{ p.t }}</mark>}@else{<span>{{ p.t }}</span>}}</span>
+          @if (o.detalle) { <small>{{ o.detalle }}</small> }
+        </li>
+      } @empty {
+        <li class="sb__nada">Sin coincidencias con «{{ busqueda() }}».</li>
+      }
+      <li class="sb__pie" aria-hidden="true">Filtra mientras escribe · ↑↓ y Enter para elegir</li>
+    </ul>
+  }
+</div>

@@ -10,6 +10,7 @@ import {
   ActivoFijo, ActivoFijoForm, CentroCosto, CorridaDepreciacion, CuentaContable, FichaActivoFijo, Tercero, VistaPreviaDepreciacion,
 } from '../../../core/models';
 import { paginar } from '../../../shared/paginacion';
+import { OpcionBusqueda, SelectorBusquedaComponent } from '../../../shared/selector-busqueda/selector-busqueda';
 import { PaginadorComponent } from '../../../shared/paginador/paginador';
 
 const FORM_VACIO: ActivoFijoForm = {
@@ -29,6 +30,25 @@ const PREFIJOS_ACTIVO = ['15', '16'];
 const PREFIJOS_DEPRECIACION = ['1592', '1597', '1598'];
 const PREFIJOS_GASTO = ['5160', '5165', '5260', '5265', '7'];
 
+/**
+ * C7-01 · «Tipo de activo» (aprobado por el usuario el 2-oct-2026): precarga la vida
+ * útil y las tres cuentas; todo se puede cambiar después.
+ * - Vida útil: la de las tasas máximas de depreciación fiscal (art. 137 E.T.,
+ *   Decreto 1625 de 2016): cómputo 20 % anual → 5 años; muebles, maquinaria y
+ *   vehículos 10 % → 10 años; edificaciones 2,22 % → 45 años.
+ * - Cuentas: la primera cuenta de movimiento del grupo del PUC (Decreto 2650) que
+ *   corresponde a cada tipo, si el plan de JD&D la tiene. Es una sugerencia: la
+ *   contadora confirma la vida útil contable y las cuentas.
+ */
+interface TipoActivo { clave: string; nombre: string; meses: number | null; activo: string; depreciacion: string; gasto: string }
+const TIPOS_ACTIVO: TipoActivo[] = [
+  { clave: 'computo', nombre: 'Equipo de cómputo y comunicación', meses: 60, activo: '1528', depreciacion: '159220', gasto: '516020' },
+  { clave: 'muebles', nombre: 'Muebles y enseres', meses: 120, activo: '1524', depreciacion: '159215', gasto: '516015' },
+  { clave: 'maquinaria', nombre: 'Maquinaria y equipo', meses: 120, activo: '1520', depreciacion: '159210', gasto: '516010' },
+  { clave: 'vehiculo', nombre: 'Vehículo', meses: 120, activo: '1540', depreciacion: '159235', gasto: '516035' },
+  { clave: 'edificio', nombre: 'Edificaciones', meses: 540, activo: '1516', depreciacion: '159205', gasto: '516005' },
+];
+
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 
 /**
@@ -41,7 +61,7 @@ const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', '
  */
 @Component({
   selector: 'app-activos',
-  imports: [FormsModule, PaginadorComponent],
+  imports: [FormsModule, PaginadorComponent, SelectorBusquedaComponent],
   templateUrl: './activos.html',
   styleUrl: './activos.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -72,6 +92,15 @@ export class ActivosComponent implements OnInit, OnDestroy {
   protected readonly cuentasActivo = this.filtrar(PREFIJOS_ACTIVO);
   protected readonly cuentasDepreciacion = this.filtrar(PREFIJOS_DEPRECIACION);
   protected readonly cuentasGasto = this.filtrar(PREFIJOS_GASTO);
+  private opciones(lista: () => CuentaContable[]) {
+    return computed<OpcionBusqueda[]>(() => lista().map((c) => ({ valor: c.id, texto: `${c.codigo} · ${c.nombre}` })));
+  }
+  protected readonly opcionesActivo = this.opciones(() => this.cuentasActivo());
+  protected readonly opcionesDepreciacion = this.opciones(() => this.cuentasDepreciacion());
+  protected readonly opcionesGasto = this.opciones(() => this.cuentasGasto());
+  protected readonly opcionesProveedor = computed<OpcionBusqueda[]>(() =>
+    this.proveedores().map((t) => ({ valor: t.id, texto: t.nombre, detalle: t.numero_documento })));
+
   /** El plan todavía no tiene alguno de los tres grupos: se avisa en el formulario. */
   protected readonly faltanCuentas = computed(() => !this.verTodas()
     && (!this.cuentasActivo().length || !this.cuentasDepreciacion().length || !this.cuentasGasto().length));
@@ -188,10 +217,39 @@ export class ActivosComponent implements OnInit, OnDestroy {
   protected readonly bloqueado = signal(false);
   protected readonly guardando = signal(false);
   protected form: ActivoFijoForm = { ...FORM_VACIO };
+  protected readonly tiposActivo = TIPOS_ACTIVO;
+  /** Solo para precargar el formulario; no se guarda (la ficha conserva lo que quede). */
+  protected tipoActivo = '';
+  /** Qué precargó el tipo, para decirlo debajo del campo. */
+  protected readonly precarga = signal<string | null>(null);
+
+  /** Primera cuenta de movimiento del grupo (por código), si el plan la tiene. */
+  private cuentaDe(prefijo: string): string {
+    return this.cuentasMovimiento().filter((c) => c.codigo.startsWith(prefijo)).sort((a, b) => a.codigo.localeCompare(b.codigo))[0]?.id ?? '';
+  }
+
+  protected elegirTipo(clave: string): void {
+    this.tipoActivo = clave;
+    const t = TIPOS_ACTIVO.find((x) => x.clave === clave);
+    if (!t) { this.precarga.set(null); return; }
+    if (t.meses) this.form.vida_util_meses = t.meses;
+    const encontradas = { activo: this.cuentaDe(t.activo), depreciacion: this.cuentaDe(t.depreciacion), gasto: this.cuentaDe(t.gasto) };
+    if (encontradas.activo) this.form.cuenta_activo_id = encontradas.activo;
+    if (encontradas.depreciacion) this.form.cuenta_depreciacion_id = encontradas.depreciacion;
+    if (encontradas.gasto) this.form.cuenta_gasto_id = encontradas.gasto;
+    const faltan = [!encontradas.activo && t.activo, !encontradas.depreciacion && t.depreciacion, !encontradas.gasto && t.gasto].filter(Boolean);
+    this.precarga.set(
+      `Vida útil sugerida: ${t.meses} meses (${t.meses! / 12} años, tasa fiscal máxima).` +
+      (faltan.length ? ` El plan de cuentas aún no tiene ${faltan.join(', ')}: elija esas cuentas a mano.` : ' Cuentas sugeridas según el PUC.') +
+      ' La contadora confirma.',
+    );
+  }
 
   /** Público: lo llama el botón «Nuevo activo» de la cabecera de Contabilidad. */
   nuevo(): void {
     this.form = { ...FORM_VACIO };
+    this.tipoActivo = '';
+    this.precarga.set(null);
     this.editandoId.set(null);
     this.bloqueado.set(false);
     this.formOpen.set(true);

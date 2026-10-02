@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, PLATFORM_ID, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser, NgTemplateOutlet } from '@angular/common';
+import { OpcionBusqueda, SelectorBusquedaComponent } from '../../shared/selector-busqueda/selector-busqueda';
 import { FormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../core/api.service';
@@ -68,7 +69,7 @@ const iso = (d: Date) => `${d.getFullYear()}-${dosDigitos(d.getMonth() + 1)}-${d
  */
 @Component({
   selector: 'app-informes-contables',
-  imports: [FormsModule, NgTemplateOutlet],
+  imports: [FormsModule, NgTemplateOutlet, SelectorBusquedaComponent],
   templateUrl: './informes-contables.html',
   styleUrl: './informes-contables.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -99,6 +100,8 @@ export class InformesContablesComponent implements OnInit {
 
   protected readonly terceros = signal<Tercero[]>([]);
   protected readonly centros = signal<CentroCosto[]>([]);
+  protected readonly opcionesTerceros = computed<OpcionBusqueda[]>(() =>
+    this.terceros().map((t) => ({ valor: t.id, texto: t.nombre, detalle: t.numero_documento })));
 
   protected readonly cargando = signal(false);
   protected readonly exportando = signal(false);

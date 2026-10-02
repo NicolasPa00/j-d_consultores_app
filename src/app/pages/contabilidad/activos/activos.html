@@ -226,6 +226,16 @@
         </p>
       }
       <div class="af-grid">
+        @if (!editandoId()) {
+          <div class="form-field af-grid__ancho">
+            <label class="form-field__label" for="afTipo">Tipo de activo</label>
+            <select id="afTipo" class="form-control" [ngModel]="tipoActivo" (ngModelChange)="elegirTipo($event)">
+              <option value="">Elija para precargar la vida útil y las cuentas…</option>
+              @for (t of tiposActivo; track t.clave) { <option [value]="t.clave">{{ t.nombre }}</option> }
+            </select>
+            @if (precarga(); as texto) { <p class="form-field__hint">{{ texto }}</p> }
+          </div>
+        }
         <div class="form-field af-grid__ancho">
           <label class="form-field__label" for="afDesc">Descripción *</label>
           <input id="afDesc" class="form-control" [(ngModel)]="form.descripcion" placeholder="Ej. Portátil Lenovo ThinkPad" />
@@ -236,10 +246,7 @@
         </div>
         <div class="form-field">
           <label class="form-field__label" for="afProv">Proveedor</label>
-          <select id="afProv" class="form-control" [(ngModel)]="form.proveedor_id">
-            <option value="">Sin proveedor</option>
-            @for (t of proveedores(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
-          </select>
+          <app-selector-busqueda idCampo="afProv" [opciones]="opcionesProveedor()" [(valor)]="form.proveedor_id" textoVacio="Sin proveedor" placeholder="Nombre o NIT…" />
         </div>
         <div class="form-field">
           <label class="form-field__label" for="afValor">Costo *</label>
@@ -261,24 +268,15 @@
         </div>
         <div class="form-field af-grid__ancho">
           <label class="form-field__label" for="afCtaAct">Cuenta del activo *</label>
-          <select id="afCtaAct" class="form-control" [(ngModel)]="form.cuenta_activo_id" [disabled]="bloqueado()">
-            <option value="">Elija una cuenta…</option>
-            @for (c of cuentasActivo(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
-          </select>
+          <app-selector-busqueda idCampo="afCtaAct" [opciones]="opcionesActivo()" [(valor)]="form.cuenta_activo_id" [deshabilitado]="bloqueado()" placeholder="Código o nombre de la cuenta…" />
         </div>
         <div class="form-field af-grid__ancho">
           <label class="form-field__label" for="afCtaDep">Cuenta de depreciación acumulada *</label>
-          <select id="afCtaDep" class="form-control" [(ngModel)]="form.cuenta_depreciacion_id" [disabled]="bloqueado()">
-            <option value="">Elija una cuenta…</option>
-            @for (c of cuentasDepreciacion(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
-          </select>
+          <app-selector-busqueda idCampo="afCtaDep" [opciones]="opcionesDepreciacion()" [(valor)]="form.cuenta_depreciacion_id" [deshabilitado]="bloqueado()" placeholder="Código o nombre de la cuenta…" />
         </div>
         <div class="form-field af-grid__ancho">
           <label class="form-field__label" for="afCtaGasto">Cuenta del gasto por depreciación *</label>
-          <select id="afCtaGasto" class="form-control" [(ngModel)]="form.cuenta_gasto_id">
-            <option value="">Elija una cuenta…</option>
-            @for (c of cuentasGasto(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
-          </select>
+          <app-selector-busqueda idCampo="afCtaGasto" [opciones]="opcionesGasto()" [(valor)]="form.cuenta_gasto_id" placeholder="Código o nombre de la cuenta…" />
         </div>
         @if (centros().length) {
           <div class="form-field">
