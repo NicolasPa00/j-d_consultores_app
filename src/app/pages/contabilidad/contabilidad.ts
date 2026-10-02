@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_ID, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_ID, signal, viewChild } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -79,6 +79,8 @@ export class ContabilidadComponent implements OnInit {
 
   /** B0-01 es el plan de cuentas; B1-01 añade el libro diario y los periodos. */
   protected readonly pestana = signal<Pestana>('plan');
+  /** El botón «Nuevo activo» de la cabecera abre el formulario de la pestaña. */
+  protected readonly activos = viewChild(ActivosComponent);
 
   protected readonly porCodigo = computed(() => new Map(this.cuentas().map((c) => [c.codigo, c])));
   protected readonly totalMovimiento = computed(() => this.cuentas().filter((c) => c.acepta_movimiento && c.activa).length);

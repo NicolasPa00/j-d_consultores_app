@@ -189,7 +189,8 @@ export class ActivosComponent implements OnInit, OnDestroy {
   protected readonly guardando = signal(false);
   protected form: ActivoFijoForm = { ...FORM_VACIO };
 
-  protected nuevo(): void {
+  /** Público: lo llama el botón «Nuevo activo» de la cabecera de Contabilidad. */
+  nuevo(): void {
     this.form = { ...FORM_VACIO };
     this.editandoId.set(null);
     this.bloqueado.set(false);
