@@ -18,6 +18,7 @@ const ETIQUETA: Record<Vista, string> = {
   configuracion: 'Configuración',
   facturacion: 'Facturación',
   contabilidad: 'Contabilidad',
+  informes_contables: 'Informes contables',
   cartera: 'Cartera',
   compras: 'Compras y gastos',
   terceros: 'Terceros',

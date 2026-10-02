@@ -137,6 +137,13 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/contabilidad/contabilidad').then((m) => m.ContabilidadComponent),
       },
       {
+        // Fase C · C1-01 / C2-01 · Informes contables: balance de comprobación y auxiliar
+        path: 'informes-contables',
+        canActivate: [permissionGuard],
+        data: { vista: 'informes_contables' },
+        loadComponent: () => import('./pages/informes-contables/informes-contables').then((m) => m.InformesContablesComponent),
+      },
+      {
         path: 'profesionales',
         canActivate: [permissionGuard],
         data: { vista: 'profesionales' },

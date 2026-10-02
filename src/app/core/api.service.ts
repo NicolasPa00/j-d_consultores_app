@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar, OrdenManualForm, DetalleCobroOrden, ValoresCobroForm } from './models';
+import { AuxiliarPorCuenta, BalanceComprobacion, FiltrosInformeContable, ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar, OrdenManualForm, DetalleCobroOrden, ValoresCobroForm } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -109,6 +109,11 @@ function queryString(filtros: object): string {
     .map(([k, v]) => [k, String(v)] as [string, string]);
   const qs = new URLSearchParams(limpios).toString();
   return qs ? `?${qs}` : '';
+}
+
+/** Filtros de los informes contables como query string (el booleano solo viaja si es true). */
+function filtrosContables(f: FiltrosInformeContable): object {
+  return { ...f, sin_cierre: f.sin_cierre ? 'true' : undefined };
 }
 
 @Injectable({ providedIn: 'root' })
@@ -1300,6 +1305,25 @@ export class ApiService {
   /** Irreversible (D-20). Solo admin. */
   cerrarAnio(anio: number, body: { cuenta_utilidad_id: string; cuenta_perdida_id: string }): Observable<Wrap<{ comprobante: string; resultado: string; tipo_resultado: string }>> {
     return this.http.post<Wrap<{ comprobante: string; resultado: string; tipo_resultado: string }>>(`${this.base}/contabilidad/cierre/${anio}`, body);
+  }
+
+  // ---- Fase C · Informes contables ----
+
+  /** C1-01 (RPC-06) · Balance de comprobación. */
+  balanceComprobacion(f: FiltrosInformeContable): Observable<Wrap<BalanceComprobacion>> {
+    return this.http.get<Wrap<BalanceComprobacion>>(`${this.base}/informes-contables/balance${queryString(filtrosContables(f))}`);
+  }
+  /** C1-01 · El mismo balance en Excel (importes como números). */
+  balanceComprobacionXlsx(f: FiltrosInformeContable): Observable<Blob> {
+    return this.http.get(`${this.base}/informes-contables/balance/xlsx${queryString(filtrosContables(f))}`, { responseType: 'blob' });
+  }
+  /** C2-01 (RPC-09) · Movimiento general por cuenta (libro auxiliar). */
+  auxiliarPorCuenta(f: FiltrosInformeContable): Observable<Wrap<AuxiliarPorCuenta>> {
+    return this.http.get<Wrap<AuxiliarPorCuenta>>(`${this.base}/informes-contables/auxiliar${queryString(filtrosContables(f))}`);
+  }
+  /** C2-01 · El auxiliar en Excel, con las columnas del de Siigo. */
+  auxiliarPorCuentaXlsx(f: FiltrosInformeContable): Observable<Blob> {
+    return this.http.get(`${this.base}/informes-contables/auxiliar/xlsx${queryString(filtrosContables(f))}`, { responseType: 'blob' });
   }
 
   // ---- Fase B · B5-01 · Carga masiva de compras ----

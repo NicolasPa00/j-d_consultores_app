@@ -40,6 +40,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: 'money', label: 'Cartera', hint: 'Lo que deben los clientes y sus pagos', route: '/cartera', vista: 'cartera' },
   { icon: 'invoice', label: 'Compras y gastos', hint: 'Facturas de proveedores y gastos', route: '/compras', vista: 'compras' },
   { icon: 'ledger', label: 'Contabilidad', hint: 'Plan de cuentas y comprobantes', route: '/contabilidad', vista: 'contabilidad' },
+  { icon: 'reports', label: 'Informes contables', hint: 'Balance de prueba y auxiliares', route: '/informes-contables', vista: 'informes_contables' },
   { icon: 'people', label: 'Terceros', hint: 'A quién se factura o se paga', route: '/terceros', vista: 'terceros' },
   { icon: 'settings', label: 'Parametrización', hint: 'Emisor, tarifas y numeración', route: '/parametrizacion', vista: 'parametrizacion' },
   { icon: 'reports', label: 'Informes y Resúmenes', hint: 'Indicadores y exportaciones', route: '/informes', vista: 'informes' },

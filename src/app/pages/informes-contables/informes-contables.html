@@ -1,0 +1,262 @@
+<section class="page-head ic-head">
+  <div>
+    <h2 class="page-head__title">Informes contables</h2>
+    <p class="page-head__sub">
+      @if (pestana() === 'balance') { Balance de comprobación · RPC-06 · saldo inicial, débitos, créditos y saldo final por cuenta }
+      @else { Movimiento por cuenta · RPC-09 · libro auxiliar con su comprobante de origen }
+    </p>
+  </div>
+  <div class="ic-head__actions">
+    <button type="button" class="btn btn--ghost" (click)="exportarPdf()" [disabled]="cargando()">PDF</button>
+    <button type="button" class="btn btn--ghost" (click)="exportarExcel()" [disabled]="cargando() || exportando()">
+      @if (exportando()) { <span class="spinner" aria-hidden="true"></span> } Excel
+    </button>
+  </div>
+</section>
+
+<div class="tabs" role="tablist">
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'balance'" (click)="cambiarPestana('balance')">Balance de comprobación</button>
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'auxiliar'" (click)="cambiarPestana('auxiliar')">Movimiento por cuenta</button>
+</div>
+
+<!-- ============ FILTROS (comunes) ============ -->
+<form class="card ic-filtros" (ngSubmit)="consultar()">
+  <div class="ic-filtros__fila">
+    <label class="ic-campo">Desde <input type="date" class="form-control" name="desde" [(ngModel)]="desde" /></label>
+    <label class="ic-campo">Hasta <input type="date" class="form-control" name="hasta" [(ngModel)]="hasta" /></label>
+    <div class="ic-rapidos" role="group" aria-label="Periodos rápidos">
+      <button type="button" class="btn btn--ghost btn--sm" (click)="elegirPeriodo('mes')">Este mes</button>
+      <button type="button" class="btn btn--ghost btn--sm" (click)="elegirPeriodo('mes-anterior')">Mes anterior</button>
+      <button type="button" class="btn btn--ghost btn--sm" (click)="elegirPeriodo('anio')">Año en curso</button>
+    </div>
+  </div>
+  <div class="ic-filtros__fila">
+    @if (pestana() === 'balance') {
+      <label class="ic-campo">Nivel
+        <select class="form-control" name="nivel" [(ngModel)]="nivel">
+          @for (n of niveles; track n.valor) { <option [ngValue]="n.valor">{{ n.nombre }}</option> }
+        </select>
+      </label>
+    }
+    <label class="ic-campo">Cuenta
+      <input type="text" class="form-control ic-cuenta" name="cuenta" [(ngModel)]="cuenta" inputmode="numeric" placeholder="Ej. 1305" title="Código o comienzo del código: 1305 trae toda esa rama" />
+    </label>
+    <label class="ic-campo ic-campo--ancho">Tercero
+      <select class="form-control" name="tercero" [(ngModel)]="terceroId">
+        <option value="">Todos</option>
+        @for (t of terceros(); track t.id) { <option [value]="t.id">{{ t.nombre }} · {{ t.numero_documento }}</option> }
+      </select>
+    </label>
+    @if (centros().length) {
+      <label class="ic-campo">Centro de costo
+        <select class="form-control" name="centro" [(ngModel)]="centroId">
+          <option value="">Todos</option>
+          @for (c of centros(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
+        </select>
+      </label>
+    }
+    <label class="ic-check" title="El comprobante de cierre (CA) deja en cero las cuentas de resultado al 31 de diciembre">
+      <input type="checkbox" name="sinCierre" [(ngModel)]="sinCierre" /> Sin el cierre de año
+    </label>
+    <span class="ic-sep"></span>
+    <button type="button" class="btn btn--ghost" (click)="limpiarFiltros()">Limpiar</button>
+    <button type="submit" class="btn btn--primary" [disabled]="cargando()">
+      @if (cargando()) { <span class="spinner" aria-hidden="true"></span> } Consultar
+    </button>
+  </div>
+</form>
+
+<!-- ============ BALANCE DE COMPROBACIÓN ============ -->
+@if (pestana() === 'balance') {
+  @if (balance(); as b) {
+    <div class="ic-estado">
+      @if (b.cuadra === true) {
+        <span class="pill pill--success" title="Débitos = créditos y la suma de los saldos da cero">Cuadra: débitos = créditos</span>
+      } @else if (b.cuadra === false) {
+        <span class="pill pill--danger">No cuadra: diferencia de {{ pesos(b.diferencia) }}</span>
+      } @else {
+        <span class="pill pill--info" title="Con un filtro de cuenta, tercero o centro de costo se ve solo una parte de cada asiento">Vista parcial: no se exige el cuadre</span>
+      }
+      <small class="ic-nota">Saldos como débito − crédito: un saldo crédito sale en negativo, igual que en el software contable anterior.</small>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table ic-tabla">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Cuenta</th>
+            <th class="col-num">Saldo inicial</th>
+            <th class="col-num">Débito</th>
+            <th class="col-num">Crédito</th>
+            <th class="col-num">Saldo final</th>
+            <th class="col-actions" aria-label="Acciones"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (f of b.filas; track f.cuenta_id) {
+            <tr [class.ic-fila--clase]="f.nivel === 1" [class.ic-fila--grupo]="f.nivel === 2">
+              <td class="mono">{{ f.codigo }}</td>
+              <td><div class="ic-nombre" [attr.data-nivel]="f.nivel">{{ f.nombre }}</div></td>
+              <td class="col-num mono" [class.ic-neg]="negativo(f.saldo_inicial)">{{ pesos(f.saldo_inicial) }}</td>
+              <td class="col-num mono">{{ pesosOVacio(f.debito) }}</td>
+              <td class="col-num mono">{{ pesosOVacio(f.credito) }}</td>
+              <td class="col-num mono" [class.ic-neg]="negativo(f.saldo_final)">{{ pesos(f.saldo_final) }}</td>
+              <td class="col-actions">
+                <button type="button" class="icon-action" (click)="verAuxiliar(f.codigo)" [attr.aria-label]="'Ver el movimiento de ' + f.codigo" title="Ver el movimiento de la cuenta">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg>
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td class="table__empty" colspan="7">No hay movimientos contabilizados en este periodo con esos filtros.</td></tr>
+          }
+        </tbody>
+        @if (b.filas.length) {
+          <tfoot>
+            <tr>
+              <td></td>
+              <td>Total</td>
+              <td class="col-num mono">{{ pesos(b.totales.saldo_inicial) }}</td>
+              <td class="col-num mono">{{ pesos(b.totales.debito) }}</td>
+              <td class="col-num mono">{{ pesos(b.totales.credito) }}</td>
+              <td class="col-num mono">{{ pesos(b.totales.saldo_final) }}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        }
+      </table>
+    </div>
+  } @else if (cargando()) {
+    <p class="ic-vacio">Calculando el balance…</p>
+  }
+}
+
+<!-- ============ MOVIMIENTO POR CUENTA (AUXILIAR) ============ -->
+@if (pestana() === 'auxiliar') {
+  @if (auxiliar(); as a) {
+    <div class="ic-estado">
+      <span class="pill pill--info">{{ a.cuentas.length }} cuenta(s) · {{ a.n_movimientos }} movimiento(s)</span>
+      <small class="ic-nota">El saldo de cada línea es el saldo corrido de la cuenta. Use el ícono del comprobante para ver el asiento completo.</small>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table ic-tabla ic-aux">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Comprobante</th>
+            <th>Tercero</th>
+            <th>Detalle</th>
+            <th class="col-num">Débito</th>
+            <th class="col-num">Crédito</th>
+            <th class="col-num">Saldo</th>
+          </tr>
+        </thead>
+        @for (c of a.cuentas; track c.cuenta_id) {
+          <tbody>
+            <tr class="ic-cuenta-fila">
+              <td colspan="4">
+                <button type="button" class="ic-plegar" (click)="plegar(c.cuenta_id)" [attr.aria-expanded]="!plegadas().has(c.cuenta_id)" [attr.aria-label]="(plegadas().has(c.cuenta_id) ? 'Desplegar ' : 'Plegar ') + c.codigo">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" [class.ic-plegar--cerrado]="plegadas().has(c.cuenta_id)"><path d="m6 9 6 6 6-6" /></svg>
+                </button>
+                <span class="mono">{{ c.codigo }}</span> · {{ c.nombre }}
+              </td>
+              <td colspan="2" class="col-num ic-sub">Saldo inicial</td>
+              <td class="col-num mono" [class.ic-neg]="negativo(c.saldo_inicial)">{{ pesos(c.saldo_inicial) }}</td>
+            </tr>
+            @if (!plegadas().has(c.cuenta_id)) {
+              @for (m of c.movimientos; track $index) {
+                <tr>
+                  <td class="mono">{{ fecha(m.fecha) }}</td>
+                  <td>
+                    <div class="ic-cmp">
+                      <span class="mono">{{ m.comprobante }}</span>
+                      <button type="button" class="icon-action" (click)="abrirComprobante(m.comprobante_id)" [attr.aria-label]="'Ver el comprobante ' + m.comprobante" title="Ver el comprobante">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg>
+                      </button>
+                    </div>
+                  </td>
+                  <td>{{ m.tercero_nombre || '—' }}</td>
+                  <td>{{ m.descripcion || '' }}@if (m.documento_cruce && !(m.descripcion || '').includes(m.documento_cruce)) { <small class="ic-sub"> · {{ m.documento_cruce }}</small> }</td>
+                  <td class="col-num mono">{{ pesosOVacio(m.debito) }}</td>
+                  <td class="col-num mono">{{ pesosOVacio(m.credito) }}</td>
+                  <td class="col-num mono" [class.ic-neg]="negativo(m.saldo)">{{ pesos(m.saldo) }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="7" class="ic-sub">Sin movimientos en el periodo: solo arrastra su saldo.</td></tr>
+              }
+            }
+            <tr class="ic-total-cuenta">
+              <td colspan="4">Total {{ c.codigo }}</td>
+              <td class="col-num mono">{{ pesos(c.debito) }}</td>
+              <td class="col-num mono">{{ pesos(c.credito) }}</td>
+              <td class="col-num mono" [class.ic-neg]="negativo(c.saldo_final)">{{ pesos(c.saldo_final) }}</td>
+            </tr>
+          </tbody>
+        } @empty {
+          <tbody><tr><td class="table__empty" colspan="7">No hay movimientos contabilizados en este periodo con esos filtros.</td></tr></tbody>
+        }
+        @if (a.cuentas.length) {
+          <tfoot>
+            <tr>
+              <td colspan="4">Total general</td>
+              <td class="col-num mono">{{ pesos(a.totales.debito) }}</td>
+              <td class="col-num mono">{{ pesos(a.totales.credito) }}</td>
+              <td class="col-num mono">{{ pesos(a.totales.saldo_final) }}</td>
+            </tr>
+          </tfoot>
+        }
+      </table>
+    </div>
+  } @else if (cargando()) {
+    <p class="ic-vacio">Armando el auxiliar…</p>
+  }
+}
+
+<!-- ============ MODAL · COMPROBANTE (solo lectura) ============ -->
+@if (detalle(); as c) {
+  <div class="modal-backdrop" (click)="detalle.set(null)"></div>
+  <div class="modal modal--xl" role="dialog" aria-modal="true" aria-labelledby="icCmpTitle">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="icCmpTitle">{{ c.numero_completo }}</h3>
+        <small class="ic-sub">{{ c.tipo_nombre }} · {{ fecha(c.fecha) }}{{ c.creado_por_nombre ? ' · ' + c.creado_por_nombre : '' }}</small>
+      </div>
+      <button type="button" class="icon-action" (click)="detalle.set(null)" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      @if (c.descripcion) { <p class="ic-texto">{{ c.descripcion }}</p> }
+      <div class="table-wrap">
+        <table class="table ic-tabla">
+          <thead>
+            <tr><th>Cuenta</th><th>Tercero</th><th>Detalle</th><th class="col-num">Débito</th><th class="col-num">Crédito</th></tr>
+          </thead>
+          <tbody>
+            @for (m of c.movimientos ?? []; track m.id) {
+              <tr>
+                <td><div class="ic-celda-cuenta"><span class="mono">{{ m.cuenta_codigo }}</span><small class="ic-sub">{{ m.cuenta_nombre }}</small></div></td>
+                <td>{{ m.tercero_nombre || '—' }}</td>
+                <td>{{ m.descripcion || m.documento_cruce || '' }}</td>
+                <td class="col-num mono">{{ pesosOVacio(m.debito) }}</td>
+                <td class="col-num mono">{{ pesosOVacio(m.credito) }}</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3">Totales</td>
+              <td class="col-num mono">{{ pesos(c.total_debito) }}</td>
+              <td class="col-num mono">{{ pesos(c.total_credito) }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--close" (click)="detalle.set(null)">Cerrar</button>
+    </footer>
+  </div>
+}

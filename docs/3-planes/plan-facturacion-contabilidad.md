@@ -22,6 +22,21 @@
 
 ## 0. Dónde retomar (leer SIEMPRE primero)
 
+### ▶▶▶▶ 2-oct-2026 — EMPIEZA LA FASE C: C1-01 y C2-01 hechos
+
+Rama **`fase-c-informes`** en los dos repos (desde `fase-b-contabilidad`, solo local). Pantalla nueva
+**`/informes-contables`** (vista `informes_contables`; migración `2026-10-02-informes-contables-permiso.sql`
+**aplicada en `jdd_dev`, no en producción**) con dos pestañas: **Balance de comprobación** y **Movimiento por
+cuenta**. Backend en `sst_ws/src/modules/informes-contables/` (`/api/informes-contables/balance[ /xlsx]` y
+`/auxiliar[ /xlsx]`, admin/contador/auditor). Decisiones: saldos como **débito − crédito** (igual que Siigo:
+un saldo crédito sale en negativo); solo cuenta lo CONTABILIZADO; el saldo inicial arrastra toda la historia
+(las clases 4-7 vuelven a cero solo con el CA); «Sin el cierre de año» excluye el CA; con filtro de cuenta,
+tercero o centro **no se exige el cuadre**; el Excel lleva importes como números (no reutiliza `POST
+/reports/xlsx`, que manda texto); las tablas de estos informes **no se paginan** a propósito. El PDF usa
+`core/imprimir.ts`, que ahora comparte con `/informes`. Verificación: `node --import tsx
+scripts/verificar-informes-contables.mjs` (30 OK). **Siguiente:** C3-01 (tercero general y detallado) y C4-01
+(libros de IVA, CxC y CxP), que reutilizan `leerFiltros`/`condicionesMovimiento` de `balance.service.js`.
+
 ### ▶▶▶ 30-sep-2026 (noche) — LO MÁS RECIENTE: peticiones de JD&D, base limpia y prueba de punta a punta
 
 Encima de lo de abajo (que sigue valiendo), en `fase-b-contabilidad` y **SIN COMMITEAR** en los dos repos:
@@ -609,8 +624,8 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecha y verificada · ❓ espera 
 
 | ID | Tarea | Depende | Tam. | Estado |
 |---|---|---|---|---|
-| C1-01 | Balance de comprobación (RPC-06) | B1-01 | M | ⬜ |
-| C2-01 | Movimiento general por cuenta — auxiliar (RPC-09) | B1-01 | M | ⬜ |
+| C1-01 | Balance de comprobación (RPC-06) | B1-01 | M | ✅ 2-oct (rama `fase-c-informes`): `/informes-contables`, niveles del PUC, filtros de cuenta/tercero/centro, sin el cierre de año, Excel con números y PDF; `verificar-informes-contables.mjs` 30 OK con ROLLBACK; visto en el navegador |
+| C2-01 | Movimiento general por cuenta — auxiliar (RPC-09) | B1-01 | M | ✅ 2-oct: mismas columnas que `puc.xlsx` + saldo corrido, «Ver» desde el balance, comprobante de solo lectura; mismo script y navegador |
 | C3-01 | Tercero general y detallado (RPC-10) | B1-01 | M | ⬜ |
 | C4-01 | Libros auxiliares de IVA, CxC y CxP (RPC-08, RPC-02) | B3-01, B4-01 | M | ⬜ |
 | C5-01 | Estado de situación financiera y de resultados (RPC-04, 05) | C1-01 | L | ❓ Q-19 |

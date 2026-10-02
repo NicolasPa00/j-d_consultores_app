@@ -1,0 +1,124 @@
+/*
+ * Informes contables (C1-01, C2-01). Las tablas NO se paginan, a diferencia del
+ * resto del sistema: un balance o un auxiliar se lee entero, con su total al pie,
+ * y cortarlo en páginas de 10 filas esconde justo la cifra que se está cuadrando.
+ */
+
+.ic-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.ic-head__actions { display: flex; gap: 0.5rem; }
+
+/* ===== Pestañas (mismo aspecto que Contabilidad y Facturación) ===== */
+.tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.tab {
+  padding: 0.5rem 0.95rem;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.tab:hover { color: var(--text-main); background: #f1f5fa; }
+.tab--active { color: var(--primary-color); background: rgba(45, 123, 200, 0.1); border-color: var(--accent-color); }
+
+/* ===== Filtros ===== */
+.ic-filtros {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1rem;
+}
+.ic-filtros__fila {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.ic-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.ic-campo .form-control { width: auto; min-width: 9rem; }
+.ic-campo--ancho .form-control { min-width: 16rem; max-width: 22rem; }
+.ic-cuenta { width: 8rem !important; min-width: 0 !important; }
+.ic-rapidos { display: flex; gap: 0.4rem; flex-wrap: wrap; padding-bottom: 0.15rem; }
+.ic-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-main);
+  padding-bottom: 0.55rem;
+}
+.ic-sep { flex: 1; }
+
+/* ===== Estado y notas ===== */
+.ic-estado {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.ic-nota, .ic-sub { color: var(--text-muted); font-size: 0.8rem; }
+.ic-vacio { color: var(--text-muted); padding: 1rem 0; }
+.ic-texto { margin: 0 0 0.75rem; }
+
+/* ===== Tablas ===== */
+.ic-tabla .col-num { text-align: right; white-space: nowrap; }
+.ic-tabla td.col-actions { width: 3rem; text-align: center; }
+.ic-neg { color: #9f1239; }
+
+/* Sangría por nivel del PUC: clase, grupo, cuenta, subcuenta, auxiliar. */
+.ic-nombre[data-nivel='2'] { padding-left: 0.9rem; }
+.ic-nombre[data-nivel='4'] { padding-left: 1.8rem; }
+.ic-nombre[data-nivel='6'] { padding-left: 2.7rem; }
+.ic-nombre[data-nivel='8'],
+.ic-nombre[data-nivel='10'] { padding-left: 3.6rem; }
+.ic-fila--clase td { font-weight: 700; color: var(--primary-color); }
+.ic-fila--grupo td { font-weight: 600; }
+
+/* Auxiliar: cada cuenta es un <tbody> con su cabecera y su total. */
+.ic-aux tbody tr.ic-cuenta-fila td {
+  background: var(--table-head-bg, #eef2fb);
+  color: var(--primary-color);
+  font-weight: 700;
+}
+.ic-aux tbody tr.ic-total-cuenta td {
+  font-weight: 700;
+  border-bottom: 2px solid var(--border-soft);
+}
+.ic-celda-cuenta { display: flex; flex-direction: column; gap: 0.1rem; }
+.ic-cmp { display: inline-flex; align-items: center; gap: 0.25rem; }
+.ic-cmp .icon-action { width: 1.75rem; height: 1.75rem; }
+
+.ic-plegar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-right: 0.3rem;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  vertical-align: middle;
+
+  svg { width: 1rem; height: 1rem; transition: transform 0.15s; }
+}
+.ic-plegar--cerrado { transform: rotate(-90deg); }

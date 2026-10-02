@@ -49,12 +49,12 @@ export interface MeResponse {
 /** Vistas gestionables desde Configuración → Roles y permisos (= ítems del sidebar). */
 export type Vista =
   | 'dashboard' | 'importar' | 'ordenes' | 'informes' | 'precuentas' | 'empresas' | 'terceros'
-  | 'parametrizacion' | 'facturacion' | 'contabilidad' | 'cartera' | 'compras' | 'profesionales' | 'configuracion';
+  | 'parametrizacion' | 'facturacion' | 'contabilidad' | 'informes_contables' | 'cartera' | 'compras' | 'profesionales' | 'configuracion';
 
 /** Catálogo completo de vistas. Es también el fallback cuando no hay permisos conocidos. */
 export const VISTAS: Vista[] = [
   'dashboard', 'importar', 'ordenes', 'informes', 'precuentas', 'empresas', 'terceros',
-  'parametrizacion', 'facturacion', 'contabilidad', 'cartera', 'compras', 'profesionales', 'configuracion',
+  'parametrizacion', 'facturacion', 'contabilidad', 'informes_contables', 'cartera', 'compras', 'profesionales', 'configuracion',
 ];
 
 export interface PermisoRol {
@@ -1970,4 +1970,82 @@ export interface ResumenImportCompras {
   errores: number;
   total: string;
   resultados: { filas: number[]; proveedor: string | null; factura: string | null; items: number; total: string | null; comprobante?: string | null; error: string | null }[];
+}
+
+// ---- Fase C · Informes contables (C1-01, C2-01) ----
+
+/** Filtros comunes del balance y el auxiliar (los importes del resultado viajan como texto). */
+export interface FiltrosInformeContable {
+  desde: string;
+  hasta: string;
+  /** Prefijo del código ("1305" = toda esa rama). */
+  cuenta?: string;
+  tercero_id?: string;
+  centro_costo_id?: string;
+  /** Excluir el comprobante de cierre de año (CA). */
+  sin_cierre?: boolean;
+  /** Solo el balance: 1 clase, 2 grupo, 4 cuenta, 6 subcuenta, 10 auxiliar. */
+  nivel?: number;
+}
+
+/** Fila del balance. Saldos como débito − crédito: un saldo crédito sale en negativo, como en Siigo. */
+export interface FilaBalance {
+  cuenta_id: string;
+  codigo: string;
+  nombre: string;
+  nivel: number;
+  naturaleza: NaturalezaCuenta;
+  acepta_movimiento: boolean;
+  saldo_inicial: string;
+  debito: string;
+  credito: string;
+  saldo_final: string;
+}
+
+export interface TotalesInformeContable {
+  saldo_inicial: string;
+  debito: string;
+  credito: string;
+  saldo_final: string;
+}
+
+export interface BalanceComprobacion {
+  filtros: FiltrosInformeContable & { nivel: number; nivel_nombre: string };
+  filas: FilaBalance[];
+  totales: TotalesInformeContable;
+  /** false si hay filtro de cuenta, tercero o centro de costo: solo se ve una parte de cada asiento. */
+  completo: boolean;
+  /** null cuando no es completo (no se puede exigir el cuadre). */
+  cuadra: boolean | null;
+  diferencia: string;
+}
+
+export interface MovimientoAuxiliar {
+  comprobante_id: string;
+  /** "FV-12" */
+  comprobante: string;
+  fecha: string;
+  tercero_id: string | null;
+  tercero_nombre: string | null;
+  tercero_documento: string | null;
+  descripcion: string | null;
+  documento_cruce: string | null;
+  debito: string;
+  credito: string;
+  /** Saldo corrido de la cuenta después de esta línea. */
+  saldo: string;
+}
+
+export interface CuentaAuxiliar extends TotalesInformeContable {
+  cuenta_id: string;
+  codigo: string;
+  nombre: string;
+  movimientos: MovimientoAuxiliar[];
+}
+
+export interface AuxiliarPorCuenta {
+  filtros: FiltrosInformeContable;
+  cuentas: CuentaAuxiliar[];
+  totales: TotalesInformeContable;
+  n_movimientos: number;
 }

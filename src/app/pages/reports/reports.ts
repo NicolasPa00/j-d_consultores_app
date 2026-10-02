@@ -3,6 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../../core/api.service';
+import { escapeHtml, imprimirHtml } from '../../core/imprimir';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import {
@@ -782,33 +783,7 @@ export class ReportsComponent implements OnInit {
 
   private printHtml(title: string, bodyHtml: string): void {
     if (!this.isBrowser) return;
-    const iframe = document.createElement('iframe');
-    iframe.setAttribute('aria-hidden', 'true');
-    iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
-    document.body.appendChild(iframe);
-    const doc = iframe.contentWindow?.document;
-    if (!doc) { iframe.remove(); return; }
-    doc.open();
-    doc.write(
-      `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>` +
-      `<style>
-        * { box-sizing: border-box; }
-        body { font-family: Arial, Helvetica, sans-serif; color: #0f172a; margin: 28px; }
-        h1 { font-size: 18px; color: #000b50; margin: 0 0 4px; }
-        .meta { font-size: 11px; color: #64748b; margin: 0 0 4px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 11px; }
-        th { background: #000b50; color: #fff; text-align: left; padding: 7px 9px; }
-        td { padding: 6px 9px; border-bottom: 1px solid #e2e8f0; }
-        tr:nth-child(even) td { background: #f8fafc; }
-        p { line-height: 1.5; font-size: 12px; }
-      </style></head><body>${bodyHtml}</body></html>`,
-    );
-    doc.close();
-    iframe.contentWindow?.focus();
-    setTimeout(() => {
-      iframe.contentWindow?.print();
-      setTimeout(() => iframe.remove(), 1500);
-    }, 350);
+    imprimirHtml(title, bodyHtml);
   }
 }
 
@@ -827,11 +802,6 @@ function hoyIso(): string {
 /** 1 de enero del año en curso: rango por defecto del reporte de horas. */
 function primerDiaDelAnio(): string {
   return `${new Date().getFullYear()}-01-01`;
-}
-
-function escapeHtml(v: string): string {
-  return String(v ?? '')
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function buildTable(headers: string[], rows: (string | number)[][]): string {

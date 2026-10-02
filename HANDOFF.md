@@ -5,7 +5,7 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
+> **Última actualización:** 2-oct-2026: **empieza la Fase C** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
 > para lo último; el resto de esta cabecera es del 16-sep) — **🚀 EL SISTEMA ESTÁ EN
 > PRODUCCIÓN**
 > (desde el 2-sep-2026) y ya lo están usando clientes reales. ORBITA vive en
@@ -15,6 +15,16 @@
 > **`docs/4-despliegue/despliegue-vultr.md`**, y es lo primero que hay que leer para tocar el
 > servidor. **Lo último desplegado:** el Excel SIPAB de Bolívar dejó de leerse
 > cuando llegaba como `.xls` binario (ver §0 punto 2 y la Tanda 23 en §3).
+>
+> 📊 **2-oct-2026 · FASE C — C1-01 BALANCE DE COMPROBACIÓN y C2-01 AUXILIAR POR CUENTA, hechos.** Rama
+> **`fase-c-informes`** (los dos repos, commiteada en local, sin push). Pantalla **`/informes-contables`** en el menú de
+> Finanzas (vista `informes_contables`: admin, contador y auditor; migración `2026-10-02-informes-contables-permiso.sql`
+> aplicada en `jdd_dev`, **no en producción**). Saldos como débito − crédito, igual que Siigo; «Ver» en una fila del
+> balance abre su auxiliar con las mismas fechas; Excel con importes numéricos y encabezado de empresa; PDF por
+> `core/imprimir.ts` (compartido con `/informes`). Verificado: `scripts/verificar-informes-contables.mjs` (30 OK, con
+> ROLLBACK) y en el navegador. Detalle y siguiente paso: bloque del 2-oct en el §0 de `docs/3-planes/plan-facturacion-contabilidad.md`.
+> Trampa: en `jdd_dev` no hay ficha del emisor, así que el Excel sale sin las líneas de razón social y NIT (en
+> producción sí salen).
 >
 > 🚀 **1-oct-2026 (noche) · SEGUNDO LOTE DESPLEGADO EN PRODUCCIÓN** (`master b232b50`, `main 57d5059`). Detalle, respaldo
 > y cómo revertir: **`docs/4-despliegue/despliegue-lote2.md`**. Guía para el cliente (16 cambios, HTML + PDF):
