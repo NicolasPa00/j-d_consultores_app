@@ -225,6 +225,13 @@
       } @else {
         <p class="af-sub">Registrar el activo no genera asiento: la compra ya entró por Compras y gastos. Aquí solo se contabiliza la depreciación.</p>
       }
+      @if (faltanCuentas()) {
+        <p class="af-aviso">
+          El plan de cuentas todavía no tiene todas las cuentas habituales para activos fijos: propiedad, planta y equipo
+          (15), depreciación acumulada (1592) y gasto por depreciación (5160). Créelas en Plan de cuentas, o
+          <button type="button" class="af-link" (click)="verTodas.set(true)">elija entre todas las cuentas</button>.
+        </p>
+      }
       <div class="af-grid">
         <div class="form-field af-grid__ancho">
           <label class="form-field__label" for="afDesc">Descripción *</label>
@@ -270,7 +277,7 @@
           <label class="form-field__label" for="afCtaDep">Cuenta de depreciación acumulada *</label>
           <select id="afCtaDep" class="form-control" [(ngModel)]="form.cuenta_depreciacion_id" [disabled]="bloqueado()">
             <option value="">Elija una cuenta…</option>
-            @for (c of cuentasActivo(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
+            @for (c of cuentasDepreciacion(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
           </select>
         </div>
         <div class="form-field af-grid__ancho">

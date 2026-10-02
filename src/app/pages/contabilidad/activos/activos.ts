@@ -5,7 +5,6 @@ import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../../core/api.service';
 import { AlertService } from '../../../core/alert.service';
 import { mensajeError } from '../../../core/errores';
-import { PESOS } from '../../../core/dinero';
 import { escapeHtml, imprimirHtml } from '../../../core/imprimir';
 import {
   ActivoFijo, ActivoFijoForm, CentroCosto, CorridaDepreciacion, CuentaContable, FichaActivoFijo, Tercero, VistaPreviaDepreciacion,
@@ -18,6 +17,17 @@ const FORM_VACIO: ActivoFijoForm = {
   valor_residual: '', vida_util_meses: null, inicio_depreciacion: '', cuenta_activo_id: '', cuenta_depreciacion_id: '',
   cuenta_gasto_id: '', centro_costo_id: '', observaciones: '',
 };
+
+/** Como en los informes contables: siempre dos decimales. */
+const PESOS_2 = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/**
+ * Grupos del PUC (Decreto 2650) donde va cada cuenta de la ficha. Sin este filtro
+ * el formulario ofrecía Caja o Clientes como cuenta del activo.
+ */
+const PREFIJOS_ACTIVO = ['15', '16'];
+const PREFIJOS_DEPRECIACION = ['1592', '1597', '1598'];
+const PREFIJOS_GASTO = ['5160', '5165', '5260', '5265', '7'];
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 
@@ -54,8 +64,17 @@ export class ActivosComponent implements OnInit, OnDestroy {
 
   /** Solo cuentas que reciben movimiento; el activo suele ir en la clase 1 y el gasto en la 5. */
   protected readonly cuentasMovimiento = computed(() => this.cuentas().filter((c) => c.acepta_movimiento && c.activa));
-  protected readonly cuentasActivo = computed(() => this.cuentasMovimiento().filter((c) => c.codigo.startsWith('1')));
-  protected readonly cuentasGasto = computed(() => this.cuentasMovimiento().filter((c) => /^[57]/.test(c.codigo)));
+  /** «Ver todas»: por si JD&D usa cuentas fuera de los grupos habituales del PUC. */
+  protected readonly verTodas = signal(false);
+  private filtrar(prefijos: string[]) {
+    return computed(() => this.verTodas() ? this.cuentasMovimiento() : this.cuentasMovimiento().filter((c) => prefijos.some((p) => c.codigo.startsWith(p))));
+  }
+  protected readonly cuentasActivo = this.filtrar(PREFIJOS_ACTIVO);
+  protected readonly cuentasDepreciacion = this.filtrar(PREFIJOS_DEPRECIACION);
+  protected readonly cuentasGasto = this.filtrar(PREFIJOS_GASTO);
+  /** El plan todavía no tiene alguno de los tres grupos: se avisa en el formulario. */
+  protected readonly faltanCuentas = computed(() => !this.verTodas()
+    && (!this.cuentasActivo().length || !this.cuentasDepreciacion().length || !this.cuentasGasto().length));
 
   protected readonly totales = computed(() => {
     let costo = 0;
@@ -93,7 +112,7 @@ export class ActivosComponent implements OnInit, OnDestroy {
   }
 
   protected pesos(v: string | number | null | undefined): string {
-    return PESOS.format(Number(v) || 0);
+    return PESOS_2.format(Number(v) || 0);
   }
 
   protected fecha(iso: string | null): string {

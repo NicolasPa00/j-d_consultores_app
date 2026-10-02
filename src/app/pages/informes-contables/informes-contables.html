@@ -11,6 +11,18 @@
   </div>
 </section>
 
+<!-- Celular: seis pestañas no caben y en scroll no se sabe que hay más; ahí van en un selector. -->
+<label class="ic-campo ic-selector-informe">Informe
+  <select class="form-control" [ngModel]="pestana()" (ngModelChange)="cambiarPestana($event)" name="informeMovil">
+    <option value="balance">Balance de comprobación</option>
+    <option value="auxiliar">Movimiento por cuenta</option>
+    <option value="terceros">Por tercero</option>
+    <option value="libros">Libros auxiliares</option>
+    <option value="ventas">Ventas por cliente</option>
+    <option value="estados">Estados financieros</option>
+  </select>
+</label>
+
 <div class="tabs ic-tabs" role="tablist">
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'balance'" (click)="cambiarPestana('balance')">Balance de comprobación</button>
   <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'auxiliar'" (click)="cambiarPestana('auxiliar')">Movimiento por cuenta</button>
@@ -211,7 +223,6 @@
                 <span class="ic-tercero__nombre">{{ t.nombre }}</span>
                 @if (t.documento) { <span class="mono ic-tercero__doc">{{ t.documento }}</span> }
                 <span class="ic-sep"></span>
-                <span class="mono">Saldo {{ pesos(t.totales.saldo_final) }}</span>
                 @if (!detallado && t.tercero_id) {
                   <button type="button" class="icon-action ic-tercero__ver" (click)="verTercero(t)" [attr.aria-label]="'Ver el detalle de ' + t.nombre" title="Ver el detalle del tercero">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg>
