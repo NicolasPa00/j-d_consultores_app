@@ -5,7 +5,7 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
+> **Última actualización:** 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
 > para lo último; el resto de esta cabecera es del 16-sep) — **🚀 EL SISTEMA ESTÁ EN
 > PRODUCCIÓN**
 > (desde el 2-sep-2026) y ya lo están usando clientes reales. ORBITA vive en
@@ -133,13 +133,60 @@
 > («$2.103.701,9») y el código de producto «2» sin etiqueta en el borrador. (8) 10 borradores PENDIENTE_REVISION huérfanos
 > de importaciones anteriores (no se ven en ninguna pantalla).
 >
+> 👥 **5-oct-2026 · TRES PETICIONES DE JD&D — construidas en `fase-c-informes`, SIN COMMITEAR y SIN DESPLEGAR.**
+> Migraciones `2026-10-05-especialidades.sql` y `2026-10-05-coasesores.sql`: **aplicadas solo en `jdd_dev`**.
+> 1. **Varios asesores en la misma orden, mismas fechas y horarios** (audio de JD&D, `audioPeticion.ogg` en la raíz).
+>    Tabla `sst.orden_coasesores` (orden, profesional, horas, valor hora congelado). `profesional_asignado_id` sigue
+>    siendo el **principal** (enlace de soportes, encuesta, firma, viáticos); sus horas = las de la orden − las de los
+>    adicionales. En el modal de asignación: «La orden la ejecutan varios asesores» → asesor + horas. **Cada asesor
+>    recibe su correo** con formatos e invitación y sus horas; `vw_horas_ejecutadas` / `vw_horas_por_cobrar` dan una
+>    fila por (orden, profesional), así que **cada uno cobra lo suyo en su cuenta de cobro**. `POST /orders/:id/assign`
+>    acepta `coasesores: [{profesional_id, horas}]` (lista = reemplaza; omitida = conserva). Verificación:
+>    `node --import tsx scripts/verificar-coasesores.mjs` (ROLLBACK, 9 OK) + prueba real contra `:4010` con correo en
+>    consola. **No visto en el navegador.** Decisiones mías a confirmar con JD&D: los soportes los sube solo el
+>    principal; los formatos de los dos salen iguales (a nombre del principal o del suplente); el cruce de agenda del
+>    asesor adicional NO se comprueba (la rejilla pinta la del principal).
+> 2. **Catálogo de especialidades** (`sst.especialidades`, `GET/POST/PUT/DELETE /especialidades`, admin): botón
+>    «Especialidades» en Profesionales; la ficha elige de la lista. La ficha guarda el NOMBRE: renombrar se propaga,
+>    eliminar no le quita la especialidad a nadie. Nace con las seis de la lista fija + las que ya tenían las fichas.
+> 3. **NIT opcional en AXA**: ya no bloquea la carga (`drafts.routes.js`) ni se pinta en rojo con 0 % en Importar;
+>    sin NIT la empresa se resuelve por nombre.
+>
 > 🧾 **1-oct-2026 · ALTA DE JD&D EN EL PROVEEDOR DE FACTURACIÓN (en curso).** Decidido: **paquetes individuales**,
 > comprando ahora **solo facturación 1.600 ($220.000, trae certificado)**; nómina 24 cuando el módulo vaya a
 > producción y RADIAN en la Fase C (tramo pendiente de volumen y de cómo cuenta el consumo). Documentos para
 > `activacion@factus.com.co`: RUT ✅ y cámara de comercio ✅ (expedida 26-sep, vale hasta ~26-oct) en
 > `1-cliente-jdd/contabilidad-siigo/empresa/`; cédula del representante ✅ (`1-cliente-jdd/2. CEDULA JOSE LUIS GUACAS.pdf`);
-> **falta el logo**; el comprobante de compra lo generamos nosotros. Antes de pagar, confirmar el precio de 1.600 y que
+> **logo ✅ (5-oct): es el de JD&D, `public/logoJDD-Consultores.png`, no el de ORBITA** — es el que el proveedor pinta
+> en el PDF de la factura. Los cuatro documentos y los dos mensajes (compra y activación) están reunidos en
+> `3-entregables-y-respaldos/alta-proveedor-facturacion/` (`0-LEEME-mensajes.md`); **solo falta el comprobante de
+> compra**, que sale al pagar el paquete. **5-oct, respuesta del proveedor al mensaje de compra:** el paquete de 1.600
+> cubre facturas, notas crédito, documentos soporte y notas de ajuste, con certificado **a nombre de JD&D**; nómina y
+> RADIAN se activan aparte cuando se quiera (tablas iguales a las de `docs/6-comercial-y-cliente/factus-precios-paquetes.md`).
+> **Abierto:** no confirmaron la cifra de $220.000 ni dieron datos de pago, y preguntan si la activación es «alquiler a
+> otras empresas» o «software propio». **5-oct (tarde): cambia el orden.** El proveedor creará a EscalApp como ALIADO
+> y habilitará un **panel de aliados** desde el que se activa cada cliente y se carga su documentación. Antes pide, en
+> PDF y al correo de activación, el contrato de alianza y el acuerdo de confidencialidad firmados y el RUT del aliado:
+> están en `3-entregables-y-respaldos/alta-proveedor-facturacion/aliado-escalapp/` (paso 0 del LEEME).
+> **5-oct 16:56: solicitud de activación de JD&D ENVIADA desde el panel de aliados — radicado `RAD-218`, estado «En
+> revisión»**, paquete F-03 de 1.600 documentos por **$220.000** (precio confirmado en el panel), API v2. Falta: que
+> el proveedor la revise, el pago/comprobante, las credenciales de producción y la documentación del certificado. Antes de pagar, confirmar el precio de 1.600 y que
 > nómina/RADIAN se compran aparte. Al comprar corren **8 días** para la documentación del certificado.
+> **6-oct: `RAD-218` pasó a «Activada».** Sigue faltando: comprobante de pago, credenciales de producción,
+> documentación del certificado, resolución de numeración (vence 11-oct) y encender las banderas (tercer lote).
+> **6-oct (más tarde):** pago aprobado, credenciales de producción recibidas y certificado activo con el paquete.
+> Solo falta la resolución nueva y asociarla en la DIAN. La contadora respondió parte de la lista (PUC de Siigo en
+> `1-cliente-jdd/`, provisiones, autorretención 1,1 %, ReteICA 5 ‰ Bolívar / 6 ‰ el resto, seguridad social):
+> detalle en el bloque del 6-oct del §0 de `docs/3-planes/plan-facturacion-contabilidad.md`.
+> **Resolución nueva recibida (6-oct): FE 1001-1500, 24 meses, n.º 18764116756455** (mismo prefijo que Siigo, solo
+> 500 números, dirección distinta a la del RUT: ver el plan). La otra que mandaron es la de documento soporte (DS).
+> **PUC real importado en `jdd_dev` (solo activas): 773 cuentas, 430 de movimiento.** Sin commitear:
+> Producción sigue sin PUC.
+> **Tercer lote preparado (6-oct, noche):** todo commiteado en `fase-c-informes` de los dos repos (**local, sin
+> push**; sin `ng build`: el equipo estaba sin memoria). Runbook: **`docs/4-despliegue/despliegue-lote3.md`**, en dos
+> partes: 1) Fase C + peticiones del 5-oct, sin DIAN; 2) encender la DIAN. **Único bloqueo de la parte 2:** la
+> resolución nueva aún no aparece en el portal de producción de la DIAN para asociar el prefijo `FE`; el modo de
+> operación ya lo creó el proveedor («Software propio», Aceptado). No asociar ningún proveedor tecnológico a mano.
 > **Q-21 resuelta:** dirección del emisor = la del RUT (`CR 26 N 19 07 O 103`). Resolución vence el 11-oct (R-01).
 >
 > 🎨 **30-sep/1-oct-2026 · FASE DE ESTILOS VISUALES Y ESTANDARIZACIÓN — commiteada el 1-oct (aprobada por el usuario).**

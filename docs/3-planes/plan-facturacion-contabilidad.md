@@ -22,6 +22,84 @@
 
 ## 0. Dónde retomar (leer SIEMPRE primero)
 
+### ▶▶▶▶▶ 5-oct-2026 — ALTA EN EL PROVEEDOR ENVIADA + tres peticiones de JD&D (leer esto primero)
+
+**Alta de JD&D en el proveedor de facturación (S-01), en curso.** El proveedor creó a EscalApp como ALIADO y habilitó
+un **panel de aliados**: las activaciones y la documentación de cada cliente se hacen ahí, no por correo. Solicitud
+de JD&D enviada el 5-oct a las 16:56: **radicado `RAD-218`, estado «En revisión»**, paquete F-03 de 1.600 documentos
+por **$220.000**, API v2. Confirmado por escrito: el paquete cubre facturas, notas crédito, documentos soporte y notas
+de ajuste, y trae certificado **a nombre de JD&D**; nómina y RADIAN se activan aparte cuando se quiera. Logo de las
+facturas: el de **JD&D** (`public/logoJDD-Consultores.png`), no el de ORBITA. Todo lo enviado y los mensajes están en
+`3-entregables-y-respaldos/alta-proveedor-facturacion/` (fuera de git; `0-LEEME-mensajes.md`).
+
+**6-oct-2026: `RAD-218` aparece «Activada» en el panel de aliados.** La aprobación ya está; lo demás de la lista de
+abajo sigue pendiente (por confirmar si el pago ya quedó hecho y dónde entrega el proveedor las credenciales).
+
+**Qué falta para emitir de verdad (tercer lote):** que el proveedor apruebe la solicitud → pago y comprobante →
+credenciales de producción (variables `FACTUS_*` del servidor, S-03) → documentación del certificado (**8 días
+calendario** desde la compra) → **JD&D renueva la resolución de numeración, que vence el 11-oct (R-01)** y se asocia
+(S-02) → encender las banderas `emisionDian` / `PROVEEDOR_VISIBLE` → primera factura real con la contadora (S-04).
+Sin resolver: la dirección del RUT (`CR 26 N 19 07 O 103`) no coincide con la de la cámara de comercio
+(`Carrera 24 N. 17-15 Casona San Agustín`); preguntado a JD&D en la lista de pendientes.
+
+**Lista de pendientes enviada a JD&D el 5-oct** (10 puntos + resolución + dirección): PUC completo, extracto bancario,
+fecha de corte y balance de prueba, porcentajes de provisiones, autorretención 1,1 %, ReteICA por pagador, renglones de
+los estados financieros, prefacturas de Colmena y AXA, origen de los documentos soporte y cómo radican. Sin respuesta aún.
+
+**6-oct-2026 — respuestas de la contadora (WhatsApp, 9:41-9:57) y avance del alta.** Pago aprobado ($220.000, QR
+Bre-B, 5-oct 16:59), credenciales de producción en poder del desarrollador y certificado **activo con el paquete**
+(respuesta del proveedor: no hay documentación adicional). La ficha del facturador coincide con el RUT. Sigue
+faltando la resolución de numeración y asociarla en el portal de la DIAN (con el usuario de JD&D). Respuestas:
+
+- **Resoluciones de numeración (R-01), recibidas el 6-oct 15:27 en `1-cliente-jdd/`. Son DOS documentos distintos:**
+  `18764116756455.pdf` = **factura electrónica de venta, prefijo `FE`, 1001 a 1500, 24 meses**, formalizada el
+  6-oct-2026 15:00 (vence 6-oct-2028); y `18764090152350 (1).pdf` = **documento soporte, prefijo `DS`, 1001 a 2000,
+  24 meses**, del 7-mar-2025 (vence 7-mar-2027; es la que ya usan en Siigo, sirve para A4-01). **Por aclarar antes
+  de asociar:** (1) `FE` es el mismo prefijo de Siigo (FE-775, FE-781…): es la continuación de su numeración, no
+  un prefijo aparte, así que Siigo y ORBITA no pueden emitir a la vez sobre ese rango; (2) son solo 500 números;
+  (3) la resolución nueva trae **otra dirección** (`CR 24 17 24 OF 205`; establecimiento `CR 26 N 19 07 OF 201`),
+  distinta de la del RUT de 2025 y de la cámara: pedir el RUT actualizado y corregir la ficha del facturador.
+  **Decidido el 6-oct (usuario, tras hablar con JD&D):** ORBITA arranca con `FE` desde el 1001; el rango se pidió
+  lejos de la última factura de Siigo a propósito y Siigo no lo usará. Dirección del emisor = **la que tenga la
+  DIAN** (RUT vigente); la de la resolución nueva (`CR 24 17 24 OF 205`) no es la del RUT de 2025 que está en el
+  panel ni la de la cámara: falta el RUT actualizado para confirmarla y corregir la ficha.
+  **Cerrado el mismo día: la dirección que queda es la de la cámara de comercio, `Carrera 24 N. 17-15 Casona San
+  Agustín`.** JD&D va a actualizar el RUT a esa. Pendiente nuestro: cambiarla en la ficha del facturador del panel
+  y usarla en la empresa emisora de ORBITA al parametrizar producción (tal como quede escrita en el RUT nuevo).
+  **Portal de la DIAN (6-oct, en reunión con JD&D):** el modo de operación **ya lo creó el proveedor** al activar la
+  cuenta: en habilitación figura «Software propio», software del proveedor, registrado el 6-oct-2026, «Aceptado»
+  (junto al gratuito de 2021 y SiigoPT de 2019). **No hay que asociar ningún proveedor tecnológico en
+  «Configurar modos de operación»** (el proveedor no está en esa lista). Solo queda asociar el prefijo `FE` a ese
+  software en el portal de producción (Configuración → Rangos de numeración) y cargar el rango en el panel.
+  Ingreso al portal: cédula del representante + NIT sin DV; el enlace llega al correo del RUT.
+- **PUC (Q-22):** llegó el Excel de Siigo en `1-cliente-jdd/Cuentas contables-20261006…xlsx`: 1.083 cuentas, 665
+  transaccionales de 8 dígitos (**430 activas, 235 inactivas** según la columna «Activo»; 251 son de diferencia
+  fiscal). La contadora avisa que varias no tienen movimiento. **Importado el 6-oct SOLO en `jdd_dev`, solo las
+  activas:** `scripts/filtrar-puc-activas.mjs` (nuevo) deja las 430 de movimiento + sus 343 niveles superiores en
+  `2-pruebas/contabilidad/puc-siigo-solo-activas-2026-10-06.xlsx`, cargado con `sembrar-puc-desde-auxiliar.mjs`:
+  592 creadas, 48 renombradas, 0 errores; el plan pasó de 181 a **773 cuentas**, sin ningún «(por confirmar)». Las
+  181 que había están todas entre las activas. Naturaleza por clase (el Excel no la trae). Ojo: 13 cuentas de
+  movimiento tienen 6 dígitos (360505 Utilidad del ejercicio, 361005 Pérdida, 511030…): son las del cierre de año.
+  `verificar-informes-contables.mjs` se ajustó porque daba por hecho que no existía la clase 3 (53 OK).
+  **Producción no lo tiene:** ese mismo Excel filtrado se sube por Contabilidad → Plan de cuentas → Importar.
+- **Conciliación bancaria (B7-01):** en Siigo no se concilia; registran y comparan valores. Lo único que se
+  contabiliza desde el banco es GMF, cuota de manejo e IVA, con una **nota interna**.
+- **Provisiones (D-25):** cesantías 8,33 % · intereses a las cesantías 1 % · prima 8,33 % · vacaciones **4,33 %**
+  (tal cual lo escribió; el porcentaje habitual es 4,17 %: confirmar).
+- **Autorretención (Q-28):** confirmada, 1,1 % por la actividad económica.
+- **ReteICA (Q-12):** depende de la ARL: **5 ‰ Bolívar, 6 ‰ las demás** (cierra la duda de Colmena).
+- **Seguridad social (B6-01):** pide que el cálculo quede automático: pensión 12 % · caja de compensación 4 % ·
+  ARL 0,522 %. No mencionó salud (¿exonerados del 8,5 %?), SENA ni ICBF: confirmar.
+- **Sin respuesta aún:** extracto bancario de ejemplo, fecha de corte y balance de prueba, renglones de los estados
+  financieros (Q-19), prefacturas de Colmena y AXA, origen de los documentos soporte (Q-17), radicación (Q-24) y la
+  dirección RUT vs. cámara de comercio.
+
+**Tres peticiones de JD&D construidas el mismo día, SIN COMMITEAR ni desplegar** (rama `fase-c-informes`; detalle en el
+bloque 👥 del HANDOFF): varios asesores en una misma orden (`sst.orden_coasesores`), catálogo de especialidades y NIT
+opcional en AXA. Migraciones `2026-10-05-especialidades.sql` y `2026-10-05-coasesores.sql` **solo en `jdd_dev`**: se
+suman a las dos de la Fase C al desplegar. Verificación: `node --import tsx scripts/verificar-coasesores.mjs`.
+
+
 ### ▶▶▶▶ 2-oct-2026 — EMPIEZA LA FASE C: C1-01 y C2-01 hechos
 
 Rama **`fase-c-informes`** en los dos repos (desde `fase-b-contabilidad`, solo local). Pantalla nueva
