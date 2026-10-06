@@ -38,6 +38,11 @@ interface PreviewField {
   requiredHint?: string;
   /** Contexto del documento que ayuda a diligenciarlo (hora programada, unidad…). */
   hint?: string;
+  /**
+   * El documento nunca lo trae y tampoco hace falta (NIT en AXA): mientras esté
+   * vacío no se le pinta confianza ni aviso, porque no hay lectura que revisar.
+   */
+  opcional?: boolean;
 }
 
 /**
@@ -918,7 +923,12 @@ export class ImportComponent implements OnInit, OnDestroy {
 
   /** ¿Sigue mereciendo el subrayado de baja confianza? */
   protected marcado(item: PreviewField): boolean {
-    return bajaConfianza(item);
+    return !this.vacioOpcional(item) && bajaConfianza(item);
+  }
+
+  /** Campo opcional que el documento no trae y nadie ha escrito: nada que avisar. */
+  protected vacioOpcional(item: PreviewField): boolean {
+    return !!item.opcional && !item.value.trim();
   }
 
   protected inputMode(item: PreviewField): string {
@@ -1249,12 +1259,14 @@ function buildFields(m: MetadatosExtraccion, arl: string | null): PreviewField[]
   }
 
   push('nit_nic', 'NIT', m.nit_nic);
-  // 1-oct-2026 · La orden de AXA no trae el NIT del cliente (el único impreso es
-  // el de JD&D), así que llega vacío y lo escribe quien revisa.
+  // La orden de AXA no trae el NIT del cliente (el único impreso es el de JD&D),
+  // así que llega vacío. 5-oct-2026 · Dejó de ser obligatorio: AXA no lo exige y
+  // no puede frenar la carga. Vacío no es una lectura dudosa de la IA, así que
+  // tampoco lleva el 0 % ni el aviso de baja confianza.
   if (esAxa(arl)) {
     const nit = rows[rows.length - 1];
-    nit.required = true;
-    nit.requiredHint = 'Campo obligatorio — las órdenes de AXA no traen el NIT de la empresa: escríbalo.';
+    nit.opcional = true;
+    nit.hint = 'Opcional — las órdenes de AXA no traen el NIT de la empresa. Si lo conoce, escríbalo.';
   }
   // Las horas son obligatorias: de ellas salen las franjas de la visita y el
   // valor que se le paga al profesional. El SIPAB de Bolívar solo las trae

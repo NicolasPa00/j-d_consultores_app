@@ -20,6 +20,7 @@
         (ngModelChange)="buscar($event)"
       />
     </div>
+    <button type="button" class="btn btn--secondary" (click)="abrirEspecialidades()">Especialidades</button>
     <button type="button" class="btn btn--primary" (click)="openNew()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M12 5v14M5 12h14" />
@@ -260,10 +261,16 @@
       <div class="form-field">
         <label class="form-field__label" for="pSpecialty">Especialidad</label>
         <select id="pSpecialty" class="form-control" [(ngModel)]="draft.specialty" name="specialty">
-          @for (spec of specialties; track spec) {
+          <option value="">Sin especialidad</option>
+          @for (spec of opcionesEspecialidad(); track spec) {
             <option [value]="spec">{{ spec }}</option>
           }
         </select>
+        @if (!especialidades().length) {
+          <p class="form-field__hint">
+            Todavía no hay especialidades. Se crean con el botón «Especialidades» de esta pantalla.
+          </p>
+        }
       </div>
 
       <div class="form-field">
@@ -285,6 +292,106 @@
           {{ editingId() ? 'Actualizar' : 'Guardar' }}
         }
       </button>
+    </footer>
+  </div>
+}
+
+<!-- ============ Catálogo de especialidades (5-oct-2026) ============
+     Lo administra quien gestiona a los profesionales, así que vive aquí y no en
+     Configuración. El nombre se edita en la propia fila y se guarda al salir. -->
+@if (especialidadesOpen()) {
+  <div class="modal-backdrop" (click)="cerrarEspecialidades()"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="especialidadesTitle">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="especialidadesTitle">Especialidades</h3>
+        <p class="modal__sub">
+          Son las que se pueden elegir al crear o editar un profesional. Cambiar un nombre lo
+          actualiza también en las fichas que lo tienen.
+        </p>
+      </div>
+      <button type="button" class="icon-action" (click)="cerrarEspecialidades()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="modal__body">
+      <form class="esp-nueva" (ngSubmit)="crearEspecialidad()">
+        <label class="form-field">
+          <span class="form-field__label">Nueva especialidad</span>
+          <input
+            class="form-control"
+            type="text"
+            maxlength="120"
+            placeholder="Ej. Higiene industrial"
+            [ngModel]="especialidadNueva"
+            (ngModelChange)="especialidadNueva = tecleoLetras($event)"
+            name="espNueva"
+          />
+        </label>
+        <button type="submit" class="btn btn--primary" [disabled]="guardandoEspecialidad() === 'nueva'">
+          {{ guardandoEspecialidad() === 'nueva' ? 'Agregando…' : 'Agregar' }}
+        </button>
+      </form>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Especialidad</th>
+              <th>Profesionales</th>
+              <th class="col-actions">Opciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (e of especialidades(); track e.id) {
+              <tr>
+                <td>
+                  <input
+                    class="form-control"
+                    type="text"
+                    maxlength="120"
+                    [ngModel]="nombreEspecialidad[e.id]"
+                    (ngModelChange)="nombreEspecialidad[e.id] = tecleoLetras($event)"
+                    [name]="'esp' + e.id"
+                    [ngModelOptions]="{ standalone: true }"
+                    [disabled]="guardandoEspecialidad() === e.id"
+                    (blur)="renombrarEspecialidad(e)"
+                    (keydown.enter)="$any($event.target).blur()"
+                    [attr.aria-label]="'Nombre de la especialidad ' + e.nombre"
+                    title="Editar el nombre"
+                  />
+                </td>
+                <td class="mono">{{ e.profesionales ?? 0 }}</td>
+                <td class="col-actions">
+                  <button
+                    type="button"
+                    class="icon-action"
+                    [disabled]="guardandoEspecialidad() === e.id"
+                    (click)="eliminarEspecialidad(e)"
+                    [attr.aria-label]="'Eliminar ' + e.nombre"
+                    title="Eliminar"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6" />
+                    </svg>
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="3" class="table__empty">Todavía no hay especialidades. Agregue la primera arriba.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--close" (click)="cerrarEspecialidades()">Cerrar</button>
     </footer>
   </div>
 }

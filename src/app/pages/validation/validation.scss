@@ -1688,6 +1688,28 @@
   color: var(--warning);
 }
 
+/* 5-oct-2026 · Fila de un asesor adicional: quién, cuántas horas y quitar. */
+.coasesor {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.coasesor select {
+  flex: 1;
+  min-width: 0;
+}
+
+.coasesor__horas {
+  width: 4.5rem;
+  flex: none;
+}
+
+.coasesor__unidad {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
 .check {
   display: inline-flex;
   align-items: flex-start;

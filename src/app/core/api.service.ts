@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { ActivoFijo, ActivoFijoForm, CorridaDepreciacion, FichaActivoFijo, VistaPreviaDepreciacion, AuxiliarPorCuenta, BalanceComprobacion, FiltrosInformeContable, InformePorTercero, LibroAuxiliar, VentasPorCliente, EstadoSituacionFinanciera, EstadoResultados, ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, PagadorPorFacturar, OrdenManualForm, DetalleCobroOrden, ValoresCobroForm } from './models';
+import { ActivoFijo, ActivoFijoForm, CorridaDepreciacion, FichaActivoFijo, VistaPreviaDepreciacion, AuxiliarPorCuenta, BalanceComprobacion, FiltrosInformeContable, InformePorTercero, LibroAuxiliar, VentasPorCliente, EstadoSituacionFinanciera, EstadoResultados, ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, Coasesor, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, Especialidad, PagadorPorFacturar, OrdenManualForm, DetalleCobroOrden, ValoresCobroForm } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -59,7 +59,7 @@ export interface OrdenPortal {
  * documentos** porque la ARL no tiene plantillas activas (CFG-03); las dos
  * cosas hay que avisarlas sin presentarlas como un fallo de la operación.
  */
-type RespuestaAsignacion = Wrap<Orden> & {
+type RespuestaAsignacion = Wrap<Orden & { coasesores?: Coasesor[] }> & {
   /**
    * ASG-02 · `false` cuando las franjas todavía no cubren las horas de la
    * orden: el avance queda guardado, la OS sigue SIN PROGRAMAR y NO se envía
@@ -211,6 +211,11 @@ export class ApiService {
       observaciones_formatos?: Record<string, string>;
       /** Casillas abiertas llenadas en la vista previa: `{ fichaAxa: { 'nombre 4': '…' } }`. */
       campos_formatos?: Record<string, Record<string, string>>;
+      /**
+       * 5-oct-2026 · Asesores adicionales y sus horas. Reemplaza la lista entera:
+       * un arreglo vacío deja la orden con un solo asesor.
+       */
+      coasesores?: { profesional_id: string; horas: number }[];
     },
   ): Observable<RespuestaAsignacion> {
     return this.http.post<RespuestaAsignacion>(`${this.base}/orders/${id}/assign`, body);
@@ -583,6 +588,22 @@ export class ApiService {
   /** "Eliminar" es desactivar, por lo mismo que en los tipos de orden. */
   desactivarTipoViatico(id: string): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(`${this.base}/tipos-viatico/${id}`);
+  }
+
+  // ---- Especialidades de los profesionales (5-oct-2026) ----
+  listEspecialidades(): Observable<Wrap<Especialidad[]>> {
+    return this.http.get<Wrap<Especialidad[]>>(`${this.base}/especialidades`);
+  }
+  crearEspecialidad(nombre: string): Observable<Wrap<Especialidad>> {
+    return this.http.post<Wrap<Especialidad>>(`${this.base}/especialidades`, { nombre });
+  }
+  /** Renombrar arrastra a las fichas que la tenían. */
+  actualizarEspecialidad(id: string, nombre: string): Observable<Wrap<Especialidad>> {
+    return this.http.put<Wrap<Especialidad>>(`${this.base}/especialidades/${id}`, { nombre });
+  }
+  /** Sale del catálogo; quien ya la tenía la conserva. */
+  eliminarEspecialidad(id: string): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.base}/especialidades/${id}`);
   }
 
   // ---- Notificaciones (M11 · NOT-04) ----

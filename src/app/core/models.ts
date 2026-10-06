@@ -224,6 +224,8 @@ export interface Borrador {
    */
   os_profesional_formatos_id?: string | null;
   os_profesional_formatos_nombre?: string | null;
+  /** 5-oct-2026 · Asesores adicionales de la orden, con las horas de cada uno. */
+  os_coasesores?: Coasesor[] | null;
   /** Eje de facturación de la OS (ago-2026): columna, pastilla y filtro. */
   os_estado_cobro?: EstadoCobro | null;
   os_cobro_numero_factura?: string | null;
@@ -770,6 +772,28 @@ export interface TipoOrden {
   ordenes?: number;
   creado_en?: string;
   actualizado_en?: string;
+}
+
+/**
+ * 5-oct-2026 · Asesor ADICIONAL de una orden. Va a la misma visita que el
+ * principal (mismas fechas y horarios) y cobra las horas que aquí se le anotan;
+ * al principal le quedan las de la orden menos la suma de estas.
+ */
+export interface Coasesor {
+  profesional_id: string;
+  nombre: string;
+  horas: number;
+}
+
+/**
+ * Especialidad de un profesional (5-oct-2026). Se ELIGE de este catálogo al crear
+ * o editar la ficha; la ficha guarda el nombre, no el id.
+ */
+export interface Especialidad {
+  id: string;
+  nombre: string;
+  /** Cuántas fichas la tienen hoy. */
+  profesionales?: number;
 }
 
 /**

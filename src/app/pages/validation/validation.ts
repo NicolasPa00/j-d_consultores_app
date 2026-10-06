@@ -97,6 +97,8 @@ interface ResultadoAsignacion {
   avisoEntrega?: string | null;
   /** ASG · A nombre de quién salieron los formatos, si no fue el ejecutor. */
   formatosProf?: { id: string; nombre: string } | null;
+  /** 5-oct-2026 · Asesores adicionales tal como quedaron guardados. */
+  coasesores?: { profesional_id: string; nombre: string; horas: number }[];
   /**
    * ASG-02 · false cuando la visita quedó a medio repartir: se guardó el
    * profesional y las franjas marcadas, pero la OS sigue SIN PROGRAMAR y nadie
@@ -395,6 +397,15 @@ export class ValidationComponent implements OnInit, OnDestroy {
    */
   protected readonly usarSuplente = signal(false);
   protected readonly formatosProfId = signal<string | null>(null);
+
+  /**
+   * 5-oct-2026 · Varios asesores en la misma orden, en las mismas fechas y
+   * horarios. El de arriba es el PRINCIPAL (de él son el enlace de soportes y la
+   * encuesta); estos son los demás, con las horas de la orden que realiza cada
+   * uno. Cada uno recibe su correo con los formatos y cobra sus horas.
+   */
+  protected readonly variosAsesores = signal(false);
+  protected readonly coasesores = signal<{ profesional_id: string | null; horas: number | null }[]>([]);
   /**
    * ASG-02 · Franjas en que se ejecuta la visita.
    *
@@ -2006,6 +2017,9 @@ export class ValidationComponent implements OnInit, OnDestroy {
     // que nadie lo pidiera.
     this.formatosProfId.set(order?.formatosProfId ?? null);
     this.usarSuplente.set(!!order?.formatosProfId);
+    // Y el reparto entre varios asesores, por lo mismo.
+    this.coasesores.set((order?.coasesores ?? []).map((c) => ({ profesional_id: c.profesional_id, horas: c.horas })));
+    this.variosAsesores.set(!!order?.coasesores?.length);
     const programada = order?.scheduledAt ? new Date(order.scheduledAt) : null;
     // La agenda abre en la semana de la visita; si aún no hay, en la de hoy.
     this.agendaAncla.set(lunesDe(programada ? isoFecha(programada) : isoFecha(new Date())));
@@ -2140,6 +2154,78 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected alternarSuplente(activo: boolean): void {
     this.usarSuplente.set(activo);
     if (!activo) this.formatosProfId.set(null);
+  }
+
+  // ---- Varios asesores en la misma orden ----
+  /** Horas totales de la orden que se está asignando. */
+  protected horasDeLaOrden(): number {
+    const n = Number(String(this.assignOrder()?.fields.horas?.value ?? '').replace(',', '.'));
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  }
+
+  protected alternarVariosAsesores(activo: boolean): void {
+    this.variosAsesores.set(activo);
+    if (!activo) {
+      this.coasesores.set([]);
+    } else if (!this.coasesores().length) {
+      // Lo habitual es mitad y mitad: se propone y se puede cambiar.
+      this.coasesores.set([{ profesional_id: null, horas: this.mitadDeHoras() }]);
+    }
+  }
+
+  private mitadDeHoras(): number | null {
+    const total = this.horasDeLaOrden();
+    return total > 0 ? Math.round((total / 2) * 100) / 100 : null;
+  }
+
+  protected agregarCoasesor(): void {
+    this.coasesores.update((l) => [...l, { profesional_id: null, horas: null }]);
+  }
+
+  protected quitarCoasesor(i: number): void {
+    this.coasesores.update((l) => l.filter((_, j) => j !== i));
+    if (!this.coasesores().length) this.variosAsesores.set(false);
+  }
+
+  protected cambiarCoasesor(i: number, cambio: { profesional_id?: string | null; horas?: number | null }): void {
+    this.coasesores.update((l) => l.map((c, j) => (j === i ? { ...c, ...cambio } : c)));
+  }
+
+  /** Quiénes se pueden elegir en la fila `i`: ni el principal ni los ya puestos en otra fila. */
+  protected candidatosCoasesor(i: number): Profesional[] {
+    const usados = new Set(
+      this.coasesores().filter((_, j) => j !== i).map((c) => c.profesional_id).filter(Boolean),
+    );
+    return this.professionals().filter((p) => p.id !== this.selectedProfId() && !usados.has(p.id));
+  }
+
+  protected horasCoasesores(): number {
+    return this.coasesores().reduce((t, c) => t + (Number(c.horas) || 0), 0);
+  }
+
+  /** Lo que le queda al principal tras descontar a los demás. */
+  protected horasDelPrincipal(): number {
+    return Math.round((this.horasDeLaOrden() - this.horasCoasesores()) * 100) / 100;
+  }
+
+  /** Por qué no se puede guardar el reparto; null si está bien (o no hay reparto). */
+  protected problemaCoasesores(): string | null {
+    if (!this.variosAsesores()) return null;
+    const lista = this.coasesores();
+    if (lista.some((c) => !c.profesional_id)) return 'Elija el asesor adicional, o quite la marca de varios asesores.';
+    if (lista.some((c) => !(Number(c.horas) > 0))) return 'Indique cuántas horas realiza cada asesor adicional.';
+    if (this.horasDeLaOrden() > 0 && this.horasDelPrincipal() <= 0) {
+      return 'Al asesor principal le tiene que quedar alguna hora de la orden.';
+    }
+    return null;
+  }
+
+  /** Lo que viaja al servidor: siempre la lista entera (vacía = un solo asesor). */
+  private coasesoresParaEnviar(): { profesional_id: string; horas: number }[] {
+    if (!this.variosAsesores()) return [];
+    return this.coasesores()
+      .filter((c) => !!c.profesional_id && Number(c.horas) > 0)
+      .map((c) => ({ profesional_id: c.profesional_id as string, horas: Number(c.horas) }));
   }
 
   /** Franjas ordenadas por fecha y hora: así se leen y así se mandan. */
@@ -2363,6 +2449,8 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.franjasVisita.set([]);
     this.usarSuplente.set(false);
     this.formatosProfId.set(null);
+    this.variosAsesores.set(false);
+    this.coasesores.set([]);
     this.limpiarVistaPrevia();
   }
 
@@ -2382,6 +2470,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
       // null ni '') es lo que hace que el servidor lo lea como "sin
       // suplencia": el campo se omite del cuerpo entero.
       profesional_formatos_id: this.usarSuplente() ? (this.formatosProfId() ?? undefined) : undefined,
+      coasesores: this.coasesoresParaEnviar(),
       // Solo desde el paso de formatos: antes de verlos no hay nada que decir, y
       // omitirlo hace que el servidor conserve las observaciones ya guardadas.
       observaciones_formatos: this.pasoAsignacion() === 'formatos' ? this.observacionesFormatos() : undefined,
@@ -2505,6 +2594,8 @@ export class ValidationComponent implements OnInit, OnDestroy {
       this.formatosProfId.set(null);
       this.usarSuplente.set(false);
     }
+    // El nuevo principal no puede seguir además como asesor adicional.
+    this.coasesores.update((l) => l.map((c) => (c.profesional_id === id ? { ...c, profesional_id: null } : c)));
     this.loadSlots(id);
   }
 
@@ -2832,6 +2923,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
               formatos: r.formatos_generados ?? null,
               avisoEntrega: r.entrega?.aviso ?? null,
               formatosProf: r.profesional_formatos ?? null,
+              coasesores: (r.data.coasesores ?? []).map((c) => ({ profesional_id: c.profesional_id, nombre: c.nombre, horas: Number(c.horas) })),
               completa: r.completa !== false,
               faltan: r.faltan_minutos ?? null,
               horasOrden: r.minutos_orden ?? null,
@@ -2868,6 +2960,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
                     // coincide con el ejecutor.
                     formatosProfId: res.formatosProf?.id ?? null,
                     formatosProf: res.formatosProf?.nombre ?? null,
+                    coasesores: res.coasesores ?? [],
                     scheduledAt: os.fecha_programada ?? fechaProgramada,
                   }
                 : o,
@@ -2885,6 +2978,8 @@ export class ValidationComponent implements OnInit, OnDestroy {
         this.franjasVisita.set([]);
         this.usarSuplente.set(false);
         this.formatosProfId.set(null);
+        this.variosAsesores.set(false);
+        this.coasesores.set([]);
         this.limpiarVistaPrevia();
 
         const franjas = res.os && visita > 1
@@ -3716,6 +3811,7 @@ function toServiceOrder(b: Borrador): ServiceOrder {
     valorHoraOrigen: b.valor_hora_origen ?? null,
     formatosProfId: b.os_profesional_formatos_id ?? null,
     formatosProf: b.os_profesional_formatos_nombre ?? null,
+    coasesores: (b.os_coasesores ?? []).map((c) => ({ profesional_id: c.profesional_id, nombre: c.nombre, horas: Number(c.horas) })),
     // El eje de facturación solo existe sobre la OS: un borrador sin validar no
     // tiene nada que facturarse, y por eso puede llegar null.
     estadoCobro: b.os_estado_cobro ?? null,

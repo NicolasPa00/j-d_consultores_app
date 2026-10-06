@@ -142,6 +142,9 @@
                       <path d="M4 21a8 8 0 0 1 16 0" />
                     </svg>
                     {{ order.assignedProf }}
+                    @for (co of order.coasesores ?? []; track co.profesional_id) {
+                      <span [title]="co.horas + ' h de la orden'">· {{ co.nombre }}</span>
+                    }
                   </span>
                 }
               </div>
@@ -1184,6 +1187,72 @@
             }
           </div>
         }
+
+        <!-- 5-oct-2026 · Varios asesores en la misma orden, mismas fechas y
+             horarios. El elegido arriba es el principal; aquí se suman los demás
+             con las horas que realiza cada uno. Cada asesor recibe su correo con
+             los formatos y cobra sus horas en su cuenta de cobro. Solo sobre una
+             OS ya creada: el borrador todavía no tiene dónde guardarlo. -->
+        @if (selectedProfId() && order.osId) {
+          <div class="suplente">
+            <label class="check suplente__toggle">
+              <input
+                type="checkbox"
+                [checked]="variosAsesores()"
+                (change)="alternarVariosAsesores($any($event.target).checked)"
+              />
+              <span>La orden la ejecutan varios asesores</span>
+            </label>
+
+            @if (variosAsesores()) {
+              <p class="suplente__ok">
+                Van en las mismas fechas y horarios. Indique las horas de la orden que realiza cada uno.
+              </p>
+              @for (co of coasesores(); track $index) {
+                <div class="coasesor">
+                  <select
+                    class="form-control form-control--sm"
+                    [ngModel]="co.profesional_id"
+                    (ngModelChange)="cambiarCoasesor($index, { profesional_id: $event })"
+                    [name]="'coasesor' + $index"
+                    aria-label="Asesor adicional"
+                  >
+                    <option [ngValue]="null">— Elija el asesor —</option>
+                    @for (p of candidatosCoasesor($index); track p.id) {
+                      <option [ngValue]="p.id">{{ p.nombre }}</option>
+                    }
+                  </select>
+                  <input
+                    class="form-control form-control--sm coasesor__horas"
+                    type="number"
+                    min="0.5"
+                    step="0.5"
+                    [ngModel]="co.horas"
+                    (ngModelChange)="cambiarCoasesor($index, { horas: $event })"
+                    [name]="'coasesorHoras' + $index"
+                    aria-label="Horas del asesor adicional"
+                    title="Horas de la orden que realiza"
+                  />
+                  <span class="coasesor__unidad">h</span>
+                  <button type="button" class="icon-action" (click)="quitarCoasesor($index)" aria-label="Quitar asesor adicional" title="Quitar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              }
+              <button type="button" class="btn btn--ghost btn--sm" (click)="agregarCoasesor()">Agregar otro asesor</button>
+
+              @if (problemaCoasesores(); as problema) {
+                <p class="suplente__aviso">{{ problema }}</p>
+              } @else {
+                <p class="suplente__ok">
+                  Al asesor principal le quedan {{ horasDelPrincipal() }} h de las {{ horasDeLaOrden() }} h de la orden.
+                </p>
+              }
+            }
+          </div>
+        }
        </div>
       </div>
 
@@ -1417,6 +1486,8 @@
                así dejaría los formatos a nombre del ejecutor sin decirlo, que es
                justo lo contrario de lo que se pidió. -->
           Elija a nombre de qué profesional registrado salen los formatos, o quite la marca.
+        } @else if (problemaCoasesores(); as problema) {
+          {{ problema }}
         } @else if (!visitaCompleta()) {
           <!-- ASG-02 · No es un bloqueo: se puede guardar el avance (o solo el
                cambio de profesional) y volver luego a repartir el resto. -->
@@ -1459,7 +1530,7 @@
             <button
               type="button"
               class="btn btn--primary"
-              [disabled]="!selectedProfId() || previsualizando() || (usarSuplente() && !formatosProfId())"
+              [disabled]="!selectedProfId() || previsualizando() || (usarSuplente() && !formatosProfId()) || !!problemaCoasesores()"
               (click)="previsualizarFormatos()"
             >
               @if (previsualizando()) { <span class="spinner" aria-hidden="true"></span> Preparando formatos… } @else { Continuar }
@@ -1468,7 +1539,7 @@
             <button
               type="button"
               class="btn btn--primary"
-              [disabled]="!selectedProfId() || assigning() || (usarSuplente() && !formatosProfId())"
+              [disabled]="!selectedProfId() || assigning() || (usarSuplente() && !formatosProfId()) || !!problemaCoasesores()"
               (click)="confirmAssign()"
             >
               @if (assigning()) {

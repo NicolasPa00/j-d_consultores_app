@@ -555,7 +555,9 @@
               <div class="field" [class.field--full]="item.span === 'full'">
                 <div class="field__labelrow">
                   <label class="form-field__label">{{ item.label }}</label>
-                  <span class="conf-badge pill pill--metric" [class]="pillClass(confianzaDe(item))">{{ confianzaDe(item) }}%</span>
+                  @if (!vacioOpcional(item)) {
+                    <span class="conf-badge pill pill--metric" [class]="pillClass(confianzaDe(item))">{{ confianzaDe(item) }}%</span>
+                  }
                 </div>
 
                 @if (item.type === 'textarea') {

@@ -10,7 +10,7 @@ import {
   validarTelefono, validarTextoOpcional, primerProblema, tecleoLetras, tecleoDigitos,
 } from '../../core/personas';
 import { AlertService } from '../../core/alert.service';
-import { Encuesta, Profesional, RegistroArl } from '../../core/models';
+import { Encuesta, Especialidad, Profesional, RegistroArl } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
@@ -63,14 +63,17 @@ export class ProfessionalsComponent implements OnInit {
   protected readonly query = signal('');
   protected readonly saving = signal(false);
 
-  protected readonly specialties = [
-    'Higiene Industrial',
-    'Tareas de Alto Riesgo',
-    'Ergonomía',
-    'Medicina Preventiva',
-    'Psicología Organizacional',
-    'Seguridad en el Trabajo',
-  ];
+  /**
+   * 5-oct-2026 · Las especialidades ya no son una lista fija en el código: son un
+   * catálogo que el administrador crea, edita y elimina desde esta misma pantalla.
+   */
+  protected readonly especialidades = signal<Especialidad[]>([]);
+  protected readonly especialidadesOpen = signal(false);
+  /** Id que se está guardando, o 'nueva' mientras se crea. */
+  protected readonly guardandoEspecialidad = signal<string | null>(null);
+  protected especialidadNueva = '';
+  /** Nombre en edición de cada fila, por id. */
+  protected nombreEspecialidad: Record<string, string> = {};
 
   protected readonly modalOpen = signal(false);
   protected readonly editingId = signal<string | null>(null);
@@ -105,6 +108,7 @@ export class ProfessionalsComponent implements OnInit {
   ngOnInit(): void {
     if (!this.isBrowser) return;
     this.load();
+    this.cargarEspecialidades();
     // ENC-05 · Llegada desde la campanita: `?profesional=<id>&vista=calificaciones`
     // abre su panel de encuestas. Se escuchan los cambios y no solo el snapshot
     // porque pulsar otro aviso estando YA aquí solo cambia el query param — el
@@ -450,6 +454,110 @@ export class ProfessionalsComponent implements OnInit {
     return partes.join(' · ');
   }
 
+  // ---- Especialidades (catálogo) ----
+  private cargarEspecialidades(): void {
+    this.api.listEspecialidades().subscribe({
+      next: (r) => {
+        this.especialidades.set(r.data);
+        this.nombreEspecialidad = Object.fromEntries(r.data.map((e) => [e.id, e.nombre]));
+      },
+      error: (err) => this.alerts.error('No se pudieron cargar las especialidades', mensajeError(err, 'No fue posible consultar el catálogo.')),
+    });
+  }
+
+  /**
+   * Lo que ofrece el desplegable de la ficha. Si el profesional tiene una
+   * especialidad que ya se eliminó del catálogo, se añade para no perderla al
+   * abrir y guardar la ficha por otro motivo.
+   */
+  protected opcionesEspecialidad(): string[] {
+    const nombres = this.especialidades().map((e) => e.nombre);
+    const actual = normalizarTexto(this.draft.specialty);
+    return actual && !nombres.includes(actual) ? [actual, ...nombres] : nombres;
+  }
+
+  protected abrirEspecialidades(): void {
+    this.especialidadNueva = '';
+    this.especialidadesOpen.set(true);
+  }
+
+  protected cerrarEspecialidades(): void {
+    if (this.guardandoEspecialidad()) return;
+    this.especialidadesOpen.set(false);
+  }
+
+  protected crearEspecialidad(): void {
+    const nombre = normalizarTexto(this.especialidadNueva);
+    const problema = !nombre ? 'Escriba el nombre de la especialidad.' : validarTextoOpcional(nombre, 'La especialidad');
+    if (problema) {
+      this.alerts.warning('Revise el nombre', problema);
+      return;
+    }
+    this.guardandoEspecialidad.set('nueva');
+    this.api.crearEspecialidad(nombre).subscribe({
+      next: () => {
+        this.guardandoEspecialidad.set(null);
+        this.especialidadNueva = '';
+        this.cargarEspecialidades();
+      },
+      error: (err) => {
+        this.guardandoEspecialidad.set(null);
+        this.alerts.error('No se pudo crear la especialidad', mensajeError(err, 'El servidor rechazó el alta.'));
+      },
+    });
+  }
+
+  /** Se guarda al salir del campo, y solo si de verdad cambió. */
+  protected renombrarEspecialidad(e: Especialidad): void {
+    const nombre = normalizarTexto(this.nombreEspecialidad[e.id]);
+    if (nombre === e.nombre) return;
+    const problema = !nombre ? 'El nombre no puede quedar vacío.' : validarTextoOpcional(nombre, 'La especialidad');
+    if (problema) {
+      this.nombreEspecialidad[e.id] = e.nombre;
+      this.alerts.warning('Revise el nombre', problema);
+      return;
+    }
+    this.guardandoEspecialidad.set(e.id);
+    this.api.actualizarEspecialidad(e.id, nombre).subscribe({
+      next: () => {
+        this.guardandoEspecialidad.set(null);
+        this.cargarEspecialidades();
+        // El cambio de nombre se propagó a las fichas: se recarga la tabla.
+        if (e.profesionales) this.load();
+      },
+      error: (err) => {
+        this.guardandoEspecialidad.set(null);
+        this.nombreEspecialidad[e.id] = e.nombre;
+        this.alerts.error('No se pudo cambiar el nombre', mensajeError(err, 'El servidor rechazó el cambio.'));
+      },
+    });
+  }
+
+  protected async eliminarEspecialidad(e: Especialidad): Promise<void> {
+    const usada = e.profesionales ?? 0;
+    const conserva = usada === 1
+      ? ' El profesional que la tiene la conserva.'
+      : ` Los ${usada} profesionales que la tienen la conservan.`;
+    const ok = await this.alerts.confirm({
+      title: 'Eliminar especialidad',
+      message: `"${e.nombre}" dejará de aparecer al crear o editar profesionales.` + (usada ? conserva : ''),
+      confirmText: 'Eliminar',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    this.guardandoEspecialidad.set(e.id);
+    this.api.eliminarEspecialidad(e.id).subscribe({
+      next: () => {
+        this.guardandoEspecialidad.set(null);
+        this.cargarEspecialidades();
+      },
+      error: (err) => {
+        this.guardandoEspecialidad.set(null);
+        this.alerts.error('No se pudo eliminar', mensajeError(err, 'El servidor rechazó el cambio.'));
+      },
+    });
+  }
+
   // ---- Acciones: tabla ----
   protected toggleStatus(professional: Professional): void {
     this.api.toggleProfessional(professional.id).subscribe({
@@ -462,7 +570,7 @@ export class ProfessionalsComponent implements OnInit {
 
   // ---- Helpers ----
   private emptyDraft(): ProfessionalDraft {
-    return { name: '', email: '', phone: '', specialty: this.specialties[0], status: 'Activo' };
+    return { name: '', email: '', phone: '', specialty: '', status: 'Activo' };
   }
 }
 

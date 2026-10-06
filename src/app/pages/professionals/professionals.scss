@@ -284,3 +284,16 @@
     cursor: pointer;
   }
 }
+
+// Catálogo de especialidades: campo + botón en una línea, alineados por abajo.
+.esp-nueva {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.esp-nueva .form-field {
+  flex: 1;
+  margin: 0;
+}

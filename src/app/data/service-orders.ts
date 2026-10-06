@@ -62,6 +62,8 @@ export interface ServiceOrder {
    */
   formatosProfId?: string | null;
   formatosProf?: string | null;
+  /** 5-oct-2026 · Asesores adicionales de la orden y las horas de cada uno. */
+  coasesores?: { profesional_id: string; nombre: string; horas: number }[];
   // ---- Eje de facturación (ago-2026) ----
   /** Estado de cobro. Es un eje independiente del ciclo operativo de la OS. */
   estadoCobro?: EstadoCobro | null;
