@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { EstadisticasPeriodo, ActivoFijo, ActivoFijoForm, CorridaDepreciacion, FichaActivoFijo, VistaPreviaDepreciacion, AuxiliarPorCuenta, BalanceComprobacion, FiltrosInformeContable, InformePorTercero, LibroAuxiliar, VentasPorCliente, EstadoSituacionFinanciera, EstadoResultados, ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, Coasesor, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, Especialidad, PagadorPorFacturar, OrdenManualForm, DetalleCobroOrden, ValoresCobroForm } from './models';
+import { EstadisticasPeriodo, ActivoFijo, ActivoFijoForm, CorridaDepreciacion, FichaActivoFijo, VistaPreviaDepreciacion, AuxiliarPorCuenta, BalanceComprobacion, FiltrosInformeContable, InformePorTercero, LibroAuxiliar, VentasPorCliente, EstadoSituacionFinanciera, EstadoResultados, ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, Coasesor, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DetalleSoporte, DocumentoFactura, DocumentoSoporte, SoportePorGenerar, Especialidad, PagadorPorFacturar, OrdenManualForm, DetalleCobroOrden, ValoresCobroForm } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -1139,6 +1139,39 @@ export class ApiService {
   /** PDF o XML de una factura validada (exige sesión: se descarga como blob). */
   archivoFactura(id: string, tipo: 'pdf' | 'xml'): Observable<Blob> {
     return this.http.get(`${this.base}/facturacion/documentos/${id}/archivo/${tipo}`, { responseType: 'blob' });
+  }
+
+  // ---- A4-01 · Documentos soporte ----
+  /** Por estado (varios separados por coma) y, opcional, el mes de la cuenta de cobro (AAAA-MM). */
+  listarSoportes(estado?: string, periodo?: string): Observable<Wrap<DocumentoSoporte[]>> {
+    return this.http.get<Wrap<DocumentoSoporte[]>>(`${this.base}/documentos-soporte${queryString({ estado, periodo })}`);
+  }
+  /** Cuentas de cobro aceptadas sin documento soporte todavía. */
+  soportesPorGenerar(): Observable<Wrap<SoportePorGenerar[]>> {
+    return this.http.get<Wrap<SoportePorGenerar[]>>(`${this.base}/documentos-soporte/por-generar`);
+  }
+  /** Borrador desde una cuenta de cobro ACEPTADA. */
+  crearSoporte(precuentaId: string): Observable<Wrap<DetalleSoporte> & { message: string }> {
+    return this.http.post<Wrap<DetalleSoporte> & { message: string }>(`${this.base}/documentos-soporte`, { precuenta_id: precuentaId });
+  }
+  obtenerSoporte(id: string): Observable<Wrap<DetalleSoporte>> {
+    return this.http.get<Wrap<DetalleSoporte>>(`${this.base}/documentos-soporte/${id}`);
+  }
+  eliminarSoporte(id: string): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.base}/documentos-soporte/${id}`);
+  }
+  /** 200 = la DIAN decidió (VALIDADO o RECHAZADO); 202 = sigue ENVIANDO (se reconcilia, no se reemite). */
+  emitirSoporte(id: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.base}/documentos-soporte/${id}/emitir`, {});
+  }
+  consultarEstadoSoporte(id: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.base}/documentos-soporte/${id}/consultar-estado`, {});
+  }
+  corregirSoporte(id: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.base}/documentos-soporte/${id}/corregir`, {});
+  }
+  archivoSoporte(id: string, tipo: 'pdf' | 'xml'): Observable<Blob> {
+    return this.http.get(`${this.base}/documentos-soporte/${id}/archivo/${tipo}`, { responseType: 'blob' });
   }
 
   // ---- Fase B · B0-01 · Plan de cuentas (CNT-01) ----

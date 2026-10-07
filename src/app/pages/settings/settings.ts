@@ -446,6 +446,7 @@ export class SettingsComponent implements OnInit {
     { clave: 'terceros', label: 'Terceros', hint: 'Fase A · PAR-03 · a quién se factura o se paga' },
     { clave: 'parametrizacion', label: 'Parametrización', hint: 'Fase A · emisor, productos, tarifas, retenciones y numeración' },
     { clave: 'facturacion', label: 'Facturación', hint: 'Finanzas · facturas electrónicas ante la DIAN' },
+    { clave: 'documentos_soporte', label: 'Documentos soporte', hint: 'Finanzas · cuentas de cobro de los asesores ante la DIAN' },
     { clave: 'contabilidad', label: 'Contabilidad', hint: 'Finanzas · plan de cuentas y comprobantes' },
     { clave: 'informes_contables', label: 'Informes contables', hint: 'Finanzas · balance de comprobación y auxiliares' },
     { clave: 'cartera', label: 'Cartera', hint: 'Finanzas · cuentas por cobrar y por pagar, recibos y egresos' },

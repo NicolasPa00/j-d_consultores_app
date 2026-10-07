@@ -140,6 +140,17 @@
                 @if (esComplemento(f)) {
                   <span class="complemento" [title]="avisoComplemento(f)">complementaria</span>
                 }
+                <!-- A4-01 · La cuenta aceptada se respalda ante la DIAN con un documento soporte. -->
+                @if (f.estado === 'aceptada' && veSoportes()) {
+                  @if (f.documento_soporte; as ds) {
+                    <a class="chip-ds" [class.chip-ds--ok]="ds.estado === 'VALIDADO'" routerLink="/documentos-soporte"
+                       title="Abrir Documentos soporte">
+                      {{ ds.numero ? (ds.prefijo && !ds.numero.startsWith(ds.prefijo) ? ds.prefijo + ds.numero : ds.numero) : 'DS en borrador' }}
+                    </a>
+                  } @else {
+                    <a class="chip-ds chip-ds--falta" routerLink="/documentos-soporte" title="Generarlo en Documentos soporte">sin documento soporte</a>
+                  }
+                }
               </td>
               <td class="col-actions">
                 <div class="row-actions">

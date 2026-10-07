@@ -117,6 +117,14 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/facturacion/facturacion').then((m) => m.FacturacionComponent),
       },
       {
+        // A4-01 · Documentos soporte: el costo de los asesores ante la DIAN (Finanzas).
+        path: 'documentos-soporte',
+        title: 'Documentos soporte',
+        canActivate: [permissionGuard],
+        data: { vista: 'documentos_soporte' },
+        loadComponent: () => import('./pages/documentos-soporte/documentos-soporte').then((m) => m.DocumentosSoporteComponent),
+      },
+      {
         // Fase A · A0-05 · Terceros: a quién se factura o se paga
         path: 'terceros',
         title: 'Terceros',

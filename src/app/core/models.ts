@@ -49,12 +49,12 @@ export interface MeResponse {
 /** Vistas gestionables desde Configuración → Roles y permisos (= ítems del sidebar). */
 export type Vista =
   | 'dashboard' | 'importar' | 'ordenes' | 'informes' | 'precuentas' | 'empresas' | 'terceros'
-  | 'parametrizacion' | 'facturacion' | 'contabilidad' | 'informes_contables' | 'cartera' | 'compras' | 'profesionales' | 'configuracion';
+  | 'parametrizacion' | 'facturacion' | 'documentos_soporte' | 'contabilidad' | 'informes_contables' | 'cartera' | 'compras' | 'profesionales' | 'configuracion';
 
 /** Catálogo completo de vistas. Es también el fallback cuando no hay permisos conocidos. */
 export const VISTAS: Vista[] = [
   'dashboard', 'importar', 'ordenes', 'informes', 'precuentas', 'empresas', 'terceros',
-  'parametrizacion', 'facturacion', 'contabilidad', 'informes_contables', 'cartera', 'compras', 'profesionales', 'configuracion',
+  'parametrizacion', 'facturacion', 'documentos_soporte', 'contabilidad', 'informes_contables', 'cartera', 'compras', 'profesionales', 'configuracion',
 ];
 
 export interface PermisoRol {
@@ -722,6 +722,8 @@ export interface CuentaDelMes {
    * que se finalizó después de cerrar la anterior.
    */
   del_mes?: number;
+  /** A4-01 · Su documento soporte vivo, si ya lo tiene (solo en cuentas creadas). */
+  documento_soporte?: { id: string; estado: EstadoDocumento; prefijo: string | null; numero: string | null } | null;
 }
 
 /** Una orden ejecutada dentro de la pre-cuenta, ya valorada. */
@@ -1615,6 +1617,53 @@ export interface EventoFactura {
   descripcion: string | null;
   fecha: string;
   datos: unknown;
+}
+
+/** A4-01 · Fila de `GET /documentos-soporte`. */
+export interface DocumentoSoporte {
+  id: string;
+  estado: EstadoDocumento;
+  reference_code: string;
+  prefijo: string | null;
+  numero: string | null;
+  cufe: string | null;
+  fecha_emision: string | null;
+  total_a_pagar: string;
+  tiene_pdf: boolean;
+  tiene_xml: boolean;
+  tercero_id: string;
+  tercero_nombre: string;
+  tercero_documento: string | null;
+  precuenta_id: string | null;
+  periodo: string | null;
+  profesional_nombre: string | null;
+  total_lineas: number;
+  creado_en: string;
+}
+
+/** A4-01 · Cuenta de cobro aceptada que todavía no tiene documento soporte. */
+export interface SoportePorGenerar {
+  precuenta_id: string;
+  periodo: string;
+  periodo_largo: string;
+  total_horas: string;
+  total_monto: string;
+  total_viaticos: string;
+  respondido_en: string | null;
+  profesional_id: string;
+  profesional_nombre: string;
+  tercero_id: string | null;
+  tercero_documento: string | null;
+  total_ordenes: number;
+  /** Lo que le falta al asesor para poder emitir: 'tercero', 'dirección', 'municipio'. */
+  faltantes: string[];
+}
+
+/** A4-01 · Detalle de un documento soporte: el de la factura más su cuenta de cobro de origen. */
+export interface DetalleSoporte extends DetalleFactura {
+  precuenta_id: string | null;
+  precuenta: { id: string; periodo: string; periodo_largo: string; estado: string; profesional_nombre: string } | null;
+  items: (ItemFactura & { arl_nombre: string | null; orden_codigo: string | null })[];
 }
 
 /** Detalle de `GET /facturacion/borradores/:id` (cualquier estado). */

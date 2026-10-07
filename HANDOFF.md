@@ -5,7 +5,7 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 7-oct-2026: **tercer lote (parte 1) DESPLEGADO** (bloque 🚀 del 7-oct). Antes, 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
+> **Última actualización:** 7-oct-2026 (tarde): **A4-01 documento soporte construido** (bloque 🧾 del 7-oct, tarde). Antes, 7-oct: **tercer lote (parte 1) DESPLEGADO** (bloque 🚀 del 7-oct). Antes, 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
 > para lo último; el resto de esta cabecera es del 16-sep) — **🚀 EL SISTEMA ESTÁ EN
 > PRODUCCIÓN**
 > (desde el 2-sep-2026) y ya lo están usando clientes reales. ORBITA vive en
@@ -226,6 +226,18 @@
 > Pendiente: el usuario prueba Finanzas con la guía (enlace en la memoria `pruebas-locales-finanzas`), un envío real de
 > factura para ver el logo, decidir si se despliega la parte 1 del tercer lote, y asociar el prefijo FE en la DIAN cuando
 > aparezca en el portal de producción.
+> 🧾 **7-oct-2026 (tarde) · A4-01 DOCUMENTO SOPORTE: emisión + pantalla HECHAS (commiteado en local, sin push ni
+> despliegue).** Pantalla nueva `/documentos-soporte` (Finanzas, vista `documentos_soporte` en la matriz de
+> permisos): Por generar (cuentas de cobro ACEPTADAS sin DS, avisa si al asesor le falta tercero/dirección/
+> municipio) · Pendientes · Emitidos (PDF, XML, historial). Backend `sst_ws/src/modules/facturacion/soporte.service.js`
+> + `soporte.routes.js` (`/api/documentos-soporte`); adaptador `POST /v2/support-documents/validate`. Cuentas de
+> cobro aceptadas muestran una píldora con el estado de su DS. Migración `2026-10-07-documento-soporte.sql`
+> (solo en `jdd_dev`; **va antes del restart**: el detalle de facturas lee `precuenta_id`). Bandera
+> `emisionDian` NUEVA en `documentos-soporte.ts` (en `false`; se enciende con las otras dos). **Trampas:** la DIAN
+> rechaza el DS si el proveedor residente no va como NIT (31) aunque sea persona natural (la cédula + DV, se
+> calcula si falta); `HttpError` usa `statusCode`, no `status` (el `FactusError` sí trae `status`). **Siguiente DS en
+> producción = 1334** (confirmado; el rango DS aún NO está creado en el proveedor). Falta: contabilización del DS y su
+> CxP. Prueba: `node --import tsx scripts/verificar-documento-soporte.mjs` (siembra y borra; `--conservar` para verlo).
 > 🚀 **7-oct-2026 · TERCER LOTE (PARTE 1) DESPLEGADO EN PRODUCCIÓN** (`master 8ae0142`, `main 52ee7cc`): todo lo del
 > 2 al 7-oct, con `emisionDian` y `PROVEEDOR_VISIBLE` en `false`. Detalle, respaldo y cómo revertir:
 > **`docs/4-despliegue/despliegue-lote3.md`**. Guía para el cliente (14 cambios, HTML + PDF):

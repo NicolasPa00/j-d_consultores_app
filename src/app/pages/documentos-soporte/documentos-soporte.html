@@ -1,0 +1,346 @@
+<section class="page-head fac-head">
+  <div>
+    <h2 class="page-head__title">Documentos soporte</h2>
+    <p class="page-head__sub">Lo que JD&amp;D les paga a los asesores, respaldado ante la DIAN · uno por cuenta de cobro aceptada</p>
+  </div>
+</section>
+
+<div class="fac-barra">
+  <div class="tabs" role="tablist">
+    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'por-generar'" (click)="cambiarPestana('por-generar')">
+      Por generar <span class="tab__count">{{ porGenerar().length }}</span>
+    </button>
+    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'pendientes'" (click)="cambiarPestana('pendientes')">
+      Pendientes <span class="tab__count">{{ pendientes().length }}</span>
+    </button>
+    @if (emisionDian) {
+      <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'emitidos'" (click)="cambiarPestana('emitidos')">
+        Emitidos <span class="tab__count">{{ emitidos().length }}</span>
+      </button>
+    }
+  </div>
+  @if (pestana() === 'emitidos') {
+    <select class="form-control fac-filtro" [ngModel]="filtroEstado()" (ngModelChange)="filtroEstado.set($event); pagEmitidos.reiniciar()" aria-label="Filtrar por estado">
+      <option value="">Todos los estados</option>
+      <option value="VALIDADO">Validados</option>
+      <option value="RECHAZADO">Rechazados</option>
+      <option value="ENVIANDO">Enviando a la DIAN</option>
+      <option value="ANULADO">Anulados</option>
+    </select>
+  }
+</div>
+
+<!-- ======================= POR GENERAR ======================= -->
+@if (pestana() === 'por-generar') {
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Asesor</th><th>Mes</th><th class="num">Órdenes</th><th class="num">Horas</th><th class="num">Viáticos</th><th class="num">Total</th><th>Datos DIAN</th><th class="col-actions">Acciones</th></tr>
+        </thead>
+        <tbody>
+          @for (c of pagPorGenerar.visibles(); track c.precuenta_id) {
+            <tr>
+              <td><span class="who__name">{{ c.profesional_nombre }}</span>
+                @if (c.tercero_documento) { <small class="fac-sub">NIT {{ c.tercero_documento }}</small> }
+              </td>
+              <td>{{ mes(c.periodo) }}</td>
+              <td class="num">{{ c.total_ordenes }}</td>
+              <td class="num">{{ +c.total_horas }}</td>
+              <td class="num">{{ +c.total_viaticos ? pesos(c.total_viaticos) : '—' }}</td>
+              <td class="num"><b>{{ pesos(c.total_monto) }}</b></td>
+              <td>
+                @if (c.faltantes.length) {
+                  <span class="pill pill--warning" [title]="'Complete en Terceros: ' + c.faltantes.join(', ')">Falta {{ c.faltantes.join(', ') }}</span>
+                } @else {
+                  <span class="pill pill--success">Completos</span>
+                }
+              </td>
+              <td class="col-actions">
+                <span class="fac-acciones">
+                  @if (c.faltantes.length) {
+                    <a class="btn btn--ghost btn--sm" routerLink="/terceros">Ir a Terceros</a>
+                  } @else if (puedeOperar()) {
+                    <button type="button" class="btn btn--primary btn--sm" (click)="generar(c)" [disabled]="!!generando()">
+                      @if (generando() === c.precuenta_id) { <span class="spinner" aria-hidden="true"></span> } Generar
+                    </button>
+                  }
+                </span>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8" class="table__empty">
+              @if (cargando()) { Cargando… } @else {
+                No hay cuentas de cobro por respaldar. Aparecen aquí las que el asesor ya <b>aceptó</b> en
+                <a routerLink="/precuentas">Cuentas de cobro</a> y todavía no tienen documento soporte.
+              }
+            </td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <app-paginador [pag]="pagPorGenerar" etiqueta="cuentas" />
+  </div>
+}
+
+<!-- ======================= PENDIENTES ======================= -->
+@if (pestana() === 'pendientes') {
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Referencia</th><th>Asesor</th><th>Mes</th><th class="num">Líneas</th><th class="num">Total</th><th>Estado</th><th class="col-actions">Acciones</th></tr>
+        </thead>
+        <tbody>
+          @for (d of pagPendientes.visibles(); track d.id) {
+            <tr>
+              <td class="mono">{{ d.reference_code }}</td>
+              <td><span class="who__name">{{ d.tercero_nombre }}</span></td>
+              <td>{{ mes(d.periodo) }}</td>
+              <td class="num">{{ d.total_lineas }}</td>
+              <td class="num"><b>{{ pesos(d.total_a_pagar) }}</b></td>
+              <td><span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
+              <td class="col-actions"><button type="button" class="btn btn--ghost btn--sm" (click)="abrir(d.id)">Ver</button></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="table__empty">
+              @if (cargando()) { Cargando… } @else { No hay documentos soporte en borrador. Se crean desde «Por generar». }
+            </td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <app-paginador [pag]="pagPendientes" etiqueta="documentos" />
+  </div>
+}
+
+<!-- ======================= EMITIDOS ======================= -->
+@if (pestana() === 'emitidos') {
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Número</th><th>Asesor</th><th>Mes</th><th>Emisión</th><th class="num">Total</th><th>Estado</th><th class="col-actions">Acciones</th></tr>
+        </thead>
+        <tbody>
+          @for (d of pagEmitidos.visibles(); track d.id) {
+            <tr>
+              <td><b>{{ numeroDe(d) }}</b></td>
+              <td><span class="who__name">{{ d.tercero_nombre }}</span></td>
+              <td>{{ mes(d.periodo) }}</td>
+              <td>{{ fecha(d.fecha_emision) }}</td>
+              <td class="num">{{ pesos(d.total_a_pagar) }}</td>
+              <td><span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
+              <td class="col-actions">
+                <span class="fac-acciones">
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="abrir(d.id)">Ver</button>
+                  @if (d.tiene_pdf) {
+                    <button type="button" class="icon-action" (click)="abrir(d.id, 'pdf')" aria-label="Ver el PDF del documento soporte" title="Documento soporte (PDF)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></svg></button>
+                  }
+                  <button type="button" class="icon-action" (click)="abrir(d.id, 'historial')" aria-label="Ver el historial" title="Historial"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg></button>
+                </span>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="table__empty">
+              @if (cargando()) { Cargando… } @else { Todavía no hay documentos soporte emitidos. }
+            </td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <app-paginador [pag]="pagEmitidos" etiqueta="documentos" />
+  </div>
+}
+
+<!-- ======================= DETALLE ======================= -->
+@if (cargandoDetalle() && !detalle()) {
+  <div class="modal-backdrop"></div>
+  <div class="modal fac-cargando"><span class="spinner" aria-hidden="true"></span> Abriendo…</div>
+}
+@if (detalle(); as d) {
+ @if (vista() === 'ver') {
+  <div class="modal-backdrop" (click)="cerrar()"></div>
+  <div class="modal modal--lg modal--factura" role="dialog" aria-modal="true" aria-labelledby="dsTitulo">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="dsTitulo">
+          {{ d.estado === 'BORRADOR' ? 'Borrador de documento soporte' : 'Documento soporte ' + numeroDe(d) }}
+          <span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span>
+        </h3>
+        <p class="modal__sub">
+          {{ d.tercero_nombre }}
+          @if (d.precuenta) { · cuenta de cobro de {{ d.precuenta.periodo_largo }} }
+          · ref. {{ d.reference_code }}
+        </p>
+      </div>
+      <button type="button" class="icon-action" (click)="cerrar()" aria-label="Cerrar" [disabled]="!!accion()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+
+    <div class="modal__body">
+      <section class="fac-progreso">
+        <ol class="fac-pasos">
+          @for (p of pasosDe(d); track $index) {
+            <li class="fac-paso" [class]="'fac-paso fac-paso--' + p.estado">
+              <span class="fac-paso__punto" aria-hidden="true">
+                @if (p.estado === 'hecho') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 12.5 4 4 8-9" /></svg>
+                } @else if (p.estado === 'error') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M7 7l10 10M17 7 7 17" /></svg>
+                }
+              </span>
+              <span class="fac-paso__etiqueta">{{ p.etiqueta }}</span>
+              @if (p.fecha) { <span class="fac-paso__fecha">{{ fechaHora(p.fecha) }}</span> }
+            </li>
+          }
+        </ol>
+        @if (d.estado === 'RECHAZADO' && erroresDe(d).length) {
+          <div class="fac-aviso fac-aviso--error" role="alert">
+            <ul class="fac-errores">@for (e of erroresDe(d); track $index) { <li>{{ e }}</li> }</ul>
+          </div>
+        }
+        @if (d.estado === 'BORRADOR' && !emisionDian) {
+          <p class="alert alert--info ds-aviso">El documento quedó preparado. El envío a la DIAN se habilitará en el próximo lote de cambios.</p>
+        }
+      </section>
+
+      <div class="fac-doc">
+        <div class="fac-datos">
+          <div><span>Emisión</span><b>{{ d.estado === 'BORRADOR' ? 'al emitir' : fecha(d.fecha_emision) }}</b></div>
+          <div><span>Vencimiento</span><b>{{ fecha(d.fecha_vencimiento) }}</b></div>
+          <div><span>Forma de pago</span><b>{{ d.forma_pago_nombre || '—' }}</b></div>
+          <div><span>Medio de pago</span><b>{{ d.medio_pago_nombre || '—' }}</b></div>
+          @if (d.cufe) {
+            <div class="fac-datos__ancho">
+              <span>CUDS</span>
+              <div class="fac-cufe-fila">
+                <b class="fac-cufe">{{ d.cufe }}</b>
+                <button type="button" class="icon-action fac-copiar" (click)="copiarCuds(d)" aria-label="Copiar el CUDS" title="Copiar el CUDS">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h9" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="table-wrap">
+          <table class="table fac-items">
+            <thead><tr><th>Descripción</th><th>ARL</th><th class="num">Cant.</th><th class="num">Valor unitario</th><th class="num">Total</th></tr></thead>
+            <tbody>
+              @for (it of d.items; track it.id) {
+                <tr>
+                  <td>{{ it.descripcion }}</td>
+                  <td>{{ it.arl_nombre || '—' }}</td>
+                  <td class="num">{{ +it.cantidad }}</td>
+                  <td class="num">{{ pesos(it.valor_unitario) }}</td>
+                  <td class="num">{{ pesos(it.total_linea) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="fac-totales">
+          <div><span>Subtotal</span><b>{{ pesos(d.totales.subtotal) }}</b></div>
+          <div><span>IVA</span><b>No aplica</b></div>
+          <div class="fac-totales__final"><span>Total a pagar</span><b>{{ pesos(d.totales.total_a_pagar) }}</b></div>
+        </div>
+
+        @if (d.observaciones) { <p class="fac-obs"><b>Observaciones:</b> {{ d.observaciones }}</p> }
+      </div>
+    </div>
+
+    <footer class="modal__footer fac-pie">
+      @if (d.estado === 'VALIDADO' || d.estado === 'ANULADO') {
+        <button type="button" class="btn btn--secondary" (click)="verPdf()" [disabled]="!!accion() || !d.pdf_path">
+          @if (accion() === 'ver') { <span class="spinner" aria-hidden="true"></span> } Ver documento
+        </button>
+        <button type="button" class="btn btn--ghost" (click)="descargar('pdf')" [disabled]="!!accion() || !d.pdf_path">PDF</button>
+        <button type="button" class="btn btn--ghost" (click)="descargar('xml')" [disabled]="!!accion() || !d.xml_path">XML</button>
+      }
+      <span class="fac-pie__espacio"></span>
+      @if (puedeOperar()) {
+        @switch (d.estado) {
+          @case ('BORRADOR') {
+            <button type="button" class="btn btn--danger" (click)="eliminar()" [disabled]="!!accion()">Eliminar borrador</button>
+            @if (emisionDian) {
+              <button type="button" class="btn btn--primary" (click)="emitir()" [disabled]="!!accion()">
+                @if (accion() === 'emitir') { <span class="spinner" aria-hidden="true"></span> Enviando a la DIAN… } @else { Emitir ante la DIAN }
+              </button>
+            }
+          }
+          @case ('ENVIANDO') {
+            <button type="button" class="btn btn--primary" (click)="consultarEstado()" [disabled]="!!accion()">
+              @if (accion() === 'estado') { <span class="spinner" aria-hidden="true"></span> } Consultar estado
+            </button>
+          }
+          @case ('RECHAZADO') {
+            <button type="button" class="btn btn--primary" (click)="corregir()" [disabled]="!!accion()">
+              @if (accion() === 'corregir') { <span class="spinner" aria-hidden="true"></span> } Volver a borrador
+            </button>
+          }
+        }
+      }
+      <button type="button" class="btn btn--close" (click)="cerrar()" [disabled]="!!accion()">Cerrar</button>
+    </footer>
+  </div>
+ }
+
+ @if (vista() === 'historial') {
+  <div class="modal-backdrop" (click)="cerrar()"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="dsHistTitulo">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="dsHistTitulo">Historial</h3>
+        <p class="modal__sub">{{ numeroDe(d) }} · {{ d.tercero_nombre }}</p>
+      </div>
+      <button type="button" class="icon-action" (click)="cerrar()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      @if (d.eventos.length) {
+        <ol class="fac-historial">
+          @for (e of d.eventos; track $index) {
+            <li class="fac-historial__item">
+              <span class="fac-historial__punto" aria-hidden="true"></span>
+              <div>
+                <p class="fac-historial__titulo">{{ etiquetaEvento(e.codigo) }}</p>
+                <p class="fac-historial__meta">{{ fechaHora(e.fecha) }}</p>
+                @if (e.descripcion) { <p class="fac-historial__desc">{{ e.descripcion }}</p> }
+              </div>
+            </li>
+          }
+        </ol>
+      } @else {
+        <p class="fac-vacio">Este documento todavía no tiene eventos.</p>
+      }
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--close" (click)="cerrar()">Cerrar</button>
+    </footer>
+  </div>
+ }
+}
+
+@if (pdfVisto(); as url) {
+  <div class="modal-backdrop fac-visor-fondo" (click)="cerrarPdf()"></div>
+  <div class="modal modal--full fac-visor" role="dialog" aria-modal="true" aria-labelledby="dsVisorTitulo">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="dsVisorTitulo">{{ pdfTitulo() }}</h3>
+        <p class="modal__sub">Vista previa · el archivo no se descarga</p>
+      </div>
+      <button type="button" class="icon-action" (click)="cerrarPdf()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+    <div class="modal__body fac-visor__cuerpo">
+      <iframe [src]="url" [title]="pdfTitulo()"></iframe>
+    </div>
+  </div>
+}

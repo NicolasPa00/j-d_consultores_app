@@ -43,8 +43,8 @@ export const SISTEMAS: Sistema[] = [
     id: 'finanzas',
     nombre: 'Finanzas',
     descripcion: 'Facturación electrónica ante la DIAN, cartera, compras, contabilidad, terceros y parametrización.',
-    llaves: ['facturacion', 'contabilidad', 'cartera', 'compras', 'terceros', 'parametrizacion'],
-    menu: ['facturacion', 'cartera', 'compras', 'contabilidad', 'informes_contables', 'terceros', 'parametrizacion', 'precuentas', 'informes', 'configuracion'],
+    llaves: ['facturacion', 'documentos_soporte', 'contabilidad', 'cartera', 'compras', 'terceros', 'parametrizacion'],
+    menu: ['facturacion', 'documentos_soporte', 'cartera', 'compras', 'contabilidad', 'informes_contables', 'terceros', 'parametrizacion', 'precuentas', 'informes', 'configuracion'],
   },
 ];
 
@@ -59,6 +59,7 @@ export const RUTA_DE_VISTA: Record<Vista, string> = {
   informes: '/informes',
   configuracion: '/configuracion',
   facturacion: '/facturacion',
+  documentos_soporte: '/documentos-soporte',
   terceros: '/terceros',
   parametrizacion: '/parametrizacion',
   contabilidad: '/contabilidad',

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, PLATFORM_ID, co
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
@@ -36,7 +36,7 @@ const MESES = [
  */
 @Component({
   selector: 'app-billing',
-  imports: [FormsModule, PaginadorComponent],
+  imports: [FormsModule, PaginadorComponent, RouterLink],
   templateUrl: './billing.html',
   styleUrl: './billing.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -103,6 +103,8 @@ export class BillingComponent implements OnInit {
 
   /** Solo el administrador genera, envía y edita tarifas (contador/auditor leen). */
   protected readonly puedeGestionar = computed(() => this.auth.usuario()?.rol === 'admin');
+  /** A4-01 · Quien ve Documentos soporte ve también en qué va el de cada cuenta aceptada. */
+  protected readonly veSoportes = computed(() => this.auth.puedeVer('documentos_soporte'));
 
   /** Lo que se ve en la tabla: el año, recortado por mes y por pestaña. */
   protected readonly filas = computed(() => {

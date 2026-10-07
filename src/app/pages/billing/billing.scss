@@ -411,3 +411,20 @@
 .fila--destacada > td:first-child {
   box-shadow: inset 3px 0 0 var(--secondary-color, var(--primary-color));
 }
+
+// A4-01 · Estado del documento soporte de una cuenta aceptada (lleva a la pantalla).
+.chip-ds {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--secondary-color);
+  background: rgba(45, 123, 200, 0.12);
+  border-radius: 999px;
+  text-decoration: none;
+
+  &:hover { text-decoration: underline; }
+  &--ok { color: var(--success); background: rgba(22, 163, 74, 0.12); }
+  &--falta { color: var(--warning); background: rgba(217, 119, 6, 0.12); }
+}

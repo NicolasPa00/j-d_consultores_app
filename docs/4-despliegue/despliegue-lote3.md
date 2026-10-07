@@ -95,7 +95,21 @@ restart. Las migraciones solo añaden tablas y columnas; si hiciera falta volver
 
 ## Parte 2 · Encender el envío a la DIAN
 
-### Qué tiene que estar listo antes (estado al 6-oct)
+### Qué entra además (construido el 7-oct, después de la parte 1)
+
+- **A4-01 · Documentos soporte** (`/documentos-soporte`, menú de Finanzas): uno por cuenta de cobro
+  aceptada, una línea por orden con su ARL y los viáticos aparte; emisión, «Consultar estado», PDF/XML.
+  Probado de punta a punta contra el sandbox (`node --import tsx scripts/verificar-documento-soporte.mjs`).
+  Sin contabilización todavía (siguiente paso de A4-01).
+- **Migración nueva** (antes del pull/restart: el backend nuevo lee `documentos_electronicos.precuenta_id`
+  en TODO el detalle de facturas, y sin la columna Facturación responde 500):
+  `db/migraciones/2026-10-07-documento-soporte.sql` (columna `precuenta_id`, índice único parcial y
+  la fila de permisos de la vista `documentos_soporte`). Aplicada solo en `jdd_dev`.
+- **Rango DS en el proveedor:** crear con `node ~/factus-rango-crear-ds.mjs` (simulación) y luego
+  `--confirmar`; **el siguiente DS es el 1334** (confirmado por el usuario el 7-oct: Siigo no lo usó).
+  Después, «Sincronizar con el proveedor» debe traer también `DS` 1001-2000.
+
+### Qué tiene que estar listo antes (estado al 7-oct)
 
 | Requisito | Estado |
 |---|---|
@@ -103,8 +117,11 @@ restart. Las migraciones solo añaden tablas y columnas; si hiciera falta volver
 | Credenciales de producción | ✅ en poder del desarrollador; van en `/opt/orbita/sst_ws/.env` |
 | Modo de operación en la DIAN | ✅ lo creó el proveedor («Software propio», Aceptado, 6-oct) |
 | Resolución de numeración nueva | ✅ `18764116756455`, FE 1001-1500, vence 6-oct-2028 |
-| **Prefijo `FE` asociado al software en el portal de producción de la DIAN** | ⛔ la resolución nueva aún no aparece en el portal |
-| Rango cargado en el panel del proveedor | ⛔ depende del anterior |
+| **Prefijo `FE` asociado al software en el portal de producción de la DIAN** | ✅ 7-oct (expira 6-oct-2028) |
+| Rango FE creado en el proveedor | ✅ 7-oct, id 3021, siguiente 1001 |
+| Prefijo `DS` asociado al software (lo hizo la contadora) | ✅ 7-oct |
+| Rango DS creado en el proveedor (siguiente 1334) | ⛔ correr `factus-rango-crear-ds.mjs` |
+| Rango de notas crédito | ❓ decidir si se crea un rango NC |
 | Dirección del emisor (`Carrera 24 N. 17-15 Casona San Agustín`) en el RUT y en el panel | ⛔ JD&D actualiza el RUT |
 | Parametrización de producción (abajo) | ⛔ |
 
@@ -114,7 +131,8 @@ restart. Las migraciones solo añaden tablas y columnas; si hiciera falta volver
    `FACTUS_CLIENT_SECRET`, `FACTUS_USERNAME`, `FACTUS_PASSWORD` en `/opt/orbita/sst_ws/.env`
    (`chmod 600`). Nunca en el `.env` local: apunta al ambiente de pruebas y a `jdd_dev`.
 2. **Banderas** (un commit propio, para poder revertirlo solo):
-   `emisionDian = true` en `src/app/pages/facturacion/facturacion.ts` y
+   `emisionDian = true` en `src/app/pages/facturacion/facturacion.ts` **y en
+   `src/app/pages/documentos-soporte/documentos-soporte.ts`**, y
    `PROVEEDOR_VISIBLE = true` en `src/app/pages/parametrizacion/parametrizacion.ts`.
 3. Push, `git pull --ff-only`, `npm run build` y `sudo systemctl restart orbita-api orbita-web`.
 4. **Parametrización de producción**, por pantalla y en este orden:
