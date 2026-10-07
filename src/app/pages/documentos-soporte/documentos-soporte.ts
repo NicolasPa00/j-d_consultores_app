@@ -9,7 +9,9 @@ import { PESOS } from '../../core/dinero';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
 import { mensajeError } from '../../core/errores';
-import { AsientoDocumento, CausalNotaCredito, DetalleSoporte, DocumentoSoporte, EstadoDocumento, SoportePorGenerar } from '../../core/models';
+import { AsientoDocumento, CausalNotaCredito, CuentaContable, DetalleSoporte, DocumentoSoporte, EstadoDocumento, ResumenImportSoportes,
+  SoportePorGenerar, Tercero } from '../../core/models';
+import { OpcionBusqueda, SelectorBusquedaComponent } from '../../shared/selector-busqueda/selector-busqueda';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
@@ -42,7 +44,7 @@ interface PasoDocumento {
  */
 @Component({
   selector: 'app-documentos-soporte',
-  imports: [FormsModule, RouterLink, PaginadorComponent],
+  imports: [FormsModule, RouterLink, PaginadorComponent, SelectorBusquedaComponent],
   templateUrl: './documentos-soporte.html',
   styleUrls: ['../facturacion/facturacion.scss', './documentos-soporte.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -89,6 +91,27 @@ export class DocumentosSoporteComponent implements OnInit {
   /** Cantidad a ajustar por línea (id → cantidad), para las notas parciales. */
   protected readonly cantidadesNota = signal<Record<string, number>>({});
   protected readonly esAnulacion = computed(() => this.causalNota() === '2');
+
+  // ---------------- A4-02 · Documento soporte manual y carga masiva ----------------
+  protected readonly manualOpen = signal(false);
+  protected readonly guardandoManual = signal(false);
+  protected readonly terceros = signal<Tercero[]>([]);
+  protected readonly cuentas = signal<CuentaContable[]>([]);
+  protected readonly manualTercero = signal('');
+  protected readonly manualObs = signal('');
+  protected readonly manualLineas = signal<{ descripcion: string; cantidad: string; valor_unitario: string; cuenta_id: string }[]>([]);
+  protected readonly opcionesTercero = computed<OpcionBusqueda[]>(() =>
+    this.terceros().map((t) => ({ valor: t.id, texto: t.nombre, detalle: t.numero_documento })));
+  // Primero las de costo y gasto (5, 6, 7): son las que lleva un documento soporte.
+  protected readonly opcionesCuenta = computed<OpcionBusqueda[]>(() => [...this.cuentas()]
+    .sort((a, b) => Number(!/^[567]/.test(a.codigo)) - Number(!/^[567]/.test(b.codigo)) || a.codigo.localeCompare(b.codigo))
+    .map((c) => ({ valor: c.id, texto: `${c.codigo} · ${c.nombre}` })));
+  protected readonly totalManual = computed(() => this.manualLineas()
+    .reduce((s, l) => s + (Number(String(l.cantidad).replace(',', '.')) || 0) * (Number(String(l.valor_unitario).replace(',', '.')) || 0), 0));
+  protected readonly importOpen = signal(false);
+  protected readonly importando = signal(false);
+  protected readonly resumenImport = signal<ResumenImportSoportes | null>(null);
+  private archivoImport: File | null = null;
 
   protected readonly detalle = signal<DetalleSoporte | null>(null);
   protected readonly vista = signal<VistaDocumento>('ver');
@@ -288,6 +311,97 @@ export class DocumentosSoporteComponent implements OnInit {
   protected corregir(): void {
     const d = this.detalle();
     if (d) this.ejecutar('corregir', this.api.corregirSoporte(d.id), 'Documento soporte devuelto a borrador');
+  }
+
+  // ================= A4-02 · Manual y carga masiva =================
+  private cargarCatalogos(): void {
+    if (this.terceros().length && this.cuentas().length) return;
+    this.api.listTerceros().subscribe({ next: (r) => this.terceros.set(r.data.filter((t) => t.activo)) });
+    this.api.listCuentas().subscribe({ next: (r) => this.cuentas.set(r.data.filter((c) => c.acepta_movimiento && c.activa)) });
+  }
+
+  protected abrirManual(): void {
+    this.cargarCatalogos();
+    this.manualTercero.set('');
+    this.manualObs.set('');
+    this.manualLineas.set([{ descripcion: '', cantidad: '1', valor_unitario: '', cuenta_id: '' }]);
+    this.manualOpen.set(true);
+  }
+
+  protected cambiarLinea(i: number, campo: 'descripcion' | 'cantidad' | 'valor_unitario' | 'cuenta_id', valor: string): void {
+    this.manualLineas.update((ls) => ls.map((l, j) => (j === i ? { ...l, [campo]: valor } : l)));
+  }
+
+  protected agregarLinea(): void {
+    this.manualLineas.update((ls) => [...ls, { descripcion: '', cantidad: '1', valor_unitario: '', cuenta_id: '' }]);
+  }
+
+  protected quitarLinea(i: number): void {
+    this.manualLineas.update((ls) => ls.filter((_, j) => j !== i));
+  }
+
+  protected guardarManual(): void {
+    if (this.guardandoManual()) return;
+    this.guardandoManual.set(true);
+    this.api.crearSoporteManual({
+      tercero_id: this.manualTercero(), observaciones: this.manualObs() || undefined, lineas: this.manualLineas(),
+    }).subscribe({
+      next: (r) => {
+        this.guardandoManual.set(false);
+        this.manualOpen.set(false);
+        this.alerts.success('Documento soporte en borrador', 'Revíselo antes de emitir.');
+        this.cargar();
+        this.pestana.set('pendientes');
+        this.vista.set('ver');
+        this.detalle.set(r.data);
+      },
+      error: (err) => {
+        this.guardandoManual.set(false);
+        this.alerts.error('No se pudo crear el documento soporte', mensajeError(err, 'Revise los datos.'));
+      },
+    });
+  }
+
+  protected abrirImport(): void {
+    this.resumenImport.set(null);
+    this.archivoImport = null;
+    this.importOpen.set(true);
+  }
+
+  protected descargarPlantilla(): void {
+    this.api.plantillaSoportes().subscribe({
+      next: (blob) => this.guardarArchivo(blob, 'plantilla-documentos-soporte.xlsx'),
+      error: (err) => this.alerts.error('No se pudo descargar la plantilla', mensajeError(err, 'Intente de nuevo.')),
+    });
+  }
+
+  /** Al elegir el archivo se revisa (sin guardar nada). */
+  protected elegirArchivo(ev: Event): void {
+    const f = (ev.target as HTMLInputElement).files?.[0] ?? null;
+    this.archivoImport = f;
+    this.resumenImport.set(null);
+    if (f) this.importar(true);
+  }
+
+  protected importar(simular: boolean): void {
+    if (!this.archivoImport || this.importando()) return;
+    this.importando.set(true);
+    this.api.importarSoportes(this.archivoImport, simular).subscribe({
+      next: (r) => {
+        this.importando.set(false);
+        this.resumenImport.set(r.data);
+        if (!simular && r.data.importados) {
+          this.importOpen.set(false);
+          this.alerts.success('Documentos soporte creados', `${r.data.importados} en borrador: revíselos en Pendientes y emítalos.`);
+          this.cargar();
+          this.pestana.set('pendientes');
+        }
+      },
+      error: (err) => {
+        this.importando.set(false);
+        this.alerts.error('No se pudo leer el Excel', mensajeError(err, 'Use la plantilla.'));
+      },
+    });
   }
 
   // ================= A4-03 · Nota de ajuste =================

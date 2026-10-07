@@ -2,3 +2,39 @@
 .ds-aviso {
   margin-top: 0.75rem;
 }
+
+// A4-02 · Manual y carga masiva.
+.ds-head-acciones {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.ds-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+.ds-lineas td:first-child { min-width: 260px; }
+.ds-lineas td:nth-child(3) { width: 110px; }
+.ds-lineas td:nth-child(4) { width: 150px; }
+.ds-pie-lineas {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 0.75rem 0;
+}
+.ds-texto {
+  color: var(--text-muted);
+  margin: 0 0 0.75rem;
+}
+.ds-resumen {
+  margin: 0.75rem 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-control, 8px);
+  background: rgba(22, 163, 74, 0.08);
+}
+.ds-resumen--mal { background: rgba(220, 38, 38, 0.08); }
+.ds-fila-mal td { color: var(--danger); }

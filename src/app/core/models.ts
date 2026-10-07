@@ -1651,6 +1651,17 @@ export interface DocumentoSoporte {
   creado_en: string;
 }
 
+/** A4-02 · Resultado de revisar o importar el Excel de documentos soporte. */
+export interface ResumenImportSoportes {
+  simulado: boolean;
+  importados: number;
+  documentos: number;
+  filas: number;
+  errores: number;
+  total: string;
+  resultados: { filas: number[]; proveedor: string | null; referencia: string | null; lineas: number; total: string | null; error: string | null }[];
+}
+
 /** A4-01 · Cuenta de cobro aceptada que todavía no tiene documento soporte. */
 export interface SoportePorGenerar {
   precuenta_id: string;

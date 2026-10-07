@@ -3,6 +3,13 @@
     <h2 class="page-head__title">Documentos soporte</h2>
     <p class="page-head__sub">Lo que JD&amp;D les paga a los asesores, respaldado ante la DIAN · uno por cuenta de cobro aceptada</p>
   </div>
+  @if (puedeOperar()) {
+    <!-- A4-02 · Los DS que no salen de una cuenta de cobro (la contadora, un proveedor que no factura). -->
+    <div class="ds-head-acciones">
+      <button type="button" class="btn btn--secondary" (click)="abrirImport()">Cargar desde Excel</button>
+      <button type="button" class="btn btn--primary" (click)="abrirManual()">Nuevo documento soporte</button>
+    </div>
+  }
 </section>
 
 <div class="fac-barra">
@@ -505,6 +512,117 @@
     </footer>
   </div>
  }
+}
+
+<!-- ======================= A4-02 · NUEVO (MANUAL) ======================= -->
+@if (manualOpen()) {
+  <div class="modal-backdrop" (click)="guardandoManual() ? null : manualOpen.set(false)"></div>
+  <div class="modal modal--xl" role="dialog" aria-modal="true" aria-labelledby="dsManualTitulo">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="dsManualTitulo">Nuevo documento soporte</h3>
+        <p class="modal__sub">Para lo que se le compra a quien no factura y no viene de una cuenta de cobro (p. ej. la contadora).</p>
+      </div>
+      <button type="button" class="icon-action" (click)="manualOpen.set(false)" aria-label="Cerrar" [disabled]="guardandoManual()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      <div class="ds-grid">
+        <div class="form-field">
+          <label class="form-field__label" for="dsProv">Proveedor *</label>
+          <app-selector-busqueda idCampo="dsProv" [opciones]="opcionesTercero()" [valor]="manualTercero()" (valorChange)="manualTercero.set($event)"
+                                 placeholder="Nombre o documento…" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="dsObs">Observaciones</label>
+          <input id="dsObs" class="form-control" type="text" maxlength="500" [ngModel]="manualObs()" (ngModelChange)="manualObs.set($event)" />
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="table ds-lineas">
+          <thead><tr><th>Cuenta de costo o gasto</th><th>Detalle</th><th class="num">Cantidad</th><th class="num">Valor unitario</th><th></th></tr></thead>
+          <tbody>
+            @for (l of manualLineas(); track $index; let i = $index) {
+              <tr>
+                <td>
+                  <app-selector-busqueda [opciones]="opcionesCuenta()" [valor]="l.cuenta_id" (valorChange)="cambiarLinea(i, 'cuenta_id', $event)"
+                                         placeholder="Código o nombre de la cuenta…" />
+                </td>
+                <td><input type="text" class="form-control" [ngModel]="l.descripcion" (ngModelChange)="cambiarLinea(i, 'descripcion', $event)" [attr.aria-label]="'Detalle de la línea ' + (i + 1)" /></td>
+                <td><input type="text" inputmode="decimal" class="form-control mono num" [ngModel]="l.cantidad" (ngModelChange)="cambiarLinea(i, 'cantidad', $event)" [attr.aria-label]="'Cantidad de la línea ' + (i + 1)" /></td>
+                <td><input type="text" inputmode="decimal" class="form-control mono num" [ngModel]="l.valor_unitario" (ngModelChange)="cambiarLinea(i, 'valor_unitario', $event)" [attr.aria-label]="'Valor de la línea ' + (i + 1)" /></td>
+                <td>
+                  <button type="button" class="icon-action" (click)="quitarLinea(i)" [disabled]="manualLineas().length <= 1" [attr.aria-label]="'Quitar la línea ' + (i + 1)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="ds-pie-lineas">
+        <button type="button" class="btn btn--ghost btn--sm" (click)="agregarLinea()">+ Agregar línea</button>
+        <span>Total: <b>{{ pesos(totalManual()) }}</b> · sin IVA, a crédito a 30 días</span>
+      </div>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--close" (click)="manualOpen.set(false)" [disabled]="guardandoManual()">Cancelar</button>
+      <button type="button" class="btn btn--primary" (click)="guardarManual()" [disabled]="guardandoManual() || !manualTercero() || totalManual() <= 0">
+        @if (guardandoManual()) { <span class="spinner" aria-hidden="true"></span> Guardando… } @else { Crear borrador }
+      </button>
+    </footer>
+  </div>
+}
+
+<!-- ======================= A4-02 · CARGA DESDE EXCEL ======================= -->
+@if (importOpen()) {
+  <div class="modal-backdrop" (click)="importando() ? null : importOpen.set(false)"></div>
+  <div class="modal modal--xl" role="dialog" aria-modal="true" aria-labelledby="dsImpTitulo">
+    <header class="modal__head"><h3 class="modal__title" id="dsImpTitulo">Cargar documentos soporte desde Excel</h3></header>
+    <div class="modal__body">
+      <p class="ds-texto">
+        Una fila por línea; las filas con el mismo proveedor y la misma referencia forman un solo documento soporte. Primero
+        se revisa y no se guarda nada; se cargan solo si <strong>todas</strong> las filas están bien, y quedan en
+        <strong>borrador</strong>: ninguno sale a la DIAN hasta que alguien lo revise y lo emita.
+      </p>
+      <div class="ds-pie-lineas">
+        <button type="button" class="btn btn--ghost btn--sm" (click)="descargarPlantilla()">Descargar la plantilla</button>
+        <input type="file" class="form-control" accept=".xlsx,.xls" (change)="elegirArchivo($event)" [disabled]="importando()" aria-label="Excel de documentos soporte" />
+      </div>
+      @if (importando() && !resumenImport()) { <p class="ds-texto"><span class="spinner" aria-hidden="true"></span> Revisando el archivo…</p> }
+      @if (resumenImport(); as r) {
+        <p class="ds-resumen" [class.ds-resumen--mal]="r.errores">
+          {{ r.filas }} filas · {{ r.documentos }} documentos · {{ pesos(r.total) }} en los que están bien.
+          @if (r.errores) { <strong>{{ r.errores }} con errores: corríjalos en el Excel y vuelva a subirlo.</strong> } @else { Todo listo para cargar. }
+        </p>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Filas</th><th>Proveedor</th><th>Referencia</th><th class="num">Líneas</th><th class="num">Total</th><th>Resultado</th></tr></thead>
+            <tbody>
+              @for (x of r.resultados; track $index) {
+                <tr [class.ds-fila-mal]="x.error">
+                  <td class="mono">{{ x.filas.join(', ') }}</td>
+                  <td>{{ x.proveedor || '—' }}</td>
+                  <td class="mono">{{ x.referencia || '—' }}</td>
+                  <td class="num">{{ x.lineas }}</td>
+                  <td class="num mono">{{ x.total ? pesos(x.total) : '' }}</td>
+                  <td>{{ x.error ? x.error : 'Bien' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--close" (click)="importOpen.set(false)" [disabled]="importando()">Cancelar</button>
+      <button type="button" class="btn btn--primary" (click)="importar(false)" [disabled]="importando() || !resumenImport() || !!resumenImport()!.errores">
+        @if (importando() && resumenImport()) { <span class="spinner" aria-hidden="true"></span> Cargando… } @else { Crear borradores }
+      </button>
+    </footer>
+  </div>
 }
 
 @if (pdfVisto(); as url) {
