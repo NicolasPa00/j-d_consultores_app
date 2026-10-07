@@ -97,14 +97,21 @@ restart. Las migraciones solo añaden tablas y columnas; si hiciera falta volver
 
 ### Qué entra además (construido el 7-oct, después de la parte 1)
 
-- **A4-01 · Documentos soporte** (`/documentos-soporte`, menú de Finanzas): uno por cuenta de cobro
-  aceptada, una línea por orden con su ARL y los viáticos aparte; emisión, «Consultar estado», PDF/XML.
-  Probado de punta a punta contra el sandbox (`node --import tsx scripts/verificar-documento-soporte.mjs`).
-  Sin contabilización todavía (siguiente paso de A4-01).
+- **A4-01..03 · Documentos soporte completos** (`/documentos-soporte`, menú de Finanzas): uno por cuenta
+  de cobro aceptada (una línea por orden con su ARL, viáticos aparte), DS manual y carga por Excel, nota de
+  ajuste, asiento DS/NA y cuenta por pagar al asesor que se paga con el egreso. Probado contra el sandbox:
+  `node --import tsx scripts/verificar-documento-soporte.mjs` (29/29) y `scripts/verificar-soporte-manual.mjs`.
 - **Migración nueva** (antes del pull/restart: el backend nuevo lee `documentos_electronicos.precuenta_id`
   en TODO el detalle de facturas, y sin la columna Facturación responde 500):
-  `db/migraciones/2026-10-07-documento-soporte.sql` (columna `precuenta_id`, índice único parcial y
-  la fila de permisos de la vista `documentos_soporte`). Aplicada solo en `jdd_dev`.
+  `db/migraciones/2026-10-07-documento-soporte.sql` (columna `precuenta_id`, índice único parcial,
+  conceptos DS_COSTO/DS_CXP en las reglas, origen NOTA_AJUSTE en cartera y la fila de permisos de la vista
+  `documentos_soporte`). Idempotente. Aplicada solo en `jdd_dev`.
+- **Reglas del DS en producción:** Contabilidad → Reglas → «Cargar las del software contable actual» crea
+  DS_CXP (23352501) y el costo de Bolívar (73050501), AXA (73050503) y Colmena (73050516). Los clientes
+  particulares (Transporte de Sandoná 73050507, Kamentsa 73050508…) los agrega la contadora en «Reglas por
+  tercero» con el concepto «Costo de honorarios»; sin regla, el DS queda «contabilidad pendiente».
+- **Rango de notas de ajuste (NA) en el proveedor:** sin él no se puede emitir una nota de ajuste. Se crea
+  igual que los otros (documento `25`); decidir el prefijo con la contadora.
 - **Rango DS en el proveedor:** crear con `node ~/factus-rango-crear-ds.mjs` (simulación) y luego
   `--confirmar`; **el siguiente DS es el 1334** (confirmado por el usuario el 7-oct: Siigo no lo usó).
   Después, «Sincronizar con el proveedor» debe traer también `DS` 1001-2000.
@@ -121,6 +128,7 @@ restart. Las migraciones solo añaden tablas y columnas; si hiciera falta volver
 | Rango FE creado en el proveedor | ✅ 7-oct, id 3021, siguiente 1001 |
 | Prefijo `DS` asociado al software (lo hizo la contadora) | ✅ 7-oct |
 | Rango DS creado en el proveedor (siguiente 1334) | ⛔ correr `factus-rango-crear-ds.mjs` |
+| Rango de notas de ajuste al DS (documento 25) | ⛔ crear en el proveedor (prefijo por decidir) |
 | Rango de notas crédito | ❓ decidir si se crea un rango NC |
 | Dirección del emisor (`Carrera 24 N. 17-15 Casona San Agustín`) en el RUT y en el panel | ⛔ JD&D actualiza el RUT |
 | Parametrización de producción (abajo) | ⛔ |

@@ -5,7 +5,7 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 7-oct-2026 (tarde): **A4-01 documento soporte construido** (bloque 🧾 del 7-oct, tarde). Antes, 7-oct: **tercer lote (parte 1) DESPLEGADO** (bloque 🚀 del 7-oct). Antes, 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
+> **Última actualización:** 7-oct-2026 (noche): **documento soporte completo, A4-01..03** (bloque ✅ del 7-oct, noche). Antes, 7-oct: **tercer lote (parte 1) DESPLEGADO** (bloque 🚀 del 7-oct). Antes, 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
 > para lo último; el resto de esta cabecera es del 16-sep) — **🚀 EL SISTEMA ESTÁ EN
 > PRODUCCIÓN**
 > (desde el 2-sep-2026) y ya lo están usando clientes reales. ORBITA vive en
@@ -226,6 +226,17 @@
 > Pendiente: el usuario prueba Finanzas con la guía (enlace en la memoria `pruebas-locales-finanzas`), un envío real de
 > factura para ver el logo, decidir si se despliega la parte 1 del tercer lote, y asociar el prefijo FE en la DIAN cuando
 > aparezca en el portal de producción.
+> ✅ **7-oct-2026 (noche) · DOCUMENTO SOPORTE COMPLETO (A4-01, A4-02, A4-03), commiteado en local, sin push ni
+> despliegue.** Encima de lo de abajo: asiento DS (D costo por PAGADOR de la orden, regla `DS_COSTO` por tercero;
+> C 23352501) y cuenta por pagar al asesor que paga el egreso (`abrirCarteraDeFactura(..., 'CXP')`); «pagada» en
+> `/precuentas`; DS manual y carga por Excel (`soporte-importar.service.js`, borradores todo o nada); nota de ajuste
+> (`POST /v2/adjustment-notes/validate`, motivos 1-5; la de anulación deja el DS ANULADO y libera la cuenta de cobro;
+> asiento NA espejo y baja de la CxP con `aplicarNotaCredito(..., 'NOTA_AJUSTE')`). Pruebas:
+> `verificar-documento-soporte.mjs` (29/29, contabilidad con ROLLBACK) y `verificar-soporte-manual.mjs`. **Trampas:**
+> un comprobante contabilizado NO se puede borrar (trigger): las pruebas de contabilidad van con ROLLBACK; el
+> heredoc de bash falla con ciertos textos con comillas: escribir los scripts de edición con la herramienta de
+> archivos; `ng serve` puede quedarse con tipos viejos (reiniciarlo; `TaskStop` deja vivo el node hijo en :4001).
+> En producción faltan los rangos DS (sig. 1334) y NA en el proveedor, y las reglas de costo de los particulares.
 > 🧾 **7-oct-2026 (tarde) · A4-01 DOCUMENTO SOPORTE: emisión + pantalla HECHAS (commiteado en local, sin push ni
 > despliegue).** Pantalla nueva `/documentos-soporte` (Finanzas, vista `documentos_soporte` en la matriz de
 > permisos): Por generar (cuentas de cobro ACEPTADAS sin DS, avisa si al asesor le falta tercero/dirección/

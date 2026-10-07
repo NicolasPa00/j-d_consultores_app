@@ -187,7 +187,7 @@ Pantallas nuevas: `/contabilidad` (Plan de cuentas · Comprobantes · Reglas · 
 | B7-01 bancos y conciliación | un **extracto bancario real** (el formato depende del banco) |
 | B9-01 saldos iniciales | ⛔ Q-20 (fecha de corte + balance de prueba por tercero de Siigo) y respaldos automáticos (A0-02) |
 | B11-01 mes en paralelo con Siigo | todo lo anterior |
-| A4-01..03 documento soporte | ❓ Q-17 · al llegar: su CxP y el «Pagada» en `/precuentas` (B4-01) |
+| A4-01..03 documento soporte | ✅ 7-oct (construido y probado en sandbox; en producción falta crear los rangos DS y NA en el proveedor) |
 | A5-01 nómina · A6-01 radicación | ❓ Factus · ❓ Q-24 |
 | T0-02 evaluación PSP-F-010 de Colmena | ⛔ el formato lo envía JD&D |
 
@@ -703,9 +703,9 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecha y verificada · ❓ espera 
 | A1-08 | Pantalla de Facturación | A1-03..07 | L | ✅ 29-sep con los subsistemas Operación/Finanzas (selección al entrar, «Cambiar de sistema»); probado en navegador: crear y eliminar el borrador de la prefactura 170501. Emisión desde la pantalla sin probar (marcaría como facturadas las órdenes de prueba) |
 | A2-01 | Nota crédito (FEL-11) | A1-05 | M | ✅ 29-sep, probada en el SANDBOX real: SETP990021791 anulada con NC979; órdenes de vuelta a «Por facturar» (`scripts/verificar-nota-credito.mjs`). Hallado y corregido de paso: el número de Factus trae el prefijo y A1-05 lo duplicaba |
 | A3-01 | Órdenes manuales para privados (pagador sin ARL) | A0-05 | L | 🟨 29-sep código completo (back + front) y `scripts/verificar-orden-particular.mjs` en verde con ROLLBACK (29 comprobaciones). Migración aplicada en `jdd_dev` y verificaciones de A1-03/A1-04 en verde (29-sep). **Falta:** probar en la app (alta → asignar → soportes → factura) + reimportar un AXA y un SIPAB |
-| A4-01 | Documento soporte desde la cuenta de cobro (DSP-01, CXP-05) | A1-02, A0-05 | L | 🟡 7-oct emisión + pantalla `/documentos-soporte` hechas y probadas en sandbox (`verificar-documento-soporte.mjs`, 13/13); falta la contabilización (D 7305xxxx por ARL / C 23352501) y la CxP. Supuestos: crédito a 30 días, sin retención. Hallazgo: la DIAN exige NIT (31) al proveedor residente |
-| A4-02 | Documento soporte manual y carga masiva por Excel | A4-01 | M | ⬜ |
-| A4-03 | Nota de ajuste al documento soporte (DSP-03) | A4-01 | S | ⬜ |
+| A4-01 | Documento soporte desde la cuenta de cobro (DSP-01, CXP-05) | A1-02, A0-05 | L | ✅ 7-oct: emisión, pantalla `/documentos-soporte`, asiento DS (costo por PAGADOR de la orden: regla DS_COSTO por tercero; C 23352501) y cuenta por pagar que paga el egreso; «pagada» en `/precuentas`. `verificar-documento-soporte.mjs` 29/29 en sandbox. Supuestos: crédito a 30 días, sin retención. La DIAN exige NIT (31) al proveedor residente |
+| A4-02 | Documento soporte manual y carga masiva por Excel | A4-01 | M | ✅ 7-oct: «Nuevo documento soporte» (cada línea con su cuenta, p. ej. 51101001 de la contadora) y «Cargar desde Excel» (plantilla, revisión, borradores todo o nada). `verificar-soporte-manual.mjs` |
+| A4-03 | Nota de ajuste al documento soporte (DSP-03) | A4-01 | S | ✅ 7-oct: `POST /v2/adjustment-notes/validate`, motivos 1-5, total o por línea; la de anulación deja el DS ANULADO y libera la cuenta de cobro; asiento NA espejo y baja de la CxP |
 | A5-01 | Nómina electrónica (NOM-01..04) | A0-05 | L | ❓ Factus |
 | A6-01 | Paquete de radicación: relación, paz y salvo y soportes en un paso (FEL-03, 08, 09) | A1-05 | L | ❓ Q-24 |
 | A9-01 | Cierre de la Fase A | todas | S | ⬜ |
