@@ -113,6 +113,8 @@ restart. Las migraciones solo añaden tablas y columnas; si hiciera falta volver
 > módulo (A5-01). Falta: documentación del endpoint (pedirla al proveedor), habilitar la nómina en la DIAN con el
 > proveedor, rango del documento 26 y construir A5-01.
 >
+> **7-oct (~16:43):** desplegados los arreglos de la auditoría visual de Documentos soporte (`master 4b314ca`, `main e3dd38a`; sin migración; servicios activos, health 200).
+>
 > Historial: **7-oct-2026 (noche) · EN CURSO.** Banderas encendidas en `ca9a3a1` (front); `master` = `1835e23`,
 > `main` = `ca9a3a1`, ya en GitHub. En el servidor: respaldo `~/respaldos/orbita-antes-lote3b-20261007-1544.dump`
 > + `storage-antes-lote3b-20261007-1544.tgz` y **ensayo OK** de `2026-10-07-documento-soporte` en `orbita_ensayo`
