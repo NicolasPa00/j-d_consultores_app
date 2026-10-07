@@ -69,7 +69,7 @@ export class FacturacionComponent implements OnInit {
    * activarlo basta con ponerlo en `true`: el código está completo y probado
    * contra el sandbox.
    */
-  protected readonly emisionDian: boolean = false;
+  protected readonly emisionDian: boolean = true;
   private readonly sanitizer = inject(DomSanitizer);
   /** 1-oct-2026 · Visor del PDF del documento (sin descargarlo). */
   protected readonly pdfVisto = signal<SafeResourceUrl | null>(null);

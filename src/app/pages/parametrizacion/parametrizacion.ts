@@ -47,7 +47,7 @@ const CATALOGOS_CONSULTA: { clave: string; label: string }[] = [
  * muestra en el TERCER lote, con la emisión ante la DIAN (`emisionDian` en
  * Facturación).
  */
-const PROVEEDOR_VISIBLE: boolean = false;
+const PROVEEDOR_VISIBLE: boolean = true;
 
 @Component({
   selector: 'app-parametrizacion',

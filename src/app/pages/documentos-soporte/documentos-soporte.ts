@@ -61,7 +61,7 @@ export class DocumentosSoporteComponent implements OnInit {
    * encendido en producción (parte 2 del tercer lote), los documentos soporte se
    * preparan pero no se emiten. Se enciende en el mismo commit que las otras dos.
    */
-  protected readonly emisionDian: boolean = false;
+  protected readonly emisionDian: boolean = true;
 
   protected readonly pestana = signal<Pestana>('por-generar');
   protected readonly puedeOperar = computed(() => ['admin', 'contador'].includes(this.auth.usuario()?.rol ?? ''));
