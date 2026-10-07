@@ -1622,7 +1622,13 @@ export interface EventoFactura {
 /** A4-01 · Fila de `GET /documentos-soporte`. */
 export interface DocumentoSoporte {
   id: string;
+  /** DOC_SOPORTE o, A4-03, NOTA_AJUSTE_DS. */
+  tipo: string;
   estado: EstadoDocumento;
+  causal: string | null;
+  documento_referencia_id: string | null;
+  referencia_prefijo: string | null;
+  referencia_numero: string | null;
   reference_code: string;
   prefijo: string | null;
   numero: string | null;
@@ -1671,6 +1677,9 @@ export interface DetalleSoporte extends DetalleFactura {
   contabilizacion_error: string | null;
   /** Cuenta por pagar al asesor: valor y saldo (0 = pagada con un egreso). */
   cxp: { valor: string; saldo: string } | null;
+  /** A4-03 · En un DS: sus notas de ajuste. En una nota: el nombre del motivo. */
+  notas_ajuste: { id: string; estado: EstadoDocumento; prefijo: string | null; numero: string | null; reference_code: string; causal: string; total_a_pagar: string }[];
+  causal_nombre: string | null;
   items: (ItemFactura & { arl_nombre: string | null; orden_codigo: string | null })[];
 }
 
@@ -1906,7 +1915,7 @@ export interface AntiguedadCartera {
 }
 
 export interface MovimientoCartera {
-  origen_tipo: 'NOTA_CREDITO' | 'RECIBO_CAJA' | 'EGRESO';
+  origen_tipo: 'NOTA_CREDITO' | 'RECIBO_CAJA' | 'EGRESO' | 'NOTA_AJUSTE';
   fecha: string;
   valor_pagado: string;
   valor_retenciones: string;

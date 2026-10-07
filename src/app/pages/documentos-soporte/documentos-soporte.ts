@@ -9,11 +9,11 @@ import { PESOS } from '../../core/dinero';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
 import { mensajeError } from '../../core/errores';
-import { AsientoDocumento, DetalleSoporte, DocumentoSoporte, EstadoDocumento, SoportePorGenerar } from '../../core/models';
+import { AsientoDocumento, CausalNotaCredito, DetalleSoporte, DocumentoSoporte, EstadoDocumento, SoportePorGenerar } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
-type Pestana = 'por-generar' | 'pendientes' | 'emitidos';
+type Pestana = 'por-generar' | 'pendientes' | 'emitidos' | 'notas';
 type VistaDocumento = 'ver' | 'pdf' | 'historial' | 'contab';
 
 /** Todo lo que ya salió (o intentó salir) a la DIAN. */
@@ -77,6 +77,18 @@ export class DocumentosSoporteComponent implements OnInit {
   protected readonly pagPorGenerar = paginar(this.porGenerar);
   protected readonly pagPendientes = paginar(this.pendientes);
   protected readonly pagEmitidos = paginar(this.emitidosFiltrados);
+  /** A4-03 · Notas de ajuste ya enviadas (o intentadas); los borradores van en Pendientes. */
+  protected readonly notas = signal<DocumentoSoporte[]>([]);
+  protected readonly pagNotas = paginar(this.notas);
+
+  // ---------------- A4-03 · Nota de ajuste (formulario dentro de «Ver») ----------------
+  protected readonly causales = signal<CausalNotaCredito[]>([]);
+  protected readonly formNota = signal(false);
+  protected readonly causalNota = signal('');
+  protected readonly obsNota = signal('');
+  /** Cantidad a ajustar por línea (id → cantidad), para las notas parciales. */
+  protected readonly cantidadesNota = signal<Record<string, number>>({});
+  protected readonly esAnulacion = computed(() => this.causalNota() === '2');
 
   protected readonly detalle = signal<DetalleSoporte | null>(null);
   protected readonly vista = signal<VistaDocumento>('ver');
@@ -91,6 +103,7 @@ export class DocumentosSoporteComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargar();
+    this.api.causalesNotaAjuste().subscribe({ next: (r) => this.causales.set(r.data) });
   }
 
   protected cambiarPestana(p: Pestana): void {
@@ -99,11 +112,17 @@ export class DocumentosSoporteComponent implements OnInit {
 
   protected cargar(): void {
     this.cargando.set(true);
-    let faltan = 3;
+    let faltan = 5;
     const listo = () => { if (--faltan === 0) this.cargando.set(false); };
+    // Pendientes junta los borradores de DS y de notas de ajuste (los dos se revisan y emiten aquí).
+    let dsBorrador: DocumentoSoporte[] = [];
+    let naBorrador: DocumentoSoporte[] = [];
+    const juntar = () => this.pendientes.set([...naBorrador, ...dsBorrador]);
     this.api.soportesPorGenerar().subscribe({ next: (r) => { this.porGenerar.set(r.data); listo(); }, error: () => listo() });
-    this.api.listarSoportes('BORRADOR').subscribe({ next: (r) => { this.pendientes.set(r.data); listo(); }, error: () => listo() });
+    this.api.listarSoportes('BORRADOR').subscribe({ next: (r) => { dsBorrador = r.data; juntar(); listo(); }, error: () => listo() });
+    this.api.listarSoportes('BORRADOR', undefined, 'NOTA_AJUSTE_DS').subscribe({ next: (r) => { naBorrador = r.data; juntar(); listo(); }, error: () => listo() });
     this.api.listarSoportes(ESTADOS_EMITIDOS).subscribe({ next: (r) => { this.emitidos.set(r.data); listo(); }, error: () => listo() });
+    this.api.listarSoportes(ESTADOS_EMITIDOS, undefined, 'NOTA_AJUSTE_DS').subscribe({ next: (r) => { this.notas.set(r.data); listo(); }, error: () => listo() });
   }
 
   // ================= Por generar =================
@@ -129,6 +148,7 @@ export class DocumentosSoporteComponent implements OnInit {
   // ================= Detalle y acciones =================
   protected abrir(id: string, vista: VistaDocumento = 'ver'): void {
     this.cargandoDetalle.set(true);
+    this.formNota.set(false);
     this.vista.set(vista);
     this.api.obtenerSoporte(id).subscribe({
       next: (r) => {
@@ -247,13 +267,17 @@ export class DocumentosSoporteComponent implements OnInit {
   protected async emitir(): Promise<void> {
     const d = this.detalle();
     if (!d) return;
+    const nota = this.esNota(d);
     const ok = await this.alerts.confirm({
-      title: 'Emitir documento soporte ante la DIAN',
-      message: `Se enviará a la DIAN el documento soporte de ${d.tercero_nombre} por ${this.pesos(d.totales.total_a_pagar)}. ` +
-               'Una vez validado no se puede modificar: solo se corrige con una nota de ajuste.',
+      title: nota ? 'Emitir nota de ajuste ante la DIAN' : 'Emitir documento soporte ante la DIAN',
+      message: nota
+        ? `Se enviará a la DIAN la nota de ajuste de ${d.tercero_nombre} por ${this.pesos(d.totales.total_a_pagar)}` +
+          (d.causal === '2' ? ': anula el documento soporte y su cuenta de cobro vuelve a «Por generar».' : '.')
+        : `Se enviará a la DIAN el documento soporte de ${d.tercero_nombre} por ${this.pesos(d.totales.total_a_pagar)}. ` +
+          'Una vez validado no se puede modificar: solo se corrige con una nota de ajuste.',
       confirmText: 'Emitir',
     });
-    if (ok) this.ejecutar('emitir', this.api.emitirSoporte(d.id), 'Documento soporte enviado');
+    if (ok) this.ejecutar('emitir', this.api.emitirSoporte(d.id), nota ? 'Nota de ajuste enviada' : 'Documento soporte enviado');
   }
 
   protected consultarEstado(): void {
@@ -264,6 +288,61 @@ export class DocumentosSoporteComponent implements OnInit {
   protected corregir(): void {
     const d = this.detalle();
     if (d) this.ejecutar('corregir', this.api.corregirSoporte(d.id), 'Documento soporte devuelto a borrador');
+  }
+
+  // ================= A4-03 · Nota de ajuste =================
+  protected abrirFormNota(): void {
+    const d = this.detalle();
+    if (!d) return;
+    this.causalNota.set('');
+    this.obsNota.set('');
+    this.cantidadesNota.set(Object.fromEntries(d.items.map((it) => [it.id, Number(it.cantidad)])));
+    this.formNota.set(true);
+  }
+
+  protected cambiarCantidadNota(itemId: string, valor: number, maximo: number): void {
+    const n = Math.max(0, Math.min(Number(valor) || 0, maximo));
+    this.cantidadesNota.update((c) => ({ ...c, [itemId]: n }));
+  }
+
+  protected crearNota(): void {
+    const d = this.detalle();
+    if (!d || !this.causalNota()) return;
+    const lineas = this.esAnulacion() ? undefined
+      : Object.entries(this.cantidadesNota()).filter(([, c]) => c > 0).map(([item_id, cantidad]) => ({ item_id, cantidad }));
+    if (lineas && !lineas.length) {
+      this.alerts.error('Nada que ajustar', 'Indique la cantidad de al menos una línea.');
+      return;
+    }
+    this.accion.set('nota');
+    this.api.crearNotaAjuste(d.id, { causal: this.causalNota(), lineas, observaciones: this.obsNota() || undefined }).subscribe({
+      next: (r) => {
+        this.accion.set(null);
+        this.formNota.set(false);
+        this.alerts.success('Nota de ajuste en borrador', 'Revísela y emítala ante la DIAN.');
+        this.detalle.set(r.data);
+        this.cargar();
+      },
+      error: (err) => {
+        this.accion.set(null);
+        this.alerts.error('No se pudo crear la nota de ajuste', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  protected esNota(d: { tipo: string }): boolean {
+    return d.tipo === 'NOTA_AJUSTE_DS';
+  }
+
+  /** Número del DS que corrige una nota de ajuste. */
+  protected referenciaDe(d: DocumentoSoporte): string {
+    return d.referencia_numero
+      ? this.numeroDe({ numero: d.referencia_numero, prefijo: d.referencia_prefijo })
+      : '—';
+  }
+
+  protected nombreCausal(codigo: string | null | undefined): string {
+    return this.causales().find((c) => c.codigo === String(codigo))?.nombre ?? (codigo ? `Motivo ${codigo}` : '—');
   }
 
   protected async eliminar(): Promise<void> {
@@ -322,7 +401,7 @@ export class DocumentosSoporteComponent implements OnInit {
       [...d.eventos].reverse().find((e) => e.codigo === codigo)?.fecha ?? null;
     const validado = d.estado === 'VALIDADO' || d.estado === 'ANULADO';
     const pagado = d.cxp != null && Number(d.cxp.saldo) === 0;
-    return [
+    const pasos: PasoDocumento[] = [
       { etiqueta: d.estado === 'BORRADOR' ? 'Borrador guardado' : 'Borrador creado', estado: 'hecho', fecha: ultimo('CREADO') },
       { etiqueta: 'Enviado a la DIAN', estado: d.estado !== 'BORRADOR' ? 'hecho' : 'pendiente', fecha: ultimo('ENVIANDO') },
       {
@@ -335,12 +414,21 @@ export class DocumentosSoporteComponent implements OnInit {
         estado: !validado ? 'pendiente' : d.comprobante_id ? 'hecho' : 'error',
         fecha: null,
       },
-      {
+    ];
+    // La nota de ajuste no tiene pago propio: baja la cuenta por pagar de su DS.
+    if (!this.esNota(d)) {
+      pasos.push({
         etiqueta: pagado ? 'Pagado al asesor' : 'Pago al asesor',
         estado: pagado ? 'hecho' : d.cxp ? 'actual' : 'pendiente',
         fecha: null,
-      },
-    ];
+      });
+    }
+    return pasos;
+  }
+
+  /** Hay una nota de ajuste en curso sobre este DS (solo se permite una a la vez). */
+  protected notaEnCurso(d: DetalleSoporte): boolean {
+    return (d.notas_ajuste ?? []).some((n) => ['BORRADOR', 'ENVIANDO', 'RECHAZADO'].includes(n.estado));
   }
 
   /** Pago al asesor según su cuenta por pagar (lo paga un egreso en Cartera → Por pagar). */

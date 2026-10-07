@@ -1143,8 +1143,17 @@ export class ApiService {
 
   // ---- A4-01 · Documentos soporte ----
   /** Por estado (varios separados por coma) y, opcional, el mes de la cuenta de cobro (AAAA-MM). */
-  listarSoportes(estado?: string, periodo?: string): Observable<Wrap<DocumentoSoporte[]>> {
-    return this.http.get<Wrap<DocumentoSoporte[]>>(`${this.base}/documentos-soporte${queryString({ estado, periodo })}`);
+  listarSoportes(estado?: string, periodo?: string, tipo?: 'DOC_SOPORTE' | 'NOTA_AJUSTE_DS'): Observable<Wrap<DocumentoSoporte[]>> {
+    return this.http.get<Wrap<DocumentoSoporte[]>>(`${this.base}/documentos-soporte${queryString({ estado, periodo, tipo })}`);
+  }
+  /** A4-03 · Motivos DIAN de la nota de ajuste al documento soporte. */
+  causalesNotaAjuste(): Observable<Wrap<CausalNotaCredito[]>> {
+    return this.http.get<Wrap<CausalNotaCredito[]>>(`${this.base}/documentos-soporte/notas/causales`);
+  }
+  /** A4-03 · Nota de ajuste en BORRADOR. Sin `lineas` (o con el motivo 2, anulación) ajusta el DS completo. */
+  crearNotaAjuste(soporteId: string, body: { causal: string; lineas?: { item_id: string; cantidad: number }[]; observaciones?: string }):
+    Observable<Wrap<DetalleSoporte> & { message: string }> {
+    return this.http.post<Wrap<DetalleSoporte> & { message: string }>(`${this.base}/documentos-soporte/${soporteId}/nota-ajuste`, body);
   }
   /** Cuentas de cobro aceptadas sin documento soporte todavía. */
   soportesPorGenerar(): Observable<Wrap<SoportePorGenerar[]>> {

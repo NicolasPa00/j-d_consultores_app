@@ -163,7 +163,7 @@
               @for (m of d.movimientos; track $index) {
                 <tr>
                   <td class="mono">{{ m.fecha }}</td>
-                  <td class="car-mov">{{ m.origen_tipo === 'NOTA_CREDITO' ? 'Nota crédito' : 'Recibo de caja' }} {{ m.soporte }}
+                  <td class="car-mov">{{ m.origen_tipo === 'NOTA_CREDITO' ? 'Nota crédito' : m.origen_tipo === 'NOTA_AJUSTE' ? 'Nota de ajuste' : m.origen_tipo === 'EGRESO' ? 'Egreso' : 'Recibo de caja' }} {{ m.soporte }}
                     @if (+m.valor_retenciones) { <small>(retenido {{ pesos(m.valor_retenciones) }})</small> }</td>
                   <td></td>
                   <td></td>

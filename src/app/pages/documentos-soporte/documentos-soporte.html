@@ -17,6 +17,9 @@
       <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'emitidos'" (click)="cambiarPestana('emitidos')">
         Emitidos <span class="tab__count">{{ emitidos().length }}</span>
       </button>
+      <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'notas'" (click)="cambiarPestana('notas')">
+        Notas de ajuste <span class="tab__count">{{ notas().length }}</span>
+      </button>
     }
   </div>
   @if (pestana() === 'emitidos') {
@@ -89,12 +92,13 @@
     <div class="table-wrap">
       <table class="table">
         <thead>
-          <tr><th>Referencia</th><th>Asesor</th><th>Mes</th><th class="num">Líneas</th><th class="num">Total</th><th>Estado</th><th class="col-actions">Acciones</th></tr>
+          <tr><th>Referencia</th><th>Tipo</th><th>Asesor</th><th>Mes</th><th class="num">Líneas</th><th class="num">Total</th><th>Estado</th><th class="col-actions">Acciones</th></tr>
         </thead>
         <tbody>
           @for (d of pagPendientes.visibles(); track d.id) {
             <tr>
               <td class="mono">{{ d.reference_code }}</td>
+              <td>@if (esNota(d)) { Nota de ajuste a {{ referenciaDe(d) }} } @else { Documento soporte }</td>
               <td><span class="who__name">{{ d.tercero_nombre }}</span></td>
               <td>{{ mes(d.periodo) }}</td>
               <td class="num">{{ d.total_lineas }}</td>
@@ -103,7 +107,7 @@
               <td class="col-actions"><button type="button" class="btn btn--ghost btn--sm" (click)="abrir(d.id)">Ver</button></td>
             </tr>
           } @empty {
-            <tr><td colspan="7" class="table__empty">
+            <tr><td colspan="8" class="table__empty">
               @if (cargando()) { Cargando… } @else { No hay documentos soporte en borrador. Se crean desde «Por generar». }
             </td></tr>
           }
@@ -161,6 +165,45 @@
   </div>
 }
 
+<!-- ======================= NOTAS DE AJUSTE (A4-03) ======================= -->
+@if (pestana() === 'notas') {
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Número</th><th>Documento soporte</th><th>Asesor</th><th>Motivo</th><th class="num">Valor</th><th>Estado</th><th class="col-actions">Acciones</th></tr>
+        </thead>
+        <tbody>
+          @for (d of pagNotas.visibles(); track d.id) {
+            <tr>
+              <td><b>{{ numeroDe(d) }}</b></td>
+              <td>{{ referenciaDe(d) }}</td>
+              <td><span class="who__name">{{ d.tercero_nombre }}</span></td>
+              <td><small>{{ nombreCausal(d.causal) }}</small></td>
+              <td class="num">{{ pesos(d.total_a_pagar) }}</td>
+              <td><span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
+              <td class="col-actions">
+                <span class="fac-acciones">
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="abrir(d.id)">Ver</button>
+                  @if (d.tiene_pdf) {
+                    <button type="button" class="icon-action" (click)="abrir(d.id, 'pdf')" aria-label="Ver el PDF de la nota" title="Nota (PDF)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></svg></button>
+                  }
+                  <button type="button" class="icon-action" (click)="abrir(d.id, 'historial')" aria-label="Ver el historial" title="Historial"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg></button>
+                </span>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="table__empty">
+              @if (cargando()) { Cargando… } @else { No hay notas de ajuste. Se crean desde el detalle de un documento soporte validado. }
+            </td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <app-paginador [pag]="pagNotas" etiqueta="notas" />
+  </div>
+}
+
 <!-- ======================= DETALLE ======================= -->
 @if (cargandoDetalle() && !detalle()) {
   <div class="modal-backdrop"></div>
@@ -173,11 +216,16 @@
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="dsTitulo">
-          {{ d.estado === 'BORRADOR' ? 'Borrador de documento soporte' : 'Documento soporte ' + numeroDe(d) }}
+          @if (esNota(d)) {
+            {{ d.estado === 'BORRADOR' ? 'Borrador de nota de ajuste' : 'Nota de ajuste ' + numeroDe(d) }}
+          } @else {
+            {{ d.estado === 'BORRADOR' ? 'Borrador de documento soporte' : 'Documento soporte ' + numeroDe(d) }}
+          }
           <span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span>
         </h3>
         <p class="modal__sub">
           {{ d.tercero_nombre }}
+          @if (esNota(d)) { · ajusta el documento soporte {{ numeroDe({ numero: d.referencia_numero ?? null, prefijo: d.referencia_prefijo ?? null }) }} · {{ d.causal_nombre }} }
           @if (d.precuenta) { · cuenta de cobro de {{ d.precuenta.periodo_largo }} }
           · ref. {{ d.reference_code }}
         </p>
@@ -263,7 +311,64 @@
         </div>
 
         @if (d.observaciones) { <p class="fac-obs"><b>Observaciones:</b> {{ d.observaciones }}</p> }
+
+        @if (d.notas_ajuste.length) {
+          <p class="fac-obs"><b>Notas de ajuste:</b>
+            @for (n of d.notas_ajuste; track n.id) {
+              <button type="button" class="btn btn--ghost btn--sm" (click)="abrir(n.id)">
+                {{ n.numero ? numeroDe(n) : n.reference_code }} · {{ etiquetaEstado(n.estado) }} · {{ pesos(n.total_a_pagar) }}
+              </button>
+            }
+          </p>
+        }
       </div>
+
+      <!-- A4-03 · Nota de ajuste sobre un documento soporte validado -->
+      @if (emisionDian && !esNota(d) && d.estado === 'VALIDADO' && puedeOperar() && formNota()) {
+        <div class="fac-nota">
+          <h4 class="section-head"><span class="section-tag">Nueva nota de ajuste</span></h4>
+          <label class="form-field">
+            <span class="form-label">Motivo (DIAN)</span>
+            <select class="form-control" [ngModel]="causalNota()" (ngModelChange)="causalNota.set($event)">
+              <option value="">Elija el motivo…</option>
+              @for (c of causales(); track c.codigo) { <option [value]="c.codigo">{{ c.codigo }} · {{ c.nombre }}</option> }
+            </select>
+          </label>
+          @if (esAnulacion()) {
+            <p class="alert alert--warning fac-nota__aviso">
+              Anula el documento soporte completo. Al validarse, su cuenta de cobro vuelve a «Por generar» para emitir uno nuevo,
+              y se reversa lo que se le debía al asesor.
+            </p>
+          } @else if (causalNota()) {
+            <p class="vista-ayuda">Indique cuánto ajustar de cada línea.</p>
+            <table class="table fac-items">
+              <thead><tr><th>Línea</th><th class="num">En el documento</th><th class="num">A ajustar</th></tr></thead>
+              <tbody>
+                @for (it of d.items; track it.id) {
+                  <tr>
+                    <td>{{ it.descripcion }}</td>
+                    <td class="num">{{ +it.cantidad }} × {{ pesos(it.valor_unitario) }}</td>
+                    <td class="num">
+                      <input class="form-control fac-cant" type="number" min="0" [max]="+it.cantidad" step="0.5"
+                             [ngModel]="cantidadesNota()[it.id]" (ngModelChange)="cambiarCantidadNota(it.id, $event, +it.cantidad)" />
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+          <label class="form-field">
+            <span class="form-label">Observaciones (opcional)</span>
+            <input class="form-control" type="text" maxlength="500" [ngModel]="obsNota()" (ngModelChange)="obsNota.set($event)" />
+          </label>
+          <div class="fac-nota__acciones">
+            <button type="button" class="btn btn--close" (click)="formNota.set(false)" [disabled]="!!accion()">Cancelar</button>
+            <button type="button" class="btn btn--primary" (click)="crearNota()" [disabled]="!causalNota() || !!accion()">
+              @if (accion() === 'nota') { <span class="spinner" aria-hidden="true"></span> } Crear nota de ajuste
+            </button>
+          </div>
+        </div>
+      }
     </div>
 
     <footer class="modal__footer fac-pie">
@@ -297,6 +402,11 @@
             <button type="button" class="btn btn--primary" (click)="corregir()" [disabled]="!!accion()">
               @if (accion() === 'corregir') { <span class="spinner" aria-hidden="true"></span> } Volver a borrador
             </button>
+          }
+          @case ('VALIDADO') {
+            @if (emisionDian && !esNota(d) && !notaEnCurso(d)) {
+              <button type="button" class="btn btn--ghost" (click)="abrirFormNota()" [disabled]="!!accion() || formNota()">Nota de ajuste</button>
+            }
           }
         }
       }
