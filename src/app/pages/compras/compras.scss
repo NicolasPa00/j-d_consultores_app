@@ -181,3 +181,19 @@
   color: #8a2a00;
   background: #fff4f0;
 }
+
+/* 7-oct-2026 · La lista del selector de cuenta se abre POR FUERA de la tabla: con
+   el desbordamiento recortado quedaba cortada dentro del contenedor. */
+.cp-items-wrap {
+  overflow: visible;
+}
+
+.cp-items td:first-child {
+  min-width: 260px;
+}
+
+@media (max-width: 760px) {
+  .cp-items-wrap {
+    overflow-x: auto;
+  }
+}

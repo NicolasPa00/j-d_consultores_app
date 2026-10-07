@@ -19,104 +19,129 @@
   </div>
 }
 
-<!-- ===== Zona de carga (compacta) ===== -->
-<!-- Admite varios archivos a la vez: una tanda de PDFs de la misma ARL era el
+<!-- ===== Zona de carga =====
+     7-oct-2026 · TODA la zona es el botón: se pulsa en cualquier parte (o se
+     sueltan los archivos encima) y abre el selector. Antes solo respondía el
+     botón pequeño "Seleccionar archivos" y el resto de la franja parecía un
+     texto informativo. Con archivos elegidos la zona se encoge a una franja
+     "Añadir más" y debajo queda la tanda con su "Procesar con IA".
+     Admite varios archivos a la vez: una tanda de PDFs de la misma ARL era el
      caso normal y obligaba a repetir el ciclo completo archivo por archivo. -->
 <div class="uploader" [class.uploader--busy]="processing()" [class.uploader--bloqueado]="sinTiposOrden()">
-  <span class="uploader__icon" aria-hidden="true">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <path d="M7 10l5-5 5 5" />
-      <path d="M12 5v12" />
-    </svg>
-  </span>
-
-  <div class="uploader__meta">
-    @if (fileNames().length; as total) {
-      <span class="uploader__file">
-        {{ total === 1 ? '1 archivo seleccionado' : total + ' archivos seleccionados' }}
-      </span>
-      <!-- La tanda se arma por partes, así que cada archivo se puede quitar sin
-           deshacer la selección entera. -->
-      <ul class="uploader__list">
-        @for (n of fileNames(); track n) {
-          <li class="uploader__list-item" [title]="n">
-            <span class="uploader__list-name">{{ n }}</span>
-            <button
-              type="button"
-              class="uploader__remove"
-              [disabled]="processing()"
-              (click)="quitarArchivo(n)"
-              [attr.aria-label]="'Quitar ' + n + ' de la tanda'"
-              title="Quitar de la tanda"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-                <path d="M18 6 6 18M6 6l12 12" />
-              </svg>
-            </button>
-          </li>
+  <label
+    class="dropzone"
+    [class.dropzone--compacta]="fileNames().length"
+    [class.dropzone--encima]="arrastrando()"
+    [class.dropzone--inactiva]="sinTiposOrden() || processing()"
+    [title]="sinTiposOrden() ? 'Cree un tipo de orden en Configuración antes de importar' : ''"
+    (dragover)="onArrastre($event)"
+    (dragleave)="arrastrando.set(false)"
+    (drop)="onSoltar($event)"
+  >
+    <input
+      type="file"
+      class="dropzone__input"
+      multiple
+      accept=".xlsx,.xls,.pdf"
+      [disabled]="sinTiposOrden() || processing()"
+      (change)="onFileSelected($event)"
+    />
+    <span class="dropzone__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <path d="M7 10l5-5 5 5" />
+        <path d="M12 5v12" />
+      </svg>
+    </span>
+    <span class="dropzone__texto">
+      <span class="dropzone__titulo">
+        @if (arrastrando()) {
+          Suelte los archivos aquí
+        } @else if (fileNames().length) {
+          Añadir más archivos
+        } @else {
+          Haga clic para seleccionar los archivos
         }
-      </ul>
-    } @else {
-      <span class="uploader__file uploader__file--empty">Ningún archivo seleccionado</span>
-    }
-    @if (revisando()) {
-      <!-- IMP-09 · Comprobación previa: dura menos de un segundo, pero si no se
-           dice nada el usuario pulsa "Procesar" antes de que termine. -->
-      <span class="uploader__hint uploader__hint--busy">
-        Comprobando si estas órdenes ya están en el sistema…
       </span>
-    } @else {
       @if (sinTiposOrden()) {
-        <span class="uploader__hint uploader__hint--bloqueo">
+        <span class="dropzone__hint dropzone__hint--bloqueo">
           Carga deshabilitada: primero cree un tipo de orden en Configuración.
         </span>
+      } @else if (fileNames().length) {
+        <span class="dropzone__hint">Cada selección se suma a la tanda · también puede arrastrarlos aquí</span>
       } @else {
-        <span class="uploader__hint">
-          Excel (.xlsx) o PDF · máx. 4 MB por archivo · puedes añadir archivos de
-          varias carpetas: cada selección se suma a la tanda
+        <span class="dropzone__hint">o arrástrelos hasta aquí · puede añadir archivos de varias carpetas</span>
+        <span class="dropzone__formatos">
+          <span class="chip">Excel .xlsx</span>
+          <span class="chip">PDF</span>
+          <span class="chip">máx. 4 MB por archivo</span>
         </span>
       }
-    }
-  </div>
+    </span>
+  </label>
 
-  <div class="uploader__actions">
-    @if (fileNames().length && !processing()) {
-      <button type="button" class="btn btn--ghost btn--sm" (click)="quitarSeleccion()">Quitar todo</button>
-    }
-    <label
-      class="btn btn--ghost btn--sm uploader__pick"
-      [class.btn--disabled]="sinTiposOrden()"
-      [title]="sinTiposOrden() ? 'Cree un tipo de orden en Configuración antes de importar' : ''"
-    >
-      {{ fileNames().length ? 'Añadir más' : 'Seleccionar archivos' }}
-      <input
-        type="file"
-        class="uploader__input"
-        multiple
-        accept=".xlsx,.xls,.pdf"
-        [disabled]="sinTiposOrden()"
-        (change)="onFileSelected($event)"
-      />
-    </label>
-    <button
-      type="button"
-      class="btn btn--primary btn--sm"
-      [disabled]="!fileNames().length || processing() || revisando() || sinTiposOrden()"
-      (click)="processWithAi()"
-    >
-      @if (processing()) {
-        <span class="spinner" aria-hidden="true"></span>
-        @if (progreso(); as p) {
-          Procesando {{ p.hechos }}/{{ p.total }}…
-        } @else {
-          Procesando…
+  @if (fileNames().length; as total) {
+    <div class="tanda">
+      <div class="tanda__meta">
+        <span class="tanda__titulo">
+          {{ total === 1 ? '1 archivo seleccionado' : total + ' archivos seleccionados' }}
+        </span>
+        @if (revisando()) {
+          <!-- IMP-09 · Comprobación previa: dura menos de un segundo, pero si no se
+               dice nada el usuario pulsa "Procesar" antes de que termine. -->
+          <span class="tanda__hint tanda__hint--busy">Comprobando si estas órdenes ya están en el sistema…</span>
         }
-      } @else {
-        Procesar con IA
-      }
-    </button>
-  </div>
+        <!-- La tanda se arma por partes, así que cada archivo se puede quitar sin
+             deshacer la selección entera. -->
+        <ul class="tanda__lista">
+          @for (n of fileNames(); track n) {
+            <li class="tanda__archivo" [title]="n">
+              <svg class="tanda__archivo-icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+                <path d="M14 3v5h5" />
+              </svg>
+              <span class="tanda__archivo-nombre">{{ n }}</span>
+              <button
+                type="button"
+                class="tanda__quitar"
+                [disabled]="processing()"
+                (click)="quitarArchivo(n)"
+                [attr.aria-label]="'Quitar ' + n + ' de la tanda'"
+                title="Quitar de la tanda"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </li>
+          }
+        </ul>
+      </div>
+
+      <div class="tanda__acciones">
+        @if (!processing()) {
+          <button type="button" class="btn btn--ghost btn--sm" (click)="quitarSeleccion()">Quitar todo</button>
+        }
+        <button
+          type="button"
+          class="btn btn--primary"
+          [disabled]="processing() || revisando() || sinTiposOrden()"
+          (click)="processWithAi()"
+        >
+          @if (processing()) {
+            <span class="spinner" aria-hidden="true"></span>
+            @if (progreso(); as p) {
+              Procesando {{ p.hechos }}/{{ p.total }}…
+            } @else {
+              Procesando…
+            }
+          } @else {
+            Procesar con IA
+          }
+        </button>
+      </div>
+    </div>
+  }
 </div>
 
 @if (error(); as msg) {
@@ -158,8 +183,27 @@
      No entran a la tabla: no hay nada que revisar en ellas. Lo que sí hace
      falta es saber en qué estado está la orden que YA existe, que es lo que
      decide si esto es un reenvío normal o una orden que alguien deshabilitó. -->
-@if (duplicadas().length) {
+@if (duplicadas().length && dupCerrado() === claveDup()) {
+  <!-- 7-oct-2026 · El aviso ocupaba media pantalla y no se iba nunca. Ahora se
+       cierra solo (o con la X) y queda esta línea para volver a abrirlo. -->
+  <button type="button" class="dup-resumen" (click)="dupCerrado.set(null)">
+    {{ duplicadas().length === 1 ? 'Una orden ya existía y se descartó' : duplicadas().length + ' órdenes ya existían y se descartaron' }}
+    · <span>Ver detalle</span>
+  </button>
+}
+@if (duplicadas().length && dupCerrado() !== claveDup()) {
   <div class="alert alert--error dup-alert" role="alert">
+    <button type="button" class="dup-alert__cerrar" (click)="cerrarAvisoDup()" aria-label="Cerrar el aviso" title="Cerrar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+        <path d="M18 6 6 18M6 6l12 12" />
+      </svg>
+    </button>
+    <!-- La barra es el temporizador: al terminar su animación el aviso se cierra.
+         Con el cursor encima se detiene, para poder leer o pulsar con calma. El
+         @for sobre la clave la vuelve a crear (y a arrancar) si llegan más. -->
+    @for (k of [claveDup()]; track k) {
+      <span class="dup-alert__tiempo" (animationend)="cerrarAvisoDup()" aria-hidden="true"></span>
+    }
     <span class="alert__icon" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="9" y="9" width="12" height="12" rx="2" />

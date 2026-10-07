@@ -497,6 +497,83 @@
   display: flex;
   flex-direction: column;
   line-height: 1.35;
+  min-width: 0;
+}
+
+/* 7-oct-2026 · Fila del profesional en el modal de asignación: elegirlo y, en el
+   elegido, guardar las horas que se le acaban de marcar. */
+.prof-fila {
+  display: flex;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+
+.prof-fila .prof-pick {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Las horas que ya lleva en esta orden. */
+.prof-pick__horas {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--secondary-color);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.prof-guardar {
+  flex: none;
+  width: 42px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+
+  svg {
+    width: 19px;
+    height: 19px;
+  }
+}
+
+.prof-guardar:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Hay horas marcadas sin guardar: el botón se enciende para pedir el clic. */
+.prof-guardar--pendiente {
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(45, 123, 200, 0.22);
+}
+
+.prof-guardar--pendiente:hover {
+  background: var(--primary-hover);
+}
+
+.assign__ayuda {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+
+  svg {
+    width: 0.9rem;
+    height: 0.9rem;
+    vertical-align: -0.15rem;
+    color: var(--primary-color);
+  }
 }
 
 .prof-pick__name {
@@ -756,6 +833,100 @@
 
 .cita-bar__chip--vacia svg {
   color: var(--text-muted);
+}
+
+/* 7-oct-2026 · El equipo de la orden: un chip por asesor con sus horas, a la
+   derecha del resumen. */
+.equipo {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.equipo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem 0.3rem 0.2rem 0.25rem;
+  background: var(--surface);
+  border: 1px solid rgba(45, 123, 200, 0.35);
+  border-radius: 999px;
+  box-shadow: var(--shadow-card);
+}
+
+.equipo-chip--activo {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(45, 123, 200, 0.25);
+}
+
+.equipo-chip__nombre {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0 0.3rem 0 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--text-main);
+  cursor: pointer;
+
+  strong {
+    color: var(--primary-color);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.equipo-chip__avatar {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.equipo-chip__rol {
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(45, 123, 200, 0.12);
+  color: var(--secondary-color);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.equipo-chip__quitar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(100, 116, 139, 0.16);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+
+  svg {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+.equipo-chip__quitar:hover {
+  background: var(--danger);
+  color: #ffffff;
 }
 
 /* Las franjas ya programadas: se leen de corrido y cada una se quita sin tener
@@ -1036,6 +1207,51 @@
   color: #475569;
 }
 
+/* 7-oct-2026 · Horas de OTRO asesor de esta misma orden: contexto, con borde
+   discontinuo, y sin capturar el puntero (se puede marcar encima: dos asesores
+   pueden ir a la misma franja). */
+.ag-block--equipo {
+  background: rgba(45, 123, 200, 0.1);
+  border: 1px dashed var(--secondary-color);
+  border-left: 3px solid var(--secondary-color);
+  color: var(--primary-color);
+  pointer-events: none;
+}
+
+/* 7-oct-2026 · Iconos de quién va en la franja. Silueta = está en la franja;
+   relleno = es el profesional seleccionado a la izquierda. */
+.ag-personas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: auto;
+}
+
+.ag-persona {
+  display: inline-grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  /* El bloque de los demás no captura el puntero; los iconos sí, por el tooltip. */
+  pointer-events: auto;
+  cursor: help;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+  }
+}
+
+.ag-persona--activa svg {
+  fill: currentColor;
+}
+
+.ag-block--visita .ag-persona--activa {
+  background: rgba(255, 255, 255, 0.22);
+}
+
 /* La visita de esta orden es el protagonista de la pantalla. */
 .ag-block--visita {
   background: var(--secondary-color);
@@ -1129,6 +1345,11 @@
 
 .agenda__punto--otra {
   background: #cbd5e1;
+}
+
+.agenda__punto--equipo {
+  background: rgba(45, 123, 200, 0.15);
+  border: 1px dashed var(--secondary-color);
 }
 
 .agenda__punto--ocupado {
@@ -1417,6 +1638,13 @@
   background: #fff;
 }
 
+.verify__acciones {
+  /* La barra del visor de formatos, reutilizada encima del de soportes. */
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+}
+
 .verify__img {
   max-width: 100%;
   max-height: 56vh;
@@ -1688,28 +1916,6 @@
   color: var(--warning);
 }
 
-/* 5-oct-2026 · Fila de un asesor adicional: quién, cuántas horas y quitar. */
-.coasesor {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.coasesor select {
-  flex: 1;
-  min-width: 0;
-}
-
-.coasesor__horas {
-  width: 4.5rem;
-  flex: none;
-}
-
-.coasesor__unidad {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-}
-
 .check {
   display: inline-flex;
   align-items: flex-start;
@@ -1845,6 +2051,7 @@
 
 .vista-formatos__visor {
   display: flex;
+  flex-direction: column;
   min-height: 70vh;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
@@ -1852,9 +2059,55 @@
   background: #f4f6f9;
 
   iframe {
-    flex: 1;
+    flex: 1 1 auto;
     width: 100%;
+    min-height: 60vh;
     border: 0;
+  }
+}
+
+/* 7-oct-2026 · Barra del visor: abrir aparte o descargar, por si el navegador
+   no pinta el PDF dentro de la página. */
+.vista-formatos__barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.7rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.vista-formatos__barra-nombre {
+  margin-right: auto;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.vista-formatos__barra-ayuda {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.vista-formatos__sin-visor {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-muted);
+
+  p {
+    margin: 0;
+    max-width: 34rem;
+  }
+
+  strong {
+    color: var(--text-main);
   }
 }
 
@@ -1889,4 +2142,69 @@
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
   }
+}
+
+/* 7-oct-2026 · Píldora que además es botón (estado ARL): misma identidad, con
+   cursor y un realce al pasar por encima para que se note que se pulsa. */
+.pill--boton {
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+  transition: filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pill--boton:hover,
+.pill--boton:focus-visible {
+  filter: brightness(0.95);
+  box-shadow: 0 0 0 2px rgba(45, 123, 200, 0.25);
+  outline: none;
+}
+
+/* 7-oct-2026 · Modal de prefactura: la columna del check mide lo que mide el
+   check, y el ancho que sobra se lo quedan las columnas con contenido.
+   OJO: esta tabla reutiliza `.ord-table`, que le pone 210 px de ancho mínimo a
+   la PRIMERA columna (en la bandeja es la razón social). Aquí la primera es el
+   check, así que ese mínimo se anula con un selector más específico: sin esto
+   `width: 1%` no hace nada, que es lo que pasó en el primer intento. */
+.ord-table.pf-tabla th.pf-check,
+.ord-table.pf-tabla td.pf-check {
+  width: 2.5rem;
+  min-width: 0;
+  max-width: 2.5rem;
+  padding-left: 0.9rem;
+  padding-right: 0.25rem;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.pf-tabla .pf-check input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  vertical-align: middle;
+}
+
+.pf-tabla .pf-check input:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* El código de la orden y su estado no van pegados. */
+.pf-tabla .pf-orden {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* La empresa es la columna que se queda con el ancho liberado. */
+.pf-tabla .pf-empresa {
+  width: 40%;
+}
+
+/* 7-oct-2026 · De qué asesor es el documento (varios asesores en la orden). */
+.reject-cat__asesor,
+.soporte-asesor {
+  font-weight: 500;
+  color: var(--secondary-color);
 }

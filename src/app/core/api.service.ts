@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { ActivoFijo, ActivoFijoForm, CorridaDepreciacion, FichaActivoFijo, VistaPreviaDepreciacion, AuxiliarPorCuenta, BalanceComprobacion, FiltrosInformeContable, InformePorTercero, LibroAuxiliar, VentasPorCliente, EstadoSituacionFinanciera, EstadoResultados, ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, Coasesor, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, Especialidad, PagadorPorFacturar, OrdenManualForm, DetalleCobroOrden, ValoresCobroForm } from './models';
+import { EstadisticasPeriodo, ActivoFijo, ActivoFijoForm, CorridaDepreciacion, FichaActivoFijo, VistaPreviaDepreciacion, AuxiliarPorCuenta, BalanceComprobacion, FiltrosInformeContable, InformePorTercero, LibroAuxiliar, VentasPorCliente, EstadoSituacionFinanciera, EstadoResultados, ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, Coasesor, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DocumentoFactura, Especialidad, PagadorPorFacturar, OrdenManualForm, DetalleCobroOrden, ValoresCobroForm } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -140,6 +140,11 @@ export class ApiService {
     return this.http.get<Wrap<ReporteHoras>>(`${this.base}/reports/horas?desde=${desde}&hasta=${hasta}`);
   }
 
+  /** 7-oct-2026 · Cifras del periodo para las gráficas de «Estadísticas». */
+  estadisticas(desde: string, hasta: string): Observable<Wrap<EstadisticasPeriodo>> {
+    return this.http.get<Wrap<EstadisticasPeriodo>>(`${this.base}/reports/estadisticas${queryString({ desde, hasta })}`);
+  }
+
   /** Convierte headers + filas en un .xlsx real (el backend lo arma con ExcelJS). */
   exportXlsx(hoja: string, headers: string[], rows: (string | number)[][]): Observable<Blob> {
     return this.http.post(`${this.base}/reports/xlsx`, { hoja, headers, rows }, { responseType: 'blob' });
@@ -195,8 +200,11 @@ export class ApiService {
     body: {
       profesional_id: string;
       fecha_programada?: string;
-      /** ASG-02 · Franjas de la visita. El servidor deriva de ellas la fecha. */
-      franjas?: { fecha: string; hora_inicio: string; hora_fin: string }[];
+      /**
+       * ASG-02 · Franjas de la visita. El servidor deriva de ellas la fecha.
+       * Con varios asesores cada franja dice de quién es (`profesional_id`).
+       */
+      franjas?: { fecha: string; hora_inicio: string; hora_fin: string; profesional_id?: string | null }[];
       /**
        * ASG · A nombre de quién salen los FORMATOS cuando el ejecutor no está
        * registrado ante la ARL. Se omite en el caso normal; el servidor exige
@@ -212,8 +220,8 @@ export class ApiService {
       /** Casillas abiertas llenadas en la vista previa: `{ fichaAxa: { 'nombre 4': '…' } }`. */
       campos_formatos?: Record<string, Record<string, string>>;
       /**
-       * 5-oct-2026 · Asesores adicionales y sus horas. Reemplaza la lista entera:
-       * un arreglo vacío deja la orden con un solo asesor.
+       * 5-oct-2026 · Asesores adicionales y sus horas (las que suman SUS franjas).
+       * Reemplaza la lista entera: un arreglo vacío deja la orden con un solo asesor.
        */
       coasesores?: { profesional_id: string; horas: number }[];
     },
@@ -241,10 +249,17 @@ export class ApiService {
 
   // ---- Verificación y cierre (M7) ----
   /** VER-01 · Soportes firmados que subió el profesional para una OS. */
-  listSupports(orderId: string): Observable<Wrap<ArchivoSoporte[]> & { casillas: CasillaSoporte[] }> {
+  listSupports(orderId: string): Observable<Wrap<ArchivoSoporte[]> & {
+    casillas: CasillaSoporte[];
+    /** 7-oct-2026 · Los asesores de la orden y si ya entregaron sus soportes. */
+    equipo?: { profesional_id: string; nombre: string; principal: boolean; entregado: boolean }[];
+  }> {
     // `casillas` son las que se le pidieron a ESTA orden (dependen de la ARL y
     // del tipo de actividad), no el catálogo completo.
-    return this.http.get<Wrap<ArchivoSoporte[]> & { casillas: CasillaSoporte[] }>(
+    return this.http.get<Wrap<ArchivoSoporte[]> & {
+      casillas: CasillaSoporte[];
+      equipo?: { profesional_id: string; nombre: string; principal: boolean; entregado: boolean }[];
+    }>(
       `${this.base}/orders/${orderId}/supports`,
     );
   }
@@ -275,6 +290,8 @@ export class ApiService {
    */
   rejectOrder(
     orderId: string, motivo: string, categorias?: CategoriaSoporte[],
+    /** 7-oct-2026 · De QUIÉN es cada documento devuelto (varios asesores). */
+    devueltos?: { categoria: CategoriaSoporte; profesional_id: string | null }[],
   ): Observable<Wrap<Orden> & {
     correo_enviado?: boolean; correo_error?: string | null; categorias_rechazadas?: string[];
   }> {
@@ -284,7 +301,7 @@ export class ApiService {
       // Sin `categorias` el servidor devuelve la orden entera, que es lo que
       // hacía siempre; la vista manda la lista marcada para que el profesional
       // solo pueda reemplazar lo que de verdad se le devolvió.
-      `${this.base}/orders/${orderId}/reject`, { motivo, categorias },
+      `${this.base}/orders/${orderId}/reject`, { motivo, categorias, devueltos },
     );
   }
   // ---- Estados y auditoría (M3) ----
@@ -936,6 +953,8 @@ export class ApiService {
   }
   updateUsuario(id: string, body: {
     nombre?: string; correo?: string; telefono?: string; especialidad?: string; rol?: Rol;
+    /** 7-oct-2026 · El documento también se corrige (es con lo que inicia sesión). */
+    documento?: string;
   }): Observable<{ usuario: Usuario }> {
     return this.http.put<{ usuario: Usuario }>(`${this.base}/auth/usuarios/${id}`, body);
   }

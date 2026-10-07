@@ -72,10 +72,11 @@
                   // verificación); 8kB se quedaron cortos para esa pantalla, la
                   // agenda semanal del modal de asignación (rejilla, bloques y
                   // capas) volvió a pasarse de 20kB, y el acordeón del historial
-                  // se llevó los últimos 235 bytes.
+                  // se llevó los últimos 235 bytes. 7-oct-2026: los asesores por
+                  // orden y la barra del visor de soportes la llevaron a 28,2kB.
                   "type": "anyComponentStyle",
-                  "maximumWarning": "24kB",
-                  "maximumError": "28kB"
+                  "maximumWarning": "28kB",
+                  "maximumError": "32kB"
                 }
               ],
               "outputHashing": "all"

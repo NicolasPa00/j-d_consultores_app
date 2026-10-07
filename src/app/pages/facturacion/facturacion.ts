@@ -45,6 +45,9 @@ interface PasoDocumento {
   fecha: string | null;
 }
 
+/** Ventanas que se abren sobre un documento (ver `vista` en el componente). */
+type VistaDocumento = 'ver' | 'pdf' | 'enviar' | 'contab' | 'historial';
+
 @Component({
   selector: 'app-facturacion',
   imports: [FormsModule, RouterLink, PaginadorComponent],
@@ -117,6 +120,14 @@ export class FacturacionComponent implements OnInit {
 
   // ---------------- Detalle ----------------
   protected readonly detalle = signal<DetalleFactura | null>(null);
+  /**
+   * 7-oct-2026 · Qué ventana se abre sobre el documento cargado. «Ver» es el
+   * documento; el resto salieron de ahí a sus propias ventanas para aligerarlo:
+   * el PDF, el envío al cliente, la contabilización y el historial.
+   */
+  protected readonly vista = signal<VistaDocumento>('ver');
+  /** La ventana se abrió desde «Ver» (un borrador): al cerrarla se vuelve ahí. */
+  protected panelDesdeDetalle = false;
   /** B2-01 · Vista de contabilización del documento abierto (se pide al pulsar). */
   protected readonly asiento = signal<AsientoDocumento | null>(null);
   protected readonly cargandoAsiento = signal(false);
@@ -199,6 +210,11 @@ export class FacturacionComponent implements OnInit {
     return this.lineasMarcadas(g).filter((l) => l.valor_referencia == null).length;
   }
 
+  /** Cuántas órdenes de ese pagador ya se pueden facturar (cabecera de su sección). */
+  protected facturablesDe(p: PagadorPorFacturar): number {
+    return p.grupos.reduce((t, g) => t + g.n_facturables, 0);
+  }
+
   protected crearFactura(p: PagadorPorFacturar, g: GrupoPorFacturar): void {
     const lineas = this.lineasMarcadas(g);
     if (!lineas.length || this.creando()) return;
@@ -276,13 +292,21 @@ export class FacturacionComponent implements OnInit {
   }
 
   // ================= Detalle y acciones =================
-  protected abrir(id: string): void {
+  protected abrir(id: string, vista: VistaDocumento = 'ver'): void {
     this.cargandoDetalle.set(true);
     this.correoReenvio.set('');
     this.formNota.set(false);
     this.asiento.set(null);
+    this.panelDesdeDetalle = false;
+    this.vista.set(vista);
     this.api.obtenerFactura(id).subscribe({
-      next: (r) => { this.cargandoDetalle.set(false); this.detalle.set(r.data); },
+      next: (r) => {
+        this.cargandoDetalle.set(false);
+        this.detalle.set(r.data);
+        // Las ventanas que necesitan algo más lo piden al abrirse.
+        if (vista === 'contab') this.verAsiento(r.data);
+        if (vista === 'pdf') this.verPdf();
+      },
       error: (err) => {
         this.cargandoDetalle.set(false);
         this.alerts.error('No se pudo abrir la factura', mensajeError(err, 'Intente de nuevo.'));
@@ -292,8 +316,29 @@ export class FacturacionComponent implements OnInit {
 
   protected cerrar(): void {
     if (this.accion()) return;
+    this.vista.set('ver');
     this.cerrarPdf();
     this.detalle.set(null);
+  }
+
+  /** Abre una ventana (contabilización…) DESDE el documento abierto. */
+  protected abrirPanel(vista: VistaDocumento): void {
+    const d = this.detalle();
+    if (!d) return;
+    this.panelDesdeDetalle = true;
+    this.vista.set(vista);
+    if (vista === 'contab' && !this.asiento()) this.verAsiento(d);
+  }
+
+  /** Cierra la ventana: vuelve al documento si se abrió desde él; si no, cierra todo. */
+  protected cerrarPanel(): void {
+    if (this.accion()) return;
+    if (this.panelDesdeDetalle) {
+      this.panelDesdeDetalle = false;
+      this.vista.set('ver');
+      return;
+    }
+    this.cerrar();
   }
 
   /** Abre el PDF del documento en un visor, sin descargarlo. */
@@ -313,6 +358,7 @@ export class FacturacionComponent implements OnInit {
       },
       error: (err) => {
         this.accion.set(null);
+        if (this.vista() === 'pdf') { this.vista.set('ver'); this.detalle.set(null); }
         this.alerts.error('No se pudo abrir el PDF', mensajeError(err, 'Intente de nuevo.'));
       },
     });
@@ -322,6 +368,11 @@ export class FacturacionComponent implements OnInit {
     if (this.pdfObjeto && this.isBrowser) URL.revokeObjectURL(this.pdfObjeto);
     this.pdfObjeto = null;
     this.pdfVisto.set(null);
+    // El PDF abierto desde la fila no tiene documento detrás: se cierra todo.
+    if (this.vista() === 'pdf') {
+      this.vista.set('ver');
+      this.detalle.set(null);
+    }
   }
 
   /** Copia el CUFE/CUDE: es lo que piden la ARL y la DIAN para ubicar el documento. */
@@ -541,7 +592,7 @@ export class FacturacionComponent implements OnInit {
    * lo que se contabilizará al validarlo; en uno validado, lo contabilizado.
    */
   protected verAsiento(d: DetalleFactura): void {
-    if (this.asiento()) { this.asiento.set(null); return; }
+    this.asiento.set(null);
     this.cargandoAsiento.set(true);
     this.api.asientoDocumento(d.id).subscribe({
       next: (r) => { this.cargandoAsiento.set(false); this.asiento.set(r.data); },

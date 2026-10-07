@@ -324,6 +324,34 @@
 /* ===== Dos ajustes de una línea, uno al lado del otro =====
    Umbral y día de corte son un campo y un botón cada uno: en una pantalla ancha
    ocupaban una fila entera para casi nada. */
+/* 7-oct-2026 · Preferencias del Sistema: las tarjetas iban apiladas sin aire
+   entre ellas (`.card` no trae margen) y, dentro, el texto de ayuda, la tabla y
+   el formulario de alta quedaban pegados. */
+.sistema-ajustes {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.sistema-ajustes > .card {
+  margin: 0;
+}
+
+.sistema-ajustes .card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.sistema-ajustes .card__body > * {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.sistema-ajustes .profile-form__row {
+  gap: 1rem;
+}
+
 .ajustes-par {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));

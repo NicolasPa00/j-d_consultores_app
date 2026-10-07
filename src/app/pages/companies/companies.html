@@ -214,34 +214,12 @@
         </ul>
       }
 
-      @if (puedeEditar()) {
-        <!-- Fusión: única salida para los duplicados que deja un NIT mal leído
-             por el OCR, porque con órdenes asociadas no se pueden eliminar. -->
-        <h4 class="ficha-sub">Fusionar con otra empresa</h4>
-        <p class="ficha-hint">
-          Traspasa las órdenes de <strong>{{ emp.nombre }}</strong> a la empresa que elija y elimina esta ficha.
-          Úselo cuando el mismo cliente quedó registrado dos veces.
-        </p>
-        <div class="ficha-fusion">
-          <select class="form-control" [(ngModel)]="destinoFusion" name="destinoFusion">
-            <option value="">Seleccione la empresa correcta…</option>
-            @for (c of candidatasFusion(); track c.id) {
-              <option [value]="c.id">{{ c.nombre }} — NIT {{ c.nit }}</option>
-            }
-          </select>
-          <button type="button" class="btn btn--ghost" [disabled]="!destinoFusion" (click)="fusionar()">
-            Fusionar
-          </button>
-        </div>
-      }
     </div>
 
     @if (puedeEditar()) {
       <footer class="modal__footer">
-        <button type="button" class="btn btn--ghost btn--danger" (click)="eliminar(emp)">Eliminar</button>
-        <button type="button" class="btn btn--ghost" (click)="toggleActivo(emp)">
-          {{ emp.activo ? 'Desactivar' : 'Activar' }}
-        </button>
+        <!-- 7-oct-2026 · Aquí solo se edita: desactivar ya está en la fila de la
+             tabla, y eliminar y fusionar se retiraron a pedido del usuario. -->
         <button type="button" class="btn btn--primary" (click)="openEdit(emp)">Editar</button>
       </footer>
     }

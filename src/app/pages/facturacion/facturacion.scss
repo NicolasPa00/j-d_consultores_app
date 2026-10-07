@@ -6,6 +6,19 @@
 .fac-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 
 .tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap; }
+
+/* 7-oct-2026 · Pestañas y filtro de estado en una sola fila. */
+.fac-barra {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem 1rem; flex-wrap: wrap;
+  margin-bottom: 1rem;
+  .tabs { margin-bottom: 0; }
+}
+
+/* El botón de eventos, con icono. */
+.fac-btn-eventos {
+  white-space: nowrap;
+  svg { width: 1rem; height: 1rem; flex-shrink: 0; }
+}
 .tab {
   display: inline-flex; align-items: center; gap: 0.45rem;
   padding: 0.55rem 1.1rem; font: inherit; font-size: 0.9rem; font-weight: 600;
@@ -18,10 +31,30 @@
 
 .fac-vacio { padding: 1.5rem; color: var(--text-muted); display: flex; gap: 0.6rem; align-items: center; }
 
-.fac-pagador { margin-bottom: 1.25rem; }
-.fac-pagador__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+/* 7-oct-2026 · Cada ARL es una SECCIÓN: borde de color, cabecera teñida y
+   compacta. Antes era una tarjeta blanca igual a las demás y no se leía dónde
+   terminaba una ARL y empezaba la otra. */
+.fac-pagador {
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  border: 1px solid var(--accent-color);
+  border-left: 5px solid var(--primary-color);
+}
+.fac-pagador__head {
+  display: flex; align-items: center; gap: 0.75rem 1rem; flex-wrap: wrap;
+  padding: 0.6rem 1.25rem;
+  background: rgba(45, 123, 200, 0.1);
+  border-bottom: 1px solid var(--accent-color);
+}
+.fac-pagador__nombre {
+  display: inline-flex; align-items: center; gap: 0.5rem; margin: 0;
+  font-size: 1rem; font-weight: 700; color: var(--primary-color);
+  svg { width: 1.15rem; height: 1.15rem; flex-shrink: 0; }
+}
+.fac-pagador__resumen { margin-left: auto; font-size: 0.8rem; font-weight: 600; color: var(--text-main); }
 
 .fac-grupo { border-top: 1px solid var(--border-soft); }
+.fac-grupo:first-of-type { border-top: 0; }
 .fac-grupo__titulo {
   display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
   padding: 0.75rem 1.25rem; background: #f8fafc; font-size: 0.9rem;
@@ -38,9 +71,29 @@
 .num { text-align: right; white-space: nowrap; }
 .fac-sub { display: block; color: var(--text-muted); font-size: 0.72rem; }
 .fac-fila--bloqueada td { color: var(--text-muted); }
-.fac-motivo { font-size: 0.78rem; color: var(--text-muted); line-height: 1.3; display: inline-block; max-width: 280px; }
-.fac-filtros { display: flex; justify-content: flex-end; margin-bottom: 0.75rem; }
-.fac-filtro { max-width: 240px; }.fac-cargando { width: auto; padding: 1.25rem 1.5rem; flex-direction: row; gap: 0.6rem; align-items: center; }.fac-pie__espacio { flex: 1; }
+/* 7-oct-2026 · Por qué la orden no se puede facturar, en una píldora de aviso:
+   como texto gris pasaba desapercibido. Puede ocupar dos líneas. */
+.fac-motivo {
+  display: inline-block; max-width: 300px; padding: 0.3rem 0.6rem;
+  font-size: 0.76rem; font-weight: 600; line-height: 1.3; white-space: normal; text-align: left;
+  border-radius: var(--radius-sm);
+}
+.fac-filtro { max-width: 240px; }
+
+/* Acciones de una fila emitida. */
+.fac-acciones { display: inline-flex; align-items: center; justify-content: flex-end; gap: 0.2rem; }
+.fac-acciones .icon-action svg { width: 1.05rem; height: 1.05rem; }
+
+/* El documento, en una columna. */
+.fac-doc { display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; }
+
+.spinner--oscuro {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid rgba(45, 123, 200, 0.25); border-top-color: var(--secondary-color);
+  border-radius: 50%; animation: fac-giro 0.7s linear infinite;
+}
+@keyframes fac-giro { to { transform: rotate(360deg); } }
+.fac-cargando { width: auto; padding: 1.25rem 1.5rem; flex-direction: row; gap: 0.6rem; align-items: center; }.fac-pie__espacio { flex: 1; }
 
 .fac-datos {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;

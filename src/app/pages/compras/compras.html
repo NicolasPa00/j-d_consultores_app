@@ -177,17 +177,22 @@
         }
       </div>
 
-      <div class="table-wrap">
+      <div class="table-wrap cp-items-wrap">
         <table class="table cp-items">
           <thead><tr><th>Cuenta de gasto o costo</th><th>Detalle</th><th class="col-num">Valor (sin IVA)</th><th>IVA</th><th></th></tr></thead>
           <tbody>
             @for (it of items(); track $index; let i = $index) {
               <tr>
                 <td>
-                  <select class="form-control" [ngModel]="it.cuenta_id" (ngModelChange)="cambiarItem(i, 'cuenta_id', $event)" [attr.aria-label]="'Cuenta del ítem ' + (i + 1)">
-                    <option value="">Elija…</option>
-                    @for (c of cuentasGasto(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
-                  </select>
+                  <!-- 7-oct-2026 · Selector con búsqueda: el plan tiene cientos de cuentas
+                       y en un desplegable normal había que recorrerlas todas. Se
+                       escribe el código o el nombre y la lista se filtra. -->
+                  <app-selector-busqueda
+                    [opciones]="opcionesCuenta()"
+                    [valor]="it.cuenta_id"
+                    (valorChange)="cambiarItem(i, 'cuenta_id', $event)"
+                    placeholder="Código o nombre de la cuenta…"
+                  />
                 </td>
                 <td><input type="text" class="form-control" [ngModel]="it.descripcion" (ngModelChange)="cambiarItem(i, 'descripcion', $event)" [attr.aria-label]="'Detalle del ítem ' + (i + 1)" /></td>
                 <td><input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="it.valor" (ngModelChange)="cambiarItem(i, 'valor', $event)" [attr.aria-label]="'Valor del ítem ' + (i + 1)" /></td>

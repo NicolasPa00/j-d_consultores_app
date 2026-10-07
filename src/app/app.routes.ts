@@ -87,7 +87,7 @@ export const routes: Routes = [
       { path: 'validacion', redirectTo: 'ordenes', pathMatch: 'full' },
       {
         path: 'informes',
-        title: 'Informes y resúmenes',
+        title: 'Estadísticas',
         canActivate: [permissionGuard],
         data: { vista: 'informes' },
         loadComponent: () => import('./pages/reports/reports').then((m) => m.ReportsComponent),

@@ -1,0 +1,336 @@
+<!-- ===== Filtros: una sola fila, arriba de todo ===== -->
+<div class="est-filtros">
+  <div class="est-segmento" role="group" aria-label="Periodo">
+    @for (p of periodos; track p.clave) {
+      <button
+        type="button"
+        class="est-segmento__op"
+        [class.est-segmento__op--activa]="periodo() === p.clave"
+        [attr.aria-pressed]="periodo() === p.clave"
+        (click)="elegirPeriodo(p.clave)"
+      >
+        {{ p.nombre }}
+      </button>
+    }
+  </div>
+
+  @if (periodo() === 'rango') {
+    <div class="est-rango">
+      <label class="est-rango__campo">
+        <span>Desde</span>
+        <input class="form-control form-control--sm" type="date" [(ngModel)]="desdeRango" name="estDesde" [max]="hastaRango" (change)="cargar()" />
+      </label>
+      <label class="est-rango__campo">
+        <span>Hasta</span>
+        <input class="form-control form-control--sm" type="date" [(ngModel)]="hastaRango" name="estHasta" [min]="desdeRango" (change)="cargar()" />
+      </label>
+    </div>
+  }
+
+  <span class="est-filtros__periodo">
+    @if (cargando()) {
+      <span class="spinner spinner--oscuro" aria-hidden="true"></span> Actualizando…
+    } @else if (datos()) {
+      Órdenes recibidas · {{ rotuloPeriodo() }}
+    }
+  </span>
+
+  <div class="est-filtros__acciones">
+    <button type="button" class="btn btn--ghost btn--sm" [disabled]="!datos() || exportando()" (click)="exportarExcel()">
+      {{ exportando() ? 'Generando…' : 'Excel' }}
+    </button>
+    <button type="button" class="btn btn--ghost btn--sm" [disabled]="!datos()" (click)="exportarPdf()">PDF</button>
+  </div>
+</div>
+
+@if (datos(); as d) {
+  <!-- ===== Cifras del periodo ===== -->
+  <div class="kpi-grid est-kpis">
+    <article class="kpi-card kpi-card--primary">
+      <div class="kpi-card__info">
+        <span class="kpi-card__label">Órdenes recibidas</span>
+        <span class="kpi-card__value">{{ n(d.kpis.ordenes) }}</span>
+        <span class="est-kpi__nota">{{ n(d.kpis.empresas) }} empresa{{ d.kpis.empresas === 1 ? '' : 's' }}</span>
+      </div>
+    </article>
+    <article class="kpi-card kpi-card--info">
+      <div class="kpi-card__info">
+        <span class="kpi-card__label">Horas asignadas</span>
+        <span class="kpi-card__value">{{ n(d.kpis.horas) }}</span>
+        <span class="est-kpi__nota">{{ n(d.kpis.profesionales) }} profesional{{ d.kpis.profesionales === 1 ? '' : 'es' }}</span>
+      </div>
+    </article>
+    <article class="kpi-card kpi-card--success">
+      <div class="kpi-card__info">
+        <span class="kpi-card__label">Finalizadas</span>
+        <span class="kpi-card__value">{{ n(d.kpis.finalizadas) }}</span>
+        <span class="est-kpi__nota">{{ pct(d.kpis.finalizadas, d.kpis.ordenes) }} del periodo</span>
+      </div>
+    </article>
+    <article class="kpi-card" [class.kpi-card--warning]="d.kpis.vencidas > 0" [class.kpi-card--neutral]="!d.kpis.vencidas">
+      <div class="kpi-card__info">
+        <span class="kpi-card__label">Vencidas sin ejecutar</span>
+        <span class="kpi-card__value">{{ n(d.kpis.vencidas) }}</span>
+        <span class="est-kpi__nota">{{ d.kpis.vencidas ? 'Requieren atención' : 'Ninguna pendiente' }}</span>
+      </div>
+    </article>
+    <article class="kpi-card kpi-card--neutral">
+      <div class="kpi-card__info">
+        <span class="kpi-card__label">Satisfacción del cliente</span>
+        <span class="kpi-card__value">
+          {{ d.kpis.satisfaccion.promedio != null ? n(d.kpis.satisfaccion.promedio) : '—' }}<small class="est-kpi__de">/ 5</small>
+        </span>
+        <span class="est-kpi__nota">
+          {{ d.kpis.satisfaccion.respuestas ? n(d.kpis.satisfaccion.respuestas) + ' encuesta' + (d.kpis.satisfaccion.respuestas === 1 ? '' : 's') : 'Sin encuestas respondidas' }}
+        </span>
+      </div>
+    </article>
+  </div>
+
+  @if (!d.kpis.ordenes) {
+    <div class="card est-vacio">
+      <p><strong>No entraron órdenes en este periodo.</strong></p>
+      <p>Pruebe con un periodo más amplio: «Este mes» o un rango de fechas.</p>
+    </div>
+  } @else {
+    <div class="est-rejilla">
+      <!-- ===== Tendencia: una sola serie, por eso no lleva leyenda ===== -->
+      <section class="card est-tarjeta est-tarjeta--ancha">
+        <header class="est-tarjeta__cabeza">
+          <div>
+            <h3 class="est-tarjeta__titulo">{{ medida() === 'ordenes' ? 'Órdenes recibidas' : 'Horas asignadas' }} {{ d.grano === 'month' ? 'por mes' : 'por día' }}</h3>
+            <p class="est-tarjeta__sub">
+              {{ n(tendencia().total) }} {{ medida() === 'ordenes' ? 'órdenes' : 'horas' }} en el periodo, según la fecha en que la orden entró al sistema.
+            </p>
+          </div>
+          <div class="est-segmento est-segmento--sm" role="group" aria-label="Qué se mide">
+            <button type="button" class="est-segmento__op" [class.est-segmento__op--activa]="medida() === 'ordenes'" [attr.aria-pressed]="medida() === 'ordenes'" (click)="medida.set('ordenes')">Órdenes</button>
+            <button type="button" class="est-segmento__op" [class.est-segmento__op--activa]="medida() === 'horas'" [attr.aria-pressed]="medida() === 'horas'" (click)="medida.set('horas')">Horas</button>
+          </div>
+        </header>
+
+        <div class="est-linea">
+          <svg
+            class="est-linea__svg"
+            [attr.viewBox]="'0 0 ' + G.ancho + ' ' + G.alto"
+            role="img"
+            [attr.aria-label]="(medida() === 'ordenes' ? 'Órdenes recibidas' : 'Horas asignadas') + ' a lo largo del periodo. Los valores están en la tabla de datos.'"
+            (pointermove)="moverSobreTendencia($event)"
+            (pointerleave)="foco.set(null)"
+          >
+            <!-- Rejilla y eje Y: marcas redondas, discretas. -->
+            @for (m of tendencia().marcasY; track m.y) {
+              <line class="est-linea__rejilla" [attr.x1]="G.izq" [attr.x2]="G.ancho - G.der" [attr.y1]="m.y" [attr.y2]="m.y" />
+              <text class="est-linea__eje" [attr.x]="G.izq - 8" [attr.y]="m.y + 4" text-anchor="end">{{ n(m.valor) }}</text>
+            }
+            @for (p of tendencia().marcasX; track p.i) {
+              <text class="est-linea__eje" [attr.x]="p.x" [attr.y]="G.alto - 8" text-anchor="middle">{{ rotuloPunto(p.inicio) }}</text>
+            }
+
+            @if (tendencia().area) {
+              <path class="est-linea__area" [attr.d]="tendencia().area" />
+              <path class="est-linea__trazo" [attr.d]="tendencia().linea" />
+            }
+            @if (tendencia().conMarcadores) {
+              @for (p of tendencia().puntos; track p.i) {
+                <circle class="est-linea__punto" [attr.cx]="p.x" [attr.cy]="p.y" r="4" />
+              }
+            }
+
+            <!-- Cursor: una línea vertical enganchada al punto más cercano. -->
+            @if (puntoEnFoco(); as f) {
+              <line class="est-linea__cursor" [attr.x1]="f.x" [attr.x2]="f.x" [attr.y1]="G.arriba" [attr.y2]="tendencia().base" />
+              <circle class="est-linea__punto est-linea__punto--foco" [attr.cx]="f.x" [attr.cy]="f.y" r="5.5" />
+            }
+          </svg>
+          @if (puntoEnFoco(); as f) {
+            <div
+              class="est-tooltip"
+              [class.est-tooltip--izq]="f.x > G.ancho * 0.7"
+              [style.left.%]="(f.x / G.ancho) * 100"
+              [style.top.%]="(f.y / G.alto) * 100"
+            >
+              <span class="est-tooltip__fecha">{{ rotuloPunto(f.inicio, true) }}</span>
+              <strong class="est-tooltip__valor">{{ n(f.valor) }}</strong>
+              <span class="est-tooltip__unidad">{{ medida() === 'ordenes' ? (f.valor === 1 ? 'orden' : 'órdenes') : (f.valor === 1 ? 'hora' : 'horas') }}</span>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- ===== Estado: partes de un todo → barra apilada con leyenda ===== -->
+      <section class="card est-tarjeta">
+        <header class="est-tarjeta__cabeza">
+          <div>
+            <h3 class="est-tarjeta__titulo">En qué estado están</h3>
+            <p class="est-tarjeta__sub">Las {{ n(d.kpis.ordenes) }} órdenes del periodo, según su estado de hoy.</p>
+          </div>
+        </header>
+        <div class="est-pila" role="img" aria-label="Reparto de las órdenes por estado; los valores están en la leyenda.">
+          @for (e of estados(); track e.clave) {
+            @if (e.ordenes) {
+              <span
+                class="est-pila__tramo"
+                [style.flex-grow]="e.ordenes"
+                [style.background]="e.color"
+                [style.color]="e.tinta"
+                [title]="e.nombre + ': ' + n(e.ordenes) + ' (' + pct(e.ordenes, d.kpis.ordenes) + ')'"
+              >
+                <!-- La etiqueta va dentro solo si cabe; si no, queda la leyenda. -->
+                @if (e.parte >= 0.14) { {{ pct(e.ordenes, d.kpis.ordenes) }} }
+              </span>
+            }
+          }
+        </div>
+        <ul class="est-leyenda">
+          @for (e of estados(); track e.clave) {
+            <li class="est-leyenda__fila">
+              <span class="est-leyenda__muestra" [style.background]="e.color" aria-hidden="true"></span>
+              <span class="est-leyenda__nombre">{{ e.nombre }}</span>
+              <strong class="est-leyenda__valor">{{ n(e.ordenes) }}</strong>
+              <span class="est-leyenda__parte">{{ pct(e.ordenes, d.kpis.ordenes) }}</span>
+              <span class="est-leyenda__parte">{{ n(e.horas) }} h</span>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <!-- ===== Magnitudes: listas de barras, un solo tono ===== -->
+      <section class="card est-tarjeta">
+        <header class="est-tarjeta__cabeza">
+          <div>
+            <h3 class="est-tarjeta__titulo">Órdenes por ARL</h3>
+            <p class="est-tarjeta__sub">Quién envió el trabajo del periodo.</p>
+          </div>
+        </header>
+        <ul class="est-barras">
+          @for (b of porArl(); track b.nombre) {
+            <li class="est-barras__fila" [title]="b.nombre + ': ' + n(b.ordenes) + ' órdenes · ' + n(b.horas) + ' h'">
+              <span class="est-barras__nombre">{{ b.nombre }}</span>
+              <span class="est-barras__pista"><span class="est-barras__barra" [style.width.%]="b.ancho"></span></span>
+              <strong class="est-barras__valor">{{ n(b.ordenes) }}</strong>
+              <span class="est-barras__extra">{{ n(b.horas) }} h</span>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <section class="card est-tarjeta">
+        <header class="est-tarjeta__cabeza">
+          <div>
+            <h3 class="est-tarjeta__titulo">Horas por profesional</h3>
+            <p class="est-tarjeta__sub">
+              Horas asignadas a cada asesor{{ d.por_profesional.length > 8 ? ' (los 8 con más horas; el resto está en la tabla)' : '' }}.
+            </p>
+          </div>
+        </header>
+        @if (porProfesional().length) {
+          <ul class="est-barras">
+            @for (b of porProfesional(); track b.nombre) {
+              <li class="est-barras__fila" [title]="b.nombre + ': ' + n(b.horas) + ' h en ' + n(b.ordenes) + ' órdenes'">
+                <span class="est-barras__nombre">{{ b.nombre }}</span>
+                <span class="est-barras__pista"><span class="est-barras__barra" [style.width.%]="b.ancho"></span></span>
+                <strong class="est-barras__valor">{{ n(b.horas) }} h</strong>
+                <span class="est-barras__extra">{{ n(b.ordenes) }} órd.</span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="est-tarjeta__vacio">Ninguna orden del periodo tiene profesional asignado todavía.</p>
+        }
+      </section>
+
+      <section class="card est-tarjeta">
+        <header class="est-tarjeta__cabeza">
+          <div>
+            <h3 class="est-tarjeta__titulo">Tipo de actividad</h3>
+            <p class="est-tarjeta__sub">Qué clase de trabajo se pidió.</p>
+          </div>
+        </header>
+        <ul class="est-barras">
+          @for (b of porTipo(); track b.nombre) {
+            <li class="est-barras__fila" [title]="b.nombre + ': ' + n(b.ordenes) + ' órdenes · ' + n(b.horas) + ' h'">
+              <span class="est-barras__nombre">{{ b.nombre }}</span>
+              <span class="est-barras__pista"><span class="est-barras__barra" [style.width.%]="b.ancho"></span></span>
+              <strong class="est-barras__valor">{{ n(b.ordenes) }}</strong>
+              <span class="est-barras__extra">{{ n(b.horas) }} h</span>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <section class="card est-tarjeta">
+        <header class="est-tarjeta__cabeza">
+          <div>
+            <h3 class="est-tarjeta__titulo">Dónde se ejecuta</h3>
+            <p class="est-tarjeta__sub">Las ciudades con más órdenes.</p>
+          </div>
+        </header>
+        <ul class="est-barras">
+          @for (b of porCiudad(); track b.nombre) {
+            <li class="est-barras__fila" [title]="b.nombre + ': ' + n(b.ordenes) + ' órdenes · ' + n(b.horas) + ' h'">
+              <span class="est-barras__nombre">{{ b.nombre }}</span>
+              <span class="est-barras__pista"><span class="est-barras__barra" [style.width.%]="b.ancho"></span></span>
+              <strong class="est-barras__valor">{{ n(b.ordenes) }}</strong>
+              <span class="est-barras__extra">{{ n(b.horas) }} h</span>
+            </li>
+          }
+        </ul>
+      </section>
+    </div>
+
+    <!-- ===== Los mismos datos, en tablas ===== -->
+    <div class="est-tablas">
+      <button type="button" class="btn btn--ghost btn--sm" [attr.aria-expanded]="verTablas()" (click)="verTablas.set(!verTablas())">
+        {{ verTablas() ? 'Ocultar las tablas de estas gráficas' : 'Ver estos datos en tablas' }}
+      </button>
+      @if (verTablas()) {
+        <div class="est-tablas__rejilla">
+          <div class="card">
+            <div class="card__head"><h3 class="card__title">Por profesional</h3></div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead><tr><th>Profesional</th><th class="est-num">Órdenes</th><th class="est-num">Horas</th><th class="est-num">Finalizadas</th></tr></thead>
+                <tbody>
+                  @for (f of d.por_profesional; track f.profesional) {
+                    <tr><td>{{ f.profesional }}</td><td class="est-num">{{ n(f.ordenes) }}</td><td class="est-num">{{ n(f.horas) }}</td><td class="est-num">{{ n(f.finalizadas) }}</td></tr>
+                  } @empty {
+                    <tr><td colspan="4">Sin profesionales asignados en el periodo.</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card__head"><h3 class="card__title">Por ARL</h3></div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead><tr><th>ARL o cliente</th><th class="est-num">Órdenes</th><th class="est-num">Horas</th><th class="est-num">Finalizadas</th></tr></thead>
+                <tbody>
+                  @for (f of d.por_arl; track f.arl) {
+                    <tr><td>{{ f.arl }}</td><td class="est-num">{{ n(f.ordenes) }}</td><td class="est-num">{{ n(f.horas) }}</td><td class="est-num">{{ n(f.finalizadas) }}</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card__head"><h3 class="card__title">{{ d.grano === 'month' ? 'Por mes' : 'Por día' }}</h3></div>
+            <div class="table-wrap est-tablas__alta">
+              <table class="table">
+                <thead><tr><th>Fecha</th><th class="est-num">Órdenes</th><th class="est-num">Horas</th><th class="est-num">Finalizadas</th></tr></thead>
+                <tbody>
+                  @for (p of d.serie; track p.inicio) {
+                    <tr><td>{{ rotuloPunto(p.inicio, true) }}</td><td class="est-num">{{ n(p.ordenes) }}</td><td class="est-num">{{ n(p.horas) }}</td><td class="est-num">{{ n(p.finalizadas) }}</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+} @else if (cargando()) {
+  <div class="card est-vacio"><p><span class="spinner spinner--oscuro" aria-hidden="true"></span> Cargando las estadísticas…</p></div>
+}

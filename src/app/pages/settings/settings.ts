@@ -634,7 +634,18 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  protected togglePlantilla(p: Plantilla): void {
+  protected async togglePlantilla(p: Plantilla): Promise<void> {
+    // 7-oct-2026 · Activar o desactivar siempre pregunta: un clic de más no lo hace solo.
+    const activo = p.activo;
+    const ok = await this.alerts.confirm({
+      title: `${activo ? 'Desactivar' : 'Activar'} formato`,
+      message: activo
+        ? `Se desactivará ${p.nombre}. Dejará de generarse al asignar una orden.`
+        : `Se volverá a activar ${p.nombre}.`,
+      confirmText: activo ? 'Desactivar' : 'Activar',
+      tone: activo ? 'danger' : 'primary',
+    });
+    if (!ok) return;
     this.api.togglePlantilla(p.id).subscribe({
       next: (r) => {
         this.plantillas.update((list) => list.map((x) => (x.id === r.data.id ? { ...x, ...r.data } : x)));
@@ -884,7 +895,7 @@ export class SettingsComponent implements OnInit {
       validarCorreo(d.correo),
       validarTelefono(d.telefono),
       validarTextoOpcional(d.especialidad, 'La especialidad'),
-      editing === 'nuevo' ? validarDocumento(d.documento) : null,
+      validarDocumento(d.documento),
     );
     if (problema) {
       this.alerts.warning('Revise los datos', problema);
@@ -917,7 +928,7 @@ export class SettingsComponent implements OnInit {
       });
     } else {
       this.api.updateUsuario(editing.id, {
-        nombre: d.nombre, correo: d.correo, rol: d.rol,
+        nombre: d.nombre, correo: d.correo, rol: d.rol, documento: d.documento,
         telefono: d.telefono || undefined, especialidad: d.especialidad || undefined,
       }).subscribe({
         next: () => done('Usuario actualizado', `Se guardaron los datos de ${d.nombre}.`),
@@ -926,7 +937,18 @@ export class SettingsComponent implements OnInit {
     }
   }
 
-  protected toggleActivo(u: Usuario): void {
+  protected async toggleActivo(u: Usuario): Promise<void> {
+    // 7-oct-2026 · Activar o desactivar siempre pregunta: un clic de más no lo hace solo.
+    const activo = (u.activo ?? true);
+    const ok = await this.alerts.confirm({
+      title: `${activo ? 'Desactivar' : 'Activar'} usuario`,
+      message: activo
+        ? `Se desactivará ${u.nombre}. No podrá iniciar sesión hasta que se le vuelva a activar.`
+        : `Se volverá a activar ${u.nombre}.`,
+      confirmText: activo ? 'Desactivar' : 'Activar',
+      tone: activo ? 'danger' : 'primary',
+    });
+    if (!ok) return;
     this.api.setUsuarioActivo(u.id, !(u.activo ?? true)).subscribe({
       next: () => {
         this.alerts.success(

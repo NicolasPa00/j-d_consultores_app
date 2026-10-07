@@ -3,8 +3,8 @@
  *
  * 30-sep-2026 · Identidad corporativa de JD&D: el fondo es `.brand-screen`, el
  * botón de salir `.btn--outline-light`, las tarjetas `.card.card--interactive`,
- * las funcionalidades `.chip` y el "Entrar a…" `.link-cta` (todo en
- * styles.scss). Aquí solo queda la disposición propia de esta pantalla.
+ * y las funcionalidades `.chip` (todo en styles.scss). Aquí queda la disposición
+ * propia de esta pantalla y el aspecto de botón de las tarjetas.
  */
 :host {
   display: block;
@@ -76,45 +76,81 @@
   max-width: 800px;
 }
 
-/* ---- Tarjeta de sistema (sobre `.card.card--interactive`) ---- */
+/* ---- Tarjeta de sistema (sobre `.card.card--interactive`) ----
+   7-oct-2026 · Cada tarjeta es UN botón y tiene que parecerlo: borde que se
+   enciende, franja de color arriba y, abajo, una barra «Entrar a…» con aspecto
+   de botón primario. Antes el "Entrar a… →" era un texto suelto y la tarjeta se
+   leía como una ficha informativa. */
 .tarjeta {
+  --tarjeta-acento: var(--primary-color);
+  --tarjeta-acento-hover: var(--primary-hover);
+  --tarjeta-tenue: rgba(0, 11, 79, 0.07);
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.75rem;
-  padding: 2rem;
+  padding: 2rem 2rem 1.5rem;
+  overflow: hidden;
   text-align: left;
   color: var(--text-main);
   font: inherit;
-  border: 0;
+  border: 2px solid transparent;
   box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.4);
-}
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 
-.tarjeta__icono {
-  width: 48px;
-  height: 48px;
-  display: grid;
-  place-items: center;
-  border-radius: 12px;
-  background: rgba(0, 11, 79, 0.07);
-  color: var(--primary-color);
-
-  svg {
-    width: 26px;
-    height: 26px;
+  // Franja superior con el color del sistema.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 5px;
+    background: var(--tarjeta-acento);
   }
 }
 
 // Finanzas conserva su acento verde para distinguirse de un vistazo.
-.tarjeta--finanzas .tarjeta__icono {
-  background: rgba(16, 185, 129, 0.12);
-  color: #047857;
+.tarjeta--finanzas {
+  --tarjeta-acento: #047857;
+  --tarjeta-acento-hover: #065f46;
+  --tarjeta-tenue: rgba(16, 185, 129, 0.12);
+}
+
+.tarjeta:hover,
+.tarjeta:focus-visible {
+  border-color: var(--tarjeta-acento);
+}
+
+.tarjeta:active {
+  transform: translateY(-1px);
+}
+
+.tarjeta__icono {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--tarjeta-tenue);
+  color: var(--tarjeta-acento);
+  transition: background 0.2s ease, color 0.2s ease;
+
+  svg {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+.tarjeta:hover .tarjeta__icono,
+.tarjeta:focus-visible .tarjeta__icono {
+  background: var(--tarjeta-acento);
+  color: #ffffff;
 }
 
 .tarjeta__nombre {
-  font-size: 1.3rem;
+  font-size: 1.35rem;
   font-weight: 700;
-  color: var(--primary-color);
+  color: var(--tarjeta-acento);
 }
 
 .tarjeta__descripcion {
@@ -123,24 +159,51 @@
   color: var(--text-muted);
 }
 
+.tarjeta__pantallas {
+  margin-bottom: 0.5rem;
+}
+
+/* La barra de acción: es lo que dice "esto se pulsa". */
 .tarjeta__entrar {
   margin-top: auto;
-  padding-top: 0.5rem;
-  transition: color 0.2s ease;
-}
-
-.tarjeta:hover .tarjeta__entrar {
-  color: var(--primary-hover);
-}
-
-.sistemas__recordar {
-  margin-top: 1.75rem;
-  display: inline-flex;
+  align-self: stretch;
+  display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.85);
-  cursor: pointer;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--tarjeta-acento);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: background 0.2s ease;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.2s ease;
+  }
+}
+
+.tarjeta:hover .tarjeta__entrar,
+.tarjeta:focus-visible .tarjeta__entrar {
+  background: var(--tarjeta-acento-hover);
+
+  svg {
+    transform: translateX(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tarjeta,
+  .tarjeta__entrar svg {
+    transition: none;
+  }
+
+  .tarjeta:active {
+    transform: none;
+  }
 }
 
 @media (max-width: 600px) {
@@ -157,6 +220,6 @@
   }
 
   .tarjeta {
-    padding: 1.5rem;
+    padding: 1.5rem 1.5rem 1.25rem;
   }
 }

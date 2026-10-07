@@ -182,6 +182,70 @@
 > 500 números, dirección distinta a la del RUT: ver el plan). La otra que mandaron es la de documento soporte (DS).
 > **PUC real importado en `jdd_dev` (solo activas): 773 cuentas, 430 de movimiento.** Sin commitear:
 > Producción sigue sin PUC.
+> **`jdd_dev` EN BLANCO desde el 6-oct (noche), a pedido del usuario, para probar Finanzas de punta a punta:** 40
+> tablas de movimiento vaciadas (órdenes, borradores, soportes, cuentas de cobro, prefacturas, documentos
+> electrónicos, comprobantes, cartera, compras, activos) y consecutivos en 0. Se conservó la configuración:
+> usuarios, 3 profesionales, 22 empresas, 7 terceros, PUC de 773 cuentas, 18 reglas, productos, tarifas,
+> retenciones, numeración del ambiente de pruebas y catálogos. **Vacíos y por llenar al probar:** empresa emisora,
+> UVT, tipos de viático. Respaldo previo en el VPS de desarrollo:
+> `~/respaldos/jdd_dev-antes-de-limpiar-20261007-0128.dump`. Guion de la prueba: `2-pruebas/LEEME.md`.
+> **7-oct-2026 · tres cambios pedidos por el usuario, SIN COMMITEAR** (`fase-c-informes`, los dos repos):
+> (1) `/sistemas`: se retiró «Recordar mi elección» (`SistemaService.elegir(id)` ya no recuerda y limpia lo guardado)
+> y las tarjetas son botones con barra «Entrar a…». (2) `/importar`: toda la zona de carga es el botón (`<label
+> class="dropzone">`), admite arrastrar y soltar (`sumarALaTanda`) y se encoge a una franja al elegir archivos.
+> (3) **Asignación con varios asesores, cada uno con SU horario** (reemplaza al interruptor del 5-oct): se marcan las
+> horas de uno, se guardan con el botón de su fila (`guardarProgreso`, señal `equipo`) y se elige al siguiente; el
+> chip de cada uno sale en «Visita de esta orden». Backend: `sst.franjas_visita.profesional_id` (NULL = principal;
+> migración `2026-10-07-franjas-por-profesional.sql`, **aplicada solo en `jdd_dev`**), un juego de formatos por asesor
+> con sus franjas (`generateOrderDocuments`, archivos con el nombre del asesor delante), correo e `.ics` con su
+> horario. El primero que se guarda es el PRINCIPAL (enlace de soportes, encuesta, viáticos). Con suplente, todos los
+> juegos van a nombre del registrado. Verificación: `node --import tsx scripts/verificar-franjas-por-asesor.mjs`
+> (12 OK) y `npx ngc -p tsconfig.app.json --noEmit` limpio. **No visto en el navegador ni probado el envío real.**
+> **7-oct-2026 (2.ª tanda) · once cambios más pedidos por el usuario, SIN COMMITEAR.** Órdenes: iconos de personas
+> en las franjas compartidas (`BloqueAgenda.personas`); **cada asesor sube SUS soportes** por su propio enlace
+> (`enlaces_publicos.profesional_id/rechazados/entregado_en`, `archivos_soporte.profesional_id`, migración
+> `2026-10-07-soportes-por-asesor.sql` **solo en `jdd_dev`**): la orden pasa a EJECUTADA cuando no falta ninguno
+> (`asesoresSinEntregar`) y el rechazo se marca por asesor (`devueltos: [{categoria, profesional_id}]`); estado ARL
+> como botón que explica cómo cambia; modal de prefactura con check angosto y **solo órdenes FINALIZADAS marcables**;
+> modal de cobro con chip de facturación en la cabecera y «Resumen del cobro» a la derecha; visor de formatos con
+> «Abrir en otra pestaña»/«Descargar» y aviso si el navegador no pinta PDF (`pdfEnPagina`; causa del reporte del
+> cliente SIN confirmar, no se vio el video). Importar: el aviso de duplicadas se cierra solo (barra de 15 s) o con X.
+> Empresas: sin Eliminar ni Fusionar; **activar/desactivar pregunta siempre** (también en centros de costo, productos,
+> tarifas, retenciones, numeración, profesionales, usuarios, formatos y terceros). Configuración: el documento del
+> usuario se puede corregir (`PUT /auth/usuarios/:id` acepta `documento`) y «Preferencias del Sistema» con separación.
+> **`/informes` ahora es «Estadísticas»** (`pages/reports/estadisticas/`, `GET /reports/estadisticas`): filtro Hoy ·
+> 7 días · Este mes · Rango, cifras, tendencia y cinco gráficas en SVG/HTML propios (sin librería), Excel y PDF; las
+> tablas de siempre quedan debajo como «Tablas de detalle». Verificado: `ngc --noEmit` limpio,
+> `verificar-franjas-por-asesor.mjs` 17 OK; vistos en el navegador `/informes`, `/importar` y `/sistemas`. **Sin ver en
+> pantalla:** asignación con iconos, portal de soportes por asesor y rechazo, modales de cobro y prefactura.
+> ⏸️ **CIERRE DE SESIÓN 7-oct-2026 · leer primero.** Todo lo del 7-oct (tres tandas, puntos 1-23, bloques de abajo) está
+> **SIN COMMITEAR** en `fase-c-informes` de los dos repos; lo del 6-oct sí está commiteado en local, sin push. Las banderas
+> `emisionDian` y `PROVEEDOR_VISIBLE` quedaron en `true` SOLO para probar contra el sandbox: al commitear, dejarlas fuera
+> (`git add -p` o revertirlas) y encenderlas en un commit propio el día del tercer lote. Migraciones nuevas aplicadas solo en
+> `jdd_dev`: `2026-10-07-franjas-por-profesional` y `2026-10-07-soportes-por-asesor` (ya en el runbook del tercer lote).
+> Pendiente: el usuario prueba Finanzas con la guía (enlace en la memoria `pruebas-locales-finanzas`), un envío real de
+> factura para ver el logo, decidir si se despliega la parte 1 del tercer lote, y asociar el prefijo FE en la DIAN cuando
+> aparezca en el portal de producción.
+> **7-oct-2026 · visor de soportes en blanco (reporte de JD&D, OS-2026-0157, tres JPG) · SIN COMMITEAR.** Causa en
+> producción SIN confirmar (no se pudo leer la base de producción; la compresión de JPG funciona en local). Arreglo
+> defensivo en `validation.ts/html`: el tipo se decide por los primeros bytes del archivo (no por el `mime` que declaró el
+> móvil), `<img (error)>` muestra aviso, barra «Abrir en otra pestaña / Descargar» siempre que hay archivo, y si
+> `pdfViewerEnabled` es false el PDF ofrece abrirse aparte (mismo patrón que el visor de formatos). No se convierten las
+> fotos a PDF: en un equipo sin visor de PDF quedaría PEOR. **Probado en local (7-oct)** con puppeteer
+> (`2-pruebas/herramientas-capturas/prueba-visor-soportes.mjs`, capturas en `shots/visor-soportes/`): foto JPG real se
+> ve, falso .jpg (HEIC) avisa, PDF en iframe, PDF con `pdfViewerEnabled=false` ofrece abrirlo. Soportes de prueba
+> sembrados en la OS-2026-0001 de `jdd_dev` y borrados al terminar. Un JPG válido se veía también con el código viejo:
+> el blanco de producción apunta a un archivo que el navegador no decodifica (confirmar con la consulta a producción).
+> **7-oct-2026 (3.ª tanda, puntos 15-23) · SIN COMMITEAR.** Subidas intermitentes: `server.keepAliveTimeout` 65 s
+> (`sst_ws/src/server.js`), latido TCP en el pool de la base y `reintentoInterceptor` (un reintento si la petición
+> muere en menos de 1,5 s) — causa probable, NO confirmada. Correo de la factura con logo embebido
+> (`sst_ws/assets/correo/logoFacturacion.png`, `correoHtml({ logoCid })`). Facturación: pestañas y filtro en una
+> fila, botón de eventos con cuerpo, secciones por ARL con cabecera de color, motivo en píldora, acciones por fila
+> (Ver · PDF · Enviar · Contabilización · Historial, señal `vista`) y modal «Ver» de una columna sin el aviso
+> repetido. Compras: cuenta con `app-selector-busqueda`. **OJO: `emisionDian` y `PROVEEDOR_VISIBLE` están en `true`
+> en el árbol de trabajo para probar; no commitearlas con lo demás.** Vistos en el navegador (7-oct): ventanas Contabilización,
+> Enviar e Historial y el selector de Compras. Falta: probar un envío real (logo en el correo) y ajustar el paso 4.5
+> de la guía de pruebas (quedó en la cuenta anterior de Claude; editarla a mano).
 > **Tercer lote preparado (6-oct, noche):** todo commiteado en `fase-c-informes` de los dos repos (**local, sin
 > push**; sin `ng build`: el equipo estaba sin memoria). Runbook: **`docs/4-despliegue/despliegue-lote3.md`**, en dos
 > partes: 1) Fase C + peticiones del 5-oct, sin DIAN; 2) encender la DIAN. **Único bloqueo de la parte 2:** la

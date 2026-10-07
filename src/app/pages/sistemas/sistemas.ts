@@ -1,6 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/auth.service';
 import { SistemaService } from '../../core/sistema.service';
 import { Sistema, SistemaId } from '../../core/sistemas';
@@ -14,7 +13,7 @@ const ETIQUETA: Record<Vista, string> = {
   profesionales: 'Profesionales',
   precuentas: 'Cuentas de cobro',
   empresas: 'Empresas',
-  informes: 'Informes',
+  informes: 'Estadísticas',
   configuracion: 'Configuración',
   facturacion: 'Facturación',
   contabilidad: 'Contabilidad',
@@ -27,12 +26,11 @@ const ETIQUETA: Record<Vista, string> = {
 
 /**
  * Selección de sistema (29-sep-2026). Solo llega aquí quien tiene acceso a los
- * dos sistemas y no recordó su elección: a los demás `destinoAlEntrar()` los
- * lleva directo. Se entra también con «Cambiar de sistema» desde la barra.
+ * dos sistemas: a los demás `destinoAlEntrar()` los lleva directo. Se entra
+ * también con «Cambiar de sistema» desde la barra.
  */
 @Component({
   selector: 'app-sistemas',
-  imports: [FormsModule],
   templateUrl: './sistemas.html',
   styleUrl: './sistemas.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,7 +41,6 @@ export class SistemasComponent {
   private readonly router = inject(Router);
 
   protected readonly usuario = this.auth.usuario;
-  protected readonly recordar = signal(false);
 
   /** Cada sistema accesible con las pantallas que ESTE rol verá en su menú. */
   protected readonly opciones = computed(() =>
@@ -56,7 +53,7 @@ export class SistemasComponent {
   );
 
   protected elegir(id: SistemaId): void {
-    this.router.navigateByUrl(this.sistemas.elegir(id, this.recordar()));
+    this.router.navigateByUrl(this.sistemas.elegir(id));
   }
 
   protected logout(): void {

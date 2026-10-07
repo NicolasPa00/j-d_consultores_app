@@ -11,7 +11,8 @@
 
     <div class="sistemas__tarjetas">
       @for (s of opciones(); track s.id) {
-        <button type="button" class="card card--interactive tarjeta" [class.tarjeta--finanzas]="s.id === 'finanzas'" (click)="elegir(s.id)">
+        <button type="button" class="card card--interactive tarjeta" [class.tarjeta--finanzas]="s.id === 'finanzas'"
+                [attr.aria-label]="'Entrar a ' + s.nombre" (click)="elegir(s.id)">
           <span class="tarjeta__icono" aria-hidden="true">
             @if (s.id === 'operacion') {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -31,14 +32,14 @@
               <span class="chip">{{ p }}</span>
             }
           </span>
-          <span class="link-cta tarjeta__entrar">Entrar a {{ s.nombre }} <span aria-hidden="true">→</span></span>
+          <span class="tarjeta__entrar">
+            Entrar a {{ s.nombre }}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </span>
         </button>
       }
     </div>
-
-    <label class="sistemas__recordar">
-      <input type="checkbox" [ngModel]="recordar()" (ngModelChange)="recordar.set($event)" />
-      Recordar mi elección en este equipo
-    </label>
   </section>
 </main>

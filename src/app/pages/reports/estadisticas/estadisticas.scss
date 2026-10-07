@@ -1,0 +1,475 @@
+/*
+ * 7-oct-2026 · Estadísticas: gráficas del periodo.
+ *
+ * Los colores de las series son los de una paleta categórica comprobada (la
+ * distancia entre vecinos se validó para daltonismo y a la vista): van como
+ * variables aquí arriba y el resto de la hoja habla de PAPELES, no de colores.
+ * Reglas que se respetan a propósito: una sola serie = un solo tono y sin
+ * leyenda; partes de un todo = barra apilada con 2 px de aire entre tramos; el
+ * texto nunca lleva el color de la serie; rejilla y ejes discretos.
+ */
+:host {
+  display: block;
+  --serie-1: #2a78d6; /* azul · tono único de las magnitudes y de la tendencia */
+  /* Rampa ordinal del mismo azul para los cuatro estados (claro = menos avanzada). */
+  --paso-1: #86b6ef;
+  --paso-2: #5598e7;
+  --paso-3: #256abf;
+  --paso-4: #104281;
+  --est-rejilla: #e8ecf2;
+  --est-superficie: var(--card-bg, #ffffff);
+}
+
+/* ---- Filtros: una fila, encima de todo ---- */
+.est-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.est-filtros__periodo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.est-filtros__acciones {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+/* Control segmentado (periodo y medida). */
+.est-segmento {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: var(--est-superficie);
+}
+
+.est-segmento__op {
+  padding: 0.4rem 0.95rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.est-segmento__op:hover {
+  color: var(--primary-color);
+}
+
+.est-segmento__op--activa {
+  background: var(--primary-color);
+  color: #ffffff;
+}
+
+.est-segmento__op--activa:hover {
+  color: #ffffff;
+}
+
+.est-segmento__op:focus-visible {
+  outline: 2px solid var(--secondary-color);
+  outline-offset: 2px;
+}
+
+.est-segmento--sm .est-segmento__op {
+  padding: 0.28rem 0.75rem;
+  font-size: 0.78rem;
+}
+
+.est-rango {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.est-rango__campo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.spinner--oscuro {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(45, 123, 200, 0.25);
+  border-top-color: var(--secondary-color);
+  border-radius: 50%;
+  animation: est-giro 0.7s linear infinite;
+}
+
+@keyframes est-giro {
+  to { transform: rotate(360deg); }
+}
+
+/* ---- Cifras ---- */
+.est-kpis {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.est-kpis .kpi-card {
+  padding: 1.1rem 1.25rem;
+}
+
+.est-kpi__nota {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.est-kpi__de {
+  margin-left: 0.3rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.est-vacio {
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: var(--text-muted);
+
+  p {
+    margin: 0.25rem 0;
+  }
+
+  strong {
+    color: var(--text-main);
+  }
+}
+
+/* ---- Rejilla de tarjetas ---- */
+.est-rejilla {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.est-tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem 1.4rem;
+  min-width: 0;
+}
+
+.est-tarjeta--ancha {
+  grid-column: 1 / -1;
+}
+
+.est-tarjeta__cabeza {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.est-tarjeta__titulo {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--text-strong, var(--text-main));
+}
+
+.est-tarjeta__sub,
+.est-tarjeta__vacio {
+  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+/* ---- Tendencia ---- */
+.est-linea {
+  position: relative;
+}
+
+.est-linea__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: pan-y;
+}
+
+.est-linea__rejilla {
+  stroke: var(--est-rejilla);
+  stroke-width: 1;
+}
+
+.est-linea__eje {
+  fill: var(--text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.est-linea__area {
+  fill: var(--serie-1);
+  opacity: 0.1;
+}
+
+.est-linea__trazo {
+  fill: none;
+  stroke: var(--serie-1);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* El anillo del color de la superficie separa el punto de la línea. */
+.est-linea__punto {
+  fill: var(--serie-1);
+  stroke: var(--est-superficie);
+  stroke-width: 2;
+}
+
+.est-linea__punto--foco {
+  stroke-width: 2.5;
+}
+
+.est-linea__cursor {
+  stroke: var(--text-muted);
+  stroke-width: 1;
+  opacity: 0.55;
+}
+
+.est-tooltip {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 7rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--radius-sm);
+  background: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 8px 24px -6px rgba(15, 23, 42, 0.45);
+  pointer-events: none;
+  transform: translate(12px, -110%);
+  white-space: nowrap;
+}
+
+/* Cerca del borde derecho se abre hacia la izquierda para no salirse. */
+.est-tooltip--izq {
+  transform: translate(calc(-100% - 12px), -110%);
+}
+
+.est-tooltip__fecha,
+.est-tooltip__unidad {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.est-tooltip__valor {
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Barra apilada (estado) ---- */
+.est-pila {
+  display: flex;
+  gap: 2px; /* el aire entre tramos es la superficie, no un borde */
+  height: 26px;
+}
+
+.est-pila__tramo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4px;
+  flex-basis: 0;
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: filter 0.15s ease;
+}
+
+.est-pila__tramo:first-child {
+  border-radius: 4px 0 0 4px;
+}
+
+.est-pila__tramo:last-child {
+  border-radius: 0 4px 4px 0;
+}
+
+.est-pila__tramo:only-child {
+  border-radius: 4px;
+}
+
+.est-pila__tramo:hover {
+  filter: brightness(1.08);
+}
+
+.est-leyenda {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.est-leyenda__fila {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto 4.2rem 4.2rem;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--text-main);
+}
+
+.est-leyenda__muestra {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.est-leyenda__valor,
+.est-leyenda__parte {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.est-leyenda__parte {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+/* ---- Listas de barras (magnitud) ---- */
+.est-barras {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.est-barras__fila {
+  display: grid;
+  grid-template-columns: minmax(6rem, 34%) minmax(0, 1fr) 4rem 4rem;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.84rem;
+  color: var(--text-main);
+}
+
+.est-barras__nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.est-barras__pista {
+  display: block;
+  height: 12px;
+  border-radius: 0 4px 4px 0;
+  background: #f1f4f8;
+}
+
+/* Recta en la base, redondeada en la punta. */
+.est-barras__barra {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: 0 4px 4px 0;
+  background: var(--serie-1);
+  transition: filter 0.15s ease;
+}
+
+.est-barras__fila:hover .est-barras__barra {
+  filter: brightness(1.12);
+}
+
+.est-barras__valor,
+.est-barras__extra {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.est-barras__extra {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+/* ---- Tablas ---- */
+.est-tablas {
+  margin-top: 1.25rem;
+}
+
+.est-tablas__rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1rem;
+  align-items: start;
+}
+
+.est-tablas__alta {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.est-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 900px) {
+  .est-rejilla {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .est-filtros__acciones {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .est-tarjeta {
+    padding: 1rem;
+  }
+
+  .est-tarjeta__cabeza {
+    flex-direction: column;
+  }
+
+  .est-barras__fila {
+    grid-template-columns: minmax(0, 1fr) 3.4rem 3.4rem;
+  }
+
+  // En pantallas angostas la barra pasa debajo del nombre.
+  .est-barras__pista {
+    grid-column: 1 / -1;
+    order: 2;
+  }
+
+  .est-leyenda__fila {
+    grid-template-columns: 12px minmax(0, 1fr) auto 3.6rem;
+  }
+
+  .est-leyenda__fila .est-leyenda__parte:last-child {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner--oscuro {
+    animation-duration: 2s;
+  }
+}

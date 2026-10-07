@@ -13,6 +13,7 @@ import {
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 import { etiquetaEmpresa } from '../../core/bolivar';
+import { EstadisticasComponent } from './estadisticas/estadisticas';
 
 type ReportTab = 'ordenes' | 'profesionales' | 'satisfaccion' | 'vencidas' | 'horas' | 'cobro';
 
@@ -24,7 +25,7 @@ const ESTADOS = ['SIN PROGRAMAR', 'PROGRAMADA', 'EJECUTADA', 'FINALIZADA', 'EN V
 
 @Component({
   selector: 'app-reports',
-  imports: [FormsModule, PaginadorComponent],
+  imports: [FormsModule, PaginadorComponent, EstadisticasComponent],
   templateUrl: './reports.html',
   styleUrl: './reports.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -2,34 +2,173 @@
   display: block;
 }
 
-/* ===== Zona de carga compacta =====
-   Una sola fila: deja el protagonismo a la tabla de vista previa. */
+/* ===== Zona de carga =====
+   7-oct-2026 · La zona entera es el botón de carga (un <label> sobre el input):
+   borde discontinuo, icono y llamada a la acción, como cualquier "suelte aquí
+   sus archivos". Vacía es alta y protagonista; con archivos se encoge a una
+   franja y cede el sitio a la tanda y, más abajo, a la tabla de vista previa.
+   El contenedor es una tarjeta igual que la de la tabla, para que la pantalla
+   se lea como dos bloques de la misma familia. */
 .uploader {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 0.9rem;
-  padding: 0.75rem 1rem;
+  padding: 1rem;
   background: var(--surface);
   border: 1px solid var(--border-soft);
-  border-left: 3px solid var(--secondary-color);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
-}
-
-.uploader--busy {
-  opacity: 0.85;
 }
 
 /* CFG-04 · Sin tipos de orden la zona de carga se ve apagada e inerte; el aviso
    de arriba dice por qué y a dónde ir. */
 .uploader--bloqueado {
   opacity: 0.6;
-  border-left-color: var(--border-soft);
 }
 
-.uploader__hint--bloqueo {
+.dropzone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 172px;
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+  border: 2px dashed var(--accent-color);
+  border-radius: var(--radius-md);
+  background: rgba(45, 123, 200, 0.05);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dropzone:hover,
+.dropzone:focus-within,
+.dropzone--encima {
+  border-color: var(--secondary-color);
+  background: rgba(45, 123, 200, 0.1);
+}
+
+// El foco del teclado cae en el input oculto: el anillo se pinta en la zona.
+.dropzone:focus-within {
+  box-shadow: 0 0 0 3px rgba(136, 178, 232, 0.45);
+}
+
+// Durante el arrastre los hijos no reciben eventos: si no, pasar por encima del
+// icono dispara `dragleave` y el resalte parpadea.
+.dropzone--encima * {
+  pointer-events: none;
+}
+
+.dropzone--encima {
+  border-style: solid;
+  box-shadow: 0 0 0 4px rgba(45, 123, 200, 0.15);
+}
+
+/* Un <label> no responde a :disabled, así que el estado apagado se pinta. */
+.dropzone--inactiva {
+  cursor: not-allowed;
+  pointer-events: none;
+  border-color: var(--border-soft);
+  background: transparent;
+}
+
+/* El input cubre la zona pero no se ve: el clic lo abre el <label>. */
+.dropzone__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dropzone__icon {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(45, 123, 200, 0.14);
+  color: var(--secondary-color);
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+
+  svg {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+.dropzone:hover .dropzone__icon,
+.dropzone--encima .dropzone__icon {
+  background: var(--secondary-color);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.dropzone__texto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.dropzone__titulo {
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.dropzone__hint {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.dropzone__hint--bloqueo {
   color: var(--warning-color, var(--secondary-color));
   font-weight: 600;
+}
+
+.dropzone__formatos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+/* Con archivos en la tanda: una franja en una sola línea, todavía pulsable. */
+.dropzone--compacta {
+  flex-direction: row;
+  justify-content: flex-start;
+  min-height: 0;
+  padding: 0.7rem 1rem;
+  text-align: left;
+
+  .dropzone__icon {
+    width: 38px;
+    height: 38px;
+
+    svg {
+      width: 19px;
+      height: 19px;
+    }
+  }
+
+  .dropzone__texto {
+    align-items: flex-start;
+    gap: 0.05rem;
+  }
+
+  .dropzone__titulo {
+    font-size: 0.92rem;
+  }
+
+  .dropzone__hint {
+    font-size: 0.76rem;
+  }
 }
 
 /* Aviso bloqueante: el botón queda debajo del texto, no en línea. */
@@ -45,94 +184,83 @@
   }
 }
 
-/* Un <label> no responde a :disabled, así que el estado apagado se pinta. */
-.uploader__pick.btn--disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  pointer-events: none;
-}
-
-.uploader__icon {
-  flex-shrink: 0;
-  width: 38px;
-  height: 38px;
+/* ---- La tanda: lo elegido y el paso siguiente ("Procesar con IA") ---- */
+.tanda {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(45, 123, 200, 0.12);
-  color: var(--secondary-color);
+  align-items: flex-end;
+  gap: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border-soft);
 }
 
-.uploader__icon svg {
-  width: 19px;
-  height: 19px;
+.uploader--busy .tanda__meta {
+  opacity: 0.75;
 }
 
-.uploader__meta {
+.tanda__meta {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  line-height: 1.3;
+  gap: 0.2rem;
 }
 
-.uploader__file {
-  font-size: 0.88rem;
+.tanda__titulo {
+  font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-main);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.uploader__file--empty {
-  font-weight: 500;
-  color: var(--text-muted);
-}
-
-.uploader__hint {
-  font-size: 0.74rem;
+.tanda__hint {
+  font-size: 0.76rem;
   color: var(--text-muted);
 }
 
 /* Con varios archivos en la tanda, el nombre de cada uno bajo el conteo: sin
    esto "5 archivos seleccionados" no deja comprobar que son los correctos. */
-.uploader__list {
+.tanda__lista {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.3rem 0.5rem;
+  gap: 0.4rem 0.5rem;
   margin: 0.3rem 0 0;
   padding: 0;
   list-style: none;
 }
 
-.uploader__list-item {
+.tanda__archivo {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  max-width: 16rem;
-  padding: 0.1rem 0.25rem 0.1rem 0.5rem;
-  border-radius: 999px;
-  background: rgba(45, 123, 200, 0.09);
-  font-size: 0.72rem;
+  gap: 0.35rem;
+  max-width: 20rem;
+  padding: 0.3rem 0.35rem 0.3rem 0.6rem;
+  border: 1px solid rgba(45, 123, 200, 0.25);
+  border-radius: var(--radius-sm);
+  background: rgba(45, 123, 200, 0.07);
+  font-size: 0.8rem;
+  font-weight: 500;
   color: var(--secondary-color);
 }
 
-.uploader__list-name {
+.tanda__archivo-icono {
+  flex-shrink: 0;
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.tanda__archivo-nombre {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 /* Quitar UN archivo de la tanda (la selección se arma por partes). */
-.uploader__remove {
+.tanda__quitar {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 1.25rem;
+  height: 1.25rem;
   padding: 0;
   border: 0;
   border-radius: 999px;
@@ -142,39 +270,27 @@
   opacity: 0.65;
 }
 
-.uploader__remove:hover:not(:disabled) {
+.tanda__quitar:hover:not(:disabled) {
   background: rgba(220, 38, 38, 0.12);
   color: var(--danger);
   opacity: 1;
 }
 
-.uploader__remove:disabled {
+.tanda__quitar:disabled {
   cursor: not-allowed;
   opacity: 0.3;
 }
 
-.uploader__remove svg {
-  width: 0.7rem;
-  height: 0.7rem;
+.tanda__quitar svg {
+  width: 0.75rem;
+  height: 0.75rem;
 }
 
-.uploader__actions {
+.tanda__acciones {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.uploader__pick {
-  position: relative;
-  overflow: hidden;
-}
-
-.uploader__input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
 }
 
 .btn[disabled] {
@@ -213,7 +329,80 @@
    orden es, con qué OS choca y en qué estado está esa OS: sin el estado, el
    aviso obligaba a ir a Órdenes a averiguar por qué el archivo no entraba. */
 .dup-alert {
+  position: relative;
   margin-top: 0.7rem;
+  padding-right: 2.6rem;
+  overflow: hidden;
+}
+
+/* 7-oct-2026 · Cerrar a mano y barra de tiempo (el aviso se cierra solo). */
+.dup-alert__cerrar {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.7;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.dup-alert__cerrar:hover {
+  background: rgba(220, 38, 38, 0.14);
+  opacity: 1;
+}
+
+.dup-alert__tiempo {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  background: var(--danger);
+  opacity: 0.55;
+  transform-origin: left;
+  animation: dup-tiempo 15s linear forwards;
+}
+
+.dup-alert:hover .dup-alert__tiempo,
+.dup-alert:focus-within .dup-alert__tiempo {
+  animation-play-state: paused;
+}
+
+@keyframes dup-tiempo {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+/* Lo que queda al cerrarse: una línea para volver a abrirlo. */
+.dup-resumen {
+  display: inline-flex;
+  gap: 0.3rem;
+  margin-top: 0.6rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  border-radius: 999px;
+  background: rgba(220, 38, 38, 0.06);
+  color: #b91c1c;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+
+  span {
+    font-weight: 600;
+    text-decoration: underline;
+  }
 }
 
 .dup-list {
@@ -290,7 +479,7 @@
 }
 
 /* Mientras se comprueba la selección contra lo ya cargado. */
-.uploader__hint--busy {
+.tanda__hint--busy {
   color: var(--secondary-color);
   font-weight: 600;
 }
@@ -726,12 +915,16 @@
 }
 
 @media (max-width: 720px) {
-  .uploader {
-    flex-wrap: wrap;
+  .dropzone {
+    min-height: 148px;
   }
 
-  .uploader__actions {
-    width: 100%;
+  .tanda {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tanda__acciones {
     justify-content: flex-end;
   }
 

@@ -167,6 +167,17 @@ export class ImportComponent implements OnInit, OnDestroy {
   protected readonly previewRows = signal<PreviewOrder[]>([]);
   /** Órdenes descartadas por duplicadas; se informan, no se listan. */
   protected readonly duplicadas = signal<DuplicadaInfo[]>([]);
+  /**
+   * 7-oct-2026 · El aviso de duplicadas se cierra solo (barra de tiempo) o con la
+   * X. Se recuerda PARA QUÉ lista se cerró: si llegan duplicadas nuevas, la clave
+   * cambia y el aviso vuelve a salir.
+   */
+  protected readonly claveDup = computed(() => this.duplicadas().map((d) => d.id).join('|'));
+  protected readonly dupCerrado = signal<string | null>(null);
+
+  protected cerrarAvisoDup(): void {
+    this.dupCerrado.set(this.claveDup());
+  }
   /** Archivos de la tanda que fallaron; el resto se procesa igual. */
   protected readonly fallos = signal<FalloArchivo[]>([]);
   /** Avance de la tanda ("3 de 7"). Null cuando no hay proceso en curso. */
@@ -385,11 +396,39 @@ export class ImportComponent implements OnInit, OnDestroy {
       return;
     }
     const elegidos = Array.from(input.files ?? []);
-    this.error.set(null);
     // Se limpia el input (no los File, que ya están capturados): así volver a
     // elegir el MISMO archivo dispara el evento change otra vez, que es justo lo
     // que hace falta para reintentar una tanda que falló.
     input.value = '';
+    this.sumarALaTanda(elegidos);
+  }
+
+  /** La zona de carga está recibiendo un arrastre (se resalta para invitar a soltar). */
+  protected readonly arrastrando = signal(false);
+
+  /** Sin `preventDefault` el navegador no deja soltar: abriría el archivo. */
+  protected onArrastre(event: DragEvent): void {
+    event.preventDefault();
+    if (this.sinTiposOrden() || this.processing()) return;
+    this.arrastrando.set(true);
+  }
+
+  /** Soltar archivos sobre la zona equivale a elegirlos con el selector. */
+  protected onSoltar(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastrando.set(false);
+    if (this.processing()) return;
+    if (this.sinTiposOrden()) {
+      this.avisarSinTipos();
+      return;
+    }
+    this.sumarALaTanda(Array.from(event.dataTransfer?.files ?? []));
+  }
+
+  /** Valida lo elegido (o soltado) y lo añade a la tanda. */
+  private sumarALaTanda(elegidos: File[]): void {
+    if (!elegidos.length) return;
+    this.error.set(null);
 
     // Lo que el servidor va a rechazar de todas formas se descarta aquí, con el
     // peso real en la frase. Subir 40 MB para que vuelvan con un error es un

@@ -5,7 +5,11 @@ import { RUTA_DE_VISTA, SISTEMAS, Sistema, SistemaId, vistaDeUrl } from './siste
 
 /** Sistema en el que se está trabajando ahora (sobrevive a recargar la página). */
 const ACTIVO_KEY = 'orbita_sistema';
-/** «Recordar mi elección»: a quien lo marca no se le vuelve a preguntar al entrar. */
+/**
+ * «Recordar mi elección» se retiró el 7-oct-2026 (a pedido del usuario): quien tiene
+ * los dos sistemas elige siempre al entrar. La clave solo se conserva para limpiar
+ * lo que quedó guardado en los navegadores.
+ */
 const RECORDADO_KEY = 'orbita_sistema_recordado';
 
 /**
@@ -48,30 +52,27 @@ export class SistemaService {
 
   /**
    * A dónde entra la sesión al iniciar (o al pedir la raíz): directo si solo
-   * tiene un sistema o si recordó su elección; si no, a elegir.
+   * tiene un sistema; si no, a elegir.
    */
   destinoAlEntrar(): string {
     const accesibles = this.accesibles();
     if (accesibles.length === 1) return this.activar(accesibles[0].id);
-    const recordado = this.leer(this.claveRecordado()) as SistemaId | null;
-    if (recordado && accesibles.some((s) => s.id === recordado)) return this.activar(recordado);
     return '/sistemas';
   }
 
   /** Elige un sistema (desde `/sistemas`) y devuelve su pantalla de inicio. */
-  elegir(id: SistemaId, recordar: boolean): string {
-    this.escribir(this.claveRecordado(), recordar ? id : null);
+  elegir(id: SistemaId): string {
+    this.olvidarEleccion();
     return this.activar(id);
   }
 
-  /** Con «Cambiar de sistema» se olvida la elección recordada: la persona quiere elegir. */
+  /** Borra la elección que algún navegador guardó cuando existía «Recordar mi elección». */
   olvidarEleccion(): void {
     this.escribir(this.claveRecordado(), null);
   }
 
   /**
-   * La elección se recuerda POR USUARIO: en JD&D varias personas comparten
-   * equipo, y la contadora no debe heredar lo que eligió el administrador.
+   * La elección se guardaba POR USUARIO (varias personas comparten equipo).
    */
   private claveRecordado(): string {
     return `${RECORDADO_KEY}_${this.auth.usuario()?.id ?? ''}`;

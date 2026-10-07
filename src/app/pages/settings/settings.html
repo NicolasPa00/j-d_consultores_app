@@ -116,6 +116,8 @@
 
 <!-- ===== Pestaña 2: Sistema ===== -->
 @if (activeTab() === 'system' && esMaestro()) {
+  <!-- 7-oct-2026 · Contenedor con separación: las tarjetas iban pegadas unas a otras. -->
+  <div class="sistema-ajustes">
   <!-- Dos ajustes de una línea cada uno: en una pantalla ancha ocupaban una
        fila entera para un solo campo. Se reparten en dos columnas y se apilan
        solos por debajo de 900 px. -->
@@ -366,6 +368,7 @@
       </form>
     </div>
   </div>
+  </div>
 }
 
 <!-- ===== Pestaña 3: Usuarios del Sistema (solo Administrador Maestro) ===== -->
@@ -393,18 +396,23 @@
               />
             </label>
             <!-- El documento identifica al usuario (es su credencial de acceso):
-                 no puede repetirse. En BD la columna es UNIQUE. -->
+                 no puede repetirse. En BD la columna es UNIQUE.
+                 7-oct-2026 · También se puede corregir al editar. -->
             <label class="form-field">
-              <span class="form-field__label">Documento de identidad {{ editing === 'nuevo' ? '*' : '' }}</span>
+              <span class="form-field__label">Documento de identidad *</span>
               <input class="form-control" type="text" inputmode="numeric" maxlength="20"
                      [ngModel]="draft.documento"
                      (ngModelChange)="draft.documento = tecleoDocumento($event)"
                      name="uDocumento"
                      [class.form-control--error]="documentoDuplicado()"
-                     [disabled]="editing !== 'nuevo'" placeholder="Ej. 1020304050" />
+                     placeholder="Ej. 1020304050" />
               @if (documentoDuplicado(); as dup) {
                 <span class="form-field__hint form-field__hint--error">
                   Este documento ya pertenece a {{ dup.nombre }} ({{ rolLabel(dup.rol) }}).
+                </span>
+              } @else if (editing !== 'nuevo') {
+                <span class="form-field__hint">
+                  Es con lo que la persona inicia sesión. Si lo cambia, entrará con el número nuevo y su misma contraseña.
                 </span>
               }
             </label>

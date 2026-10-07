@@ -19,6 +19,8 @@ Rama `fase-c-informes` de los dos repos, sobre lo desplegado el 1-oct (`master b
   financieros (formato provisional, ❓ Q-19).
 - **Activos fijos** con depreciación mensual y QR.
 - **Peticiones del 5-oct:** varios asesores por orden, catálogo de especialidades y NIT opcional en AXA.
+- **Peticiones del 7-oct:** cada asesor de la orden con su propio horario y sus formatos, selector de
+  sistema sin «Recordar mi elección» y zona de carga de Importar como un solo botón (con arrastrar y soltar).
 - Herramientas: `scripts/filtrar-puc-activas.mjs` y el script de respaldo diario (sin instalar).
 
 Las banderas `emisionDian` (Facturación) y `PROVEEDOR_VISIBLE` (Parametrización) **siguen en
@@ -31,6 +33,8 @@ Las banderas `emisionDian` (Facturación) y `PROVEEDOR_VISIBLE` (Parametrizació
 2026-10-02-activos-fijos
 2026-10-05-especialidades
 2026-10-05-coasesores
+2026-10-07-franjas-por-profesional
+2026-10-07-soportes-por-asesor
 ```
 
 Todas aditivas. **No usar `npm run migrate`** (resiembra datos de demostración).
@@ -52,12 +56,12 @@ pg_dump -h 127.0.0.1 -U orbita -Fc orbita > ~/respaldos/orbita-antes-lote3-$F.du
 tar czf ~/respaldos/storage-antes-lote3-$F.tgz -C /opt/orbita storage
 sudo -n -u postgres createdb -O orbita orbita_ensayo
 pg_restore -h 127.0.0.1 -U orbita -d orbita_ensayo --no-owner ~/respaldos/orbita-antes-lote3-$F.dump
-# correr las 4 migraciones contra orbita_ensayo, comparar conteos y borrarla:
+# correr las 6 migraciones contra orbita_ensayo, comparar conteos y borrarla:
 sudo -n -u postgres dropdb orbita_ensayo
 
 # 3. Migraciones sobre la base real
 cd /opt/orbita/sst_ws && git fetch
-for m in 2026-10-02-informes-contables-permiso 2026-10-02-activos-fijos 2026-10-05-especialidades 2026-10-05-coasesores; do
+for m in 2026-10-02-informes-contables-permiso 2026-10-02-activos-fijos 2026-10-05-especialidades 2026-10-05-coasesores 2026-10-07-franjas-por-profesional 2026-10-07-soportes-por-asesor; do
   git show origin/master:db/migraciones/$m.sql | psql -h 127.0.0.1 -U orbita -d orbita -v ON_ERROR_STOP=1 -q || break; echo "ok $m"
 done
 

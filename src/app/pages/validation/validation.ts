@@ -167,9 +167,28 @@ interface DiaAgenda {
  * está decidiendo aquí —las franjas de la visita (`franjaId`) y las ocupaciones
  * del profesional (`slot`)—; las otras OS son contexto de solo lectura.
  */
+/**
+ * 7-oct-2026 · Un asesor de la orden con SU horario. El primero de la lista es
+ * el principal: de él son el enlace de soportes, la encuesta y los viáticos.
+ */
+interface MiembroEquipo {
+  profesional_id: string;
+  franjas: FranjaVisita[];
+}
+
+/** Minutos que suman unas franjas. */
+function minutosDe(franjas: FranjaVisita[]): number {
+  return franjas.reduce((t, f) => t + (aMinutos(f.hora_fin) - aMinutos(f.hora_inicio)), 0);
+}
+
+/** Huella de unas franjas, para saber si lo marcado difiere de lo guardado. */
+function firmaDe(franjas: FranjaVisita[]): string {
+  return franjas.map((f) => `${f.fecha}|${f.hora_inicio}|${f.hora_fin}`).sort().join(';');
+}
+
 interface BloqueAgenda {
   id: string;
-  tipo: 'ocupado' | 'otra' | 'visita';
+  tipo: 'ocupado' | 'otra' | 'visita' | 'equipo';
   top: number;
   alto: number;
   rango: string;
@@ -178,6 +197,12 @@ interface BloqueAgenda {
   slot: FranjaVista | null;
   /** Franja de la visita que representa el bloque; ausente en el resto. */
   franjaId?: string;
+  /**
+   * 7-oct-2026 · Quiénes coinciden en esa franja cuando la orden la ejecutan
+   * varios: un icono por asesor, relleno el seleccionado. `minutos` es lo que
+   * cada uno tiene asignado dentro de la franja.
+   */
+  personas?: { id: string; nombre: string; minutos: number; activa: boolean }[];
 }
 
 @Component({
@@ -268,6 +293,35 @@ export class ValidationComponent implements OnInit, OnDestroy {
   );
   protected cobroObsAprobacion = '';
   protected readonly gastosCobro = GASTOS_COBRO;
+
+  /**
+   * 7-oct-2026 · Estado de facturación como chip de la cabecera del modal de
+   * cobro (antes era una tarjeta aparte): texto, color y la frase del tooltip.
+   */
+  protected chipFacturacion(d: {
+    estado: string; estado_cobro: string | null; cobro_numero_factura: string | null;
+    factura_electronica: { estado: string; numero: string | null } | null;
+  }): { texto: string; clase: string; detalle: string } {
+    const fe = d.factura_electronica;
+    if (fe?.estado === 'VALIDADO') {
+      return { texto: `Facturada · ${fe.numero ?? ''}`.trim(), clase: 'pill--success', detalle: 'Facturada electrónicamente. Se gestiona desde Facturación.' };
+    }
+    if (fe) {
+      return { texto: `En factura · ${fe.estado}`, clase: 'pill--info', detalle: 'Está en una factura electrónica que aún no se valida. Se gestiona desde Facturación.' };
+    }
+    if (d.estado_cobro === 'FACTURADA') {
+      return {
+        texto: d.cobro_numero_factura ? `Facturada · ${d.cobro_numero_factura}` : 'Facturada',
+        clase: 'pill--success', detalle: 'Marcada como facturada.',
+      };
+    }
+    return {
+      texto: 'No facturada', clase: 'pill--muted',
+      detalle: d.estado !== 'FINALIZADA'
+        ? 'El estado de cobro solo se mueve cuando la orden está FINALIZADA.'
+        : 'Todavía no se ha facturado.',
+    };
+  }
   /** osId de la fila cuyo ✓ de «Validado plataforma» se está guardando. */
   protected readonly validandoPlataforma = signal<string | null>(null);
   /** 1-oct-2026 · Orden cuyo n.º de radicado (Bolívar) se está editando. */
@@ -289,6 +343,28 @@ export class ValidationComponent implements OnInit, OnDestroy {
   /** Historial del estado ARL de la orden abierta en el detalle. */
   protected readonly historialArl = signal<HistorialEstadoArl[]>([]);
   /** Lo elegido en el formulario de edición; se manda al pulsar Guardar. */
+  /**
+   * 7-oct-2026 · Qué significa el estado ARL de la fila y cómo cambia. El estado
+   * no se toca desde la tabla: lo pone la prefactura (o la edición de la orden).
+   */
+  protected explicarEstadoArl(o: ServiceOrder): void {
+    const codigo = o.osCode || 'esta orden';
+    if (o.estadoArl === 'APROBADO') {
+      this.alerts.info(
+        'Aprobada por la ARL',
+        o.numeroPrefactura
+          ? `La prefactura ${o.numeroPrefactura} ya fue cargada para ${codigo}: la ARL aprobó el cobro y la orden puede seguir a facturación.`
+          : `La prefactura de ${codigo} ya fue cargada: la ARL aprobó el cobro y la orden puede seguir a facturación.`,
+      );
+      return;
+    }
+    this.alerts.info(
+      'Pendiente de aprobación de la ARL',
+      `${codigo} pasará a «Aprobado» automáticamente cuando se cargue la prefactura de la ARL que la incluya ` +
+      `(botón «Cargar prefactura», con la orden ya finalizada).`,
+    );
+  }
+
   protected estadoArlEdit: EstadoArl = 'PENDIENTE';
   protected prefacturaEdit = '';
   /** Marcan en rojo el campo cuyo cambio rechazó el servidor al guardar. */
@@ -325,6 +401,11 @@ export class ValidationComponent implements OnInit, OnDestroy {
    * fotográfico; una asistencia técnica lleva informe).
    */
   protected readonly casillasOrden = signal<CasillaSoporte[]>([]);
+  /**
+   * 7-oct-2026 · Los asesores de la orden que se está revisando. Con más de uno,
+   * cada soporte dice de quién es y el rechazo se marca por asesor.
+   */
+  protected readonly equipoSoportes = signal<{ profesional_id: string; nombre: string; principal: boolean; entregado: boolean }[]>([]);
   protected readonly loadingSupports = signal(false);
   protected readonly selectedSupportId = signal<string | null>(null);
   /** `blob:` del soporte abierto; solo se incrusta lo que descargó el propio API. */
@@ -347,6 +428,12 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected readonly rejectCats = signal<CategoriaRechazo[]>([]);
   /** URL viva del visor; se libera al cambiar de archivo o cerrar el modal. */
   private supportObjectUrl: string | null = null;
+  /**
+   * 7-oct-2026 · Hay un archivo descargado que se puede abrir aparte o guardar,
+   * aunque no se haya podido pintar dentro del modal. Es la salida cuando el
+   * visor queda en blanco (JD&D lo reportó con tres JPG de la OS-2026-0157).
+   */
+  protected readonly supportDescargado = signal(false);
 
   // ---- Modal de asignación de profesional ----
   protected readonly assignId = signal<string | null>(null);
@@ -399,21 +486,62 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected readonly formatosProfId = signal<string | null>(null);
 
   /**
-   * 5-oct-2026 · Varios asesores en la misma orden, en las mismas fechas y
-   * horarios. El de arriba es el PRINCIPAL (de él son el enlace de soportes y la
-   * encuesta); estos son los demás, con las horas de la orden que realiza cada
-   * uno. Cada uno recibe su correo con los formatos y cobra sus horas.
+   * 7-oct-2026 · El EQUIPO de la orden: los asesores cuyas horas ya se guardaron
+   * con el botón de guardar de su fila, cada uno con su horario (el mismo día y
+   * hora que otro, o distinto). Reemplaza al interruptor «La orden la ejecutan
+   * varios asesores» del 5-oct, donde todos iban a las mismas franjas y las horas
+   * se tecleaban. El primero es el PRINCIPAL. Cada uno recibe su correo con sus
+   * formatos (sus fechas, sus horas) y cobra lo suyo.
    */
-  protected readonly variosAsesores = signal(false);
-  protected readonly coasesores = signal<{ profesional_id: string | null; horas: number | null }[]>([]);
+  protected readonly equipo = signal<MiembroEquipo[]>([]);
   /**
-   * ASG-02 · Franjas en que se ejecuta la visita.
+   * ASG-02 · Franjas que se están marcando en la agenda, las del profesional
+   * SELECCIONADO.
    *
    * Una visita se parte: mañana y tarde, o varios días. Viven en pantalla hasta
    * pulsar "Asignar profesional"; ahí se mandan enteras y el servidor las
    * reemplaza en bloque (y deriva `fecha_programada` de la primera).
    */
   protected readonly franjasVisita = signal<FranjaVisita[]>([]);
+  /**
+   * El reparto vigente: lo guardado en `equipo`, con lo que hay ahora mismo en la
+   * agenda del seleccionado puesto encima. Es la fuente de los totales y de lo
+   * que viaja al servidor, de modo que quien asigna a UN solo profesional no
+   * necesita pulsar el botón de guardar: sus horas cuentan igual.
+   */
+  protected readonly reparto = computed<MiembroEquipo[]>(() => {
+    const sel = this.selectedProfId();
+    const enCurso = this.franjasVisita();
+    const guardados = this.equipo();
+    if (!sel) return guardados;
+    if (guardados.some((m) => m.profesional_id === sel)) {
+      return guardados
+        .map((m) => (m.profesional_id === sel ? { ...m, franjas: enCurso } : m))
+        .filter((m) => m.franjas.length);
+    }
+    return enCurso.length ? [...guardados, { profesional_id: sel, franjas: enCurso }] : guardados;
+  });
+  /** ¿Lo marcado para el seleccionado difiere de lo que tiene guardado? */
+  protected readonly pendienteDeGuardar = computed(() => {
+    const sel = this.selectedProfId();
+    if (!sel) return false;
+    const guardado = this.equipo().find((m) => m.profesional_id === sel);
+    if (!guardado) return this.franjasVisita().length > 0;
+    return firmaDe(guardado.franjas) !== firmaDe(this.franjasVisita());
+  });
+  /** Los chips del equipo en «Visita de esta orden»: quién y cuántas horas. */
+  protected readonly equipoVista = computed(() =>
+    this.equipo().map((m, i) => ({
+      id: m.profesional_id,
+      nombre: this.professionals().find((p) => p.id === m.profesional_id)?.nombre ?? 'Profesional',
+      minutos: minutosDe(m.franjas),
+      principal: i === 0,
+      detalle: [...m.franjas]
+        .sort((a, b) => (a.fecha + a.hora_inicio).localeCompare(b.fecha + b.hora_inicio))
+        .map((f) => this.rotuloFranja(f))
+        .join(' · '),
+    })),
+  );
   /** Formulario manual para agregar una franja de visita (camino de teclado). */
   /** Contador para los id temporales de las franjas aún no persistidas. */
   private tmpSeq = 0;
@@ -458,9 +586,13 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected readonly duracionVisita = computed(() =>
     duracionDeOrden(this.assignOrder()?.fields.horas?.value),
   );
-  /** Minutos ya repartidos entre las franjas de la visita. */
+  /** Minutos ya repartidos entre TODOS los asesores de la orden. */
   protected readonly minutosProgramados = computed(() =>
-    this.franjasVisita().reduce((t, f) => t + (aMinutos(f.hora_fin) - aMinutos(f.hora_inicio)), 0),
+    this.reparto().reduce((t, m) => t + minutosDe(m.franjas), 0),
+  );
+  /** Cuántas franjas suma el reparto entero. */
+  protected readonly totalFranjas = computed(() =>
+    this.reparto().reduce((t, m) => t + m.franjas.length, 0),
   );
   /** Minutos que faltan por repartir. Nunca negativo: el tope es duro. */
   protected readonly minutosPorRepartir = computed(() =>
@@ -470,7 +602,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected readonly visitaCompleta = computed(() =>
     this.duracionVisita() > 0
       ? this.minutosProgramados() === this.duracionVisita()
-      : this.franjasVisita().length > 0,
+      : this.totalFranjas() > 0,
   );
   /** Minutos → "4 h", "1 h 30 min". */
   protected duracionTexto(min: number): string {
@@ -1068,8 +1200,22 @@ export class ValidationComponent implements OnInit, OnDestroy {
   }
 
   /** Sin orden encontrada no hay nada que marcar: no existe una OS a la que aplicarle nada. */
+  /**
+   * 7-oct-2026 · Solo se marca lo que el servidor va a aplicar: la orden existe,
+   * está FINALIZADA y no tiene otra prefactura («Encontrada» o «Valor distinto»).
+   * Antes se dejaba marcar una orden sin finalizar y el servidor la omitía en
+   * silencio, que en la pantalla parecía haberla cargado.
+   */
   protected prefacturaFilaMarcable(f: FilaPrefactura): boolean {
-    return f.resultado !== 'no_encontrada';
+    return f.resultado === 'encontrada' || f.resultado === 'valor_distinto';
+  }
+
+  /** Por qué no se puede marcar la fila (texto del tooltip del check). */
+  protected motivoNoMarcable(f: FilaPrefactura): string {
+    if (this.prefacturaFilaMarcable(f)) return '';
+    if (f.resultado === 'no_finalizada') return 'La orden todavía no está FINALIZADA: acepte sus soportes antes de cargarle la prefactura.';
+    if (f.resultado === 'no_encontrada') return 'No hay ninguna orden con ese cronograma y secuencia.';
+    return 'La orden ya tiene otra prefactura.';
   }
 
   protected alternarFilaPrefactura(f: FilaPrefactura, marcada: boolean): void {
@@ -2017,9 +2163,8 @@ export class ValidationComponent implements OnInit, OnDestroy {
     // que nadie lo pidiera.
     this.formatosProfId.set(order?.formatosProfId ?? null);
     this.usarSuplente.set(!!order?.formatosProfId);
-    // Y el reparto entre varios asesores, por lo mismo.
-    this.coasesores.set((order?.coasesores ?? []).map((c) => ({ profesional_id: c.profesional_id, horas: c.horas })));
-    this.variosAsesores.set(!!order?.coasesores?.length);
+    // El equipo se arma abajo, con las franjas guardadas de cada asesor.
+    this.equipo.set([]);
     const programada = order?.scheduledAt ? new Date(order.scheduledAt) : null;
     // La agenda abre en la semana de la visita; si aún no hay, en la de hoy.
     this.agendaAncla.set(lunesDe(programada ? isoFecha(programada) : isoFecha(new Date())));
@@ -2031,7 +2176,23 @@ export class ValidationComponent implements OnInit, OnDestroy {
       this.api.listFranjasVisita(order.osId).subscribe({
         next: (r) => {
           if (r.data.length) {
-            this.franjasVisita.set(r.data);
+            // 7-oct-2026 · Cada asesor con SUS franjas (las que no dicen de quién
+            // son, del principal). En pantalla quedan las del seleccionado.
+            const principal = order.assignedProfId ?? null;
+            const porAsesor = new Map<string, FranjaVisita[]>();
+            for (const f of r.data) {
+              const de = f.profesional_id ?? principal ?? '';
+              porAsesor.set(de, [...(porAsesor.get(de) ?? []), f]);
+            }
+            const miembros: MiembroEquipo[] = [principal, ...(order.coasesores ?? []).map((c) => c.profesional_id)]
+              .filter((id): id is string => !!id && !!porAsesor.get(id)?.length)
+              .map((id) => ({ profesional_id: id, franjas: porAsesor.get(id) ?? [] }));
+            // Con un solo asesor no hace falta el chip: se comporta como siempre.
+            this.equipo.set(miembros.length > 1 ? miembros : []);
+            const sel = this.selectedProfId();
+            this.franjasVisita.set(
+              miembros.length > 1 ? [...(porAsesor.get(sel ?? '') ?? [])] : r.data,
+            );
           } else if (programada) {
             const ini = isoHora(programada);
             this.franjasVisita.set([
@@ -2156,76 +2317,55 @@ export class ValidationComponent implements OnInit, OnDestroy {
     if (!activo) this.formatosProfId.set(null);
   }
 
-  // ---- Varios asesores en la misma orden ----
-  /** Horas totales de la orden que se está asignando. */
-  protected horasDeLaOrden(): number {
-    const n = Number(String(this.assignOrder()?.fields.horas?.value ?? '').replace(',', '.'));
-    return Number.isFinite(n) && n > 0 ? n : 0;
+  // ---- Varios asesores en la misma orden (7-oct-2026) ----
+  /** El asesor principal: el primero del reparto o, sin horas marcadas, el elegido. */
+  protected principalId(): string | null {
+    return this.reparto()[0]?.profesional_id ?? this.selectedProfId();
   }
 
-  protected alternarVariosAsesores(activo: boolean): void {
-    this.variosAsesores.set(activo);
-    if (!activo) {
-      this.coasesores.set([]);
-    } else if (!this.coasesores().length) {
-      // Lo habitual es mitad y mitad: se propone y se puede cambiar.
-      this.coasesores.set([{ profesional_id: null, horas: this.mitadDeHoras() }]);
-    }
+  /** Minutos que lleva un profesional en esta orden (0 si no está en el reparto). */
+  protected minutosDelProfesional(id: string): number {
+    const m = this.reparto().find((x) => x.profesional_id === id);
+    return m ? minutosDe(m.franjas) : 0;
   }
 
-  private mitadDeHoras(): number | null {
-    const total = this.horasDeLaOrden();
-    return total > 0 ? Math.round((total / 2) * 100) / 100 : null;
+  /**
+   * El botón de guardar de la fila: deja las horas marcadas como de ESE
+   * profesional. A partir de ahí se puede elegir a otro y repartirle el resto,
+   * en la misma franja o en otra. Guardar sin horas lo saca del equipo.
+   */
+  protected guardarProgreso(): void {
+    const sel = this.selectedProfId();
+    if (!sel) return;
+    const franjas = this.franjasVisita().map((f) => ({ ...f }));
+    this.equipo.update((lista) => {
+      const esta = lista.some((m) => m.profesional_id === sel);
+      if (!franjas.length) return lista.filter((m) => m.profesional_id !== sel);
+      return esta
+        ? lista.map((m) => (m.profesional_id === sel ? { ...m, franjas } : m))
+        : [...lista, { profesional_id: sel, franjas }];
+    });
   }
 
-  protected agregarCoasesor(): void {
-    this.coasesores.update((l) => [...l, { profesional_id: null, horas: null }]);
+  /** Saca a un asesor del equipo y libera sus horas para volver a repartirlas. */
+  protected quitarDelEquipo(id: string): void {
+    this.equipo.update((lista) => lista.filter((m) => m.profesional_id !== id));
+    if (this.selectedProfId() === id) this.franjasVisita.set([]);
   }
 
-  protected quitarCoasesor(i: number): void {
-    this.coasesores.update((l) => l.filter((_, j) => j !== i));
-    if (!this.coasesores().length) this.variosAsesores.set(false);
+  /** Por qué el botón de guardar de la fila está como está. */
+  protected ayudaGuardar(): string {
+    if (this.pendienteDeGuardar()) return 'Guardar las horas marcadas para este profesional';
+    return this.franjasVisita().length
+      ? 'Horas guardadas para este profesional'
+      : 'Marque sus horas en la agenda para poder guardarlas';
   }
 
-  protected cambiarCoasesor(i: number, cambio: { profesional_id?: string | null; horas?: number | null }): void {
-    this.coasesores.update((l) => l.map((c, j) => (j === i ? { ...c, ...cambio } : c)));
-  }
-
-  /** Quiénes se pueden elegir en la fila `i`: ni el principal ni los ya puestos en otra fila. */
-  protected candidatosCoasesor(i: number): Profesional[] {
-    const usados = new Set(
-      this.coasesores().filter((_, j) => j !== i).map((c) => c.profesional_id).filter(Boolean),
-    );
-    return this.professionals().filter((p) => p.id !== this.selectedProfId() && !usados.has(p.id));
-  }
-
-  protected horasCoasesores(): number {
-    return this.coasesores().reduce((t, c) => t + (Number(c.horas) || 0), 0);
-  }
-
-  /** Lo que le queda al principal tras descontar a los demás. */
-  protected horasDelPrincipal(): number {
-    return Math.round((this.horasDeLaOrden() - this.horasCoasesores()) * 100) / 100;
-  }
-
-  /** Por qué no se puede guardar el reparto; null si está bien (o no hay reparto). */
-  protected problemaCoasesores(): string | null {
-    if (!this.variosAsesores()) return null;
-    const lista = this.coasesores();
-    if (lista.some((c) => !c.profesional_id)) return 'Elija el asesor adicional, o quite la marca de varios asesores.';
-    if (lista.some((c) => !(Number(c.horas) > 0))) return 'Indique cuántas horas realiza cada asesor adicional.';
-    if (this.horasDeLaOrden() > 0 && this.horasDelPrincipal() <= 0) {
-      return 'Al asesor principal le tiene que quedar alguna hora de la orden.';
-    }
-    return null;
-  }
-
-  /** Lo que viaja al servidor: siempre la lista entera (vacía = un solo asesor). */
-  private coasesoresParaEnviar(): { profesional_id: string; horas: number }[] {
-    if (!this.variosAsesores()) return [];
-    return this.coasesores()
-      .filter((c) => !!c.profesional_id && Number(c.horas) > 0)
-      .map((c) => ({ profesional_id: c.profesional_id as string, horas: Number(c.horas) }));
+  /** Todas las franjas del reparto, ordenadas y con su dueño: así se mandan. */
+  private franjasDelReparto(): (FranjaVisita & { de: string })[] {
+    return this.reparto()
+      .flatMap((m) => m.franjas.map((f) => ({ ...f, de: m.profesional_id })))
+      .sort((a, b) => (a.fecha + a.hora_inicio).localeCompare(b.fecha + b.hora_inicio));
   }
 
   /** Franjas ordenadas por fecha y hora: así se leen y así se mandan. */
@@ -2243,7 +2383,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
    * comienzo de la primera franja. El servidor hace la misma cuenta.
    */
   private fechaProgramadaIso(): string | null {
-    const primera = this.franjasOrdenadas()[0];
+    const primera = this.franjasDelReparto()[0];
     if (!primera) return null;
     return new Date(`${primera.fecha}T${primera.hora_inicio}:00`).toISOString();
   }
@@ -2433,10 +2573,10 @@ export class ValidationComponent implements OnInit, OnDestroy {
     if (this.assigning() || this.previsualizando()) return;
     // Lo marcado en la agenda vive solo en pantalla hasta pulsar "Asignar":
     // cerrar sin guardar lo descarta, y conviene avisarlo.
-    if (this.franjasVisita().length) {
+    if (this.totalFranjas()) {
       const ok = await this.alerts.confirm({
         title: 'La programación no se ha guardado',
-        message: `Marcó ${this.franjasVisita().length} franja(s) de la visita que todavía no se han guardado. Si cierra ahora se descartarán.`,
+        message: `Marcó ${this.totalFranjas()} franja(s) de la visita que todavía no se han guardado. Si cierra ahora se descartarán.`,
         confirmText: 'Cerrar y descartar',
         tone: 'danger',
       });
@@ -2449,8 +2589,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.franjasVisita.set([]);
     this.usarSuplente.set(false);
     this.formatosProfId.set(null);
-    this.variosAsesores.set(false);
-    this.coasesores.set([]);
+    this.equipo.set([]);
     this.limpiarVistaPrevia();
   }
 
@@ -2461,16 +2600,22 @@ export class ValidationComponent implements OnInit, OnDestroy {
       fecha_programada: fechaProgramada ?? undefined,
       // ASG-02 · La visita entera, franja a franja. El servidor las
       // reemplaza en bloque y deriva `fecha_programada` de la primera.
-      franjas: this.franjasOrdenadas().map((f) => ({
+      // 7-oct-2026 · Cada una dice de qué asesor es.
+      franjas: this.franjasDelReparto().map((f) => ({
         fecha: f.fecha,
         hora_inicio: f.hora_inicio,
         hora_fin: f.hora_fin,
+        profesional_id: f.de,
       })),
       // ASG · Solo viaja si el interruptor está puesto. `undefined` (y no
       // null ni '') es lo que hace que el servidor lo lea como "sin
       // suplencia": el campo se omite del cuerpo entero.
       profesional_formatos_id: this.usarSuplente() ? (this.formatosProfId() ?? undefined) : undefined,
-      coasesores: this.coasesoresParaEnviar(),
+      // Los demás asesores, con las horas que suman SUS franjas. Siempre la lista
+      // entera (vacía = un solo asesor).
+      coasesores: this.reparto()
+        .filter((m) => m.profesional_id !== profId)
+        .map((m) => ({ profesional_id: m.profesional_id, horas: Math.round((minutosDe(m.franjas) / 60) * 100) / 100 })),
       // Solo desde el paso de formatos: antes de verlos no hay nada que decir, y
       // omitirlo hace que el servidor conserve las observaciones ya guardadas.
       observaciones_formatos: this.pasoAsignacion() === 'formatos' ? this.observacionesFormatos() : undefined,
@@ -2485,7 +2630,9 @@ export class ValidationComponent implements OnInit, OnDestroy {
    */
   protected previsualizarFormatos(): void {
     const order = this.assignOrder();
-    const profId = this.selectedProfId();
+    // Lo marcado y aún sin guardar se da por guardado: es lo que se va a enviar.
+    if (this.pendienteDeGuardar()) this.guardarProgreso();
+    const profId = this.principalId();
     if (!order?.osId || !profId || this.previsualizando()) return;
     const fechaProgramada = this.fechaProgramadaIso();
     if (!fechaProgramada) {
@@ -2522,6 +2669,35 @@ export class ValidationComponent implements OnInit, OnDestroy {
         this.alerts.error('No se pudo preparar la vista previa', mensajeError(err, 'Intente de nuevo en unos segundos.'));
       },
     });
+  }
+
+  /**
+   * 7-oct-2026 · ¿El navegador pinta PDF dentro de la página? `pdfViewerEnabled`
+   * vale false cuando el visor integrado está apagado (o no existe): ahí el
+   * iframe queda en blanco, así que se ofrece abrir el documento aparte.
+   */
+  protected readonly pdfEnPagina: boolean =
+    !this.isBrowser || (navigator as Navigator & { pdfViewerEnabled?: boolean }).pdfViewerEnabled !== false;
+
+  /** Abre el formato que se está viendo en una pestaña nueva. */
+  protected abrirFormatoAparte(): void {
+    if (!this.urlFormatoObjeto || !this.isBrowser) return;
+    // Sin `noopener`: con él `window.open` devuelve siempre null y no se sabría
+    // si la pestaña se abrió. La URL es un blob de esta misma página.
+    const ventana = window.open(this.urlFormatoObjeto, '_blank');
+    // Con las ventanas emergentes bloqueadas queda la descarga.
+    if (!ventana) this.descargarFormatoVisto();
+  }
+
+  /** Descarga el formato que se está viendo, con su nombre de archivo. */
+  protected descargarFormatoVisto(): void {
+    if (!this.urlFormatoObjeto || !this.isBrowser) return;
+    const enlace = document.createElement('a');
+    enlace.href = this.urlFormatoObjeto;
+    enlace.download = this.formatoEnVisor()?.nombre || 'formato.pdf';
+    document.body.appendChild(enlace);
+    enlace.click();
+    enlace.remove();
   }
 
   /** Muestra en el visor el PDF `i` de la vista previa. */
@@ -2585,8 +2761,19 @@ export class ValidationComponent implements OnInit, OnDestroy {
   }
 
   protected async selectProf(id: string): Promise<void> {
-    if (id === this.selectedProfId()) return;
+    const anterior = this.selectedProfId();
+    if (id === anterior) return;
+    // 7-oct-2026 · Qué pasa con lo marcado al cambiar de profesional:
+    //  · si el anterior ya estaba en el equipo, sus cambios se guardan con él y
+    //    la agenda se abre con las horas del nuevo (vacía si aún no tiene);
+    //  · si no estaba guardado, las franjas marcadas se quedan y pasan al nuevo:
+    //    es el «me equivoqué de profesional» de siempre.
+    const anteriorGuardado = !!anterior && this.equipo().some((m) => m.profesional_id === anterior);
+    if (anteriorGuardado && this.pendienteDeGuardar()) this.guardarProgreso();
+    const delNuevo = this.equipo().find((m) => m.profesional_id === id);
     this.selectedProfId.set(id);
+    if (delNuevo) this.franjasVisita.set(delNuevo.franjas.map((f) => ({ ...f })));
+    else if (anteriorGuardado) this.franjasVisita.set([]);
     // ASG · Cambiar de ejecutor puede dejar como suplente al mismo que acaba de
     // elegirse (o hacer innecesaria la suplencia): se limpia para no mandar al
     // servidor un firmante que la pantalla ya no ofrece.
@@ -2594,8 +2781,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
       this.formatosProfId.set(null);
       this.usarSuplente.set(false);
     }
-    // El nuevo principal no puede seguir además como asesor adicional.
-    this.coasesores.update((l) => l.map((c) => (c.profesional_id === id ? { ...c, profesional_id: null } : c)));
     this.loadSlots(id);
   }
 
@@ -2687,14 +2872,42 @@ export class ValidationComponent implements OnInit, OnDestroy {
       });
     }
 
-    // Las franjas de ESTA visita, que son las que se están decidiendo.
+    // 7-oct-2026 · Las franjas de ESTA orden, de todos sus asesores. Cuando dos o
+    // más coinciden en el mismo rato quedaban montadas y no se veía quién iba:
+    // ahora cada bloque dice con iconos cuántos son, el seleccionado va relleno y
+    // el tooltip de cada icono da el nombre y las horas que tiene en esa franja.
     const order = this.assignOrder();
+    const seleccionado = this.selectedProfId();
+    const nombreDe = (id: string) => this.professionals().find((p) => p.id === id)?.nombre ?? 'Profesional';
+    const delDia = this.reparto().flatMap((m) =>
+      m.franjas
+        .filter((f) => f.fecha === iso)
+        .map((f) => ({ de: m.profesional_id, f, ini: aMinutos(f.hora_inicio), fin: aMinutos(f.hora_fin) })),
+    );
+    /** Los asesores que pisan ese rango, con los minutos que tienen dentro de él. */
+    const personasEn = (ini: number, fin: number) => {
+      const porAsesor = new Map<string, number>();
+      for (const x of delDia) {
+        const solape = Math.min(fin, x.fin) - Math.max(ini, x.ini);
+        if (solape > 0) porAsesor.set(x.de, (porAsesor.get(x.de) ?? 0) + solape);
+      }
+      return [...porAsesor.entries()]
+        .map(([id, minutos]) => ({ id, nombre: nombreDe(id), minutos, activa: id === seleccionado }))
+        // El seleccionado primero: su icono relleno abre la fila.
+        .sort((p, q) => Number(q.activa) - Number(p.activa) || p.nombre.localeCompare(q.nombre));
+    };
+    /** Rangos ya pintados: dos asesores con la MISMA franja comparten un bloque. */
+    const pintados = new Set<string>();
+
+    // Primero las del seleccionado, que son las que se están decidiendo.
     for (const v of this.franjasVisita()) {
       if (v.fecha !== iso) continue;
       const ini = aMinutos(v.hora_inicio);
       const fin = aMinutos(v.hora_fin);
       const geo = this.geometria(ini, fin);
       if (!geo) continue;
+      const personas = personasEn(ini, fin);
+      pintados.add(`${ini}-${fin}`);
       bloques.push({
         id: v.id,
         tipo: 'visita',
@@ -2703,6 +2916,25 @@ export class ValidationComponent implements OnInit, OnDestroy {
         texto: order?.company || 'Esta orden',
         slot: null,
         franjaId: v.id,
+        personas: personas.length > 1 ? personas : undefined,
+      });
+    }
+
+    // Después las de los demás. Son contexto y no bloquean: se puede marcar encima.
+    for (const x of delDia) {
+      if (x.de === seleccionado || pintados.has(`${x.ini}-${x.fin}`)) continue;
+      const geo = this.geometria(x.ini, x.fin);
+      if (!geo) continue;
+      const personas = personasEn(x.ini, x.fin);
+      pintados.add(`${x.ini}-${x.fin}`);
+      bloques.push({
+        id: `eq-${x.de}-${x.f.id}`,
+        tipo: 'equipo',
+        ...geo,
+        rango: `${x.f.hora_inicio}–${x.f.hora_fin}`,
+        texto: personas.length > 1 ? `${personas.length} asesores` : nombreDe(x.de),
+        slot: null,
+        personas,
       });
     }
 
@@ -2888,7 +3120,8 @@ export class ValidationComponent implements OnInit, OnDestroy {
    */
   protected confirmAssign(): void {
     const order = this.assignOrder();
-    const profId = this.selectedProfId();
+    if (this.pendienteDeGuardar()) this.guardarProgreso();
+    const profId = this.principalId();
     if (!order || !profId || this.assigning()) return;
 
     // ASG-02 · Sin franjas el profesional no sabe cuándo presentarse, y el
@@ -2967,7 +3200,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
             ),
           );
         }
-        const visita = this.franjasOrdenadas().length;
+        const visita = this.totalFranjas();
         // Se leen ANTES de limpiar las señales del modal: los mensajes de abajo
         // hablan de lo que se acaba de guardar, no del formulario ya vaciado.
         const duracionObjetivo = this.duracionVisita();
@@ -2978,8 +3211,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
         this.franjasVisita.set([]);
         this.usarSuplente.set(false);
         this.formatosProfId.set(null);
-        this.variosAsesores.set(false);
-        this.coasesores.set([]);
+        this.equipo.set([]);
         this.limpiarVistaPrevia();
 
         const franjas = res.os && visita > 1
@@ -3178,6 +3410,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
       next: (r) => {
         this.supports.set(r.data);
         this.casillasOrden.set(r.casillas ?? []);
+        this.equipoSoportes.set(r.equipo ?? []);
         this.loadingSupports.set(false);
         // Para «Descargar en un solo PDF»: todos marcados, en el orden de
         // revisión (acta, asistencia, evidencias), que el servidor ya devuelve.
@@ -3287,19 +3520,67 @@ export class ValidationComponent implements OnInit, OnDestroy {
 
     this.supportLoading.set(true);
     this.api.viewSupport(soporte.id).subscribe({
-      next: (blob) => {
+      next: async (blob) => {
+        // Pudo cambiarse de archivo mientras llegaba este: no pisar al nuevo.
+        if (this.selectedSupportId() !== soporte.id) return;
+        // El tipo se decide por los primeros bytes, no solo por el `mime` de la
+        // BD: ese lo declaró el móvil al subir, y una foto HEIC con nombre .jpg
+        // (o una respuesta HTML del proxy) se quedaba como un <img> en blanco
+        // sin ningún aviso.
+        const real = await this.tipoPorContenido(blob);
+        if (this.selectedSupportId() !== soporte.id) return;
         this.supportObjectUrl = URL.createObjectURL(blob);
+        this.supportDescargado.set(true);
+        this.supportLoading.set(false);
+        if (real === 'other') {
+          this.supportKind.set('other');
+          this.supportError.set('Este archivo no es una imagen ni un PDF que el navegador pueda mostrar.');
+          return;
+        }
+        this.supportKind.set(real);
         // #view=FitH abre el PDF ajustado al ancho del panel; sin esto el visor
         // usa "ajustar a página" y el documento queda ilegible.
-        const url = kind === 'pdf' ? `${this.supportObjectUrl}#view=FitH` : this.supportObjectUrl;
+        const url = real === 'pdf' ? `${this.supportObjectUrl}#view=FitH` : this.supportObjectUrl;
         this.supportUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
-        this.supportLoading.set(false);
       },
       error: () => {
+        if (this.selectedSupportId() !== soporte.id) return;
         this.supportLoading.set(false);
         this.supportError.set('No se pudo abrir el soporte. Intente nuevamente.');
       },
     });
+  }
+
+  /** Qué es de verdad el archivo, mirando su firma: JPEG, PNG o PDF. */
+  private async tipoPorContenido(blob: Blob): Promise<'pdf' | 'image' | 'other'> {
+    const b = new Uint8Array(await blob.slice(0, 5).arrayBuffer());
+    if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image';
+    if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return 'image';
+    if (b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46) return 'pdf';
+    return 'other';
+  }
+
+  /** El <img> no pudo decodificar la foto: se dice, en vez de dejar el hueco. */
+  protected imagenSoporteFallo(): void {
+    this.supportUrl.set(null);
+    this.supportError.set('El navegador no pudo mostrar esta imagen dentro de la plataforma.');
+  }
+
+  /** Abre el soporte visto en una pestaña nueva; sin ventanas emergentes, lo descarga. */
+  protected abrirSoporteAparte(): void {
+    if (!this.supportObjectUrl || !this.isBrowser) return;
+    const ventana = window.open(this.supportObjectUrl, '_blank');
+    if (!ventana) this.descargarSoporteVisto();
+  }
+
+  /** Descarga el soporte visto con su nombre canónico (`acta.jpg`). */
+  protected descargarSoporteVisto(): void {
+    const s = this.selectedSupport();
+    if (!this.supportObjectUrl || !s || !this.isBrowser) return;
+    const enlace = document.createElement('a');
+    enlace.href = this.supportObjectUrl;
+    enlace.download = this.nombreSoporte(s) || 'soporte';
+    enlace.click();
   }
 
   /** VER-02/03 · Aceptar: la OS pasa a FINALIZADA y el ciclo se cierra. */
@@ -3348,38 +3629,55 @@ export class ValidationComponent implements OnInit, OnDestroy {
    * algo ahí.
    */
   private catalogoRechazo(): CategoriaRechazo[] {
-    const conteo = new Map<string, number>();
-    for (const s of this.supports()) {
-      const c = s.categoria ?? 'otros';
-      conteo.set(c, (conteo.get(c) ?? 0) + 1);
-    }
     // Sin respuesta del servidor (orden anterior al cambio) se cae a las tres de
     // siempre, que es justo lo que se le pidió a esa orden en su día.
     const casillas = this.casillasOrden().length
       ? this.casillasOrden()
       : (['acta', 'asistencia', 'evidencias'] as CategoriaSoporte[])
           .map((clave) => ({ clave, etiqueta: ETIQUETAS_SOPORTE[clave], opcional: clave === 'evidencias' }));
-    const filas: CategoriaRechazo[] = casillas.map((c) => ({
-      clave: c.clave,
-      etiqueta: c.etiqueta,
-      archivos: conteo.get(c.clave) ?? 0,
-      marcada: false,
-      opcional: !!c.opcional,
-    }));
-    if (conteo.get('otros')) {
-      filas.push({
-        clave: 'otros' as CategoriaSoporte,
-        etiqueta: ETIQUETAS_SOPORTE['otros'],
-        archivos: conteo.get('otros') ?? 0,
-        marcada: false,
-      });
+    // 7-oct-2026 · Con varios asesores, las casillas se repiten por cada uno: se
+    // devuelve "el acta de Fulano", no "el acta" a secas. Con uno solo, `null`.
+    const equipo = this.equipoSoportes();
+    const asesores: ({ profesional_id: string; nombre: string } | null)[] = equipo.length > 1 ? equipo : [null];
+    const filas: CategoriaRechazo[] = [];
+    for (const asesor of asesores) {
+      const suyos = this.supports().filter((s) => !asesor || s.de_profesional_id === asesor.profesional_id);
+      const conteo = new Map<string, number>();
+      for (const s of suyos) {
+        const cat = s.categoria ?? 'otros';
+        conteo.set(cat, (conteo.get(cat) ?? 0) + 1);
+      }
+      const de = asesor?.profesional_id ?? null;
+      for (const cas of casillas) {
+        filas.push({
+          id: `${cas.clave}@${de ?? ''}`,
+          clave: cas.clave,
+          etiqueta: cas.etiqueta,
+          archivos: conteo.get(cas.clave) ?? 0,
+          marcada: false,
+          opcional: !!cas.opcional,
+          profesional_id: de,
+          asesor: asesor?.nombre ?? null,
+        });
+      }
+      if (conteo.get('otros')) {
+        filas.push({
+          id: `otros@${de ?? ''}`,
+          clave: 'otros' as CategoriaSoporte,
+          etiqueta: ETIQUETAS_SOPORTE['otros'],
+          archivos: conteo.get('otros') ?? 0,
+          marcada: false,
+          profesional_id: de,
+          asesor: asesor?.nombre ?? null,
+        });
+      }
     }
     return filas;
   }
 
-  protected toggleRejectCat(clave: string): void {
+  protected toggleRejectCat(id: string): void {
     this.rejectCats.update((list) =>
-      list.map((c) => (c.clave === clave ? { ...c, marcada: !c.marcada } : c)),
+      list.map((x) => (x.id === id ? { ...x, marcada: !x.marcada } : x)),
     );
   }
 
@@ -3416,11 +3714,14 @@ export class ValidationComponent implements OnInit, OnDestroy {
     }
 
     this.deciding.set(true);
-    this.api.rejectOrder(order.osId, motivo, marcadas.map((c) => c.clave)).subscribe({
+    this.api.rejectOrder(
+      order.osId, motivo, [...new Set(marcadas.map((x) => x.clave))],
+      marcadas.map((x) => ({ categoria: x.clave, profesional_id: x.profesional_id })),
+    ).subscribe({
       next: (r) => {
         this.deciding.set(false);
         this.aplicarEstado(order.id, r.data.estado);
-        const devueltos = marcadas.map((c) => c.etiqueta).join(', ');
+        const devueltos = marcadas.map((x) => (x.asesor ? `${x.etiqueta} (${x.asesor})` : x.etiqueta)).join(', ');
         this.closeVerify();
         // El correo es la parte que de verdad importa del rechazo: si no salió
         // hay que decirlo, o se da por avisado a alguien que no lo está.
@@ -3464,6 +3765,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
       this.supportObjectUrl = null;
     }
     this.supportUrl.set(null);
+    this.supportDescargado.set(false);
     this.supportLoading.set(false);
   }
 
@@ -3486,7 +3788,11 @@ export class ValidationComponent implements OnInit, OnDestroy {
    * indistinguibles.
    */
   protected etiquetaSoporte(soporte: ArchivoSoporte): string {
-    return ETIQUETAS_SOPORTE[soporte.categoria ?? 'otros'] ?? ETIQUETAS_SOPORTE['otros'];
+    const etiqueta = ETIQUETAS_SOPORTE[soporte.categoria ?? 'otros'] ?? ETIQUETAS_SOPORTE['otros'];
+    // 7-oct-2026 · Con varios asesores cada uno sube lo suyo: se dice de quién es.
+    return this.equipoSoportes().length > 1 && soporte.profesional_nombre
+      ? `${etiqueta} · ${soporte.profesional_nombre}`
+      : etiqueta;
   }
 
   /** Nombre a mostrar: el que puso el sistema; el del móvil solo si no hay. */
@@ -3662,6 +3968,11 @@ function sumarDias(iso: string, dias: number): string {
  */
 /** Una casilla del portal en el diálogo de rechazo, con lo que hay en ella. */
 interface CategoriaRechazo {
+  /** Única en la lista: la casilla y de quién es (`acta@<id>`). */
+  id: string;
+  /** De qué asesor es el documento; null con un solo asesor (el principal). */
+  profesional_id: string | null;
+  asesor: string | null;
   clave: CategoriaSoporte;
   etiqueta: string;
   /** Cuántos archivos hay hoy; 0 significa que el profesional no lo subió. */

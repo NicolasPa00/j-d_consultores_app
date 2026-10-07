@@ -559,7 +559,18 @@ export class ProfessionalsComponent implements OnInit {
   }
 
   // ---- Acciones: tabla ----
-  protected toggleStatus(professional: Professional): void {
+  protected async toggleStatus(professional: Professional): Promise<void> {
+    // 7-oct-2026 · Activar o desactivar siempre pregunta: un clic de más no lo hace solo.
+    const activo = professional.status === 'Activo';
+    const ok = await this.alerts.confirm({
+      title: `${activo ? 'Desactivar' : 'Activar'} profesional`,
+      message: activo
+        ? `Se desactivará ${professional.name}. No se le podrán asignar órdenes nuevas; las que ya tiene no cambian.`
+        : `Se volverá a activar ${professional.name}.`,
+      confirmText: activo ? 'Desactivar' : 'Activar',
+      tone: activo ? 'danger' : 'primary',
+    });
+    if (!ok) return;
     this.api.toggleProfessional(professional.id).subscribe({
       next: (r) => {
         this.professionals.update((list) => list.map((p) => (p.id === r.data.id ? toView(r.data) : p)));

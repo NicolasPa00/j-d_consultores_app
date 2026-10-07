@@ -80,8 +80,6 @@ export class CompaniesComponent implements OnInit {
   protected readonly detalle = signal<Empresa | null>(null);
   protected readonly detalleOrdenes = signal<OrdenDeEmpresa[]>([]);
   protected readonly loadingDetalle = signal(false);
-  /** Empresa destino elegida al fusionar duplicados (id, '' = ninguna). */
-  protected destinoFusion = '';
 
   protected readonly filtradas = computed(() => {
     const q = this.query().trim().toLowerCase();
@@ -109,12 +107,6 @@ export class CompaniesComponent implements OnInit {
   }
 
   protected readonly activas = computed(() => this.empresas().filter((e) => e.activo).length);
-
-  /** Candidatas a recibir las órdenes al fusionar: todas menos la que se elimina. */
-  protected readonly candidatasFusion = computed(() => {
-    const actual = this.detalle()?.id;
-    return this.empresas().filter((e) => e.id !== actual);
-  });
 
   ngOnInit(): void {
     if (this.isBrowser) this.load();
@@ -215,7 +207,6 @@ export class CompaniesComponent implements OnInit {
   // ---- Ficha ----
   protected openDetalle(e: Empresa): void {
     this.detalle.set(e);
-    this.destinoFusion = '';
     this.detalleOrdenes.set([]);
     this.loadingDetalle.set(true);
     this.api.getEmpresa(e.id).subscribe({
@@ -236,7 +227,26 @@ export class CompaniesComponent implements OnInit {
   }
 
   // ---- Acciones ----
-  protected toggleActivo(e: Empresa): void {
+  /**
+   * 7-oct-2026 · Activar o desactivar pregunta antes: desactivar saca a la
+   * empresa de los listados operativos y un clic de más no puede hacerlo solo.
+   */
+  protected async toggleActivo(e: Empresa): Promise<void> {
+    const ok = await this.alerts.confirm(
+      e.activo
+        ? {
+            title: 'Desactivar empresa',
+            message: `${e.nombre} dejará de ofrecerse en los listados operativos. Conserva su historial de órdenes y se puede volver a activar.`,
+            confirmText: 'Desactivar',
+            tone: 'danger',
+          }
+        : {
+            title: 'Activar empresa',
+            message: `${e.nombre} volverá a aparecer en los listados operativos.`,
+            confirmText: 'Activar',
+          },
+    );
+    if (!ok) return;
     this.api.toggleEmpresa(e.id).subscribe({
       next: (r) => {
         this.empresas.update((list) => list.map((x) => (x.id === r.data.id ? { ...x, ...r.data } : x)));
@@ -249,54 +259,6 @@ export class CompaniesComponent implements OnInit {
         );
       },
       error: (err) => this.alerts.error('No se pudo cambiar el estado', mensajeError(err, `El servidor rechazó el cambio de estado de ${e.nombre}.`)),
-    });
-  }
-
-  /**
-   * Baja definitiva. Con órdenes asociadas el backend la rechaza: para eso está
-   * la fusión, que primero traspasa las órdenes a la ficha correcta.
-   */
-  protected async eliminar(e: Empresa): Promise<void> {
-    const ok = await this.alerts.confirm({
-      title: 'Eliminar empresa',
-      message: `Se eliminará definitivamente la ficha de ${e.nombre} (NIT ${e.nit}). Si solo quiere dejar de usarla, desactívela en su lugar.`,
-      confirmText: 'Eliminar',
-      tone: 'danger',
-    });
-    if (!ok) return;
-    this.api.deleteEmpresa(e.id).subscribe({
-      next: () => {
-        this.alerts.success('Empresa eliminada', `${e.nombre} ya no está en el maestro de clientes.`);
-        if (this.detalle()?.id === e.id) this.closeDetalle();
-        this.load();
-      },
-      error: (err) => this.alerts.error('No se pudo eliminar la empresa', mensajeError(err, 'El servidor rechazó la baja.')),
-    });
-  }
-
-  /**
-   * Fusiona la ficha abierta contra otra: las órdenes pasan a la empresa destino
-   * y la duplicada desaparece. Es la salida para los duplicados que genera un NIT
-   * mal leído por el OCR, que de otro modo no se podrían borrar (tienen órdenes).
-   */
-  protected async fusionar(): Promise<void> {
-    const origen = this.detalle();
-    const destino = this.candidatasFusion().find((e) => e.id === this.destinoFusion);
-    if (!origen || !destino) return;
-    const ok = await this.alerts.confirm({
-      title: 'Fusionar empresas',
-      message: `Las ${origen.total_ordenes ?? 0} orden(es) de ${origen.nombre} pasarán a ${destino.nombre} y la ficha de ${origen.nombre} se eliminará. Esta acción no se puede deshacer.`,
-      confirmText: 'Fusionar',
-      tone: 'danger',
-    });
-    if (!ok) return;
-    this.api.deleteEmpresa(origen.id, destino.id).subscribe({
-      next: (r) => {
-        this.alerts.success('Empresas fusionadas', `${r.data.reasignadas} orden(es) quedaron a nombre de ${destino.nombre}.`);
-        this.closeDetalle();
-        this.load();
-      },
-      error: (err) => this.alerts.error('No se pudo fusionar', mensajeError(err, 'El servidor rechazó la fusión.')),
     });
   }
 }

@@ -174,13 +174,17 @@
                 <span class="venc__none" title="Orden de un cliente particular">No aplica</span>
               } @else if (order.osId) {
                 <span class="arl-celda">
-                  <span
-                    class="pill"
+                  <!-- 7-oct-2026 · El estado es un botón (misma píldora): al pulsarlo
+                       explica cómo cambia, porque nadie lo cambia desde aquí. -->
+                  <button
+                    type="button"
+                    class="pill pill--boton"
                     [class]="pillArl(order.estadoArl)"
-                    [attr.title]="order.numeroPrefactura ? 'Prefactura ' + order.numeroPrefactura : null"
+                    [attr.title]="order.numeroPrefactura ? 'Prefactura ' + order.numeroPrefactura : '¿Cómo cambia este estado?'"
+                    (click)="$event.stopPropagation(); explicarEstadoArl(order)"
                   >
                     {{ order.estadoArl === 'APROBADO' ? 'Aprobado' : 'Pendiente' }}
-                  </span>
+                  </button>
                   <!-- 30-sep-2026 · «Validado plataforma»: check a mano, distinto
                        del estado ARL (ese lo pone la prefactura). No bloquea nada. -->
                   <button
@@ -1091,10 +1095,33 @@
         </aside>
 
         <section class="vista-formatos__visor">
+          <!-- 7-oct-2026 · El visor dependía de que el NAVEGADOR supiera pintar un
+               PDF dentro de la página. Donde no puede (visor de PDF desactivado,
+               un gestor de descargas que se queda con el archivo, algunos móviles)
+               el recuadro salía en blanco y sin explicación. Ahora siempre hay una
+               barra para abrirlo aparte o descargarlo, y si el navegador declara
+               que no muestra PDF se dice en vez de dejar el hueco. -->
           @if (urlFormatoVisto(); as url) {
-            <iframe [src]="url" title="Vista previa del formato"></iframe>
+            <div class="vista-formatos__barra">
+              <span class="vista-formatos__barra-nombre">{{ formatoEnVisor() ? formatoEnVisor().etiqueta : '' }}</span>
+              <span class="vista-formatos__barra-ayuda">¿No ve el documento aquí?</span>
+              <button type="button" class="btn btn--ghost btn--sm" (click)="abrirFormatoAparte()">Abrir en otra pestaña</button>
+              <button type="button" class="btn btn--ghost btn--sm" (click)="descargarFormatoVisto()">Descargar</button>
+            </div>
+            @if (pdfEnPagina) {
+              <iframe [src]="url" title="Vista previa del formato"></iframe>
+            } @else {
+              <div class="vista-formatos__sin-visor">
+                <p><strong>Este navegador no muestra documentos PDF dentro de la página.</strong></p>
+                <p>El formato está listo: ábralo en otra pestaña o descárguelo para revisarlo. Lo que escriba a la izquierda se aplica igual al confirmar.</p>
+                <button type="button" class="btn btn--primary" (click)="abrirFormatoAparte()">Abrir el formato</button>
+              </div>
+            }
           } @else {
-            <p class="vista-formatos__ayuda">Este documento no se puede previsualizar.</p>
+            <div class="vista-formatos__sin-visor">
+              <p><strong>Este documento no se puede previsualizar.</strong></p>
+              <p>Se envía adjunto tal cual en el correo. Elija otro documento de la lista para verlo.</p>
+            </div>
           }
         </section>
       </div>
@@ -1109,18 +1136,42 @@
         <p class="assign__section-title">Profesionales</p>
         <div class="assign__list">
         @for (prof of professionals(); track prof.id) {
-          <button
-            type="button"
-            class="prof-pick"
-            [class.prof-pick--active]="prof.id === selectedProfId()"
-            (click)="selectProf(prof.id)"
-          >
-            <span class="prof-pick__avatar" aria-hidden="true">{{ prof.nombre.charAt(0) }}</span>
-            <span class="prof-pick__text">
-              <span class="prof-pick__name">{{ prof.nombre }}</span>
-              <span class="prof-pick__spec">{{ prof.especialidad || 'Sin especialidad' }}</span>
-            </span>
-          </button>
+          <!-- 7-oct-2026 · La fila lleva dos botones hermanos (uno dentro de otro
+               no es HTML válido): elegir al profesional y, en el elegido, GUARDAR
+               las horas que se le acaban de marcar en la agenda. -->
+          <div class="prof-fila">
+            <button
+              type="button"
+              class="prof-pick"
+              [class.prof-pick--active]="prof.id === selectedProfId()"
+              (click)="selectProf(prof.id)"
+            >
+              <span class="prof-pick__avatar" aria-hidden="true">{{ prof.nombre.charAt(0) }}</span>
+              <span class="prof-pick__text">
+                <span class="prof-pick__name">{{ prof.nombre }}</span>
+                <span class="prof-pick__spec">{{ prof.especialidad || 'Sin especialidad' }}</span>
+              </span>
+              @if (minutosDelProfesional(prof.id); as min) {
+                <span class="prof-pick__horas" title="Horas de esta orden">{{ duracionTexto(min) }}</span>
+              }
+            </button>
+            @if (prof.id === selectedProfId() && order.osId) {
+              <button
+                type="button"
+                class="prof-guardar"
+                [class.prof-guardar--pendiente]="pendienteDeGuardar()"
+                [disabled]="!pendienteDeGuardar()"
+                (click)="guardarProgreso()"
+                [attr.aria-label]="'Guardar las horas de ' + prof.nombre"
+                [title]="ayudaGuardar()"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                  <path d="M17 21v-8H7v8M7 3v5h8" />
+                </svg>
+              </button>
+            }
+          </div>
         } @empty {
           <p class="assign__empty">No hay profesionales activos disponibles.</p>
         }
@@ -1188,70 +1239,19 @@
           </div>
         }
 
-        <!-- 5-oct-2026 · Varios asesores en la misma orden, mismas fechas y
-             horarios. El elegido arriba es el principal; aquí se suman los demás
-             con las horas que realiza cada uno. Cada asesor recibe su correo con
-             los formatos y cobra sus horas en su cuenta de cobro. Solo sobre una
-             OS ya creada: el borrador todavía no tiene dónde guardarlo. -->
-        @if (selectedProfId() && order.osId) {
-          <div class="suplente">
-            <label class="check suplente__toggle">
-              <input
-                type="checkbox"
-                [checked]="variosAsesores()"
-                (change)="alternarVariosAsesores($any($event.target).checked)"
-              />
-              <span>La orden la ejecutan varios asesores</span>
-            </label>
-
-            @if (variosAsesores()) {
-              <p class="suplente__ok">
-                Van en las mismas fechas y horarios. Indique las horas de la orden que realiza cada uno.
-              </p>
-              @for (co of coasesores(); track $index) {
-                <div class="coasesor">
-                  <select
-                    class="form-control form-control--sm"
-                    [ngModel]="co.profesional_id"
-                    (ngModelChange)="cambiarCoasesor($index, { profesional_id: $event })"
-                    [name]="'coasesor' + $index"
-                    aria-label="Asesor adicional"
-                  >
-                    <option [ngValue]="null">— Elija el asesor —</option>
-                    @for (p of candidatosCoasesor($index); track p.id) {
-                      <option [ngValue]="p.id">{{ p.nombre }}</option>
-                    }
-                  </select>
-                  <input
-                    class="form-control form-control--sm coasesor__horas"
-                    type="number"
-                    min="0.5"
-                    step="0.5"
-                    [ngModel]="co.horas"
-                    (ngModelChange)="cambiarCoasesor($index, { horas: $event })"
-                    [name]="'coasesorHoras' + $index"
-                    aria-label="Horas del asesor adicional"
-                    title="Horas de la orden que realiza"
-                  />
-                  <span class="coasesor__unidad">h</span>
-                  <button type="button" class="icon-action" (click)="quitarCoasesor($index)" aria-label="Quitar asesor adicional" title="Quitar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M18 6 6 18M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              }
-              <button type="button" class="btn btn--ghost btn--sm" (click)="agregarCoasesor()">Agregar otro asesor</button>
-
-              @if (problemaCoasesores(); as problema) {
-                <p class="suplente__aviso">{{ problema }}</p>
-              } @else {
-                <p class="suplente__ok">
-                  Al asesor principal le quedan {{ horasDelPrincipal() }} h de las {{ horasDeLaOrden() }} h de la orden.
-                </p>
-              }
-            }
-          </div>
+        <!-- 7-oct-2026 · Varios asesores: ya no hay interruptor ni horas tecleadas.
+             Se marca en la agenda lo de uno, se guarda con el botón de su fila y
+             se elige al siguiente. El resumen de quién lleva qué está arriba de
+             la agenda, en «Visita de esta orden». -->
+        @if (order.osId && duracionVisita() > 0) {
+          <p class="assign__ayuda">
+            ¿La orden la ejecutan varios? Marque las horas de un profesional, guárdelas con
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+              <path d="M17 21v-8H7v8M7 3v5h8" />
+            </svg>
+            y elija al siguiente para repartirle el resto.
+          </p>
         }
        </div>
       </div>
@@ -1267,7 +1267,7 @@
           <!-- Resumen de lo programado. Cada franja se puede quitar desde aquí
                o desde su bloque en la rejilla. -->
           <div class="cita-bar">
-            <div class="cita-bar__chip" [class.cita-bar__chip--vacia]="!franjasVisita().length">
+            <div class="cita-bar__chip" [class.cita-bar__chip--vacia]="!totalFranjas()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="3" y="4" width="18" height="18" rx="2" />
                 <path d="M16 2v4M8 2v4M3 10h18" />
@@ -1275,9 +1275,9 @@
               <span class="cita-bar__texto">
                 <span class="cita-bar__label">Visita de esta orden</span>
                 <strong class="cita-bar__valor">
-                  @if (franjasVisita().length) {
+                  @if (totalFranjas()) {
                     {{ duracionTexto(minutosProgramados()) }} en
-                    {{ franjasVisita().length }} franja{{ franjasVisita().length === 1 ? '' : 's' }}
+                    {{ totalFranjas() }} franja{{ totalFranjas() === 1 ? '' : 's' }}
                     · de {{ duracionTexto(duracionVisita()) }} asignadas
                   } @else {
                     Sin programar · marque las horas en la agenda
@@ -1294,7 +1294,39 @@
               </span>
             </div>
 
-            @if (franjasOrdenadas().length) {
+            <!-- 7-oct-2026 · El equipo: un chip por asesor con las horas que ya
+                 tiene guardadas. Pulsarlo lo selecciona (para ver o cambiar su
+                 horario); la X lo saca y libera sus horas. -->
+            @if (equipoVista().length) {
+              <ul class="equipo">
+                @for (m of equipoVista(); track m.id) {
+                  <li class="equipo-chip" [class.equipo-chip--activo]="m.id === selectedProfId()">
+                    <button type="button" class="equipo-chip__nombre" (click)="selectProf(m.id)" [title]="m.detalle">
+                      <span class="equipo-chip__avatar" aria-hidden="true">{{ m.nombre.charAt(0) }}</span>
+                      <span>{{ m.nombre }}</span>
+                      <strong>{{ duracionTexto(m.minutos) }}</strong>
+                      @if (m.principal && equipoVista().length > 1) {
+                        <span class="equipo-chip__rol" title="Recibe el enlace para subir los soportes">Principal</span>
+                      }
+                    </button>
+                    <button
+                      type="button"
+                      class="equipo-chip__quitar"
+                      (click)="quitarDelEquipo(m.id)"
+                      [attr.aria-label]="'Quitar a ' + m.nombre + ' de esta orden'"
+                      title="Quitar de esta orden"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M18 6 6 18M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+
+            <!-- Las franjas del seleccionado, mientras no estén guardadas. -->
+            @if (franjasOrdenadas().length && (pendienteDeGuardar() || !equipoVista().length)) {
               <ul class="franjas">
                 @for (f of franjasOrdenadas(); track f.id) {
                   <li class="franja-chip">
@@ -1424,6 +1456,27 @@
                       >
                         <span class="ag-block__hora">{{ b.rango }}</span>
                         <span class="ag-block__texto">{{ b.texto }}</span>
+                        <!-- 7-oct-2026 · Quiénes van en esta franja: un icono por
+                             asesor, relleno el seleccionado. El tooltip de cada uno
+                             dice su nombre y sus horas aquí. -->
+                        @if (b.personas; as personas) {
+                          <span class="ag-personas">
+                            @for (p of personas; track p.id) {
+                              <span
+                                class="ag-persona"
+                                [class.ag-persona--activa]="p.activa"
+                                [title]="p.nombre + ' · ' + duracionTexto(p.minutos) + ' en esta franja'"
+                                [attr.aria-label]="p.nombre + ', ' + duracionTexto(p.minutos) + ' en esta franja'"
+                                (pointerdown)="$event.stopPropagation()"
+                              >
+                                <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                  <circle cx="12" cy="8" r="4" />
+                                  <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z" />
+                                </svg>
+                              </span>
+                            }
+                          </span>
+                        }
                         @if (b.slot; as slot) {
                           <button
                             type="button"
@@ -1467,6 +1520,9 @@
 
           <ul class="agenda__leyenda">
             <li><span class="agenda__punto agenda__punto--visita"></span>Visita de esta orden</li>
+            @if (equipoVista().length) {
+              <li><span class="agenda__punto agenda__punto--equipo"></span>Otros asesores de esta orden</li>
+            }
             <li><span class="agenda__punto agenda__punto--otra"></span>Otras órdenes suyas</li>
             <li><span class="agenda__punto agenda__punto--ocupado"></span>Ocupado</li>
           </ul>
@@ -1479,15 +1535,13 @@
       <span class="modal__status">
         @if (pasoAsignacion() === 'formatos') {
           Revise cada documento. Al confirmar, la orden se guarda y el correo sale con estos formatos.
-        } @else if (!selectedProfId()) {
+        } @else if (!principalId()) {
           Marque las franjas en la agenda y elija un profesional para poder asignar.
         } @else if (usarSuplente() && !formatosProfId()) {
           <!-- ASG · El interruptor está puesto pero no se eligió a nadie. Guardar
                así dejaría los formatos a nombre del ejecutor sin decirlo, que es
                justo lo contrario de lo que se pidió. -->
           Elija a nombre de qué profesional registrado salen los formatos, o quite la marca.
-        } @else if (problemaCoasesores(); as problema) {
-          {{ problema }}
         } @else if (!visitaCompleta()) {
           <!-- ASG-02 · No es un bloqueo: se puede guardar el avance (o solo el
                cambio de profesional) y volver luego a repartir el resto. -->
@@ -1530,7 +1584,7 @@
             <button
               type="button"
               class="btn btn--primary"
-              [disabled]="!selectedProfId() || previsualizando() || (usarSuplente() && !formatosProfId()) || !!problemaCoasesores()"
+              [disabled]="!principalId() || previsualizando() || (usarSuplente() && !formatosProfId())"
               (click)="previsualizarFormatos()"
             >
               @if (previsualizando()) { <span class="spinner" aria-hidden="true"></span> Preparando formatos… } @else { Continuar }
@@ -1539,7 +1593,7 @@
             <button
               type="button"
               class="btn btn--primary"
-              [disabled]="!selectedProfId() || assigning() || (usarSuplente() && !formatosProfId()) || !!problemaCoasesores()"
+              [disabled]="!principalId() || assigning() || (usarSuplente() && !formatosProfId())"
               (click)="confirmAssign()"
             >
               @if (assigning()) {
@@ -1685,6 +1739,16 @@
           }
         </p>
 
+        <!-- 7-oct-2026 · Salida para cuando el visor queda en blanco en el equipo
+             de quien revisa (visor de PDF apagado, foto que no decodifica). -->
+        @if (supportDescargado()) {
+          <div class="vista-formatos__barra verify__acciones">
+            <span class="vista-formatos__barra-ayuda">¿No ve el documento aquí?</span>
+            <button type="button" class="btn btn--ghost btn--sm" (click)="abrirSoporteAparte()">Abrir en otra pestaña</button>
+            <button type="button" class="btn btn--ghost btn--sm" (click)="descargarSoporteVisto()">Descargar</button>
+          </div>
+        }
+
         <div class="verify__frame">
           @if (supportLoading()) {
             <p class="doc-state">Abriendo documento…</p>
@@ -1692,14 +1756,26 @@
             <div class="alert alert--warning alert--sm" role="alert">
               <div class="alert__body">
                 <p class="alert__title">{{ msg }}</p>
-                <p class="alert__detail">Puede pedirle al profesional que lo vuelva a cargar en PDF o imagen.</p>
+                @if (supportDescargado()) {
+                  <p class="alert__detail">Ábralo en otra pestaña o descárguelo con los botones de arriba. Si tampoco se ve así, pídale al profesional que lo vuelva a cargar en PDF o JPG.</p>
+                } @else {
+                  <p class="alert__detail">Puede pedirle al profesional que lo vuelva a cargar en PDF o imagen.</p>
+                }
               </div>
             </div>
           } @else if (supportUrl(); as src) {
             @if (supportKind() === 'pdf') {
-              <iframe class="verify__doc" [src]="src" title="Soporte firmado"></iframe>
+              @if (pdfEnPagina) {
+                <iframe class="verify__doc" [src]="src" title="Soporte firmado"></iframe>
+              } @else {
+                <div class="vista-formatos__sin-visor">
+                  <p><strong>Este navegador no muestra documentos PDF dentro de la página.</strong></p>
+                  <p>El soporte está listo: ábralo en otra pestaña o descárguelo para revisarlo.</p>
+                  <button type="button" class="btn btn--primary" (click)="abrirSoporteAparte()">Abrir el soporte</button>
+                </div>
+              }
             } @else {
-              <img class="verify__img" [src]="src" alt="Soporte firmado" />
+              <img class="verify__img" [src]="src" alt="Soporte firmado" (error)="imagenSoporteFallo()" />
             }
           } @else {
             <p class="doc-state">Seleccione un archivo de la lista para revisarlo.</p>
@@ -1715,16 +1791,19 @@
       <div class="verify__reject">
         <p class="assign__section-title">¿Qué documentos debe volver a subir?</p>
         <div class="reject-cats">
-          @for (cat of rejectCats(); track cat.clave) {
+          @for (cat of rejectCats(); track cat.id) {
             <label class="reject-cat" [class.reject-cat--on]="cat.marcada">
               <input
                 type="checkbox"
                 class="reject-cat__box"
                 [checked]="cat.marcada"
-                (change)="toggleRejectCat(cat.clave)"
+                (change)="toggleRejectCat(cat.id)"
               />
               <span class="reject-cat__text">
-                <span class="reject-cat__name">{{ cat.etiqueta }}</span>
+                <span class="reject-cat__name">
+                  {{ cat.etiqueta }}
+                  @if (cat.asesor) { <span class="reject-cat__asesor">· {{ cat.asesor }}</span> }
+                </span>
                 <span class="reject-cat__meta">
                   @if (cat.archivos === 0 && cat.opcional) {
                     Sin archivo — era opcional; si lo marca, tendrá que subirlo
@@ -1836,7 +1915,16 @@
   <div class="modal modal--xl" role="dialog" aria-modal="true" aria-labelledby="cobroTitle">
     <header class="modal__head">
       <div>
-        <h3 class="modal__title" id="cobroTitle">Cobro de la orden</h3>
+        <h3 class="modal__title cobro__cabecera" id="cobroTitle">
+          Cobro de la orden
+          <!-- 7-oct-2026 · El estado de facturación va aquí, como chip: era una
+               tarjeta entera para decir una palabra. -->
+          @if (cobroDetalle(); as dc) {
+            <span class="pill" [class]="chipFacturacion(dc).clase" [title]="chipFacturacion(dc).detalle">
+              {{ chipFacturacion(dc).texto }}
+            </span>
+          }
+        </h3>
         <p class="modal__sub">
           {{ ordenCobro.osCode || ordenCobro.company }} · {{ ordenCobro.arl }}
         </p>
@@ -1966,21 +2054,11 @@
         </section>
 
 
-        <!-- 5 · Facturación -->
+        <!-- 5 · Marcado manual de lo facturado por fuera (apagado: `marcadoManualSiigo`).
+             El ESTADO de facturación ya no vive aquí: es el chip de la cabecera. -->
+        @if (marcadoManualSiigo && puedeMarcarManual() && !d.factura_electronica && d.estado === 'FINALIZADA') {
         <section class="cobro__seccion">
           <h4 class="cobro__titulo">Facturación</h4>
-          @if (d.factura_electronica; as fe) {
-            <p class="cobro__estado">
-              @if (fe.estado === 'VALIDADO') {
-                Facturada electrónicamente con <strong class="mono">{{ fe.numero }}</strong>.
-              } @else {
-                Está en una factura electrónica en estado {{ fe.estado }}.
-              }
-              Se gestiona desde Facturación.
-            </p>
-          } @else if (d.estado !== 'FINALIZADA') {
-            <p class="cobro__estado">El estado de cobro solo se mueve cuando la orden está FINALIZADA.</p>
-          } @else if (marcadoManualSiigo && puedeMarcarManual()) {
             <!-- APAGADO (30-sep-2026): ver `marcadoManualSiigo` en validation.ts. -->
             <p class="card__hint">
               Solo para lo facturado por fuera de Orbita (Siigo). Lo facturado electrónicamente se marca solo.
@@ -2034,17 +2112,54 @@
                 {{ cobroSaving() ? 'Guardando…' : 'Guardar estado' }}
               </button>
             </div>
-          } @else {
-            <p class="cobro__estado">
-              {{ d.estado_cobro || 'NO FACTURADA' }}
-              @if (d.cobro_numero_factura) { · factura <span class="mono">{{ d.cobro_numero_factura }}</span> }
-            </p>
-          }
         </section>
+        }
         </div>
 
         <div class="cobro__col">
-        <!-- 3 · Comparación con la prefactura (si ya se cargó) -->
+        <!-- 3 · Sin prefactura todavía: el resumen de lo que se va a cobrar, que
+             se mueve con lo que se escribe a la izquierda. Con prefactura, la
+             comparación (7-oct-2026: antes este lado quedaba casi vacío). -->
+        @if (!d.prefactura) {
+          <section class="cobro__seccion">
+            <h4 class="cobro__titulo">
+              Resumen del cobro
+              @if (cobroSinGuardar()) { <span class="cobro__pendiente">sin guardar</span> }
+            </h4>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr><th>Concepto</th><th class="col-num">Valor</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Honorarios</td>
+                    <td class="col-num mono">{{ cobroHonorariosForm() != null ? pesos(cobroHonorariosForm()) : '—' }}</td>
+                  </tr>
+                  @for (g of gastosCobro; track g.clave) {
+                    @if (cobroGastos()[g.clave]) {
+                      <tr>
+                        <td>{{ g.etiqueta }}</td>
+                        <td class="col-num mono">{{ pesos(cobroGastos()[g.clave]) }}</td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td>Total a cobrar</td>
+                    <td class="col-num mono">{{ cobroTotalForm() != null ? pesos(cobroTotalForm()) : '—' }}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+            @if (!esAxaArl(ordenCobro) && !ordenCobro.particular) {
+              <p class="card__hint">
+                Aún no se ha cargado una prefactura que incluya esta orden: cuando llegue, aquí se compara concepto por concepto.
+              </p>
+            }
+          </section>
+        }
         @if (d.prefactura; as pf) {
           <section class="cobro__seccion">
             <h4 class="cobro__titulo">
@@ -2255,14 +2370,15 @@
 
       <p class="form-note">
         {{ prefacturaMarcadasCount() }} de {{ pf.filas.length }} filas marcadas. Solo las
-        <strong>Encontradas</strong> quedan marcadas por defecto; el resto se elige a mano.
+        <strong>Encontradas</strong> quedan marcadas por defecto. Una fila solo se puede marcar si su
+        orden está <strong>FINALIZADA</strong> y no tiene ya otra prefactura.
       </p>
 
       <div class="table-wrap">
-        <table class="table ord-table">
+        <table class="table ord-table pf-tabla">
           <thead>
             <tr>
-              <th class="col-num"></th>
+              <th class="pf-check" aria-label="Marcar"></th>
               <th>Cronograma-Secuencia</th>
               <th>Empresa</th>
               <th>Valor a facturar</th>
@@ -2273,22 +2389,25 @@
           <tbody>
             @for (f of pf.filas; track f.codigo_cronograma + '-' + f.secuencia) {
               <tr>
-                <td class="col-num">
+                <td class="pf-check">
                   <input
                     type="checkbox"
                     [checked]="prefacturaFilaMarcada(f)"
                     [disabled]="!prefacturaFilaMarcable(f)"
+                    [title]="motivoNoMarcable(f)"
                     (change)="alternarFilaPrefactura(f, $any($event.target).checked)"
                     [attr.aria-label]="'Marcar ' + f.codigo_cronograma + '-' + f.secuencia"
                   />
                 </td>
                 <td class="mono">{{ f.codigo_cronograma }}-{{ f.secuencia }}</td>
-                <td>{{ f.razon_social || '—' }}</td>
+                <td class="pf-empresa">{{ f.razon_social || '—' }}</td>
                 <td class="mono">{{ pesos(f.valor_a_facturar) }}</td>
                 <td>
                   @if (f.orden) {
+                    <span class="pf-orden">
                     <span class="mono">{{ f.orden.codigo }}</span>
                     <span class="pill" [class]="pillEstado(f.orden.estado)">{{ f.orden.estado }}</span>
+                    </span>
                   } @else {
                     <span class="venc__none">—</span>
                   }

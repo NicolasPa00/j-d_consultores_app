@@ -247,7 +247,18 @@ export class ParametrizacionComponent implements OnInit {
     });
   }
 
-  protected toggleProducto(p: Producto): void {
+  protected async toggleProducto(p: Producto): Promise<void> {
+    // 7-oct-2026 · Activar o desactivar siempre pregunta: un clic de más no lo hace solo.
+    const activo = p.activo;
+    const ok = await this.alerts.confirm({
+      title: `${activo ? 'Desactivar' : 'Activar'} producto`,
+      message: activo
+        ? `Se desactivará ${p.nombre}. Dejará de ofrecerse al facturar; lo ya facturado no cambia.`
+        : `Se volverá a activar ${p.nombre}.`,
+      confirmText: activo ? 'Desactivar' : 'Activar',
+      tone: activo ? 'danger' : 'primary',
+    });
+    if (!ok) return;
     this.api.setProductoActivo(p.id, !p.activo).subscribe({
       next: (r) => this.productos.update((l) => l.map((x) => (x.id === r.data.id ? r.data : x))),
       error: (err) => this.alerts.error('No se pudo cambiar el estado', mensajeError(err, 'El servidor rechazó el cambio.')),
@@ -308,7 +319,18 @@ export class ParametrizacionComponent implements OnInit {
     });
   }
 
-  protected toggleTarifa(t: TarifaVenta): void {
+  protected async toggleTarifa(t: TarifaVenta): Promise<void> {
+    // 7-oct-2026 · Activar o desactivar siempre pregunta: un clic de más no lo hace solo.
+    const activo = t.activo;
+    const ok = await this.alerts.confirm({
+      title: `${activo ? 'Desactivar' : 'Activar'} tarifa de venta`,
+      message: activo
+        ? `Se desactivará ${'esta tarifa'}. Dejará de proponerse al facturar; lo ya facturado no cambia.`
+        : `Se volverá a activar ${'esta tarifa'}.`,
+      confirmText: activo ? 'Desactivar' : 'Activar',
+      tone: activo ? 'danger' : 'primary',
+    });
+    if (!ok) return;
     this.api.setTarifaVentaActiva(t.id, !t.activo).subscribe({
       next: (r) => this.tarifas.update((l) => l.map((x) => (x.id === r.data.id ? r.data : x))),
       error: (err) => this.alerts.error('No se pudo cambiar el estado', mensajeError(err, 'El servidor rechazó el cambio.')),
@@ -401,7 +423,18 @@ export class ParametrizacionComponent implements OnInit {
     });
   }
 
-  protected toggleRetencion(r: Retencion): void {
+  protected async toggleRetencion(r: Retencion): Promise<void> {
+    // 7-oct-2026 · Activar o desactivar siempre pregunta: un clic de más no lo hace solo.
+    const activo = r.activa;
+    const ok = await this.alerts.confirm({
+      title: `${activo ? 'Desactivar' : 'Activar'} retención`,
+      message: activo
+        ? `Se desactivará ${r.nombre}. Dejará de aplicarse en las facturas y pagos nuevos.`
+        : `Se volverá a activar ${r.nombre}.`,
+      confirmText: activo ? 'Desactivar' : 'Activar',
+      tone: activo ? 'danger' : 'primary',
+    });
+    if (!ok) return;
     this.api.setRetencionActiva(r.id, !r.activa).subscribe({
       next: (res) => this.retenciones.update((l) => l.map((x) => (x.id === res.data.id ? res.data : x))),
       error: (err) => this.alerts.error('No se pudo cambiar el estado', mensajeError(err, 'El servidor rechazó el cambio.')),
@@ -441,7 +474,18 @@ export class ParametrizacionComponent implements OnInit {
     });
   }
 
-  protected toggleResolucion(r: ResolucionNumeracion): void {
+  protected async toggleResolucion(r: ResolucionNumeracion): Promise<void> {
+    // 7-oct-2026 · Activar o desactivar siempre pregunta: un clic de más no lo hace solo.
+    const activo = r.activa;
+    const ok = await this.alerts.confirm({
+      title: `${activo ? 'Desactivar' : 'Activar'} resolución de numeración`,
+      message: activo
+        ? `Se desactivará ${(r.prefijo || 'esta resolución')}. No se podrá facturar con esa numeración hasta volver a activarla.`
+        : `Se volverá a activar ${(r.prefijo || 'esta resolución')}.`,
+      confirmText: activo ? 'Desactivar' : 'Activar',
+      tone: activo ? 'danger' : 'primary',
+    });
+    if (!ok) return;
     this.api.setResolucionActiva(r.id, !r.activa).subscribe({
       next: (res) => this.resoluciones.set(res.data),
       error: (err) => this.alerts.error('No se pudo cambiar el estado', mensajeError(err, 'El servidor rechazó el cambio.')),

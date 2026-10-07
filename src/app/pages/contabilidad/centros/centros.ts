@@ -68,7 +68,18 @@ export class CentrosComponent implements OnInit {
     });
   }
 
-  protected alternar(c: CentroCosto): void {
+  protected async alternar(c: CentroCosto): Promise<void> {
+    // 7-oct-2026 · Activar o desactivar siempre pregunta: un clic de más no lo hace solo.
+    const activo = c.activo;
+    const ok = await this.alerts.confirm({
+      title: `${activo ? 'Desactivar' : 'Activar'} centro de costo`,
+      message: activo
+        ? `Se desactivará ${c.nombre}. Dejará de ofrecerse en compras y comprobantes; lo ya registrado no cambia.`
+        : `Se volverá a activar ${c.nombre}.`,
+      confirmText: activo ? 'Desactivar' : 'Activar',
+      tone: activo ? 'danger' : 'primary',
+    });
+    if (!ok) return;
     this.api.setCentroCostoActivo(c.id, !c.activo).subscribe({
       next: () => this.cargar(),
       error: (err) => this.alerts.error('No se pudo cambiar el estado', mensajeError(err, 'Intente de nuevo.')),

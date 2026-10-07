@@ -55,7 +55,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: 'reports', label: 'Informes contables', hint: 'Balance de prueba y auxiliares', route: '/informes-contables', vista: 'informes_contables', corto: 'Informes' },
   { icon: 'people', label: 'Terceros', hint: 'A quién se factura o se paga', route: '/terceros', vista: 'terceros', corto: 'Terceros' },
   { icon: 'settings', label: 'Parametrización', hint: 'Emisor, tarifas y numeración', route: '/parametrizacion', vista: 'parametrizacion', corto: 'Parámetros' },
-  { icon: 'reports', label: 'Informes y Resúmenes', hint: 'Indicadores y exportaciones', route: '/informes', vista: 'informes', corto: 'Resúmenes' },
+  { icon: 'reports', label: 'Estadísticas', hint: 'Informes y resúmenes', route: '/informes', vista: 'informes', corto: 'Estadísticas' },
   { icon: 'settings', label: 'Configuración', hint: 'Cuenta y ajustes', route: '/configuracion', vista: 'configuracion', corto: 'Ajustes' },
 ];
 

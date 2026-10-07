@@ -298,6 +298,12 @@ export interface ArchivoSoporte {
   id: string;
   orden_id: string;
   /**
+   * 7-oct-2026 · Quién lo subió. Con varios asesores en la orden cada uno sube
+   * lo suyo; `de_profesional_id` ya viene resuelto (el principal incluido).
+   */
+  de_profesional_id?: string | null;
+  profesional_nombre?: string | null;
+  /**
    * Nombre que le puso el sistema ('acta.pdf'). Es el que se enseña: el del
    * móvil del profesional no dice qué documento es. NULL en los soportes
    * anteriores a la clasificación.
@@ -921,6 +927,11 @@ export interface ConteosNotificaciones {
 export interface FranjaVisita {
   id: string;
   orden_id?: string;
+  /**
+   * 7-oct-2026 · De qué asesor es la franja cuando la orden la ejecutan varios,
+   * cada uno con su horario. Vacío = del asesor principal de la orden.
+   */
+  profesional_id?: string | null;
   fecha: string;
   hora_inicio: string;
   hora_fin: string;
@@ -2296,4 +2307,28 @@ export interface EstadoResultados {
   utilidad: string;
   utilidad_bruta_anterior?: string;
   utilidad_anterior?: string;
+}
+
+/**
+ * 7-oct-2026 · Estadísticas del periodo (`GET /reports/estadisticas`): lo que
+ * pintan las gráficas de la pantalla «Estadísticas». El periodo se mide sobre la
+ * fecha en que la orden entró al sistema; el estado es el de hoy.
+ */
+export interface EstadisticasPeriodo {
+  desde: string;
+  hasta: string;
+  /** La serie va por día (rangos de hasta dos meses) o por mes. */
+  grano: 'day' | 'month';
+  kpis: {
+    ordenes: number; horas: number; finalizadas: number; ejecutadas: number;
+    programadas: number; sin_programar: number; vencidas: number;
+    empresas: number; profesionales: number; valor: number;
+    satisfaccion: { respuestas: number; promedio: number | null };
+  };
+  serie: { inicio: string; ordenes: number; horas: number; finalizadas: number }[];
+  por_arl: { arl: string; ordenes: number; horas: number; finalizadas: number }[];
+  por_estado: { estado: string; ordenes: number; horas: number }[];
+  por_profesional: { profesional: string; ordenes: number; horas: number; finalizadas: number }[];
+  por_tipo: { tipo: string; ordenes: number; horas: number }[];
+  por_ciudad: { ciudad: string; ordenes: number; horas: number }[];
 }

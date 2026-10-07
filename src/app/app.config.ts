@@ -5,7 +5,7 @@ import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/
 
 import { routes } from './app.routes';
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
-import { authInterceptor } from './core/auth.interceptor';
+import { authInterceptor, reintentoInterceptor } from './core/auth.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -14,6 +14,6 @@ export const appConfig: ApplicationConfig = {
     // Pestaña del navegador: «<pantalla> · ORBITA» (core/titulo.ts).
     { provide: TitleStrategy, useClass: TituloOrbita },
     provideClientHydration(withEventReplay()),
-    provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
+    provideHttpClient(withFetch(), withInterceptors([authInterceptor, reintentoInterceptor])),
   ],
 };

@@ -468,7 +468,18 @@ export class TercerosComponent implements OnInit {
     this.editandoCondicion.set(false);
   }
 
-  protected toggleActivo(t: Tercero): void {
+  protected async toggleActivo(t: Tercero): Promise<void> {
+    // 7-oct-2026 · Activar o desactivar siempre pregunta: un clic de más no lo hace solo.
+    const activo = t.activo;
+    const ok = await this.alerts.confirm({
+      title: `${activo ? 'Desactivar' : 'Activar'} tercero`,
+      message: activo
+        ? `Se desactivará ${t.nombre}. Dejará de ofrecerse en los formularios; conserva su historial.`
+        : `Se volverá a activar ${t.nombre}.`,
+      confirmText: activo ? 'Desactivar' : 'Activar',
+      tone: activo ? 'danger' : 'primary',
+    });
+    if (!ok) return;
     this.api.setTerceroActivo(t.id, !t.activo).subscribe({
       next: (r) => {
         this.terceros.update((lista) => lista.map((x) => (x.id === r.data.id ? r.data : x)));

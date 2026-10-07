@@ -182,10 +182,31 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1.25rem;
-  align-items: start;
+  /* 7-oct-2026 · Las dos columnas miden lo mismo: la más corta estira su última
+     tarjeta en vez de dejar un hueco en blanco debajo. */
+  align-items: stretch;
 
   @media (max-width: 900px) {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.cobro__col > .cobro__seccion:last-child {
+  flex: 1 1 auto;
+}
+
+/* Título del modal con el chip de facturación al lado. */
+.cobro__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+
+  .pill {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: none;
   }
 }
 
@@ -252,7 +273,7 @@
 
 .cobro__gastos {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 0.6rem;
 
   .form-field {

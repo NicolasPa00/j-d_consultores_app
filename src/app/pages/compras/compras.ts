@@ -10,6 +10,7 @@ import { ResumenImportCompras, CentroCosto, Compra, CompraForm, CuentaContable, 
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 import { aCentavos } from '../contabilidad/comprobantes/comprobantes';
+import { OpcionBusqueda, SelectorBusquedaComponent } from '../../shared/selector-busqueda/selector-busqueda';
 
 
 export const ETIQUETA_TIPO_COMPRA: Record<TipoCompra, string> = {
@@ -33,7 +34,7 @@ const ITEM_VACIO = () => ({ cuenta_id: '', descripcion: '', valor: '', iva_pct: 
  */
 @Component({
   selector: 'app-compras',
-  imports: [FormsModule, PaginadorComponent],
+  imports: [FormsModule, PaginadorComponent, SelectorBusquedaComponent],
   templateUrl: './compras.html',
   styleUrl: './compras.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -176,6 +177,9 @@ export class ComprasComponent implements OnInit {
   }
 
   /** Las cuentas de gasto y costo primero (clases 5, 6 y 7): son las que casi siempre se eligen. */
+  /** Las cuentas del ítem, en la forma que pide el selector con búsqueda. */
+  protected readonly opcionesCuenta = computed<OpcionBusqueda[]>(() =>
+    this.cuentasGasto().map((c) => ({ valor: c.id, texto: `${c.codigo} · ${c.nombre}` })));
   protected readonly cuentasGasto = computed(() => [...this.cuentas()].sort((a, b) =>
     Number(!/^[567]/.test(a.codigo)) - Number(!/^[567]/.test(b.codigo)) || a.codigo.localeCompare(b.codigo)));
 
