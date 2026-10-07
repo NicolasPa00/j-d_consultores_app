@@ -95,6 +95,15 @@ restart. Las migraciones solo añaden tablas y columnas; si hiciera falta volver
 
 ## Parte 2 · Encender el envío a la DIAN
 
+> 🟡 **7-oct-2026 (noche) · EN CURSO.** Banderas encendidas en `ca9a3a1` (front); `master` = `1835e23`,
+> `main` = `ca9a3a1`, ya en GitHub. En el servidor: respaldo `~/respaldos/orbita-antes-lote3b-20261007-1544.dump`
+> + `storage-antes-lote3b-20261007-1544.tgz` y **ensayo OK** de `2026-10-07-documento-soporte` en `orbita_ensayo`
+> (mismos conteos; +4 filas de permisos; ensayo borrado). El auto-modo bloqueó migrar/pull/build/restart desde la
+> sesión: **lo corre el usuario** (comando en el chat del 7-oct). Rangos en el proveedor de producción (consultados
+> el 7-oct): FE id 3021 (sig. 1001) y **DS id 3026 (sig. 1334)** ya creados; **faltan NC y NA**. Producción tiene
+> 1 sola regla contable: hasta importar el PUC y cargar las reglas, lo emitido queda «contabilidad pendiente».
+> Guía al cliente: `3-entregables-y-respaldos/entregas-cliente/2026-10-07-facturacion-electronica-y-documentos-soporte/`.
+
 ### Qué entra además (construido el 7-oct, después de la parte 1)
 
 - **A4-01..03 · Documentos soporte completos** (`/documentos-soporte`, menú de Finanzas): uno por cuenta
