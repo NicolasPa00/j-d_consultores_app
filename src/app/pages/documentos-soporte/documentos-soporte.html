@@ -54,7 +54,7 @@
               <td><span class="who__name">{{ c.profesional_nombre }}</span>
                 @if (c.tercero_documento) { <small class="fac-sub">NIT {{ c.tercero_documento }}</small> }
               </td>
-              <td>{{ mes(c.periodo) }}</td>
+              <td class="ds-fijo">{{ mes(c.periodo) }}</td>
               <td class="num">{{ c.total_ordenes }}</td>
               <td class="num">{{ +c.total_horas }}</td>
               <td class="num">{{ +c.total_viaticos ? pesos(c.total_viaticos) : '—' }}</td>
@@ -99,7 +99,7 @@
     <div class="table-wrap">
       <table class="table">
         <thead>
-          <tr><th>Referencia</th><th>Tipo</th><th>Asesor</th><th>Mes</th><th class="num">Líneas</th><th class="num">Total</th><th>Estado</th><th class="col-actions">Acciones</th></tr>
+          <tr><th>Referencia</th><th>Tipo</th><th>Tercero</th><th>Mes</th><th class="num">Líneas</th><th class="num">Total</th><th>Estado</th><th class="col-actions">Acciones</th></tr>
         </thead>
         <tbody>
           @for (d of pagPendientes.visibles(); track d.id) {
@@ -107,7 +107,7 @@
               <td class="mono">{{ d.reference_code }}</td>
               <td>@if (esNota(d)) { Nota de ajuste a {{ referenciaDe(d) }} } @else { Documento soporte }</td>
               <td><span class="who__name">{{ d.tercero_nombre }}</span></td>
-              <td>{{ mes(d.periodo) }}</td>
+              <td class="ds-fijo">{{ mes(d.periodo) }}</td>
               <td class="num">{{ d.total_lineas }}</td>
               <td class="num"><b>{{ pesos(d.total_a_pagar) }}</b></td>
               <td><span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
@@ -131,15 +131,15 @@
     <div class="table-wrap">
       <table class="table">
         <thead>
-          <tr><th>Número</th><th>Asesor</th><th>Mes</th><th>Emisión</th><th class="num">Total</th><th>Estado</th><th>Pago al asesor</th><th class="col-actions">Acciones</th></tr>
+          <tr><th>Número</th><th>Tercero</th><th>Mes</th><th>Emisión</th><th class="num">Total</th><th>Estado</th><th>Pago</th><th class="col-actions">Acciones</th></tr>
         </thead>
         <tbody>
           @for (d of pagEmitidos.visibles(); track d.id) {
             <tr>
               <td><b>{{ numeroDe(d) }}</b></td>
               <td><span class="who__name">{{ d.tercero_nombre }}</span></td>
-              <td>{{ mes(d.periodo) }}</td>
-              <td>{{ fecha(d.fecha_emision) }}</td>
+              <td class="ds-fijo">{{ mes(d.periodo) }}</td>
+              <td class="ds-fijo">{{ fecha(d.fecha_emision) }}</td>
               <td class="num">{{ pesos(d.total_a_pagar) }}</td>
               <td><span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
               <td>
@@ -178,7 +178,7 @@
     <div class="table-wrap">
       <table class="table">
         <thead>
-          <tr><th>Número</th><th>Documento soporte</th><th>Asesor</th><th>Motivo</th><th class="num">Valor</th><th>Estado</th><th class="col-actions">Acciones</th></tr>
+          <tr><th>Número</th><th>Documento soporte</th><th>Tercero</th><th>Motivo</th><th class="num">Valor</th><th>Estado</th><th class="col-actions">Acciones</th></tr>
         </thead>
         <tbody>
           @for (d of pagNotas.visibles(); track d.id) {
@@ -423,14 +423,14 @@
  }
 
  @if (vista() === 'contab') {
-  <div class="modal-backdrop" (click)="cerrar()"></div>
+  <div class="modal-backdrop" (click)="cerrarPanel()"></div>
   <div class="modal modal--lg" role="dialog" aria-modal="true" aria-labelledby="dsContabTitulo">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="dsContabTitulo">Contabilización</h3>
         <p class="modal__sub">{{ d.estado === 'BORRADOR' ? 'Borrador' : numeroDe(d) }} · {{ d.tercero_nombre }}</p>
       </div>
-      <button type="button" class="icon-action" (click)="cerrar()" aria-label="Cerrar">
+      <button type="button" class="icon-action" (click)="cerrarPanel()" aria-label="Cerrar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
       </button>
     </header>
@@ -472,7 +472,7 @@
       }
     </div>
     <footer class="modal__footer">
-      <button type="button" class="btn btn--close" (click)="cerrar()">Cerrar</button>
+      <button type="button" class="btn btn--close" (click)="cerrarPanel()">{{ panelDesdeDetalle ? 'Volver' : 'Cerrar' }}</button>
     </footer>
   </div>
  }
@@ -517,7 +517,7 @@
 <!-- ======================= A4-02 · NUEVO (MANUAL) ======================= -->
 @if (manualOpen()) {
   <div class="modal-backdrop" (click)="guardandoManual() ? null : manualOpen.set(false)"></div>
-  <div class="modal modal--xl" role="dialog" aria-modal="true" aria-labelledby="dsManualTitulo">
+  <div class="modal modal--xl ds-manual" role="dialog" aria-modal="true" aria-labelledby="dsManualTitulo">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="dsManualTitulo">Nuevo documento soporte</h3>
@@ -539,28 +539,36 @@
           <input id="dsObs" class="form-control" type="text" maxlength="500" [ngModel]="manualObs()" (ngModelChange)="manualObs.set($event)" />
         </div>
       </div>
-      <div class="table-wrap">
-        <table class="table ds-lineas">
-          <thead><tr><th>Cuenta de costo o gasto</th><th>Detalle</th><th class="num">Cantidad</th><th class="num">Valor unitario</th><th></th></tr></thead>
-          <tbody>
-            @for (l of manualLineas(); track $index; let i = $index) {
-              <tr>
-                <td>
-                  <app-selector-busqueda [opciones]="opcionesCuenta()" [valor]="l.cuenta_id" (valorChange)="cambiarLinea(i, 'cuenta_id', $event)"
-                                         placeholder="Código o nombre de la cuenta…" />
-                </td>
-                <td><input type="text" class="form-control" [ngModel]="l.descripcion" (ngModelChange)="cambiarLinea(i, 'descripcion', $event)" [attr.aria-label]="'Detalle de la línea ' + (i + 1)" /></td>
-                <td><input type="text" inputmode="decimal" class="form-control mono num" [ngModel]="l.cantidad" (ngModelChange)="cambiarLinea(i, 'cantidad', $event)" [attr.aria-label]="'Cantidad de la línea ' + (i + 1)" /></td>
-                <td><input type="text" inputmode="decimal" class="form-control mono num" [ngModel]="l.valor_unitario" (ngModelChange)="cambiarLinea(i, 'valor_unitario', $event)" [attr.aria-label]="'Valor de la línea ' + (i + 1)" /></td>
-                <td>
-                  <button type="button" class="icon-action" (click)="quitarLinea(i)" [disabled]="manualLineas().length <= 1" [attr.aria-label]="'Quitar la línea ' + (i + 1)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-                  </button>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+      <!-- 7-oct-2026 · Las líneas van en una rejilla (no en una tabla): así la lista de los
+           selectores se abre sin recortarse y en celular cada línea se apila. -->
+      <div class="ds-lineas">
+        <div class="ds-linea ds-linea--cab" aria-hidden="true">
+          <span>Cuenta de costo o gasto</span><span>Detalle</span><span class="num">Cantidad</span><span class="num">Valor unitario</span><span></span>
+        </div>
+        @for (l of manualLineas(); track $index; let i = $index) {
+          <div class="ds-linea">
+            <div>
+              <span class="ds-linea__rotulo">Cuenta de costo o gasto</span>
+              <app-selector-busqueda [opciones]="opcionesCuenta()" [valor]="l.cuenta_id" (valorChange)="cambiarLinea(i, 'cuenta_id', $event)"
+                                     placeholder="Código o nombre de la cuenta…" />
+            </div>
+            <div>
+              <span class="ds-linea__rotulo">Detalle</span>
+              <input type="text" class="form-control" [ngModel]="l.descripcion" (ngModelChange)="cambiarLinea(i, 'descripcion', $event)" [attr.aria-label]="'Detalle de la línea ' + (i + 1)" />
+            </div>
+            <div>
+              <span class="ds-linea__rotulo">Cantidad</span>
+              <input type="text" inputmode="decimal" class="form-control mono num" [ngModel]="l.cantidad" (ngModelChange)="cambiarLinea(i, 'cantidad', $event)" [attr.aria-label]="'Cantidad de la línea ' + (i + 1)" />
+            </div>
+            <div>
+              <span class="ds-linea__rotulo">Valor unitario</span>
+              <input type="text" inputmode="decimal" class="form-control mono num" [ngModel]="l.valor_unitario" (ngModelChange)="cambiarLinea(i, 'valor_unitario', $event)" [attr.aria-label]="'Valor de la línea ' + (i + 1)" />
+            </div>
+            <button type="button" class="icon-action ds-linea__quitar" (click)="quitarLinea(i)" [disabled]="manualLineas().length <= 1" [attr.aria-label]="'Quitar la línea ' + (i + 1)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            </button>
+          </div>
+        }
       </div>
       <div class="ds-pie-lineas">
         <button type="button" class="btn btn--ghost btn--sm" (click)="agregarLinea()">+ Agregar línea</button>
@@ -580,7 +588,12 @@
 @if (importOpen()) {
   <div class="modal-backdrop" (click)="importando() ? null : importOpen.set(false)"></div>
   <div class="modal modal--xl" role="dialog" aria-modal="true" aria-labelledby="dsImpTitulo">
-    <header class="modal__head"><h3 class="modal__title" id="dsImpTitulo">Cargar documentos soporte desde Excel</h3></header>
+    <header class="modal__head">
+      <h3 class="modal__title" id="dsImpTitulo">Cargar documentos soporte desde Excel</h3>
+      <button type="button" class="icon-action" (click)="importOpen.set(false)" aria-label="Cerrar" [disabled]="importando()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
     <div class="modal__body">
       <p class="ds-texto">
         Una fila por línea; las filas con el mismo proveedor y la misma referencia forman un solo documento soporte. Primero

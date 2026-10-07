@@ -15,9 +15,6 @@
   gap: 0.75rem 1rem;
   margin-bottom: 1rem;
 }
-.ds-lineas td:first-child { min-width: 260px; }
-.ds-lineas td:nth-child(3) { width: 110px; }
-.ds-lineas td:nth-child(4) { width: 150px; }
 .ds-pie-lineas {
   display: flex;
   align-items: center;
@@ -38,3 +35,60 @@
 }
 .ds-resumen--mal { background: rgba(220, 38, 38, 0.08); }
 .ds-fila-mal td { color: var(--danger); }
+
+/* 7-oct-2026 · Líneas del documento manual en REJILLA, no en tabla: una tabla con el
+   desbordamiento recortado encerraba la lista de los selectores en un recuadro con su
+   propia barra (reporte del usuario). En celular cada línea se apila. */
+.ds-lineas {
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: #fff;
+}
+.ds-linea {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.3fr) minmax(0, 1.5fr) 110px 150px 40px;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--border-soft);
+
+  &:last-child { border-bottom: 0; }
+  .num { text-align: right; }
+}
+.ds-linea--cab {
+  padding: 0.7rem 0.75rem;
+  background: var(--table-head-bg, #eef2fb);
+  color: var(--primary-color);
+  border-bottom: 2px solid var(--primary-color);
+  border-radius: 12px 12px 0 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.ds-linea__rotulo { display: none; }
+/* La ventana guarda alto para que la lista del selector (16 rem) quepa aunque el
+   documento tenga una sola línea o la pantalla sea baja. */
+.ds-manual .modal__body {
+  min-height: min(30rem, calc(100vh - 14rem));
+}
+@media (max-width: 760px) {
+  .ds-linea--cab { display: none; }
+  .ds-linea {
+    grid-template-columns: 1fr 1fr auto;
+    align-items: end;
+
+    > :nth-child(1),
+    > :nth-child(2) { grid-column: 1 / -1; }
+  }
+  .ds-linea__rotulo {
+    display: block;
+    margin-bottom: 0.2rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+}
+
+/* Mes, fecha: no se parten en tres renglones cuando la tabla va justa de ancho. */
+.ds-fijo { white-space: nowrap; }

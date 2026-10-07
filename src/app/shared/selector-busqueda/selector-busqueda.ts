@@ -64,6 +64,9 @@ export class SelectorBusquedaComponent {
     this.busqueda.set('');
     this.resaltado.set(0);
     this.abierto.set(true);
+    // 7-oct-2026 · Dentro de un modal que hace scroll, la lista podía abrirse por
+    // debajo de lo visible (última fila de una tabla): se desplaza lo justo para verla.
+    setTimeout(() => this.host.nativeElement.querySelector('.sb__lista')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
   }
 
   protected escribir(v: string): void {

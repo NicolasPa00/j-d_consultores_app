@@ -115,6 +115,8 @@ export class DocumentosSoporteComponent implements OnInit {
 
   protected readonly detalle = signal<DetalleSoporte | null>(null);
   protected readonly vista = signal<VistaDocumento>('ver');
+  /** La contabilización se abrió desde «Ver»: al cerrarla se vuelve ahí (como en Facturación). */
+  protected panelDesdeDetalle = false;
   protected readonly cargandoDetalle = signal(false);
   protected readonly accion = signal<string | null>(null);
   /** El asiento DS del documento abierto (vista previa en un borrador). */
@@ -172,6 +174,7 @@ export class DocumentosSoporteComponent implements OnInit {
   protected abrir(id: string, vista: VistaDocumento = 'ver'): void {
     this.cargandoDetalle.set(true);
     this.formNota.set(false);
+    this.panelDesdeDetalle = false;
     this.vista.set(vista);
     this.api.obtenerSoporte(id).subscribe({
       next: (r) => {
@@ -191,8 +194,19 @@ export class DocumentosSoporteComponent implements OnInit {
   protected abrirContab(): void {
     const d = this.detalle();
     if (!d) return;
+    this.panelDesdeDetalle = true;
     this.vista.set('contab');
     this.verAsiento(d.id);
+  }
+
+  /** Cierra la contabilización: vuelve al documento si se abrió desde él; si no, cierra todo. */
+  protected cerrarPanel(): void {
+    if (this.panelDesdeDetalle) {
+      this.panelDesdeDetalle = false;
+      this.vista.set('ver');
+      return;
+    }
+    this.cerrar();
   }
 
   private verAsiento(id: string): void {
@@ -555,7 +569,12 @@ export class DocumentosSoporteComponent implements OnInit {
   }
 
   protected etiquetaEvento(codigo: string): string {
-    if (codigo === 'CONTABILIZACION_PENDIENTE') return 'Contabilidad pendiente';
+    const propias: Record<string, string> = {
+      CONTABILIZACION_PENDIENTE: 'Contabilidad pendiente', NOTA_AJUSTE_CREADA: 'Nota de ajuste creada',
+      NOTA_AJUSTE: 'Nota de ajuste validada', ENVIANDO: 'Enviado a la DIAN', SIN_DECISION: 'La DIAN aún no responde',
+      CONSULTA_ESTADO: 'Estado consultado', DESCARGA_FALLIDA: 'No se pudo descargar el PDF o el XML', ERROR_RED: 'Sin respuesta del servicio',
+    };
+    if (propias[codigo]) return propias[codigo];
     return codigo.charAt(0) + codigo.slice(1).toLowerCase().replace(/_/g, ' ');
   }
 
