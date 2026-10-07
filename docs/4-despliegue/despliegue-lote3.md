@@ -103,6 +103,15 @@ restart. Las migraciones solo añaden tablas y columnas; si hiciera falta volver
 > ⚠️ **La parametrización de Finanzas en producción está VACÍA** (0 emisor, 3 cuentas, 1 regla, 0 productos, 0
 > retenciones, 0 condiciones de pagador, 0 asesores con tercero): sin empresa emisora no se puede emitir la FE-1001.
 > Es el paso 4 de abajo, con la contadora.
+> ✅ **7-oct (noche), pedido del usuario:** **plan de cuentas importado en producción** (773 cuentas, 430 de
+> movimiento; `puc-siigo-solo-activas-2026-10-06.xlsx`, simulado antes) y **reglas cargadas** («Cargar las del
+> software contable actual»: 21 nuevas, con DS_CXP y el costo DS de Bolívar/AXA/Colmena). La regla FV_RETEFUENTE
+> que alguien había puesto a mano en `1355` (que al importar pasó a cuenta padre) se apuntó a `13551509`, la de
+> Siigo. Siguen vacíos: empresa emisora, productos, retenciones, condiciones de pagador y terceros de los asesores.
+> **Nómina electrónica:** el usuario compró el paquete (60 documentos, 7-oct-2026 → 7-oct-2027). La doc pública del
+> proveedor la marca «Pronto», pero `GET /v2/payrolls` SÍ responde en el sandbox (sin documentar). ORBITA no tiene el
+> módulo (A5-01). Falta: documentación del endpoint (pedirla al proveedor), habilitar la nómina en la DIAN con el
+> proveedor, rango del documento 26 y construir A5-01.
 >
 > Historial: **7-oct-2026 (noche) · EN CURSO.** Banderas encendidas en `ca9a3a1` (front); `master` = `1835e23`,
 > `main` = `ca9a3a1`, ya en GitHub. En el servidor: respaldo `~/respaldos/orbita-antes-lote3b-20261007-1544.dump`
