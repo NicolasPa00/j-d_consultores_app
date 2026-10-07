@@ -95,7 +95,16 @@ restart. Las migraciones solo añaden tablas y columnas; si hiciera falta volver
 
 ## Parte 2 · Encender el envío a la DIAN
 
-> 🟡 **7-oct-2026 (noche) · EN CURSO.** Banderas encendidas en `ca9a3a1` (front); `master` = `1835e23`,
+> ✅ **7-oct-2026 (~16:07 hora Colombia) · PARTE 2 DESPLEGADA** por Claude Code con autorización del usuario:
+> migración `2026-10-07-documento-soporte` OK (+4 permisos), servidor en `master 3286315` / `main 122a7e1`, build 26 s,
+> `orbita-api` y `orbita-web` activos, `/api/health` 200, SSR de `/login` 200. Humo con token firmado en el servidor:
+> documentos soporte, facturación, cuentas de cobro, reglas y numeración en 200. **«Sincronizar con el proveedor»
+> hecho:** FE 1001–1500 (sig. 1001), DS 1001–2000 (sig. 1334), NC (sig. 90) y NA (sig. 1) activas en ORBITA.
+> ⚠️ **La parametrización de Finanzas en producción está VACÍA** (0 emisor, 3 cuentas, 1 regla, 0 productos, 0
+> retenciones, 0 condiciones de pagador, 0 asesores con tercero): sin empresa emisora no se puede emitir la FE-1001.
+> Es el paso 4 de abajo, con la contadora.
+>
+> Historial: **7-oct-2026 (noche) · EN CURSO.** Banderas encendidas en `ca9a3a1` (front); `master` = `1835e23`,
 > `main` = `ca9a3a1`, ya en GitHub. En el servidor: respaldo `~/respaldos/orbita-antes-lote3b-20261007-1544.dump`
 > + `storage-antes-lote3b-20261007-1544.tgz` y **ensayo OK** de `2026-10-07-documento-soporte` en `orbita_ensayo`
 > (mismos conteos; +4 filas de permisos; ensayo borrado). El auto-modo bloqueó migrar/pull/build/restart desde la
