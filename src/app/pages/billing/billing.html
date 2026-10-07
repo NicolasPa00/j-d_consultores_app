@@ -146,6 +146,7 @@
                     <a class="chip-ds" [class.chip-ds--ok]="ds.estado === 'VALIDADO'" routerLink="/documentos-soporte"
                        title="Abrir Documentos soporte">
                       {{ ds.numero ? (ds.prefijo && !ds.numero.startsWith(ds.prefijo) ? ds.prefijo + ds.numero : ds.numero) : 'DS en borrador' }}
+                      @if (ds.saldo != null && +ds.saldo === 0) { · pagada }
                     </a>
                   } @else {
                     <a class="chip-ds chip-ds--falta" routerLink="/documentos-soporte" title="Generarlo en Documentos soporte">sin documento soporte</a>

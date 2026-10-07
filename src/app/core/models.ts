@@ -723,7 +723,7 @@ export interface CuentaDelMes {
    */
   del_mes?: number;
   /** A4-01 · Su documento soporte vivo, si ya lo tiene (solo en cuentas creadas). */
-  documento_soporte?: { id: string; estado: EstadoDocumento; prefijo: string | null; numero: string | null } | null;
+  documento_soporte?: { id: string; estado: EstadoDocumento; prefijo: string | null; numero: string | null; saldo?: string | null } | null;
 }
 
 /** Una orden ejecutada dentro de la pre-cuenta, ya valorada. */
@@ -1638,6 +1638,10 @@ export interface DocumentoSoporte {
   periodo: string | null;
   profesional_nombre: string | null;
   total_lineas: number;
+  /** Tiene su asiento DS. */
+  contabilizado: boolean;
+  /** Lo que falta pagarle al asesor (su cuenta por pagar); null si aún no se contabiliza. */
+  saldo_por_pagar: string | null;
   creado_en: string;
 }
 
@@ -1663,6 +1667,10 @@ export interface SoportePorGenerar {
 export interface DetalleSoporte extends DetalleFactura {
   precuenta_id: string | null;
   precuenta: { id: string; periodo: string; periodo_largo: string; estado: string; profesional_nombre: string } | null;
+  comprobante_id: string | null;
+  contabilizacion_error: string | null;
+  /** Cuenta por pagar al asesor: valor y saldo (0 = pagada con un egreso). */
+  cxp: { valor: string; saldo: string } | null;
   items: (ItemFactura & { arl_nombre: string | null; orden_codigo: string | null })[];
 }
 
@@ -1830,7 +1838,7 @@ export interface PeriodoContable {
 
 export interface ConceptoContable {
   concepto: string;
-  documento: 'FACTURA' | 'NOTA_CREDITO' | 'COMPRA';
+  documento: 'FACTURA' | 'NOTA_CREDITO' | 'COMPRA' | 'DOC_SOPORTE';
   nombre: string;
   lado: 'D' | 'C';
 }

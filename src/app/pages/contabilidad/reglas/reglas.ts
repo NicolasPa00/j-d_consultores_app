@@ -38,10 +38,14 @@ export class ReglasComponent implements OnInit {
     this.reglas().filter((r) => !r.tercero_id && !r.producto_id).map((r) => [r.concepto, r]),
   ));
   protected readonly especificas = computed(() => this.reglas().filter((r) => r.tercero_id || r.producto_id));
-  protected readonly faltantes = computed(() => this.conceptos().filter((c) => !this.generales().has(c.concepto)));
+  // A4-01 · El costo del documento soporte va por pagador (reglas por tercero): con
+  // al menos una de esas, que no haya general no es una falta.
+  protected readonly faltantes = computed(() => this.conceptos().filter((c) => !this.generales().has(c.concepto)
+    && !(c.concepto === 'DS_COSTO' && this.especificas().some((r) => r.concepto === 'DS_COSTO'))));
   protected readonly deFactura = computed(() => this.conceptos().filter((c) => c.documento === 'FACTURA'));
   protected readonly deNota = computed(() => this.conceptos().filter((c) => c.documento === 'NOTA_CREDITO'));
   protected readonly deCompra = computed(() => this.conceptos().filter((c) => c.documento === 'COMPRA'));
+  protected readonly deSoporte = computed(() => this.conceptos().filter((c) => c.documento === 'DOC_SOPORTE'));
   private readonly nombreConcepto = computed(() => new Map(this.conceptos().map((c) => [c.concepto, c.nombre])));
 
   // Alta de una regla específica.

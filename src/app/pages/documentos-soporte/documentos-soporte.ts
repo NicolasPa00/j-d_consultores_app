@@ -9,12 +9,12 @@ import { PESOS } from '../../core/dinero';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
 import { mensajeError } from '../../core/errores';
-import { DetalleSoporte, DocumentoSoporte, EstadoDocumento, SoportePorGenerar } from '../../core/models';
+import { AsientoDocumento, DetalleSoporte, DocumentoSoporte, EstadoDocumento, SoportePorGenerar } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
 type Pestana = 'por-generar' | 'pendientes' | 'emitidos';
-type VistaDocumento = 'ver' | 'pdf' | 'historial';
+type VistaDocumento = 'ver' | 'pdf' | 'historial' | 'contab';
 
 /** Todo lo que ya salió (o intentó salir) a la DIAN. */
 const ESTADOS_EMITIDOS = 'VALIDADO,RECHAZADO,ENVIANDO,ANULADO';
@@ -82,6 +82,9 @@ export class DocumentosSoporteComponent implements OnInit {
   protected readonly vista = signal<VistaDocumento>('ver');
   protected readonly cargandoDetalle = signal(false);
   protected readonly accion = signal<string | null>(null);
+  /** El asiento DS del documento abierto (vista previa en un borrador). */
+  protected readonly asiento = signal<AsientoDocumento | null>(null);
+  protected readonly cargandoAsiento = signal(false);
   protected readonly pdfVisto = signal<SafeResourceUrl | null>(null);
   protected readonly pdfTitulo = signal('');
   private pdfObjeto: string | null = null;
@@ -132,10 +135,31 @@ export class DocumentosSoporteComponent implements OnInit {
         this.cargandoDetalle.set(false);
         this.detalle.set(r.data);
         if (vista === 'pdf') this.verPdf();
+        if (vista === 'contab') this.verAsiento(r.data.id);
       },
       error: (err) => {
         this.cargandoDetalle.set(false);
         this.alerts.error('No se pudo abrir el documento soporte', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  /** Abre la contabilización desde «Ver» (en un borrador, la vista previa del asiento). */
+  protected abrirContab(): void {
+    const d = this.detalle();
+    if (!d) return;
+    this.vista.set('contab');
+    this.verAsiento(d.id);
+  }
+
+  private verAsiento(id: string): void {
+    this.asiento.set(null);
+    this.cargandoAsiento.set(true);
+    this.api.asientoDocumento(id).subscribe({
+      next: (r) => { this.cargandoAsiento.set(false); this.asiento.set(r.data); },
+      error: (err) => {
+        this.cargandoAsiento.set(false);
+        this.alerts.error('No se pudo armar la contabilización', mensajeError(err, 'Revise las reglas en Contabilidad.'));
       },
     });
   }
@@ -297,6 +321,7 @@ export class DocumentosSoporteComponent implements OnInit {
     const ultimo = (codigo: string): string | null =>
       [...d.eventos].reverse().find((e) => e.codigo === codigo)?.fecha ?? null;
     const validado = d.estado === 'VALIDADO' || d.estado === 'ANULADO';
+    const pagado = d.cxp != null && Number(d.cxp.saldo) === 0;
     return [
       { etiqueta: d.estado === 'BORRADOR' ? 'Borrador guardado' : 'Borrador creado', estado: 'hecho', fecha: ultimo('CREADO') },
       { etiqueta: 'Enviado a la DIAN', estado: d.estado !== 'BORRADOR' ? 'hecho' : 'pendiente', fecha: ultimo('ENVIANDO') },
@@ -305,10 +330,30 @@ export class DocumentosSoporteComponent implements OnInit {
         estado: validado ? 'hecho' : d.estado === 'RECHAZADO' ? 'error' : d.estado === 'ENVIANDO' ? 'actual' : 'pendiente',
         fecha: ultimo(validado ? 'VALIDADO' : 'RECHAZADO'),
       },
+      {
+        etiqueta: validado && !d.comprobante_id ? 'Contabilidad pendiente' : 'Contabilizado',
+        estado: !validado ? 'pendiente' : d.comprobante_id ? 'hecho' : 'error',
+        fecha: null,
+      },
+      {
+        etiqueta: pagado ? 'Pagado al asesor' : 'Pago al asesor',
+        estado: pagado ? 'hecho' : d.cxp ? 'actual' : 'pendiente',
+        fecha: null,
+      },
     ];
   }
 
+  /** Pago al asesor según su cuenta por pagar (lo paga un egreso en Cartera → Por pagar). */
+  protected pagoDe(d: DocumentoSoporte): { texto: string; pill: string } {
+    if (d.estado !== 'VALIDADO') return { texto: '—', pill: '' };
+    if (!d.contabilizado || d.saldo_por_pagar == null) return { texto: 'Sin contabilizar', pill: 'pill--warning' };
+    return Number(d.saldo_por_pagar) === 0
+      ? { texto: 'Pagado', pill: 'pill--success' }
+      : { texto: `Por pagar ${this.pesos(d.saldo_por_pagar)}`, pill: 'pill--info' };
+  }
+
   protected etiquetaEvento(codigo: string): string {
+    if (codigo === 'CONTABILIZACION_PENDIENTE') return 'Contabilidad pendiente';
     return codigo.charAt(0) + codigo.slice(1).toLowerCase().replace(/_/g, ' ');
   }
 

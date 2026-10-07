@@ -120,7 +120,7 @@
     <div class="table-wrap">
       <table class="table">
         <thead>
-          <tr><th>Número</th><th>Asesor</th><th>Mes</th><th>Emisión</th><th class="num">Total</th><th>Estado</th><th class="col-actions">Acciones</th></tr>
+          <tr><th>Número</th><th>Asesor</th><th>Mes</th><th>Emisión</th><th class="num">Total</th><th>Estado</th><th>Pago al asesor</th><th class="col-actions">Acciones</th></tr>
         </thead>
         <tbody>
           @for (d of pagEmitidos.visibles(); track d.id) {
@@ -131,18 +131,26 @@
               <td>{{ fecha(d.fecha_emision) }}</td>
               <td class="num">{{ pesos(d.total_a_pagar) }}</td>
               <td><span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
+              <td>
+                @if (pagoDe(d); as p) {
+                  @if (p.pill) { <span class="pill" [class]="'pill ' + p.pill">{{ p.texto }}</span> } @else { {{ p.texto }} }
+                }
+              </td>
               <td class="col-actions">
                 <span class="fac-acciones">
                   <button type="button" class="btn btn--ghost btn--sm" (click)="abrir(d.id)">Ver</button>
                   @if (d.tiene_pdf) {
                     <button type="button" class="icon-action" (click)="abrir(d.id, 'pdf')" aria-label="Ver el PDF del documento soporte" title="Documento soporte (PDF)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></svg></button>
                   }
+                  @if (d.contabilizado) {
+                    <button type="button" class="icon-action" (click)="abrir(d.id, 'contab')" aria-label="Ver la contabilización" title="Contabilización"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z" /><path d="M4 9h16M10 9v11" /></svg></button>
+                  }
                   <button type="button" class="icon-action" (click)="abrir(d.id, 'historial')" aria-label="Ver el historial" title="Historial"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg></button>
                 </span>
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="7" class="table__empty">
+            <tr><td colspan="8" class="table__empty">
               @if (cargando()) { Cargando… } @else { Todavía no hay documentos soporte emitidos. }
             </td></tr>
           }
@@ -200,6 +208,10 @@
           <div class="fac-aviso fac-aviso--error" role="alert">
             <ul class="fac-errores">@for (e of erroresDe(d); track $index) { <li>{{ e }}</li> }</ul>
           </div>
+        }
+        @if (d.contabilizacion_error && !d.comprobante_id && d.estado === 'VALIDADO') {
+          <p class="alert alert--warning ds-aviso">Validado ante la DIAN, pero el asiento quedó pendiente: {{ d.contabilizacion_error }}
+            Corrija la regla y reintente desde Contabilidad → Pendientes.</p>
         }
         @if (d.estado === 'BORRADOR' && !emisionDian) {
           <p class="alert alert--info ds-aviso">El documento quedó preparado. El envío a la DIAN se habilitará en el próximo lote de cambios.</p>
@@ -262,6 +274,9 @@
         <button type="button" class="btn btn--ghost" (click)="descargar('pdf')" [disabled]="!!accion() || !d.pdf_path">PDF</button>
         <button type="button" class="btn btn--ghost" (click)="descargar('xml')" [disabled]="!!accion() || !d.xml_path">XML</button>
       }
+      <button type="button" class="btn btn--ghost" (click)="abrirContab()" [disabled]="!!accion()">
+        {{ d.estado === 'BORRADOR' ? 'Ver contabilización' : 'Contabilización' }}
+      </button>
       <span class="fac-pie__espacio"></span>
       @if (puedeOperar()) {
         @switch (d.estado) {
@@ -286,6 +301,61 @@
         }
       }
       <button type="button" class="btn btn--close" (click)="cerrar()" [disabled]="!!accion()">Cerrar</button>
+    </footer>
+  </div>
+ }
+
+ @if (vista() === 'contab') {
+  <div class="modal-backdrop" (click)="cerrar()"></div>
+  <div class="modal modal--lg" role="dialog" aria-modal="true" aria-labelledby="dsContabTitulo">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="dsContabTitulo">Contabilización</h3>
+        <p class="modal__sub">{{ d.estado === 'BORRADOR' ? 'Borrador' : numeroDe(d) }} · {{ d.tercero_nombre }}</p>
+      </div>
+      <button type="button" class="icon-action" (click)="cerrar()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      @if (cargandoAsiento()) {
+        <p class="fac-vacio"><span class="spinner spinner--oscuro" aria-hidden="true"></span> Armando el asiento…</p>
+      } @else if (asiento(); as a) {
+        <p class="card__hint fac-asiento__nota">
+          @if (!d.comprobante_id) { Vista previa: así quedará el asiento cuando la DIAN valide el documento soporte. }
+          @else { Asiento {{ a.tipo_comprobante }} del {{ fecha(a.fecha) }}. }
+          El costo va a la cuenta de quien paga cada orden (Contabilidad → Reglas → «Costo de honorarios»).
+        </p>
+        <div class="table-wrap">
+          <table class="table fac-asiento__tabla">
+            <thead><tr><th>Cuenta</th><th>Detalle</th><th class="col-num">Débito</th><th class="col-num">Crédito</th></tr></thead>
+            <tbody>
+              @for (l of a.lineas; track l.linea) {
+                <tr>
+                  <td><span class="mono">{{ l.cuenta_codigo }}</span> <small>{{ l.cuenta_nombre }}</small></td>
+                  <td><small>{{ l.descripcion || '' }}</small></td>
+                  <td class="col-num mono">{{ l.debito ? pesos(l.debito) : '' }}</td>
+                  <td class="col-num mono">{{ l.credito ? pesos(l.credito) : '' }}</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr><td colspan="2">Totales</td><td class="col-num mono">{{ pesos(a.totales.debito) }}</td><td class="col-num mono">{{ pesos(a.totales.credito) }}</td></tr>
+            </tfoot>
+          </table>
+        </div>
+        @if (d.cxp) {
+          <p class="card__hint fac-asiento__nota">
+            Cuenta por pagar al asesor: {{ pesos(d.cxp.valor) }} ·
+            @if (+d.cxp.saldo === 0) { <b>pagada</b> } @else { saldo <b>{{ pesos(d.cxp.saldo) }}</b> (se paga en Cartera → Por pagar, con un egreso) }
+          </p>
+        }
+      } @else {
+        <p class="fac-vacio">No se pudo armar la contabilización de este documento.</p>
+      }
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--close" (click)="cerrar()">Cerrar</button>
     </footer>
   </div>
  }

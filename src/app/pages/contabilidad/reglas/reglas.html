@@ -15,7 +15,7 @@
 }
 
 <div class="rg-grid">
-  @for (grupo of [{ titulo: 'Factura de venta', lista: deFactura() }, { titulo: 'Nota crédito', lista: deNota() }, { titulo: 'Compras y pagos', lista: deCompra() }]; track grupo.titulo) {
+  @for (grupo of [{ titulo: 'Factura de venta', lista: deFactura() }, { titulo: 'Nota crédito', lista: deNota() }, { titulo: 'Compras y pagos', lista: deCompra() }, { titulo: 'Documento soporte', lista: deSoporte() }]; track grupo.titulo) {
     <div class="card">
       <div class="card__head"><h3 class="card__title">{{ grupo.titulo }}</h3></div>
       <div class="table-wrap">
@@ -45,7 +45,8 @@
 <div class="card rg-especificas">
   <div class="card__head"><h3 class="card__title">Reglas por tercero</h3></div>
   <div class="card__body">
-    <p class="rg-ayuda">Reemplazan a la regla general para ese cliente (por ejemplo, el ingreso de una ARL a una cuenta propia).</p>
+    <p class="rg-ayuda">Reemplazan a la regla general para ese cliente (por ejemplo, el ingreso de una ARL a una cuenta propia).
+      En el documento soporte, «Costo de honorarios» se define por <b>quien paga la orden</b>: una regla por ARL o cliente particular.</p>
     @if (especificas().length) {
       <div class="table-wrap">
         <table class="table">
@@ -76,7 +77,7 @@
       <div class="rg-nueva">
         <select class="form-control" [(ngModel)]="nConcepto" aria-label="Concepto">
           <option value="">Concepto…</option>
-          @for (c of conceptos(); track c.concepto) { <option [value]="c.concepto">{{ c.documento === 'FACTURA' ? 'FV' : c.documento === 'NOTA_CREDITO' ? 'NC' : 'Compra' }} · {{ c.nombre }}</option> }
+          @for (c of conceptos(); track c.concepto) { <option [value]="c.concepto">{{ c.documento === 'FACTURA' ? 'FV' : c.documento === 'NOTA_CREDITO' ? 'NC' : c.documento === 'DOC_SOPORTE' ? 'DS' : 'Compra' }} · {{ c.nombre }}</option> }
         </select>
         <select class="form-control" [(ngModel)]="nTercero" aria-label="Tercero">
           <option value="">Tercero…</option>
