@@ -100,7 +100,7 @@ restart. Las migraciones solo añaden tablas y columnas; si hiciera falta volver
 > + `storage-antes-lote3b-20261007-1544.tgz` y **ensayo OK** de `2026-10-07-documento-soporte` en `orbita_ensayo`
 > (mismos conteos; +4 filas de permisos; ensayo borrado). El auto-modo bloqueó migrar/pull/build/restart desde la
 > sesión: **lo corre el usuario** (comando en el chat del 7-oct). Rangos en el proveedor de producción (consultados
-> el 7-oct): FE id 3021 (sig. 1001), **DS id 3026 (sig. 1334)** y **NC id 3032 (prefijo NC, sig. 90, indicado por la contadora; sin resolución)** creados con `scripts/factus-rango-crear-nota.mjs`; **falta NA** (sin información de la contadora: `node ~/factus-rango-crear-nota.mjs na PREFIJO INICIO`). Producción tiene
+> el 7-oct): FE id 3021 (sig. 1001), **DS id 3026 (sig. 1334)** y **NC id 3032 (prefijo NC, sig. 90, indicado por la contadora; sin resolución)** y **NA id 3033 (prefijo NA, sig. 1: la contadora confirmó que nunca se usó)** creados con `scripts/factus-rango-crear-nota.mjs`. Los cuatro rangos están listos. Producción tiene
 > 1 sola regla contable: hasta importar el PUC y cargar las reglas, lo emitido queda «contabilidad pendiente».
 > Guía al cliente: `3-entregables-y-respaldos/entregas-cliente/2026-10-07-facturacion-electronica-y-documentos-soporte/`.
 
@@ -138,7 +138,7 @@ restart. Las migraciones solo añaden tablas y columnas; si hiciera falta volver
 | Prefijo `DS` asociado al software (lo hizo la contadora) | ✅ 7-oct |
 | Rango DS creado en el proveedor (siguiente 1334) | ⛔ correr `factus-rango-crear-ds.mjs` |
 | Rango de notas crédito (documento 22) | ✅ 7-oct, id 3032, NC, siguiente 90 |
-| Rango de notas de ajuste al DS (documento 25) | ⛔ crear en el proveedor (prefijo por decidir) |
+| Rango de notas de ajuste al DS (documento 25) | ✅ 7-oct, id 3033, NA, siguiente 1 |
 | Rango de notas crédito | ❓ decidir si se crea un rango NC |
 | Dirección del emisor (`Carrera 24 N. 17-15 Casona San Agustín`) en el RUT y en el panel | ⛔ JD&D actualiza el RUT |
 | Parametrización de producción (abajo) | ⛔ |
