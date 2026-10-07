@@ -5,7 +5,7 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
+> **Última actualización:** 7-oct-2026: **tercer lote (parte 1) DESPLEGADO** (bloque 🚀 del 7-oct). Antes, 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
 > para lo último; el resto de esta cabecera es del 16-sep) — **🚀 EL SISTEMA ESTÁ EN
 > PRODUCCIÓN**
 > (desde el 2-sep-2026) y ya lo están usando clientes reales. ORBITA vive en
@@ -226,6 +226,12 @@
 > Pendiente: el usuario prueba Finanzas con la guía (enlace en la memoria `pruebas-locales-finanzas`), un envío real de
 > factura para ver el logo, decidir si se despliega la parte 1 del tercer lote, y asociar el prefijo FE en la DIAN cuando
 > aparezca en el portal de producción.
+> 🚀 **7-oct-2026 · TERCER LOTE (PARTE 1) DESPLEGADO EN PRODUCCIÓN** (`master 8ae0142`, `main 52ee7cc`): todo lo del
+> 2 al 7-oct, con `emisionDian` y `PROVEEDOR_VISIBLE` en `false`. Detalle, respaldo y cómo revertir:
+> **`docs/4-despliegue/despliegue-lote3.md`**. Guía para el cliente (14 cambios, HTML + PDF):
+> `3-entregables-y-respaldos/entregas-cliente/2026-10-07-tercer-lote-de-cambios/` (capturas con
+> `2-pruebas/herramientas-capturas/guia-lote3.mjs`). Lo de «SIN COMMITEAR» de los bloques del 7-oct de abajo
+> ya está commiteado y desplegado. Siguiente: parte 2 (DIAN; el prefijo FE ya quedó asociado el 7-oct).
 > **7-oct-2026 · visor de soportes en blanco (reporte de JD&D, OS-2026-0157, tres JPG) · SIN COMMITEAR.** Causa en
 > producción SIN confirmar (no se pudo leer la base de producción; la compresión de JPG funciona en local). Arreglo
 > defensivo en `validation.ts/html`: el tipo se decide por los primeros bytes del archivo (no por el `mime` que declaró el

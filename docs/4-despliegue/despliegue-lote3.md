@@ -1,8 +1,21 @@
-# Despliegue del tercer lote (preparado el 6-oct-2026, SIN DESPLEGAR)
+# Despliegue del tercer lote (parte 1 DESPLEGADA el 7-oct-2026)
 
-> ⏳ **Pendiente.** Método igual al del segundo lote (`despliegue-lote2.md`): lectura de producción →
-> respaldo → ensayo en `orbita_ensayo` → migraciones → pull/restart → humo. Runbook general del
-> servidor: `despliegue-vultr.md`.
+> ✅ **Parte 1 DESPLEGADA el 7-oct-2026 (~09:10 hora Colombia)**: `master` = `8ae0142`, `main` = `52ee7cc`,
+> con `emisionDian` y `PROVEEDOR_VISIBLE` en `false` (pedido del usuario: el botón de emitir sigue oculto).
+> Antes: producción en `b232b50` / `57d5059`, árboles limpios, 207 órdenes, 6 usuarios, 18 profesionales,
+> 8 soportes, 27 franjas, 2.357 borradores. **Respaldo:** `~/respaldos/orbita-antes-lote3-20261007-0906.dump`
+> y `~/respaldos/storage-antes-lote3-20261007-0906.tgz`. **Ensayo** en `orbita_ensayo` con las 6 migraciones:
+> todas OK y conteos idénticos (ensayo borrado). Migraciones en la base real OK; `npm ci --omit=dev`
+> (`qrcode` cargado); build del frontend 28 s; `orbita-api` y `orbita-web` activos. **Humo de solo
+> lectura** con token firmado en el servidor: bandeja de Órdenes (207), dashboard, estadísticas, balance de
+> comprobación, activos, especialidades, profesionales, por facturar, notificaciones y empresas en 200;
+> `/api/health` 200; SSR de `/login` 17,2 kB. El push a GitHub lo hizo Claude Code esta vez.
+> Antes de compilar hubo que subir el presupuesto de estilos por componente a 28/32 kB (`angular.json`):
+> `validation.scss` llegó a 28,2 kB y la compilación de producción fallaba.
+> Guía para el cliente: `3-entregables-y-respaldos/entregas-cliente/2026-10-07-tercer-lote-de-cambios/`
+> (HTML + PDF, 14 cambios). **Parte 2 (DIAN) pendiente**: el prefijo FE quedó asociado en la DIAN el 7-oct.
+>
+> Método igual al del segundo lote (`despliegue-lote2.md`). Runbook general del servidor: `despliegue-vultr.md`.
 
 El lote tiene **dos partes que se pueden desplegar por separado**. La parte 1 no depende de la DIAN
 y puede salir en cuanto el usuario lo decida; la parte 2 solo cuando el prefijo esté asociado.
