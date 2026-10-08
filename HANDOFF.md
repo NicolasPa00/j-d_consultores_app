@@ -267,6 +267,13 @@
 > otra tipo 2 (el resto); (3) las horas extra se aceptan con la fecha `AAAA-MM-DD HH:MM:SS` (con espacio).
 > Las credenciales de producción NO sirven en el ambiente de pruebas («Client authentication failed»): las de pruebas
 > están en el panel de aliados, tarjeta «Sandbox», y quedaron en `sst_ws/.env` como `FACTUS_NOMINA_*`.
+> **⏸️ 8-oct (cierre) · NÓMINA EN PAUSA, POR DECISIÓN DEL USUARIO: NO DESPLEGAR hasta que el módulo esté completo.** Se
+> retoma cuando responda la contadora (¿emitían nómina electrónica desde el software anterior, con qué prefijo y último
+> número?; cómo se reporta un mes completo de vacaciones o licencia; revisión de las fórmulas; cuentas para la
+> contabilización; retiro y quincenal). Sin ella no queda nada de peso por hacer: solo liquidar a todos los empleados de
+> una vez (poco útil con uno solo), la guía para el cliente (mejor con el módulo desplegado) y los casos del API sin
+> explorar (necesitan que el proveedor reactive la nómina en el ambiente de pruebas).
+>
 > **8-oct (~15:35) · NÓMINA: PARÁMETROS EDITABLES, CORREO DEL DESPRENDIBLE Y SCRIPT DE DESPLIEGUE.**
 > · **Pestaña «Parámetros»** (Nómina): salario mínimo y auxilio de transporte por año en `sst.nomina_parametros`
 >   (sembrados 2025 = 1.423.500 / 200.000 y 2026 = 1.750.905 / 249.095; **❓ confirmar con la contadora**). `liquidar()`
