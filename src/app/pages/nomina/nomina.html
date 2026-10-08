@@ -366,6 +366,42 @@
           </div>
         </section>
 
+        <!-- Otros pagos: auxilios, viáticos, bonificación no salarial… -->
+        <section class="nom-nov">
+          <header><h4>Otros pagos</h4><button type="button" class="btn btn--ghost btn--sm" (click)="agregar('otrosDevengados')">+ Agregar</button></header>
+          @for (o of nov().otrosDevengados; track $index; let i = $index) {
+            <div class="nom-fila nom-fila--otros">
+              <select class="form-control" [ngModel]="o.tipo" (ngModelChange)="cambiarFila('otrosDevengados', i, 'tipo', $event)" aria-label="Tipo">
+                @for (t of catalogos()?.otros_devengados ?? []; track t.clave) { <option [value]="t.clave">{{ t.nombre }}</option> }
+              </select>
+              <input type="text" class="form-control" maxlength="200" [placeholder]="pideDescripcion('otros_devengados', o.tipo) ? 'Descripción *' : 'Descripción (opcional)'"
+                     [ngModel]="o.descripcion" (ngModelChange)="cambiarFila('otrosDevengados', i, 'descripcion', $event)" aria-label="Descripción" />
+              <input type="text" inputmode="decimal" class="form-control num" placeholder="Valor" [ngModel]="o.valor" (ngModelChange)="cambiarFila('otrosDevengados', i, 'valor', $event)" aria-label="Valor del pago" />
+              <button type="button" class="icon-action" (click)="quitar('otrosDevengados', i)" aria-label="Quitar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+              </button>
+            </div>
+          }
+        </section>
+
+        <!-- Otras deducciones: libranza, embargo, retención… -->
+        <section class="nom-nov">
+          <header><h4>Otras deducciones</h4><button type="button" class="btn btn--ghost btn--sm" (click)="agregar('otrasDeducciones')">+ Agregar</button></header>
+          @for (o of nov().otrasDeducciones; track $index; let i = $index) {
+            <div class="nom-fila nom-fila--otros">
+              <select class="form-control" [ngModel]="o.tipo" (ngModelChange)="cambiarFila('otrasDeducciones', i, 'tipo', $event)" aria-label="Tipo">
+                @for (t of catalogos()?.otras_deducciones ?? []; track t.clave) { <option [value]="t.clave">{{ t.nombre }}</option> }
+              </select>
+              <input type="text" class="form-control" maxlength="200" [placeholder]="pideDescripcion('otras_deducciones', o.tipo) ? 'Descripción *' : 'Descripción (opcional)'"
+                     [ngModel]="o.descripcion" (ngModelChange)="cambiarFila('otrasDeducciones', i, 'descripcion', $event)" aria-label="Descripción" />
+              <input type="text" inputmode="decimal" class="form-control num" placeholder="Valor" [ngModel]="o.valor" (ngModelChange)="cambiarFila('otrasDeducciones', i, 'valor', $event)" aria-label="Valor de la deducción" />
+              <button type="button" class="icon-action" (click)="quitar('otrasDeducciones', i)" aria-label="Quitar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+              </button>
+            </div>
+          }
+        </section>
+
         <div class="form-field">
           <label class="form-field__label" for="nomLiqObs">Observaciones</label>
           <input id="nomLiqObs" class="form-control" type="text" maxlength="500" [ngModel]="liqObs()" (ngModelChange)="liqObs.set($event)" />

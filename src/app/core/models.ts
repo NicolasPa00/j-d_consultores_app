@@ -1637,6 +1637,8 @@ export interface CatalogosNomina {
   tipos_cuenta: { codigo: string; nombre: string }[];
   tipos_hora: { clave: string; nombre: string; porcentaje: number }[];
   tipos_licencia: { clave: string; nombre: string; remunerada: boolean }[];
+  otros_devengados: { clave: string; nombre: string; salarial: boolean; conDescripcion: boolean }[];
+  otras_deducciones: { clave: string; nombre: string; conDescripcion: boolean }[];
   parametros: { anio: number; smmlv: number; auxilio_transporte: number }[];
 }
 
@@ -1703,6 +1705,8 @@ export interface NovedadesNomina {
   bonificacion?: number;
   prima?: { dias: number };
   cesantias?: { dias: number };
+  otrosDevengados?: { tipo: string; valor: number; descripcion?: string | null }[];
+  otrasDeducciones?: { tipo: string; valor: number; descripcion?: string | null }[];
 }
 
 /** Lo que devuelve `nomina/calculo.js`: el desprendible. */
@@ -1720,11 +1724,14 @@ export interface ResultadoLiquidacion {
     incapacidades: { codigo: number; dias: number; valor: number }[];
     prima: { dias: number; valor: number } | null;
     cesantias: { dias: number; valor: number; intereses: number; porcentajeIntereses: number } | null;
+    /** Otros pagos (auxilios, viáticos, bonificación no salarial…). Las liquidaciones viejas no lo traen. */
+    otros?: { tipo: string; valor: number; descripcion: string | null; salarial: boolean }[];
   };
   deducciones: {
     salud: { porcentaje: number; valor: number };
     pension: { porcentaje: number; valor: number };
     fondoSolidaridad: { porcentaje: number; valor: number } | null;
+    otras?: { tipo: string; valor: number; descripcion: string | null }[];
   };
   totales: { devengado: number; deducido: number; neto: number };
 }

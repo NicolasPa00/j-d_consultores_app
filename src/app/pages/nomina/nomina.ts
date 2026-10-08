@@ -30,14 +30,19 @@ interface NovedadesForm {
   vacaciones: { dias: string; compensadas: boolean; inicio: string; fin: string }[];
   licencias: { tipo: string; dias: string; inicio: string; fin: string }[];
   incapacidades: { dias: string; inicio: string; fin: string }[];
+  otrosDevengados: { tipo: string; descripcion: string; valor: string }[];
+  otrasDeducciones: { tipo: string; descripcion: string; valor: string }[];
   comisiones: string;
   bonificacion: string;
   primaDias: string;
   cesantiasDias: string;
 }
 const NOVEDADES_VACIAS = (): NovedadesForm => ({
-  horas: [], vacaciones: [], licencias: [], incapacidades: [], comisiones: '', bonificacion: '', primaDias: '', cesantiasDias: '',
+  horas: [], vacaciones: [], licencias: [], incapacidades: [], otrosDevengados: [], otrasDeducciones: [], comisiones: '', bonificacion: '', primaDias: '', cesantiasDias: '',
 });
+
+/** Las listas de filas del formulario de novedades. */
+type ListaNovedad = 'horas' | 'vacaciones' | 'licencias' | 'incapacidades' | 'otrosDevengados' | 'otrasDeducciones';
 
 /**
  * A5-01 · Nómina electrónica (sistema Finanzas).
@@ -253,6 +258,8 @@ export class NominaComponent implements OnInit {
       vacaciones: (n.vacaciones ?? []).map((v) => ({ dias: String(v.dias), compensadas: !!v.compensadas, inicio: v.inicio ?? '', fin: v.fin ?? '' })),
       licencias: (n.licencias ?? []).map((l) => ({ tipo: l.tipo, dias: String(l.dias), inicio: l.inicio ?? '', fin: l.fin ?? '' })),
       incapacidades: (n.incapacidades ?? []).map((i) => ({ dias: String(i.dias), inicio: i.inicio ?? '', fin: i.fin ?? '' })),
+      otrosDevengados: (n.otrosDevengados ?? []).map((o) => ({ tipo: o.tipo, descripcion: o.descripcion ?? '', valor: String(o.valor) })),
+      otrasDeducciones: (n.otrasDeducciones ?? []).map((o) => ({ tipo: o.tipo, descripcion: o.descripcion ?? '', valor: String(o.valor) })),
       comisiones: n.comisiones ? String(n.comisiones) : '',
       bonificacion: n.bonificacion ? String(n.bonificacion) : '',
       primaDias: n.prima?.dias ? String(n.prima.dias) : '',
@@ -269,6 +276,8 @@ export class NominaComponent implements OnInit {
       vacaciones: f.vacaciones.map((v) => ({ dias: Number(v.dias) || 0, compensadas: v.compensadas, inicio: v.inicio || undefined, fin: v.fin || undefined })),
       licencias: f.licencias.map((l) => ({ tipo: l.tipo, dias: Number(l.dias) || 0, inicio: l.inicio || undefined, fin: l.fin || undefined })),
       incapacidades: f.incapacidades.map((i) => ({ dias: Number(i.dias) || 0, inicio: i.inicio || undefined, fin: i.fin || undefined })),
+      otrosDevengados: f.otrosDevengados.map((o) => ({ tipo: o.tipo, valor: num(o.valor), descripcion: o.descripcion.trim() || undefined })),
+      otrasDeducciones: f.otrasDeducciones.map((o) => ({ tipo: o.tipo, valor: num(o.valor), descripcion: o.descripcion.trim() || undefined })),
       comisiones: num(f.comisiones), bonificacion: num(f.bonificacion),
       prima: { dias: Number(f.primaDias) || 0 }, cesantias: { dias: Number(f.cesantiasDias) || 0 },
     };
@@ -285,22 +294,24 @@ export class NominaComponent implements OnInit {
     return (n) => ({ ...n, [campo]: valor == null ? '' : String(valor) });
   }
 
-  protected agregar(lista: 'horas' | 'vacaciones' | 'licencias' | 'incapacidades'): void {
+  protected agregar(lista: ListaNovedad): void {
     const c = this.catalogos();
     const fila = {
       horas: { tipo: c?.tipos_hora[0]?.clave ?? 'HED', cantidad: '', inicio: '', fin: '' },
       vacaciones: { dias: '', compensadas: false, inicio: '', fin: '' },
       licencias: { tipo: c?.tipos_licencia[1]?.clave ?? 'REMUNERADA', dias: '', inicio: '', fin: '' },
       incapacidades: { dias: '', inicio: '', fin: '' },
+      otrosDevengados: { tipo: c?.otros_devengados[0]?.clave ?? 'AUXILIO_SALARIAL', descripcion: '', valor: '' },
+      otrasDeducciones: { tipo: c?.otras_deducciones[0]?.clave ?? 'LIBRANZA', descripcion: '', valor: '' },
     }[lista];
     this.cambiarNov((n) => ({ ...n, [lista]: [...n[lista], fila] }));
   }
 
-  protected quitar(lista: 'horas' | 'vacaciones' | 'licencias' | 'incapacidades', i: number): void {
+  protected quitar(lista: ListaNovedad, i: number): void {
     this.cambiarNov((n) => ({ ...n, [lista]: (n[lista] as unknown[]).filter((_, j) => j !== i) }));
   }
 
-  protected cambiarFila(lista: 'horas' | 'vacaciones' | 'licencias' | 'incapacidades', i: number, campo: string, valor: string | boolean): void {
+  protected cambiarFila(lista: ListaNovedad, i: number, campo: string, valor: string | boolean): void {
     this.cambiarNov((n) => ({ ...n, [lista]: (n[lista] as object[]).map((f, j) => (j === i ? { ...f, [campo]: valor } : f)) }));
   }
 
@@ -502,6 +513,11 @@ export class NominaComponent implements OnInit {
     return this.catalogos()?.tipos_hora.find((t) => t.clave === clave)?.nombre ?? clave;
   }
 
+  /** ¿Ese tipo de pago o de deducción exige escribir una descripción? */
+  protected pideDescripcion(lista: 'otros_devengados' | 'otras_deducciones', clave: string): boolean {
+    return this.catalogos()?.[lista].find((t) => t.clave === clave)?.conDescripcion ?? false;
+  }
+
   protected nombreLicencia(clave: string): string {
     return this.catalogos()?.tipos_licencia.find((t) => t.clave === clave)?.nombre ?? clave;
   }
@@ -524,6 +540,11 @@ export class NominaComponent implements OnInit {
       filas.push({ concepto: 'Cesantías', detalle: `${d.cesantias.dias} días`, valor: d.cesantias.valor });
       filas.push({ concepto: 'Intereses a las cesantías', detalle: `${d.cesantias.porcentajeIntereses} %`, valor: d.cesantias.intereses });
     }
+    // Las liquidaciones guardadas antes del 8-oct-2026 no traen `otros`.
+    for (const o of d.otros ?? []) {
+      const nombre = this.catalogos()?.otros_devengados.find((t) => t.clave === o.tipo)?.nombre ?? 'Otro pago';
+      filas.push({ concepto: o.descripcion || nombre, detalle: o.descripcion ? nombre : (o.salarial ? '' : 'no salarial'), valor: o.valor });
+    }
     return filas;
   }
 
@@ -534,6 +555,9 @@ export class NominaComponent implements OnInit {
       { concepto: 'Pensión', detalle: `${x.pension.porcentaje} %`, valor: x.pension.valor },
     ];
     if (x.fondoSolidaridad) filas.push({ concepto: 'Fondo de solidaridad pensional', detalle: `${x.fondoSolidaridad.porcentaje} %`, valor: x.fondoSolidaridad.valor });
+    for (const o of x.otras ?? []) {
+      filas.push({ concepto: this.catalogos()?.otras_deducciones.find((t) => t.clave === o.tipo)?.nombre ?? 'Otra deducción', detalle: o.descripcion ?? '', valor: o.valor });
+    }
     return filas;
   }
 

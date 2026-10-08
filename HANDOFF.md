@@ -267,6 +267,16 @@
 > otra tipo 2 (el resto); (3) las horas extra se aceptan con la fecha `AAAA-MM-DD HH:MM:SS` (con espacio).
 > Las credenciales de producción NO sirven en el ambiente de pruebas («Client authentication failed»): las de pruebas
 > están en el panel de aliados, tarjeta «Sandbox», y quedaron en `sst_ws/.env` como `FACTUS_NOMINA_*`.
+> **8-oct (~15:25) · NÓMINA: «OTROS PAGOS» Y «OTRAS DEDUCCIONES».** Dos secciones nuevas al liquidar: pagos (auxilio
+> salarial o no, viáticos, bonificación no salarial, otro pago con descripción) y deducciones (libranza con descripción,
+> retención en la fuente, embargo, cooperativa, anticipo, deuda con la empresa, pensión voluntaria, AFC, otra). Lo
+> salarial entra a la base de cotización y lo no salarial no (**sin aplicar el tope del 40 % de la Ley 1393: ❓
+> contadora**); el neto no puede quedar negativo. Tablas `OTROS_DEVENGADOS` / `OTRAS_DEDUCCIONES` en `calculo.js`; en el
+> documento van a `boni/auxi/tra/otro` y a `libr/anti/otra` (listas) o `rete/emba/coop/deud/pevo/afco` (objeto: varias
+> del mismo tipo se suman). **⚠️ El formato de estos conceptos sale de la documentación del proveedor y NO se probó en el
+> ambiente de pruebas** (la doc ya falló en `dedu` y `terc`): la primera vez que se usen puede haber un rechazo de
+> formato. Verificado en `verificar-nomina.mjs` y por pantalla (`revision-nomina-otros.mjs`).
+>
 > **8-oct (~15:20) · NÓMINA: EMISIÓN Y ANULACIÓN VERIFICADAS CON UN PROVEEDOR SIMULADO + DESPRENDIBLE EN PDF.**
 > `node --import tsx scripts/verificar-nomina.mjs [carpeta]` recorre el módulo entero sin hablar con el proveedor
 > (sustituye sus tres métodos por un guion): 500 y luego validada con la misma referencia, rechazo de la DIAN

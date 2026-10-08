@@ -70,6 +70,7 @@
 }
 .nom-fila--horas { grid-template-columns: minmax(0, 1.5fr) 80px minmax(0, 1fr) minmax(0, 1fr) 40px; }
 .nom-fila--dias { grid-template-columns: minmax(0, 1.5fr) 80px minmax(0, 1fr) minmax(0, 1fr) 40px; }
+.nom-fila--otros { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.4fr) 130px 40px; }
 .nom-fila__check { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer; }
 .nom-fila__texto { font-size: 0.82rem; color: var(--text-muted); }
 
@@ -113,4 +114,5 @@
   .nom-grid__ancho { grid-column: 1 / -1; }
   .nom-datos { grid-template-columns: repeat(2, 1fr); }
   .nom-fila--horas, .nom-fila--dias { grid-template-columns: 1fr 1fr auto; > :first-child { grid-column: 1 / -1; } }
+  .nom-fila--otros { grid-template-columns: 1fr auto; > :nth-child(-n + 2) { grid-column: 1 / -1; } }
 }
