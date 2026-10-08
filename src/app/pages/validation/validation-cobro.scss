@@ -422,3 +422,72 @@
     }
   }
 }
+
+/* 7-oct-2026 · Radicado con fecha, visto bueno e historial. El ✓ es el mismo lenguaje
+   de «Validado plataforma»: relleno cuando está aprobado, solo borde cuando no. */
+.radicado__check {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 0.95rem;
+  height: 0.95rem;
+  border: 1.5px solid #b6c0cf;
+  border-radius: 50%;
+  color: transparent;
+
+  svg { width: 0.6rem; height: 0.6rem; }
+
+  &--ok {
+    border-color: var(--success);
+    background: var(--success);
+    color: #fff;
+  }
+}
+.radicado-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+.radicado-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 2.6rem;
+  padding: 0 0.8rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control, 8px);
+  background: #fff;
+  color: var(--text-muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &--si { border-color: var(--success); color: var(--success); }
+  &:disabled { cursor: default; opacity: 0.7; }
+}
+.radicado-lista {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md, 10px);
+}
+.radicado-lista__item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border-soft);
+
+  &:last-child { border-bottom: 0; }
+  &--vigente { background: #f5f7fd; }
+}
+.radicado-lista__num { font-weight: 700; }
+.radicado-lista__meta { flex: 1 1 auto; color: var(--text-muted); font-size: 0.8rem; }
+@media (max-width: 600px) {
+  .radicado-form { grid-template-columns: 1fr; }
+}

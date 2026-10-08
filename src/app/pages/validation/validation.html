@@ -237,15 +237,23 @@
                      columna propia: solo lo usa Bolívar (la columna quedaría vacía
                      en AXA y Colmena) y la tabla ya no cabe sin scroll a 1366 px. -->
                 @if (esBolivarArl(order)) {
+                  <!-- 7-oct-2026 · El último radicado y su visto bueno: el ✓ va relleno
+                       cuando está aprobado y solo con borde cuando no. Al pulsar se
+                       abre la ventana con la fecha, el visto bueno y el historial. -->
                   <button
                     type="button"
                     class="radicado"
                     [class.radicado--vacio]="!order.numeroRadicado"
-                    [disabled]="!puedeEditarCobro()"
+                    [disabled]="!order.numeroRadicado && !puedeEditarCobro()"
                     (click)="abrirRadicado(order)"
-                    [title]="order.numeroRadicado ? 'N.º de radicado ante Bolívar · pulse para cambiarlo' : 'Agregar el n.º de radicado ante Bolívar'"
+                    [title]="order.numeroRadicado
+                      ? 'Radicado ante Bolívar' + (order.radicadoFecha ? ' del ' + fechaRadicado(order.radicadoFecha) : '') + (order.radicadoAprobado ? ' · aprobado' : ' · sin aprobar') + ' · pulse para ver o cambiar'
+                      : 'Agregar el radicado ante Bolívar'"
                   >
                     @if (order.numeroRadicado) {
+                      <span class="radicado__check" [class.radicado__check--ok]="order.radicadoAprobado" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 12.5 4 4 8-9" /></svg>
+                      </span>
                       RADICADO {{ order.numeroRadicado }}
                     } @else if (puedeEditarCobro()) {
                       + Radicado
@@ -2601,13 +2609,14 @@
   </div>
 }
 
-<!-- 1-oct-2026 · N.º de radicado ante Bolívar (se abre desde la columna Cobro). -->
+<!-- 1-oct / 7-oct-2026 · Radicados ante Bolívar (se abre desde la columna Cobro):
+     número, fecha y visto bueno del vigente, y el historial de los anteriores. -->
 @if (radicadoOrden(); as ro) {
   <div class="modal-backdrop" (click)="cerrarRadicado()"></div>
-  <div class="modal modal--sm" role="dialog" aria-modal="true" aria-labelledby="radicadoTitle">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="radicadoTitle">
     <header class="modal__head">
       <div>
-        <h3 class="modal__title" id="radicadoTitle">N.º de radicado</h3>
+        <h3 class="modal__title" id="radicadoTitle">Radicado ante Bolívar</h3>
         <p class="modal__sub">{{ ro.osCode }} · {{ nombreOrden(ro) }}</p>
       </div>
       <button type="button" class="icon-action" (click)="cerrarRadicado()" aria-label="Cerrar" [disabled]="radicadoGuardando()">
@@ -2617,28 +2626,70 @@
       </button>
     </header>
     <div class="modal__body">
-      <label class="form-field">
-        <span class="form-field__label">Radicado ante Bolívar</span>
-        <input
-          class="form-control mono"
-          type="text"
-          maxlength="40"
-          placeholder="Ej. 2026-123456"
-          [(ngModel)]="radicadoTexto"
-          name="radicadoTexto"
-          id="radicadoInput"
-          (keydown.enter)="guardarRadicado()"
-        />
-      </label>
-      <p class="modal__sub">Déjelo vacío y guarde para quitarlo.</p>
+      @if (radicadoCargando()) {
+        <p class="modal__sub"><span class="spinner spinner--oscuro" aria-hidden="true"></span> Cargando…</p>
+      } @else {
+        <h4 class="section-head"><span class="section-tag">{{ radicadoNuevo() || !radicados().length ? 'Nuevo radicado' : 'Radicado vigente' }}</span></h4>
+        <div class="radicado-form">
+          <label class="form-field">
+            <span class="form-field__label">N.º de radicado</span>
+            <input class="form-control mono" type="text" maxlength="40" placeholder="Ej. 2026-123456" [(ngModel)]="radicadoTexto" name="radicadoTexto"
+                   id="radicadoInput" [disabled]="!puedeEditarCobro()" (keydown.enter)="guardarRadicado()" />
+          </label>
+          <label class="form-field">
+            <span class="form-field__label">Fecha de radicado</span>
+            <input class="form-control" type="date" [(ngModel)]="radicadoFecha" name="radicadoFecha" [disabled]="!puedeEditarCobro()" />
+          </label>
+          <!-- El mismo ✓ de «Validado plataforma»: relleno = aprobado, solo borde = no. -->
+          <button type="button" class="radicado-ok" [class.radicado-ok--si]="radicadoAprobado()" [disabled]="!puedeEditarCobro()"
+                  (click)="radicadoAprobado.set(!radicadoAprobado())" [attr.aria-pressed]="radicadoAprobado()"
+                  [title]="radicadoAprobado() ? 'Aprobado · pulse para quitar el visto bueno' : 'Sin aprobar · pulse para dar el visto bueno'">
+            <span class="radicado__check" [class.radicado__check--ok]="radicadoAprobado()" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 12.5 4 4 8-9" /></svg>
+            </span>
+            {{ radicadoAprobado() ? 'Aprobado' : 'Sin aprobar' }}
+          </button>
+        </div>
+
+        @if (radicados().length) {
+          <h4 class="section-head"><span class="section-tag">{{ radicados().length > 1 ? 'Historial de radicados' : 'Registrado' }}</span></h4>
+          <ul class="radicado-lista">
+            @for (r of radicados(); track r.id) {
+              <li class="radicado-lista__item" [class.radicado-lista__item--vigente]="r.vigente">
+                <span class="radicado__check" [class.radicado__check--ok]="r.aprobado" [title]="r.aprobado ? 'Aprobado' : 'Sin aprobar'" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 12.5 4 4 8-9" /></svg>
+                </span>
+                <span class="radicado-lista__num mono">{{ r.numero }}</span>
+                <span class="radicado-lista__meta">
+                  {{ r.fecha ? fechaRadicado(r.fecha) : 'sin fecha' }}@if (r.vigente) { · <b>vigente</b> }@if (r.creado_por_nombre) { · {{ r.creado_por_nombre }} }
+                </span>
+                @if (puedeEditarCobro()) {
+                  <button type="button" class="icon-action" (click)="eliminarRadicado(r)" [disabled]="radicadoGuardando()"
+                          [attr.aria-label]="'Eliminar el radicado ' + r.numero" title="Eliminar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
+                  </button>
+                }
+              </li>
+            }
+          </ul>
+        }
+      }
     </div>
     <footer class="modal__footer">
+      @if (puedeEditarCobro() && radicados().length && !radicadoNuevo()) {
+        <button type="button" class="btn btn--ghost" (click)="nuevoRadicado()" [disabled]="radicadoGuardando() || radicadoCargando()">+ Otro radicado</button>
+      }
+      @if (radicadoNuevo()) {
+        <button type="button" class="btn btn--ghost" (click)="cancelarNuevoRadicado()" [disabled]="radicadoGuardando()">Volver al vigente</button>
+      }
       <span class="modal__status"></span>
       <div class="modal__footer-actions">
-        <button type="button" class="btn btn--close" (click)="cerrarRadicado()" [disabled]="radicadoGuardando()">Cancelar</button>
-        <button type="button" class="btn btn--primary" (click)="guardarRadicado()" [disabled]="radicadoGuardando()">
-          {{ radicadoGuardando() ? 'Guardando…' : 'Guardar' }}
-        </button>
+        <button type="button" class="btn btn--close" (click)="cerrarRadicado()" [disabled]="radicadoGuardando()">Cerrar</button>
+        @if (puedeEditarCobro()) {
+          <button type="button" class="btn btn--primary" (click)="guardarRadicado()" [disabled]="radicadoGuardando() || radicadoCargando() || !radicadoTexto.trim()">
+            {{ radicadoGuardando() ? 'Guardando…' : (radicadoNuevo() || !radicados().length ? 'Registrar' : 'Guardar') }}
+          </button>
+        }
       </div>
     </footer>
   </div>

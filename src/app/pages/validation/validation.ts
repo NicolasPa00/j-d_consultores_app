@@ -10,7 +10,7 @@ import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
-import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, ClaveGasto, DetalleCobroOrden, GASTOS_COBRO, EstadoArl, ESTADOS_ARL, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, TipoViatico, CasillaEditable, FilaPrefactura, FormatoPrevio, FranjaVisita, HistorialCobro, HistorialEstado, HistorialEstadoArl, Ocupacion, Orden, OrdenManualForm, Plantilla, PrevisualizacionPrefactura, Profesional, RegistroArl, ResultadoCrucePrefactura, Tercero } from '../../core/models';
+import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, ClaveGasto, DetalleCobroOrden, GASTOS_COBRO, EstadoArl, ESTADOS_ARL, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, TipoViatico, CasillaEditable, FilaPrefactura, FormatoPrevio, FranjaVisita, HistorialCobro, HistorialEstado, HistorialEstadoArl, Ocupacion, Orden, OrdenManualForm, Plantilla, PrevisualizacionPrefactura, Profesional, RadicadoOrden, RegistroArl, ResultadoCrucePrefactura, Tercero } from '../../core/models';
 import { aIsoFecha, fechaLocal } from '../../core/fechas';
 import {
   ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, opcionesDeCampo,
@@ -327,7 +327,14 @@ export class ValidationComponent implements OnInit, OnDestroy {
   /** 1-oct-2026 · Orden cuyo n.º de radicado (Bolívar) se está editando. */
   protected readonly radicadoOrden = signal<ServiceOrder | null>(null);
   protected readonly radicadoGuardando = signal(false);
+  protected readonly radicadoCargando = signal(false);
   protected radicadoTexto = '';
+  /** 7-oct-2026 · Fecha y visto bueno del radicado, y el historial de la orden. */
+  protected radicadoFecha = '';
+  protected readonly radicadoAprobado = signal(false);
+  protected readonly radicados = signal<RadicadoOrden[]>([]);
+  /** Se está registrando OTRO radicado (el vigente pasará al historial). */
+  protected readonly radicadoNuevo = signal(false);
   /** Historial del eje de cobro de la orden abierta en el detalle. */
   protected readonly historialCobro = signal<HistorialCobro[]>([]);
 
@@ -1554,16 +1561,36 @@ export class ValidationComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ================= N.º de radicado ante Bolívar (1-oct-2026) =================
+  // ================= Radicados ante Bolívar (1-oct / 7-oct-2026) =================
+  // Número + fecha + visto bueno, con historial: al registrar otro radicado el
+  // anterior queda listado abajo (y se puede eliminar). La tabla muestra el vigente.
   protected abrirRadicado(o: ServiceOrder): void {
-    if (!o.osId || !this.puedeEditarCobro()) return;
-    this.radicadoTexto = o.numeroRadicado ?? '';
+    if (!o.osId) return;
+    this.radicados.set([]);
+    this.radicadoNuevo.set(false);
     this.radicadoOrden.set(o);
-    // `autofocus` no actúa en un modal que Angular inserta después de cargar la
-    // página: sin esto lo tecleado se perdía y un Enter guardaba el campo vacío.
-    if (this.isBrowser) {
-      setTimeout(() => (document.getElementById('radicadoInput') as HTMLInputElement | null)?.select());
-    }
+    this.radicadoCargando.set(true);
+    this.api.listarRadicados(o.osId).subscribe({
+      next: (r) => { this.radicadoCargando.set(false); this.aplicarRadicados(o, r.data, false); },
+      error: (err) => {
+        this.radicadoCargando.set(false);
+        this.alerts.error('No se pudieron cargar los radicados', mensajeError(err, 'Inténtelo de nuevo.'));
+      },
+    });
+  }
+
+  /** Carga el formulario con el vigente (o en blanco si se va a registrar otro) y refleja la fila. */
+  private aplicarRadicados(o: ServiceOrder, lista: RadicadoOrden[], avisar: boolean): void {
+    this.radicados.set(lista);
+    const v = lista[0] ?? null;
+    this.radicadoNuevo.set(false);
+    this.radicadoTexto = v?.numero ?? '';
+    this.radicadoFecha = v?.fecha ?? '';
+    this.radicadoAprobado.set(v?.aprobado ?? false);
+    this.orders.update((list) => list.map((x) => (x.osId === o.osId
+      ? { ...x, numeroRadicado: v?.numero ?? null, radicadoFecha: v?.fecha ?? null, radicadoAprobado: v?.aprobado ?? false }
+      : x)));
+    if (avisar) this.alerts.success('Radicado guardado', v ? `${o.osCode}: radicado ${v.numero}${v.aprobado ? ' · aprobado' : ''}.` : `${o.osCode} ya no tiene radicado.`);
   }
 
   protected cerrarRadicado(): void {
@@ -1571,27 +1598,66 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.radicadoOrden.set(null);
   }
 
+  /** Deja el formulario en blanco para registrar OTRO radicado (el actual pasa al historial). */
+  protected nuevoRadicado(): void {
+    this.radicadoNuevo.set(true);
+    this.radicadoTexto = '';
+    this.radicadoFecha = this.hoyIso();
+    this.radicadoAprobado.set(false);
+    if (this.isBrowser) setTimeout(() => (document.getElementById('radicadoInput') as HTMLInputElement | null)?.focus());
+  }
+
+  protected cancelarNuevoRadicado(): void {
+    const o = this.radicadoOrden();
+    if (o) this.aplicarRadicados(o, this.radicados(), false);
+  }
+
+  private hoyIso(): string {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
   protected guardarRadicado(): void {
     const o = this.radicadoOrden();
-    if (!o?.osId || this.radicadoGuardando()) return;
+    if (!o?.osId || this.radicadoGuardando() || !this.radicadoTexto.trim()) return;
+    const vigente = this.radicados()[0];
+    const cuerpo = { numero: this.radicadoTexto.trim(), fecha: this.radicadoFecha || null, aprobado: this.radicadoAprobado() };
     this.radicadoGuardando.set(true);
-    this.api.guardarRadicado(o.osId, this.radicadoTexto.trim()).subscribe({
-      next: (r) => {
-        this.radicadoGuardando.set(false);
-        this.orders.update((list) =>
-          list.map((x) => (x.osId === o.osId ? { ...x, numeroRadicado: r.data.numero_radicado } : x)),
-        );
-        this.radicadoOrden.set(null);
-        this.alerts.success(
-          r.data.numero_radicado ? 'Radicado guardado' : 'Radicado quitado',
-          r.data.numero_radicado ? `${o.osCode}: radicado ${r.data.numero_radicado}.` : `${o.osCode} ya no tiene radicado.`,
-        );
-      },
+    const llamada = vigente && !this.radicadoNuevo()
+      ? this.api.actualizarRadicado(o.osId, vigente.id, cuerpo)
+      : this.api.crearRadicado(o.osId, cuerpo);
+    llamada.subscribe({
+      next: (r) => { this.radicadoGuardando.set(false); this.aplicarRadicados(o, r.data, true); },
       error: (err) => {
         this.radicadoGuardando.set(false);
         this.alerts.error('No se pudo guardar el radicado', mensajeError(err, 'Inténtelo de nuevo.'));
       },
     });
+  }
+
+  protected async eliminarRadicado(r: RadicadoOrden): Promise<void> {
+    const o = this.radicadoOrden();
+    if (!o?.osId || this.radicadoGuardando()) return;
+    const ok = await this.alerts.confirm({
+      title: 'Eliminar radicado',
+      message: `Se elimina el radicado ${r.numero}${r.vigente ? ' (el vigente: pasará a serlo el anterior, si hay)' : ''}.`,
+      confirmText: 'Eliminar', tone: 'danger',
+    });
+    if (!ok) return;
+    this.radicadoGuardando.set(true);
+    this.api.eliminarRadicado(o.osId, r.id).subscribe({
+      next: (res) => { this.radicadoGuardando.set(false); this.aplicarRadicados(o, res.data, false); },
+      error: (err) => {
+        this.radicadoGuardando.set(false);
+        this.alerts.error('No se pudo eliminar el radicado', mensajeError(err, 'Inténtelo de nuevo.'));
+      },
+    });
+  }
+
+  /** '2026-10-07' → '07/10/2026'. */
+  protected fechaRadicado(iso: string | null | undefined): string {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? '');
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : '';
   }
 
   protected guardarCobro(): void {
@@ -4134,6 +4200,8 @@ function toServiceOrder(b: Borrador): ServiceOrder {
     validadoPlataformaPor: b.os_validado_plataforma_por ?? null,
     cobroAprobadoEn: b.os_cobro_aprobado_en ?? null,
     numeroRadicado: b.os_numero_radicado ?? null,
+    radicadoFecha: b.os_radicado_fecha ?? null,
+    radicadoAprobado: b.os_radicado_aprobado === true,
     tipoViaticoId: b.tipo_viatico_id ?? null,
     tipoViatico: b.tipo_viatico ?? null,
     // El importe de la ORDEN, no el vigente del catálogo: mientras el borrador

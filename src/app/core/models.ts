@@ -235,6 +235,9 @@ export interface Borrador {
   os_cobro_aprobado_en?: string | null;
   /** 1-oct-2026 · N.º de radicado ante Bolívar (a mano). */
   os_numero_radicado?: string | null;
+  /** 7-oct-2026 · Fecha y visto bueno del radicado vigente. */
+  os_radicado_fecha?: string | null;
+  os_radicado_aprobado?: boolean | null;
   /**
    * A3-01 · Orden de un cliente PARTICULAR (sin ARL): el tercero que la paga.
    * NULL en las órdenes de ARL. `pagador_nombre` va donde las demás llevan la ARL.
@@ -1658,6 +1661,17 @@ export interface DocumentoSoporte {
   /** Lo que falta pagarle al asesor (su cuenta por pagar); null si aún no se contabiliza. */
   saldo_por_pagar: string | null;
   creado_en: string;
+}
+
+/** 7-oct-2026 · Un radicado de la orden ante la ARL. `vigente` = el más reciente (el que se ve en la tabla). */
+export interface RadicadoOrden {
+  id: string;
+  numero: string;
+  fecha: string | null;
+  aprobado: boolean;
+  creado_en: string;
+  creado_por_nombre: string | null;
+  vigente: boolean;
 }
 
 /** 7-oct-2026 · Resultado de revisar o cargar el Excel de terceros (plantilla de ORBITA o exportación de Siigo). */
