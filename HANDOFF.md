@@ -267,6 +267,15 @@
 > otra tipo 2 (el resto); (3) las horas extra se aceptan con la fecha `AAAA-MM-DD HH:MM:SS` (con espacio).
 > Las credenciales de producción NO sirven en el ambiente de pruebas («Client authentication failed»): las de pruebas
 > están en el panel de aliados, tarjeta «Sandbox», y quedaron en `sst_ws/.env` como `FACTUS_NOMINA_*`.
+> **8-oct (15:01) · EL PROVEEDOR HABILITÓ LA NÓMINA EN PRODUCCIÓN para el NIT 901203812.** Comprobado en solo lectura
+> desde el servidor: `/v2/payrolls`, `/v2/adjustment-payrolls` y `/v2/numbering-ranges/payrolls` responden 200 y **no hay
+> ningún rango de nómina**: hay que crearlos (documento **26** nómina, **27** nota de ajuste) con
+> `scripts/factus-rango-crear-nomina.mjs <nomina|ajuste> PREFIJO INICIO` (simula; `--confirmar` crea). **El prefijo y el
+> número de inicio los decide la contadora** (si ya emitían nómina electrónica desde el software anterior, se continúa
+> ese consecutivo); no se creó nada. Sobre el mes completo de vacaciones/licencia y los aprendices, el proveedor remitió
+> a la contadora («consulta con tu contador cómo debes realizar el reporte»): sigue sin resolver. En el ambiente de
+> pruebas la creación de nóminas sigue apagada (no se ha pedido reactivarla).
+>
 > **🆕 8-oct (~15:15) · MÓDULO DE NÓMINA (A5-01) CONSTRUIDO — rama `nomina-electronica` de los DOS repos, commiteado en
 > local, SIN push, SIN merge y SIN desplegar.** Pantalla **Finanzas → Nómina** (`/nomina`, vista `nomina` en la matriz de
 > permisos: admin, contador y auditor). Dos pestañas:
