@@ -10,13 +10,15 @@ import { separarNit } from '../../core/nit';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
-type FiltroRol = 'todos' | 'cliente' | 'proveedor' | 'empleado' | 'arl';
+type FiltroRol = 'todos' | 'cliente' | 'proveedor' | 'empleado' | 'acreedor';
 
-const ROLES: { clave: 'es_cliente' | 'es_proveedor' | 'es_empleado' | 'es_arl'; etiqueta: string; filtro: FiltroRol }[] = [
+// 8-oct-2026 (petición de JD&D) · «Acreedor» ocupa el lugar de «ARL». `es_arl` sigue en la ficha
+// de las ARL que ya existen (lo usan Facturación y Cartera) y se devuelve tal cual al guardar.
+const ROLES: { clave: 'es_cliente' | 'es_proveedor' | 'es_empleado' | 'es_acreedor'; etiqueta: string; filtro: FiltroRol }[] = [
   { clave: 'es_cliente', etiqueta: 'Cliente', filtro: 'cliente' },
   { clave: 'es_proveedor', etiqueta: 'Proveedor', filtro: 'proveedor' },
   { clave: 'es_empleado', etiqueta: 'Empleado', filtro: 'empleado' },
-  { clave: 'es_arl', etiqueta: 'ARL', filtro: 'arl' },
+  { clave: 'es_acreedor', etiqueta: 'Acreedor', filtro: 'acreedor' },
 ];
 
 const FORM_VACIO: TerceroForm = {
@@ -24,7 +26,7 @@ const FORM_VACIO: TerceroForm = {
   razon_social: '', nombres: '', apellidos: '', nombre_comercial: '',
   direccion: '', municipio_id: '', codigo_postal: '', telefono: '', correo_facturacion: '',
   responsabilidades_fiscales: [], regimen: 'RESPONSABLE_IVA',
-  es_cliente: true, es_proveedor: false, es_empleado: false, es_arl: false,
+  es_cliente: true, es_proveedor: false, es_empleado: false, es_arl: false, es_acreedor: false,
 };
 
 /** Tipos de documento (código DIAN) cuyo número admite letras. */
@@ -231,7 +233,7 @@ export class TercerosComponent implements OnInit {
 
   /** Roles de un tercero como texto corto, para las pastillas de la tabla y la ficha. */
   protected rolesDe(t: Tercero): string[] {
-    return ROLES.filter((r) => t[r.clave]).map((r) => r.etiqueta);
+    return [...ROLES.filter((r) => t[r.clave]).map((r) => r.etiqueta), ...(t.es_arl ? ['ARL'] : [])];
   }
 
   /** "2" / "1,1" en es-CO (coma decimal), como el resto del producto. */
@@ -358,7 +360,7 @@ export class TercerosComponent implements OnInit {
   protected isValid(): boolean {
     const d = this.draft;
     const nombreOk = d.tipo_persona === 'JURIDICA' ? d.razon_social.trim().length > 0 : d.nombres.trim().length > 0;
-    const algunRol = ROLES.some((r) => d[r.clave]);
+    const algunRol = ROLES.some((r) => d[r.clave]) || d.es_arl;
     return !!d.tipo_documento_id && d.numero_documento.trim().length > 0 && nombreOk && algunRol
       && !this.duplicado() && !(this.esNit() && this.nitVista().incoherente);
   }
@@ -471,7 +473,7 @@ export class TercerosComponent implements OnInit {
       correo_facturacion: t.correo_facturacion || '',
       responsabilidades_fiscales: [...t.responsabilidades_fiscales],
       regimen: t.regimen,
-      es_cliente: t.es_cliente, es_proveedor: t.es_proveedor, es_empleado: t.es_empleado, es_arl: t.es_arl,
+      es_cliente: t.es_cliente, es_proveedor: t.es_proveedor, es_empleado: t.es_empleado, es_arl: t.es_arl, es_acreedor: t.es_acreedor,
     };
     this.departamentoId = '';
     this.municipios.set([]);

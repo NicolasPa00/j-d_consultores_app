@@ -26,7 +26,7 @@
       <option value="cliente">Clientes</option>
       <option value="proveedor">Proveedores</option>
       <option value="empleado">Empleados</option>
-      <option value="arl">ARL</option>
+      <option value="acreedor">Acreedores</option>
     </select>
 
     <label class="ter-toggle">
@@ -494,7 +494,8 @@
         <label class="ter-check"><input type="checkbox" [(ngModel)]="draft.es_cliente" name="esCliente" /> Cliente</label>
         <label class="ter-check"><input type="checkbox" [(ngModel)]="draft.es_proveedor" name="esProveedor" /> Proveedor</label>
         <label class="ter-check"><input type="checkbox" [(ngModel)]="draft.es_empleado" name="esEmpleado" /> Empleado</label>
-        <label class="ter-check"><input type="checkbox" [(ngModel)]="draft.es_arl" name="esArl" /> ARL</label>
+        <!-- 8-oct-2026 · «Acreedor» en vez de «ARL» (petición de JD&D). -->
+        <label class="ter-check"><input type="checkbox" [(ngModel)]="draft.es_acreedor" name="esAcreedor" /> Acreedor</label>
       </div>
     </form>
 

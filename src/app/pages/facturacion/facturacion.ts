@@ -10,9 +10,10 @@ import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
 import { mensajeError } from '../../core/errores';
 import { AsientoDocumento,
-  CausalNotaCredito, DetalleFactura, DocumentoFactura, EstadoDocumento, GrupoPorFacturar, InfoPaqueteArl, LineaPorFacturar,
-  PagadorPorFacturar,
+  CausalNotaCredito, DetalleFactura, DocumentoFactura, EstadoDocumento, GrupoPorFacturar, InfoPaqueteArl, ItemCatalogo, LineaPorFacturar,
+  PagadorPorFacturar, Producto, Retencion, Tercero,
 } from '../../core/models';
+import { OpcionBusqueda, SelectorBusquedaComponent } from '../../shared/selector-busqueda/selector-busqueda';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
@@ -34,6 +35,8 @@ const ESTADOS_EMITIDAS = 'VALIDADO,RECHAZADO,ENVIANDO,ANULADO';
  *   · Borradores  → revisar el cálculo y emitir ante la DIAN (A1-05).
  *   · Emitidas    → estado DIAN, PDF/XML, reenvío (A1-06), rechazos y eventos
  *     RADIAN (A1-07).
+ *   · «Nueva factura manual» (8-oct-2026) → un borrador sin órdenes: se elige el
+ *     cliente y se escriben las líneas. Sigue el mismo camino desde «Pendientes».
  *
  * Leer: admin, contador y auditor. Operar (crear, emitir, reenviar…): admin y
  * contador — el servidor lo exige igual; aquí solo se ocultan los botones.
@@ -48,9 +51,18 @@ interface PasoDocumento {
 /** Ventanas que se abren sobre un documento (ver `vista` en el componente). */
 type VistaDocumento = 'ver' | 'pdf' | 'enviar' | 'contab' | 'historial' | 'paquete';
 
+/** Una línea del formulario de factura manual (texto, como se teclea). */
+interface LineaManual { producto_id: string; descripcion: string; cantidad: string; valor_unitario: string }
+
+/** «1.200.000,50» y «1200000.50» valen lo mismo (igual que en el servidor). */
+const aNumero = (v: string): number => {
+  const t = String(v ?? '').trim().replace(/\s|\$/g, '');
+  return t === '' ? NaN : Number(t.includes(',') ? t.replace(/\./g, '').replace(',', '.') : t);
+};
+
 @Component({
   selector: 'app-facturacion',
-  imports: [FormsModule, RouterLink, PaginadorComponent],
+  imports: [FormsModule, RouterLink, PaginadorComponent, SelectorBusquedaComponent],
   templateUrl: './facturacion.html',
   styleUrl: './facturacion.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -144,10 +156,59 @@ export class FacturacionComponent implements OnInit {
   protected readonly editandoItem = signal<string | null>(null);
   protected readonly textoItem = signal('');
 
+  // ---------------- 8-oct-2026 · Forma y medio de pago (borrador y factura manual) ----------------
+  protected readonly formasPago = signal<ItemCatalogo[]>([]);
+  protected readonly mediosPago = signal<ItemCatalogo[]>([]);
+
+  // ---------------- 8-oct-2026 · Factura manual ----------------
+  protected readonly manualOpen = signal(false);
+  protected readonly guardandoManual = signal(false);
+  protected readonly terceros = signal<Tercero[]>([]);
+  protected readonly productos = signal<Producto[]>([]);
+  protected readonly retencionesVenta = signal<Retencion[]>([]);
+  protected readonly manualTercero = signal('');
+  protected readonly manualObs = signal('');
+  protected readonly manualLineas = signal<LineaManual[]>([]);
+  protected readonly manualDescuento = signal('0');
+  protected readonly manualRetenciones = signal<ReadonlySet<string>>(new Set());
+  protected readonly manualForma = signal('');
+  protected readonly manualMedio = signal('');
+  protected readonly manualPlazo = signal(30);
+  /** Solo a quien se le factura: clientes y ARL activos. */
+  protected readonly opcionesCliente = computed<OpcionBusqueda[]>(() => this.terceros()
+    .filter((t) => t.activo && (t.es_cliente || t.es_arl))
+    .map((t) => ({ valor: t.id, texto: t.nombre, detalle: t.numero_documento })));
+  protected readonly opcionesProducto = computed<OpcionBusqueda[]>(() => this.productos()
+    .map((p) => ({ valor: p.id, texto: `${p.codigo} · ${p.nombre}`, detalle: p.tratamiento_iva === 'GRAVADO' ? `IVA ${Number(p.tarifa_iva)} %` : 'Sin IVA' })));
+  protected readonly manualEsCredito = computed(() => this.codigoForma(this.manualForma()) === '2');
+  /**
+   * Referencia en pantalla mientras se escribe. El cálculo que vale (reparto del
+   * descuento, retenciones, total a pagar) lo hace el servidor al crear el borrador.
+   */
+  protected readonly manualResumen = computed(() => {
+    const iva = new Map(this.productos().map((p) => [p.id, p.tratamiento_iva === 'GRAVADO' ? Number(p.tarifa_iva) : 0]));
+    const pct = Math.min(100, Math.max(0, aNumero(this.manualDescuento()) || 0));
+    let bruto = 0;
+    let totalIva = 0;
+    for (const l of this.manualLineas()) {
+      const linea = (aNumero(l.cantidad) || 0) * (aNumero(l.valor_unitario) || 0);
+      bruto += linea;
+      totalIva += linea * (1 - pct / 100) * (iva.get(l.producto_id) ?? 0) / 100;
+    }
+    const descuento = bruto * pct / 100;
+    return { bruto, descuento, subtotal: bruto - descuento, iva: totalIva };
+  });
+  protected readonly manualListo = computed(() => !!this.manualTercero() && this.manualResumen().bruto > 0
+    && this.manualLineas().every((l) => l.producto_id && l.descripcion.trim() && aNumero(l.cantidad) > 0 && aNumero(l.valor_unitario) >= 0)
+    && (!this.manualEsCredito() || this.manualPlazo() >= 1));
+
   ngOnInit(): void {
     this.cargarRelacion();
     this.cargarListas();
     this.api.causalesNotaCredito().subscribe({ next: (r) => this.causales.set(r.data), error: () => {} });
+    // Los selectores de forma y medio de pago del borrador y de la factura manual.
+    this.api.listCatalogo('formas-pago').subscribe({ next: (r) => this.formasPago.set(r.data.filter((f) => f.activo)), error: () => {} });
+    this.api.listCatalogo('medios-pago').subscribe({ next: (r) => this.mediosPago.set(r.data.filter((m) => m.activo)), error: () => {} });
   }
 
   protected cambiarPestana(p: Pestana): void {
@@ -434,9 +495,11 @@ export class FacturacionComponent implements OnInit {
   protected async eliminar(): Promise<void> {
     const d = this.detalle();
     if (!d) return;
+    const conOrdenes = d.items.some((it) => it.orden_id);
     const ok = await this.alerts.confirm({
       title: 'Eliminar borrador',
-      message: 'Las órdenes vuelven a quedar pendientes por facturar. No se envía nada a la DIAN.',
+      // Una factura manual no tiene órdenes que devolver a «Por facturar».
+      message: conOrdenes ? 'Las órdenes vuelven a quedar pendientes por facturar. No se envía nada a la DIAN.' : 'Se borra el borrador. No se envía nada a la DIAN.',
       confirmText: 'Eliminar', tone: 'danger',
     });
     if (!ok) return;
@@ -445,7 +508,7 @@ export class FacturacionComponent implements OnInit {
       next: () => {
         this.accion.set(null);
         this.detalle.set(null);
-        this.alerts.success('Borrador eliminado', 'Las órdenes volvieron a «Por facturar».');
+        this.alerts.success('Borrador eliminado', conOrdenes ? 'Las órdenes volvieron a «Por facturar».' : 'No se envió nada a la DIAN.');
         this.cargarListas();
         this.cargarRelacion();
       },
@@ -475,6 +538,155 @@ export class FacturacionComponent implements OnInit {
       error: (err) => {
         this.accion.set(null);
         this.alerts.error('No se pudo cambiar la descripción', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  // ================= 8-oct-2026 · Forma y medio de pago del borrador =================
+  protected codigoForma(id: string | null | undefined): string | null {
+    return this.formasPago().find((f) => f.id === id)?.codigo_dian ?? null;
+  }
+
+  /** Días entre la emisión y el vencimiento del documento (0 = contado). */
+  protected plazoDe(d: DocumentoFactura): number {
+    const a = Date.parse(String(d.fecha_emision ?? '').slice(0, 10));
+    const b = Date.parse(String(d.fecha_vencimiento ?? '').slice(0, 10));
+    return Number.isFinite(a) && Number.isFinite(b) ? Math.max(0, Math.round((b - a) / 86400000)) : 0;
+  }
+
+  /**
+   * Guarda lo que se cambió en los selectores del borrador. Al pasar a crédito sin
+   * plazo se proponen 30 días, que se corrigen en el campo de al lado.
+   */
+  protected cambiarPago(cambio: { forma?: string; medio?: string; plazo?: number }): void {
+    const d = this.detalle();
+    if (!d || this.accion()) return;
+    const forma = cambio.forma ?? d.forma_pago_id ?? '';
+    if (!forma) return;
+    const esCredito = this.codigoForma(forma) === '2';
+    const plazo = Math.trunc(Number(cambio.plazo ?? this.plazoDe(d))) || 0;
+    if (esCredito && cambio.plazo != null && plazo < 1) {
+      this.alerts.warning('Plazo no válido', 'Una factura a crédito necesita al menos 1 día de plazo.');
+      this.detalle.set({ ...d });
+      return;
+    }
+    this.accion.set('pago');
+    this.api.cambiarPagoFactura(d.id, {
+      forma_pago_id: forma,
+      medio_pago_id: cambio.medio ?? d.medio_pago_id ?? undefined,
+      plazo_dias: esCredito ? (plazo >= 1 ? plazo : 30) : 0,
+    }).subscribe({
+      next: (r) => {
+        this.accion.set(null);
+        this.detalle.set(r.data);
+        this.cargarListas();
+      },
+      error: (err) => {
+        this.accion.set(null);
+        // Se repinta el documento para que el selector vuelva a lo que sigue guardado.
+        this.detalle.set({ ...d });
+        this.alerts.error('No se pudo cambiar la forma de pago', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  // ================= 8-oct-2026 · Factura manual =================
+  protected abrirManual(): void {
+    if (!this.terceros().length) this.api.listTerceros().subscribe({ next: (r) => this.terceros.set(r.data), error: () => {} });
+    this.api.listProductos(true).subscribe({
+      next: (r) => {
+        this.productos.set(r.data);
+        // Con un solo producto no hay nada que elegir: se deja puesto.
+        if (r.data.length === 1) this.manualLineas.update((ls) => ls.map((l) => ({ ...l, producto_id: l.producto_id || r.data[0].id })));
+      },
+      error: () => {},
+    });
+    // El ReteICA no va en la factura: lo practica el cliente al pagar (se registra en el recibo de caja).
+    this.api.listRetenciones(true).subscribe({ next: (r) => this.retencionesVenta.set(r.data.filter((x) => x.aplica_a === 'VENTA' && x.tipo !== 'RETEICA')), error: () => {} });
+    this.manualTercero.set('');
+    this.manualObs.set('');
+    this.manualDescuento.set('0');
+    this.manualRetenciones.set(new Set());
+    this.manualForma.set(this.formasPago().find((f) => f.codigo_dian === '1')?.id ?? '');
+    this.manualMedio.set(this.mediosPago().find((m) => m.codigo_dian === 'ZZZ')?.id ?? '');
+    this.manualPlazo.set(30);
+    this.manualLineas.set([this.lineaManualVacia()]);
+    this.manualOpen.set(true);
+  }
+
+  private lineaManualVacia(): LineaManual {
+    const p = this.productos();
+    return { producto_id: p.length === 1 ? p[0].id : '', descripcion: '', cantidad: '1', valor_unitario: '' };
+  }
+
+  /**
+   * Al elegir el cliente se proponen SUS condiciones (Parametrización → Condiciones
+   * por pagador): descuento, retenciones y plazo. Todo queda editable.
+   */
+  protected elegirClienteManual(id: string): void {
+    this.manualTercero.set(id);
+    if (!id) return;
+    // A una ARL se le factura exento y a un particular gravado: se propone el producto que toca.
+    const t = this.terceros().find((x) => x.id === id);
+    const sugerido = this.productos().find((p) => (p.tratamiento_iva === 'GRAVADO') !== !!t?.es_arl);
+    if (sugerido) this.manualLineas.update((ls) => ls.map((l) => (l.producto_id && l.descripcion ? l : { ...l, producto_id: sugerido.id })));
+    this.api.getCondicionPagador(id).subscribe({
+      next: (r) => {
+        if (this.manualTercero() !== id) return;
+        const c = r.data;
+        const plazo = Number(c?.plazo_dias) || 0;
+        this.manualDescuento.set(String(Number(c?.descuento_comercial_pct) || 0));
+        this.manualRetenciones.set(new Set(c?.retenciones_ids ?? []));
+        this.manualForma.set(this.formasPago().find((f) => f.codigo_dian === (plazo > 0 ? '2' : '1'))?.id ?? this.manualForma());
+        if (plazo > 0) this.manualPlazo.set(plazo);
+      },
+      error: () => {},
+    });
+  }
+
+  protected cambiarLineaManual(i: number, campo: keyof LineaManual, valor: string): void {
+    this.manualLineas.update((ls) => ls.map((l, j) => (j === i ? { ...l, [campo]: valor } : l)));
+  }
+
+  protected agregarLineaManual(): void {
+    const ultima = this.manualLineas().at(-1);
+    this.manualLineas.update((ls) => [...ls, { ...this.lineaManualVacia(), producto_id: ultima?.producto_id || this.lineaManualVacia().producto_id }]);
+  }
+
+  protected quitarLineaManual(i: number): void {
+    this.manualLineas.update((ls) => ls.filter((_, j) => j !== i));
+  }
+
+  protected alternarRetencionManual(id: string): void {
+    const s = new Set(this.manualRetenciones());
+    if (s.has(id)) s.delete(id); else s.add(id);
+    this.manualRetenciones.set(s);
+  }
+
+  protected guardarManual(): void {
+    if (this.guardandoManual() || !this.manualListo()) return;
+    this.guardandoManual.set(true);
+    this.api.crearFacturaManual({
+      tercero_id: this.manualTercero(),
+      items: this.manualLineas(),
+      observaciones: this.manualObs().trim() || undefined,
+      descuento_comercial_pct: this.manualDescuento(),
+      retenciones_ids: [...this.manualRetenciones()],
+      forma_pago_id: this.manualForma() || undefined,
+      medio_pago_id: this.manualMedio() || undefined,
+      plazo_dias: this.manualEsCredito() ? this.manualPlazo() : 0,
+    }).subscribe({
+      next: (r) => {
+        this.guardandoManual.set(false);
+        this.manualOpen.set(false);
+        this.alerts.success('Borrador creado', 'Revise el cálculo y emítalo ante la DIAN cuando esté listo.');
+        this.cargarListas();
+        this.pestana.set('borradores');
+        this.abrir(r.data.id);
+      },
+      error: (err) => {
+        this.guardandoManual.set(false);
+        this.alerts.error('No se pudo crear la factura', mensajeError(err, 'Revise los datos.'));
       },
     });
   }

@@ -1255,7 +1255,10 @@ export interface Tercero {
   es_cliente: boolean;
   es_proveedor: boolean;
   es_empleado: boolean;
+  /** Ya no se marca desde el formulario (8-oct-2026): lo conservan las ARL que existen. */
   es_arl: boolean;
+  /** 8-oct-2026 · Sustituye a «ARL» entre los roles que se pueden marcar. */
+  es_acreedor: boolean;
   activo: boolean;
   creado_en?: string;
   actualizado_en?: string;
@@ -1288,6 +1291,7 @@ export interface TerceroForm {
   es_proveedor: boolean;
   es_empleado: boolean;
   es_arl: boolean;
+  es_acreedor: boolean;
 }
 
 /** Datos que la ficha del profesional aporta para proponer su tercero. */
@@ -1582,7 +1586,11 @@ export interface DocumentoFactura {
   numero_prefactura: string | null;
   fecha_emision: string | null;
   fecha_vencimiento: string | null;
+  forma_pago_id?: string | null;
   forma_pago_nombre: string | null;
+  /** '1' contado, '2' crédito. */
+  forma_pago_codigo?: string | null;
+  medio_pago_id?: string | null;
   medio_pago_nombre: string | null;
   observaciones: string | null;
   total_bruto: string;
@@ -1602,6 +1610,18 @@ export interface DocumentoFactura {
   referencia_prefijo?: string | null;
   referencia_numero?: string | null;
   creado_en: string;
+}
+
+/** 8-oct-2026 · Factura manual: sin órdenes del sistema de operación (`POST /facturacion/borradores/manual`). */
+export interface FacturaManualForm {
+  tercero_id: string;
+  items: { producto_id?: string; descripcion: string; cantidad: string; valor_unitario: string }[];
+  observaciones?: string;
+  descuento_comercial_pct?: string;
+  retenciones_ids?: string[];
+  forma_pago_id?: string;
+  medio_pago_id?: string;
+  plazo_dias?: number;
 }
 
 /** Causal DIAN de una nota crédito (tabla oficial de Factus). */

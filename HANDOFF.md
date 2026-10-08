@@ -246,10 +246,39 @@
 > contadora llene Parametrización → Empresa emisora y se emita la FE-1001. **El correo automático de la emisión lo manda
 > el proveedor con SU PDF y su logo** (`enviarCorreo: true`): para que el cliente vea el logo nuevo ahí hay que subirlo
 > también en el panel del proveedor. Sin decidir: si ORBITA debe mandar además su correo con el PDF propio al validar.
-> **Nómina:** el proveedor habilitó el sandbox de nómina (8-oct). Las credenciales del sandbox local dan token y
-> `/v2/payrolls`, `/v2/adjustment-payrolls` y `/v2/numbering-ranges/payrolls` responden 200, pero es la cuenta
-> compartida: **sin confirmar** que las pruebas queden a nombre del NIT 901203812; el usuario le preguntó al proveedor.
-> No se ha enviado ninguna nómina. Piden mínimo 20 pruebas; la nota de ajuste se habilita después.
+> **Nómina (A5-01, sin construir; el usuario pidió solo documentarlo por ahora):** el proveedor habilitó el sandbox de
+> nómina el 8-oct y respondió las tres dudas: **(1) se entra con las credenciales PROPIAS del NIT 901203812** (panel de
+> aliados → Facturadores → el facturador → Credenciales), **no** con las genéricas del sandbox que hay en el `.env` local;
+> **(2) en el sandbox los rangos de nómina y de nota de ajuste ya vienen creados** (en producción hay que crearlos);
+> **(3) usando esas credenciales las pruebas quedan registradas para el NIT**. Falta que el usuario copie esas
+> credenciales al entorno local (decidir si en variables aparte, p. ej. `FACTUS_NOMINA_*`, para no romper las pruebas de
+> facturación contra el sandbox genérico). Piden mínimo 20 pruebas con datos distintos (salarios, colaboradores, prima,
+> cesantías, vacaciones, licencia, horas extra y recargos, meses diferentes); al terminar se les avisa y habilitan la nota
+> de ajuste. API: `POST /v2/payrolls`, `POST /v2/adjustment-payrolls` (solo documentan la de eliminación),
+> `/v2/numbering-ranges/payrolls`; docs en `developers.factus.com.co/nomina/…`. No se ha enviado ninguna nómina.
+>
+> 🆕 **8-oct-2026 (tarde) · TRES PETICIONES NUEVAS — construidas en la rama `peticiones-8-oct` de los dos repos,
+> commiteadas en local, SIN push, SIN merge y SIN desplegar.**
+> 1. **Factura manual** (Facturación → «Nueva factura manual»): un borrador sin órdenes. Cliente (terceros con rol
+>    cliente o ARL), líneas (producto, descripción, cantidad, valor unitario), forma y medio de pago, plazo, descuento
+>    comercial, retenciones y observaciones. Al elegir el cliente se proponen sus condiciones de pagador; todo se puede
+>    cambiar. Queda en «Pendientes» y sigue el camino de siempre. `crearBorradorManual` en `borrador.service.js`,
+>    `POST /facturacion/borradores/manual`. El ReteICA no se ofrece (se practica al pagar). **Sin probar: emitirla
+>    contra el sandbox y su asiento contable** (la contabilización une la orden con LEFT JOIN, no debería estorbar).
+> 2. **Forma de pago editable** en el borrador de factura: selectores de forma y medio de pago y, a crédito, el plazo
+>    en días (recalcula el vencimiento). `cambiarPagoBorrador`, `PATCH /facturacion/borradores/:id/pago`. Contado ignora
+>    el plazo; crédito exige ≥ 1 día. `resolverPago()` reemplaza a `formaYMedioPago()`. Notas crédito y documentos soporte
+>    no se tocaron (el DS sigue «a crédito a 30 días»).
+> 3. **Terceros: «Acreedor» en vez de «ARL»** en las casillas de rol y en el filtro. Columna nueva
+>    `terceros.es_acreedor` (**migración `2026-10-08-tercero-acreedor.sql`**, aplicada solo en `jdd_dev`). ⚠️ `es_arl`
+>    **no se borró**: lo usan Facturación (producto exento), Cartera y las órdenes particulares; las ARL que existen lo
+>    conservan (la ficha lo devuelve tal cual al guardar) y se ve como pastilla «ARL», pero ya no se puede marcar desde
+>    la pantalla. El rol acreedor todavía no lo usa ningún otro módulo: es clasificación y filtro.
+>
+> Comprobado: `node --import tsx scripts/verificar-factura-manual.mjs` (ROLLBACK, todo bien), build de producción OK y
+> revisión por pantalla con `2-pruebas/herramientas-capturas/revision-peticiones-8-oct.mjs` (crea una factura manual, la
+> pasa a crédito y la elimina). **Para desplegar:** respaldo, la migración con `psql`, pull, build y reinicio (sin
+> dependencias nuevas).
 > ⚠️ La contraseña del proveedor en el `.env` local tiene un espacio al final: `dotenv` lo recorta, los scripts
 > `factus-*.mjs` que leen el `.env` a mano no (dan «credenciales incorrectas»).
 >

@@ -3,6 +3,7 @@
     <h2 class="page-head__title">Facturación</h2>
     <p class="page-head__sub">Facturas electrónicas ante la DIAN · por pagador y a partir de las órdenes finalizadas</p>
   </div>
+  <div class="fac-head-acciones">
   @if (puedeOperar() && emisionDian) {
     <!-- 7-oct-2026 · Botón con cuerpo (antes era un texto sin borde y no se veía). -->
     <button type="button" class="btn btn--secondary fac-btn-eventos" (click)="actualizarEventos()" [disabled]="actualizandoEventos()"
@@ -17,6 +18,11 @@
       }
     </button>
   }
+  @if (puedeOperar()) {
+    <!-- 8-oct-2026 · Facturar sin una orden del sistema de operación. -->
+    <button type="button" class="btn btn--primary" (click)="abrirManual()">Nueva factura manual</button>
+  }
+  </div>
 </section>
 
 <!-- 7-oct-2026 · Las pestañas y el filtro de estado comparten fila: el filtro iba
@@ -289,6 +295,120 @@
   </div>
 }
 
+<!-- ======================= 8-oct-2026 · FACTURA MANUAL ======================= -->
+@if (manualOpen()) {
+  <div class="modal-backdrop" (click)="guardandoManual() ? null : manualOpen.set(false)"></div>
+  <div class="modal modal--xl fac-manual" role="dialog" aria-modal="true" aria-labelledby="facManualTitulo">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="facManualTitulo">Nueva factura manual</h3>
+        <p class="modal__sub">Para facturar algo que no viene de una orden de servicio. Queda en «Pendientes» como borrador: no sale a la DIAN hasta que se emita.</p>
+      </div>
+      <button type="button" class="icon-action" (click)="manualOpen.set(false)" aria-label="Cerrar" [disabled]="guardandoManual()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      <div class="fac-man-grid">
+        <div class="form-field fac-man-grid__ancho">
+          <label class="form-field__label" for="facManCliente">Cliente *</label>
+          <app-selector-busqueda idCampo="facManCliente" [opciones]="opcionesCliente()" [valor]="manualTercero()" (valorChange)="elegirClienteManual($event)"
+                                 placeholder="Nombre o documento…" />
+          <p class="form-field__hint">Si no aparece, créelo en Terceros con el rol «Cliente».</p>
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="facManForma">Forma de pago *</label>
+          <select id="facManForma" class="form-control" [ngModel]="manualForma()" (ngModelChange)="manualForma.set($event)">
+            @for (f of formasPago(); track f.id) { <option [value]="f.id">{{ f.nombre }}</option> }
+          </select>
+        </div>
+        @if (manualEsCredito()) {
+          <div class="form-field">
+            <label class="form-field__label" for="facManPlazo">Plazo (días) *</label>
+            <input id="facManPlazo" type="number" min="1" max="365" class="form-control" [ngModel]="manualPlazo()" (ngModelChange)="manualPlazo.set(+$event || 0)" />
+          </div>
+        }
+        <div class="form-field">
+          <label class="form-field__label" for="facManMedio">Medio de pago *</label>
+          <select id="facManMedio" class="form-control" [ngModel]="manualMedio()" (ngModelChange)="manualMedio.set($event)">
+            @for (m of mediosPago(); track m.id) { <option [value]="m.id">{{ m.nombre }}</option> }
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="facManDesc">Descuento comercial (%)</label>
+          <input id="facManDesc" type="text" inputmode="decimal" class="form-control" [ngModel]="manualDescuento()" (ngModelChange)="manualDescuento.set($event)" />
+        </div>
+      </div>
+
+      <div class="fac-man-lineas">
+        <div class="fac-man-linea fac-man-linea--cab" aria-hidden="true">
+          <span>Producto</span><span>Descripción</span><span class="num">Cantidad</span><span class="num">Valor unitario</span><span></span>
+        </div>
+        @for (l of manualLineas(); track $index; let i = $index) {
+          <div class="fac-man-linea">
+            <div>
+              <span class="fac-man-linea__rotulo">Producto</span>
+              <app-selector-busqueda [opciones]="opcionesProducto()" [valor]="l.producto_id" (valorChange)="cambiarLineaManual(i, 'producto_id', $event)"
+                                     placeholder="Código o nombre…" />
+            </div>
+            <div>
+              <span class="fac-man-linea__rotulo">Descripción</span>
+              <input type="text" class="form-control" maxlength="500" [ngModel]="l.descripcion" (ngModelChange)="cambiarLineaManual(i, 'descripcion', $event)" [attr.aria-label]="'Descripción de la línea ' + (i + 1)" />
+            </div>
+            <div>
+              <span class="fac-man-linea__rotulo">Cantidad</span>
+              <input type="text" inputmode="decimal" class="form-control mono num" [ngModel]="l.cantidad" (ngModelChange)="cambiarLineaManual(i, 'cantidad', $event)" [attr.aria-label]="'Cantidad de la línea ' + (i + 1)" />
+            </div>
+            <div>
+              <span class="fac-man-linea__rotulo">Valor unitario</span>
+              <input type="text" inputmode="decimal" class="form-control mono num" [ngModel]="l.valor_unitario" (ngModelChange)="cambiarLineaManual(i, 'valor_unitario', $event)" [attr.aria-label]="'Valor unitario de la línea ' + (i + 1)" />
+            </div>
+            <button type="button" class="icon-action" (click)="quitarLineaManual(i)" [disabled]="manualLineas().length <= 1" [attr.aria-label]="'Quitar la línea ' + (i + 1)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            </button>
+          </div>
+        }
+      </div>
+      <button type="button" class="btn btn--ghost btn--sm fac-man-agregar" (click)="agregarLineaManual()">+ Agregar línea</button>
+      @if (!productos().length) {
+        <p class="fac-aviso fac-aviso--warning">No hay productos activos. Créelos en Parametrización → Productos para poder facturar.</p>
+      }
+
+      <div class="fac-man-pie">
+        <div class="fac-man-pie__izq">
+          @if (retencionesVenta().length) {
+            <fieldset class="fac-man-ret">
+              <legend>Retenciones que aplican</legend>
+              @for (r of retencionesVenta(); track r.id) {
+                <label><input type="checkbox" [checked]="manualRetenciones().has(r.id)" (change)="alternarRetencionManual(r.id)" /> {{ r.nombre }} ({{ +r.tarifa }} %)</label>
+              }
+            </fieldset>
+          }
+          <div class="form-field">
+            <label class="form-field__label" for="facManObs">Observaciones</label>
+            <textarea id="facManObs" class="form-control" rows="2" maxlength="500" [ngModel]="manualObs()" (ngModelChange)="manualObs.set($event)"></textarea>
+          </div>
+        </div>
+        <div class="fac-totales fac-man-totales">
+          <div><span>Total bruto</span><b>{{ pesos(manualResumen().bruto) }}</b></div>
+          @if (manualResumen().descuento > 0) {
+            <div><span>Descuento</span><b>− {{ pesos(manualResumen().descuento) }}</b></div>
+            <div><span>Subtotal</span><b>{{ pesos(manualResumen().subtotal) }}</b></div>
+          }
+          @if (manualResumen().iva > 0) { <div><span>IVA</span><b>{{ pesos(manualResumen().iva) }}</b></div> }
+          <p class="fac-man-nota">Las retenciones y el total a pagar los calcula el sistema al crear el borrador.</p>
+        </div>
+      </div>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--close" (click)="manualOpen.set(false)" [disabled]="guardandoManual()">Cancelar</button>
+      <button type="button" class="btn btn--primary" (click)="guardarManual()" [disabled]="guardandoManual() || !manualListo()">
+        @if (guardandoManual()) { <span class="spinner" aria-hidden="true"></span> Creando… } @else { Crear borrador }
+      </button>
+    </footer>
+  </div>
+}
+
 <!-- ======================= DETALLE ======================= -->
 @if (cargandoDetalle() && !detalle()) {
   <div class="modal-backdrop"></div>
@@ -355,8 +475,33 @@
       <div class="fac-datos">
         <div><span>Emisión</span><b>{{ d.fecha_emision ? fecha(d.fecha_emision) : 'al emitir' }}</b></div>
         <div><span>Vencimiento</span><b>{{ fecha(d.fecha_vencimiento) }}</b></div>
-        <div><span>Forma de pago</span><b>{{ d.forma_pago_nombre || '—' }}</b></div>
-        <div><span>Medio de pago</span><b>{{ d.medio_pago_nombre || '—' }}</b></div>
+        <!-- 8-oct-2026 · En un borrador la forma y el medio de pago se eligen: el sistema
+             propone los del pagador y quien factura los cambia aquí. -->
+        @if (d.estado === 'BORRADOR' && !esNota(d) && puedeOperar() && formasPago().length) {
+          <div>
+            <label for="facForma">Forma de pago</label>
+            <div class="fac-pago">
+              <select id="facForma" class="form-control" [ngModel]="d.forma_pago_id" (ngModelChange)="cambiarPago({ forma: $event })" [disabled]="!!accion()">
+                @for (f of formasPago(); track f.id) { <option [value]="f.id">{{ f.nombre }}</option> }
+              </select>
+              @if (codigoForma(d.forma_pago_id) === '2') {
+                <input type="number" min="1" max="365" class="form-control fac-pago__plazo" [ngModel]="plazoDe(d)"
+                       (change)="cambiarPago({ plazo: +$any($event.target).value })" [disabled]="!!accion()"
+                       aria-label="Plazo en días" title="Plazo en días" />
+                <span class="fac-pago__dias">días</span>
+              }
+            </div>
+          </div>
+          <div>
+            <label for="facMedio">Medio de pago</label>
+            <select id="facMedio" class="form-control" [ngModel]="d.medio_pago_id" (ngModelChange)="cambiarPago({ medio: $event })" [disabled]="!!accion()">
+              @for (m of mediosPago(); track m.id) { <option [value]="m.id">{{ m.nombre }}</option> }
+            </select>
+          </div>
+        } @else {
+          <div><span>Forma de pago</span><b>{{ d.forma_pago_nombre || '—' }}</b></div>
+          <div><span>Medio de pago</span><b>{{ d.medio_pago_nombre || '—' }}</b></div>
+        }
         @if (d.cufe) {
           <div class="fac-datos__ancho">
             <span>{{ esNota(d) ? 'CUDE' : 'CUFE' }}</span>

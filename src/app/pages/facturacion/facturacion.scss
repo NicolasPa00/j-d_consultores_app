@@ -420,3 +420,95 @@
 }
 .fac-paq__aviso--alerta { margin-top: 0.75rem; }
 .fac-paq__cod { white-space: nowrap; }
+
+/* ───────── 8-oct-2026 · Botones de la cabecera, forma de pago editable y factura manual ───────── */
+.fac-head-acciones { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+
+/* Forma y medio de pago del borrador: selectores en el sitio del dato. */
+.fac-datos label { font-size: 0.75rem; color: var(--text-muted); }
+.fac-datos .form-control { padding-block: 0.3rem; font-size: 0.88rem; font-weight: 600; }
+/* El selector ocupa el ancho de la celda y el plazo va debajo: al lado lo dejaba en «Pago a». */
+.fac-datos .fac-pago { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.4rem; }
+.fac-pago select { flex: 1 1 100%; }
+.fac-pago__plazo { width: 4.6rem; flex: none; text-align: right; }
+.fac-datos .fac-pago__dias { font-size: 0.8rem; }
+
+.fac-man-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+.fac-man-grid__ancho { grid-column: span 2; }
+.fac-man-lineas {
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: #fff;
+}
+.fac-man-linea {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.1fr) minmax(0, 1.7fr) 100px 150px 40px;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--border-soft);
+
+  &:last-child { border-bottom: 0; }
+  .num { text-align: right; }
+}
+.fac-man-linea--cab {
+  padding: 0.7rem 0.75rem;
+  background: var(--table-head-bg, #eef2fb);
+  color: var(--primary-color);
+  border-bottom: 2px solid var(--primary-color);
+  border-radius: 12px 12px 0 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.fac-man-linea__rotulo { display: none; }
+.fac-man-agregar { margin: 0.6rem 0 1rem; }
+.fac-man-pie {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+.fac-man-pie__izq { flex: 1 1 320px; display: flex; flex-direction: column; gap: 0.85rem; }
+.fac-man-ret {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.1rem;
+  font-size: 0.88rem;
+
+  legend { padding: 0; margin-bottom: 0.35rem; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
+  label { display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; }
+}
+.fac-man-totales { align-self: flex-start; }
+.fac-man-nota { margin: 0.3rem 0 0; max-width: 300px; font-size: 0.78rem; color: var(--text-muted); }
+/* La ventana guarda alto para que la lista de los selectores con búsqueda quepa
+   aunque la factura tenga una sola línea. */
+.fac-manual .modal__body { min-height: min(32rem, calc(100vh - 14rem)); }
+@media (max-width: 760px) {
+  .fac-man-grid__ancho { grid-column: 1 / -1; }
+  .fac-man-linea--cab { display: none; }
+  .fac-man-linea {
+    grid-template-columns: 1fr 1fr auto;
+    align-items: end;
+
+    > :nth-child(1),
+    > :nth-child(2) { grid-column: 1 / -1; }
+  }
+  .fac-man-linea__rotulo {
+    display: block;
+    margin-bottom: 0.2rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+}
