@@ -361,3 +361,19 @@
 .ter-lista-prof button:hover {
   background: color-mix(in srgb, var(--accent-color) 14%, transparent);
 }
+
+/* 7-oct-2026 · Cargue de terceros por Excel. */
+.ter-imp__texto { color: var(--text-muted); margin: 0; }
+.ter-imp__barra {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(220px, 300px);
+  gap: 0.75rem;
+  align-items: end;
+}
+.ter-imp__rol { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.78rem; color: var(--text-muted); }
+.ter-imp__resumen { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.ter-imp__mal td { color: var(--danger); }
+.ter-imp__aviso { display: block; color: var(--warning); }
+@media (max-width: 760px) {
+  .ter-imp__barra { grid-template-columns: 1fr; }
+}

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { EstadisticasPeriodo, ActivoFijo, ActivoFijoForm, CorridaDepreciacion, FichaActivoFijo, VistaPreviaDepreciacion, AuxiliarPorCuenta, BalanceComprobacion, FiltrosInformeContable, InformePorTercero, LibroAuxiliar, VentasPorCliente, EstadoSituacionFinanciera, EstadoResultados, ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, Coasesor, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DetalleSoporte, DocumentoFactura, DocumentoSoporte, ResumenImportSoportes, SoportePorGenerar, Especialidad, PagadorPorFacturar, OrdenManualForm, DetalleCobroOrden, ValoresCobroForm } from './models';
+import { EstadisticasPeriodo, ActivoFijo, ActivoFijoForm, CorridaDepreciacion, FichaActivoFijo, VistaPreviaDepreciacion, AuxiliarPorCuenta, BalanceComprobacion, FiltrosInformeContable, InformePorTercero, LibroAuxiliar, VentasPorCliente, EstadoSituacionFinanciera, EstadoResultados, ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, Coasesor, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, DetalleSoporte, DocumentoFactura, DocumentoSoporte, ResumenImportSoportes, ResumenImportTerceros, SoportePorGenerar, Especialidad, PagadorPorFacturar, OrdenManualForm, DetalleCobroOrden, ValoresCobroForm } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -1498,6 +1498,17 @@ export class ApiService {
   }
   libroAuxiliarXlsx(f: FiltrosInformeContable): Observable<Blob> {
     return this.http.get(`${this.base}/informes-contables/libros/xlsx${queryString(filtrosContables(f))}`, { responseType: 'blob' });
+  }
+
+  // ---- 7-oct-2026 · Cargue de terceros por Excel ----
+  plantillaTerceros(): Observable<Blob> {
+    return this.http.get(`${this.base}/terceros/plantilla.xlsx`, { responseType: 'blob' });
+  }
+  /** `simular` revisa sin guardar. `rol` aplica a las filas que no traen roles (la exportación de Siigo). */
+  importarTerceros(file: File, simular: boolean, rol: string): Observable<Wrap<ResumenImportTerceros>> {
+    const fd = new FormData();
+    fd.append('file', file);
+    return this.http.post<Wrap<ResumenImportTerceros>>(`${this.base}/terceros/importar${queryString({ simular: simular ? 'true' : undefined, rol })}`, fd);
   }
 
   // ---- Fase B · B5-01 · Carga masiva de compras ----

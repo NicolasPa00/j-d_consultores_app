@@ -5,7 +5,7 @@ import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
-import { CondicionPagador, ItemCatalogo, Profesional, Retencion, Tercero, TerceroForm } from '../../core/models';
+import { CondicionPagador, ItemCatalogo, Profesional, ResumenImportTerceros, Retencion, Tercero, TerceroForm } from '../../core/models';
 import { separarNit } from '../../core/nit';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
@@ -370,6 +370,77 @@ export class TercerosComponent implements OnInit {
   }
 
   // ---- Formulario: abrir / cerrar / guardar ----
+  // ---------------- 7-oct-2026 · Cargue por Excel ----------------
+  protected readonly importOpen = signal(false);
+  protected readonly importando = signal(false);
+  protected readonly resumenImport = signal<ResumenImportTerceros | null>(null);
+  /** Para las filas que no dicen si es cliente o proveedor (la exportación de Siigo no lo trae). */
+  protected readonly rolImport = signal<'AUTO' | 'CLIENTE' | 'PROVEEDOR' | 'AMBOS'>('AUTO');
+  /** En la revisión, ver solo lo que pide atención (errores y avisos). */
+  protected readonly soloAtencion = signal(false);
+  protected readonly filasImport = computed(() => {
+    const r = this.resumenImport();
+    if (!r) return [];
+    return this.soloAtencion() ? r.resultados.filter((x) => x.estado === 'ERROR' || x.avisos.length) : r.resultados;
+  });
+  protected readonly pagImport = paginar(this.filasImport);
+  private archivoImport: File | null = null;
+
+  protected abrirImport(): void {
+    this.resumenImport.set(null);
+    this.archivoImport = null;
+    this.soloAtencion.set(false);
+    this.importOpen.set(true);
+  }
+
+  protected descargarPlantilla(): void {
+    this.api.plantillaTerceros().subscribe({
+      next: (blob) => {
+        if (!this.isBrowser) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'plantilla-terceros.xlsx';
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: (err) => this.alerts.error('No se pudo descargar la plantilla', mensajeError(err, 'Intente de nuevo.')),
+    });
+  }
+
+  /** Al elegir el archivo (o cambiar el rol por defecto) se revisa, sin guardar nada. */
+  protected elegirArchivo(ev: Event): void {
+    this.archivoImport = (ev.target as HTMLInputElement).files?.[0] ?? null;
+    this.resumenImport.set(null);
+    if (this.archivoImport) this.importar(true);
+  }
+
+  protected cambiarRolImport(rol: 'AUTO' | 'CLIENTE' | 'PROVEEDOR' | 'AMBOS'): void {
+    this.rolImport.set(rol);
+    if (this.archivoImport) this.importar(true);
+  }
+
+  protected importar(simular: boolean): void {
+    if (!this.archivoImport || this.importando()) return;
+    this.importando.set(true);
+    this.api.importarTerceros(this.archivoImport, simular, this.rolImport()).subscribe({
+      next: (r) => {
+        this.importando.set(false);
+        this.resumenImport.set(r.data);
+        this.pagImport.reiniciar();
+        if (!simular) {
+          this.importOpen.set(false);
+          this.alerts.success('Terceros cargados', `${r.data.cargados} terceros nuevos.${r.data.errores ? ` ${r.data.errores} filas con error no se cargaron.` : ''}`);
+          this.load();
+        }
+      },
+      error: (err) => {
+        this.importando.set(false);
+        this.alerts.error('No se pudo leer el Excel', mensajeError(err, 'Use la plantilla o la exportación de terceros.'));
+      },
+    });
+  }
+
   protected openNew(): void {
     this.editingId.set(null);
     this.profesionalId.set(null);

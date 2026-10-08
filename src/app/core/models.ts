@@ -1660,6 +1660,22 @@ export interface DocumentoSoporte {
   creado_en: string;
 }
 
+/** 7-oct-2026 · Resultado de revisar o cargar el Excel de terceros (plantilla de ORBITA o exportación de Siigo). */
+export interface ResumenImportTerceros {
+  formato: 'PLANTILLA' | 'SIIGO';
+  simulado: boolean;
+  filas: number;
+  nuevos: number;
+  ya_existen: number;
+  errores: number;
+  con_avisos: number;
+  cargados: number;
+  resultados: {
+    fila: number; nombre: string | null; documento: string | null; municipio: string | null;
+    estado: 'NUEVO' | 'YA_EXISTE' | 'ERROR'; avisos: string[]; error: string | null;
+  }[];
+}
+
 /** A4-02 · Resultado de revisar o importar el Excel de documentos soporte. */
 export interface ResumenImportSoportes {
   simulado: boolean;

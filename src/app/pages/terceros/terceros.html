@@ -35,6 +35,7 @@
     </label>
 
     @if (puedeEditar()) {
+      <button type="button" class="btn btn--ghost" (click)="abrirImport()">Cargar desde Excel</button>
       <button type="button" class="btn btn--ghost" (click)="openElegirProfesional()">Desde un profesional</button>
       <button type="button" class="btn btn--primary" (click)="openNew()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -506,6 +507,85 @@
         } @else {
           {{ editingId() ? 'Actualizar' : 'Guardar' }}
         }
+      </button>
+    </footer>
+  </div>
+}
+
+<!-- ============ 7-oct-2026 · CARGUE POR EXCEL ============ -->
+@if (importOpen()) {
+  <div class="modal-backdrop" (click)="importando() ? null : importOpen.set(false)"></div>
+  <div class="modal modal--xl" role="dialog" aria-modal="true" aria-labelledby="terImpTitulo">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="terImpTitulo">Cargar terceros desde Excel</h3>
+        <p class="modal__sub">Sirve la plantilla de ORBITA o la exportación «Búsqueda de terceros» del software contable, tal como sale.</p>
+      </div>
+      <button type="button" class="icon-action" (click)="importOpen.set(false)" aria-label="Cerrar" [disabled]="importando()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      <p class="ter-imp__texto">
+        Primero se revisa el archivo y no se guarda nada. Al cargar entran solo las filas que están bien; las que ya existen
+        (mismo tipo y número de documento) <strong>no se tocan</strong>, y las que tienen un error se dejan fuera con su motivo.
+      </p>
+      <div class="ter-imp__barra">
+        <button type="button" class="btn btn--ghost btn--sm" (click)="descargarPlantilla()">Descargar la plantilla en blanco</button>
+        <input type="file" class="form-control" accept=".xlsx,.xls" (change)="elegirArchivo($event)" [disabled]="importando()" aria-label="Excel de terceros" />
+        <label class="ter-imp__rol">
+          <span>Si la fila no dice el rol</span>
+          <select class="form-control" [ngModel]="rolImport()" (ngModelChange)="cambiarRolImport($event)" [disabled]="importando()">
+            <option value="AUTO">Cliente si tiene NIT, proveedor si no</option>
+            <option value="CLIENTE">Todos clientes</option>
+            <option value="PROVEEDOR">Todos proveedores</option>
+            <option value="AMBOS">Cliente y proveedor</option>
+          </select>
+        </label>
+      </div>
+
+      @if (importando() && !resumenImport()) { <p class="ter-imp__texto"><span class="spinner spinner--oscuro" aria-hidden="true"></span> Revisando el archivo…</p> }
+      @if (resumenImport(); as r) {
+        <div class="ter-imp__resumen">
+          <span class="pill pill--success">{{ r.nuevos }} nuevos</span>
+          <span class="pill pill--muted">{{ r.ya_existen }} ya existen</span>
+          <span class="pill" [class.pill--danger]="r.errores" [class.pill--muted]="!r.errores">{{ r.errores }} con error</span>
+          <span class="pill" [class.pill--warning]="r.con_avisos" [class.pill--muted]="!r.con_avisos">{{ r.con_avisos }} con avisos</span>
+          <label class="ter-toggle">
+            <input type="checkbox" [checked]="soloAtencion()" (change)="soloAtencion.set(!soloAtencion()); pagImport.reiniciar()" />
+            Ver solo errores y avisos
+          </label>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Fila</th><th>Nombre</th><th>Documento</th><th>Municipio</th><th>Resultado</th></tr></thead>
+            <tbody>
+              @for (x of pagImport.visibles(); track x.fila) {
+                <tr [class.ter-imp__mal]="x.estado === 'ERROR'">
+                  <td class="mono">{{ x.fila }}</td>
+                  <td>{{ x.nombre || '—' }}</td>
+                  <td class="mono">{{ x.documento || '—' }}</td>
+                  <td>{{ x.municipio || '—' }}</td>
+                  <td>
+                    @if (x.estado === 'ERROR') { <span class="pill pill--danger">Error</span> {{ x.error }} }
+                    @else if (x.estado === 'YA_EXISTE') { <span class="pill pill--muted">Ya existe</span> no se toca }
+                    @else { <span class="pill pill--success">Nuevo</span> }
+                    @for (a of x.avisos; track $index) { <small class="ter-imp__aviso">{{ a }}</small> }
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="5" class="table__empty">Nada que mostrar con ese filtro.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-paginador [pag]="pagImport" etiqueta="filas" />
+      }
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--close" (click)="importOpen.set(false)" [disabled]="importando()">Cancelar</button>
+      <button type="button" class="btn btn--primary" (click)="importar(false)" [disabled]="importando() || !resumenImport() || !resumenImport()!.nuevos">
+        @if (importando() && resumenImport()) { <span class="spinner" aria-hidden="true"></span> Cargando… } @else { Cargar {{ resumenImport()?.nuevos || '' }} terceros }
       </button>
     </footer>
   </div>
