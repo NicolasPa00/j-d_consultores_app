@@ -226,7 +226,29 @@
 > Pendiente: el usuario prueba Finanzas con la guía (enlace en la memoria `pruebas-locales-finanzas`), un envío real de
 > factura para ver el logo, decidir si se despliega la parte 1 del tercer lote, y asociar el prefijo FE en la DIAN cuando
 > aparezca en el portal de producción.
-> ▶️ **DÓNDE RETOMAR (cierre del 7-oct-2026, noche).** Todo lo de hoy está commiteado en la rama
+> ▶️ **DÓNDE RETOMAR (8-oct-2026).** El usuario pidió **desplegar lo del 7-oct con el PDF propio de la factura**.
+> **Hecho:** el PDF propio quedó **conectado** (backend `c6df1ae`): «Ver factura», la descarga, «Reenviar al cliente» y el
+> paquete para la ARL usan `pdfDeDocumento()` de `representacion.service.js`; si no se puede armar (sin empresa emisora, o
+> no es una factura validada) cae al PDF guardado del proveedor. Notas crédito y documentos soporte siguen con el del
+> proveedor. La leyenda lateral ahora copia la del PDF del proveedor («generada con software propio autorizado por la
+> DIAN»: JD&D opera en modo software propio), y los datos del emisor se parten en renglones (la dirección nueva se montaba
+> sobre el logo y el QR). Comprobación: `node --import tsx scripts/verificar-pdf-propio.mjs <carpeta>` (ROLLBACK).
+> `master` (`c6df1ae`) y `main` (`521664d`) fusionadas (ff) y **en GitHub**; build de producción del frontend OK en local.
+> **⛔ FALTA EL DESPLIEGUE EN EL SERVIDOR:** el auto-modo bloqueó el respaldo y las migraciones desde la sesión. Lo corre el
+> usuario: `bash docs/4-despliegue/despliegue-peticiones-7-oct.sh` (respaldo, ensayo, 2 migraciones, pull, `npm ci`,
+> build, reinicio, humo y copia de la firma). Producción sigue en `4b314ca` / `e3dd38a`. Al terminar, anotar aquí el resultado.
+> **Ojo en producción:** no hay empresa emisora (0 filas) ni facturas validadas: el PDF propio no se verá hasta que la
+> contadora llene Parametrización → Empresa emisora y se emita la FE-1001. **El correo automático de la emisión lo manda
+> el proveedor con SU PDF y su logo** (`enviarCorreo: true`): para que el cliente vea el logo nuevo ahí hay que subirlo
+> también en el panel del proveedor. Sin decidir: si ORBITA debe mandar además su correo con el PDF propio al validar.
+> **Nómina:** el proveedor habilitó el sandbox de nómina (8-oct). Las credenciales del sandbox local dan token y
+> `/v2/payrolls`, `/v2/adjustment-payrolls` y `/v2/numbering-ranges/payrolls` responden 200, pero es la cuenta
+> compartida: **sin confirmar** que las pruebas queden a nombre del NIT 901203812; el usuario le preguntó al proveedor.
+> No se ha enviado ninguna nómina. Piden mínimo 20 pruebas; la nota de ajuste se habilita después.
+> ⚠️ La contraseña del proveedor en el `.env` local tiene un espacio al final: `dotenv` lo recorta, los scripts
+> `factus-*.mjs` que leen el `.env` a mano no (dan «credenciales incorrectas»).
+>
+> ⏮️ **Cierre del 7-oct-2026 (noche) — el frente A (PDF) y el despliegue de C quedan superados por el bloque de arriba.** Todo lo de hoy está commiteado en la rama
 > **`peticiones-reunion-7-oct`** de los dos repos (backend `5ac3cdc`, frontend: el commit de este HANDOFF),
 > **sin push, sin merge y sin desplegar**. Tres frentes abiertos, en este orden:
 >
