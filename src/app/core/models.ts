@@ -1754,6 +1754,30 @@ export interface DetalleSoporte extends DetalleFactura {
 }
 
 /** Detalle de `GET /facturacion/borradores/:id` (cualquier estado). */
+/** 7-oct-2026 · Paquete para radicar una factura ante la ARL (.zip de Bolívar, PDF de AXA). */
+export interface OrdenPaqueteArl {
+  id: string;
+  codigo: string;
+  empresa: string | null;
+  secuencia: string | null;
+  actividad: string | null;
+  valor: string | number;
+  soportes: number;
+  tiene_original: boolean;
+}
+export interface InfoPaqueteArl {
+  numero: string | null;
+  estado: EstadoDocumento;
+  pagador: string | null;
+  arl: string | null;
+  /** null = todavía no hay formato definido para esa ARL (o el pagador no es una ARL). */
+  formato: 'ZIP' | 'PDF' | null;
+  motivo: string | null;
+  tiene_factura_pdf: boolean;
+  firma_disponible: boolean;
+  ordenes: OrdenPaqueteArl[];
+}
+
 export interface DetalleFactura extends DocumentoFactura {
   eventos: EventoFactura[];
   items: ItemFactura[];

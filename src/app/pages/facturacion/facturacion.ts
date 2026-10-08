@@ -10,7 +10,7 @@ import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
 import { mensajeError } from '../../core/errores';
 import { AsientoDocumento,
-  CausalNotaCredito, DetalleFactura, DocumentoFactura, EstadoDocumento, GrupoPorFacturar, LineaPorFacturar,
+  CausalNotaCredito, DetalleFactura, DocumentoFactura, EstadoDocumento, GrupoPorFacturar, InfoPaqueteArl, LineaPorFacturar,
   PagadorPorFacturar,
 } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
@@ -46,7 +46,7 @@ interface PasoDocumento {
 }
 
 /** Ventanas que se abren sobre un documento (ver `vista` en el componente). */
-type VistaDocumento = 'ver' | 'pdf' | 'enviar' | 'contab' | 'historial';
+type VistaDocumento = 'ver' | 'pdf' | 'enviar' | 'contab' | 'historial' | 'paquete';
 
 @Component({
   selector: 'app-facturacion',
@@ -135,6 +135,11 @@ export class FacturacionComponent implements OnInit {
   /** Acción en curso sobre el documento abierto ('emitir', 'reenviar'…); bloquea los botones. */
   protected readonly accion = signal<string | null>(null);
   protected readonly correoReenvio = signal('');
+  /** 7-oct-2026 · Paquete para la ARL: lo que se puede armar y las órdenes elegidas. */
+  protected readonly paquete = signal<InfoPaqueteArl | null>(null);
+  protected readonly cargandoPaquete = signal(false);
+  protected readonly ordenesPaquete = signal<ReadonlySet<string>>(new Set());
+  protected readonly avisosPaquete = signal<string[]>([]);
   /** 7-oct-2026 · Línea del borrador cuya descripción se está redactando, y su texto. */
   protected readonly editandoItem = signal<string | null>(null);
   protected readonly textoItem = signal('');
@@ -332,6 +337,7 @@ export class FacturacionComponent implements OnInit {
     this.panelDesdeDetalle = true;
     this.vista.set(vista);
     if (vista === 'contab' && !this.asiento()) this.verAsiento(d);
+    if (vista === 'paquete') this.cargarPaquete(d);
   }
 
   /** Cierra la ventana: vuelve al documento si se abrió desde él; si no, cierra todo. */
@@ -582,6 +588,75 @@ export class FacturacionComponent implements OnInit {
       error: (err) => {
         this.accion.set(null);
         this.alerts.error(`No se pudo descargar el ${tipo.toUpperCase()}`, mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  // ================= Paquete para la ARL =================
+  private cargarPaquete(d: DocumentoFactura): void {
+    this.paquete.set(null);
+    this.avisosPaquete.set([]);
+    this.cargandoPaquete.set(true);
+    this.api.infoPaqueteArl(d.id).subscribe({
+      next: (r) => {
+        this.cargandoPaquete.set(false);
+        this.paquete.set(r.data);
+        this.ordenesPaquete.set(new Set(r.data.ordenes.map((o) => o.id)));
+      },
+      error: (err) => {
+        this.cargandoPaquete.set(false);
+        this.alerts.error('No se pudo preparar el paquete', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  protected alternarOrdenPaquete(id: string): void {
+    const s = new Set(this.ordenesPaquete());
+    if (s.has(id)) s.delete(id); else s.add(id);
+    this.ordenesPaquete.set(s);
+  }
+
+  protected alternarTodasPaquete(): void {
+    const todas = this.paquete()?.ordenes ?? [];
+    this.ordenesPaquete.set(this.ordenesPaquete().size === todas.length ? new Set() : new Set(todas.map((o) => o.id)));
+  }
+
+  protected generarPaquete(): void {
+    const d = this.detalle();
+    const p = this.paquete();
+    if (!d || !p?.formato || this.accion()) return;
+    const ids = [...this.ordenesPaquete()];
+    if (!ids.length) {
+      this.alerts.warning('Elija las órdenes', 'Marque al menos una orden para armar el paquete.');
+      return;
+    }
+    this.accion.set('paquete');
+    this.api.paqueteArl(d.id, ids).subscribe({
+      next: (res) => {
+        this.accion.set(null);
+        if (!res.body) return;
+        const nombre = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') ?? '')?.[1]
+          ?? `paquete-${this.numeroDe(d)}.${p.formato === 'ZIP' ? 'zip' : 'pdf'}`;
+        this.guardarArchivo(res.body, nombre);
+        let avisos: string[] = [];
+        try { avisos = JSON.parse(decodeURIComponent(res.headers.get('X-Paquete-Avisos') ?? '[]')); } catch { /* sin avisos */ }
+        this.avisosPaquete.set(avisos);
+        if (avisos.length) this.alerts.warning('Paquete descargado con avisos', 'Revise la lista: hay documentos que no se incluyeron.');
+        else this.alerts.success('Paquete descargado', nombre);
+      },
+      error: (err) => {
+        this.accion.set(null);
+        // El cuerpo del error llega como blob: hay que leerlo para mostrar el mensaje del servidor.
+        const cuerpo = err?.error;
+        if (cuerpo instanceof Blob) {
+          cuerpo.text().then((t) => {
+            let msg = 'Intente de nuevo.';
+            try { msg = JSON.parse(t)?.message ?? msg; } catch { /* no era JSON */ }
+            this.alerts.error('No se pudo armar el paquete', msg);
+          });
+        } else {
+          this.alerts.error('No se pudo armar el paquete', mensajeError(err, 'Intente de nuevo.'));
+        }
       },
     });
   }

@@ -401,3 +401,22 @@
 .fac-desc { width: 100%; min-width: 16rem; resize: vertical; }
 .fac-desc__acciones { display: flex; gap: 0.4rem; margin-top: 0.4rem; }
 .fac-desc__editar { margin-left: 0.3rem; vertical-align: middle; }
+
+/* 7-oct-2026 · Paquete para la ARL. */
+.fac-paq__que { margin-bottom: 0.75rem; }
+.fac-paq__marca { width: 2.25rem; text-align: center; }
+.fac-paq__sec,
+.fac-paq__act { display: block; font-size: 0.8rem; color: var(--text-muted); }
+.fac-paq__aviso {
+  margin: 0 0 0.75rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  background: #fff7e6;
+  border: 1px solid #f5d490;
+  color: #7a4b00;
+  font-size: 0.875rem;
+
+  ul { margin: 0.35rem 0 0; padding-left: 1.1rem; }
+}
+.fac-paq__aviso--alerta { margin-top: 0.75rem; }
+.fac-paq__cod { white-space: nowrap; }

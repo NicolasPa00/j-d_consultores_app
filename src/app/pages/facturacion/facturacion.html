@@ -482,6 +482,9 @@
       @if (d.estado === 'VALIDADO') {
         <button type="button" class="btn btn--ghost" (click)="descargar('pdf')" [disabled]="!!accion() || !d.pdf_path">PDF</button>
         <button type="button" class="btn btn--ghost" (click)="descargar('xml')" [disabled]="!!accion() || !d.xml_path">XML</button>
+        @if (!esNota(d)) {
+          <button type="button" class="btn btn--ghost" (click)="abrirPanel('paquete')" [disabled]="!!accion()">Paquete para la ARL</button>
+        }
       }
       @if (d.estado === 'BORRADOR') {
         <!-- En el borrador no hay fila con acciones: la vista previa del asiento se abre desde aquí. -->
@@ -549,6 +552,106 @@
       <button type="button" class="btn btn--primary" (click)="reenviar()" [disabled]="!!accion()">
         @if (accion() === 'reenviar') { <span class="spinner" aria-hidden="true"></span> Enviando… } @else { Enviar }
       </button>
+    </footer>
+  </div>
+ }
+
+ @if (vista() === 'paquete') {
+  <div class="modal-backdrop" (click)="cerrarPanel()"></div>
+  <div class="modal modal--lg" role="dialog" aria-modal="true" aria-labelledby="facPaqueteTitulo">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="facPaqueteTitulo">Paquete para la ARL</h3>
+        <p class="modal__sub">{{ numeroDe(d) }} · {{ d.tercero_nombre }}</p>
+      </div>
+      <button type="button" class="icon-action" (click)="cerrarPanel()" aria-label="Cerrar" [disabled]="!!accion()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      @if (cargandoPaquete()) {
+        <p class="fac-vacio"><span class="spinner spinner--oscuro" aria-hidden="true"></span> Revisando las órdenes de la factura…</p>
+      } @else if (paquete(); as p) {
+        @if (!p.formato) {
+          <p class="fac-paq__aviso fac-paq__aviso--alerta">{{ p.motivo }}</p>
+        } @else {
+          <p class="card__hint fac-paq__que">
+            @if (p.formato === 'ZIP') {
+              Se descarga un archivo comprimido (<strong>.zip</strong>) con la factura, un PDF por orden con sus soportes,
+              la relación de actividades realizadas y el paz y salvo de seguridad social.
+            } @else {
+              Se descarga <strong>un solo PDF</strong> con la orden de servicio original y los soportes de cada orden.
+              El correo de aprobación del caso que envía la ARL no está en ORBITA: si lo necesita, agréguelo aparte.
+            }
+          </p>
+          @if (p.formato === 'ZIP' && !p.firma_disponible) {
+            <p class="fac-paq__aviso">El paz y salvo saldrá sin la firma del representante legal: imprímalo y fírmelo antes de radicar.</p>
+          }
+          @if (!p.tiene_factura_pdf && p.formato === 'ZIP') {
+            <p class="fac-paq__aviso">Esta factura todavía no tiene su PDF guardado: el paquete saldrá sin ella.</p>
+          }
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th class="fac-paq__marca">
+                    <input type="checkbox" [checked]="ordenesPaquete().size === p.ordenes.length && p.ordenes.length > 0"
+                           (change)="alternarTodasPaquete()" aria-label="Marcar todas" />
+                  </th>
+                  <th>Orden</th>
+                  <th>Empresa y actividad</th>
+                  <th class="num">Valor</th>
+                  <th>Documentos</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (o of p.ordenes; track o.id) {
+                  <tr>
+                    <td class="fac-paq__marca">
+                      <input type="checkbox" [checked]="ordenesPaquete().has(o.id)" (change)="alternarOrdenPaquete(o.id)"
+                             [attr.aria-label]="'Incluir ' + o.codigo" />
+                    </td>
+                    <td>
+                      <strong class="fac-paq__cod">{{ o.codigo }}</strong>
+                      @if (o.secuencia) { <span class="fac-paq__sec">Sec. {{ o.secuencia }}</span> }
+                    </td>
+                    <td>
+                      {{ o.empresa || '—' }}
+                      <span class="fac-paq__act">{{ o.actividad }}</span>
+                    </td>
+                    <td class="num">{{ pesos(o.valor) }}</td>
+                    <td>
+                      <span class="pill" [class.pill--success]="o.soportes > 0" [class.pill--warning]="o.soportes === 0">
+                        {{ o.soportes === 0 ? 'Sin soportes' : o.soportes === 1 ? '1 soporte' : o.soportes + ' soportes' }}
+                      </span>
+                      @if (p.formato === 'PDF' && !o.tiene_original) { <span class="pill pill--warning">Sin orden original</span> }
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr><td colspan="5" class="fac-vacio">Esta factura no tiene órdenes de servicio asociadas.</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (avisosPaquete().length) {
+            <div class="fac-paq__aviso fac-paq__aviso--alerta">
+              <strong>El paquete se descargó, pero revise:</strong>
+              <ul>
+                @for (a of avisosPaquete(); track a) { <li>{{ a }}</li> }
+              </ul>
+            </div>
+          }
+        }
+      }
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--close" (click)="cerrarPanel()" [disabled]="!!accion()">Volver</button>
+      @if (paquete()?.formato) {
+        <button type="button" class="btn btn--primary" (click)="generarPaquete()" [disabled]="!!accion() || ordenesPaquete().size === 0">
+          @if (accion() === 'paquete') { <span class="spinner" aria-hidden="true"></span> Armando… }
+          @else { Descargar paquete ({{ ordenesPaquete().size }}) }
+        </button>
+      }
     </footer>
   </div>
  }

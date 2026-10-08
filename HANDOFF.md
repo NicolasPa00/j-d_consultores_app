@@ -226,6 +226,39 @@
 > Pendiente: el usuario prueba Finanzas con la guía (enlace en la memoria `pruebas-locales-finanzas`), un envío real de
 > factura para ver el logo, decidir si se despliega la parte 1 del tercer lote, y asociar el prefijo FE en la DIAN cuando
 > aparezca en el portal de producción.
+> 🗒️ **7-oct-2026 (noche) · SIETE CORRECCIONES DE LA REUNIÓN DE CONTABILIDAD — construidas y commiteadas en la rama
+> `peticiones-reunion-7-oct` de los DOS repos; SIN push, SIN merge y SIN desplegar (falta el visto bueno del usuario).**
+> La transcripción de la reunión está en `1-cliente-jdd/reuniones/2026-10-07-reunion-contabilidad-transcripcion.txt`.
+> 1. **Código postal automático** (terceros y empresa emisora): `municipios.codigo_postal` con los 1.122 municipios
+>    (fuente 4-72, datos.gov.co `ixig-z8b5`); al elegir ciudad se propone y se guarda; editable.
+>    Migración `2026-10-07-codigo-postal.sql`.
+> 2. **Cargue de terceros por Excel** (Terceros → «Cargar desde Excel»): plantilla en blanco, previsualización
+>    (NUEVO / YA EXISTE / ERROR) y cargue. Lee la plantilla de ORBITA y la exportación «Búsqueda de terceros» del
+>    software contable tal como sale. No pisa los que ya existen. `terceros/importar.service.js`.
+> 3. **Radicados con historial** (Órdenes, solo Bolívar): número + fecha + visto bueno, lista de anteriores
+>    eliminables; en la tabla, el último número y su ✓. Tabla `sst.orden_radicados`, migración `2026-10-07-radicados.sql`,
+>    `orders/radicados.service.js`. Se quitó el antiguo `PATCH /orders/:id/radicado`.
+> 4. **Paquete para la ARL** (Facturación → ver una factura VALIDADA → «Paquete para la ARL»): se eligen las órdenes y
+>    se descarga. **Bolívar** = `.zip` «FE n» con `1.FE-n.pdf`, `2.k.AT031-… SEC s.pdf` (soportes de cada orden unidos),
+>    `3.ACTIVIDADES REALIZADAS.pdf` y `4.PAZ Y SALVO.pdf` (los dos últimos se generan con el membrete de JD&D, fecha de hoy).
+>    **AXA** = un PDF «SOPORTES FE-n.pdf» con la orden original + soportes por orden. **Colmena**: sin formato definido,
+>    la pantalla lo dice. `facturacion/paquete.service.js`, rutas `GET|POST /facturacion/documentos/:id/paquete`,
+>    dependencia nueva **`jszip`** (→ `npm ci` al desplegar). ⚠️ `assets/paquete-arl/firma-representante.jpg` está en
+>    `.gitignore`: **hay que copiarla a mano al servidor**; sin ella el paz y salvo sale sin firma y la pantalla avisa.
+>    ⚠️ El modelo de AXA trae además el correo «Caso aprobado» de la ARL: no existe en ORBITA y no se incluye.
+>    Probado en `jdd_dev` con dos facturas de Bolívar; **AXA sin probar con datos reales** (no hay factura de AXA en dev).
+> 5. **Valor por defecto del cobro**: si la orden no trae precio ni hay tarifa, se propone **$71.457** (`VALOR_POR_DEFECTO`
+>    en `orders/cobro-orden.service.js`), editable.
+> 6. **Descripción editable en el borrador de la factura** (`PATCH /facturacion/borradores/:id/items/:itemId`).
+> 7. **«Próximas a ejecutar»** (Órdenes): botón con contador y ventana con las visitas programadas de los próximos 7 días
+>    y las atrasadas sin soportes, ordenadas por cercanía y con colores (atrasada, en curso o < 3 h, hoy, mañana, esta
+>    semana). `orders/proximas.service.js`, `GET /orders/proximas`.
+>
+> **Revisión visual:** `2-pruebas/herramientas-capturas/revision-reunion-7-oct.mjs` (en `jdd_dev` no hay órdenes
+> PROGRAMADAS: la lista de próximas se simula interceptando la petición). **Para desplegar:** respaldo, las dos
+> migraciones con `psql`, `git pull`, `npm ci` (por `jszip`), build, reinicio y copiar la firma. Pendiente con el cliente:
+> formato de Colmena, dónde cargar el correo de aprobación de AXA y si el paz y salvo puede salir firmado por el sistema.
+>
 > ✅ **7-oct-2026 (noche) · DOCUMENTO SOPORTE COMPLETO (A4-01, A4-02, A4-03), commiteado en local, sin push ni
 > despliegue.** Encima de lo de abajo: asiento DS (D costo por PAGADOR de la orden, regla `DS_COSTO` por tercero;
 > C 23352501) y cuenta por pagar al asesor que paga el egreso (`abrirCarteraDeFactura(..., 'CXP')`); «pagada» en
