@@ -442,6 +442,9 @@
       <ng-container *ngTemplateOutlet="desprendible; context: { $implicit: d.liquidacion }" />
     </div>
     <footer class="modal__footer nom-pie">
+      <button type="button" class="btn btn--ghost nom-pie__izq" (click)="abrirDesprendible()" [disabled]="!!accion()">
+        @if (accion() === 'pdf') { <span class="spinner" aria-hidden="true"></span> } Desprendible en PDF
+      </button>
       @if (puedeOperar()) {
         @if (d.estado === 'BORRADOR' || d.estado === 'RECHAZADO') {
           <button type="button" class="btn btn--danger" (click)="eliminar()" [disabled]="!!accion()">Eliminar</button>

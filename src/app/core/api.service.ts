@@ -1117,6 +1117,10 @@ export class ApiService {
   eliminarLiquidacionNomina(id: string): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(`${this.base}/nomina/liquidaciones/${id}`);
   }
+  /** El desprendible en PDF, para entregárselo al empleado. */
+  desprendibleNomina(id: string): Observable<Blob> {
+    return this.http.get(`${this.base}/nomina/liquidaciones/${id}/desprendible`, { responseType: 'blob' });
+  }
   /** Emite ante la DIAN. Si queda ENVIANDO, volver a llamarlo retoma el mismo envío. */
   emitirLiquidacionNomina(id: string): Observable<Wrap<LiquidacionNomina> & { message: string }> {
     return this.http.post<Wrap<LiquidacionNomina> & { message: string }>(`${this.base}/nomina/liquidaciones/${id}/emitir`, {});

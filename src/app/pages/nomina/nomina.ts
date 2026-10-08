@@ -441,6 +441,31 @@ export class NominaComponent implements OnInit {
     });
   }
 
+  /** Abre el desprendible en una pestaña nueva (desde ahí se imprime o se guarda). */
+  protected abrirDesprendible(): void {
+    const d = this.detalle();
+    if (!d || !this.isBrowser || this.accion()) return;
+    this.accion.set('pdf');
+    this.api.desprendibleNomina(d.id).subscribe({
+      next: (blob) => {
+        this.accion.set(null);
+        const url = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+        // Si el navegador bloquea la ventana, se descarga.
+        if (!window.open(url, '_blank')) {
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `nomina-${d.anio}-${String(d.mes).padStart(2, '0')}-${d.empleado_documento}.pdf`;
+          a.click();
+        }
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      },
+      error: (err) => {
+        this.accion.set(null);
+        this.alerts.error('No se pudo generar el desprendible', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
   private refrescarDetalle(id: string): void {
     this.api.obtenerLiquidacionNomina(id).subscribe({ next: (r) => this.detalle.set(r.data), error: () => {} });
     this.cargarLiquidaciones();

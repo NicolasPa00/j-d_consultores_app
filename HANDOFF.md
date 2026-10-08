@@ -267,6 +267,17 @@
 > otra tipo 2 (el resto); (3) las horas extra se aceptan con la fecha `AAAA-MM-DD HH:MM:SS` (con espacio).
 > Las credenciales de producción NO sirven en el ambiente de pruebas («Client authentication failed»): las de pruebas
 > están en el panel de aliados, tarjeta «Sandbox», y quedaron en `sst_ws/.env` como `FACTUS_NOMINA_*`.
+> **8-oct (~15:20) · NÓMINA: EMISIÓN Y ANULACIÓN VERIFICADAS CON UN PROVEEDOR SIMULADO + DESPRENDIBLE EN PDF.**
+> `node --import tsx scripts/verificar-nomina.mjs [carpeta]` recorre el módulo entero sin hablar con el proveedor
+> (sustituye sus tres métodos por un guion): 500 y luego validada con la misma referencia, rechazo de la DIAN
+> (queda RECHAZADO, se elimina en el proveedor, se corrige y se reemite con OTRA referencia), sin respuesta (queda
+> ENVIANDO y se retoma), negativa 403 (vuelve a borrador), empleado al que le falta la dirección (no se llama al
+> proveedor), anulación y volver a liquidar el mes. Todo pasa y borra sus datos. **Con esto no hace falta reactivar la
+> nómina en el ambiente de pruebas para confiar en el flujo**; lo único que sigue sin verse es el clic real en la
+> pantalla contra el proveedor. **Desprendible:** `nomina/desprendible.service.js`,
+> `GET /nomina/liquidaciones/:id/desprendible`, botón «Desprendible en PDF» en el detalle; hoja carta con logo, datos del
+> empleado, devengados, deducciones, neto, y CUNE + QR si está validada (marca «BORRADOR» o «ANULADA» si no).
+>
 > **8-oct (15:01) · EL PROVEEDOR HABILITÓ LA NÓMINA EN PRODUCCIÓN para el NIT 901203812.** Comprobado en solo lectura
 > desde el servidor: `/v2/payrolls`, `/v2/adjustment-payrolls` y `/v2/numbering-ranges/payrolls` responden 200 y **no hay
 > ningún rango de nómina**: hay que crearlos (documento **26** nómina, **27** nota de ajuste) con

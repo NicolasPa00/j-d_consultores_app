@@ -102,6 +102,7 @@
   b { font-family: ui-monospace, monospace; font-size: 0.75rem; font-weight: 500; word-break: break-all; }
 }
 .nom-pie { flex-wrap: wrap; }
+.nom-pie__izq { margin-right: auto; }
 
 @media (max-width: 900px) {
   .nom-liq { grid-template-columns: 1fr; }
