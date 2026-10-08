@@ -257,8 +257,7 @@
 > de ajuste. API: `POST /v2/payrolls`, `POST /v2/adjustment-payrolls` (solo documentan la de eliminación),
 > `/v2/numbering-ranges/payrolls`; docs en `developers.factus.com.co/nomina/…`. No se ha enviado ninguna nómina.
 >
-> 🆕 **8-oct-2026 (tarde) · TRES PETICIONES NUEVAS — construidas en la rama `peticiones-8-oct` de los dos repos,
-> commiteadas en local, SIN push, SIN merge y SIN desplegar.**
+> 🆕 **8-oct-2026 (tarde) · TRES PETICIONES NUEVAS — construidas en la rama `peticiones-8-oct` y DESPLEGADAS en producción el 8-oct (~14:09 hora Colombia)** con `docs/4-despliegue/despliegue-peticiones-8-oct.sh`: respaldo `~/respaldos/orbita-antes-peticiones-8oct-20261008-1408.dump` (+ storage), ensayo de la migración con conteos idénticos, servidor en `master b3b15d1` / `main 0d6d0fb`, servicios activos, health y login 200. Sin probar por pantalla en producción. Revertir: `git reset --hard c6df1ae` / `521664d`, build y restart (la columna nueva no estorba).
 > 1. **Factura manual** (Facturación → «Nueva factura manual»): un borrador sin órdenes. Cliente (terceros con rol
 >    cliente o ARL), líneas (producto, descripción, cantidad, valor unitario), forma y medio de pago, plazo, descuento
 >    comercial, retenciones y observaciones. Al elegir el cliente se proponen sus condiciones de pagador; todo se puede
