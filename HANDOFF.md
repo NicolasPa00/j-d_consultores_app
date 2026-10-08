@@ -5,7 +5,7 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 7-oct-2026 (noche): **🚀 parte 2 del tercer lote DESPLEGADA (DIAN encendida; FE, DS, NC y NA sincronizadas). Falta parametrizar Finanzas en producción con la contadora (emisor, PUC, reglas, productos, retenciones) antes de la FE-1001.** Detalle (ver `docs/4-despliegue/despliegue-lote3.md`, parte 2). Antes: documento soporte completo, A4-01..03 (bloque ✅ del 7-oct, noche). Antes, 7-oct: **tercer lote (parte 1) DESPLEGADO** (bloque 🚀 del 7-oct). Antes, 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
+> **Última actualización:** 7-oct-2026 (cierre): **▶️ ver «DÓNDE RETOMAR» más abajo — rama `peticiones-reunion-7-oct` sin desplegar (7 correcciones, PDF propio de factura en muestra, tareas del audio identificadas).** Antes: **🚀 parte 2 del tercer lote DESPLEGADA (DIAN encendida; FE, DS, NC y NA sincronizadas). Falta parametrizar Finanzas en producción con la contadora (emisor, PUC, reglas, productos, retenciones) antes de la FE-1001.** Detalle (ver `docs/4-despliegue/despliegue-lote3.md`, parte 2). Antes: documento soporte completo, A4-01..03 (bloque ✅ del 7-oct, noche). Antes, 7-oct: **tercer lote (parte 1) DESPLEGADO** (bloque 🚀 del 7-oct). Antes, 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
 > para lo último; el resto de esta cabecera es del 16-sep) — **🚀 EL SISTEMA ESTÁ EN
 > PRODUCCIÓN**
 > (desde el 2-sep-2026) y ya lo están usando clientes reales. ORBITA vive en
@@ -226,6 +226,38 @@
 > Pendiente: el usuario prueba Finanzas con la guía (enlace en la memoria `pruebas-locales-finanzas`), un envío real de
 > factura para ver el logo, decidir si se despliega la parte 1 del tercer lote, y asociar el prefijo FE en la DIAN cuando
 > aparezca en el portal de producción.
+> ▶️ **DÓNDE RETOMAR (cierre del 7-oct-2026, noche).** Todo lo de hoy está commiteado en la rama
+> **`peticiones-reunion-7-oct`** de los dos repos (backend `5ac3cdc`, frontend: el commit de este HANDOFF),
+> **sin push, sin merge y sin desplegar**. Tres frentes abiertos, en este orden:
+>
+> **A. PDF propio de la factura — MUESTRA aprobada en lo visual, SIN CONECTAR.** JD&D quiere **el mismo formato de
+> su software contable anterior** (trae datos que el PDF del proveedor tecnológico no muestra). Una primera propuesta
+> con diseño nuevo fue **rechazada**: no «mejorar» nada. Lo construido: `sst_ws/src/modules/facturacion/representacion.service.js`
+> (`pdfFactura`, `valorEnLetras`), medidas tomadas de `1-cliente-jdd/FE 816.zip → 1.FE-816.pdf`, logo nuevo
+> (`1-cliente-jdd/nuevoLogo.jpeg` → `assets/facturacion/logo-jdd.jpg`). A pedido del usuario **ocupa la hoja completa**
+> (constante `EXTRA = 80`: el marco baja al margen inferior y la tabla gana ese alto). Las filas Descuentos/Subtotal/IVA
+> salen solo cuando aplican. Muestras: `node scripts/muestra-factura-pdf.mjs <documentoId> <carpeta> [modelo|descuento|N]`
+> («modelo» = datos de la FE 816, «descuento» = FE 756, N = N líneas de relleno); copias en
+> `3-entregables-y-respaldos/propuesta-pdf-factura/` junto al original.
+> **Falta:** (1) que el usuario diga «conéctalo»: entonces «Ver factura», la descarga, el correo al cliente y el paquete
+> para la ARL deben usar este PDF en vez de `pdf_path` (decidir si se genera al validar y se guarda, o al vuelo);
+> (2) **el texto vertical del borde derecho**: hoy dice «Software: ORBITA. Documento validado por la DIAN a través de
+> proveedor tecnológico autorizado…» para no nombrar al proveedor; **sin verificar** si la DIAN exige nombre y NIT del
+> proveedor tecnológico ahí — preguntarle a la contadora; (3) los datos del emisor, el régimen y la actividad económica
+> salen de Parametrización (en `jdd_dev` no hay emisor: el script usa los de la factura modelo); (4) notas crédito y
+> documentos soporte siguen con el PDF del proveedor: no se pidió cambiarlos.
+>
+> **B. Tareas del AUDIO de la reunión — identificadas, NADA construido.** El audio pide un **resumen gerencial**
+> (facturado, cartera por pagador, mora, bancos, deuda con asesores), el **cruce órdenes ↔ facturación** con el motivo
+> de lo pendiente y el **control de pagos dobles** contra el plano de pagos de la contadora. Reconstrucción minuto a
+> minuto, tabla G1–G8 y cinco preguntas para el cliente en
+> **`docs/1-requerimientos/reunion-contabilidad-7-oct-tareas.md`**. El usuario aún no dijo «constrúyelo».
+>
+> **C. Las siete correcciones escritas — construidas (bloque 🗒️ de abajo), falta el visto bueno para desplegar.**
+> Abierto con el cliente: formato del paquete de Colmena, el correo «Caso aprobado» de AXA y si el paz y salvo sale
+> firmado por el sistema. Sin probar con datos reales: el paquete de AXA; sin revisar en pantalla: el código postal
+> en el formulario y la descripción editable del borrador.
+>
 > 🗒️ **7-oct-2026 (noche) · SIETE CORRECCIONES DE LA REUNIÓN DE CONTABILIDAD — construidas y commiteadas en la rama
 > `peticiones-reunion-7-oct` de los DOS repos; SIN push, SIN merge y SIN desplegar (falta el visto bueno del usuario).**
 > La transcripción de la reunión está en `1-cliente-jdd/reuniones/2026-10-07-reunion-contabilidad-transcripcion.txt`.
