@@ -234,9 +234,14 @@
 > DIAN»: JD&D opera en modo software propio), y los datos del emisor se parten en renglones (la dirección nueva se montaba
 > sobre el logo y el QR). Comprobación: `node --import tsx scripts/verificar-pdf-propio.mjs <carpeta>` (ROLLBACK).
 > `master` (`c6df1ae`) y `main` (`521664d`) fusionadas (ff) y **en GitHub**; build de producción del frontend OK en local.
-> **⛔ FALTA EL DESPLIEGUE EN EL SERVIDOR:** el auto-modo bloqueó el respaldo y las migraciones desde la sesión. Lo corre el
-> usuario: `bash docs/4-despliegue/despliegue-peticiones-7-oct.sh` (respaldo, ensayo, 2 migraciones, pull, `npm ci`,
-> build, reinicio, humo y copia de la firma). Producción sigue en `4b314ca` / `e3dd38a`. Al terminar, anotar aquí el resultado.
+> **✅ DESPLEGADO el 8-oct-2026 (~11:09 hora Colombia)** con `bash docs/4-despliegue/despliegue-peticiones-7-oct.sh`
+> (autorizado por el usuario): respaldo `~/respaldos/orbita-antes-peticiones-7oct-20261008-1108.dump` +
+> `storage-antes-peticiones-7oct-20261008-1108.tgz`; ensayo de `2026-10-07-codigo-postal` y `2026-10-07-radicados` con
+> conteos idénticos; migraciones reales OK (1.122 municipios con código postal, 4 radicados migrados a `orden_radicados`);
+> servidor en `master c6df1ae` / `main 521664d`, `jszip` instalado, build 27 s, `orbita-api` y `orbita-web` activos,
+> `/api/health` y `/login` en 200, 238 órdenes antes y después; firma del representante copiada. **Sin probar por
+> pantalla en producción.** Antes estaba en `4b314ca` / `e3dd38a` (para revertir: `git reset --hard` a esos, `npm ci`,
+> build y restart; las migraciones solo añaden).
 > **Ojo en producción:** no hay empresa emisora (0 filas) ni facturas validadas: el PDF propio no se verá hasta que la
 > contadora llene Parametrización → Empresa emisora y se emita la FE-1001. **El correo automático de la emisión lo manda
 > el proveedor con SU PDF y su logo** (`enviarCorreo: true`): para que el cliente vea el logo nuevo ahí hay que subirlo
