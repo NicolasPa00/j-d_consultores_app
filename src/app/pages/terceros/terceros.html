@@ -443,12 +443,17 @@
         </div>
         <div class="form-field">
           <label class="form-field__label" for="tMuni">Municipio</label>
-          <select id="tMuni" class="form-control" [(ngModel)]="draft.municipio_id" name="muni" [disabled]="!departamentoId">
+          <select id="tMuni" class="form-control" [ngModel]="draft.municipio_id" (ngModelChange)="cambiarMunicipio($event)" name="muni" [disabled]="!departamentoId">
             <option value="">{{ departamentoId ? 'Seleccione…' : 'Elija primero el departamento' }}</option>
             @for (m of municipios(); track m.id) {
               <option [value]="m.id">{{ m.nombre }}</option>
             }
           </select>
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="tPostal">Código postal</label>
+          <input id="tPostal" class="form-control mono" type="text" inputmode="numeric" maxlength="6" [(ngModel)]="draft.codigo_postal" name="postal"
+                 [disabled]="!draft.municipio_id" placeholder="Se llena al elegir el municipio" />
         </div>
       </div>
       <div class="form-row">

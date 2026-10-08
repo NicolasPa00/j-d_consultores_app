@@ -22,7 +22,7 @@ const ROLES: { clave: 'es_cliente' | 'es_proveedor' | 'es_empleado' | 'es_arl'; 
 const FORM_VACIO: TerceroForm = {
   tipo_persona: 'JURIDICA', tipo_documento_id: '', numero_documento: '',
   razon_social: '', nombres: '', apellidos: '', nombre_comercial: '',
-  direccion: '', municipio_id: '', telefono: '', correo_facturacion: '',
+  direccion: '', municipio_id: '', codigo_postal: '', telefono: '', correo_facturacion: '',
   responsabilidades_fiscales: [], regimen: 'RESPONSABLE_IVA',
   es_cliente: true, es_proveedor: false, es_empleado: false, es_arl: false,
 };
@@ -296,12 +296,19 @@ export class TercerosComponent implements OnInit {
   protected cambiarDepartamento(id: string): void {
     this.departamentoId = id;
     this.draft.municipio_id = '';
+    this.draft.codigo_postal = '';
     this.municipios.set([]);
     if (!id) return;
     this.api.listCatalogo('municipios', { departamento_id: id }).subscribe({
       next: (r) => this.municipios.set(r.data),
       error: (err) => this.alerts.error('No se pudieron cargar los municipios', mensajeError(err, 'El servidor no devolvió el catálogo.')),
     });
+  }
+
+  /** 7-oct-2026 · Al elegir la ciudad, el formulario trae su código postal (se guarda con lo demás). */
+  protected cambiarMunicipio(id: string): void {
+    this.draft.municipio_id = id;
+    this.draft.codigo_postal = this.municipios().find((m) => m.id === id)?.codigo_postal ?? '';
   }
 
   /** Al editar, el tercero trae el nombre del departamento y no su id: se busca. */
@@ -388,6 +395,7 @@ export class TercerosComponent implements OnInit {
       nombre_comercial: t.nombre_comercial || '',
       direccion: t.direccion || '',
       municipio_id: t.municipio_id || '',
+      codigo_postal: t.codigo_postal || '',
       telefono: t.telefono || '',
       correo_facturacion: t.correo_facturacion || '',
       responsabilidades_fiscales: [...t.responsabilidades_fiscales],

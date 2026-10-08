@@ -73,10 +73,15 @@
             </div>
             <div class="form-field">
               <label class="form-field__label" for="eMuni">Municipio *</label>
-              <select id="eMuni" class="form-control" [(ngModel)]="emisorForm.municipio_id" name="eMuni" [disabled]="!puedeEditar() || !departamentoId">
+              <select id="eMuni" class="form-control" [ngModel]="emisorForm.municipio_id" (ngModelChange)="cambiarMunicipioEmisor($event)" name="eMuni" [disabled]="!puedeEditar() || !departamentoId">
                 <option value="">Seleccione…</option>
                 @for (m of municipios(); track m.id) { <option [value]="m.id">{{ m.nombre }}</option> }
               </select>
+            </div>
+            <div class="form-field">
+              <label class="form-field__label" for="ePostal">Código postal</label>
+              <input id="ePostal" class="form-control mono" type="text" inputmode="numeric" maxlength="6" [(ngModel)]="emisorForm.codigo_postal" name="ePostal"
+                     [disabled]="!puedeEditar() || !emisorForm.municipio_id" placeholder="Se llena al elegir el municipio" />
             </div>
           </div>
           <div class="form-row">

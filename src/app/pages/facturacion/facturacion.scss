@@ -396,3 +396,8 @@
     border: 0;
   }
 }
+
+/* 7-oct-2026 · Descripción editable de una línea del borrador. */
+.fac-desc { width: 100%; min-width: 16rem; resize: vertical; }
+.fac-desc__acciones { display: flex; gap: 0.4rem; margin-top: 0.4rem; }
+.fac-desc__editar { margin-left: 0.3rem; vertical-align: middle; }

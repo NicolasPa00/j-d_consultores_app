@@ -1996,9 +1996,13 @@
           }
           @if (!d.bloqueada && d.valor_hora == null && d.precio_sugerido) {
             <p class="card__hint">
-              La orden no traía precio: se propone la tarifa de venta del pagador
+              @if (d.precio_sugerido.origen === 'POR_DEFECTO') {
+                La orden no traía precio y el pagador no tiene tarifa de venta: se propone el valor por defecto
+              } @else {
+                La orden no traía precio: se propone la tarifa de venta del pagador
+              }
               ({{ pesos(d.precio_sugerido.valor) }} {{ d.precio_sugerido.unidad === 'HORA' ? 'por hora' : 'por actividad' }}).
-              No cuenta hasta que se guarde.
+              Puede cambiarlo; no cuenta hasta que se guarde.
             </p>
           } @else if (!d.bloqueada && d.valor_hora == null && d.honorarios == null) {
             <p class="card__hint cobro__falta">

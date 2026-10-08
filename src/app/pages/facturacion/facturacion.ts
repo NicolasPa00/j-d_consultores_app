@@ -135,6 +135,9 @@ export class FacturacionComponent implements OnInit {
   /** Acción en curso sobre el documento abierto ('emitir', 'reenviar'…); bloquea los botones. */
   protected readonly accion = signal<string | null>(null);
   protected readonly correoReenvio = signal('');
+  /** 7-oct-2026 · Línea del borrador cuya descripción se está redactando, y su texto. */
+  protected readonly editandoItem = signal<string | null>(null);
+  protected readonly textoItem = signal('');
 
   ngOnInit(): void {
     this.cargarRelacion();
@@ -295,6 +298,7 @@ export class FacturacionComponent implements OnInit {
   protected abrir(id: string, vista: VistaDocumento = 'ver'): void {
     this.cargandoDetalle.set(true);
     this.correoReenvio.set('');
+    this.editandoItem.set(null);
     this.formNota.set(false);
     this.asiento.set(null);
     this.panelDesdeDetalle = false;
@@ -442,6 +446,29 @@ export class FacturacionComponent implements OnInit {
       error: (err) => {
         this.accion.set(null);
         this.alerts.error('No se pudo eliminar', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  // ================= Descripción de una línea del borrador =================
+  protected editarDescripcion(itemId: string, actual: string): void {
+    this.textoItem.set(actual);
+    this.editandoItem.set(itemId);
+  }
+
+  protected guardarDescripcion(itemId: string): void {
+    const d = this.detalle();
+    if (!d || this.accion()) return;
+    this.accion.set('descripcion');
+    this.api.cambiarDescripcionItemFactura(d.id, itemId, this.textoItem()).subscribe({
+      next: (r) => {
+        this.accion.set(null);
+        this.editandoItem.set(null);
+        this.detalle.set(r.data);
+      },
+      error: (err) => {
+        this.accion.set(null);
+        this.alerts.error('No se pudo cambiar la descripción', mensajeError(err, 'Intente de nuevo.'));
       },
     });
   }

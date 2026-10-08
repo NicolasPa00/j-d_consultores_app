@@ -379,7 +379,27 @@
           <tbody>
             @for (it of d.items; track it.id) {
               <tr>
-                <td>{{ it.descripcion }} @if (it.codigo) { <small class="fac-sub" title="Código del producto en Parametrización">Cód. {{ it.codigo }}</small> }</td>
+                <td>
+                  <!-- 7-oct-2026 · En el borrador la descripción se puede redactar antes de emitir. -->
+                  @if (editandoItem() === it.id) {
+                    <textarea class="form-control fac-desc" rows="3" maxlength="500" [ngModel]="textoItem()" (ngModelChange)="textoItem.set($event)"
+                              aria-label="Descripción de la línea"></textarea>
+                    <span class="fac-desc__acciones">
+                      <button type="button" class="btn btn--primary btn--sm" (click)="guardarDescripcion(it.id)" [disabled]="!!accion() || !textoItem().trim()">
+                        @if (accion() === 'descripcion') { <span class="spinner" aria-hidden="true"></span> } Guardar
+                      </button>
+                      <button type="button" class="btn btn--ghost btn--sm" (click)="editandoItem.set(null)" [disabled]="!!accion()">Cancelar</button>
+                    </span>
+                  } @else {
+                    {{ it.descripcion }} @if (it.codigo) { <small class="fac-sub" title="Código del producto en Parametrización">Cód. {{ it.codigo }}</small> }
+                    @if (d.estado === 'BORRADOR' && !esNota(d) && puedeOperar()) {
+                      <button type="button" class="icon-action fac-desc__editar" (click)="editarDescripcion(it.id, it.descripcion)" [disabled]="!!accion()"
+                              aria-label="Editar la descripción" title="Editar la descripción">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                      </button>
+                    }
+                  }
+                </td>
                 <td class="num">{{ +it.cantidad }}</td>
                 <td class="num">{{ pesos(it.valor_unitario) }}</td>
                 <td class="num">{{ it.iva_pct ? it.iva_pct + ' %' : 'Excluido' }}</td>

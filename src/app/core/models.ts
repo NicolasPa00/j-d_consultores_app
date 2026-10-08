@@ -448,7 +448,8 @@ export interface DetalleCobroOrden {
   gastos: Record<ClaveGasto, number>;
   total_gastos: number;
   total: number | null;
-  precio_sugerido: { valor: number; unidad: 'HORA' | 'UNIDAD'; origen: 'TARIFA' } | null;
+  /** `POR_DEFECTO` (7-oct-2026): sin precio en la orden ni tarifa del pagador se propone el valor por defecto. */
+  precio_sugerido: { valor: number; unidad: 'HORA' | 'UNIDAD'; origen: 'TARIFA' | 'POR_DEFECTO' } | null;
   gastos_del_sipab: boolean;
   prefactura: {
     numero: string;
@@ -1210,6 +1211,8 @@ export interface ItemCatalogo {
   activo: boolean;
   /** Solo en los municipios. */
   departamento_id?: string;
+  /** Código postal del municipio (4-72): el formulario lo trae al elegir la ciudad. */
+  codigo_postal?: string | null;
   departamento_nombre?: string;
   departamento_codigo?: string;
 }
@@ -1239,6 +1242,7 @@ export interface Tercero {
   direccion: string | null;
   municipio_id: string | null;
   municipio_nombre: string | null;
+  codigo_postal: string | null;
   municipio_codigo: string | null;
   departamento_nombre: string | null;
   telefono: string | null;
@@ -1271,6 +1275,8 @@ export interface TerceroForm {
   nombre_comercial: string;
   direccion: string;
   municipio_id: string;
+  /** Sale del municipio elegido; se puede corregir si la dirección cae en otra zona postal. */
+  codigo_postal: string;
   telefono: string;
   correo_facturacion: string;
   responsabilidades_fiscales: string[];
@@ -1386,6 +1392,7 @@ export interface Emisor {
   direccion: string;
   municipio_id: string;
   municipio_nombre: string;
+  codigo_postal: string | null;
   municipio_codigo: string;
   departamento_nombre: string;
   correo: string;
@@ -1407,6 +1414,8 @@ export interface EmisorForm {
   nombre_comercial: string;
   direccion: string;
   municipio_id: string;
+  /** Sale del municipio elegido; se puede corregir si la dirección cae en otra zona postal. */
+  codigo_postal: string;
   correo: string;
   telefono: string;
   ciiu_principal: string;

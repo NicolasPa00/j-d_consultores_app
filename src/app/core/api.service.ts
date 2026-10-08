@@ -1079,6 +1079,10 @@ export class ApiService {
   obtenerFactura(id: string): Observable<Wrap<DetalleFactura>> {
     return this.http.get<Wrap<DetalleFactura>>(`${this.base}/facturacion/borradores/${id}`);
   }
+  /** 7-oct-2026 · Cambia solo el texto de una línea del borrador (las cifras no se tocan). */
+  cambiarDescripcionItemFactura(id: string, itemId: string, descripcion: string): Observable<Wrap<DetalleFactura> & { message: string }> {
+    return this.http.patch<Wrap<DetalleFactura> & { message: string }>(`${this.base}/facturacion/borradores/${id}/items/${itemId}`, { descripcion });
+  }
   eliminarBorradorFactura(id: string): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(`${this.base}/facturacion/borradores/${id}`);
   }

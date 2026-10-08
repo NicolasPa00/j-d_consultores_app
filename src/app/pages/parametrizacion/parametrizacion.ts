@@ -15,7 +15,7 @@ type TabKey = 'emisor' | 'productos' | 'tarifas' | 'impuestos' | 'numeracion' | 
 
 const EMISOR_VACIO: EmisorForm = {
   tipo_persona: 'JURIDICA', nit: '', razon_social: '', nombre_comercial: '', direccion: '',
-  municipio_id: '', correo: '', telefono: '', ciiu_principal: '', ciiu_secundarias: [],
+  municipio_id: '', codigo_postal: '', correo: '', telefono: '', ciiu_principal: '', ciiu_secundarias: [],
   responsabilidades_rut: [], ambiente: 'PRUEBAS', paquete_proveedor_vence: '', documentos_certificado_enviados_en: '',
 };
 
@@ -111,7 +111,7 @@ export class ParametrizacionComponent implements OnInit {
           this.emisorForm = {
             tipo_persona: r.data.tipo_persona, nit: r.data.nit, razon_social: r.data.razon_social,
             nombre_comercial: r.data.nombre_comercial || '', direccion: r.data.direccion,
-            municipio_id: r.data.municipio_id, correo: r.data.correo, telefono: r.data.telefono || '',
+            municipio_id: r.data.municipio_id, codigo_postal: r.data.codigo_postal || '', correo: r.data.correo, telefono: r.data.telefono || '',
             ciiu_principal: r.data.ciiu_principal || '', ciiu_secundarias: [...r.data.ciiu_secundarias],
             responsabilidades_rut: [...r.data.responsabilidades_rut], ambiente: r.data.ambiente,
             paquete_proveedor_vence: r.data.paquete_proveedor_vence || '',
@@ -151,9 +151,16 @@ export class ParametrizacionComponent implements OnInit {
   protected cambiarDepartamentoEmisor(id: string): void {
     this.departamentoId = id;
     this.emisorForm.municipio_id = '';
+    this.emisorForm.codigo_postal = '';
     this.municipios.set([]);
     if (!id) return;
     this.api.listCatalogo('municipios', { departamento_id: id }).subscribe({ next: (r) => this.municipios.set(r.data) });
+  }
+
+  /** 7-oct-2026 · Al elegir la ciudad, el formulario trae su código postal. */
+  protected cambiarMunicipioEmisor(id: string): void {
+    this.emisorForm.municipio_id = id;
+    this.emisorForm.codigo_postal = this.municipios().find((m) => m.id === id)?.codigo_postal ?? '';
   }
 
   /** DV en vivo, calculado en el cliente igual que el servidor; se muestra, no se teclea. */
