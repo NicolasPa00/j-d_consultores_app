@@ -50,6 +50,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: 'building', label: 'Empresas', hint: 'Clientes y contactos', route: '/empresas', vista: 'empresas', corto: 'Empresas' },
   { icon: 'invoice', label: 'Facturación', hint: 'Facturas electrónicas DIAN', route: '/facturacion', vista: 'facturacion', corto: 'Facturación' },
   { icon: 'invoice', label: 'Documentos soporte', hint: 'Lo que se les paga a los asesores, ante la DIAN', route: '/documentos-soporte', vista: 'documentos_soporte', corto: 'Soporte' },
+  { icon: 'people', label: 'Nómina', hint: 'Empleados y nómina electrónica', route: '/nomina', vista: 'nomina', corto: 'Nómina' },
   { icon: 'money', label: 'Cartera', hint: 'Lo que deben los clientes y sus pagos', route: '/cartera', vista: 'cartera', corto: 'Cartera' },
   { icon: 'invoice', label: 'Compras y gastos', hint: 'Facturas de proveedores y gastos', route: '/compras', vista: 'compras', corto: 'Compras' },
   { icon: 'ledger', label: 'Contabilidad', hint: 'Plan de cuentas y comprobantes', route: '/contabilidad', vista: 'contabilidad', corto: 'Contabilidad' },

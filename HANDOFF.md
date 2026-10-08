@@ -267,6 +267,29 @@
 > otra tipo 2 (el resto); (3) las horas extra se aceptan con la fecha `AAAA-MM-DD HH:MM:SS` (con espacio).
 > Las credenciales de producción NO sirven en el ambiente de pruebas («Client authentication failed»): las de pruebas
 > están en el panel de aliados, tarjeta «Sandbox», y quedaron en `sst_ws/.env` como `FACTUS_NOMINA_*`.
+> **🆕 8-oct (~15:15) · MÓDULO DE NÓMINA (A5-01) CONSTRUIDO — rama `nomina-electronica` de los DOS repos, commiteado en
+> local, SIN push, SIN merge y SIN desplegar.** Pantalla **Finanzas → Nómina** (`/nomina`, vista `nomina` en la matriz de
+> permisos: admin, contador y auditor). Dos pestañas:
+> · **Empleados**: ficha laboral de un tercero persona natural (cargo, salario, integral, contrato, tipo de trabajador,
+>   ingreso/retiro, medio de pago con banco y cuenta, seguridad social informativa). Crearla marca al tercero como
+>   «Empleado». Avisa qué le falta en Terceros para emitirle (documento solo numérico, dirección, municipio…).
+> · **Liquidaciones**: «Liquidar nómina» → empleado, mes, fecha de pago y novedades (horas extra y recargos,
+>   vacaciones, licencias, incapacidad, comisiones, bonificación, días de prima y de cesantías); el desprendible se
+>   liquida EN EL SERVIDOR mientras se escribe (`POST /nomina/liquidaciones/previa`). Se guarda en BORRADOR, se emite,
+>   y una validada se **anula** con nota de ajuste (para corregir: anular y volver a liquidar el mes).
+> Backend en `sst_ws/src/modules/nomina/` (`empleados.service.js`, `liquidaciones.service.js`, `nomina.routes.js`,
+> `catalogos.js`, `calculo.js`); **migración `2026-10-08-nomina.sql`** (`sst.empleados`, `sst.nomina_liquidaciones`,
+> permisos; aplicada solo en `jdd_dev`). La emisión reintenta con la misma referencia, deja ENVIANDO si no hay respuesta
+> (se retoma con «Reintentar el envío») y, si la DIAN rechaza, elimina la nómina en el proveedor y queda RECHAZADO con el
+> motivo. ORBITA valida lo que la DIAN no: mes futuro, fecha de ingreso/retiro y una sola nómina viva por empleado y mes.
+> **Probado:** build de producción y recorrido por pantalla con `2-pruebas/herramientas-capturas/revision-nomina.mjs`
+> (crear empleado, liquidar con novedades, guardar, abrir el detalle). **⚠️ SIN PROBAR: la emisión y la anulación desde
+> la pantalla**, porque el proveedor tiene apagada la creación de nóminas en el ambiente de pruebas (403); el mensaje de
+> ese rechazo sí se vio y devuelve la nómina a borrador. Hay que pedirle al proveedor que la reactive para probarlo.
+> **Falta:** PDF/desprendible para el empleado, contabilización (B6-01), nómina quincenal, conceptos no salariales y
+> deducciones opcionales (libranza, embargo…), liquidación final por retiro, meses completos de vacaciones/licencia y
+> aprendices (el API exige ≥ 1 día y sueldo > 0), rangos de nómina en producción y validar las fórmulas con la contadora.
+>
 > **✅ 8-oct (~14:52) · NOTAS DE AJUSTE DE NÓMINA: 4 de 4 VALIDADAS** (`NAN1`…`NAN4`, eliminan NEF30, NEF29, NEF28 y
 > NEF27; respuestas en `2-pruebas/nomina/notas-ajuste-261008/`). El proveedor confirmó por WhatsApp que **con 4 notas
 > validadas el entorno queda habilitado y se puede pasar a producción**, que el 403 al crear nóminas era por haber

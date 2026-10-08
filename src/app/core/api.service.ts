@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { EstadisticasPeriodo, ActivoFijo, ActivoFijoForm, CorridaDepreciacion, FichaActivoFijo, VistaPreviaDepreciacion, AuxiliarPorCuenta, BalanceComprobacion, FiltrosInformeContable, InformePorTercero, LibroAuxiliar, VentasPorCliente, EstadoSituacionFinanciera, EstadoResultados, ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, Coasesor, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, InfoPaqueteArl, DetalleSoporte, DocumentoFactura, DocumentoSoporte, RadicadoOrden, ResumenImportSoportes, ResumenImportTerceros, SoportePorGenerar, VisitaProxima, Especialidad, PagadorPorFacturar, OrdenManualForm, FacturaManualForm, DetalleCobroOrden, ValoresCobroForm } from './models';
+import { EstadisticasPeriodo, ActivoFijo, ActivoFijoForm, CorridaDepreciacion, FichaActivoFijo, VistaPreviaDepreciacion, AuxiliarPorCuenta, BalanceComprobacion, FiltrosInformeContable, InformePorTercero, LibroAuxiliar, VentasPorCliente, EstadoSituacionFinanciera, EstadoResultados, ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, Coasesor, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, InfoPaqueteArl, DetalleSoporte, DocumentoFactura, DocumentoSoporte, RadicadoOrden, ResumenImportSoportes, ResumenImportTerceros, SoportePorGenerar, VisitaProxima, Especialidad, PagadorPorFacturar, OrdenManualForm, FacturaManualForm, CatalogosNomina, EmpleadoForm, EmpleadoNomina, LiquidacionNomina, LiquidacionNominaForm, NovedadesNomina, ResultadoLiquidacion, DetalleCobroOrden, ValoresCobroForm } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -1082,6 +1082,50 @@ export class ApiService {
   }): Observable<Wrap<DetalleFactura> & { message: string }> {
     return this.http.post<Wrap<DetalleFactura> & { message: string }>(`${this.base}/facturacion/borradores`, body);
   }
+  // ---- A5-01 · Nómina electrónica ----
+  catalogosNomina(): Observable<Wrap<CatalogosNomina>> {
+    return this.http.get<Wrap<CatalogosNomina>>(`${this.base}/nomina/catalogos`);
+  }
+  listarEmpleadosNomina(): Observable<Wrap<EmpleadoNomina[]>> {
+    return this.http.get<Wrap<EmpleadoNomina[]>>(`${this.base}/nomina/empleados`);
+  }
+  crearEmpleadoNomina(body: EmpleadoForm): Observable<Wrap<EmpleadoNomina> & { message: string }> {
+    return this.http.post<Wrap<EmpleadoNomina> & { message: string }>(`${this.base}/nomina/empleados`, body);
+  }
+  actualizarEmpleadoNomina(id: string, body: EmpleadoForm): Observable<Wrap<EmpleadoNomina> & { message: string }> {
+    return this.http.put<Wrap<EmpleadoNomina> & { message: string }>(`${this.base}/nomina/empleados/${id}`, body);
+  }
+  estadoEmpleadoNomina(id: string, activo: boolean): Observable<Wrap<EmpleadoNomina>> {
+    return this.http.patch<Wrap<EmpleadoNomina>>(`${this.base}/nomina/empleados/${id}/estado`, { activo });
+  }
+  /** Liquida sin guardar: el desprendible que se ve mientras se escriben las novedades. */
+  previaLiquidacionNomina(body: { empleado_id: string; anio: number; mes: number; novedades: NovedadesNomina }): Observable<Wrap<{ liquidacion: ResultadoLiquidacion }>> {
+    return this.http.post<Wrap<{ liquidacion: ResultadoLiquidacion }>>(`${this.base}/nomina/liquidaciones/previa`, body);
+  }
+  listarLiquidacionesNomina(anio: number, mes?: number): Observable<Wrap<LiquidacionNomina[]>> {
+    return this.http.get<Wrap<LiquidacionNomina[]>>(`${this.base}/nomina/liquidaciones${queryString({ anio, mes })}`);
+  }
+  obtenerLiquidacionNomina(id: string): Observable<Wrap<LiquidacionNomina>> {
+    return this.http.get<Wrap<LiquidacionNomina>>(`${this.base}/nomina/liquidaciones/${id}`);
+  }
+  crearLiquidacionNomina(body: LiquidacionNominaForm): Observable<Wrap<LiquidacionNomina> & { message: string }> {
+    return this.http.post<Wrap<LiquidacionNomina> & { message: string }>(`${this.base}/nomina/liquidaciones`, body);
+  }
+  actualizarLiquidacionNomina(id: string, body: LiquidacionNominaForm): Observable<Wrap<LiquidacionNomina> & { message: string }> {
+    return this.http.put<Wrap<LiquidacionNomina> & { message: string }>(`${this.base}/nomina/liquidaciones/${id}`, body);
+  }
+  eliminarLiquidacionNomina(id: string): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.base}/nomina/liquidaciones/${id}`);
+  }
+  /** Emite ante la DIAN. Si queda ENVIANDO, volver a llamarlo retoma el mismo envío. */
+  emitirLiquidacionNomina(id: string): Observable<Wrap<LiquidacionNomina> & { message: string }> {
+    return this.http.post<Wrap<LiquidacionNomina> & { message: string }>(`${this.base}/nomina/liquidaciones/${id}/emitir`, {});
+  }
+  /** Anula una nómina validada con una nota de ajuste de eliminación. */
+  anularLiquidacionNomina(id: string): Observable<Wrap<LiquidacionNomina> & { message: string }> {
+    return this.http.post<Wrap<LiquidacionNomina> & { message: string }>(`${this.base}/nomina/liquidaciones/${id}/anular`, {});
+  }
+
   /** 8-oct-2026 · Factura manual: un borrador sin órdenes, con las líneas que escribe quien factura. */
   crearFacturaManual(body: FacturaManualForm): Observable<Wrap<DetalleFactura> & { message: string }> {
     return this.http.post<Wrap<DetalleFactura> & { message: string }>(`${this.base}/facturacion/borradores/manual`, body);

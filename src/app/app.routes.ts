@@ -125,6 +125,14 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/documentos-soporte/documentos-soporte').then((m) => m.DocumentosSoporteComponent),
       },
       {
+        // A5-01 · Nómina electrónica: empleados y liquidaciones mensuales (Finanzas).
+        path: 'nomina',
+        title: 'Nómina',
+        canActivate: [permissionGuard],
+        data: { vista: 'nomina' },
+        loadComponent: () => import('./pages/nomina/nomina').then((m) => m.NominaComponent),
+      },
+      {
         // Fase A · A0-05 · Terceros: a quién se factura o se paga
         path: 'terceros',
         title: 'Terceros',

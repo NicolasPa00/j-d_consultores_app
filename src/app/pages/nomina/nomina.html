@@ -1,0 +1,489 @@
+<section class="page-head nom-head">
+  <div>
+    <h2 class="page-head__title">Nómina</h2>
+    <p class="page-head__sub">Nómina electrónica ante la DIAN · una liquidación por empleado y mes</p>
+  </div>
+  @if (puedeOperar()) {
+    <div class="nom-head__acciones">
+      <button type="button" class="btn btn--secondary" (click)="abrirEmpleado()">Nuevo empleado</button>
+      <button type="button" class="btn btn--primary" (click)="abrirLiquidar()" [disabled]="!opcionesEmpleado().length"
+              [title]="opcionesEmpleado().length ? '' : 'Primero cree la ficha de un empleado'">Liquidar nómina</button>
+    </div>
+  }
+</section>
+
+<div class="nom-barra">
+  <div class="tabs" role="tablist">
+    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'liquidaciones'" (click)="cambiarPestana('liquidaciones')">
+      Liquidaciones <span class="tab__count">{{ liquidaciones().length }}</span>
+    </button>
+    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'empleados'" (click)="cambiarPestana('empleados')">
+      Empleados <span class="tab__count">{{ empleados().length }}</span>
+    </button>
+  </div>
+  @if (pestana() === 'liquidaciones') {
+    <div class="nom-periodo">
+      <select class="form-control" [ngModel]="anio()" (ngModelChange)="cambiarPeriodo($event, mes())" aria-label="Año">
+        @for (a of anios(); track a) { <option [ngValue]="a">{{ a }}</option> }
+      </select>
+      <select class="form-control" [ngModel]="mes()" (ngModelChange)="cambiarPeriodo(anio(), $event)" aria-label="Mes">
+        <option [ngValue]="0">Todo el año</option>
+        @for (m of meses; track $index) { <option [ngValue]="$index + 1">{{ m }}</option> }
+      </select>
+    </div>
+  }
+</div>
+
+<!-- ======================= LIQUIDACIONES ======================= -->
+@if (pestana() === 'liquidaciones') {
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Empleado</th><th>Periodo</th><th class="num">Días</th><th class="num">Devengado</th><th class="num">Deducciones</th>
+            <th class="num">Neto a pagar</th><th>Estado</th><th class="col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (l of pagLiquidaciones.visibles(); track l.id) {
+            <tr>
+              <td><span class="who__name">{{ l.empleado_nombre }}</span><small class="nom-sub">{{ l.empleado_documento }}</small></td>
+              <td class="nom-fijo">{{ periodo(l) }}</td>
+              <td class="num">{{ +l.dias_trabajados }}</td>
+              <td class="num">{{ pesos(l.total_devengado) }}</td>
+              <td class="num">{{ pesos(l.total_deducido) }}</td>
+              <td class="num"><b>{{ pesos(l.neto) }}</b></td>
+              <td>
+                <span class="pill" [class]="pillEstado(l.estado)">{{ etiquetaEstado(l.estado) }}</span>
+                @if (l.numero) { <small class="nom-sub">{{ l.numero }}</small> }
+              </td>
+              <td class="col-actions"><button type="button" class="btn btn--ghost btn--sm" (click)="abrir(l)">Ver</button></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8" class="table__empty">
+              @if (cargando()) { Cargando… }
+              @else if (!empleados().length) { Todavía no hay empleados. Cree la ficha del primero en la pestaña <b>Empleados</b>. }
+              @else { No hay nóminas en ese periodo. Use <b>Liquidar nómina</b> para crear la primera. }
+            </td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (liquidaciones().length) {
+      <p class="nom-total">Neto del periodo (sin las anuladas): <b>{{ pesos(totalNeto()) }}</b></p>
+    }
+    <app-paginador [pag]="pagLiquidaciones" etiqueta="nóminas" />
+  </div>
+}
+
+<!-- ======================= EMPLEADOS ======================= -->
+@if (pestana() === 'empleados') {
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Empleado</th><th>Cargo</th><th>Contrato</th><th class="num">Salario</th><th>Ingreso</th><th>Pago</th><th>Estado</th><th class="col-actions">Acciones</th></tr>
+        </thead>
+        <tbody>
+          @for (e of pagEmpleados.visibles(); track e.id) {
+            <tr>
+              <td>
+                <span class="who__name">{{ e.nombre }}</span><small class="nom-sub">{{ e.numero_documento }}</small>
+                @if (e.faltantes.length) {
+                  <span class="pill pill--warning" [title]="'Complete en Terceros: ' + e.faltantes.join(', ')">Falta {{ e.faltantes.join(', ') }}</span>
+                }
+              </td>
+              <td>{{ e.cargo || '—' }}</td>
+              <td>{{ nombreDe(catalogos()?.tipos_contrato, e.tipo_contrato) }}</td>
+              <td class="num">{{ pesos(e.salario) }}@if (e.salario_integral) { <small class="nom-sub">integral</small> }</td>
+              <td class="nom-fijo">{{ fecha(e.fecha_ingreso) }}@if (e.fecha_retiro) { <small class="nom-sub">retiro {{ fecha(e.fecha_retiro) }}</small> }</td>
+              <td>{{ nombreDe(catalogos()?.metodos_pago, e.metodo_pago) }}@if (e.banco) { <small class="nom-sub">{{ e.banco }}</small> }</td>
+              <td><span class="pill" [class]="e.activo ? 'pill--success' : 'pill--muted'">{{ e.activo ? 'Activo' : 'Inactivo' }}</span></td>
+              <td class="col-actions">
+                @if (puedeOperar()) {
+                  <span class="nom-acciones">
+                    <button type="button" class="btn btn--ghost btn--sm" (click)="abrirEmpleado(e)">Editar</button>
+                    <button type="button" class="btn btn--ghost btn--sm" (click)="alternarEmpleado(e)">{{ e.activo ? 'Desactivar' : 'Activar' }}</button>
+                  </span>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8" class="table__empty">
+              Todavía no hay empleados. La persona se crea primero en <a routerLink="/terceros">Terceros</a> (persona natural) y
+              aquí se le agrega el contrato, el salario y cómo se le paga.
+            </td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <app-paginador [pag]="pagEmpleados" etiqueta="empleados" />
+  </div>
+}
+
+<!-- ======================= FICHA DEL EMPLEADO ======================= -->
+@if (empleadoOpen()) {
+  <div class="modal-backdrop" (click)="guardandoEmpleado() ? null : empleadoOpen.set(false)"></div>
+  <div class="modal modal--lg nom-modal-selector" role="dialog" aria-modal="true" aria-labelledby="nomEmpTitulo">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="nomEmpTitulo">{{ empleadoId() ? 'Editar empleado' : 'Nuevo empleado' }}</h3>
+        <p class="modal__sub">El contrato y cómo se le paga. El documento, la dirección y el municipio se mantienen en Terceros.</p>
+      </div>
+      <button type="button" class="icon-action" (click)="empleadoOpen.set(false)" aria-label="Cerrar" [disabled]="guardandoEmpleado()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+    <form class="modal__body" (ngSubmit)="guardarEmpleado()">
+      <div class="nom-grid">
+        <div class="form-field nom-grid__ancho">
+          <label class="form-field__label" for="nomEmpTercero">Persona *</label>
+          @if (empleadoId()) {
+            <input id="nomEmpTercero" class="form-control" type="text" [value]="detalleEmpleado()" disabled />
+          } @else {
+            <app-selector-busqueda idCampo="nomEmpTercero" [opciones]="opcionesTercero()" [valor]="empleadoForm.tercero_id"
+                                   (valorChange)="empleadoForm.tercero_id = $event" placeholder="Nombre o documento…" />
+            <p class="form-field__hint">Solo personas naturales de Terceros que aún no tienen ficha.</p>
+          }
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="nomEmpCargo">Cargo</label>
+          <input id="nomEmpCargo" class="form-control" type="text" maxlength="120" [(ngModel)]="empleadoForm.cargo" name="cargo" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="nomEmpSalario">Salario mensual *</label>
+          <input id="nomEmpSalario" class="form-control" type="number" min="0" step="1" [(ngModel)]="empleadoForm.salario" name="salario" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="nomEmpContrato">Tipo de contrato *</label>
+          <select id="nomEmpContrato" class="form-control" [(ngModel)]="empleadoForm.tipo_contrato" name="tipoContrato">
+            @for (t of catalogos()?.tipos_contrato ?? []; track t.codigo) { <option [value]="t.codigo">{{ t.nombre }}</option> }
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="nomEmpTipo">Tipo de trabajador *</label>
+          <select id="nomEmpTipo" class="form-control" [(ngModel)]="empleadoForm.tipo_trabajador" name="tipoTrabajador">
+            @for (t of catalogos()?.tipos_trabajador ?? []; track t.codigo) { <option [value]="t.codigo">{{ t.nombre }}</option> }
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="nomEmpIngreso">Fecha de ingreso *</label>
+          <input id="nomEmpIngreso" class="form-control" type="date" [(ngModel)]="empleadoForm.fecha_ingreso" name="fechaIngreso" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="nomEmpRetiro">Fecha de retiro</label>
+          <input id="nomEmpRetiro" class="form-control" type="date" [(ngModel)]="empleadoForm.fecha_retiro" name="fechaRetiro" />
+        </div>
+      </div>
+      <div class="nom-checks">
+        <label><input type="checkbox" [(ngModel)]="empleadoForm.salario_integral" name="integral" /> Salario integral</label>
+        <label><input type="checkbox" [(ngModel)]="empleadoForm.alto_riesgo" name="altoRiesgo" /> Actividad de alto riesgo</label>
+        <label><input type="checkbox" [ngModel]="empleadoForm.subtipo_trabajador === '01'" (ngModelChange)="empleadoForm.subtipo_trabajador = $event ? '01' : '00'" name="pensionado" /> Pensionado por vejez activo</label>
+      </div>
+
+      <h4 class="section-head"><span class="section-tag">Cómo se le paga</span></h4>
+      <div class="nom-grid">
+        <div class="form-field">
+          <label class="form-field__label" for="nomEmpMetodo">Medio de pago *</label>
+          <select id="nomEmpMetodo" class="form-control" [(ngModel)]="empleadoForm.metodo_pago" name="metodoPago">
+            @for (m of catalogos()?.metodos_pago ?? []; track m.codigo) { <option [value]="m.codigo">{{ m.nombre }}</option> }
+          </select>
+        </div>
+        @if (metodoConCuenta(empleadoForm.metodo_pago)) {
+          <div class="form-field">
+            <label class="form-field__label" for="nomEmpBanco">Banco *</label>
+            <input id="nomEmpBanco" class="form-control" type="text" maxlength="80" [(ngModel)]="empleadoForm.banco" name="banco" />
+          </div>
+          <div class="form-field">
+            <label class="form-field__label" for="nomEmpTipoCuenta">Tipo de cuenta *</label>
+            <select id="nomEmpTipoCuenta" class="form-control" [(ngModel)]="empleadoForm.tipo_cuenta" name="tipoCuenta">
+              @for (t of catalogos()?.tipos_cuenta ?? []; track t.codigo) { <option [value]="t.codigo">{{ t.nombre }}</option> }
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-field__label" for="nomEmpCuenta">Número de cuenta *</label>
+            <input id="nomEmpCuenta" class="form-control mono" type="text" inputmode="numeric" maxlength="30" [(ngModel)]="empleadoForm.numero_cuenta" name="numeroCuenta" />
+          </div>
+        }
+      </div>
+
+      <h4 class="section-head"><span class="section-tag">Seguridad social</span></h4>
+      <div class="nom-grid">
+        <div class="form-field"><label class="form-field__label" for="nomEmpEps">EPS</label><input id="nomEmpEps" class="form-control" type="text" maxlength="80" [(ngModel)]="empleadoForm.eps" name="eps" /></div>
+        <div class="form-field"><label class="form-field__label" for="nomEmpPension">Fondo de pensión</label><input id="nomEmpPension" class="form-control" type="text" maxlength="80" [(ngModel)]="empleadoForm.fondo_pension" name="fondoPension" /></div>
+        <div class="form-field"><label class="form-field__label" for="nomEmpCes">Fondo de cesantías</label><input id="nomEmpCes" class="form-control" type="text" maxlength="80" [(ngModel)]="empleadoForm.fondo_cesantias" name="fondoCesantias" /></div>
+        <div class="form-field"><label class="form-field__label" for="nomEmpArl">ARL</label><input id="nomEmpArl" class="form-control" type="text" maxlength="80" [(ngModel)]="empleadoForm.arl" name="arl" /></div>
+        <div class="form-field"><label class="form-field__label" for="nomEmpCaja">Caja de compensación</label><input id="nomEmpCaja" class="form-control" type="text" maxlength="80" [(ngModel)]="empleadoForm.caja_compensacion" name="caja" /></div>
+      </div>
+      <p class="form-field__hint">La seguridad social es informativa: no viaja en la nómina electrónica.</p>
+    </form>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--close" (click)="empleadoOpen.set(false)" [disabled]="guardandoEmpleado()">Cancelar</button>
+      <button type="button" class="btn btn--primary" (click)="guardarEmpleado()" [disabled]="guardandoEmpleado() || !empleadoValido()">
+        @if (guardandoEmpleado()) { <span class="spinner" aria-hidden="true"></span> Guardando… } @else { Guardar }
+      </button>
+    </footer>
+  </div>
+}
+
+<!-- ======================= LIQUIDAR ======================= -->
+@if (liquidarOpen()) {
+  <div class="modal-backdrop" (click)="guardando() ? null : liquidarOpen.set(false)"></div>
+  <div class="modal modal--xl nom-modal-selector" role="dialog" aria-modal="true" aria-labelledby="nomLiqTitulo">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="nomLiqTitulo">{{ editandoId() ? 'Cambiar la nómina' : 'Liquidar nómina' }}</h3>
+        <p class="modal__sub">Escriba las novedades del mes; el sistema liquida a la derecha. Se guarda como borrador: no sale a la DIAN hasta que se emita.</p>
+      </div>
+      <button type="button" class="icon-action" (click)="liquidarOpen.set(false)" aria-label="Cerrar" [disabled]="guardando()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+    <div class="modal__body nom-liq">
+      <div class="nom-liq__form">
+        <div class="nom-grid">
+          <div class="form-field nom-grid__ancho">
+            <label class="form-field__label" for="nomLiqEmp">Empleado *</label>
+            @if (editandoId()) {
+              <input id="nomLiqEmp" class="form-control" type="text" [value]="empleadoElegido()?.nombre ?? ''" disabled />
+            } @else {
+              <app-selector-busqueda idCampo="nomLiqEmp" [opciones]="opcionesEmpleado()" [valor]="liqEmpleado()"
+                                     (valorChange)="liqEmpleado.set($event); programarPrevia(0)" placeholder="Nombre o documento…" />
+            }
+          </div>
+          <div class="form-field">
+            <label class="form-field__label" for="nomLiqMes">Mes *</label>
+            <select id="nomLiqMes" class="form-control" [ngModel]="liqMes()" (ngModelChange)="liqMes.set(+$event); programarPrevia(0)" [disabled]="!!editandoId()">
+              @for (m of meses; track $index) { <option [ngValue]="$index + 1">{{ m }}</option> }
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-field__label" for="nomLiqAnio">Año *</label>
+            <select id="nomLiqAnio" class="form-control" [ngModel]="liqAnio()" (ngModelChange)="liqAnio.set(+$event); programarPrevia(0)" [disabled]="!!editandoId()">
+              @for (a of anios(); track a) { <option [ngValue]="a">{{ a }}</option> }
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-field__label" for="nomLiqPago">Fecha de pago *</label>
+            <input id="nomLiqPago" class="form-control" type="date" [ngModel]="liqFechaPago()" (ngModelChange)="liqFechaPago.set($event)" />
+          </div>
+        </div>
+        @if (empleadoElegido(); as e) {
+          @if (e.faltantes.length) {
+            <p class="nom-aviso nom-aviso--warning">Para emitirle la nómina a {{ e.nombre }} falta {{ e.faltantes.join(', ') }}. Complételo en <a routerLink="/terceros">Terceros</a>.</p>
+          }
+        }
+
+        <!-- Horas extra y recargos -->
+        <section class="nom-nov">
+          <header><h4>Horas extra y recargos</h4><button type="button" class="btn btn--ghost btn--sm" (click)="agregar('horas')">+ Agregar</button></header>
+          @for (h of nov().horas; track $index; let i = $index) {
+            <div class="nom-fila nom-fila--horas">
+              <select class="form-control" [ngModel]="h.tipo" (ngModelChange)="cambiarFila('horas', i, 'tipo', $event)" [attr.aria-label]="'Tipo de la fila ' + (i + 1)">
+                @for (t of catalogos()?.tipos_hora ?? []; track t.clave) { <option [value]="t.clave">{{ t.nombre }} ({{ t.porcentaje }} %)</option> }
+              </select>
+              <input type="number" min="1" step="1" class="form-control num" placeholder="Horas" [ngModel]="h.cantidad" (ngModelChange)="cambiarFila('horas', i, 'cantidad', $event)" [attr.aria-label]="'Horas de la fila ' + (i + 1)" />
+              <input type="datetime-local" class="form-control" [ngModel]="h.inicio" (ngModelChange)="cambiarFila('horas', i, 'inicio', $event)" [attr.aria-label]="'Inicio de la fila ' + (i + 1)" />
+              <input type="datetime-local" class="form-control" [ngModel]="h.fin" (ngModelChange)="cambiarFila('horas', i, 'fin', $event)" [attr.aria-label]="'Fin de la fila ' + (i + 1)" />
+              <button type="button" class="icon-action" (click)="quitar('horas', i)" [attr.aria-label]="'Quitar la fila ' + (i + 1)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+              </button>
+            </div>
+          }
+        </section>
+
+        <!-- Vacaciones -->
+        <section class="nom-nov">
+          <header><h4>Vacaciones</h4><button type="button" class="btn btn--ghost btn--sm" (click)="agregar('vacaciones')">+ Agregar</button></header>
+          @for (v of nov().vacaciones; track $index; let i = $index) {
+            <div class="nom-fila nom-fila--dias">
+              <label class="nom-fila__check"><input type="checkbox" [ngModel]="v.compensadas" (ngModelChange)="cambiarFila('vacaciones', i, 'compensadas', $event)" /> Compensadas en dinero</label>
+              <input type="number" min="1" max="30" step="1" class="form-control num" placeholder="Días" [ngModel]="v.dias" (ngModelChange)="cambiarFila('vacaciones', i, 'dias', $event)" [attr.aria-label]="'Días de vacaciones, fila ' + (i + 1)" />
+              <input type="date" class="form-control" [ngModel]="v.inicio" (ngModelChange)="cambiarFila('vacaciones', i, 'inicio', $event)" aria-label="Desde" />
+              <input type="date" class="form-control" [ngModel]="v.fin" (ngModelChange)="cambiarFila('vacaciones', i, 'fin', $event)" aria-label="Hasta" />
+              <button type="button" class="icon-action" (click)="quitar('vacaciones', i)" aria-label="Quitar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+              </button>
+            </div>
+          }
+        </section>
+
+        <!-- Licencias -->
+        <section class="nom-nov">
+          <header><h4>Licencias</h4><button type="button" class="btn btn--ghost btn--sm" (click)="agregar('licencias')">+ Agregar</button></header>
+          @for (l of nov().licencias; track $index; let i = $index) {
+            <div class="nom-fila nom-fila--dias">
+              <select class="form-control" [ngModel]="l.tipo" (ngModelChange)="cambiarFila('licencias', i, 'tipo', $event)" aria-label="Tipo de licencia">
+                @for (t of catalogos()?.tipos_licencia ?? []; track t.clave) { <option [value]="t.clave">{{ t.nombre }}</option> }
+              </select>
+              <input type="number" min="1" max="30" step="1" class="form-control num" placeholder="Días" [ngModel]="l.dias" (ngModelChange)="cambiarFila('licencias', i, 'dias', $event)" aria-label="Días de licencia" />
+              <input type="date" class="form-control" [ngModel]="l.inicio" (ngModelChange)="cambiarFila('licencias', i, 'inicio', $event)" aria-label="Desde" />
+              <input type="date" class="form-control" [ngModel]="l.fin" (ngModelChange)="cambiarFila('licencias', i, 'fin', $event)" aria-label="Hasta" />
+              <button type="button" class="icon-action" (click)="quitar('licencias', i)" aria-label="Quitar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+              </button>
+            </div>
+          }
+        </section>
+
+        <!-- Incapacidades -->
+        <section class="nom-nov">
+          <header><h4>Incapacidad por enfermedad común</h4><button type="button" class="btn btn--ghost btn--sm" (click)="agregar('incapacidades')">+ Agregar</button></header>
+          @for (x of nov().incapacidades; track $index; let i = $index) {
+            <div class="nom-fila nom-fila--dias">
+              <span class="nom-fila__texto">Se paga al 66,67 %</span>
+              <input type="number" min="1" max="30" step="1" class="form-control num" placeholder="Días" [ngModel]="x.dias" (ngModelChange)="cambiarFila('incapacidades', i, 'dias', $event)" aria-label="Días de incapacidad" />
+              <input type="date" class="form-control" [ngModel]="x.inicio" (ngModelChange)="cambiarFila('incapacidades', i, 'inicio', $event)" aria-label="Desde" />
+              <input type="date" class="form-control" [ngModel]="x.fin" (ngModelChange)="cambiarFila('incapacidades', i, 'fin', $event)" aria-label="Hasta" />
+              <button type="button" class="icon-action" (click)="quitar('incapacidades', i)" aria-label="Quitar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+              </button>
+            </div>
+          }
+        </section>
+
+        <!-- Otros pagos y prestaciones -->
+        <section class="nom-nov">
+          <header><h4>Otros pagos y prestaciones</h4></header>
+          <div class="nom-grid nom-grid--cuatro">
+            <div class="form-field">
+              <label class="form-field__label" for="nomLiqComi">Comisiones</label>
+              <input id="nomLiqComi" class="form-control num" type="text" inputmode="decimal" [ngModel]="nov().comisiones" (ngModelChange)="cambiarNov(asignar('comisiones', $event))" />
+            </div>
+            <div class="form-field">
+              <label class="form-field__label" for="nomLiqBoni">Bonificación salarial</label>
+              <input id="nomLiqBoni" class="form-control num" type="text" inputmode="decimal" [ngModel]="nov().bonificacion" (ngModelChange)="cambiarNov(asignar('bonificacion', $event))" />
+            </div>
+            <div class="form-field">
+              <label class="form-field__label" for="nomLiqPrima">Prima: días del semestre</label>
+              <input id="nomLiqPrima" class="form-control num" type="number" min="0" max="180" step="1" placeholder="180 = completo" [ngModel]="nov().primaDias" (ngModelChange)="cambiarNov(asignar('primaDias', $event))" />
+            </div>
+            <div class="form-field">
+              <label class="form-field__label" for="nomLiqCes">Cesantías: días del año</label>
+              <input id="nomLiqCes" class="form-control num" type="number" min="0" max="360" step="1" placeholder="360 = completo" [ngModel]="nov().cesantiasDias" (ngModelChange)="cambiarNov(asignar('cesantiasDias', $event))" />
+            </div>
+          </div>
+        </section>
+
+        <div class="form-field">
+          <label class="form-field__label" for="nomLiqObs">Observaciones</label>
+          <input id="nomLiqObs" class="form-control" type="text" maxlength="500" [ngModel]="liqObs()" (ngModelChange)="liqObs.set($event)" />
+        </div>
+      </div>
+
+      <!-- El desprendible, liquidado por el servidor -->
+      <aside class="nom-liq__previa" aria-live="polite">
+        <h4>Liquidación @if (calculando()) { <span class="spinner" aria-hidden="true"></span> }</h4>
+        @if (errorPrevia(); as err) {
+          <p class="nom-aviso nom-aviso--error">{{ err }}</p>
+        } @else if (previa(); as r) {
+          <ng-container *ngTemplateOutlet="desprendible; context: { $implicit: r }" />
+        } @else {
+          <p class="nom-vacio">Elija el empleado para ver la liquidación.</p>
+        }
+      </aside>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--close" (click)="liquidarOpen.set(false)" [disabled]="guardando()">Cancelar</button>
+      <button type="button" class="btn btn--primary" (click)="guardarLiquidacion()" [disabled]="guardando() || calculando() || !previa() || !liqFechaPago()">
+        @if (guardando()) { <span class="spinner" aria-hidden="true"></span> Guardando… } @else { Guardar borrador }
+      </button>
+    </footer>
+  </div>
+}
+
+<!-- ======================= DETALLE ======================= -->
+@if (detalle(); as d) {
+  <div class="modal-backdrop" (click)="cerrar()"></div>
+  <div class="modal modal--lg" role="dialog" aria-modal="true" aria-labelledby="nomDetTitulo">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="nomDetTitulo">
+          Nómina de {{ periodo(d) }} <span class="pill" [class]="pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span>
+        </h3>
+        <p class="modal__sub">{{ d.empleado_nombre }} · {{ d.empleado_documento }}@if (d.numero) { · {{ d.numero }} }</p>
+      </div>
+      <button type="button" class="icon-action" (click)="cerrar()" aria-label="Cerrar" [disabled]="!!accion()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      @if (d.estado === 'RECHAZADO' && erroresDe(d).length) {
+        <div class="nom-aviso nom-aviso--error" role="alert">
+          <b>La DIAN rechazó la nómina:</b>
+          <ul>@for (e of erroresDe(d); track $index) { <li>{{ e }}</li> }</ul>
+        </div>
+      }
+      @if (d.estado === 'ENVIANDO') {
+        <p class="nom-aviso nom-aviso--warning">Se envió y la DIAN todavía no responde. Pulse «Reintentar el envío»: se retoma el mismo, no se duplica.</p>
+      }
+      @if (d.estado === 'ANULADO') {
+        <p class="nom-aviso nom-aviso--muted">Anulada con la nota de ajuste {{ d.nota_numero }}. Para corregirla, liquide de nuevo el mismo mes.</p>
+      }
+      <div class="nom-datos">
+        <div><span>Salario</span><b>{{ pesos(d.salario) }}@if (d.salario_integral) { (integral) }</b></div>
+        <div><span>Días laborados</span><b>{{ +d.dias_trabajados }}</b></div>
+        <div><span>Fecha de pago</span><b>{{ fecha(d.fecha_pago) }}</b></div>
+        <div><span>Cargo</span><b>{{ d.empleado_cargo || '—' }}</b></div>
+        @if (d.cune) {
+          <div class="nom-datos__ancho">
+            <span>CUNE</span>
+            <div class="nom-cune">
+              <b>{{ d.cune }}</b>
+              <button type="button" class="icon-action" (click)="copiarCune(d)" aria-label="Copiar el CUNE" title="Copiar el CUNE">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h9" /></svg>
+              </button>
+            </div>
+          </div>
+        }
+        @if (d.observaciones) { <div class="nom-datos__ancho"><span>Observaciones</span><b>{{ d.observaciones }}</b></div> }
+      </div>
+      <ng-container *ngTemplateOutlet="desprendible; context: { $implicit: d.liquidacion }" />
+    </div>
+    <footer class="modal__footer nom-pie">
+      @if (puedeOperar()) {
+        @if (d.estado === 'BORRADOR' || d.estado === 'RECHAZADO') {
+          <button type="button" class="btn btn--danger" (click)="eliminar()" [disabled]="!!accion()">Eliminar</button>
+          <button type="button" class="btn btn--secondary" (click)="abrirLiquidar(d)" [disabled]="!!accion()">Cambiar novedades</button>
+        }
+        @if (d.estado === 'BORRADOR' || d.estado === 'ENVIANDO') {
+          <button type="button" class="btn btn--primary" (click)="emitir()" [disabled]="!!accion()">
+            @if (accion() === 'emitir') { <span class="spinner" aria-hidden="true"></span> Enviando… }
+            @else { {{ d.estado === 'ENVIANDO' ? 'Reintentar el envío' : 'Emitir ante la DIAN' }} }
+          </button>
+        }
+        @if (d.estado === 'VALIDADO') {
+          <button type="button" class="btn btn--danger" (click)="anular()" [disabled]="!!accion()">
+            @if (accion() === 'anular') { <span class="spinner" aria-hidden="true"></span> Anulando… } @else { Anular nómina }
+          </button>
+        }
+      }
+      <button type="button" class="btn btn--close" (click)="cerrar()" [disabled]="!!accion()">Cerrar</button>
+    </footer>
+  </div>
+}
+
+<!-- El desprendible: devengados, deducciones y neto. Lo usan la vista previa y el detalle. -->
+<ng-template #desprendible let-r>
+  <div class="nom-desp">
+    <table class="nom-desp__tabla">
+      <thead><tr><th>Devengados</th><th></th><th class="num">Valor</th></tr></thead>
+      <tbody>
+        @for (f of devengadosDe(r); track $index) {
+          <tr><td>{{ f.concepto }}</td><td class="nom-desp__det">{{ f.detalle }}</td><td class="num">{{ pesos(f.valor) }}</td></tr>
+        }
+        <tr class="nom-desp__sub"><td colspan="2">Total devengado</td><td class="num">{{ pesos(r.totales.devengado) }}</td></tr>
+      </tbody>
+      <thead><tr><th>Deducciones</th><th></th><th class="num">Valor</th></tr></thead>
+      <tbody>
+        @for (f of deduccionesDe(r); track $index) {
+          <tr><td>{{ f.concepto }}</td><td class="nom-desp__det">{{ f.detalle }}</td><td class="num">{{ pesos(f.valor) }}</td></tr>
+        }
+        <tr class="nom-desp__sub"><td colspan="2">Total deducciones</td><td class="num">{{ pesos(r.totales.deducido) }}</td></tr>
+      </tbody>
+    </table>
+    <div class="nom-desp__neto"><span>Neto a pagar</span><b>{{ pesos(r.totales.neto) }}</b></div>
+    <p class="nom-desp__nota">Base de cotización: {{ pesos(r.ibc) }} · {{ r.diasTrabajados }} días laborados</p>
+  </div>
+</ng-template>

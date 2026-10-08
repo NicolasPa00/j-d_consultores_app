@@ -49,12 +49,12 @@ export interface MeResponse {
 /** Vistas gestionables desde Configuración → Roles y permisos (= ítems del sidebar). */
 export type Vista =
   | 'dashboard' | 'importar' | 'ordenes' | 'informes' | 'precuentas' | 'empresas' | 'terceros'
-  | 'parametrizacion' | 'facturacion' | 'documentos_soporte' | 'contabilidad' | 'informes_contables' | 'cartera' | 'compras' | 'profesionales' | 'configuracion';
+  | 'parametrizacion' | 'facturacion' | 'documentos_soporte' | 'nomina' | 'contabilidad' | 'informes_contables' | 'cartera' | 'compras' | 'profesionales' | 'configuracion';
 
 /** Catálogo completo de vistas. Es también el fallback cuando no hay permisos conocidos. */
 export const VISTAS: Vista[] = [
   'dashboard', 'importar', 'ordenes', 'informes', 'precuentas', 'empresas', 'terceros',
-  'parametrizacion', 'facturacion', 'documentos_soporte', 'contabilidad', 'informes_contables', 'cartera', 'compras', 'profesionales', 'configuracion',
+  'parametrizacion', 'facturacion', 'documentos_soporte', 'nomina', 'contabilidad', 'informes_contables', 'cartera', 'compras', 'profesionales', 'configuracion',
 ];
 
 export interface PermisoRol {
@@ -1622,6 +1622,153 @@ export interface FacturaManualForm {
   forma_pago_id?: string;
   medio_pago_id?: string;
   plazo_dias?: number;
+}
+
+// ─── A5-01 · Nómina electrónica ──────────────────────────────────────────────────────────────
+
+export type EstadoNomina = 'BORRADOR' | 'ENVIANDO' | 'VALIDADO' | 'RECHAZADO' | 'ANULADO';
+
+/** Tablas para los selectores de la pantalla de Nómina (`GET /nomina/catalogos`). */
+export interface CatalogosNomina {
+  tipos_contrato: { codigo: string; nombre: string }[];
+  tipos_trabajador: { codigo: string; nombre: string }[];
+  subtipos_trabajador: { codigo: string; nombre: string }[];
+  metodos_pago: { codigo: string; nombre: string; conCuenta: boolean }[];
+  tipos_cuenta: { codigo: string; nombre: string }[];
+  tipos_hora: { clave: string; nombre: string; porcentaje: number }[];
+  tipos_licencia: { clave: string; nombre: string; remunerada: boolean }[];
+  parametros: { anio: number; smmlv: number; auxilio_transporte: number }[];
+}
+
+/** Lo que escribe el formulario de la ficha laboral. */
+export interface EmpleadoForm {
+  tercero_id: string;
+  cargo: string;
+  salario: number | null;
+  salario_integral: boolean;
+  tipo_contrato: string;
+  tipo_trabajador: string;
+  subtipo_trabajador: string;
+  alto_riesgo: boolean;
+  fecha_ingreso: string;
+  fecha_retiro: string;
+  metodo_pago: string;
+  banco: string;
+  tipo_cuenta: string;
+  numero_cuenta: string;
+  eps: string;
+  fondo_pension: string;
+  fondo_cesantias: string;
+  arl: string;
+  caja_compensacion: string;
+}
+
+/** Ficha laboral de un tercero (`GET /nomina/empleados`). */
+export interface EmpleadoNomina {
+  id: string;
+  tercero_id: string;
+  nombre: string;
+  numero_documento: string;
+  tipo_documento_nombre: string;
+  cargo: string | null;
+  salario: string;
+  salario_integral: boolean;
+  tipo_contrato: string;
+  tipo_trabajador: string;
+  subtipo_trabajador: string;
+  alto_riesgo: boolean;
+  fecha_ingreso: string;
+  fecha_retiro: string | null;
+  metodo_pago: string;
+  banco: string | null;
+  tipo_cuenta: string | null;
+  numero_cuenta: string | null;
+  eps: string | null;
+  fondo_pension: string | null;
+  fondo_cesantias: string | null;
+  arl: string | null;
+  caja_compensacion: string | null;
+  activo: boolean;
+  /** Lo que le falta a su ficha de Terceros para poder emitirle la nómina. */
+  faltantes: string[];
+}
+
+/** Novedades del mes, como se guardan y como las espera el servidor. */
+export interface NovedadesNomina {
+  horas?: { tipo: string; cantidad: number; inicio?: string | null; fin?: string | null }[];
+  vacaciones?: { dias: number; compensadas?: boolean; inicio?: string | null; fin?: string | null }[];
+  licencias?: { tipo: string; dias: number; inicio?: string | null; fin?: string | null }[];
+  incapacidades?: { dias: number; inicio?: string | null; fin?: string | null }[];
+  comisiones?: number;
+  bonificacion?: number;
+  prima?: { dias: number };
+  cesantias?: { dias: number };
+}
+
+/** Lo que devuelve `nomina/calculo.js`: el desprendible. */
+export interface ResultadoLiquidacion {
+  diasTrabajados: number;
+  ibc: number;
+  devengados: {
+    sueldo: number;
+    auxilioTransporte: number;
+    horas: { tipo: string; codigo: number; cantidad: number; porcentaje: number; valor: number }[];
+    comisiones: number;
+    bonificacion: number;
+    vacaciones: { codigo: number; dias: number; valor: number }[];
+    licencias: { tipo: string; codigo: number; dias: number; valor: number }[];
+    incapacidades: { codigo: number; dias: number; valor: number }[];
+    prima: { dias: number; valor: number } | null;
+    cesantias: { dias: number; valor: number; intereses: number; porcentajeIntereses: number } | null;
+  };
+  deducciones: {
+    salud: { porcentaje: number; valor: number };
+    pension: { porcentaje: number; valor: number };
+    fondoSolidaridad: { porcentaje: number; valor: number } | null;
+  };
+  totales: { devengado: number; deducido: number; neto: number };
+}
+
+/** Una liquidación de nómina (`GET /nomina/liquidaciones`). */
+export interface LiquidacionNomina {
+  id: string;
+  empleado_id: string;
+  empleado_nombre: string;
+  empleado_documento: string;
+  empleado_cargo: string | null;
+  anio: number;
+  mes: number;
+  estado: EstadoNomina;
+  salario: string;
+  salario_integral: boolean;
+  novedades: NovedadesNomina;
+  liquidacion: ResultadoLiquidacion;
+  dias_trabajados: string;
+  total_devengado: string;
+  total_deducido: string;
+  neto: string;
+  fecha_pago: string;
+  observaciones: string | null;
+  reference_code: string | null;
+  numero: string | null;
+  cune: string | null;
+  qr_url: string | null;
+  errores: unknown;
+  validada_en: string | null;
+  nota_numero: string | null;
+  nota_cune: string | null;
+  anulada_en: string | null;
+  creado_en: string;
+}
+
+/** Cuerpo para guardar una liquidación. */
+export interface LiquidacionNominaForm {
+  empleado_id: string;
+  anio: number;
+  mes: number;
+  fecha_pago: string;
+  observaciones?: string;
+  novedades: NovedadesNomina;
 }
 
 /** Causal DIAN de una nota crédito (tabla oficial de Factus). */
