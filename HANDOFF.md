@@ -267,6 +267,16 @@
 > otra tipo 2 (el resto); (3) las horas extra se aceptan con la fecha `AAAA-MM-DD HH:MM:SS` (con espacio).
 > Las credenciales de producción NO sirven en el ambiente de pruebas («Client authentication failed»): las de pruebas
 > están en el panel de aliados, tarjeta «Sandbox», y quedaron en `sst_ws/.env` como `FACTUS_NOMINA_*`.
+> **✅ 8-oct (~14:52) · NOTAS DE AJUSTE DE NÓMINA: 4 de 4 VALIDADAS** (`NAN1`…`NAN4`, eliminan NEF30, NEF29, NEF28 y
+> NEF27; respuestas en `2-pruebas/nomina/notas-ajuste-261008/`). El proveedor confirmó por WhatsApp que **con 4 notas
+> validadas el entorno queda habilitado y se puede pasar a producción**, que el 403 al crear nóminas era por haber
+> pasado a la fase de notas (habilita un documento a la vez) y que **«es muy común que quede sin validar en sandbox; se
+> resuelve enviando la misma petición»**. `POST /v2/adjustment-payrolls { payroll_number, reference_code }`; la nómina
+> queda con `related_documents.adjustment_payroll`; una segunda nota sobre la misma nómina o sobre una que no existe
+> responde 422. Solo existe la nota de ELIMINACIÓN: corregir = eliminar y volver a emitir. `emitirNotaAjusteNomina()` ya
+> está en el adaptador. **Falta para producción:** que el usuario confirme con el proveedor que quedó habilitado, crear
+> los rangos de nómina y de nota de ajuste en producción (prefijos por decidir con la contadora) y **construir el
+> módulo** (hoy solo hay fórmulas, adaptador y scripts).
 > **8-oct (~14:45) · EXPLORACIÓN DEL API** (`scripts/nomina-exploracion-sandbox.mjs`, 47 casos raros; resultados en
 > `2-pruebas/nomina/exploracion-2610081942/resumen.json`). Solo llegaron a probarse de verdad los primeros 18: a mitad de
 > la corrida **el proveedor dejó de permitir crear nóminas** (403 «La empresa no tiene habilitada la creación de este
