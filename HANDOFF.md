@@ -267,6 +267,22 @@
 > otra tipo 2 (el resto); (3) las horas extra se aceptan con la fecha `AAAA-MM-DD HH:MM:SS` (con espacio).
 > Las credenciales de producción NO sirven en el ambiente de pruebas («Client authentication failed»): las de pruebas
 > están en el panel de aliados, tarjeta «Sandbox», y quedaron en `sst_ws/.env` como `FACTUS_NOMINA_*`.
+> **8-oct (~14:45) · EXPLORACIÓN DEL API** (`scripts/nomina-exploracion-sandbox.mjs`, 47 casos raros; resultados en
+> `2-pruebas/nomina/exploracion-2610081942/resumen.json`). Solo llegaron a probarse de verdad los primeros 18: a mitad de
+> la corrida **el proveedor dejó de permitir crear nóminas** (403 «La empresa no tiene habilitada la creación de este
+> documento»; sin confirmar si es porque pasó el ambiente a la fase de nota de ajuste). Quedaron 30 nóminas validadas
+> (NEF1…NEF30) y ninguna pendiente. **Lo aprendido:** `pay_period_half` es un ENTERO 1/2 (la doc dice texto) y la
+> quincenal valida; **`days_worked` mínimo 1 y `suel.amount` mínimo 0,01** → un mes entero de vacaciones o de licencia, o
+> un aprendiz que solo recibe apoyo de sostenimiento, NO se puede enviar con ceros (**sin resolver cómo se reporta**:
+> preguntar al proveedor); el número de documento del trabajador debe ser numérico (la DIAN rechaza un pasaporte con
+> letras, regla NIE045); **un rechazo de la DIAN deja la nómina creada y pendiente y bloquea las demás con 409: hay que
+> eliminarla con `DELETE /v2/payrolls/reference/:reference_code`**; `deductions.terc` es lista; las horas solo aceptan
+> `AAAA-MM-DD HH:MM:SS`. Validaron: periodo de un año anterior, periodo futuro, pago en otro mes, ingreso a mitad de mes,
+> liquidación final con `retirement_date`, pensionado sin aporte a pensión, tiempo parcial y cédula de extranjería.
+> **Sin probar (bloqueados):** alto riesgo, un solo apellido, tildes y ñ, incapacidades 2 y 3, pagos no salariales,
+> viáticos y dotación, horas con fracción o sin fechas, porcentaje de recargo distinto al de la tabla, huelga, todas las
+> deducciones opcionales, neto negativo, salario alto sin fondo de solidaridad, medios de pago, importes sin decimales,
+> salario bajo el mínimo, dos nóminas del mismo trabajador en el mes y reenvío de una referencia ya validada.
 > **8-oct (tarde) · PRIMER BLOQUE DE A5-01, rama `nomina-electronica` del backend, commiteado en local, sin push:**
 > `src/modules/nomina/calculo.js` (liquidación mensual: sueldo por días, auxilio de transporte, 7 tipos de horas extra
 > y recargos, vacaciones, licencias, incapacidad, comisiones, bonificación, prima, cesantías e intereses, salud,
