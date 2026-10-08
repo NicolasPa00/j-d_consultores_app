@@ -1663,6 +1663,26 @@ export interface DocumentoSoporte {
   creado_en: string;
 }
 
+/** 7-oct-2026 · Una visita programada que viene (o ya pasó sin soportes): recordatorio de Órdenes. */
+export interface VisitaProxima {
+  orden_id: string;
+  codigo: string;
+  empresa_nombre: string | null;
+  pagador: string | null;
+  ciudad_ejecucion: string | null;
+  direccion: string | null;
+  modalidad_ejecucion: string | null;
+  actividad: string | null;
+  fecha: string;
+  hora_inicio: string;
+  hora_fin: string;
+  asesores: string | null;
+  /** Negativo = ya empezó. */
+  minutos_para_iniciar: number;
+  /** Negativo = ya terminó (y la orden sigue sin soportes). */
+  minutos_para_terminar: number;
+}
+
 /** 7-oct-2026 · Un radicado de la orden ante la ARL. `vigente` = el más reciente (el que se ve en la tabla). */
 export interface RadicadoOrden {
   id: string;

@@ -10,7 +10,7 @@ import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
-import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, ClaveGasto, DetalleCobroOrden, GASTOS_COBRO, EstadoArl, ESTADOS_ARL, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, TipoViatico, CasillaEditable, FilaPrefactura, FormatoPrevio, FranjaVisita, HistorialCobro, HistorialEstado, HistorialEstadoArl, Ocupacion, Orden, OrdenManualForm, Plantilla, PrevisualizacionPrefactura, Profesional, RadicadoOrden, RegistroArl, ResultadoCrucePrefactura, Tercero } from '../../core/models';
+import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, ClaveGasto, DetalleCobroOrden, GASTOS_COBRO, EstadoArl, ESTADOS_ARL, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, TipoViatico, CasillaEditable, FilaPrefactura, FormatoPrevio, FranjaVisita, HistorialCobro, HistorialEstado, HistorialEstadoArl, Ocupacion, Orden, OrdenManualForm, Plantilla, PrevisualizacionPrefactura, Profesional, RadicadoOrden, RegistroArl, ResultadoCrucePrefactura, Tercero, VisitaProxima } from '../../core/models';
 import { aIsoFecha, fechaLocal } from '../../core/fechas';
 import {
   ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, opcionesDeCampo,
@@ -818,6 +818,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
     // El orden importa: load() marca `loading` antes de que llegue el primer
     // valor del query param, así la apertura queda en cola hasta tener el listado.
     this.load();
+    this.cargarProximas();
     // Pulsar la campanita estando YA en Órdenes solo cambia el query param —el
     // componente no se reconstruye—, así que se escuchan los cambios en vez de
     // leer el snapshot una única vez.
@@ -1559,6 +1560,70 @@ export class ValidationComponent implements OnInit, OnDestroy {
         this.alerts.error('No se pudo marcar la orden', mensajeError(err, 'Inténtelo de nuevo.'));
       },
     });
+  }
+
+  // ================= Próximas a ejecutar (7-oct-2026) =================
+  // Recordatorio de las visitas programadas que vienen, de la más cercana a la más
+  // lejana, con un color por lo que falta. Se pide al entrar (para el contador del
+  // botón) y cada vez que se abre la ventana.
+  protected readonly proximas = signal<VisitaProxima[]>([]);
+  protected readonly proximasOpen = signal(false);
+  protected readonly proximasCargando = signal(false);
+  /** Las que piden atención ya: atrasadas, en curso o que empiezan hoy. */
+  protected readonly proximasUrgentes = computed(() =>
+    this.proximas().filter((v) => ['atrasada', 'en-curso', 'muy-pronto', 'hoy'].includes(this.urgenciaDe(v).clave)).length);
+
+  protected cargarProximas(): void {
+    if (!this.isBrowser) return;
+    this.proximasCargando.set(true);
+    this.api.ordenesProximas(7).subscribe({
+      next: (r) => { this.proximasCargando.set(false); this.proximas.set(r.data); },
+      error: () => this.proximasCargando.set(false),
+    });
+  }
+
+  protected abrirProximas(): void {
+    this.proximasOpen.set(true);
+    this.cargarProximas();
+  }
+
+  /** Abre la orden de la visita (la bandeja se recarga y abre su ficha, como desde la campanita). */
+  protected abrirOrdenDeVisita(v: VisitaProxima): void {
+    this.proximasOpen.set(false);
+    this.router.navigate([], { relativeTo: this.route, queryParams: { os: v.orden_id }, queryParamsHandling: 'merge' });
+  }
+
+  /** Qué tan cerca está la visita: de ahí salen el color y el texto de la fila. */
+  protected urgenciaDe(v: VisitaProxima): { clave: string; texto: string } {
+    const ini = v.minutos_para_iniciar;
+    if (v.minutos_para_terminar < 0) return { clave: 'atrasada', texto: `Terminó hace ${this.duracion(-v.minutos_para_terminar)} · sin soportes` };
+    if (ini <= 0) return { clave: 'en-curso', texto: 'En curso ahora' };
+    if (ini <= 180) return { clave: 'muy-pronto', texto: `Empieza en ${this.duracion(ini)}` };
+    const hoy = this.hoyIso();
+    if (v.fecha === hoy) return { clave: 'hoy', texto: `Hoy · en ${this.duracion(ini)}` };
+    const manana = new Date(); manana.setDate(manana.getDate() + 1);
+    const mIso = `${manana.getFullYear()}-${String(manana.getMonth() + 1).padStart(2, '0')}-${String(manana.getDate()).padStart(2, '0')}`;
+    if (v.fecha === mIso) return { clave: 'manana', texto: 'Mañana' };
+    return { clave: 'despues', texto: `En ${Math.ceil(ini / 1440)} días` };
+  }
+
+  private duracion(min: number): string {
+    if (min < 60) return `${min} min`;
+    const h = Math.floor(min / 60);
+    if (h < 24) return `${h} h${min % 60 ? ` ${min % 60} min` : ''}`;
+    const d = Math.floor(h / 24);
+    return `${d} día${d === 1 ? '' : 's'}`;
+  }
+
+  /** '2026-10-08' → 'jue 8 oct'. */
+  protected diaVisita(iso: string): string {
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' });
+  }
+
+  protected horaVisita(hhmm: string): string {
+    const [h, m] = hhmm.split(':').map(Number);
+    return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'a. m.' : 'p. m.'}`;
   }
 
   // ================= Radicados ante Bolívar (1-oct / 7-oct-2026) =================

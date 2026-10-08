@@ -58,6 +58,19 @@
       }
     </select>
 
+    <!-- 7-oct-2026 · Recordatorio de las visitas programadas que vienen. El número es
+         lo que pide atención ya (atrasadas, en curso o de hoy). -->
+    <button type="button" class="btn btn--secondary btn--sm prox-btn" (click)="abrirProximas()"
+            [title]="proximas().length ? proximas().length + ' visitas programadas en los próximos 7 días' : 'No hay visitas programadas en los próximos 7 días'">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 2M9 3h6" />
+      </svg>
+      Próximas a ejecutar
+      @if (proximas().length) {
+        <span class="prox-btn__n" [class.prox-btn__n--urgente]="proximasUrgentes()">{{ proximasUrgentes() || proximas().length }}</span>
+      }
+    </button>
+
     @if (puedeCargarPrefactura()) {
       <!-- T0-09 · Cargar la prefactura de Bolívar (PDF) con IA: extrae, cruza
            contra Orbita y abre el modal de previsualización. No escribe nada
@@ -2691,6 +2704,60 @@
           </button>
         }
       </div>
+    </footer>
+  </div>
+}
+
+<!-- 7-oct-2026 · Próximas a ejecutar: las visitas programadas, de la más cercana a la
+     más lejana, con un color por lo que falta. Pulsar una fila abre la orden. -->
+@if (proximasOpen()) {
+  <div class="modal-backdrop" (click)="proximasOpen.set(false)"></div>
+  <div class="modal modal--lg" role="dialog" aria-modal="true" aria-labelledby="proxTitle">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="proxTitle">Próximas a ejecutar</h3>
+        <p class="modal__sub">Visitas programadas de los próximos 7 días, y las que ya pasaron y siguen sin soportes.</p>
+      </div>
+      <button type="button" class="icon-action" (click)="proximasOpen.set(false)" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      <div class="prox-leyenda" aria-hidden="true">
+        <span class="prox-leyenda__i prox--atrasada">Atrasada</span>
+        <span class="prox-leyenda__i prox--muy-pronto">En curso o en menos de 3 h</span>
+        <span class="prox-leyenda__i prox--hoy">Hoy</span>
+        <span class="prox-leyenda__i prox--manana">Mañana</span>
+        <span class="prox-leyenda__i prox--despues">Esta semana</span>
+      </div>
+      @if (proximasCargando() && !proximas().length) {
+        <p class="modal__sub"><span class="spinner spinner--oscuro" aria-hidden="true"></span> Cargando…</p>
+      } @else if (!proximas().length) {
+        <p class="prox-vacio">No hay visitas programadas en los próximos 7 días.</p>
+      } @else {
+        <ul class="prox-lista">
+          @for (v of proximas(); track v.orden_id + v.fecha + v.hora_inicio) {
+            @let u = urgenciaDe(v);
+            <li>
+              <button type="button" class="prox" [class]="'prox prox--' + u.clave" (click)="abrirOrdenDeVisita(v)" [title]="'Abrir ' + v.codigo">
+                <span class="prox__cuando">
+                  <b>{{ diaVisita(v.fecha) }}</b>
+                  <span>{{ horaVisita(v.hora_inicio) }} – {{ horaVisita(v.hora_fin) }}</span>
+                </span>
+                <span class="prox__que">
+                  <b>{{ v.codigo }} · {{ v.empresa_nombre || 'Sin empresa' }}</b>
+                  <span>{{ v.asesores || 'Sin asesor' }}@if (v.pagador) { · {{ v.pagador }} }@if (v.ciudad_ejecucion) { · {{ v.ciudad_ejecucion }} }@if (v.modalidad_ejecucion) { · {{ v.modalidad_ejecucion }} }</span>
+                  @if (v.actividad) { <small>{{ v.actividad }}</small> }
+                </span>
+                <span class="prox__falta">{{ u.texto }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--close" (click)="proximasOpen.set(false)">Cerrar</button>
     </footer>
   </div>
 }

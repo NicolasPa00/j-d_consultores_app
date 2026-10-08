@@ -491,3 +491,70 @@
 @media (max-width: 600px) {
   .radicado-form { grid-template-columns: 1fr; }
 }
+
+/* 7-oct-2026 · Próximas a ejecutar. Un color por lo que falta para la visita. */
+.prox-btn { position: relative; }
+.prox-btn__n {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  margin-left: 0.3rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+  font-size: 0.72rem;
+  font-weight: 700;
+
+  &--urgente { background: var(--danger); color: #fff; }
+}
+.prox-leyenda { display: flex; flex-wrap: wrap; gap: 0.4rem 0.9rem; font-size: 0.76rem; color: var(--text-muted); }
+.prox-leyenda__i {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+
+  &::before { content: ''; width: 0.7rem; height: 0.7rem; border-radius: 3px; background: var(--prox); }
+}
+.prox-vacio { margin: 0; padding: 1.5rem 0; text-align: center; color: var(--text-muted); }
+.prox-lista { display: flex; flex-direction: column; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.prox {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr) auto;
+  gap: 0.9rem;
+  align-items: center;
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border-soft);
+  border-left: 5px solid var(--prox);
+  border-radius: var(--radius-md, 10px);
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover { background: #f5f7fd; }
+}
+.prox__cuando, .prox__que { display: flex; flex-direction: column; min-width: 0; }
+.prox__cuando b { text-transform: capitalize; }
+.prox__cuando span, .prox__que span { font-size: 0.8rem; color: var(--text-muted); }
+.prox__que b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prox__que small { color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prox__falta {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--prox);
+  color: var(--prox-texto, #fff);
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.prox--atrasada { --prox: #b42318; }
+.prox--en-curso, .prox--muy-pronto { --prox: #e04f16; }
+.prox--hoy { --prox: #f59e0b; --prox-texto: #3b2600; }
+.prox--manana { --prox: #fcd34d; --prox-texto: #3b2600; }
+.prox--despues { --prox: #2d7bc8; }
+@media (max-width: 700px) {
+  .prox { grid-template-columns: 1fr; gap: 0.35rem; }
+  .prox__falta { justify-self: start; }
+}
