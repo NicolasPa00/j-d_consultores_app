@@ -256,6 +256,17 @@
 > cesantías, vacaciones, licencia, horas extra y recargos, meses diferentes); al terminar se les avisa y habilitan la nota
 > de ajuste. API: `POST /v2/payrolls`, `POST /v2/adjustment-payrolls` (solo documentan la de eliminación),
 > `/v2/numbering-ranges/payrolls`; docs en `developers.factus.com.co/nomina/…`. No se ha enviado ninguna nómina.
+> **✅ 8-oct (~14:35) · LAS 20 PRUEBAS DE NÓMINA VALIDADAS en el ambiente de pruebas con las credenciales propias del
+> NIT:** `NEF1`…`NEF20`, 20 de 20 validadas y sin avisos (comprobado listando `/v2/payrolls`). Cuerpos y respuestas en
+> `2-pruebas/nomina/sandbox-26100819*/`. **Siguiente paso: el usuario le avisa al proveedor** para que habilite la nota
+> de ajuste (rango `NAN` ya creado en el sandbox). Tres hallazgos que la documentación no dice:
+> (1) **el proveedor a veces responde 500 después de crear la nómina**: queda con número y CUNE pero sin validar,
+> bloquea las siguientes con 409 «pendiente por enviar a la DIAN» y **no se deja eliminar**; se destraba **repitiendo el
+> mismo envío con la misma `reference_code`** (devuelve la misma, ya validada) — el módulo tiene que reintentar así,
+> nunca con otra referencia; (2) **`deductions.dedu` (fondo de solidaridad) es una LISTA**: una fila tipo 1 (0,5 %) y
+> otra tipo 2 (el resto); (3) las horas extra se aceptan con la fecha `AAAA-MM-DD HH:MM:SS` (con espacio).
+> Las credenciales de producción NO sirven en el ambiente de pruebas («Client authentication failed»): las de pruebas
+> están en el panel de aliados, tarjeta «Sandbox», y quedaron en `sst_ws/.env` como `FACTUS_NOMINA_*`.
 > **8-oct (tarde) · PRIMER BLOQUE DE A5-01, rama `nomina-electronica` del backend, commiteado en local, sin push:**
 > `src/modules/nomina/calculo.js` (liquidación mensual: sueldo por días, auxilio de transporte, 7 tipos de horas extra
 > y recargos, vacaciones, licencias, incapacidad, comisiones, bonificación, prima, cesantías e intereses, salud,
@@ -265,10 +276,7 @@
 > para nómina** (`FACTUS_NOMINA_*`; sin ellas usa las `FACTUS_*`, que es lo correcto en producción).
 > **Las 20 pruebas:** `node --import tsx scripts/nomina-pruebas-sandbox.mjs` simula (arma, revisa que cuadren y guarda
 > los cuerpos en `2-pruebas/nomina/`); con `--enviar --solo=1` manda una y con `--enviar` las 20. Se niega a enviar fuera
-> del ambiente de pruebas o sin las credenciales propias del NIT. **⛔ Falta que el usuario llene las cuatro
-> `FACTUS_NOMINA_*` en `sst_ws/.env`** (quedaron comentadas al final del archivo). Sin resolver hasta la primera prueba
-> real: si las horas llevan la fecha con espacio (ejemplo oficial, lo que se envía) o con `T` (`--fecha-hora=T`), y si el
-> fondo de solidaridad se acepta como un solo `dedu` tipo 1. **Falta de A5-01:** tablas (`sst.empleados`,
+> del ambiente de pruebas o sin las credenciales propias del NIT. **Falta de A5-01:** tablas (`sst.empleados`,
 > `sst.nomina_liquidaciones`), pantalla, nota de ajuste, PDF, contabilización (B6-01) y el rango de nómina en producción.
 >
 > 🆕 **8-oct-2026 (tarde) · TRES PETICIONES NUEVAS — construidas en la rama `peticiones-8-oct` y DESPLEGADAS en producción el 8-oct (~14:09 hora Colombia)** con `docs/4-despliegue/despliegue-peticiones-8-oct.sh`: respaldo `~/respaldos/orbita-antes-peticiones-8oct-20261008-1408.dump` (+ storage), ensayo de la migración con conteos idénticos, servidor en `master b3b15d1` / `main 0d6d0fb`, servicios activos, health y login 200. Sin probar por pantalla en producción. Revertir: `git reset --hard c6df1ae` / `521664d`, build y restart (la columna nueva no estorba).
