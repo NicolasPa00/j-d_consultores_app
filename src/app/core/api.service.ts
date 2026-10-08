@@ -1117,6 +1117,14 @@ export class ApiService {
   eliminarLiquidacionNomina(id: string): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(`${this.base}/nomina/liquidaciones/${id}`);
   }
+  /** Salario mínimo y auxilio de transporte de un año (se crea o se actualiza). */
+  guardarParametrosNomina(body: { anio: number; smmlv: number; auxilio_transporte: number }): Observable<Wrap<CatalogosNomina['parametros']> & { message: string }> {
+    return this.http.put<Wrap<CatalogosNomina['parametros']> & { message: string }>(`${this.base}/nomina/parametros`, body);
+  }
+  /** Le manda el desprendible por correo al empleado (al de su ficha, o al que se indique). */
+  enviarDesprendibleNomina(id: string, correo?: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.base}/nomina/liquidaciones/${id}/enviar`, correo ? { correo } : {});
+  }
   /** El desprendible en PDF, para entregárselo al empleado. */
   desprendibleNomina(id: string): Observable<Blob> {
     return this.http.get(`${this.base}/nomina/liquidaciones/${id}/desprendible`, { responseType: 'blob' });

@@ -267,6 +267,19 @@
 > otra tipo 2 (el resto); (3) las horas extra se aceptan con la fecha `AAAA-MM-DD HH:MM:SS` (con espacio).
 > Las credenciales de producción NO sirven en el ambiente de pruebas («Client authentication failed»): las de pruebas
 > están en el panel de aliados, tarjeta «Sandbox», y quedaron en `sst_ws/.env` como `FACTUS_NOMINA_*`.
+> **8-oct (~15:35) · NÓMINA: PARÁMETROS EDITABLES, CORREO DEL DESPRENDIBLE Y SCRIPT DE DESPLIEGUE.**
+> · **Pestaña «Parámetros»** (Nómina): salario mínimo y auxilio de transporte por año en `sst.nomina_parametros`
+>   (sembrados 2025 = 1.423.500 / 200.000 y 2026 = 1.750.905 / 249.095; **❓ confirmar con la contadora**). `liquidar()`
+>   los recibe del servicio (`parametros.service.js`); los de `calculo.js` quedan solo como respaldo para scripts.
+>   Cambiar un año no recalcula las nóminas guardadas. Sin el año cargado no se puede liquidar ese año.
+> · **«Enviar al empleado»** en el detalle de una nómina VALIDADA: correo con el desprendible en PDF
+>   (`enviarDesprendible`, `POST /nomina/liquidaciones/:id/enviar`). La ficha del empleado tiene ahora `correo`
+>   (columna nueva `empleados.correo`); se puede escribir otro al enviar. Probado con el correo en modo consola.
+> · La migración `2026-10-08-nomina.sql` creció (tabla de parámetros + columna correo): **sigue siendo UNA sola y no se
+>   ha desplegado**. Script listo y sin ejecutar: `bash docs/4-despliegue/despliegue-nomina.sh` (respaldo, ensayo,
+>   migración, pull, `npm ci`, build, reinicio y humo); antes hay que fusionar `nomina-electronica` en `master`/`main`
+>   y hacer push. Revisión por pantalla: `revision-nomina-parametros.mjs`.
+>
 > **8-oct (~15:25) · NÓMINA: «OTROS PAGOS» Y «OTRAS DEDUCCIONES».** Dos secciones nuevas al liquidar: pagos (auxilio
 > salarial o no, viáticos, bonificación no salarial, otro pago con descripción) y deducciones (libranza con descripción,
 > retención en la fuente, embargo, cooperativa, anticipo, deuda con la empresa, pensión voluntaria, AFC, otra). Lo

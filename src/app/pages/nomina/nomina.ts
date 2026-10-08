@@ -14,12 +14,12 @@ import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 import { OpcionBusqueda, SelectorBusquedaComponent } from '../../shared/selector-busqueda/selector-busqueda';
 
-type Pestana = 'liquidaciones' | 'empleados';
+type Pestana = 'liquidaciones' | 'empleados' | 'parametros';
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 const EMPLEADO_VACIO: EmpleadoForm = {
-  tercero_id: '', cargo: '', salario: null, salario_integral: false, tipo_contrato: '2', tipo_trabajador: '01',
+  tercero_id: '', cargo: '', correo: '', salario: null, salario_integral: false, tipo_contrato: '2', tipo_trabajador: '01',
   subtipo_trabajador: '00', alto_riesgo: false, fecha_ingreso: '', fecha_retiro: '', metodo_pago: '47', banco: '',
   tipo_cuenta: '2', numero_cuenta: '', eps: '', fondo_pension: '', fondo_cesantias: '', arl: '', caja_compensacion: '',
 };
@@ -127,6 +127,15 @@ export class NominaComponent implements OnInit {
   // ---------------- Detalle ----------------
   protected readonly detalle = signal<LiquidacionNomina | null>(null);
   protected readonly accion = signal<string | null>(null);
+  /** Ventana para enviarle el desprendible al empleado, y el correo al que sale. */
+  protected readonly enviarOpen = signal(false);
+  protected readonly correoEnvio = signal('');
+
+  // ---------------- Parámetros del año ----------------
+  protected readonly paramAnio = signal<number | null>(null);
+  protected readonly paramSmmlv = signal<number | null>(null);
+  protected readonly paramAuxilio = signal<number | null>(null);
+  protected readonly guardandoParam = signal(false);
 
   ngOnInit(): void {
     this.api.catalogosNomina().subscribe({ next: (r) => this.catalogos.set(r.data), error: () => {} });
@@ -171,7 +180,7 @@ export class NominaComponent implements OnInit {
     if (!this.terceros().length) this.api.listTerceros().subscribe({ next: (r) => this.terceros.set(r.data), error: () => {} });
     this.empleadoId.set(e?.id ?? null);
     this.empleadoForm = e ? {
-      tercero_id: e.tercero_id, cargo: e.cargo ?? '', salario: Number(e.salario), salario_integral: e.salario_integral,
+      tercero_id: e.tercero_id, cargo: e.cargo ?? '', correo: e.correo ?? '', salario: Number(e.salario), salario_integral: e.salario_integral,
       tipo_contrato: e.tipo_contrato, tipo_trabajador: e.tipo_trabajador, subtipo_trabajador: e.subtipo_trabajador,
       alto_riesgo: e.alto_riesgo, fecha_ingreso: e.fecha_ingreso, fecha_retiro: e.fecha_retiro ?? '', metodo_pago: e.metodo_pago,
       banco: e.banco ?? '', tipo_cuenta: e.tipo_cuenta ?? '2', numero_cuenta: e.numero_cuenta ?? '', eps: e.eps ?? '',
@@ -473,6 +482,63 @@ export class NominaComponent implements OnInit {
       error: (err) => {
         this.accion.set(null);
         this.alerts.error('No se pudo generar el desprendible', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  // ================= Enviar el desprendible =================
+  protected abrirEnviar(): void {
+    const d = this.detalle();
+    if (!d) return;
+    this.correoEnvio.set(this.empleados().find((e) => e.id === d.empleado_id)?.correo ?? '');
+    this.enviarOpen.set(true);
+  }
+
+  protected enviarDesprendible(): void {
+    const d = this.detalle();
+    const correo = this.correoEnvio().trim();
+    if (!d || this.accion()) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+      this.alerts.warning('Correo no válido', 'Revise la dirección del empleado.');
+      return;
+    }
+    this.accion.set('enviar');
+    this.api.enviarDesprendibleNomina(d.id, correo).subscribe({
+      next: (r) => {
+        this.accion.set(null);
+        this.enviarOpen.set(false);
+        this.alerts.success('Desprendible enviado', r.message);
+      },
+      error: (err) => {
+        this.accion.set(null);
+        this.alerts.error('No se pudo enviar el desprendible', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  // ================= Parámetros del año =================
+  /** Carga un año en el formulario para corregirlo (o lo deja listo para el año siguiente). */
+  protected editarParametro(p: { anio: number; smmlv: number; auxilio_transporte: number } | null): void {
+    const ultimo = this.catalogos()?.parametros[0];
+    this.paramAnio.set(p?.anio ?? (ultimo ? ultimo.anio + 1 : this.hoy.getFullYear()));
+    this.paramSmmlv.set(p?.smmlv ?? null);
+    this.paramAuxilio.set(p?.auxilio_transporte ?? null);
+  }
+
+  protected guardarParametro(): void {
+    const [anio, smmlv, auxilio] = [this.paramAnio(), this.paramSmmlv(), this.paramAuxilio()];
+    if (this.guardandoParam() || !anio || !smmlv || auxilio == null) return;
+    this.guardandoParam.set(true);
+    this.api.guardarParametrosNomina({ anio, smmlv, auxilio_transporte: auxilio }).subscribe({
+      next: (r) => {
+        this.guardandoParam.set(false);
+        this.catalogos.update((c) => (c ? { ...c, parametros: r.data } : c));
+        this.paramAnio.set(null);
+        this.alerts.success('Parámetros guardados', `Cifras de ${anio}. Aplican a lo que se liquide desde ahora.`);
+      },
+      error: (err) => {
+        this.guardandoParam.set(false);
+        this.alerts.error('No se pudieron guardar los parámetros', mensajeError(err, 'Revise las cifras.'));
       },
     });
   }

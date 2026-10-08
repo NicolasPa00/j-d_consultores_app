@@ -90,6 +90,22 @@
 }
 .nom-desp__nota { margin: 0.5rem 0 0; font-size: 0.76rem; color: var(--text-muted); }
 
+/* ───────── Parámetros del año ───────── */
+.nom-param__texto {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  padding: 1rem 1.25rem; color: var(--text-muted); font-size: 0.9rem;
+  p { margin: 0; max-width: 60ch; }
+}
+.nom-param__form {
+  display: grid; grid-template-columns: 120px repeat(2, minmax(160px, 1fr)) auto; gap: 0.75rem 1rem; align-items: end;
+  padding: 0 1.25rem 1rem;
+}
+.nom-param__botones { display: flex; gap: 0.5rem; }
+/* La ventana de enviar se abre encima del detalle. */
+.nom-encima { z-index: 60; }
+.modal.nom-encima { z-index: 61; }
+@media (max-width: 700px) { .nom-param__form { grid-template-columns: 1fr; } }
+
 /* ───────── Detalle ───────── */
 .nom-datos {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1rem;

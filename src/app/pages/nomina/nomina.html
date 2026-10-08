@@ -20,6 +20,7 @@
     <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'empleados'" (click)="cambiarPestana('empleados')">
       Empleados <span class="tab__count">{{ empleados().length }}</span>
     </button>
+    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'parametros'" (click)="cambiarPestana('parametros')">Parámetros</button>
   </div>
   @if (pestana() === 'liquidaciones') {
     <div class="nom-periodo">
@@ -122,6 +123,56 @@
   </div>
 }
 
+<!-- ======================= PARÁMETROS DEL AÑO ======================= -->
+@if (pestana() === 'parametros') {
+  <div class="card">
+    <div class="nom-param__texto">
+      <p>El salario mínimo y el auxilio de transporte con los que se liquida cada año. Cuando salga el decreto de diciembre, agregue aquí el año nuevo: no hace falta nada más.</p>
+      @if (puedeOperar() && paramAnio() === null) { <button type="button" class="btn btn--primary btn--sm" (click)="editarParametro(null)">Agregar año</button> }
+    </div>
+    @if (paramAnio() !== null) {
+      <form class="nom-param__form" (ngSubmit)="guardarParametro()">
+        <div class="form-field">
+          <label class="form-field__label" for="nomParAnio">Año *</label>
+          <input id="nomParAnio" class="form-control" type="number" min="2020" max="2100" [ngModel]="paramAnio()" (ngModelChange)="paramAnio.set(+$event || 0)" name="anio" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="nomParSmmlv">Salario mínimo mensual *</label>
+          <input id="nomParSmmlv" class="form-control" type="number" min="0" step="1" [ngModel]="paramSmmlv()" (ngModelChange)="paramSmmlv.set($event === null || $event === '' ? null : +$event)" name="smmlv" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="nomParAux">Auxilio de transporte *</label>
+          <input id="nomParAux" class="form-control" type="number" min="0" step="1" [ngModel]="paramAuxilio()" (ngModelChange)="paramAuxilio.set($event === null || $event === '' ? null : +$event)" name="auxilio" />
+        </div>
+        <div class="nom-param__botones">
+          <button type="button" class="btn btn--close" (click)="paramAnio.set(null)" [disabled]="guardandoParam()">Cancelar</button>
+          <button type="submit" class="btn btn--primary" [disabled]="guardandoParam() || !paramAnio() || !paramSmmlv() || paramAuxilio() === null">
+            @if (guardandoParam()) { <span class="spinner" aria-hidden="true"></span> } Guardar
+          </button>
+        </div>
+      </form>
+    }
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Año</th><th class="num">Salario mínimo mensual</th><th class="num">Auxilio de transporte</th><th class="num">Tope del auxilio (2 mínimos)</th><th class="col-actions">Acciones</th></tr></thead>
+        <tbody>
+          @for (p of catalogos()?.parametros ?? []; track p.anio) {
+            <tr>
+              <td><b>{{ p.anio }}</b></td>
+              <td class="num">{{ pesos(p.smmlv) }}</td>
+              <td class="num">{{ pesos(p.auxilio_transporte) }}</td>
+              <td class="num">{{ pesos(p.smmlv * 2) }}</td>
+              <td class="col-actions">@if (puedeOperar()) { <button type="button" class="btn btn--ghost btn--sm" (click)="editarParametro(p)">Editar</button> }</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="table__empty">No hay cifras cargadas: sin ellas no se puede liquidar.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
 <!-- ======================= FICHA DEL EMPLEADO ======================= -->
 @if (empleadoOpen()) {
   <div class="modal-backdrop" (click)="guardandoEmpleado() ? null : empleadoOpen.set(false)"></div>
@@ -150,6 +201,10 @@
         <div class="form-field">
           <label class="form-field__label" for="nomEmpCargo">Cargo</label>
           <input id="nomEmpCargo" class="form-control" type="text" maxlength="120" [(ngModel)]="empleadoForm.cargo" name="cargo" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="nomEmpCorreo">Correo</label>
+          <input id="nomEmpCorreo" class="form-control" type="email" maxlength="120" [(ngModel)]="empleadoForm.correo" name="correo" placeholder="Para enviarle el desprendible" />
         </div>
         <div class="form-field">
           <label class="form-field__label" for="nomEmpSalario">Salario mensual *</label>
@@ -493,12 +548,39 @@
           </button>
         }
         @if (d.estado === 'VALIDADO') {
+          <button type="button" class="btn btn--secondary" (click)="abrirEnviar()" [disabled]="!!accion()">Enviar al empleado</button>
           <button type="button" class="btn btn--danger" (click)="anular()" [disabled]="!!accion()">
             @if (accion() === 'anular') { <span class="spinner" aria-hidden="true"></span> Anulando… } @else { Anular nómina }
           </button>
         }
       }
       <button type="button" class="btn btn--close" (click)="cerrar()" [disabled]="!!accion()">Cerrar</button>
+    </footer>
+  </div>
+}
+
+<!-- ======================= ENVIAR EL DESPRENDIBLE ======================= -->
+@if (enviarOpen() && detalle(); as d) {
+  <div class="modal-backdrop nom-encima" (click)="accion() ? null : enviarOpen.set(false)"></div>
+  <div class="modal modal--sm nom-encima" role="dialog" aria-modal="true" aria-labelledby="nomEnvTitulo">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="nomEnvTitulo">Enviar el desprendible</h3>
+        <p class="modal__sub">{{ d.empleado_nombre }} · {{ periodo(d) }}</p>
+      </div>
+    </header>
+    <div class="modal__body">
+      <div class="form-field">
+        <label class="form-field__label" for="nomEnvCorreo">Correo del empleado *</label>
+        <input id="nomEnvCorreo" class="form-control" type="email" [ngModel]="correoEnvio()" (ngModelChange)="correoEnvio.set($event)" />
+        <p class="form-field__hint">Se le envía el comprobante en PDF. Para dejar el correo guardado, edite su ficha en Empleados.</p>
+      </div>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--close" (click)="enviarOpen.set(false)" [disabled]="!!accion()">Cancelar</button>
+      <button type="button" class="btn btn--primary" (click)="enviarDesprendible()" [disabled]="!!accion() || !correoEnvio().trim()">
+        @if (accion() === 'enviar') { <span class="spinner" aria-hidden="true"></span> Enviando… } @else { Enviar }
+      </button>
     </footer>
   </div>
 }

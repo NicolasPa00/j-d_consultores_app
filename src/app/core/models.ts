@@ -1646,6 +1646,8 @@ export interface CatalogosNomina {
 export interface EmpleadoForm {
   tercero_id: string;
   cargo: string;
+  /** A dónde se le envía el desprendible. */
+  correo: string;
   salario: number | null;
   salario_integral: boolean;
   tipo_contrato: string;
@@ -1673,6 +1675,7 @@ export interface EmpleadoNomina {
   numero_documento: string;
   tipo_documento_nombre: string;
   cargo: string | null;
+  correo: string | null;
   salario: string;
   salario_integral: boolean;
   tipo_contrato: string;
