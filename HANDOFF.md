@@ -267,6 +267,28 @@
 > otra tipo 2 (el resto); (3) las horas extra se aceptan con la fecha `AAAA-MM-DD HH:MM:SS` (con espacio).
 > Las credenciales de producción NO sirven en el ambiente de pruebas («Client authentication failed»): las de pruebas
 > están en el panel de aliados, tarjeta «Sandbox», y quedaron en `sst_ws/.env` como `FACTUS_NOMINA_*`.
+> **📩 8-oct (tarde) · TRES OBSERVACIONES DE LA CONTADORA** (sobre una factura manual que armó en producción para
+> Transporte de Sandoná, borrador de $2.075.820,01, comparada con la FV-1-807 de su software anterior):
+> 1. **Orden de los totales de la factura:** escribió «primero iría el subtotal - iva - Total bruto». **SIN ACLARAR** qué
+>    quiere exactamente (¿Subtotal → IVA → Total bruto, siendo «total bruto» el subtotal + IVA?). Hoy ORBITA muestra
+>    Total bruto → Subtotal → IVA → Total a pagar. **No se cambió nada**; el usuario le va a preguntar.
+> 2. **«Falta la autorretención»:** su asiento trae 13551816 / 23657502 por $19.188,25 (1,1 % del subtotal). **No es un
+>    fallo de código:** la contabilización ya la calcula sola en todas las ventas (`autorretencion()` en
+>    `contabilizacion.service.js`) **si existe una retención activa de tipo AUTORRETENCION**, y en producción no hay
+>    NINGUNA retención creada (consultado el 8-oct: 0 retenciones, 0 empresa emisora, 2 productos, reglas
+>    FV_AUTORRET_DB/CR sí están). Se arregla creando en Parametrización → Retenciones la autorretención del 1,1 % (en
+>    `jdd_dev`: código `AUTO-1.1`, «AUTORRETENCIÓN ESPECIAL», tipo AUTORRETENCION, 1,1 %, aplica a VENTA). **No se creó:**
+>    es dato de producción y falta la orden del usuario.
+> 3. **Comprobante de nómina de su software anterior** (abril de 2026, una empleada): sirve de modelo y de prueba.
+>    **(a)** `liquidar()` da EXACTAMENTE lo mismo en sueldo (27 días), vacaciones (3 días), salud y pensión, y confirma
+>    el auxilio de transporte de 2026 ($249.095, proporcional a los días laborados). Única diferencia: ellos muestran el
+>    auxilio en $224.185 y ORBITA en $224.185,50 (**su software redondea a pesos; SIN decidir si ORBITA debe hacerlo y
+>    cómo**). **(b)** El desprendible se rehízo con ESE formato (`desprendible.service.js`, backend `e999ccd`); muestra
+>    con los mismos datos en `3-entregables-y-respaldos/propuesta-comprobante-nomina/`.
+> También escribió **«NE-12 CONSECUTIVO DE NOMINA ELECTRONICA-DEPENDIENDO»**: el prefijo de nómina electrónica es **NE**;
+> **falta saber si el 12 es el último emitido o el siguiente** (el comprobante de abril era el n.º 6) y el consecutivo de
+> la nota de ajuste. Con eso se crean los rangos (`factus-rango-crear-nomina.mjs`).
+>
 > **⏸️ 8-oct (cierre) · NÓMINA EN PAUSA, POR DECISIÓN DEL USUARIO: NO DESPLEGAR hasta que el módulo esté completo.** Se
 > retoma cuando responda la contadora (¿emitían nómina electrónica desde el software anterior, con qué prefijo y último
 > número?; cómo se reporta un mes completo de vacaciones o licencia; revisión de las fórmulas; cuentas para la
