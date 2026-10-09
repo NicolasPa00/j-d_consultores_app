@@ -227,19 +227,24 @@
 > factura para ver el logo, decidir si se despliega la parte 1 del tercer lote, y asociar el prefijo FE en la DIAN cuando
 > aparezca en el portal de producción.
 > ▶️ **TRASPASO DEL 9-OCT-2026 (el desarrollador principal sale de viaje el fin de semana; retoma su compañero).**
-> **Qué hay en producción:** `master 69c3f50` / `main` con el lote «parametrización 9-oct» (bloque 🧾 de abajo), ya
-> cargado con los datos de JD&D. La contadora (Mireya) está usando Finanzas: parametriza, arma borradores y está por
-> emitir la primera factura real (FE-1001). **En producción todo lo emitido es real ante la DIAN.**
+> **Qué hay en producción (9-oct, ~18:03 hora Colombia):** `master 14dd815` / `main 4cc8bbf` = el lote «parametrización
+> 9-oct» (bloque 🧾 de abajo, con los datos de JD&D cargados) **más las dos opciones del borrador de factura**,
+> desplegadas con `bash docs/4-despliegue/despliegue-borrador-9-oct.sh` (respaldo
+> `~/respaldos/orbita-antes-borrador-9oct-20261009-1802.dump`; health y login 200). Revertir solo esto último:
+> `git reset --hard 69c3f50` (backend) / `24b15f4` (frontend), build y restart; sin migración.
+> **🎉 La contadora (Mireya) YA EMITIÓ LAS PRIMERAS FACTURAS REALES el 9-oct por la tarde:** FE-1001 (prueba de $108,
+> anulada con la nota crédito NC-90), FE-1002, FE-1003 y FE-1004, todas VALIDADAS por la DIAN y contabilizadas.
+> Revisados sus asientos (solo lectura): cuadran, la autorretención va una sola vez, la retefuente a 13551509, la NC
+> reversa en 13551510 y la FE-1004 (AXA) tomó sola el 2 % de descuento y el 11 % de sus condiciones. **En producción
+> todo lo emitido es real ante la DIAN.** El siguiente número es FE-1005.
+> **Las dos opciones del borrador (ya desplegadas, sin probar por pantalla EN producción):** **«Corregir IVA y
+> retenciones»** (el IVA de una línea sale de su producto: quitarlo = pasarla a un producto sin IVA; las retenciones,
+> por casillas; `PATCH /facturacion/borradores/:id/impuestos`) y **«Ver factura»** antes de emitir (el PDF del
+> borrador con marca de agua, sin número ni CUFE; `GET /facturacion/borradores/:id/vista-previa`). Verificaciones:
+> `scripts/verificar-impuestos-borrador.mjs` y `2-pruebas/herramientas-capturas/revision-impuestos-borrador.mjs`.
+> Ojo: cada guardado de un borrador vuelve a crear sus líneas (cambian los ids).
 > **Qué está LISTO y SIN DESPLEGAR:**
-> 1. **Dos opciones del borrador de factura** (pedidas por la contadora el 9-oct), rama **`borrador-iva-y-vista-previa`**
->    de los dos repos, en GitHub, probada (`scripts/verificar-impuestos-borrador.mjs` y
->    `2-pruebas/herramientas-capturas/revision-impuestos-borrador.mjs`, todo OK): **«Corregir IVA y retenciones»**
->    (el IVA de una línea sale de su producto: quitarlo = pasarla a un producto sin IVA; las retenciones, por casillas;
->    `PATCH /facturacion/borradores/:id/impuestos`) y **«Ver factura»** antes de emitir (el PDF del borrador con marca
->    de agua, sin número ni CUFE; `GET /facturacion/borradores/:id/vista-previa`). Sin migración. **Falta la orden de
->    desplegar:** fusionar la rama y correr `bash docs/4-despliegue/despliegue-borrador-9-oct.sh` (los pasos van en su
->    cabecera). Ojo: cada guardado de un borrador vuelve a crear sus líneas (cambian los ids).
-> 2. **Nómina electrónica**, rama **`nomina-electronica`** (los dos repos, en GitHub desde el 9-oct). **EN PAUSA por
+> · **Nómina electrónica**, rama **`nomina-electronica`** (los dos repos, en GitHub desde el 9-oct). **EN PAUSA por
 >    decisión del usuario: NO desplegar** hasta que el módulo esté completo. Su detalle está en el `HANDOFF.md` DE ESA
 >    RAMA (bloques del 8-oct) y en el bloque 📩 de abajo. Decidido el 9-oct: valores en pesos sin centavos (hecho);
 >    rango de nómina **NE desde 13** y nota de ajuste desde 1 con prefijo sugerido **NAN** (rangos SIN crear en el
