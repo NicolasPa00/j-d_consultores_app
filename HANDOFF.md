@@ -5,7 +5,7 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 9-oct-2026 (noche): **lote «parametrización 9-oct» (rama `carga-parametrizacion-9-oct`, bloque 🧾 del 9-oct arriba de «DÓNDE RETOMAR (8-oct)»): retenciones, cargue de terceros y CARGA de la parametrización de JD&D en producción.** Nómina sigue EN PAUSA y sin desplegar. Antes, 7-oct-2026 (cierre): **▶️ ver «DÓNDE RETOMAR» más abajo — rama `peticiones-reunion-7-oct` sin desplegar (7 correcciones, PDF propio de factura en muestra, tareas del audio identificadas).** Antes: **🚀 parte 2 del tercer lote DESPLEGADA (DIAN encendida; FE, DS, NC y NA sincronizadas). Falta parametrizar Finanzas en producción con la contadora (emisor, PUC, reglas, productos, retenciones) antes de la FE-1001.** Detalle (ver `docs/4-despliegue/despliegue-lote3.md`, parte 2). Antes: documento soporte completo, A4-01..03 (bloque ✅ del 7-oct, noche). Antes, 7-oct: **tercer lote (parte 1) DESPLEGADO** (bloque 🚀 del 7-oct). Antes, 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
+> **Última actualización:** 9-oct-2026 (cierre): **▶️ PARA QUIEN RETOMA: leer el bloque «TRASPASO DEL 9-OCT» (justo debajo de esta cabecera larga, antes de «DÓNDE RETOMAR (8-oct)»).** Antes, 9-oct-2026 (noche): **lote «parametrización 9-oct» (rama `carga-parametrizacion-9-oct`, bloque 🧾 del 9-oct arriba de «DÓNDE RETOMAR (8-oct)»): retenciones, cargue de terceros y CARGA de la parametrización de JD&D en producción.** Nómina sigue EN PAUSA y sin desplegar. Antes, 7-oct-2026 (cierre): **▶️ ver «DÓNDE RETOMAR» más abajo — rama `peticiones-reunion-7-oct` sin desplegar (7 correcciones, PDF propio de factura en muestra, tareas del audio identificadas).** Antes: **🚀 parte 2 del tercer lote DESPLEGADA (DIAN encendida; FE, DS, NC y NA sincronizadas). Falta parametrizar Finanzas en producción con la contadora (emisor, PUC, reglas, productos, retenciones) antes de la FE-1001.** Detalle (ver `docs/4-despliegue/despliegue-lote3.md`, parte 2). Antes: documento soporte completo, A4-01..03 (bloque ✅ del 7-oct, noche). Antes, 7-oct: **tercer lote (parte 1) DESPLEGADO** (bloque 🚀 del 7-oct). Antes, 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
 > para lo último; el resto de esta cabecera es del 16-sep) — **🚀 EL SISTEMA ESTÁ EN
 > PRODUCCIÓN**
 > (desde el 2-sep-2026) y ya lo están usando clientes reales. ORBITA vive en
@@ -226,6 +226,34 @@
 > Pendiente: el usuario prueba Finanzas con la guía (enlace en la memoria `pruebas-locales-finanzas`), un envío real de
 > factura para ver el logo, decidir si se despliega la parte 1 del tercer lote, y asociar el prefijo FE en la DIAN cuando
 > aparezca en el portal de producción.
+> ▶️ **TRASPASO DEL 9-OCT-2026 (el desarrollador principal sale de viaje el fin de semana; retoma su compañero).**
+> **Qué hay en producción:** `master 69c3f50` / `main` con el lote «parametrización 9-oct» (bloque 🧾 de abajo), ya
+> cargado con los datos de JD&D. La contadora (Mireya) está usando Finanzas: parametriza, arma borradores y está por
+> emitir la primera factura real (FE-1001). **En producción todo lo emitido es real ante la DIAN.**
+> **Qué está LISTO y SIN DESPLEGAR:**
+> 1. **Dos opciones del borrador de factura** (pedidas por la contadora el 9-oct), rama **`borrador-iva-y-vista-previa`**
+>    de los dos repos, en GitHub, probada (`scripts/verificar-impuestos-borrador.mjs` y
+>    `2-pruebas/herramientas-capturas/revision-impuestos-borrador.mjs`, todo OK): **«Corregir IVA y retenciones»**
+>    (el IVA de una línea sale de su producto: quitarlo = pasarla a un producto sin IVA; las retenciones, por casillas;
+>    `PATCH /facturacion/borradores/:id/impuestos`) y **«Ver factura»** antes de emitir (el PDF del borrador con marca
+>    de agua, sin número ni CUFE; `GET /facturacion/borradores/:id/vista-previa`). Sin migración. **Falta la orden de
+>    desplegar:** fusionar la rama y correr `bash docs/4-despliegue/despliegue-borrador-9-oct.sh` (los pasos van en su
+>    cabecera). Ojo: cada guardado de un borrador vuelve a crear sus líneas (cambian los ids).
+> 2. **Nómina electrónica**, rama **`nomina-electronica`** (los dos repos, en GitHub desde el 9-oct). **EN PAUSA por
+>    decisión del usuario: NO desplegar** hasta que el módulo esté completo. Su detalle está en el `HANDOFF.md` DE ESA
+>    RAMA (bloques del 8-oct) y en el bloque 📩 de abajo. Decidido el 9-oct: valores en pesos sin centavos (hecho);
+>    rango de nómina **NE desde 13** y nota de ajuste desde 1 con prefijo sugerido **NAN** (rangos SIN crear en el
+>    proveedor: `scripts/factus-rango-crear-nomina.mjs`, requiere orden del usuario).
+> **Pendiente de la contadora** (mensaje enviado el 9-oct): inactivar la autorretención duplicada 23657502; confirmar
+> la cuenta de la retefuente 2,5 % de ventas (13551519); correos de facturación de los clientes (95 sin correo); datos
+> de 4 asesores sin tercero (Ana Cristina Cuaspud, Johana Rosero, María Camila Tello, Lorena Ortega); para nómina: mes
+> completo de vacaciones/licencia y aprendices, revisión de fórmulas, cuentas de contabilización, retiro y quincenal.
+> **Reglas que no se rompen:** no desplegar ni tocar datos de producción sin orden explícita; respaldo antes de cada
+> despliegue (los scripts lo hacen); ningún texto visible nombra al proveedor de facturación; responder al cliente en
+> español; el PDF de la factura sigue el formato del software anterior; nunca `npm run migrate` ni `seed:demo`.
+> **Lo que NO está en el repo** (credenciales, llaves, datos del cliente): ver el documento de traspaso que el
+> desarrollador principal entrega aparte (`3-entregables-y-respaldos/traspaso-2026-10-09/`).
+>
 > 🧾 **9-oct-2026 (noche) · LOTE «PARAMETRIZACIÓN 9-OCT» — ✅ DESPLEGADO Y CARGADO en producción el 9-oct (~16:45 hora
 > Colombia)**: `master 69c3f50` / `main 7341666`; respaldo `~/respaldos/orbita-antes-parametrizacion-9oct-20261009-1644.dump`
 > (+ storage); health y login 200; tras la carga: 256 terceros, 36 retenciones, emisor, 18/22 asesores con tercero, 3
