@@ -555,6 +555,43 @@
         </table>
       </div>
 
+      <!-- 9-oct-2026 · Corregir el IVA de las líneas o quitar/poner retenciones sin rehacer el borrador. -->
+      @if (d.estado === 'BORRADOR' && !esNota(d) && puedeOperar()) {
+        @if (!editandoImpuestos()) {
+          <button type="button" class="btn btn--ghost btn--sm fac-imp__abrir" (click)="abrirImpuestos(d)" [disabled]="!!accion()">Corregir IVA y retenciones</button>
+        } @else {
+          <section class="fac-imp" aria-label="Corregir IVA y retenciones">
+            <h4 class="fac-imp__titulo">IVA de cada línea</h4>
+            <p class="vista-ayuda">El IVA sale del producto: para quitarlo, pase la línea a un producto sin IVA.</p>
+            @for (it of d.items; track it.id) {
+              <label class="fac-imp__linea">
+                <span class="fac-imp__desc">{{ it.descripcion }}</span>
+                <select class="form-control" [ngModel]="impProductos()[it.id]" (ngModelChange)="cambiarProductoLinea(it.id, $event)" [disabled]="!!accion()">
+                  @if (!impProductos()[it.id]) { <option value="">Sin producto (IVA {{ it.iva_pct }} %)</option> }
+                  @for (p of productos(); track p.id) { <option [value]="p.id">{{ etiquetaProducto(p) }}</option> }
+                </select>
+              </label>
+            }
+            <h4 class="fac-imp__titulo">Retenciones de la factura</h4>
+            @if (retencionesVenta().length) {
+              <div class="fac-imp__rets">
+                @for (r of retencionesVenta(); track r.id) {
+                  <label><input type="checkbox" [checked]="impRetenciones().has(r.id)" (change)="alternarRetencionBorrador(r.id)" [disabled]="!!accion()" /> {{ r.nombre }} ({{ +r.tarifa }} %)</label>
+                }
+              </div>
+            } @else {
+              <p class="vista-ayuda">No hay retenciones de venta activas (Parametrización → Impuestos y retenciones).</p>
+            }
+            <div class="fac-imp__acciones">
+              <button type="button" class="btn btn--ghost btn--sm" (click)="editandoImpuestos.set(false)" [disabled]="!!accion()">Cancelar</button>
+              <button type="button" class="btn btn--primary btn--sm" (click)="guardarImpuestos()" [disabled]="!!accion()">
+                @if (accion() === 'impuestos') { <span class="spinner" aria-hidden="true"></span> } Guardar y recalcular
+              </button>
+            </div>
+          </section>
+        }
+      }
+
       <div class="fac-totales">
         <div><span>Total bruto</span><b>{{ pesos(d.totales.total_bruto) }}</b></div>
         @if (+d.totales.total_descuento) { <div><span>Descuento</span><b>− {{ pesos(d.totales.total_descuento) }}</b></div> }
@@ -634,6 +671,12 @@
       @if (d.estado === 'BORRADOR') {
         <!-- En el borrador no hay fila con acciones: la vista previa del asiento se abre desde aquí. -->
         <button type="button" class="btn btn--ghost" (click)="abrirPanel('contab')" [disabled]="!!accion()">Ver contabilización</button>
+        @if (!esNota(d)) {
+          <!-- 9-oct-2026 · La factura como la recibirá el cliente, antes de emitirla. -->
+          <button type="button" class="btn btn--secondary" (click)="verVistaPrevia()" [disabled]="!!accion()">
+            @if (accion() === 'vista') { <span class="spinner" aria-hidden="true"></span> } Ver factura
+          </button>
+        }
       }
       <span class="fac-pie__espacio"></span>
       @if (puedeOperar() && !emisionDian && d.estado === 'BORRADOR') {

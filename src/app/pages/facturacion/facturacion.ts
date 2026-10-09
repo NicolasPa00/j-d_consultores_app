@@ -154,6 +154,10 @@ export class FacturacionComponent implements OnInit {
   protected readonly avisosPaquete = signal<string[]>([]);
   /** 7-oct-2026 · Línea del borrador cuya descripción se está redactando, y su texto. */
   protected readonly editandoItem = signal<string | null>(null);
+  // 9-oct-2026 · Corregir el IVA de las líneas y las retenciones del borrador.
+  protected readonly editandoImpuestos = signal(false);
+  protected readonly impProductos = signal<Record<string, string>>({});
+  protected readonly impRetenciones = signal<Set<string>>(new Set());
   protected readonly textoItem = signal('');
 
   // ---------------- 8-oct-2026 · Forma y medio de pago (borrador y factura manual) ----------------
@@ -538,6 +542,77 @@ export class FacturacionComponent implements OnInit {
       error: (err) => {
         this.accion.set(null);
         this.alerts.error('No se pudo cambiar la descripción', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  // ================= 9-oct-2026 · IVA y retenciones del borrador =================
+  /** Abre la corrección con lo que tiene hoy el borrador: el producto de cada línea y sus retenciones. */
+  protected abrirImpuestos(d: DetalleFactura): void {
+    this.api.listProductos(true).subscribe({ next: (r) => this.productos.set(r.data), error: () => {} });
+    // El ReteICA no va en la factura: lo practica el cliente al pagar.
+    this.api.listRetenciones(true).subscribe({
+      next: (r) => this.retencionesVenta.set(r.data.filter((x) => x.aplica_a === 'VENTA' && x.tipo !== 'RETEICA')),
+      error: () => {},
+    });
+    this.impProductos.set(Object.fromEntries(d.items.map((it) => [it.id, it.producto_id ?? ''])));
+    this.impRetenciones.set(new Set(d.retenciones.map((r) => r.id).filter((x): x is string => !!x)));
+    this.editandoImpuestos.set(true);
+  }
+
+  protected cambiarProductoLinea(itemId: string, productoId: string): void {
+    this.impProductos.update((m) => ({ ...m, [itemId]: productoId }));
+  }
+
+  protected alternarRetencionBorrador(id: string): void {
+    this.impRetenciones.update((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  }
+
+  /** Cómo se nombra un producto en el selector: con el IVA que le pone a la línea. */
+  protected etiquetaProducto(p: Producto): string {
+    const iva = p.tratamiento_iva === 'GRAVADO' ? `IVA ${+p.tarifa_iva} %` : p.tratamiento_iva === 'EXENTO' ? 'sin IVA (exento)' : 'sin IVA (excluido)';
+    return `${p.codigo} · ${p.nombre} — ${iva}`;
+  }
+
+  protected guardarImpuestos(): void {
+    const d = this.detalle();
+    if (!d || this.accion()) return;
+    const productos = Object.fromEntries(Object.entries(this.impProductos()).filter(([, v]) => !!v));
+    this.accion.set('impuestos');
+    this.api.cambiarImpuestosBorrador(d.id, { productos, retenciones_ids: [...this.impRetenciones()] }).subscribe({
+      next: (r) => {
+        this.accion.set(null);
+        this.editandoImpuestos.set(false);
+        this.detalle.set(r.data);
+        this.alerts.success('Impuestos corregidos', `Nuevo total a pagar: ${this.pesos(r.data.totales.total_a_pagar)}.`);
+        this.cargarListas();
+      },
+      error: (err) => {
+        this.accion.set(null);
+        this.alerts.error('No se pudieron corregir los impuestos', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  /** 9-oct-2026 · La factura del borrador tal como la recibiría el cliente, antes de emitirla. */
+  protected verVistaPrevia(): void {
+    const d = this.detalle();
+    if (!d || !this.isBrowser) return;
+    this.accion.set('vista');
+    this.api.vistaPreviaFactura(d.id).subscribe({
+      next: (blob) => {
+        this.accion.set(null);
+        this.cerrarPdf();
+        this.pdfObjeto = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+        this.pdfTitulo.set('Vista previa de la factura (sin validez hasta emitirla)');
+        this.pdfVisto.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.pdfObjeto));
+      },
+      error: async (err) => {
+        this.accion.set(null);
+        // La respuesta de error llega como Blob (se pidió un PDF): se lee para mostrar su mensaje.
+        let mensaje = 'Intente de nuevo.';
+        try { mensaje = JSON.parse(await (err?.error as Blob).text())?.error ?? mensaje; } catch { /* sin cuerpo legible */ }
+        this.alerts.error('No se pudo armar la vista previa', mensaje);
       },
     });
   }
