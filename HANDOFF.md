@@ -226,7 +226,12 @@
 > Pendiente: el usuario prueba Finanzas con la guía (enlace en la memoria `pruebas-locales-finanzas`), un envío real de
 > factura para ver el logo, decidir si se despliega la parte 1 del tercer lote, y asociar el prefijo FE en la DIAN cuando
 > aparezca en el portal de producción.
-> 🧾 **9-oct-2026 (noche) · LOTE «PARAMETRIZACIÓN 9-OCT»** — rama `carga-parametrizacion-9-oct` (los dos repos, sobre
+> 🧾 **9-oct-2026 (noche) · LOTE «PARAMETRIZACIÓN 9-OCT» — ✅ DESPLEGADO Y CARGADO en producción el 9-oct (~16:45 hora
+> Colombia)**: `master 69c3f50` / `main 7341666`; respaldo `~/respaldos/orbita-antes-parametrizacion-9oct-20261009-1644.dump`
+> (+ storage); health y login 200; tras la carga: 256 terceros, 36 retenciones, emisor, 18/22 asesores con tercero, 3
+> condiciones; los 2 documentos que había, intactos; reporte en `~/carga-9oct/carga.json`. Revertir el código:
+> `git reset --hard b3b15d1` / `d1242a8`, build y restart (la columna nueva no estorba); revertir los datos: restaurar
+> ese respaldo (se pierde lo que se haya hecho después). Rama `carga-parametrizacion-9-oct` (los dos repos, sobre
 > lo desplegado el 8-oct). Despliegue: `bash docs/4-despliegue/despliegue-parametrizacion-9-oct.sh` (respaldo, ensayo,
 > migración `2026-10-09-retenciones-cuenta-devolucion`, código, humo y la CARGA de datos).
 > **Código:**
