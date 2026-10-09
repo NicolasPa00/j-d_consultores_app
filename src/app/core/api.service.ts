@@ -1106,6 +1106,14 @@ export class ApiService {
   cambiarDescripcionItemFactura(id: string, itemId: string, descripcion: string): Observable<Wrap<DetalleFactura> & { message: string }> {
     return this.http.patch<Wrap<DetalleFactura> & { message: string }>(`${this.base}/facturacion/borradores/${id}/items/${itemId}`, { descripcion });
   }
+  /** 9-oct-2026 · Corregir el IVA (producto de cada línea) y las retenciones de un borrador. */
+  cambiarImpuestosBorrador(id: string, body: { productos?: Record<string, string>; retenciones_ids?: string[] }): Observable<Wrap<DetalleFactura>> {
+    return this.http.patch<Wrap<DetalleFactura>>(`${this.base}/facturacion/borradores/${id}/impuestos`, body);
+  }
+  /** 9-oct-2026 · La factura del borrador en PDF, con marca de «vista previa», antes de emitirla. */
+  vistaPreviaFactura(id: string): Observable<Blob> {
+    return this.http.get(`${this.base}/facturacion/borradores/${id}/vista-previa`, { responseType: 'blob' });
+  }
   eliminarBorradorFactura(id: string): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(`${this.base}/facturacion/borradores/${id}`);
   }

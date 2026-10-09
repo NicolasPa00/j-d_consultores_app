@@ -1646,6 +1646,8 @@ export interface ItemFactura {
   total_linea: string;
   iva_pct: number;
   iva_valor: string;
+  /** El producto de la línea: de él sale su IVA. */
+  producto_id?: string | null;
 }
 
 export interface EventoFactura {
@@ -1805,7 +1807,7 @@ export interface InfoPaqueteArl {
 export interface DetalleFactura extends DocumentoFactura {
   eventos: EventoFactura[];
   items: ItemFactura[];
-  retenciones: { codigo: string; tipo: string; tarifa: string; valor: string }[];
+  retenciones: { id?: string; codigo: string; nombre?: string; tipo: string; tarifa: string; valor: string }[];
   totales: {
     total_bruto: string; total_descuento: string; subtotal: string;
     total_iva: string; total_retenciones: string; total_a_pagar: string;
