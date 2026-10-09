@@ -564,14 +564,19 @@
               @for (x of pagImport.visibles(); track x.fila) {
                 <tr [class.ter-imp__mal]="x.estado === 'ERROR'">
                   <td class="mono">{{ x.fila }}</td>
-                  <td>{{ x.nombre || '—' }}</td>
+                  <td>
+                    {{ x.nombre || '—' }}
+                    <!-- 9-oct-2026 · Cómo se partió el nombre (la exportación lo trae en una sola celda): así se ve antes de cargar. -->
+                    @if (x.nombres) { <small class="ter-imp__aviso">Nombres: {{ x.nombres }} · Apellidos: {{ x.apellidos || '—' }}</small> }
+                  </td>
                   <td class="mono">{{ x.documento || '—' }}</td>
                   <td>{{ x.municipio || '—' }}</td>
                   <td>
                     @if (x.estado === 'ERROR') { <span class="pill pill--danger">Error</span> {{ x.error }} }
                     @else if (x.estado === 'YA_EXISTE') { <span class="pill pill--muted">Ya existe</span> no se toca }
                     @else { <span class="pill pill--success">Nuevo</span> }
-                    @for (a of x.avisos; track $index) { <small class="ter-imp__aviso">{{ a }}</small> }
+                    <!-- Una fila con error no se carga: sus avisos (p. ej. «sin correo») solo distraen. -->
+                    @if (x.estado !== 'ERROR') { @for (a of x.avisos; track $index) { <small class="ter-imp__aviso">{{ a }}</small> } }
                   </td>
                 </tr>
               } @empty {

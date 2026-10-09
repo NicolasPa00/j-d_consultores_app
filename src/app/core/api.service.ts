@@ -784,6 +784,10 @@ export class ApiService {
   updateRetencion(id: string, body: Partial<Retencion>): Observable<Wrap<Retencion>> {
     return this.http.put<Wrap<Retencion>>(`${this.base}/parametros/retenciones/${id}`, body);
   }
+  /** 9-oct-2026 · Solo si no se usó en nada contabilizado; limpia borradores y condiciones. */
+  deleteRetencion(id: string): Observable<Wrap<{ codigo: string; nombre: string; borradores: number; condiciones: number }>> {
+    return this.http.delete<Wrap<{ codigo: string; nombre: string; borradores: number; condiciones: number }>>(`${this.base}/parametros/retenciones/${id}`);
+  }
   setRetencionActiva(id: string, activa: boolean): Observable<Wrap<Retencion>> {
     return this.http.patch<Wrap<Retencion>>(`${this.base}/parametros/retenciones/${id}/estado`, { activa });
   }

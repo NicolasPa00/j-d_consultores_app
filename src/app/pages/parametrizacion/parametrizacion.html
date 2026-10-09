@@ -235,33 +235,41 @@
     </div>
     <div class="card__body table-wrap">
       <table class="table">
-        <thead><tr><th>Código</th><th>Nombre</th><th>Tipo</th><th class="col-num">Tarifa</th><th>Aplica a</th><th>Código de tributo</th><th>Cuenta contable</th><th>Estado</th><th class="col-actions">Acciones</th></tr></thead>
+        <thead><tr><th>Código</th><th>Nombre</th><th>Tipo</th><th class="col-num">Tarifa</th><th>Cuentas contables</th><th>Estado</th><th class="col-actions">Acciones</th></tr></thead>
         <tbody>
           @for (r of retenciones(); track r.id) {
             <tr>
               <td class="mono">{{ r.codigo }}</td>
               <td>{{ r.nombre }}</td>
-              <td>{{ r.tipo }}</td>
+              <td>{{ r.tipo }}<small class="par-sub">{{ r.factus_tributo_id ? 'Tributo ' + r.factus_tributo_id : 'Al pagar, no va en la factura' }}</small></td>
               <td class="col-num mono">{{ tarifaRetencion(r) }}</td>
-              <td>{{ r.aplica_a }}</td>
-              <td class="mono">{{ r.factus_tributo_id || 'ninguno (al pagar)' }}</td>
-              <td>
-                <!-- B3-01 · Adónde va lo retenido al contabilizar un recibo de caja. -->
-                <select class="form-control par-cuenta" [ngModel]="r.cuenta_id ?? ''" (ngModelChange)="cambiarCuentaRetencion(r, $event)"
-                        [disabled]="!puedeEditar()" [attr.aria-label]="'Cuenta contable de ' + r.codigo">
-                  <option value="">— Sin cuenta —</option>
-                  @for (c of cuentasMovimiento(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
-                </select>
+              <td class="par-cuentas">
+                <!-- 9-oct-2026 · Las dos cuentas como texto (antes, una lista de ~430 cuentas por fila; con
+                     36 retenciones la página se volvía pesada). Se cambian con «Editar». -->
+                @if (r.tipo === 'AUTORRETENCION') {
+                  <span class="par-cuentas__fila"><small>{{ r.aplica_a === 'VENTA' ? 'Venta' : 'Compra' }}</small> Débito y crédito: Contabilidad → Reglas</span>
+                } @else {
+                  <span class="par-cuentas__fila"><small>{{ r.aplica_a === 'VENTA' ? 'Venta' : 'Compra' }}</small> {{ r.cuenta_codigo ? r.cuenta_codigo + ' · ' + r.cuenta_nombre : 'La de la regla general' }}</span>
+                  <span class="par-cuentas__fila"><small>Devolución</small> {{ r.cuenta_devolucion_codigo ? r.cuenta_devolucion_codigo + ' · ' + r.cuenta_devolucion_nombre : 'La de la regla general' }}</span>
+                }
               </td>
               <td><span class="pill" [class]="r.activa ? 'pill--success' : 'pill--muted'">{{ r.activa ? 'Activa' : 'Inactiva' }}</span></td>
               <td class="col-actions">
                 @if (puedeEditar()) {
-                  <button type="button" class="icon-action" (click)="toggleRetencion(r)" [attr.aria-label]="r.activa ? 'Desactivar' : 'Activar'">⏻</button>
+                  <div class="par-acciones">
+                  <button type="button" class="icon-action" (click)="openEditarRetencion(r)" aria-label="Editar" title="Editar">✎</button>
+                  <button type="button" class="icon-action" (click)="toggleRetencion(r)" [attr.aria-label]="r.activa ? 'Desactivar' : 'Activar'" [title]="r.activa ? 'Desactivar' : 'Activar'">⏻</button>
+                  <button type="button" class="icon-action icon-action--danger" (click)="eliminarRetencion(r)" aria-label="Eliminar" title="Eliminar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" />
+                    </svg>
+                  </button>
+                  </div>
                 }
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="9" class="table__empty">{{ loadingImpuestos() ? 'Cargando…' : 'Sin retenciones todavía.' }}</td></tr>
+            <tr><td colspan="7" class="table__empty">{{ loadingImpuestos() ? 'Cargando…' : 'Sin retenciones todavía.' }}</td></tr>
           }
         </tbody>
       </table>
@@ -447,10 +455,14 @@
 @if (formRetencionOpen()) {
   <div class="modal-backdrop" (click)="closeFormRetencion()"></div>
   <div class="modal" role="dialog" aria-modal="true">
-    <header class="modal__head"><h3 class="modal__title">Nueva retención</h3></header>
+    <header class="modal__head"><h3 class="modal__title">{{ editRetencionId() ? 'Editar retención' : 'Nueva retención' }}</h3></header>
     <div class="modal__body">
-      <div class="form-field"><label class="form-field__label">Código *</label><input class="form-control" type="text" [(ngModel)]="retencionDraft.codigo" name="rCodigo" /></div>
-      <div class="form-field"><label class="form-field__label">Nombre *</label><input class="form-control" type="text" [(ngModel)]="retencionDraft.nombre" name="rNombre" /></div>
+      <div class="form-field">
+        <label class="form-field__label">Código *</label>
+        <input class="form-control" type="text" [(ngModel)]="retencionDraft.codigo" name="rCodigo" />
+        <p class="form-field__hint">Un código corto para reconocerla (p. ej. el que tenía en su software contable).</p>
+      </div>
+      <div class="form-field"><label class="form-field__label">Nombre *</label><input class="form-control" type="text" [(ngModel)]="retencionDraft.nombre" name="rNombre" placeholder="Retefuente 11 %" /></div>
       <div class="form-field">
         <label class="form-field__label">Tipo</label>
         <select class="form-control" [(ngModel)]="retencionDraft.tipo" name="rTipo">
@@ -462,19 +474,40 @@
       </div>
       <p class="form-field__hint">Código de tributo para la factura electrónica: {{ codigoFactusDe(retencionDraft.tipo) }}.</p>
       <div class="form-field">
-        <label class="form-field__label">Tarifa (%)</label>
-        <input class="form-control" type="number" step="0.1" [(ngModel)]="retencionDraft.tarifa" name="rTarifa" />
+        <label class="form-field__label">Tarifa ({{ retencionDraft.tipo === 'RETEICA' ? 'por mil, ‰' : '%' }})</label>
+        <input class="form-control" type="number" step="0.01" min="0" [(ngModel)]="retencionDraft.tarifa" name="rTarifa" />
         @if (retencionDraft.tipo === 'RETEICA') {
-          <p class="form-field__hint">El ReteICA se pacta en ‰: escriba el equivalente en % (5 ‰ = 0,5; 6 ‰ = 0,6).</p>
+          <p class="form-field__hint">Escriba el por mil tal como lo pacta el pagador: 6 para el 6 ‰, 4.14 para el 4,14 ‰.</p>
+        } @else {
+          <p class="form-field__hint">Porcentaje con punto decimal: 11 para el 11 %, 1.1 para el 1,1 %.</p>
         }
       </div>
       <div class="form-field">
         <label class="form-field__label">Aplica a</label>
         <select class="form-control" [(ngModel)]="retencionDraft.aplica_a" name="rAplica">
-          <option value="VENTA">Venta</option>
-          <option value="COMPRA">Compra</option>
+          <option value="VENTA">Venta (la practica el cliente a JD&amp;D)</option>
+          <option value="COMPRA">Compra (la practica JD&amp;D a su proveedor)</option>
         </select>
       </div>
+      @if (retencionDraft.tipo === 'AUTORRETENCION') {
+        <p class="form-field__hint">La autorretención no aparece en la factura: se contabiliza sola en cada venta.
+          Sus dos cuentas (anticipo y por pagar) se configuran en Contabilidad → Reglas. Solo puede haber una activa.</p>
+      } @else {
+        <div class="form-field">
+          <label class="form-field__label">Cuenta contable ({{ retencionDraft.aplica_a === 'VENTA' ? 'ventas' : 'compras' }})</label>
+          <select class="form-control" [(ngModel)]="retencionDraft.cuenta_id" name="rCuenta">
+            <option value="">— La de la regla general —</option>
+            @for (c of cuentasMovimiento(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-field__label">Cuenta de devolución (nota crédito)</label>
+          <select class="form-control" [(ngModel)]="retencionDraft.cuenta_devolucion_id" name="rCuentaDev">
+            <option value="">— La de la regla general —</option>
+            @for (c of cuentasMovimiento(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
+          </select>
+        </div>
+      }
     </div>
     <footer class="modal__footer">
       <button type="button" class="btn btn--close" (click)="closeFormRetencion()">Cancelar</button>

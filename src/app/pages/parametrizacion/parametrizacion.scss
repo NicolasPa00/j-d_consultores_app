@@ -119,3 +119,10 @@
 
 /* B3-01 · La cuenta de la retención se elige en la misma fila. */
 .par-cuenta { min-width: 220px; padding: 0.35rem 0.5rem; font-size: 0.84rem; }
+/* 9-oct-2026 · Las dos cuentas de una retención, una debajo de la otra. */
+.par-cuentas { min-width: 190px; font-size: 0.82rem; }
+.par-acciones { display: flex; gap: 0.3rem; justify-content: flex-end; }
+.par-sub { display: block; color: var(--text-muted); font-size: 0.72rem; }
+.par-cuentas__fila { display: block; line-height: 1.35; }
+.par-cuentas__fila + .par-cuentas__fila { margin-top: 0.2rem; }
+.par-cuentas__fila small { display: block; color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.02em; }

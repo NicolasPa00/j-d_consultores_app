@@ -1372,6 +1372,10 @@ export interface Retencion {
   cuenta_id?: string | null;
   cuenta_codigo?: string | null;
   cuenta_nombre?: string | null;
+  /** 9-oct-2026 · Cuenta de devolución: la usa la nota crédito (vacía = regla general). */
+  cuenta_devolucion_id?: string | null;
+  cuenta_devolucion_codigo?: string | null;
+  cuenta_devolucion_nombre?: string | null;
 }
 
 /** Espejo de `sst.condiciones_pagador`, con los nombres resueltos. */
@@ -1726,7 +1730,7 @@ export interface ResumenImportTerceros {
   cargados: number;
   resultados: {
     fila: number; nombre: string | null; documento: string | null; municipio: string | null;
-    estado: 'NUEVO' | 'YA_EXISTE' | 'ERROR'; avisos: string[]; error: string | null;
+    estado: 'NUEVO' | 'YA_EXISTE' | 'ERROR'; avisos: string[]; error: string | null; nombres?: string; apellidos?: string;
   }[];
 }
 

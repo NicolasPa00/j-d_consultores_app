@@ -383,7 +383,11 @@ export class TercerosComponent implements OnInit {
   protected readonly filasImport = computed(() => {
     const r = this.resumenImport();
     if (!r) return [];
-    return this.soloAtencion() ? r.resultados.filter((x) => x.estado === 'ERROR' || x.avisos.length) : r.resultados;
+    // 9-oct-2026 · Con el filtro, los errores primero: con cien avisos de «sin correo» delante,
+    // las filas que NO se van a cargar quedaban en la página 10.
+    return this.soloAtencion()
+      ? r.resultados.filter((x) => x.estado === 'ERROR' || x.avisos.length).sort((a, b) => Number(b.estado === 'ERROR') - Number(a.estado === 'ERROR'))
+      : r.resultados;
   });
   protected readonly pagImport = paginar(this.filasImport);
   private archivoImport: File | null = null;

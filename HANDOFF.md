@@ -5,7 +5,7 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 7-oct-2026 (cierre): **▶️ ver «DÓNDE RETOMAR» más abajo — rama `peticiones-reunion-7-oct` sin desplegar (7 correcciones, PDF propio de factura en muestra, tareas del audio identificadas).** Antes: **🚀 parte 2 del tercer lote DESPLEGADA (DIAN encendida; FE, DS, NC y NA sincronizadas). Falta parametrizar Finanzas en producción con la contadora (emisor, PUC, reglas, productos, retenciones) antes de la FE-1001.** Detalle (ver `docs/4-despliegue/despliegue-lote3.md`, parte 2). Antes: documento soporte completo, A4-01..03 (bloque ✅ del 7-oct, noche). Antes, 7-oct: **tercer lote (parte 1) DESPLEGADO** (bloque 🚀 del 7-oct). Antes, 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
+> **Última actualización:** 9-oct-2026 (noche): **lote «parametrización 9-oct» (rama `carga-parametrizacion-9-oct`, bloque 🧾 del 9-oct arriba de «DÓNDE RETOMAR (8-oct)»): retenciones, cargue de terceros y CARGA de la parametrización de JD&D en producción.** Nómina sigue EN PAUSA y sin desplegar. Antes, 7-oct-2026 (cierre): **▶️ ver «DÓNDE RETOMAR» más abajo — rama `peticiones-reunion-7-oct` sin desplegar (7 correcciones, PDF propio de factura en muestra, tareas del audio identificadas).** Antes: **🚀 parte 2 del tercer lote DESPLEGADA (DIAN encendida; FE, DS, NC y NA sincronizadas). Falta parametrizar Finanzas en producción con la contadora (emisor, PUC, reglas, productos, retenciones) antes de la FE-1001.** Detalle (ver `docs/4-despliegue/despliegue-lote3.md`, parte 2). Antes: documento soporte completo, A4-01..03 (bloque ✅ del 7-oct, noche). Antes, 7-oct: **tercer lote (parte 1) DESPLEGADO** (bloque 🚀 del 7-oct). Antes, 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
 > para lo último; el resto de esta cabecera es del 16-sep) — **🚀 EL SISTEMA ESTÁ EN
 > PRODUCCIÓN**
 > (desde el 2-sep-2026) y ya lo están usando clientes reales. ORBITA vive en
@@ -226,6 +226,81 @@
 > Pendiente: el usuario prueba Finanzas con la guía (enlace en la memoria `pruebas-locales-finanzas`), un envío real de
 > factura para ver el logo, decidir si se despliega la parte 1 del tercer lote, y asociar el prefijo FE en la DIAN cuando
 > aparezca en el portal de producción.
+> 🧾 **9-oct-2026 (noche) · LOTE «PARAMETRIZACIÓN 9-OCT»** — rama `carga-parametrizacion-9-oct` (los dos repos, sobre
+> lo desplegado el 8-oct). Despliegue: `bash docs/4-despliegue/despliegue-parametrizacion-9-oct.sh` (respaldo, ensayo,
+> migración `2026-10-09-retenciones-cuenta-devolucion`, código, humo y la CARGA de datos).
+> **Código:**
+> · **Cada retención se contabiliza en SU cuenta** (`retenciones.cuenta_id`; antes toda retefuente iba a 13551509, la
+>   del 11 %) y la nota crédito la reversa en su **cuenta de devolución** (columna nueva `cuenta_devolucion_id`); sin
+>   cuenta propia, la regla general como antes (`contabilizacion.service.js`).
+> · **ReteIVA sobre el IVA**, no sobre el subtotal (`calculo.js`; salía ~5 veces mayor).
+> · **Autorretención:** se calcula SIEMPRE en el asiento, una sola vez (un borrador con dos autorretenciones la
+>   duplicaba). **Se sigue viendo en la pantalla del borrador** (la contadora lo quiere así) pero **NO sale en el PDF
+>   de la factura** (`representacion.service.js`), que además lleva los totales **Subtotal → IVA → Total bruto
+>   (subtotal + IVA) → retención → Total a pagar** (pedido de la contadora, «solo en la factura»; la pantalla no cambia).
+> · **Retenciones en Parametrización:** editar (✎), eliminar (🗑: si se usó en algo emitido/contabilizado lo impide y
+>   pide inactivarla; si está en borradores o condiciones, se quita de ahí y se recalcula el borrador), una sola
+>   autorretención activa, **ReteICA en ‰** en el formulario (ella escribió 6 y quedó 60 ‰), mensajes claros, las
+>   dos cuentas como texto en la tabla (antes una lista de ~430 cuentas por fila).
+> · **Cargue de terceros:** el nombre de Siigo se lee «NOMBRES APELLIDOS» (antes al revés: ~150 personas invertidas),
+>   se ignora el pie «Procesado en…», el repetido dice en qué fila está el primero, avisos de «sin dirección / sin
+>   correo», la revisión muestra cómo partió cada nombre y, con el filtro, los errores van primero.
+> **Datos (`scripts/cargar-parametrizacion-jdd.mjs <terceros.xlsx> [--confirmar]`, una transacción, NO pisa nada):**
+> 33 retenciones de la tabla de impuestos de Siigo (ventas y compras, con cuenta y devolución), empresa emisora (RUT +
+> dirección de la cámara), 250 terceros del Excel (6 nombres corregidos a mano), 18 asesores enlazados a su tercero
+> (cruce revisado a mano), condiciones de Bolívar/AXA/Colmena (RF 11 % + autorretención, ReteICA 5/6 ‰, AXA 2 %),
+> marcas de banco 11100501 y cartera 13050501 / 23352501 / 23359501 (producción no tenía ninguna: recibos, pagos y
+> libros de cartera no tenían dónde mirar) y borra la ReteICA 13551801 que la contadora creó con 60 ‰ y pidió eliminar.
+> **Probado:** `verificar-retenciones-9-oct.mjs` (todo OK en `jdd_dev` y en una copia de producción), ensayo completo
+> en el servidor sobre `orbita_ensayo` (carga idempotente, los 2 documentos existentes intactos) y revisión por
+> pantalla `2-pruebas/herramientas-capturas/revision-retenciones-9-oct.mjs` (todo OK). `verificar-borrador-factura`,
+> `-relacion-facturar`, `-orden-particular`, `-nota-credito` y `-compras` fallan IGUAL con el código de producción
+> (datos de prueba viejos y el visto bueno de cobro del 30-sep): no son de este lote; están por actualizar.
+> **Queda para la contadora:** 2 autorretenciones activas (13551816 y 23657502; se usa la primera, conviene inactivar la
+> segunda); retefuente 2,5 % de ventas apunta a 13551519 «Autorretención 1.1%» como en Siigo; 95 clientes sin correo
+> de facturación (el Excel no lo trae); 4 asesores sin tercero (ANA CRISTINA CUASPUD no está en el Excel; JOHANA
+> ROSERO, MARIA CAMILA TELLO y LORENA ORTEGA sin cruce seguro); tarifas de venta vacías (no bloquean: manda el valor
+> aprobado de la orden); NIT del Excel = cliente por defecto (EPS, bancos, fondos quedan como clientes).
+>
+> 📩 **9-oct-2026 · RESPUESTAS DE LA CONTADORA (nómina).**
+> 1. **Consecutivo (CONFIRMADO, segunda respuesta del 9-oct):** «La NE12 fue la última emitida, debemos empezar por
+>    la 13» y «no se ha hecho ninguna nota de ajuste». Rangos: **NE desde 13** y nota de ajuste de nómina desde **1**
+>    (prefijo sugerido **NAN**: **NA** ya es del documento soporte). En el servidor, primero sin `--confirmar`:
+>    `node factus-rango-crear-nomina.mjs nomina NE 13` y `node factus-rango-crear-nomina.mjs ajuste NAN 1`.
+>    **No se ha creado nada:** necesita la orden del usuario.
+> 2. **Redondeo:** «Se redondea». Hecho en `sst_ws/src/modules/nomina/calculo.js` (rama `nomina-electronica`, SIN
+>    commitear): cada concepto se liquida en **pesos enteros quitando los centavos** (`r0` = `Math.floor`), porque su
+>    comprobante de abril muestra el auxilio de 27 días en 224.185 (exacto: 224.185,50; al peso más cercano daría
+>    224.186). Con eso el comprobante de abril cuadra al peso en todo. `verificar-nomina.mjs` actualizado (neto esperado
+>    2.770.437) y pasa 46/46; la simulación de las 20 pruebas arma bien. El documento sigue enviando `"…00"`.
+> **9-oct (tarde) · MÁS DE LA CONTADORA (facturación y terceros).**
+> · **«Agregar la autorretención» y «falta la retención en la fuente, que se pueda escoger»:** NO es código pendiente.
+>   Todo está en producción desde el 8-oct: la factura manual muestra «Retenciones que aplican» (casillas) **solo si hay
+>   retenciones creadas**, y la autorretención se contabiliza sola si existe una activa de tipo AUTORRETENCION. En
+>   producción hay 0 retenciones (consultado el 8-oct) → hay que crearlas en Parametrización → Retenciones con el Excel
+>   de retenciones que va a enviar.
+> · **Orden de los totales:** «Subtotal – IVA – Retención en la fuente – Total bruto». Su factura FE-787 de Siigo
+>   muestra Total bruto → Descuentos → Subtotal → Retefuente 11 % → Total a pagar. En ORBITA la factura manual muestra
+>   Total bruto → (Descuento → Subtotal) → IVA y dice que las retenciones se calculan al crear el borrador. **Sin
+>   cambiar:** falta decidir si «Total bruto» al final es el total a pagar.
+> · **Excel de terceros** (`1-cliente-jdd/terceros.xlsx`, exportación de Siigo del 7-oct, 260 terceros: 157 cédulas y
+>   103 NIT). Simulación del cargue contra `jdd_dev`: 250 nuevos, 6 ya existen, 5 errores (4 documentos repetidos en el
+>   archivo —CHAMORRO PORTILLA SAS y tres FOSYGA— y la fila «Procesado en…»), 11 teléfonos inválidos; todas las ciudades
+>   se reconocen. **Al Excel le falta el correo de facturación en TODAS las filas** (Siigo no lo exporta), 7 no traen
+>   dirección y 3 no traen ciudad. **⚠️ BUG del cargue (en producción):** `partirNombre()` supone «APELLIDOS NOMBRES»,
+>   pero en este archivo casi todas las personas vienen «NOMBRES APELLIDOS» (solo unas 5, p. ej. ACHICANOY ZAMBRANO
+>   ANYELA YURANI, vienen al revés): si se carga así, la mayoría queda con nombres y apellidos invertidos.
+> · **«En los profesionales faltan los datos»:** la ficha de profesional solo guarda nombre, correo y teléfono, así
+>   que «Crear desde un profesional» deja vacíos la cédula, la dirección y el municipio. Si el profesional está en el
+>   Excel, basta con cargar el Excel y luego escribir su cédula al crearlo desde el profesional (se enlaza al tercero
+>   existente). Si no está (ANA CRISTINA CUASPUD, la de su captura, no está), esos datos hay que pedírselos.
+>
+> **Sigue pendiente de la contadora:** mes completo de vacaciones/licencia y aprendices (el API exige ≥ 1 día y sueldo
+> mayor que 0); revisión de fórmulas (jornada 220/210 h, recargo dominical 75 % de la tabla frente a la Ley 2466, cifras de
+> SMMLV/auxilio 2025-2026, tope del 40 % no salarial, incapacidad en el IBC); cuentas para la contabilización (no
+> construida); liquidación por retiro y quincenal. De facturación: orden de los totales sin aclarar y la autorretención
+> 1,1 % sin crear en producción (Parametrización → Retenciones; requiere orden del usuario).
+>
 > ▶️ **DÓNDE RETOMAR (8-oct-2026).** El usuario pidió **desplegar lo del 7-oct con el PDF propio de la factura**.
 > **Hecho:** el PDF propio quedó **conectado** (backend `c6df1ae`): «Ver factura», la descarga, «Reenviar al cliente» y el
 > paquete para la ARL usan `pdfDeDocumento()` de `representacion.service.js`; si no se puede armar (sin empresa emisora, o

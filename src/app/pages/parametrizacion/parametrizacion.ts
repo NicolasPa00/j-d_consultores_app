@@ -352,9 +352,13 @@ export class ParametrizacionComponent implements OnInit {
   protected uvtAnio = new Date().getFullYear();
   protected uvtValor = 0;
   protected readonly formRetencionOpen = signal(false);
+  /** 9-oct-2026 · La retención que se está editando (null = nueva). */
+  protected readonly editRetencionId = signal<string | null>(null);
   protected readonly savingRetencion = signal(false);
-  protected retencionDraft: { codigo: string; nombre: string; tipo: TipoRetencion; tarifa: number; aplica_a: 'VENTA' | 'COMPRA' } =
-    { codigo: '', nombre: '', tipo: 'RETEFUENTE', tarifa: 0, aplica_a: 'VENTA' };
+  protected retencionDraft: {
+    codigo: string; nombre: string; tipo: TipoRetencion; tarifa: number; aplica_a: 'VENTA' | 'COMPRA';
+    cuenta_id: string; cuenta_devolucion_id: string;
+  } = { codigo: '', nombre: '', tipo: 'RETEFUENTE', tarifa: 0, aplica_a: 'VENTA', cuenta_id: '', cuenta_devolucion_id: '' };
 
   /** El código de Factus que corresponde a cada tipo (solo informativo en el formulario). */
   protected codigoFactusDe(tipo: TipoRetencion): string {
@@ -363,23 +367,6 @@ export class ParametrizacionComponent implements OnInit {
 
   /** B3-01 · Cuentas que reciben movimiento, para elegir adónde va cada retención. */
   protected readonly cuentasMovimiento = signal<CuentaContable[]>([]);
-
-  /** Cambia la cuenta contable de una retención (se reenvía la ficha completa: así la valida el servidor). */
-  protected cambiarCuentaRetencion(r: Retencion, cuentaId: string): void {
-    this.api.updateRetencion(r.id, {
-      codigo: r.codigo, nombre: r.nombre, tipo: r.tipo, tarifa: r.tarifa, base_minima_uvt: r.base_minima_uvt,
-      aplica_a: r.aplica_a, factus_tributo_id: r.factus_tributo_id, cuenta_id: cuentaId || null,
-    }).subscribe({
-      next: (res) => {
-        this.retenciones.update((l) => l.map((x) => (x.id === res.data.id ? res.data : x)));
-        this.alerts.success('Cuenta de la retención guardada', `${r.codigo} → ${res.data.cuenta_codigo ?? 'sin cuenta'}`);
-      },
-      error: (err) => {
-        this.alerts.error('No se pudo guardar la cuenta', mensajeError(err, 'Intente de nuevo.'));
-        this.cargarImpuestos();
-      },
-    });
-  }
 
   private cargarImpuestos(): void {
     this.loadingImpuestos.set(true);
@@ -403,8 +390,46 @@ export class ParametrizacionComponent implements OnInit {
   }
 
   protected openNuevaRetencion(): void {
-    this.retencionDraft = { codigo: '', nombre: '', tipo: 'RETEFUENTE', tarifa: 0, aplica_a: 'VENTA' };
+    this.retencionDraft = { codigo: '', nombre: '', tipo: 'RETEFUENTE', tarifa: 0, aplica_a: 'VENTA', cuenta_id: '', cuenta_devolucion_id: '' };
+    this.editRetencionId.set(null);
     this.formRetencionOpen.set(true);
+  }
+
+  /**
+   * 9-oct-2026 · Editar cualquier retención. El ReteICA se muestra y se escribe en ‰ (como lo
+   * pacta el pagador); en la base va en % (6 ‰ = 0,6): la conversión la hace el formulario.
+   */
+  protected openEditarRetencion(r: Retencion): void {
+    const tarifa = Number(r.tarifa);
+    this.retencionDraft = {
+      codigo: r.codigo, nombre: r.nombre, tipo: r.tipo, aplica_a: r.aplica_a,
+      tarifa: r.tipo === 'RETEICA' ? Math.round(tarifa * 10 * 1000) / 1000 : tarifa,
+      cuenta_id: r.cuenta_id ?? '', cuenta_devolucion_id: r.cuenta_devolucion_id ?? '',
+    };
+    this.editRetencionId.set(r.id);
+    this.formRetencionOpen.set(true);
+  }
+
+  protected async eliminarRetencion(r: Retencion): Promise<void> {
+    const ok = await this.alerts.confirm({
+      title: 'Eliminar retención',
+      message: `Se eliminará «${r.nombre}» (${r.codigo}). Si está en borradores de factura o en las condiciones de algún pagador, `
+        + 'se quita de ahí. Si ya se usó en algo emitido o contabilizado no se podrá eliminar: en ese caso, inactívela.',
+      confirmText: 'Eliminar',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    this.api.deleteRetencion(r.id).subscribe({
+      next: (res) => {
+        const extra = [
+          res.data.borradores && `se quitó de ${res.data.borradores} borrador(es) de factura`,
+          res.data.condiciones && `y de las condiciones de ${res.data.condiciones} pagador(es)`,
+        ].filter(Boolean).join(' ');
+        this.alerts.success('Retención eliminada', `${r.nombre}${extra ? `: ${extra}.` : '.'}`);
+        this.cargarImpuestos();
+      },
+      error: (err) => this.alerts.error('No se pudo eliminar la retención', mensajeError(err, 'El servidor no respondió. Intente de nuevo.')),
+    });
   }
 
   protected closeFormRetencion(): void {
@@ -414,18 +439,39 @@ export class ParametrizacionComponent implements OnInit {
 
   protected guardarRetencion(): void {
     const d = this.retencionDraft;
-    if (!d.codigo.trim() || !d.nombre.trim()) return;
+    // Antes el botón no hacía nada si faltaba algo: ahora dice qué falta.
+    const faltan = [!d.codigo.trim() && 'el código', !d.nombre.trim() && 'el nombre', !(Number(d.tarifa) > 0) && 'la tarifa'].filter(Boolean);
+    if (faltan.length) {
+      this.alerts.warning('Faltan datos', `Escriba ${faltan.join(', ')} de la retención.`);
+      return;
+    }
+    const editId = this.editRetencionId();
+    if (d.tipo === 'RETEICA' && Number(d.tarifa) > 20) {
+      this.alerts.warning('Revise la tarifa', `El ReteICA va en por mil: ${d.tarifa} ‰ es demasiado. Para el 6 por mil escriba 6.`);
+      return;
+    }
+    if (d.tipo === 'AUTORRETENCION' && this.retenciones().some((r) => r.id !== editId && r.tipo === 'AUTORRETENCION' && r.aplica_a === d.aplica_a && r.activa)) {
+      this.alerts.warning('Ya hay una autorretención', 'Solo se usa una. Sus dos cuentas (anticipo y por pagar) se configuran en Contabilidad → Reglas.');
+      return;
+    }
     this.savingRetencion.set(true);
-    this.api.createRetencion(d).subscribe({
+    const cuerpo = {
+      ...d,
+      // En la base el ReteICA va en %: 6 ‰ → 0,6.
+      tarifa: d.tipo === 'RETEICA' ? Math.round(Number(d.tarifa) * 100) / 1000 : Number(d.tarifa),
+      cuenta_id: d.cuenta_id || null, cuenta_devolucion_id: d.cuenta_devolucion_id || null,
+    };
+    if (d.tipo === 'AUTORRETENCION' && !editId) { cuerpo.cuenta_id = null; cuerpo.cuenta_devolucion_id = null; }
+    (editId ? this.api.updateRetencion(editId, cuerpo) : this.api.createRetencion(cuerpo)).subscribe({
       next: () => {
         this.savingRetencion.set(false);
         this.formRetencionOpen.set(false);
-        this.alerts.success('Retención creada', `${d.codigo} · ${d.nombre}`);
+        this.alerts.success(editId ? 'Retención guardada' : 'Retención creada', `${d.nombre} (${d.codigo})`);
         this.cargarImpuestos();
       },
       error: (err) => {
         this.savingRetencion.set(false);
-        this.alerts.error('No se pudo guardar la retención', mensajeError(err, 'Revise el tipo y el código de tributo.'));
+        this.alerts.error('No se pudo guardar la retención', mensajeError(err, 'El servidor no respondió. Intente de nuevo.'));
       },
     });
   }
