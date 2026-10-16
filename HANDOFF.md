@@ -5,7 +5,7 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 16-oct-2026: **firma digital de los profesionales (bloque ✍️, sin desplegar).** Antes, 9-oct-2026 (cierre): **▶️ PARA QUIEN RETOMA: leer el bloque «TRASPASO DEL 9-OCT» (justo debajo de esta cabecera larga, antes de «DÓNDE RETOMAR (8-oct)»).** Antes, 9-oct-2026 (noche): **lote «parametrización 9-oct» (rama `carga-parametrizacion-9-oct`, bloque 🧾 del 9-oct arriba de «DÓNDE RETOMAR (8-oct)»): retenciones, cargue de terceros y CARGA de la parametrización de JD&D en producción.** Nómina sigue EN PAUSA y sin desplegar. Antes, 7-oct-2026 (cierre): **▶️ ver «DÓNDE RETOMAR» más abajo — rama `peticiones-reunion-7-oct` sin desplegar (7 correcciones, PDF propio de factura en muestra, tareas del audio identificadas).** Antes: **🚀 parte 2 del tercer lote DESPLEGADA (DIAN encendida; FE, DS, NC y NA sincronizadas). Falta parametrizar Finanzas en producción con la contadora (emisor, PUC, reglas, productos, retenciones) antes de la FE-1001.** Detalle (ver `docs/4-despliegue/despliegue-lote3.md`, parte 2). Antes: documento soporte completo, A4-01..03 (bloque ✅ del 7-oct, noche). Antes, 7-oct: **tercer lote (parte 1) DESPLEGADO** (bloque 🚀 del 7-oct). Antes, 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
+> **Última actualización:** 16-oct-2026: **firma digital de los profesionales y en los formatos (bloque ✍️).** Antes, 9-oct-2026 (cierre): **▶️ PARA QUIEN RETOMA: leer el bloque «TRASPASO DEL 9-OCT» (justo debajo de esta cabecera larga, antes de «DÓNDE RETOMAR (8-oct)»).** Antes, 9-oct-2026 (noche): **lote «parametrización 9-oct» (rama `carga-parametrizacion-9-oct`, bloque 🧾 del 9-oct arriba de «DÓNDE RETOMAR (8-oct)»): retenciones, cargue de terceros y CARGA de la parametrización de JD&D en producción.** Nómina sigue EN PAUSA y sin desplegar. Antes, 7-oct-2026 (cierre): **▶️ ver «DÓNDE RETOMAR» más abajo — rama `peticiones-reunion-7-oct` sin desplegar (7 correcciones, PDF propio de factura en muestra, tareas del audio identificadas).** Antes: **🚀 parte 2 del tercer lote DESPLEGADA (DIAN encendida; FE, DS, NC y NA sincronizadas). Falta parametrizar Finanzas en producción con la contadora (emisor, PUC, reglas, productos, retenciones) antes de la FE-1001.** Detalle (ver `docs/4-despliegue/despliegue-lote3.md`, parte 2). Antes: documento soporte completo, A4-01..03 (bloque ✅ del 7-oct, noche). Antes, 7-oct: **tercer lote (parte 1) DESPLEGADO** (bloque 🚀 del 7-oct). Antes, 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
 > para lo último; el resto de esta cabecera es del 16-sep) — **🚀 EL SISTEMA ESTÁ EN
 > PRODUCCIÓN**
 > (desde el 2-sep-2026) y ya lo están usando clientes reales. ORBITA vive en
@@ -226,20 +226,31 @@
 > Pendiente: el usuario prueba Finanzas con la guía (enlace en la memoria `pruebas-locales-finanzas`), un envío real de
 > factura para ver el logo, decidir si se despliega la parte 1 del tercer lote, y asociar el prefijo FE en la DIAN cuando
 > aparezca en el portal de producción.
-> ✍️ **16-oct-2026 · FIRMA DIGITAL DE LOS PROFESIONALES — rama `firma-profesionales` (los dos repos), commiteada en
-> local, SIN PUSH y SIN DESPLEGAR.** Pedido de JD&D: cada asesor con su firma en el sistema. En Profesionales →
-> Editar (o Nuevo) hay una sección **«Firma digital»** con vista previa, «Subir/Cambiar firma» y «Quitar»; el cambio
-> se aplica al pulsar Guardar (Cancelar lo deshace). La tabla marca «✓ Firma digital» bajo el correo.
-> Backend: columnas `profesionales.firma_url/firma_mime/firma_actualizada_en` (migración aditiva
-> `2026-10-16-firma-profesional.sql`, **sin aplicar en ningún lado**), `GET/PUT/DELETE /professionals/:id/firma`
-> (PUT y DELETE solo admin; PNG/JPG ≤ 4 MB, campo multipart `firma`; reemplazar borra el archivo anterior).
-> **Todavía NO se usa en ningún formato ni PDF**: solo queda guardada. Pintarla en el AT-031/actas es el paso siguiente
-> si JD&D lo pide (ojo con `profesional_formatos_id`: firma quien figura en los formatos, no quien ejecuta).
+> ✍️ **16-oct-2026 · FIRMA DIGITAL DE LOS PROFESIONALES — en `master`/`main` (rama `firma-profesionales`).**
+> Pedido de JD&D: cada asesor con su firma en el sistema y **estampada en los formatos**. En Profesionales → Editar
+> (o Nuevo) hay una sección **«Firma digital»** (vista previa, «Subir/Cambiar firma», «Quitar»; se aplica al pulsar
+> Guardar, Cancelar lo deshace) y la tabla marca «✓ Firma digital». Backend: columnas
+> `profesionales.firma_url/firma_mime/firma_actualizada_en` (migración aditiva `2026-10-16-firma-profesional.sql`),
+> `GET/PUT/DELETE /professionals/:id/firma` (PUT/DELETE solo admin; PNG/JPG ≤ 4 MB, campo `firma`).
+> **Al subirla se limpia** (`services/firma.service.js`, con `@napi-rs/canvas`): el blanco pasa a transparente y se
+> recorta el margen. Sin eso la firma salía diminuta, «flotando», y su fondo tapaba las rayas del formato.
+> **Dónde se estampa** (`utils/firma-pdf.js`; cada formato declara `firma: [[pág, x, y, ancho, alto]]` en
+> `formatos-arl.service.js`, medido con `inspeccionar-formato.mjs --png`): AT-031 «FIRMA ARL» · asistencia AXA, 1.ª
+> raya «FIRMA EXPOSITOR(ES)» · ficha de gestión AXA, recuadro de la pág. 3 · PSP-F-007 y SPM-F 38 de Colmena, raya
+> «FIRMA» · PSP-F-006 V3, raya «FIRMA» del pie (queda pequeña: hay poco alto) · plantilla genérica. **No llevan**:
+> AT-028 y la evaluación de Colmena (las firman los asistentes) ni los Word/Excel. Firma quien figura en los formatos
+> (`profesional_formatos_id` si hay suplente); con coasesores, cada juego lleva la de su asesor.
+> Trampas: el AT-031 y la ficha de AXA traen un **campo PDFSignature** en ese sitio; en la ficha su recuadro se
+> pinta encima y tapaba la imagen → se quita el campo y, solo en la ficha, se redibuja el recuadro gris
+> (`recuadro: true`). Puppeteer `uploadFile` con una ruta con `..` da `ERR_ACCESS_DENIED`: usar ruta absoluta.
+> **Probado en `jdd_dev`** (migración aplicada): API en :4010 (`2-pruebas/firmas-16-oct/probar-api.mjs`),
+> generación real con ROLLBACK para las tres ARL (`probar-generacion.mjs`), revisión visual de cada formato
+> (`probar-firmas.mjs`) y pantalla (`2-pruebas/herramientas-capturas/revision-firma-16-oct.mjs`, todo OK).
 > **Las tres firmas enviadas** (Estefany, José, Dany; sin apellidos) están en
-> `1-cliente-jdd/firmas-profesionales-2026-10-16/`. Se cargan con `scripts/cargar-firmas-16-oct.mjs` (busca cada nombre;
-> si hay más de un candidato no carga y los lista; sin `--confirmar` es ensayo). Despliegue + ensayo de la carga:
-> `bash jdd_consultores_app/docs/4-despliegue/despliegue-firmas-16-oct.sh`. **Sin probar contra una base**: el
-> clasificador bloqueó migrar `jdd_dev` y leer producción; solo compila (`ng build`) y pasa `node --check`.
+> `1-cliente-jdd/firmas-profesionales-2026-10-16/`; se ligan con `scripts/cargar-firmas-16-oct.mjs` (sin
+> `--confirmar` es ensayo; con varios candidatos no carga). Despliegue: `docs/4-despliegue/despliegue-firmas-16-oct.sh`.
+> En producción hay **dos José** (JOSE LUIS GUACAS ZAMBRANO, JUAN JOSE JURADO ALVAREZ) y **tres Dan…** (DANNY ALEXANDER
+> ROSERO NARVAEZ, DANIELA PAZ SUAREZ, DANIEL ESTIVEN GETIAL); Estefany = DIMELSA ESTEFANY CANCHALA.
 >
 > ▶️ **TRASPASO DEL 9-OCT-2026 (el desarrollador principal sale de viaje el fin de semana; retoma su compañero).**
 > **Qué hay en producción (9-oct, ~18:03 hora Colombia):** `master 14dd815` / `main 4cc8bbf` = el lote «parametrización
