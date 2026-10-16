@@ -699,6 +699,19 @@ export class ApiService {
   toggleProfessional(id: string): Observable<Wrap<Profesional>> {
     return this.http.patch<Wrap<Profesional>>(`${this.base}/professionals/${id}/estado`, {});
   }
+  /** 16-oct-2026 · Firma digital del profesional: la imagen (blob, va con sesión). */
+  firmaProfesional(id: string): Observable<Blob> {
+    return this.http.get(`${this.base}/professionals/${id}/firma`, { responseType: 'blob' });
+  }
+  /** Sube o reemplaza la firma (PNG/JPG). */
+  subirFirmaProfesional(id: string, archivo: File): Observable<Wrap<Profesional>> {
+    const fd = new FormData();
+    fd.append('firma', archivo);
+    return this.http.put<Wrap<Profesional>>(`${this.base}/professionals/${id}/firma`, fd);
+  }
+  quitarFirmaProfesional(id: string): Observable<Wrap<Profesional>> {
+    return this.http.delete<Wrap<Profesional>>(`${this.base}/professionals/${id}/firma`);
+  }
 
   // ---- Fase A · Catálogos DIAN (A0-04) y terceros (A0-05) ----
   /** Catálogo de referencia. Los municipios se piden de a departamento (`departamento_id`). */

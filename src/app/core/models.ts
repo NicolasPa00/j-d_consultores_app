@@ -1173,6 +1173,9 @@ export interface Profesional {
   registros_arl?: RegistroArl[];
   /** A0-05 · Su tercero (identidad fiscal para el documento soporte), si ya se creó. */
   tercero_id?: string | null;
+  /** 16-oct-2026 · Key de su firma digital en el almacenamiento (null = sin firma). */
+  firma_url?: string | null;
+  firma_actualizada_en?: string | null;
   // --- Desempeño (vista `vw_profesionales_desempeno`) ---
   /** Órdenes suyas con el trabajo hecho (EJECUTADA o FINALIZADA). */
   ordenes_ejecutadas?: number;

@@ -109,7 +109,52 @@
 .who__email {
   font-size: 0.8rem;
   color: var(--text-muted);
-}/* ===== Spinner (patrón compartido) ===== */
+}
+
+.who__firma {
+  font-size: 0.75rem;
+  color: var(--success);
+  font-weight: 600;
+}
+
+/* ===== Firma digital (16-oct-2026) ===== */
+.firma {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Fondo blanco y borde punteado: la firma se ve como sobre el papel. */
+.firma__lienzo {
+  flex: 1 1 220px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  padding: 0.5rem;
+}
+
+.firma__img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.firma__vacia {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.firma__acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+/* ===== Spinner (patrón compartido) ===== */
 .spinner {
   width: 16px;
   height: 16px;

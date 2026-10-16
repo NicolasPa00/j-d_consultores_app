@@ -3,8 +3,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Observable, concatMap, of } from 'rxjs';
 import { ApiService } from '../../core/api.service';
-import { mensajeError } from '../../core/errores';
+import { mensajeError, revisarArchivo } from '../../core/errores';
 import {
   normalizarTexto, normalizarCorreo, soloDigitos, validarNombre, validarCorreo,
   validarTelefono, validarTextoOpcional, primerProblema, tecleoLetras, tecleoDigitos,
@@ -34,6 +35,8 @@ interface Professional {
    * abrir ficha por ficha para saber a quién poner de suplente.
    */
   registros: RegistroArl[];
+  /** 16-oct-2026 · Si ya tiene su firma digital cargada. */
+  tieneFirma: boolean;
 }
 
 interface ProfessionalDraft {
@@ -78,6 +81,16 @@ export class ProfessionalsComponent implements OnInit {
   protected readonly modalOpen = signal(false);
   protected readonly editingId = signal<string | null>(null);
   protected draft: ProfessionalDraft = this.emptyDraft();
+
+  /**
+   * 16-oct-2026 · Firma digital en la ficha. El cambio (subir o quitar) se aplica
+   * al pulsar Guardar, junto con el resto de la ficha: así «Cancelar» también
+   * deshace la firma y un profesional nuevo puede llevarla desde el alta.
+   */
+  protected readonly firmaUrl = signal<string | null>(null);
+  protected readonly firmaCargando = signal(false);
+  private firmaPendiente: File | null = null;
+  private firmaQuitar = false;
 
   protected readonly filtered = computed(() => {
     const q = this.query().trim().toLowerCase();
@@ -250,6 +263,7 @@ export class ProfessionalsComponent implements OnInit {
   protected openNew(): void {
     this.editingId.set(null);
     this.draft = this.emptyDraft();
+    this.reiniciarFirma();
     this.modalOpen.set(true);
   }
 
@@ -262,12 +276,77 @@ export class ProfessionalsComponent implements OnInit {
       specialty: professional.specialty,
       status: professional.status,
     };
+    this.reiniciarFirma();
     this.modalOpen.set(true);
+    if (professional.tieneFirma) this.cargarFirma(professional.id);
   }
 
   protected closeModal(): void {
     if (this.saving()) return;
     this.modalOpen.set(false);
+    this.reiniciarFirma();
+  }
+
+  // ---- Firma digital (16-oct-2026) ----
+  private cargarFirma(id: string): void {
+    this.firmaCargando.set(true);
+    this.api.firmaProfesional(id).subscribe({
+      next: (blob) => {
+        this.firmaCargando.set(false);
+        // Si en el entretanto se cerró el modal o se eligió otra imagen, no se pisa.
+        if (this.editingId() !== id || this.firmaPendiente || !this.modalOpen()) return;
+        this.ponerFirmaUrl(URL.createObjectURL(blob));
+      },
+      error: (err) => {
+        this.firmaCargando.set(false);
+        this.alerts.error('No se pudo mostrar la firma', mensajeError(err, 'El servidor no devolvió la imagen de la firma.'));
+      },
+    });
+  }
+
+  protected elegirFirma(input: HTMLInputElement): void {
+    const archivo = input.files?.[0];
+    input.value = '';
+    if (!archivo) return;
+    const problema = revisarArchivo(archivo, { tipos: ['image/png', 'image/jpeg'] });
+    if (problema) {
+      this.alerts.warning('Revise la imagen de la firma', problema);
+      return;
+    }
+    this.firmaPendiente = archivo;
+    this.firmaQuitar = false;
+    this.ponerFirmaUrl(URL.createObjectURL(archivo));
+  }
+
+  protected quitarFirma(): void {
+    this.firmaPendiente = null;
+    this.firmaQuitar = true;
+    this.ponerFirmaUrl(null);
+  }
+
+  /** Hay un cambio de firma sin guardar (para avisarlo bajo la imagen). */
+  protected firmaSinGuardar(): boolean {
+    return !!this.firmaPendiente || this.firmaQuitar;
+  }
+
+  private ponerFirmaUrl(url: string | null): void {
+    const anterior = this.firmaUrl();
+    if (anterior) URL.revokeObjectURL(anterior);
+    this.firmaUrl.set(url);
+  }
+
+  private reiniciarFirma(): void {
+    this.firmaPendiente = null;
+    this.firmaQuitar = false;
+    this.ponerFirmaUrl(null);
+  }
+
+  /** Lo que hay que hacer con la firma después de guardar la ficha. */
+  private guardarFirma(id: string): Observable<unknown> {
+    if (this.firmaPendiente) return this.api.subirFirmaProfesional(id, this.firmaPendiente);
+    const pro = this.professionals().find((p) => p.id === id);
+    if (this.firmaQuitar && pro?.tieneFirma) return this.api.quitarFirmaProfesional(id);
+    return of(null);
   }
 
   /**
@@ -342,10 +421,17 @@ export class ProfessionalsComponent implements OnInit {
     };
     const id = this.editingId();
     const req = id ? this.api.updateProfessional(id, body) : this.api.createProfessional(body);
-    req.subscribe({
+    let fichaGuardada: string | null = null;
+    req.pipe(
+      concatMap((r) => {
+        fichaGuardada = r.data.id;
+        return this.guardarFirma(r.data.id);
+      }),
+    ).subscribe({
       next: () => {
         this.saving.set(false);
         this.modalOpen.set(false);
+        this.reiniciarFirma();
         this.alerts.success(
           id ? 'Profesional actualizado' : 'Profesional creado',
           `${body.nombre} quedó registrado con especialidad ${body.especialidad} y estado ${body.estado}.`,
@@ -354,6 +440,14 @@ export class ProfessionalsComponent implements OnInit {
       },
       error: (err) => {
         this.saving.set(false);
+        if (fichaGuardada) {
+          // La ficha sí quedó: lo que falló fue la imagen. Se pasa a edición para
+          // que un segundo «Guardar» no intente crear el profesional otra vez.
+          this.editingId.set(fichaGuardada);
+          this.alerts.error('La ficha se guardó, pero la firma no', mensajeError(err, 'El servidor rechazó la imagen de la firma.'));
+          this.load();
+          return;
+        }
         this.alerts.error('No se pudo guardar el profesional', mensajeError(err, 'Revise que el correo no esté ya registrado y que los campos obligatorios estén completos.'));
       },
     });
@@ -609,5 +703,6 @@ function toView(p: Profesional): Professional {
     // Solo los que de verdad tienen registro: la lista viene del backend con las
     // ARL en las que hay fila, y una ARL sin fila es "no registrado".
     registros: (p.registros_arl ?? []).filter((r) => r.registrado),
+    tieneFirma: !!p.firma_url,
   };
 }

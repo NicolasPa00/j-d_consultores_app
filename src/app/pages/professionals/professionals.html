@@ -54,6 +54,9 @@
                 <div class="who__text">
                   <span class="who__name">{{ pro.name }}</span>
                   <span class="who__email">{{ pro.email }}</span>
+                  @if (pro.tieneFirma) {
+                    <span class="who__firma" title="Tiene su firma digital cargada">✓ Firma digital</span>
+                  }
                 </div>
               </div>
             </td>
@@ -279,6 +282,39 @@
           <option value="Activo">Activo</option>
           <option value="Inactivo">Inactivo</option>
         </select>
+      </div>
+
+      <!-- 16-oct-2026 · Firma digital. Se aplica al pulsar Guardar, con el resto
+           de la ficha: «Cancelar» también deshace el cambio de firma. -->
+      <div class="form-field">
+        <span class="form-field__label">Firma digital</span>
+        <div class="firma">
+          <div class="firma__lienzo">
+            @if (firmaCargando()) {
+              <span class="firma__vacia">Cargando la firma…</span>
+            } @else if (firmaUrl(); as url) {
+              <img class="firma__img" [src]="url" alt="Firma del profesional" />
+            } @else {
+              <span class="firma__vacia">Sin firma cargada</span>
+            }
+          </div>
+          <div class="firma__acciones">
+            <input #archivoFirma type="file" accept="image/png,image/jpeg" hidden (change)="elegirFirma(archivoFirma)" />
+            <button type="button" class="btn btn--secondary" (click)="archivoFirma.click()" [disabled]="saving()">
+              {{ firmaUrl() ? 'Cambiar firma' : 'Subir firma' }}
+            </button>
+            @if (firmaUrl()) {
+              <button type="button" class="btn btn--ghost" (click)="quitarFirma()" [disabled]="saving()">Quitar</button>
+            }
+          </div>
+        </div>
+        <p class="form-field__hint">
+          @if (firmaSinGuardar()) {
+            El cambio de firma se aplica al pulsar «{{ editingId() ? 'Actualizar' : 'Guardar' }}».
+          } @else {
+            Imagen PNG o JPG de hasta 4 MB; de preferencia PNG con fondo transparente.
+          }
+        </p>
       </div>
     </form>
 
