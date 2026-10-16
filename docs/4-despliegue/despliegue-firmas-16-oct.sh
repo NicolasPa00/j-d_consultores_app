@@ -34,7 +34,8 @@ ls -la ~/respaldos/orbita-antes-firmas-16oct-$F.dump
 echo "== 2. Comprobar que lo que se va a traer es lo esperado"
 cd /opt/orbita/sst_ws && git fetch -q
 git log --oneline HEAD..origin/master
-git log origin/master --oneline -20 | grep -q "Firma digital" \
+# Sin tubería: con pipefail, `grep -q` corta la salida de git log y el conjunto falla.
+[[ "$(git log origin/master --oneline -20)" == *"irma digital"* ]] \
   || { echo "✗ master no trae la firma digital: fusione y suba primero."; exit 1; }
 
 echo "== 3. Código y migración"

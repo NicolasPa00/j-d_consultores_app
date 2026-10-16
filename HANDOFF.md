@@ -226,7 +226,10 @@
 > Pendiente: el usuario prueba Finanzas con la guía (enlace en la memoria `pruebas-locales-finanzas`), un envío real de
 > factura para ver el logo, decidir si se despliega la parte 1 del tercer lote, y asociar el prefijo FE en la DIAN cuando
 > aparezca en el portal de producción.
-> ✍️ **16-oct-2026 · FIRMA DIGITAL DE LOS PROFESIONALES — en `master`/`main` (rama `firma-profesionales`).**
+> ✍️ **16-oct-2026 · FIRMA DIGITAL DE LOS PROFESIONALES — ✅ DESPLEGADA Y CARGADA EN PRODUCCIÓN el 16-oct (~11:30 hora
+> Colombia)**: `master e8549db` / `main 9ee6ee8`, respaldo `~/respaldos/orbita-antes-firmas-16oct-20261016-1127.dump`,
+> migración aplicada, health/login 200. Revertir el código: `git reset --hard 14dd815` / `1b9fbac`, build y restart
+> (las columnas no estorban).
 > Pedido de JD&D: cada asesor con su firma en el sistema y **estampada en los formatos**. En Profesionales → Editar
 > (o Nuevo) hay una sección **«Firma digital»** (vista previa, «Subir/Cambiar firma», «Quitar»; se aplica al pulsar
 > Guardar, Cancelar lo deshace) y la tabla marca «✓ Firma digital». Backend: columnas
@@ -249,8 +252,11 @@
 > **Las tres firmas enviadas** (Estefany, José, Dany; sin apellidos) están en
 > `1-cliente-jdd/firmas-profesionales-2026-10-16/`; se ligan con `scripts/cargar-firmas-16-oct.mjs` (sin
 > `--confirmar` es ensayo; con varios candidatos no carga). Despliegue: `docs/4-despliegue/despliegue-firmas-16-oct.sh`.
-> En producción hay **dos José** (JOSE LUIS GUACAS ZAMBRANO, JUAN JOSE JURADO ALVAREZ) y **tres Dan…** (DANNY ALEXANDER
-> ROSERO NARVAEZ, DANIELA PAZ SUAREZ, DANIEL ESTIVEN GETIAL); Estefany = DIMELSA ESTEFANY CANCHALA.
+> **Cargadas en producción** (asignación confirmada por el usuario): Estefany → DIMELSA ESTEFANY CANCHALA, José → JOSE
+> LUIS GUACAS ZAMBRANO (no Juan José Jurado), Dany → DANNY ALEXANDER ROSERO NARVAEZ (no Daniela Paz ni Daniel Getial).
+> Verificado en producción con ROLLBACK y `guardar: false` (nada guardado): AT-031, asistencia AXA y PSP-F-007/006 de
+> Colmena salen con la firma de cada uno. Trampa: en el script de despliegue `git log | grep -q` con `pipefail` falla
+> aunque haya coincidencia (SIGPIPE); se compara la salida en una variable.
 >
 > ▶️ **TRASPASO DEL 9-OCT-2026 (el desarrollador principal sale de viaje el fin de semana; retoma su compañero).**
 > **Qué hay en producción (9-oct, ~18:03 hora Colombia):** `master 14dd815` / `main 4cc8bbf` = el lote «parametrización
