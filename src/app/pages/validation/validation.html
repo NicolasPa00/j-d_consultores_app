@@ -1680,7 +1680,10 @@
                 <span class="prof-pick__name">{{ etiquetaSoporte(soporte) }}</span>
                 <span class="pill pill--sm" [class]="pillSoporte(soporte)">{{ nombreSoporte(soporte) }}</span>
               </span>
-              <span class="prof-pick__spec">{{ peso(soporte) }} · {{ fechaSoporte(soporte) }}</span>
+              <span class="prof-pick__spec">
+                {{ peso(soporte) }} · {{ fechaSoporte(soporte) }}
+                @if (soporte.subido_por_nombre) { · <strong>corregido por {{ soporte.subido_por_nombre }}</strong> }
+              </span>
             </span>
           </button>
         } @empty {
@@ -1745,6 +1748,77 @@
                   Descargar PDF ({{ unirMarcados() }} {{ unirMarcados() === 1 ? 'documento' : 'documentos' }})
                 }
               </button>
+            }
+          </div>
+        }
+
+        <!-- 20-oct-2026 · La oficina sube el documento corregido (petición de
+             JD&D): reemplaza lo de la casilla sin devolverle nada al profesional
+             y sin mover el estado de la orden. -->
+        @if (puedeCorregir() && !rejectMode()) {
+          <div class="unir">
+            @if (!cargaAbierta()) {
+              <button type="button" class="btn btn--secondary btn--block" (click)="abrirCarga()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 21V9m0 0 4 4m-4-4-4 4" />
+                  <path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2" />
+                </svg>
+                Subir documento corregido
+              </button>
+            } @else {
+              <p class="assign__section-title">Subir documento corregido</p>
+              <p class="card__hint unir__ayuda">
+                Reemplaza el documento de la casilla elegida. No se le avisa al profesional
+                y la orden sigue en su estado.
+              </p>
+              <label class="form-field">
+                <span class="form-field__label">Documento</span>
+                <select
+                  class="form-control"
+                  [ngModel]="cargaCasillaId()"
+                  (ngModelChange)="elegirCasillaCarga($event)"
+                  name="cargaCasilla"
+                  [disabled]="subiendoCarga()"
+                >
+                  @for (cas of casillasCarga(); track cas.id) {
+                    <option [value]="cas.id">
+                      {{ cas.etiqueta }}@if (cas.asesor) { · {{ cas.asesor }} }
+                      — {{ cas.archivos === 0 ? 'sin archivo' : cas.archivos === 1 ? 'reemplaza 1 archivo' : 'reemplaza ' + cas.archivos + ' archivos' }}
+                    </option>
+                  }
+                </select>
+              </label>
+              <label class="form-field">
+                <span class="form-field__label">Archivo (PDF, JPG o PNG, máx. 4 MB)</span>
+                <input
+                  type="file"
+                  class="form-control"
+                  accept="application/pdf,image/jpeg,image/png"
+                  [multiple]="cargaCasilla()?.clave === 'evidencias'"
+                  [disabled]="subiendoCarga()"
+                  (change)="elegirArchivosCarga($event)"
+                />
+                @if (cargaArchivos().length) {
+                  <span class="form-field__hint">
+                    {{ cargaArchivos().length === 1 ? cargaArchivos()[0].name : cargaArchivos().length + ' archivos elegidos' }}
+                  </span>
+                }
+              </label>
+              <div class="unir__acciones">
+                <button type="button" class="btn btn--ghost" (click)="cerrarCarga()" [disabled]="subiendoCarga()">Cancelar</button>
+                <button
+                  type="button"
+                  class="btn btn--primary"
+                  [disabled]="!cargaCasilla() || !cargaArchivos().length || subiendoCarga()"
+                  (click)="confirmarCarga()"
+                >
+                  @if (subiendoCarga()) {
+                    <span class="spinner" aria-hidden="true"></span> Subiendo…
+                  } @else {
+                    Subir
+                  }
+                </button>
+              </div>
             }
           </div>
         }

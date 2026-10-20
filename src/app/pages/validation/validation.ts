@@ -7,7 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { firstValueFrom, map, Observable, Subscription } from 'rxjs';
 import { ExtractedField, ServiceOrder } from '../../data/service-orders';
 import { ApiService } from '../../core/api.service';
-import { mensajeError } from '../../core/errores';
+import { mensajeError, revisarArchivo } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
 import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, ClaveGasto, DetalleCobroOrden, GASTOS_COBRO, EstadoArl, ESTADOS_ARL, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, TipoViatico, CasillaEditable, FilaPrefactura, FormatoPrevio, FranjaVisita, HistorialCobro, HistorialEstado, HistorialEstadoArl, Ocupacion, Orden, OrdenManualForm, Plantilla, PrevisualizacionPrefactura, Profesional, RadicadoOrden, RegistroArl, ResultadoCrucePrefactura, Tercero, VisitaProxima } from '../../core/models';
@@ -3536,6 +3536,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.rejectMode.set(false);
     this.rejectMotivo = '';
     this.rejectCats.set([]);
+    this.cerrarCarga();
     this.loadingSupports.set(true);
     this.api.listSupports(order.osId).subscribe({
       next: (r) => {
@@ -3627,7 +3628,103 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.rejectMode.set(false);
     this.rejectMotivo = '';
     this.rejectCats.set([]);
+    this.cerrarCarga();
     this.releaseSupportUrl();
+  }
+
+  // ---- 20-oct-2026 · La oficina sube el documento corregido ----
+  /**
+   * Petición de JD&D: cuando el profesional sube mal un soporte y la encargada lo
+   * necesita ya, lo corrige ella y lo sube aquí en vez de devolverlo y esperar.
+   * Reemplaza lo que haya en la casilla y NO mueve el estado: aceptar o rechazar
+   * sigue siendo una decisión aparte. Solo en EJECUTADA (en revisión) o
+   * FINALIZADA (para radicar); en PROGRAMADA el envío del profesional lo pisaría.
+   */
+  protected readonly puedeCorregir = computed(
+    () =>
+      ['EJECUTADA', 'FINALIZADA'].includes(this.verifyOrder()?.osEstado ?? '') &&
+      ['admin', 'administrativo'].includes(this.auth.usuario()?.rol ?? ''),
+  );
+  protected readonly cargaAbierta = signal(false);
+  protected readonly cargaCasillaId = signal('');
+  protected readonly cargaArchivos = signal<File[]>([]);
+  protected readonly subiendoCarga = signal(false);
+  /** Las mismas casillas que se pueden devolver: lo que esta orden pide, por asesor. */
+  protected readonly casillasCarga = computed(() => (this.cargaAbierta() ? this.catalogoRechazo() : []));
+  protected readonly cargaCasilla = computed(
+    () => this.casillasCarga().find((c) => c.id === this.cargaCasillaId()) ?? null,
+  );
+
+  protected abrirCarga(): void {
+    // Se preselecciona la casilla del documento que se está viendo: casi siempre
+    // es ese el que se quiere corregir.
+    const visto = this.selectedSupport();
+    this.cargaAbierta.set(true);
+    const casillas = this.casillasCarga();
+    const deVisto = visto
+      ? casillas.find((c) => c.clave === (visto.categoria ?? 'otros') &&
+          (this.equipoSoportes().length > 1 ? c.profesional_id === visto.de_profesional_id : true))
+      : null;
+    this.cargaCasillaId.set((deVisto ?? casillas[0])?.id ?? '');
+    this.cargaArchivos.set([]);
+  }
+
+  protected cerrarCarga(): void {
+    if (this.subiendoCarga()) return;
+    this.cargaAbierta.set(false);
+    this.cargaCasillaId.set('');
+    this.cargaArchivos.set([]);
+  }
+
+  protected elegirCasillaCarga(id: string): void {
+    this.cargaCasillaId.set(id);
+    // Cambiar de casilla con fotos ya elegidas para 'evidencias' dejaría varios
+    // archivos en una casilla que guarda uno.
+    this.cargaArchivos.set([]);
+  }
+
+  protected elegirArchivosCarga(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const archivos = Array.from(input.files ?? []);
+    input.value = '';
+    for (const a of archivos) {
+      const problema = revisarArchivo(a);
+      if (problema) {
+        this.alerts.warning('No se puede subir ese archivo', problema);
+        return;
+      }
+    }
+    this.cargaArchivos.set(archivos);
+  }
+
+  protected async confirmarCarga(): Promise<void> {
+    const order = this.verifyOrder();
+    const casilla = this.cargaCasilla();
+    const archivos = this.cargaArchivos();
+    if (!order?.osId || !casilla || !archivos.length || this.subiendoCarga()) return;
+    if (casilla.archivos > 0) {
+      const ok = await this.alerts.confirm({
+        title: 'Reemplazar documento',
+        message:
+          `${casilla.etiqueta}${casilla.asesor ? ` de ${casilla.asesor}` : ''} se reemplaza por el archivo que ` +
+          `eligió. El que subió el profesional se borra y no se puede recuperar.`,
+        confirmText: 'Reemplazar',
+      });
+      if (!ok) return;
+    }
+    this.subiendoCarga.set(true);
+    this.api.subirSoporteOficina(order.osId, casilla.clave, archivos, casilla.profesional_id).subscribe({
+      next: (r) => {
+        this.subiendoCarga.set(false);
+        this.alerts.success('Documento subido', r.message);
+        // Se recarga la lista y se abre el documento recién subido.
+        this.openVerify(order, r.data[0]?.id);
+      },
+      error: (err) => {
+        this.subiendoCarga.set(false);
+        this.alerts.error('No se pudo subir el documento', mensajeError(err, 'El servidor no aceptó el archivo.'));
+      },
+    });
   }
 
   /**

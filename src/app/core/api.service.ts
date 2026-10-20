@@ -278,6 +278,20 @@ export class ApiService {
   unirSoportes(ordenId: string, ids: string[]): Observable<Blob> {
     return this.http.post(`${this.base}/files/supports/unir`, { orden_id: ordenId, ids }, { responseType: 'blob' });
   }
+  /**
+   * 20-oct-2026 · La oficina sube el documento corregido de UNA casilla: reemplaza
+   * lo que haya en ella (del asesor indicado; null = el principal) sin mover el
+   * estado de la orden.
+   */
+  subirSoporteOficina(
+    orderId: string, categoria: CategoriaSoporte, archivos: File[], profesionalId: string | null,
+  ): Observable<Wrap<ArchivoSoporte[]> & { message: string }> {
+    const fd = new FormData();
+    // Los campos de texto van ANTES que los archivos: multer los lee en orden.
+    if (profesionalId) fd.append('profesional_id', profesionalId);
+    for (const a of archivos) fd.append(categoria, a, a.name);
+    return this.http.post<Wrap<ArchivoSoporte[]> & { message: string }>(`${this.base}/orders/${orderId}/supports`, fd);
+  }
   /** VER-02/03 · Aceptar los soportes: la OS pasa a EJECUTADA. */
   verifyOrder(orderId: string): Observable<Wrap<Orden>> {
     return this.http.post<Wrap<Orden>>(`${this.base}/orders/${orderId}/verify`, {});

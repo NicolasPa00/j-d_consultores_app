@@ -320,6 +320,11 @@ export interface ArchivoSoporte {
   /** Peso antes de comprimir; permite ver cuánto está ahorrando el servidor. */
   tamano_original_bytes?: number | string | null;
   via_enlace_publico?: boolean;
+  /**
+   * 20-oct-2026 · Usuario de la oficina que lo subió en lugar del profesional
+   * (documento corregido). NULL = lo subió el profesional por su enlace.
+   */
+  subido_por_nombre?: string | null;
   subido_en: string;
 }
 

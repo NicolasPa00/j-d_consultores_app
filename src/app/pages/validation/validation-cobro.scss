@@ -360,6 +360,17 @@
   margin: 0.6rem 0 0.4rem;
 }
 
+/* 20-oct-2026 · «Subir documento corregido»: mismo bloque, con sus botones al pie. */
+.unir .form-field {
+  margin-bottom: 0.6rem;
+}
+
+.unir__acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
 .unir__lista {
   list-style: none;
   margin: 0 0 0.7rem;
