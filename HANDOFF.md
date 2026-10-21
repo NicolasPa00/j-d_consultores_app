@@ -5,6 +5,18 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
+> 🧾 **20-oct-2026 (noche, 2) · LA FACTURA A BOLÍVAR VA EN UNA SOLA LÍNEA** (petición de la contadora, igual que en
+> Siigo): «Servicios de promoción y prevención de riesgos laborales prestados a las empresas afiliadas a la compañía
+> según pre facturas: 161906-162117-162187», cantidad 1, por el total de las filas de prefactura (que ya incluyen el
+> transporte). Las demás ARL siguen con una línea por orden. Solo backend: `crearBorrador` arma `itemUnicoBolivar` cuando
+> el pagador es Bolívar y hay prefacturas; las órdenes van en `documento_ordenes` (nuevo parámetro `ordenIds` de
+> `guardarDocumento`, que al EDITAR conserva las que había si las líneas no traen orden). Por eso la emisión (marcar
+> FACTURADA y `verificarOrdenesLibres`), la anulación por nota crédito y el paquete para la ARL leen ahora las órdenes de
+> `documento_ordenes` y no de las líneas (el paquete toma el valor de cada orden de `cobro_aprobado_total`). Probado
+> contra el sandbox (`SETP990028438` en jdd_dev: 1 línea, 3 órdenes FACTURADAS, paquete con su valor por orden).
+> ⚠️ Una nota crédito PARCIAL de una factura de Bolívar solo puede acreditar esa única línea (por valor, no por orden).
+> Un borrador de Bolívar creado ANTES de este cambio sigue con una línea por orden: eliminarlo y crearlo de nuevo.
+>
 > 🧾 **20-oct-2026 (noche) · VARIAS PREFACTURAS DE BOLÍVAR EN UNA SOLA FACTURA** (petición de la contadora). En
 > Facturación → Por facturar, cada prefactura de Bolívar con órdenes listas trae la casilla **«Unir en una factura»**; con
 > dos o más marcadas sale una barra bajo «Bolívar» con el total y **«Crear una sola factura»** / «Relación en Excel».
