@@ -5,6 +5,12 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
+> 📦 **20-oct-2026 (noche, 3) · PAQUETE PARA LA ARL: la actividad es solo la «Descripción» del SIPAB** (contadora). En
+> «3.ACTIVIDADES REALIZADAS», en la ventana del paquete y en el nombre de los PDF por orden, la actividad sale de
+> `tipo_actividad` (columna «Descripcion» del SIPAB, p. ej. «AUTOCUIDADO»); antes caía a `descripcion`, que guarda las
+> Observaciones enteras. Solo `paquete.service.js`; despliegue `docs/4-despliegue/despliegue-actividad-paquete-20-oct.sh`.
+> **Trampa:** no poner comillas invertidas en comentarios SQL dentro de una plantilla de JS (cierran la cadena).
+>
 > 🧾 **20-oct-2026 (noche, 2) · LA FACTURA A BOLÍVAR VA EN UNA SOLA LÍNEA** (petición de la contadora, igual que en
 > Siigo): «Servicios de promoción y prevención de riesgos laborales prestados a las empresas afiliadas a la compañía
 > según pre facturas: 161906-162117-162187», cantidad 1, por el total de las filas de prefactura (que ya incluyen el
