@@ -5,6 +5,28 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
+> ▶️ **CIERRE DE SESIÓN 21-oct-2026 (madrugada) · PARA QUIEN RETOMA.** Todo lo de los bloques de abajo hasta el 📂 está
+> **DESPLEGADO en producción**: backend `master cd20fe7`, frontend `main b907134` (unir prefacturas, línea única de Bolívar,
+> actividad = descripción del SIPAB, fila TOTAL en actividades). Respaldos de cada paso en `~/respaldos` del servidor.
+> **Pendiente:**
+> 1. La contadora debe crear la factura conjunta de las prefacturas 161906 + 162117 + 162187 (Por facturar → «Unir en una
+>    factura» en las tres → «Crear una sola factura»): 24 órdenes, $22.390.475, saldrá en una línea. El borrador viejo de 24
+>    líneas ya lo eliminó ella.
+> 2. **Arreglar el lector de prefacturas** (`prefacturas.extraction.js`): la IA pierde la columna de transporte. Propuesta
+>    acordada pero aplazada por el usuario: leer el texto del PDF directamente (no son escaneos) y alertar si las filas no
+>    suman el total impreso.
+> 3. Hacer más visible la factura conjunta: en las prefacturas marcadas para unir, el botón de abajo debería crear la
+>    conjunta (la contadora pulsó el de una sola prefactura) y la barra quedar fija al bajar. Propuesto, sin hacer.
+> 4. Faltan los informes técnicos de OS-2026-0256 (Supertaxis 104), 0110 (LASA 1014) y 0010 (La Merced 90): se suben con
+>    «subir documento corregido» cuando lleguen.
+> 5. Encuestas de las 24 órdenes del lote: NO enviadas a los clientes (decisión del usuario); se mandan desde la plataforma.
+> 6. OS-2026-0255: `evidencias.pdf` subido por la oficina con el mismo tamaño que el AT-031 corregido (¿casilla equivocada?).
+> 7. Paz y salvo del paquete: «Señores:» sin destinatario e «informó» con tilde (¿así es la carta modelo?).
+> **Cómo se trabajó desde el portátil:** el clasificador de permisos de Claude Code bloquea `git push` y el SSH de escritura
+> a producción; el usuario pega UNA línea con `!` (push de los dos repos + `bash docs/4-despliegue/despliegue-….sh`). Los
+> scripts de despliegue de esta noche son intercambiables (todos hacen respaldo + pull + restart); solo cambia el nombre del
+> respaldo. Identidad de git del portátil sin configurar: los commits se hicieron con `-c user.name/user.email`.
+>
 > 📦 **20-oct-2026 (noche, 4) · «3.ACTIVIDADES REALIZADAS» lleva una fila TOTAL** al final (suma de las actividades,
 > en negrita; contadora). `pdfActividades` en `paquete.service.js`; despliegue `despliegue-total-actividades-20-oct.sh`.
 >
@@ -83,7 +105,7 @@
 > **Para preguntar a JD&D:** el paz y salvo dice «Señores:» sin destinatario y «informó» con tilde (¿así está la carta
 > modelo?); el aviso emergente dice «hay documentos que no se incluyeron» aunque el único aviso sea la firma.
 >
-> **Última actualización:** 20-oct-2026 (noche): **📂 formatos corregidos de Bolívar cargados en producción y 📦 prueba del paquete para la ARL** (bloques justo arriba). Antes, 20-oct-2026: **📎 la oficina sube el documento corregido — desplegado** (bloque 📎 justo debajo). Antes, 16-oct-2026: **firma digital de los profesionales y en los formatos (bloque ✍️).** Antes, 9-oct-2026 (cierre): **▶️ PARA QUIEN RETOMA: leer el bloque «TRASPASO DEL 9-OCT» (justo debajo de esta cabecera larga, antes de «DÓNDE RETOMAR (8-oct)»).** Antes, 9-oct-2026 (noche): **lote «parametrización 9-oct» (rama `carga-parametrizacion-9-oct`, bloque 🧾 del 9-oct arriba de «DÓNDE RETOMAR (8-oct)»): retenciones, cargue de terceros y CARGA de la parametrización de JD&D en producción.** Nómina sigue EN PAUSA y sin desplegar. Antes, 7-oct-2026 (cierre): **▶️ ver «DÓNDE RETOMAR» más abajo — rama `peticiones-reunion-7-oct` sin desplegar (7 correcciones, PDF propio de factura en muestra, tareas del audio identificadas).** Antes: **🚀 parte 2 del tercer lote DESPLEGADA (DIAN encendida; FE, DS, NC y NA sincronizadas). Falta parametrizar Finanzas en producción con la contadora (emisor, PUC, reglas, productos, retenciones) antes de la FE-1001.** Detalle (ver `docs/4-despliegue/despliegue-lote3.md`, parte 2). Antes: documento soporte completo, A4-01..03 (bloque ✅ del 7-oct, noche). Antes, 7-oct: **tercer lote (parte 1) DESPLEGADO** (bloque 🚀 del 7-oct). Antes, 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
+> **Última actualización:** 21-oct-2026 (madrugada): **▶️ cierre de sesión con lo desplegado y lo pendiente (bloque ▶️ al inicio)**: unir prefacturas de Bolívar en una factura, línea única de Bolívar, actividades del paquete; antes, 20-oct (noche): **📂 formatos corregidos de Bolívar cargados en producción y 📦 prueba del paquete para la ARL** (bloques justo arriba). Antes, 20-oct-2026: **📎 la oficina sube el documento corregido — desplegado** (bloque 📎 justo debajo). Antes, 16-oct-2026: **firma digital de los profesionales y en los formatos (bloque ✍️).** Antes, 9-oct-2026 (cierre): **▶️ PARA QUIEN RETOMA: leer el bloque «TRASPASO DEL 9-OCT» (justo debajo de esta cabecera larga, antes de «DÓNDE RETOMAR (8-oct)»).** Antes, 9-oct-2026 (noche): **lote «parametrización 9-oct» (rama `carga-parametrizacion-9-oct`, bloque 🧾 del 9-oct arriba de «DÓNDE RETOMAR (8-oct)»): retenciones, cargue de terceros y CARGA de la parametrización de JD&D en producción.** Nómina sigue EN PAUSA y sin desplegar. Antes, 7-oct-2026 (cierre): **▶️ ver «DÓNDE RETOMAR» más abajo — rama `peticiones-reunion-7-oct` sin desplegar (7 correcciones, PDF propio de factura en muestra, tareas del audio identificadas).** Antes: **🚀 parte 2 del tercer lote DESPLEGADA (DIAN encendida; FE, DS, NC y NA sincronizadas). Falta parametrizar Finanzas en producción con la contadora (emisor, PUC, reglas, productos, retenciones) antes de la FE-1001.** Detalle (ver `docs/4-despliegue/despliegue-lote3.md`, parte 2). Antes: documento soporte completo, A4-01..03 (bloque ✅ del 7-oct, noche). Antes, 7-oct: **tercer lote (parte 1) DESPLEGADO** (bloque 🚀 del 7-oct). Antes, 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
 > para lo último; el resto de esta cabecera es del 16-sep) — **🚀 EL SISTEMA ESTÁ EN
 > PRODUCCIÓN**
 > (desde el 2-sep-2026) y ya lo están usando clientes reales. ORBITA vive en
