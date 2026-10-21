@@ -86,6 +86,31 @@
           }
         </header>
 
+        <!-- 20-oct-2026 · Varias prefacturas de Bolívar en UNA sola factura: se eligen con
+             la casilla «Unir en una factura» de cada prefactura y se facturan desde aquí. -->
+        @if (puedeUnir(p)) {
+          <div class="fac-union" [class.fac-union--activa]="gruposUnion(p).length >= 2">
+            @if (gruposUnion(p).length >= 2) {
+              <span class="fac-union__texto">
+                <b>Una sola factura</b> con las prefacturas {{ numerosUnion(p) }} ·
+                {{ lineasUnion(p).length }} orden(es) · {{ pesos(totalUnion(p)) }}
+              </span>
+              <button type="button" class="btn btn--ghost btn--sm" (click)="descargarRelacionConjunta(p)" [disabled]="descargando() === 'union:' + p.clave">
+                @if (descargando() === 'union:' + p.clave) { <span class="spinner" aria-hidden="true"></span> } Relación en Excel
+              </button>
+              <button type="button" class="btn btn--primary btn--sm" (click)="crearFacturaConjunta(p)"
+                      [disabled]="!lineasUnion(p).length || !!creando() || !p.tercero_id">
+                @if (creando() === 'union:' + p.clave) { <span class="spinner" aria-hidden="true"></span> Creando… } @else { Crear una sola factura }
+              </button>
+            } @else {
+              <span class="fac-union__texto">
+                ¿Varias prefacturas en una sola factura? Marque <b>«Unir en una factura»</b> en cada
+                una{{ gruposUnion(p).length === 1 ? ' (lleva 1: elija al menos otra)' : '' }}.
+              </span>
+            }
+          </div>
+        }
+
         @for (g of p.grupos; track g.clave) {
           <div class="fac-grupo">
             <div class="fac-grupo__titulo">
@@ -104,6 +129,12 @@
                 <span><b>Órdenes pendientes</b></span>
               }
               <span class="fac-grupo__resumen">{{ g.n_facturables }} facturable(s) de {{ g.lineas.length }}</span>
+              @if (puedeUnir(p) && g.prefactura && g.n_facturables) {
+                <label class="fac-grupo__unir">
+                  <input type="checkbox" [checked]="enUnion(p, g)" (change)="alternarUnion(p, g)" />
+                  Unir en una factura
+                </label>
+              }
             </div>
 
             <div class="table-wrap">

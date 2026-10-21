@@ -98,6 +98,12 @@ export class FacturacionComponent implements OnInit {
   protected readonly marcadas = signal<Record<string, string[]>>({});
   protected readonly creando = signal<string | null>(null);
   protected readonly descargando = signal<string | null>(null);
+  /**
+   * 20-oct-2026 (petición de la contadora) · Prefacturas de Bolívar elegidas para
+   * UNIRLAS en una sola factura: `pagador.clave` → claves de sus grupos. Dentro de
+   * cada prefactura vale lo que esté marcado en su tabla, igual que al facturarla sola.
+   */
+  protected readonly union = signal<Record<string, string[]>>({});
 
   /** Pagadores con algo que mostrar (los que no tienen órdenes candidatas se omiten). */
   protected readonly pagadoresConLineas = computed(() => this.pagadores().filter((p) => p.grupos.length));
@@ -236,6 +242,7 @@ export class FacturacionComponent implements OnInit {
           for (const g of p.grupos) marcas[g.clave] = g.lineas.filter((l) => l.marcada_por_defecto).map((l) => l.clave);
         }
         this.marcadas.set(marcas);
+        this.union.set({});
       },
       error: (err) => {
         this.cargandoRelacion.set(false);
@@ -309,6 +316,88 @@ export class FacturacionComponent implements OnInit {
       error: (err) => {
         this.creando.set(null);
         this.alerts.error('No se pudo crear la factura', mensajeError(err, 'Revise la selección.'));
+      },
+    });
+  }
+
+  // ---------- 20-oct-2026 · Varias prefacturas de Bolívar en una sola factura ----------
+
+  /** Las prefacturas del pagador que tienen algo por facturar: solo esas se pueden unir. */
+  private prefacturasUnibles(p: PagadorPorFacturar): GrupoPorFacturar[] {
+    return p.grupos.filter((g) => g.tipo === 'PREFACTURA' && !!g.prefactura && g.n_facturables > 0);
+  }
+
+  /** Se ofrece unir cuando hay al menos dos prefacturas con órdenes listas. */
+  protected puedeUnir(p: PagadorPorFacturar): boolean {
+    return this.puedeOperar() && this.prefacturasUnibles(p).length >= 2;
+  }
+
+  protected enUnion(p: PagadorPorFacturar, g: GrupoPorFacturar): boolean {
+    return (this.union()[p.clave] ?? []).includes(g.clave);
+  }
+
+  protected alternarUnion(p: PagadorPorFacturar, g: GrupoPorFacturar): void {
+    this.union.update((u) => {
+      const actuales = u[p.clave] ?? [];
+      return { ...u, [p.clave]: actuales.includes(g.clave) ? actuales.filter((c) => c !== g.clave) : [...actuales, g.clave] };
+    });
+  }
+
+  /** Las prefacturas elegidas para unir, en el orden en que aparecen en pantalla. */
+  protected gruposUnion(p: PagadorPorFacturar): GrupoPorFacturar[] {
+    return this.prefacturasUnibles(p).filter((g) => this.enUnion(p, g));
+  }
+
+  protected lineasUnion(p: PagadorPorFacturar): LineaPorFacturar[] {
+    return this.gruposUnion(p).flatMap((g) => this.lineasMarcadas(g));
+  }
+
+  protected totalUnion(p: PagadorPorFacturar): number {
+    return this.gruposUnion(p).reduce((s, g) => s + this.totalMarcado(g), 0);
+  }
+
+  protected numerosUnion(p: PagadorPorFacturar): string {
+    return this.gruposUnion(p).map((g) => g.prefactura!.numero).join(', ');
+  }
+
+  protected crearFacturaConjunta(p: PagadorPorFacturar): void {
+    const grupos = this.gruposUnion(p);
+    const lineas = this.lineasUnion(p);
+    if (grupos.length < 2 || !lineas.length || this.creando()) return;
+    const clave = `union:${p.clave}`;
+    this.creando.set(clave);
+    this.api.crearBorradorFactura({
+      arl_id: p.arl_id!,
+      prefactura_ids: grupos.map((g) => g.prefactura!.id),
+      fila_ids: lineas.map((l) => l.fila_id!).filter(Boolean),
+    }).subscribe({
+      next: (r) => {
+        this.creando.set(null);
+        this.alerts.success('Borrador creado', `Una sola factura con las prefacturas ${this.numerosUnion(p)}. Revise el cálculo y emítala cuando esté lista.`);
+        this.cargarRelacion();
+        this.cargarListas();
+        this.pestana.set('borradores');
+        this.abrir(r.data.id);
+      },
+      error: (err) => {
+        this.creando.set(null);
+        this.alerts.error('No se pudo crear la factura', mensajeError(err, 'Revise la selección.'));
+      },
+    });
+  }
+
+  protected descargarRelacionConjunta(p: PagadorPorFacturar): void {
+    const grupos = this.gruposUnion(p);
+    const clave = `union:${p.clave}`;
+    this.descargando.set(clave);
+    this.api.relacionFacturacion(p, grupos.map((g) => g.prefactura!.id)).subscribe({
+      next: (blob) => {
+        this.descargando.set(null);
+        this.guardarArchivo(blob, `relacion-${p.arl_nombre ?? p.tercero_nombre}-${grupos.map((g) => g.prefactura!.numero).join('-')}.xlsx`);
+      },
+      error: (err) => {
+        this.descargando.set(null);
+        this.alerts.error('No se pudo generar la relación', mensajeError(err, 'Intente de nuevo.'));
       },
     });
   }

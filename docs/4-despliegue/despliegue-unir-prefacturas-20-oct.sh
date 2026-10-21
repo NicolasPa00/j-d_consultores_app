@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Despliegue de «Varias prefacturas de Bolívar en una sola factura» (20-oct-2026, petición de la
+# contadora). Solo código: SIN migración y sin dependencias nuevas (no hace falta npm ci).
+#
+# ANTES (en el equipo del desarrollador): los commits ya en master (sst_ws) y main (frontend), con push.
+# Luego, desde la raíz del monorepo:
+#   bash jdd_consultores_app/docs/4-despliegue/despliegue-unir-prefacturas-20-oct.sh
+# Revertir: git reset --hard <commit anterior> en los dos repos del servidor, build y restart.
+set -euo pipefail
+
+SERVIDOR=orbita@45.77.118.62
+LLAVE=~/.ssh/id_orbita
+
+ssh -i "$LLAVE" "$SERVIDOR" 'bash -s' <<'REMOTO'
+set -euo pipefail
+export PGPASSWORD=$(grep -oP 'postgresql://orbita:\K[^@]+' /opt/orbita/sst_ws/.env)
+
+echo "== 1. Respaldo"
+F=$(date +%Y%m%d-%H%M)
+pg_dump -h 127.0.0.1 -U orbita -Fc orbita > ~/respaldos/orbita-antes-unir-prefacturas-$F.dump
+ls -la ~/respaldos/orbita-antes-unir-prefacturas-$F.dump
+
+echo "== 2. Comprobar que lo que se va a traer es lo esperado"
+cd /opt/orbita/sst_ws && git fetch -q
+git log --oneline HEAD..origin/master
+[[ "$(git log origin/master --oneline -20)" == *"una sola factura"* ]] \
+  || { echo "✗ master no trae «una sola factura»: suba primero."; exit 1; }
+cd /opt/orbita/frontend && git fetch -q
+git log --oneline HEAD..origin/main
+[[ "$(git log origin/main --oneline -20)" == *"una sola factura"* ]] \
+  || { echo "✗ main no trae «una sola factura»: suba primero."; exit 1; }
+
+echo "== 3. Código"
+cd /opt/orbita/sst_ws   && git pull --ff-only
+cd /opt/orbita/frontend && git pull --ff-only && npm run build
+sudo systemctl restart orbita-api orbita-web
+sleep 6
+systemctl is-active orbita-api orbita-web
+
+echo "== 4. Humo"
+echo "backend:  $(git -C /opt/orbita/sst_ws log --oneline -1)"
+echo "frontend: $(git -C /opt/orbita/frontend log --oneline -1)"
+echo "health:   $(curl -s -o /dev/null -w '%{http_code}' https://orbita.jddconsultores.com/api/health)"
+echo "login:    $(curl -s -o /dev/null -w '%{http_code}' https://orbita.jddconsultores.com/login)"
+# Sin sesión la ruta responde 401 (existe y está protegida).
+echo "por facturar (espera 401): $(curl -s -o /dev/null -w '%{http_code}' https://orbita.jddconsultores.com/api/facturacion/por-facturar)"
+REMOTO
+
+echo "Listo."

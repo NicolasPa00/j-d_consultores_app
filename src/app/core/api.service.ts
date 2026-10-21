@@ -1096,12 +1096,12 @@ export class ApiService {
       `${this.base}/facturacion/por-facturar${queryString({ arl_id: arlId })}`,
     );
   }
-  /** FEL-03 · Excel de la relación para radicar ante el pagador. */
-  relacionFacturacion(pagador: { arl_id?: string | null; pagador_tercero_id?: string | null }, prefacturaId?: string, ordenIds?: string[]): Observable<Blob> {
+  /** FEL-03 · Excel de la relación para radicar ante el pagador (Bolívar: una prefactura o varias). */
+  relacionFacturacion(pagador: { arl_id?: string | null; pagador_tercero_id?: string | null }, prefacturaIds?: string | string[], ordenIds?: string[]): Observable<Blob> {
     return this.http.get(
       `${this.base}/facturacion/relacion.xlsx${queryString({
         arl_id: pagador.arl_id ?? undefined, pagador_tercero_id: pagador.pagador_tercero_id ?? undefined,
-        prefactura_id: prefacturaId, orden_ids: ordenIds?.join(','),
+        prefactura_id: Array.isArray(prefacturaIds) ? prefacturaIds.join(',') : prefacturaIds, orden_ids: ordenIds?.join(','),
       })}`,
       { responseType: 'blob' },
     );
@@ -1109,7 +1109,8 @@ export class ApiService {
   /** FEL-04 · Crea el borrador de factura con la selección de «Por facturar». */
   crearBorradorFactura(body: {
     // A3-01 · Un cliente particular se factura por `pagador_tercero_id` en vez de `arl_id`.
-    arl_id?: string; pagador_tercero_id?: string; orden_ids?: string[]; prefactura_id?: string; fila_ids?: string[]; observaciones?: string;
+    // 20-oct-2026 · Bolívar: `prefactura_ids` une varias prefacturas en una sola factura.
+    arl_id?: string; pagador_tercero_id?: string; orden_ids?: string[]; prefactura_id?: string; prefactura_ids?: string[]; fila_ids?: string[]; observaciones?: string;
   }): Observable<Wrap<DetalleFactura> & { message: string }> {
     return this.http.post<Wrap<DetalleFactura> & { message: string }>(`${this.base}/facturacion/borradores`, body);
   }

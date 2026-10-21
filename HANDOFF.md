@@ -5,7 +5,64 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> **Última actualización:** 20-oct-2026: **📎 la oficina sube el documento corregido — desplegado** (bloque 📎 justo debajo). Antes, 16-oct-2026: **firma digital de los profesionales y en los formatos (bloque ✍️).** Antes, 9-oct-2026 (cierre): **▶️ PARA QUIEN RETOMA: leer el bloque «TRASPASO DEL 9-OCT» (justo debajo de esta cabecera larga, antes de «DÓNDE RETOMAR (8-oct)»).** Antes, 9-oct-2026 (noche): **lote «parametrización 9-oct» (rama `carga-parametrizacion-9-oct`, bloque 🧾 del 9-oct arriba de «DÓNDE RETOMAR (8-oct)»): retenciones, cargue de terceros y CARGA de la parametrización de JD&D en producción.** Nómina sigue EN PAUSA y sin desplegar. Antes, 7-oct-2026 (cierre): **▶️ ver «DÓNDE RETOMAR» más abajo — rama `peticiones-reunion-7-oct` sin desplegar (7 correcciones, PDF propio de factura en muestra, tareas del audio identificadas).** Antes: **🚀 parte 2 del tercer lote DESPLEGADA (DIAN encendida; FE, DS, NC y NA sincronizadas). Falta parametrizar Finanzas en producción con la contadora (emisor, PUC, reglas, productos, retenciones) antes de la FE-1001.** Detalle (ver `docs/4-despliegue/despliegue-lote3.md`, parte 2). Antes: documento soporte completo, A4-01..03 (bloque ✅ del 7-oct, noche). Antes, 7-oct: **tercer lote (parte 1) DESPLEGADO** (bloque 🚀 del 7-oct). Antes, 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
+> 🧾 **20-oct-2026 (noche) · VARIAS PREFACTURAS DE BOLÍVAR EN UNA SOLA FACTURA** (petición de la contadora). En
+> Facturación → Por facturar, cada prefactura de Bolívar con órdenes listas trae la casilla **«Unir en una factura»**; con
+> dos o más marcadas sale una barra bajo «Bolívar» con el total y **«Crear una sola factura»** / «Relación en Excel».
+> Dentro de cada prefactura vale lo marcado en su tabla. Backend: `resolverSeleccion` acepta `prefacturaIds` (y sigue
+> aceptando `prefacturaId`); `POST /facturacion/borradores` y `/seleccion/validar` aceptan `prefactura_ids`;
+> `relacion.xlsx?prefactura_id=` admite varias separadas por coma (cada fila lleva SU prefactura). Con varias, el
+> documento queda con `prefactura_id` NULL y el detalle muestra las suyas sacadas de sus órdenes (`DOCUMENTO_SELECT`).
+> Sin migración. Probado con la copia de producción: las 3 prefacturas del lote (161906, 162117, 162187) → un borrador de
+> 24 líneas, bruto 22.390.475, RF 11 %; una sola prefactura sigue igual. Despliegue:
+> `docs/4-despliegue/despliegue-unir-prefacturas-20-oct.sh`. **Ojo:** `verificar-relacion-facturar.mjs` y
+> `verificar-borrador-factura.mjs` YA fallaban antes de este cambio (no conocen el visto bueno de cobro del 30-sep).
+>
+> 📂 **20-oct-2026 (noche) · FORMATOS CORREGIDOS DE BOLÍVAR CARGADOS EN PRODUCCIÓN — sin cambios de código.** La encargada
+> mandó `FACTURACION ARL BOLIVAR 20 DE OCT.rar` (raíz del monorepo): 24 PDF con el AT-031 y el registro de asistencia
+> UNIDOS (escaneos, sin texto), uno por orden, + 3 prefacturas + `RELACIOON DE FORMATOS ARL BOLIVAR.xlsx`. Se separó cada
+> PDF a ojo (pág. 1 = AT-031; resto = asistencia; el 2.12 son 2 hojas de AT-031; 7 traen solo AT-031) y se cruzó por
+> cronograma+secuencia. **Hecho en producción** (respaldo previo `~/respaldos/orbita-antes-carga-formatos-20261020-1957.dump`
+> + `storage-…tgz`), con los endpoints reales desde una instancia en proceso con correo en consola (no salió ningún correo):
+> - **9 ya procesadas** (8 FINALIZADAS + OS-2026-0091 EJECUTADA): acta/asistencia reemplazadas con «subir documento corregido»
+>   (`POST /orders/:id/supports`); conservan su profesional (decisión del usuario), aunque el AT-031 diga otro nombre.
+> - **15 SIN PROGRAMAR → asignadas a JOSÉ LUIS GUACAS** (decisión del usuario, aunque 6 formatos digan Estefany o Danny) con las
+>   franjas del AT-031; 12 subidas por su enlace → **EJECUTADAS** (falta que la encargada las acepte en Verificación).
+>   OS-2026-0111 (Comfenalco) lleva la asistencia en 2 archivos (`asistencia.pdf` + `asistencia-2.pdf`, el límite es 4 MB).
+> - **3 asistencias técnicas quedan PROGRAMADAS sin soportes** (OS-2026-0256 Supertaxis 104, 0110 LASA 1014, 0010 La Merced
+>   90): la matriz exige acta + **informe** y el rar no trae el informe. Las actas separadas están en el servidor en
+>   `~/carga-formatos-bolivar-20oct/separados/<OS>/acta.pdf`; se suben JUNTO con el informe por el enlace de la ficha.
+> Ensayo previo: copia de producción restaurada en `orbita_ensayo` (VPS dev, ya borrada) + storage local; huella del resto de
+> órdenes idéntica antes/después (`7c869d32…`). Scripts y salida: `~/carga-formatos-bolivar-20oct/` en el servidor.
+> ✅ **FASE 2 (misma noche, aplicada por el usuario con `!` porque el clasificador bloqueó el SSH de escritura): las 24
+> quedaron LISTAS PARA FACTURAR** — FINALIZADAS, estado ARL APROBADO con su prefactura, «Validado plataforma», valores
+> de cobro tomados de la prefactura y visto bueno; las 24 salen FACTURABLES en `/facturacion/por-facturar`. Las 3 sin
+> informe pasaron a EJECUTADA a mano + acta por la oficina y se aceptaron (casilla informe VACÍA). Prefacturas: 161906
+> cargada por primera vez; 162117 y 162187 re-aplicadas; las tres cuadran al peso (filas = total impreso = vistos buenos;
+> 22.390.475 en total). Encuestas: NO se enviaron a los clientes (decisión del usuario): quedaron con `enviado_en` NULL y
+> se mandan desde la plataforma si las quieren. Respaldo previo `~/respaldos/orbita-antes-fase2-bolivar-20261020-2021.*`;
+> script `~/carga-formatos-bolivar-20oct/finalizar-para-facturar.mjs`. ⚠️ **La lectura con IA de la prefactura de Bolívar
+> PIERDE la columna de transporte** (Extras 956: 21.020, Evolti 136: 20.000, IPS Los Ángeles 33: 41.028; comprobado
+> contra el texto del PDF): el script lo corrigió con la relación de la encargada y exigiendo que las filas sumen el
+> total impreso. **Arreglar `prefacturas.extraction.js`** (o validar la suma en la previsualización) antes de la próxima
+> prefactura con gastos.
+> **Ojo:** OS-2026-0255 tiene un `evidencias.pdf` subido HOY por la oficina con el mismo tamaño que el AT-031 corregido
+> (¿casilla equivocada?); no se tocó. Comfenalco 57: las págs. 10-20 parecen un segundo escaneo de planillas ya incluidas.
+> **Trampas:** el portal exige TODAS las casillas obligatorias en un envío; el límite de 4 MB se mide ANTES de comprimir;
+> en Windows los `import()` de rutas absolutas necesitan `pathToFileURL`, y los scripts sueltos van con `--import tsx`.
+>
+> 📦 **20-oct-2026 · PRUEBA DEL PAQUETE PARA LA ARL en local + sandbox: OK, sin cambios de código.** Desde el portátil:
+> órdenes desechables `OS-PAQ-88557-1..4` (2 de Bolívar con la prefactura `PF-88557`, 2 de AXA con orden original),
+> soportes en el storage LOCAL del portátil, facturas **SETP990028308** (Bolívar) y **SETP990028309** (AXA) emitidas y
+> VALIDADAS en el sandbox; se quedan en `jdd_dev`, como las SETP anteriores. Bolívar = zip con 1.factura, 2.k por orden
+> (soportes unidos, la foto en hoja apaisada), 3.ACTIVIDADES y 4.PAZ Y SALVO; AXA = un PDF de 7 págs. (orden original +
+> soportes de cada orden). Por pantalla (Facturación → Emitidas → Ver → «Paquete para la ARL») funcionan la descarga y la
+> selección de órdenes. **Trampas:** con `STORAGE_DRIVER=local`, los soportes y PDF de `jdd_dev` subidos desde OTRO equipo
+> no existen en este (el paquete sale con avisos de «ya no está en el almacenamiento»); `firma-representante.jpg` no está
+> en el portátil; Bolívar exige `prefactura_id` y la orden necesita `valor_total` (lo pone el visto bueno de operación).
+> **Para preguntar a JD&D:** el paz y salvo dice «Señores:» sin destinatario y «informó» con tilde (¿así está la carta
+> modelo?); el aviso emergente dice «hay documentos que no se incluyeron» aunque el único aviso sea la firma.
+>
+> **Última actualización:** 20-oct-2026 (noche): **📂 formatos corregidos de Bolívar cargados en producción y 📦 prueba del paquete para la ARL** (bloques justo arriba). Antes, 20-oct-2026: **📎 la oficina sube el documento corregido — desplegado** (bloque 📎 justo debajo). Antes, 16-oct-2026: **firma digital de los profesionales y en los formatos (bloque ✍️).** Antes, 9-oct-2026 (cierre): **▶️ PARA QUIEN RETOMA: leer el bloque «TRASPASO DEL 9-OCT» (justo debajo de esta cabecera larga, antes de «DÓNDE RETOMAR (8-oct)»).** Antes, 9-oct-2026 (noche): **lote «parametrización 9-oct» (rama `carga-parametrizacion-9-oct`, bloque 🧾 del 9-oct arriba de «DÓNDE RETOMAR (8-oct)»): retenciones, cargue de terceros y CARGA de la parametrización de JD&D en producción.** Nómina sigue EN PAUSA y sin desplegar. Antes, 7-oct-2026 (cierre): **▶️ ver «DÓNDE RETOMAR» más abajo — rama `peticiones-reunion-7-oct` sin desplegar (7 correcciones, PDF propio de factura en muestra, tareas del audio identificadas).** Antes: **🚀 parte 2 del tercer lote DESPLEGADA (DIAN encendida; FE, DS, NC y NA sincronizadas). Falta parametrizar Finanzas en producción con la contadora (emisor, PUC, reglas, productos, retenciones) antes de la FE-1001.** Detalle (ver `docs/4-despliegue/despliegue-lote3.md`, parte 2). Antes: documento soporte completo, A4-01..03 (bloque ✅ del 7-oct, noche). Antes, 7-oct: **tercer lote (parte 1) DESPLEGADO** (bloque 🚀 del 7-oct). Antes, 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
 > para lo último; el resto de esta cabecera es del 16-sep) — **🚀 EL SISTEMA ESTÁ EN
 > PRODUCCIÓN**
 > (desde el 2-sep-2026) y ya lo están usando clientes reales. ORBITA vive en
