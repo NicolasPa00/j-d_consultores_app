@@ -5,6 +5,9 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
+> 📦 **20-oct-2026 (noche, 4) · «3.ACTIVIDADES REALIZADAS» lleva una fila TOTAL** al final (suma de las actividades,
+> en negrita; contadora). `pdfActividades` en `paquete.service.js`; despliegue `despliegue-total-actividades-20-oct.sh`.
+>
 > 📦 **20-oct-2026 (noche, 3) · PAQUETE PARA LA ARL: la actividad es solo la «Descripción» del SIPAB** (contadora). En
 > «3.ACTIVIDADES REALIZADAS», en la ventana del paquete y en el nombre de los PDF por orden, la actividad sale de
 > `tipo_actividad` (columna «Descripcion» del SIPAB, p. ej. «AUTOCUIDADO»); antes caía a `descripcion`, que guarda las
