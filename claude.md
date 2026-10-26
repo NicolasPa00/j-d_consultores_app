@@ -74,6 +74,14 @@ Si no se commitea, no llega al otro equipo.
 
 ## 1. Alcance vigente (LEER ANTES DE CODIFICAR)
 
+> 🧭 **26-oct-2026 · peticiones P1/P2/P3 (commiteadas, SIN desplegar, sin probar en vivo).** Toda referencia a una orden en
+> avisos y correos sale de `referenciaOrden(orden)`/`referenciaConEmpresa(orden)` (`sst_ws/src/utils/referencia-orden.js`):
+> Bolívar → «cronograma_secuencia», demás ARL → `numero_orden`, código OS solo de respaldo. El buscador de Órdenes (filtro
+> en el cliente, `validation.ts`) encuentra «1390041_26» y «1390041-26». El correo al asesor y el `.ics` llevan cronograma,
+> secuencia y «Actividad a desarrollar» = `tipo_actividad`. **Envío parcial (P3):** ajuste `envio_parcial_permitido` (activado)
+> + `enviar_parcial` en `POST /orders/:id/assign` permiten mandar los formatos de una orden repartida a medias y dejarla
+> **PROGRAMADA** con «parcial · faltan N h» (divergencia M3/M5). Detalle, pendientes y trampas 94-96 en el bloque 🧭 del `HANDOFF.md`.
+
 > 🛰️ **24-oct-2026 · ARL SURA es la 4.ª ARL** (su orden llega como el «Reporte estado de las tareas» en Excel, no como PDF) y se
 > atendió la tanda del 23-oct (factura manual, recibo de caja con retenciones automáticas, cuentas bancarias de terceros, centro de
 > costo por ítem, ajuste de cuentas de cobro, eliminar cuentas contables, alertas de vencimiento…). Tablero:

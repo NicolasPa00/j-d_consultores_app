@@ -5,6 +5,38 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
+> 🧭 **26-oct-2026 · PETICIONES DE JD&D P1/P2/P3 — COMMITEADAS, SIN DESPLEGAR Y SIN PROBAR EN VIVO (ver aviso del túnel).**
+> Tablero: `docs/3-planes/plan-peticiones-26-oct-2026.md`. Commits: back `master` `dd21e05`(P1) `156746e`(P2) `2b04f22`(P3);
+> front `main` `2a6de38`(P1) `b75cdb8`(P2) `7330efb`(P3). **Compilan** (`ng build` y `typecheck` backend limpios salvo los
+> errores PREEXISTENTES de `src/infrastructure/*.ts` de Prisma, ajenos a esto). Qué entró:
+> - **P1 · Avisos y buscador con cronograma_secuencia, sin el código OS.** Función compartida `referenciaOrden(orden)` /
+>   `referenciaConEmpresa(orden)` en `sst_ws/src/utils/referencia-orden.js`: Bolívar → «1390041_26», demás ARL → `numero_orden`,
+>   y cae al código OS solo si no hay más. Aplicada en TODOS los avisos de órdenes (soportes cargados/corregidos y encuesta
+>   respondida en `public.routes.js`; asignación/reprogramación en `orders.routes.js`; orden por vencer en `alertas.service.js`).
+>   Buscador de Órdenes: encuentra «1390041_26» y «1390041-26» (unifica guion/guion bajo) en la bandeja (front, `validation.ts`
+>   `filtered`) y en `GET /orders?q=`. Migración `2026-10-26-referencia-orden-encuestas.sql` (añade `codigo_cronograma`,
+>   `secuencia`, `numero_orden` a `vw_encuestas`, recrea `vw_profesionales_desempeno`). Los avisos ya guardados NO se migran.
+> - **P2 · Correo al asesor con cronograma, secuencia y actividad.** Correo de asignación/reprogramación, correo de soportes
+>   devueltos y `.ics` (título por `referenciaOrden`; descripción con cronograma/secuencia o n.º de orden y
+>   «Actividad a desarrollar» = `tipo_actividad`, no `descripcion`). En `orders.routes.js` y `calendar.service.js`.
+> - **P3 · Enviar los formatos de una orden programada A MEDIAS (programación parcial).** Ajuste global
+>   `envio_parcial_permitido` (nace activado; `PUT /settings/envio-parcial`, Configuración → Sistema). `POST /orders/:id/assign`
+>   acepta `enviar_parcial`: con franjas que no cubren las horas, genera formatos, congela soportes, manda correo/.ics de lo
+>   programado y deja la OS **PROGRAMADA**; el historial anota la parcialidad. El reparto entre asesores ya existía (coasesores).
+>   Front: botón **«Enviar lo programado (16 h de 21 h)»** en el modal, indicador **«Parcial · faltan N h»** en la fila y el
+>   detalle, e interruptor en Configuración. `vw_ordenes_expandidas` y `/drafts` exponen `minutos_programados`.
+>   **Decidido con el usuario (26-oct):** envío parcial activado por defecto, la orden queda PROGRAMADA con indicador, y
+>   «mínimo primero». **Divergencia M3/M5:** una orden PROGRAMADA puede no cubrir todas sus horas.
+> - **PENDIENTE de P3 (lo demás, acordado para después):** (1) al añadir franjas, enviar SOLO lo nuevo —hoy una reprogramación
+>   reenvía a todo el equipo—; (2) impedir FINALIZAR una orden parcial hasta completar sus horas (o decidir con JD&D qué pasa si
+>   la ARL acepta menos), porque la cuenta de cobro valora `horas_asignadas`; (3) verificar que Geovanny Olivo y Román Ordóñez
+>   estén registrados ante Bolívar (`profesionales_arl`) antes de enviar la orden real (necesita la base).
+> - ⚠️ **NO PROBADO EN jdd_dev:** el `.env` de este equipo seguía apuntando a Neon y falta el USUARIO de PostgreSQL de `jdd_dev`
+>   (no está en el repo ni hay memoria/kit aquí). El túnel SSH quedó abierto en `127.0.0.1:5434` (el 5433 lo ocupa un Postgres
+>   local) y la contraseña se leyó del VPS; respaldo del `.env` viejo en `sst_ws/.env.respaldo-26-oct`. **Falta probar P1/P2/P3
+>   con órdenes desechables y backend `EMAIL_DRIVER=console` en cuanto se tenga el usuario.** NO desplegar sin autorización
+>   (producción va por detrás: la tanda del 23-oct con 4 migraciones sigue sin desplegar; §3 del plan).
+>
 > ▶️ **CIERRE DE SESIÓN 21-oct-2026 (madrugada) · PARA QUIEN RETOMA.** Todo lo de los bloques de abajo hasta el 📂 está
 > **DESPLEGADO en producción**: backend `master cd20fe7`, frontend `main b907134` (unir prefacturas, línea única de Bolívar,
 > actividad = descripción del SIPAB, fila TOTAL en actividades). Respaldos de cada paso en `~/respaldos` del servidor.
@@ -105,7 +137,7 @@
 > **Para preguntar a JD&D:** el paz y salvo dice «Señores:» sin destinatario y «informó» con tilde (¿así está la carta
 > modelo?); el aviso emergente dice «hay documentos que no se incluyeron» aunque el único aviso sea la firma.
 >
-> **Última actualización:** 26-oct-2026: **▶️ PARA QUIEN RETOMA: `docs/3-planes/plan-peticiones-26-oct-2026.md` (peticiones del cliente del 26-oct, una URGENTE, y el prompt listo para Claude Code); después, el centro de ayuda.** Además, todo lo del 24-oct (🛰️ ARL SURA + tanda del 23-oct, 🎬 centro de ayuda) quedó commiteado y subido, SIN desplegar; para terminar el centro de ayuda en otro equipo: `docs/3-planes/plan-centro-de-ayuda.md`.** Antes, 24-oct-2026: **🛰️ ARL SURA + tanda de peticiones del 23-oct** (bloque 🛰️ justo debajo). Antes, 21-oct-2026 (madrugada): **▶️ cierre de sesión con lo desplegado y lo pendiente (bloque ▶️ al inicio)**: unir prefacturas de Bolívar en una factura, línea única de Bolívar, actividades del paquete; antes, 20-oct (noche): **📂 formatos corregidos de Bolívar cargados en producción y 📦 prueba del paquete para la ARL** (bloques justo arriba). Antes, 20-oct-2026: **📎 la oficina sube el documento corregido — desplegado** (bloque 📎 justo debajo). Antes, 16-oct-2026: **firma digital de los profesionales y en los formatos (bloque ✍️).** Antes, 9-oct-2026 (cierre): **▶️ PARA QUIEN RETOMA: leer el bloque «TRASPASO DEL 9-OCT» (justo debajo de esta cabecera larga, antes de «DÓNDE RETOMAR (8-oct)»).** Antes, 9-oct-2026 (noche): **lote «parametrización 9-oct» (rama `carga-parametrizacion-9-oct`, bloque 🧾 del 9-oct arriba de «DÓNDE RETOMAR (8-oct)»): retenciones, cargue de terceros y CARGA de la parametrización de JD&D en producción.** Nómina sigue EN PAUSA y sin desplegar. Antes, 7-oct-2026 (cierre): **▶️ ver «DÓNDE RETOMAR» más abajo — rama `peticiones-reunion-7-oct` sin desplegar (7 correcciones, PDF propio de factura en muestra, tareas del audio identificadas).** Antes: **🚀 parte 2 del tercer lote DESPLEGADA (DIAN encendida; FE, DS, NC y NA sincronizadas). Falta parametrizar Finanzas en producción con la contadora (emisor, PUC, reglas, productos, retenciones) antes de la FE-1001.** Detalle (ver `docs/4-despliegue/despliegue-lote3.md`, parte 2). Antes: documento soporte completo, A4-01..03 (bloque ✅ del 7-oct, noche). Antes, 7-oct: **tercer lote (parte 1) DESPLEGADO** (bloque 🚀 del 7-oct). Antes, 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
+> **Última actualización:** 26-oct-2026 (noche): **🧭 PETICIONES P1/P2/P3 CONSTRUIDAS Y COMMITEADAS (bloque 🧭 al inicio), SIN desplegar y SIN probar en vivo (falta el usuario de PostgreSQL de `jdd_dev`); después sigue el centro de ayuda (`docs/3-planes/plan-centro-de-ayuda.md`).** Antes, 26-oct-2026: **▶️ PARA QUIEN RETOMA: `docs/3-planes/plan-peticiones-26-oct-2026.md` (peticiones del cliente del 26-oct, una URGENTE, y el prompt listo para Claude Code); después, el centro de ayuda.** Además, todo lo del 24-oct (🛰️ ARL SURA + tanda del 23-oct, 🎬 centro de ayuda) quedó commiteado y subido, SIN desplegar; para terminar el centro de ayuda en otro equipo: `docs/3-planes/plan-centro-de-ayuda.md`.** Antes, 24-oct-2026: **🛰️ ARL SURA + tanda de peticiones del 23-oct** (bloque 🛰️ justo debajo). Antes, 21-oct-2026 (madrugada): **▶️ cierre de sesión con lo desplegado y lo pendiente (bloque ▶️ al inicio)**: unir prefacturas de Bolívar en una factura, línea única de Bolívar, actividades del paquete; antes, 20-oct (noche): **📂 formatos corregidos de Bolívar cargados en producción y 📦 prueba del paquete para la ARL** (bloques justo arriba). Antes, 20-oct-2026: **📎 la oficina sube el documento corregido — desplegado** (bloque 📎 justo debajo). Antes, 16-oct-2026: **firma digital de los profesionales y en los formatos (bloque ✍️).** Antes, 9-oct-2026 (cierre): **▶️ PARA QUIEN RETOMA: leer el bloque «TRASPASO DEL 9-OCT» (justo debajo de esta cabecera larga, antes de «DÓNDE RETOMAR (8-oct)»).** Antes, 9-oct-2026 (noche): **lote «parametrización 9-oct» (rama `carga-parametrizacion-9-oct`, bloque 🧾 del 9-oct arriba de «DÓNDE RETOMAR (8-oct)»): retenciones, cargue de terceros y CARGA de la parametrización de JD&D en producción.** Nómina sigue EN PAUSA y sin desplegar. Antes, 7-oct-2026 (cierre): **▶️ ver «DÓNDE RETOMAR» más abajo — rama `peticiones-reunion-7-oct` sin desplegar (7 correcciones, PDF propio de factura en muestra, tareas del audio identificadas).** Antes: **🚀 parte 2 del tercer lote DESPLEGADA (DIAN encendida; FE, DS, NC y NA sincronizadas). Falta parametrizar Finanzas en producción con la contadora (emisor, PUC, reglas, productos, retenciones) antes de la FE-1001.** Detalle (ver `docs/4-despliegue/despliegue-lote3.md`, parte 2). Antes: documento soporte completo, A4-01..03 (bloque ✅ del 7-oct, noche). Antes, 7-oct: **tercer lote (parte 1) DESPLEGADO** (bloque 🚀 del 7-oct). Antes, 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
 > para lo último; el resto de esta cabecera es del 16-sep) — **🚀 EL SISTEMA ESTÁ EN
 > PRODUCCIÓN**
 > (desde el 2-sep-2026) y ya lo están usando clientes reales. ORBITA vive en
@@ -4459,6 +4491,32 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
     en su cuenta de cobro; `cobro_transporte/alojamiento/alimentacion/tiempo_muerto/material`
     y `valor_unitario/valor_total` son lo que se le COBRA a la ARL. Los nombres
     se parecen; no mezclarlos.
+94. **Una orden se nombra distinto según quién la mire (26-oct-2026).** El cliente
+    se guía por el cronograma y la secuencia de Bolívar («1390041_26»), no por el
+    código OS-AAAA-NNNN que reparte la plataforma. Toda referencia a una orden en
+    avisos y correos pasa por UNA función, `referenciaOrden(orden)` /
+    `referenciaConEmpresa(orden)` (`sst_ws/src/utils/referencia-orden.js`): Bolívar
+    → cronograma_secuencia, demás ARL → `numero_orden`, y código OS solo de
+    respaldo. Decide por la PRESENCIA de cronograma+secuencia (solo Bolívar los
+    tiene), no por el nombre de la ARL, para servir aunque solo lleguen las columnas
+    de `ordenes_servicio` sin el `arl_nombre` de la vista. Si aparece un aviso nuevo
+    de órdenes, usar esa función, no volver a escribir `${codigo} · ${empresa}`.
+95. **El buscador de Órdenes filtra en el CLIENTE, no por el `q` del backend
+    (26-oct-2026).** La bandeja (`validation.ts` `filtered`) filtra sobre las ~200
+    filas ya cargadas; el `q` de `GET /orders` solo lo usa la API/el dashboard. Para
+    que «1390041_26» y «1390041-26» encuentren lo mismo se unifican guion y guion
+    bajo a un separador y se compara con `cronograma-secuencia`. Si se toca la
+    búsqueda, hay que tocar LOS DOS sitios.
+96. **El envío parcial levanta una regla del ciclo, no la borra (P3, 26-oct-2026).**
+    `cuadranLasHoras` sigue decidiendo si una orden está «completa»; `enviar_parcial`
+    + el ajuste `envio_parcial_permitido` solo permiten mandar formatos y dejarla
+    PROGRAMADA con horas sin cubrir. En `aplicarAsignacion`, lo que decide generar
+    formatos/congelar soportes/avisar es ahora `programar = completa || parcial`, no
+    `completa`; el handler distingue por `result.enviado`, no por `completa`. Si se
+    vuelve a cablear algo a `completa` creyendo que significa «se envió», el envío
+    parcial deja de funcionar. OJO: una orden parcial sigue valorando
+    `horas_asignadas` enteras en la cuenta de cobro; aún NO se impide FINALIZARLA a
+    medias (pendiente de P3, ver bloque 🧭).
 
 ## 7. Cómo mantener este archivo
 

@@ -9,6 +9,12 @@
 
 ---
 
+> ✅ **Estado 26-oct-2026 (noche):** P1, P2 y P3 **construidos, compilan y commiteados** en los dos repos (sin desplegar).
+> **P3 se hizo el «mínimo primero»** con el visto bueno del usuario (envío parcial activado por defecto, la orden queda
+> PROGRAMADA con «parcial · faltan N h»). **Falta:** probar los tres en `jdd_dev` (bloqueado por el usuario de PostgreSQL, ver
+> bloque 🧭 del HANDOFF) y, de P3, «lo demás» (enviar solo lo nuevo al añadir franjas; impedir FINALIZAR una orden parcial).
+> El Centro de ayuda (P4) queda pendiente tras probar P1–P3.
+
 ## 1. Lo que pidió el cliente (texto literal + transcripción)
 
 **Audio 1 (09:27, 52 s), transcrito:**
