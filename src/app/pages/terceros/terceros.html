@@ -217,6 +217,74 @@
         }
       </dl>
 
+      <!-- 24-oct-2026 · Cuentas bancarias: a quien se le paga (profesionales, proveedores) y los asesores que las cambian. -->
+      <h4 class="ficha-sub">Cuentas bancarias</h4>
+      @if (cargandoCuentas()) {
+        <p class="ficha-vacio">Cargando…</p>
+      } @else {
+        @if (!cuentas().length) {
+          <p class="ficha-vacio">Sin cuentas registradas.{{ puedeEditar() ? ' Agregue la cuenta a la que se le paga a ' + t.nombre + '.' : '' }}</p>
+        } @else {
+          <ul class="ter-cuentas">
+            @for (c of cuentas(); track c.id) {
+              <li class="ter-cuenta">
+                <div>
+                  <strong>{{ c.banco_nombre }}</strong> · {{ etiquetaTipoCuenta[c.tipo_cuenta] }}
+                  @if (c.principal) { <span class="pill pill--success">Principal</span> }
+                  <div class="mono">{{ c.numero }}</div>
+                  @if (c.titular) { <small>Titular: {{ c.titular }}</small> }
+                </div>
+                @if (puedeEditar()) {
+                  <div class="ter-cuenta__acciones">
+                    @if (!c.principal) { <button type="button" class="btn btn--ghost btn--sm" (click)="hacerPrincipal(c)">Hacer principal</button> }
+                    <button type="button" class="btn btn--ghost btn--sm" (click)="eliminarCuenta(c)">Eliminar</button>
+                  </div>
+                }
+              </li>
+            }
+          </ul>
+        }
+        @if (puedeEditar()) {
+          @if (!agregandoCuenta()) {
+            <button type="button" class="btn btn--ghost btn--sm" (click)="abrirNuevaCuenta()">+ Agregar cuenta bancaria</button>
+          } @else {
+            <form class="par-form ter-cuenta-form">
+              <div class="form-field">
+                <label class="form-field__label" for="ctBanco">Banco *</label>
+                <app-selector-busqueda idCampo="ctBanco" [opciones]="opcionesBanco()" [(valor)]="cuentaDraft.banco_id" placeholder="Buscar banco…" />
+                @if (!cuentaDraft.banco_id) {
+                  <input class="form-control ter-cuenta-form__otro" type="text" maxlength="80" name="ctBancoNuevo" [(ngModel)]="cuentaDraft.banco_nuevo" placeholder="¿No está? Escriba el nombre del banco" />
+                }
+              </div>
+              <div class="form-row">
+                <div class="form-field">
+                  <label class="form-field__label" for="ctTipo">Tipo de cuenta *</label>
+                  <select id="ctTipo" class="form-control" name="ctTipo" [(ngModel)]="cuentaDraft.tipo_cuenta">
+                    <option value="AHORROS">Ahorros</option>
+                    <option value="CORRIENTE">Corriente</option>
+                    <option value="DEPOSITO_ELECTRONICO">Depósito electrónico (Nequi, Daviplata…)</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label class="form-field__label" for="ctNumero">Número *</label>
+                  <input id="ctNumero" class="form-control mono" type="text" inputmode="numeric" maxlength="34" name="ctNumero" [(ngModel)]="cuentaDraft.numero" />
+                </div>
+              </div>
+              <div class="form-field">
+                <label class="form-field__label" for="ctTitular">Titular (si no es el mismo tercero)</label>
+                <input id="ctTitular" class="form-control" type="text" maxlength="150" name="ctTitular" [(ngModel)]="cuentaDraft.titular" />
+              </div>
+              <div class="par-form__footer">
+                <button type="button" class="btn btn--close" [disabled]="guardandoCuenta()" (click)="agregandoCuenta.set(false)">Cancelar</button>
+                <button type="button" class="btn btn--primary" [disabled]="guardandoCuenta()" (click)="guardarCuenta()">
+                  {{ guardandoCuenta() ? 'Guardando…' : 'Guardar cuenta' }}
+                </button>
+              </div>
+            </form>
+          }
+        }
+      }
+
       <!-- A0-07 · Condiciones de facturación: solo tiene sentido para un pagador
            (cliente o ARL). El proveedor/empleado no factura, se le paga. -->
       @if (esPagador(t)) {

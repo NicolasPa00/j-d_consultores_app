@@ -1,0 +1,62 @@
+<div class="modal-backdrop modal-backdrop--sobre" (click)="guardando() ? null : cerrar.emit()"></div>
+<div class="modal modal--sobre" role="dialog" aria-modal="true" aria-labelledby="prTitulo">
+  <header class="modal__head">
+    <div>
+      <h3 class="modal__title" id="prTitulo">Nuevo producto</h3>
+      <p class="modal__sub">Se puede completar después en Parametrización → Productos.</p>
+    </div>
+    <button type="button" class="icon-action" (click)="cerrar.emit()" aria-label="Cerrar" [disabled]="guardando()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+    </button>
+  </header>
+  <div class="modal__body">
+    <div class="alta-fila">
+      <div class="form-field">
+        <label class="form-field__label" for="prCodigo">Código *</label>
+        <input id="prCodigo" class="form-control mono" type="text" [(ngModel)]="draft.codigo" maxlength="30" />
+      </div>
+      <div class="form-field">
+        <label class="form-field__label" for="prNombre">Nombre *</label>
+        <input id="prNombre" class="form-control" type="text" [(ngModel)]="draft.nombre" maxlength="200" />
+      </div>
+    </div>
+    <div class="alta-fila">
+      <div class="form-field">
+        <label class="form-field__label" for="prIva">Tratamiento del IVA *</label>
+        <select id="prIva" class="form-control" [(ngModel)]="draft.tratamiento_iva">
+          <option value="GRAVADO">Gravado</option>
+          <option value="EXENTO">Exento</option>
+          <option value="EXCLUIDO">Excluido</option>
+        </select>
+      </div>
+      @if (draft.tratamiento_iva === 'GRAVADO') {
+        <div class="form-field">
+          <label class="form-field__label" for="prTarifa">Tarifa de IVA (%) *</label>
+          <input id="prTarifa" class="form-control" type="number" min="0" max="100" step="0.5" [(ngModel)]="draft.tarifa_iva" />
+        </div>
+      }
+    </div>
+    <div class="alta-fila">
+      <div class="form-field">
+        <label class="form-field__label" for="prUnidad">Unidad de medida</label>
+        <select id="prUnidad" class="form-control" [(ngModel)]="draft.unidad_medida_id">
+          <option value="">Sin indicar</option>
+          @for (u of unidades(); track u.id) { <option [value]="u.id">{{ u.nombre }}</option> }
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-field__label" for="prTributo">Tributo</label>
+        <select id="prTributo" class="form-control" [(ngModel)]="draft.tributo_id">
+          <option value="">Sin indicar</option>
+          @for (t of tributos(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
+        </select>
+      </div>
+    </div>
+  </div>
+  <footer class="modal__footer">
+    <button type="button" class="btn btn--close" (click)="cerrar.emit()" [disabled]="guardando()">Cancelar</button>
+    <button type="button" class="btn btn--primary" (click)="guardar()" [disabled]="guardando() || !valido()">
+      @if (guardando()) { <span class="spinner" aria-hidden="true"></span> Creando… } @else { Crear producto }
+    </button>
+  </footer>
+</div>

@@ -413,6 +413,8 @@ export interface FilaPrefactura {
 
 /** Lo que devuelve `POST /prefacturas/previsualizar`. */
 export interface PrevisualizacionPrefactura {
+  /** 24-oct-2026 · 'SURA' si es el reporte de facturas de ARL SURA (las filas se cruzan por n.º de orden). */
+  arl?: 'BOLIVAR' | 'SURA';
   numero_prefactura: string;
   plan_codigo: string | null;
   plan_descripcion: string | null;
@@ -750,8 +752,11 @@ export interface PrecuentaItem {
   monto: string | number;
   /** Viáticos de ESTA orden. 0 en casi todas; se paga aparte del trabajo. */
   viaticos?: string | number;
-  /** 'tarifa' (PRE-02) o 'profesional' (valor hora base): explica la cifra. */
-  origen_tarifa?: 'tarifa' | 'profesional' | null;
+  /** 'tarifa' (PRE-02), 'profesional' (valor hora base) o 'manual' (ajustado por quien revisó): explica la cifra. */
+  origen_tarifa?: 'tarifa' | 'profesional' | 'manual' | null;
+  /** 24-oct-2026 · El valor hora o los viáticos se cambiaron a mano; `valor_hora_original` es lo que traía. */
+  ajuste_manual?: boolean;
+  valor_hora_original?: string | number | null;
 }
 
 export interface Precuenta {
@@ -892,7 +897,9 @@ export type TipoNotificacion =
   /** A0-08 · Resolución de numeración a 30/7 días de vencer, ya vencida, o con menos del 10 % de números. */
   | 'RESOLUCION_VENCE' | 'RESOLUCION_AGOTA'
   /** A0-09 · El paquete del proveedor de facturación está por vencer o venció. */
-  | 'PAQUETE_FE_VENCE';
+  | 'PAQUETE_FE_VENCE'
+  /** 24-oct-2026 · Documentos que se vencen: orden de servicio, registro del profesional ante la ARL, cartera. */
+  | 'ORDEN_VENCE' | 'REGISTRO_ARL_VENCE' | 'CARTERA_VENCE';
 
 /**
  * NOT-04 · Aviso interno de la bandeja (campanita). `datos.orden_id` apunta a la
@@ -910,6 +917,9 @@ export interface Notificacion {
     profesional_id?: string | null;
     /** CFG-05 · Mes sin cobrar del aviso del día de corte ('2026-07'). */
     periodo?: string;
+    /** 24-oct-2026 · Avisos de documentos por vencer: 'CXC' | 'CXP' en los de cartera. */
+    tipo?: string;
+    dias?: number;
   } | null;
   /** null = sin leer. */
   leido_en?: string | null;
@@ -1166,6 +1176,8 @@ export interface Profesional {
   nombre: string;
   correo: string;
   telefono?: string;
+  /** 24-oct-2026 · Cédula del asesor (la imprime el registro de asistencia de ARL SURA). */
+  documento_identidad?: string | null;
   especialidad?: string;
   valor_hora?: number;
   estado: 'Activo' | 'Inactivo';
@@ -2066,7 +2078,7 @@ export interface ConciliacionCartera {
 
 export interface PropuestaRecibo {
   reteica: { id: string; codigo: string; nombre: string; tarifa: string; cuenta_id: string | null } | null;
-  facturas: (DocumentoCartera & { base_reteica: string; reteica_sugerida: string })[];
+  facturas: (DocumentoCartera & { base_reteica: string; reteica_sugerida: string; reteica_id: string | null })[];
 }
 
 export interface ReciboCaja {
@@ -2118,7 +2130,7 @@ export interface Compra {
   comprobante_numero: string | null;
   cxp_id?: string | null;
   cxp_saldo: string | null;
-  items?: { id: string; cuenta_codigo: string; cuenta_nombre: string; descripcion: string; valor: string; iva_pct: string; iva_valor: string }[];
+  items?: { id: string; cuenta_codigo: string; cuenta_nombre: string; descripcion: string; valor: string; iva_pct: string; iva_valor: string; centro_costo_codigo?: string | null; centro_costo_nombre?: string | null }[];
   retenciones?: { codigo: string; nombre: string; base: string; tarifa: string; valor: string }[];
 }
 
@@ -2133,8 +2145,22 @@ export interface CompraForm {
   cuenta_pago_id: string;
   centro_costo_id: string;
   descripcion: string;
-  items: { cuenta_id: string; descripcion: string; valor: string; iva_pct: string }[];
+  items: { cuenta_id: string; descripcion: string; valor: string; iva_pct: string; centro_costo_id: string }[];
   retenciones: { retencion_id: string; valor: string }[];
+}
+
+/** 24-oct-2026 · Catálogo de bancos y cuentas bancarias de un tercero. */
+export interface Banco { id: string; nombre: string }
+export type TipoCuentaBancaria = 'AHORROS' | 'CORRIENTE' | 'DEPOSITO_ELECTRONICO';
+export interface CuentaBancaria {
+  id: string;
+  tercero_id: string;
+  banco_id: string;
+  banco_nombre: string;
+  tipo_cuenta: TipoCuentaBancaria;
+  numero: string;
+  titular: string | null;
+  principal: boolean;
 }
 
 export interface AnticipoProveedor {
@@ -2146,6 +2172,13 @@ export interface AnticipoProveedor {
   saldo: string;
   estado: 'CONTABILIZADO' | 'ANULADO';
   numero: string | null;
+  /** 24-oct-2026 · Cuenta del anticipo (donde queda el débito) y banco del que salió la plata. */
+  cuenta_codigo?: string | null;
+  cuenta_nombre?: string | null;
+  banco_codigo?: string | null;
+  banco_nombre?: string | null;
+  observaciones?: string | null;
+  motivo_anulacion?: string | null;
 }
 
 export interface Egreso {
@@ -2179,6 +2212,9 @@ export interface CentroCosto {
   nombre: string;
   activo: boolean;
   n_movimientos: number;
+  /** 24-oct-2026 · ARL a la que representa el centro (el documento soporte de una cuenta de cobro manda su valor aquí). */
+  arl_id?: string | null;
+  arl_nombre?: string | null;
 }
 
 export interface VistaPreviaCierre {

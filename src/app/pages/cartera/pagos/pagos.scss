@@ -145,3 +145,29 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* 24-oct-2026 · Cuenta del anticipo en la tabla y detalle del anticipo. */
+.pg-cuenta small {
+  display: block;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.74rem;
+  max-width: 190px;
+  white-space: normal;
+}
+.pg-dl {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0 0 0.75rem;
+}
+.pg-dl > div {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+}
+.pg-dl dt { color: var(--text-muted); }
+.pg-dl dd { margin: 0; }
+@media (max-width: 560px) {
+  .pg-dl > div { grid-template-columns: 1fr; gap: 0.1rem; }
+}

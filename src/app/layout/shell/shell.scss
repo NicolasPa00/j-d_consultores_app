@@ -672,3 +672,18 @@
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
+
+/* 24-oct-2026 · Botón del centro de ayuda (junto a la campanita). */
+.ayuda-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: var(--text-muted);
+  border-radius: 50%;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  svg { width: 22px; height: 22px; }
+  &:hover, &:focus-visible { background: #eef2fb; color: var(--primary-color); }
+}

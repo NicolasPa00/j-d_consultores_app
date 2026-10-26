@@ -2208,3 +2208,21 @@
   font-weight: 500;
   color: var(--secondary-color);
 }
+
+/* 24-oct-2026 · Buscador de la lista de asesores del modal de asignación. */
+.assign__buscar {
+  position: relative;
+  margin-bottom: 0.5rem;
+
+  svg {
+    position: absolute;
+    left: 0.65rem;
+    top: 50%;
+    width: 1rem;
+    height: 1rem;
+    color: var(--text-muted);
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+  input { width: 100%; padding-left: 2.1rem; }
+}

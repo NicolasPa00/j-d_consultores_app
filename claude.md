@@ -74,6 +74,12 @@ Si no se commitea, no llega al otro equipo.
 
 ## 1. Alcance vigente (LEER ANTES DE CODIFICAR)
 
+> 🛰️ **24-oct-2026 · ARL SURA es la 4.ª ARL** (su orden llega como el «Reporte estado de las tareas» en Excel, no como PDF) y se
+> atendió la tanda del 23-oct (factura manual, recibo de caja con retenciones automáticas, cuentas bancarias de terceros, centro de
+> costo por ítem, ajuste de cuentas de cobro, eliminar cuentas contables, alertas de vencimiento…). Tablero:
+> `docs/3-planes/plan-peticiones-23-oct-2026.md`; detalle y trampas: bloque 🛰️ del `HANDOFF.md`. Hay además un **centro de ayuda**
+> dentro de la app (`/ayuda`, contenido en `src/app/pages/ayuda/ayuda.contenido.ts`): **al cambiar una pantalla, se actualiza su tema.**
+
 > 🆕 **22/23-ago-2026 · tanda cerrada: seis peticiones del cliente en cinco fases.**
 > El tablero es **`docs/3-planes/plan-peticiones-22-ago-2026.md`** — ahí van el estado de
 > cada una, lo que se construyó y las **nueve decisiones pendientes con el

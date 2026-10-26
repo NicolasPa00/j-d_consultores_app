@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/api.service';
 import { mensajeError } from '../../../core/errores';
 import { AlertService } from '../../../core/alert.service';
-import { CentroCosto } from '../../../core/models';
+import { Arl, CentroCosto } from '../../../core/models';
 
 /**
  * B8-01 (CNT-09) · Centros de costo, para ver los gastos por actividad. Van en
@@ -28,9 +28,12 @@ export class CentrosComponent implements OnInit {
   protected readonly guardando = signal(false);
   protected codigo = '';
   protected nombre = '';
+  protected arlId = '';
+  protected readonly arls = signal<Arl[]>([]);
 
   ngOnInit(): void {
     this.cargar();
+    this.api.listArls().subscribe({ next: (r) => this.arls.set(r.data), error: () => {} });
   }
 
   protected cargar(): void {
@@ -44,18 +47,20 @@ export class CentrosComponent implements OnInit {
     this.editando.set(c);
     this.codigo = c.codigo;
     this.nombre = c.nombre;
+    this.arlId = c.arl_id ?? '';
   }
 
   protected cancelar(): void {
     this.editando.set(null);
     this.codigo = '';
     this.nombre = '';
+    this.arlId = '';
   }
 
   protected guardar(): void {
     if (!this.codigo.trim() || !this.nombre.trim()) { this.alerts.warning('Escriba el código y el nombre'); return; }
     const actual = this.editando();
-    const body = { codigo: this.codigo.trim(), nombre: this.nombre.trim() };
+    const body = { codigo: this.codigo.trim(), nombre: this.nombre.trim(), arl_id: this.arlId || null };
     this.guardando.set(true);
     (actual ? this.api.updateCentroCosto(actual.id, body) : this.api.createCentroCosto(body)).subscribe({
       next: (r) => {

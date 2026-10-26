@@ -9,13 +9,13 @@ import { PESOS } from '../../core/dinero';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
 import { mensajeError } from '../../core/errores';
-import { AsientoDocumento, CausalNotaCredito, CuentaContable, DetalleSoporte, DocumentoSoporte, EstadoDocumento, ResumenImportSoportes,
+import { AsientoDocumento, CausalNotaCredito, Compra, CuentaContable, DetalleSoporte, DocumentoSoporte, EstadoDocumento, ResumenImportSoportes,
   SoportePorGenerar, Tercero } from '../../core/models';
 import { OpcionBusqueda, SelectorBusquedaComponent } from '../../shared/selector-busqueda/selector-busqueda';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
-type Pestana = 'por-generar' | 'pendientes' | 'emitidos' | 'notas';
+type Pestana = 'por-generar' | 'pendientes' | 'emitidos' | 'notas' | 'facturas';
 type VistaDocumento = 'ver' | 'pdf' | 'historial' | 'contab';
 
 /** Todo lo que ya salió (o intentó salir) a la DIAN. */
@@ -133,6 +133,23 @@ export class DocumentosSoporteComponent implements OnInit {
 
   protected cambiarPestana(p: Pestana): void {
     this.pestana.set(p);
+    if (p === 'facturas') this.cargarFacturasAsesores();
+  }
+
+  // ---- 24-oct-2026 · Facturas electrónicas de los asesores ----
+  // «Pago a profesionales» maneja los dos documentos con los que se les paga: la cuenta de cobro (que
+  // JD&D respalda con un documento soporte) y la FACTURA ELECTRÓNICA de los asesores que facturan. Esta
+  // se registra en Compras y gastos como servicio profesional; aquí se ve lo registrado.
+  protected readonly facturasAsesores = signal<Compra[]>([]);
+  protected readonly cargandoFacturas = signal(false);
+  protected readonly pagFacturas = paginar(this.facturasAsesores);
+
+  protected cargarFacturasAsesores(): void {
+    this.cargandoFacturas.set(true);
+    this.api.listCompras({ tipo: 'SERVICIO_PROFESIONAL' }).subscribe({
+      next: (r) => { this.facturasAsesores.set(r.data); this.cargandoFacturas.set(false); this.pagFacturas.reiniciar(); },
+      error: (err) => { this.cargandoFacturas.set(false); this.alerts.error('No se pudieron cargar las facturas de los asesores', mensajeError(err, 'Intente de nuevo.')); },
+    });
   }
 
   protected cargar(): void {

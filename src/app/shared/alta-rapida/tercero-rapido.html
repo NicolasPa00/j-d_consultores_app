@@ -1,0 +1,85 @@
+<div class="modal-backdrop modal-backdrop--sobre" (click)="guardando() ? null : cerrar.emit()"></div>
+<div class="modal modal--lg modal--sobre" role="dialog" aria-modal="true" aria-labelledby="trTitulo">
+  <header class="modal__head">
+    <div>
+      <h3 class="modal__title" id="trTitulo">Nuevo {{ rol() === 'cliente' ? 'cliente' : 'proveedor' }}</h3>
+      <p class="modal__sub">Solo lo necesario para {{ rol() === 'cliente' ? 'facturarle' : 'registrarle compras y pagos' }}. El resto se completa después en Terceros.</p>
+    </div>
+    <button type="button" class="icon-action" (click)="cerrar.emit()" aria-label="Cerrar" [disabled]="guardando()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+    </button>
+  </header>
+  <div class="modal__body">
+    <div class="alta-fila">
+      <div class="form-field">
+        <label class="form-field__label" for="trPersona">Tipo de persona *</label>
+        <select id="trPersona" class="form-control" [ngModel]="draft.tipo_persona" (ngModelChange)="cambiarPersona($event)">
+          <option value="JURIDICA">Jurídica (empresa)</option>
+          <option value="NATURAL">Natural (persona)</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-field__label" for="trTipoDoc">Tipo de documento *</label>
+        <select id="trTipoDoc" class="form-control" [(ngModel)]="draft.tipo_documento_id">
+          @for (t of tiposDocumento(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
+        </select>
+      </div>
+    </div>
+    <div class="form-field">
+      <label class="form-field__label" for="trNumero">Número de documento *</label>
+      <input id="trNumero" class="form-control mono" type="text" [(ngModel)]="draft.numero_documento" autocomplete="off" />
+      @if (esNit() && draft.numero_documento.trim()) {
+        <p class="form-field__hint">
+          {{ nitVista().incoherente ? 'El dígito de verificación no coincide con el NIT.' : 'Dígito de verificación: ' + (nitVista().dv ?? '—') + ' (se calcula solo).' }}
+        </p>
+      }
+    </div>
+    @if (draft.tipo_persona === 'JURIDICA') {
+      <div class="form-field">
+        <label class="form-field__label" for="trRazon">Razón social *</label>
+        <input id="trRazon" class="form-control" type="text" [(ngModel)]="draft.razon_social" maxlength="200" />
+      </div>
+    } @else {
+      <div class="alta-fila">
+        <div class="form-field">
+          <label class="form-field__label" for="trNombres">Nombres *</label>
+          <input id="trNombres" class="form-control" type="text" [(ngModel)]="draft.nombres" maxlength="120" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="trApellidos">Apellidos</label>
+          <input id="trApellidos" class="form-control" type="text" [(ngModel)]="draft.apellidos" maxlength="120" />
+        </div>
+      </div>
+    }
+    <div class="form-field">
+      <label class="form-field__label" for="trDir">Dirección</label>
+      <input id="trDir" class="form-control" type="text" [(ngModel)]="draft.direccion" maxlength="200" />
+    </div>
+    <div class="alta-fila">
+      <div class="form-field">
+        <label class="form-field__label" for="trDepto">Departamento</label>
+        <app-selector-busqueda idCampo="trDepto" [opciones]="opcionesDepartamento()" [valor]="departamentoId" (valorChange)="cambiarDepartamento($event)" placeholder="Buscar…" />
+      </div>
+      <div class="form-field">
+        <label class="form-field__label" for="trMuni">Municipio</label>
+        <app-selector-busqueda idCampo="trMuni" [opciones]="opcionesMunicipio()" [valor]="draft.municipio_id" (valorChange)="cambiarMunicipio($event)" placeholder="Primero el departamento" [deshabilitado]="!departamentoId" />
+      </div>
+    </div>
+    <div class="alta-fila">
+      <div class="form-field">
+        <label class="form-field__label" for="trCorreo">Correo {{ rol() === 'cliente' ? 'de facturación' : '' }}</label>
+        <input id="trCorreo" class="form-control" type="email" [(ngModel)]="draft.correo_facturacion" maxlength="150" />
+      </div>
+      <div class="form-field">
+        <label class="form-field__label" for="trTel">Teléfono</label>
+        <input id="trTel" class="form-control" type="text" [(ngModel)]="draft.telefono" maxlength="30" />
+      </div>
+    </div>
+  </div>
+  <footer class="modal__footer">
+    <button type="button" class="btn btn--close" (click)="cerrar.emit()" [disabled]="guardando()">Cancelar</button>
+    <button type="button" class="btn btn--primary" (click)="guardar()" [disabled]="guardando() || !valido()">
+      @if (guardando()) { <span class="spinner" aria-hidden="true"></span> Creando… } @else { Crear {{ rol() === 'cliente' ? 'cliente' : 'proveedor' }} }
+    </button>
+  </footer>
+</div>

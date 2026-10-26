@@ -7,7 +7,7 @@ import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
-import { CuentaDelMes, EstadoPrecuenta, Precuenta, Profesional, Tarifa, TipoOrden } from '../../core/models';
+import { CuentaDelMes, EstadoPrecuenta, Precuenta, PrecuentaItem, Profesional, Tarifa, TipoOrden } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
@@ -370,7 +370,73 @@ export class BillingComponent implements OnInit {
   }
 
   protected cerrarDetalle(): void {
+    if (this.guardandoAjustes()) return;
     this.detalle.set(null);
+    this.editandoValores.set(false);
+  }
+
+  // ---- 24-oct-2026 · Ajustar valor hora y viáticos antes de enviar ----
+  protected readonly editandoValores = signal(false);
+  protected readonly guardandoAjustes = signal(false);
+  /** Lo que se está escribiendo por línea (texto, como se teclea). */
+  protected ajustes: Record<string, { valor_hora: string; viaticos: string }> = {};
+
+  /** Solo se ajusta mientras la cuenta no se ha enviado ni aceptado, y solo lo hace el administrador. */
+  protected puedeAjustar(pc: Precuenta): boolean {
+    return this.puedeGestionar() && (pc.estado === 'generada' || pc.estado === 'rechazada');
+  }
+
+  protected empezarAjuste(pc: Precuenta): void {
+    this.ajustes = Object.fromEntries((pc.items ?? []).map((i) => [i.id, {
+      valor_hora: String(Math.round(Number(i.valor_hora_snapshot) || 0)),
+      viaticos: String(Math.round(Number(i.viaticos) || 0)),
+    }]));
+    this.editandoValores.set(true);
+  }
+
+  protected cancelarAjuste(): void {
+    if (this.guardandoAjustes()) return;
+    this.editandoValores.set(false);
+  }
+
+  private numero(t: string | undefined): number {
+    const limpio = String(t ?? '').replace(/[^\d,.-]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.');
+    const n = Number(limpio);
+    return Number.isFinite(n) ? n : NaN;
+  }
+
+  /** Lo que valdría la línea con lo que se está escribiendo (horas × valor hora), para verlo antes de guardar. */
+  protected montoAjustado(i: PrecuentaItem): number {
+    const v = this.numero(this.ajustes[i.id]?.valor_hora);
+    return Number.isFinite(v) ? Math.round((Number(i.horas) || 0) * v) : 0;
+  }
+
+  protected totalAjustado(pc: Precuenta): number {
+    return (pc.items ?? []).reduce((t, i) => t + this.montoAjustado(i) + (this.numero(this.ajustes[i.id]?.viaticos) || 0), 0);
+  }
+
+  protected guardarAjustes(pc: Precuenta): void {
+    const items = (pc.items ?? []).map((i) => ({
+      id: i.id, valor_hora: this.numero(this.ajustes[i.id]?.valor_hora), viaticos: this.numero(this.ajustes[i.id]?.viaticos) || 0,
+    }));
+    if (items.some((i) => !Number.isFinite(i.valor_hora) || i.valor_hora < 0 || i.viaticos < 0)) {
+      this.alerts.warning('Revise los valores', 'El valor hora y los viáticos deben ser números iguales o mayores a cero.');
+      return;
+    }
+    this.guardandoAjustes.set(true);
+    this.api.ajustarItemsPrecuenta(pc.id, items).subscribe({
+      next: (r) => {
+        this.guardandoAjustes.set(false);
+        this.editandoValores.set(false);
+        this.detalle.set(r.data);
+        this.alerts.success('Valores actualizados', 'La cuenta quedó lista para enviar al profesional.');
+        this.cargar();
+      },
+      error: (err) => {
+        this.guardandoAjustes.set(false);
+        this.alerts.error('No se pudieron guardar los valores', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
   }
 
   protected verPdf(f: CuentaDelMes): void {

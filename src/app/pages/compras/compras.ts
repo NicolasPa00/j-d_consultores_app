@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
 import { PESOS } from '../../core/dinero';
@@ -11,6 +12,7 @@ import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 import { aCentavos } from '../contabilidad/comprobantes/comprobantes';
 import { OpcionBusqueda, SelectorBusquedaComponent } from '../../shared/selector-busqueda/selector-busqueda';
+import { TerceroRapidoComponent } from '../../shared/alta-rapida/tercero-rapido';
 
 
 export const ETIQUETA_TIPO_COMPRA: Record<TipoCompra, string> = {
@@ -22,7 +24,7 @@ function hoyLocal(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-const ITEM_VACIO = () => ({ cuenta_id: '', descripcion: '', valor: '', iva_pct: '0' });
+const ITEM_VACIO = () => ({ cuenta_id: '', descripcion: '', valor: '', iva_pct: '0', centro_costo_id: '' });
 
 /**
  * B5-01 (CYG-01..03) · Compras, servicios y gastos internos.
@@ -34,7 +36,7 @@ const ITEM_VACIO = () => ({ cuenta_id: '', descripcion: '', valor: '', iva_pct: 
  */
 @Component({
   selector: 'app-compras',
-  imports: [FormsModule, PaginadorComponent, SelectorBusquedaComponent],
+  imports: [FormsModule, PaginadorComponent, SelectorBusquedaComponent, TerceroRapidoComponent],
   templateUrl: './compras.html',
   styleUrl: './compras.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -56,8 +58,16 @@ export class ComprasComponent implements OnInit {
   protected fDesde = '';
   protected fHasta = '';
 
+  private readonly route = inject(ActivatedRoute);
+
   ngOnInit(): void {
     this.cargar();
+    // 24-oct-2026 · Desde «Pago a profesionales»: ?nueva=SERVICIO_PROFESIONAL abre el formulario ya con ese tipo.
+    const nueva = this.route.snapshot.queryParamMap.get('nueva') as TipoCompra | null;
+    if (nueva && this.tipos.includes(nueva) && this.puedeOperar()) {
+      this.nueva();
+      this.draft.tipo = nueva;
+    }
   }
 
   protected pesos(v: string | number | null | undefined): string {
@@ -118,6 +128,17 @@ export class ComprasComponent implements OnInit {
   protected readonly cuentas = signal<CuentaContable[]>([]);
   protected readonly retencionesCompra = signal<Retencion[]>([]);
   protected readonly centros = signal<CentroCosto[]>([]);
+  /** 24-oct-2026 · Cada ítem lleva SU centro de costo, aparte de la cuenta de gasto. */
+  protected readonly opcionesCentro = computed<OpcionBusqueda[]>(() =>
+    this.centros().filter((c) => c.activo).map((c) => ({ valor: c.id, texto: `${c.codigo} · ${c.nombre}`, detalle: c.arl_nombre ?? undefined })));
+  protected readonly opcionesProveedor = computed<OpcionBusqueda[]>(() =>
+    this.proveedores().map((t) => ({ valor: t.id, texto: t.nombre, detalle: t.numero_documento })));
+  protected readonly nuevoProveedorOpen = signal(false);
+  protected readonly nuevoCentroOpen = signal(false);
+  protected readonly creandoCentro = signal(false);
+  protected centroNuevo = { codigo: '', nombre: '' };
+  /** Ítem al que se le pondrá el centro recién creado. */
+  private itemDelCentroNuevo = 0;
   protected readonly cuentasPago = computed(() => this.cuentas().filter((c) => c.es_banco || c.codigo.startsWith('1105')));
   protected draft: Omit<CompraForm, 'items' | 'retenciones'> = this.cabeceraVacia();
   protected readonly items = signal<CompraForm['items']>([ITEM_VACIO()]);
@@ -188,7 +209,37 @@ export class ComprasComponent implements OnInit {
   }
 
   protected agregarItem(): void {
-    this.items.update((ls) => [...ls, ITEM_VACIO()]);
+    // El ítem nuevo hereda el centro de costo del anterior: casi siempre es el mismo gasto de la misma ARL.
+    this.items.update((ls) => [...ls, { ...ITEM_VACIO(), centro_costo_id: ls.at(-1)?.centro_costo_id ?? '' }]);
+  }
+
+  // ---- Alta rápida de proveedor y de centro de costo, sin salir del modal ----
+  protected proveedorCreado(t: Tercero): void {
+    this.proveedores.update((ps) => [...ps, t]);
+    this.nuevoProveedorOpen.set(false);
+    this.draft.tercero_id = t.id;
+  }
+
+  protected abrirNuevoCentro(item: number): void {
+    this.itemDelCentroNuevo = item;
+    this.centroNuevo = { codigo: '', nombre: '' };
+    this.nuevoCentroOpen.set(true);
+  }
+
+  protected crearCentro(): void {
+    const c = this.centroNuevo;
+    if (!c.codigo.trim() || !c.nombre.trim()) { this.alerts.warning('Escriba el código y el nombre del centro de costo'); return; }
+    this.creandoCentro.set(true);
+    this.api.createCentroCosto({ codigo: c.codigo.trim(), nombre: c.nombre.trim() }).subscribe({
+      next: (r) => {
+        this.creandoCentro.set(false);
+        this.nuevoCentroOpen.set(false);
+        this.centros.update((cs) => [...cs, r.data]);
+        this.cambiarItem(this.itemDelCentroNuevo, 'centro_costo_id', r.data.id);
+        this.alerts.success('Centro de costo creado', `${r.data.codigo} · ${r.data.nombre}`);
+      },
+      error: (err) => { this.creandoCentro.set(false); this.alerts.error('No se pudo crear el centro de costo', mensajeError(err, 'Intente de nuevo.')); },
+    });
   }
 
   protected quitarItem(i: number): void {
@@ -221,6 +272,8 @@ export class ComprasComponent implements OnInit {
       vencimiento: d.forma_pago === 'CREDITO' ? d.vencimiento : '',
       cuenta_pago_id: d.forma_pago === 'CONTADO' ? d.cuenta_pago_id : '',
       items: this.items().filter((i) => i.cuenta_id || i.valor).map((i) => ({ ...i, valor: ((aCentavos(i.valor) ?? 0) / 100).toFixed(2) })),
+      // El centro va por ítem; la cabecera se manda vacía para no pisarlo.
+      centro_costo_id: '',
       retenciones: this.retenciones().filter((r) => r.retencion_id).map((r) => ({
         retencion_id: r.retencion_id, valor: r.valor ? ((aCentavos(r.valor) ?? 0) / 100).toFixed(2) : '',
       })),

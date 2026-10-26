@@ -262,6 +262,12 @@
       </div>
 
       <div class="form-field">
+        <label class="form-field__label" for="pDoc">Cédula</label>
+        <input id="pDoc" class="form-control mono" type="text" inputmode="numeric" maxlength="15" [(ngModel)]="draft.documento" name="documento" placeholder="Sin puntos" autocomplete="off" />
+        <p class="form-field__hint">La imprime el registro de asistencia de ARL SURA junto a la firma del asesor.</p>
+      </div>
+
+      <div class="form-field">
         <label class="form-field__label" for="pSpecialty">Especialidad</label>
         <select id="pSpecialty" class="form-control" [(ngModel)]="draft.specialty" name="specialty">
           <option value="">Sin especialidad</option>

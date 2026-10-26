@@ -22,6 +22,8 @@ interface Professional {
   name: string;
   email: string;
   phone: string;
+  /** Cédula; vacía si todavía no se ha capturado. */
+  documento: string;
   specialty: string;
   status: ProfessionalStatus;
   /** ENC-05 · Trabajo cerrado y cómo lo califican; van juntos a propósito. */
@@ -43,6 +45,7 @@ interface ProfessionalDraft {
   name: string;
   email: string;
   phone: string;
+  documento: string;
   specialty: string;
   status: ProfessionalStatus;
 }
@@ -96,9 +99,10 @@ export class ProfessionalsComponent implements OnInit {
     const q = this.query().trim().toLowerCase();
     const list = this.professionals();
     if (!q) return list;
-    return list.filter(
-      (p) => p.name.toLowerCase().includes(q) || p.specialty.toLowerCase().includes(q),
-    );
+    // 24-oct-2026 · Además del nombre y la especialidad, busca por correo, teléfono y ARL de registro, sin tildes.
+    const norm = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const nq = norm(q);
+    return list.filter((p) => norm([p.name, p.specialty, p.email, p.phone, p.documento, ...(p.registros ?? []).map((r) => r.arl_nombre ?? '')].join(' ')).includes(nq));
   });
 
   /** CFG-01 · La lista de asesores crece con el equipo. */
@@ -273,6 +277,7 @@ export class ProfessionalsComponent implements OnInit {
       name: professional.name,
       email: professional.email,
       phone: professional.phone,
+      documento: professional.documento,
       specialty: professional.specialty,
       status: professional.status,
     };
@@ -416,6 +421,7 @@ export class ProfessionalsComponent implements OnInit {
       nombre: this.draft.name,
       correo: this.draft.email,
       telefono: this.draft.phone,
+      documento_identidad: this.draft.documento.replace(/[\s.]/g, ''),
       especialidad: this.draft.specialty,
       estado: this.draft.status,
     };
@@ -675,7 +681,7 @@ export class ProfessionalsComponent implements OnInit {
 
   // ---- Helpers ----
   private emptyDraft(): ProfessionalDraft {
-    return { name: '', email: '', phone: '', specialty: '', status: 'Activo' };
+    return { name: '', email: '', phone: '', documento: '', specialty: '', status: 'Activo' };
   }
 }
 
@@ -695,6 +701,7 @@ function toView(p: Profesional): Professional {
     name: p.nombre,
     email: p.correo,
     phone: p.telefono || '',
+    documento: p.documento_identidad || '',
     specialty: p.especialidad || '',
     status: p.estado,
     ordenesEjecutadas: Number(p.ordenes_ejecutadas ?? 0),

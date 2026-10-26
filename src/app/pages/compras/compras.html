@@ -126,10 +126,8 @@
         </div>
         <div class="form-field cp-grid__ancho">
           <label class="form-field__label" for="cpProv">Proveedor *</label>
-          <select id="cpProv" class="form-control" [(ngModel)]="draft.tercero_id">
-            <option value="">Elija…</option>
-            @for (t of proveedores(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
-          </select>
+          <app-selector-busqueda idCampo="cpProv" [opciones]="opcionesProveedor()" [(valor)]="draft.tercero_id" placeholder="Nombre o documento…" />
+          <p class="form-field__hint">¿No aparece? <button type="button" class="link-btn" (click)="nuevoProveedorOpen.set(true)">Crear proveedor sin salir de esta ventana</button>.</p>
         </div>
         <div class="form-field">
           <label class="form-field__label" for="cpNum">Factura del proveedor {{ draft.tipo === 'GASTO_INTERNO' ? '' : '*' }}</label>
@@ -160,15 +158,6 @@
             </select>
           </div>
         }
-        @if (centros().length) {
-          <div class="form-field">
-            <label class="form-field__label" for="cpCc">Centro de costo</label>
-            <select id="cpCc" class="form-control" [(ngModel)]="draft.centro_costo_id">
-              <option value="">—</option>
-              @for (c of centros(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
-            </select>
-          </div>
-        }
         @if (draft.tipo !== 'GASTO_INTERNO') {
           <div class="form-field cp-grid__ancho">
             <label class="form-field__label" for="cpCufe">CUFE (si es factura electrónica)</label>
@@ -179,7 +168,7 @@
 
       <div class="table-wrap cp-items-wrap">
         <table class="table cp-items">
-          <thead><tr><th>Cuenta de gasto o costo</th><th>Detalle</th><th class="col-num">Valor (sin IVA)</th><th>IVA</th><th></th></tr></thead>
+          <thead><tr><th>Cuenta de gasto o costo</th><th>Centro de costo</th><th>Detalle</th><th class="col-num">Valor (sin IVA)</th><th>IVA</th><th></th></tr></thead>
           <tbody>
             @for (it of items(); track $index; let i = $index) {
               <tr>
@@ -193,6 +182,17 @@
                     (valorChange)="cambiarItem(i, 'cuenta_id', $event)"
                     placeholder="Código o nombre de la cuenta…"
                   />
+                </td>
+                <td>
+                  <!-- 24-oct-2026 · Aparte de la cuenta: el centro de costo (p. ej. la ARL a la que se carga el gasto). -->
+                  <app-selector-busqueda
+                    [opciones]="opcionesCentro()"
+                    [valor]="it.centro_costo_id"
+                    (valorChange)="cambiarItem(i, 'centro_costo_id', $event)"
+                    textoVacio="Sin centro de costo"
+                    placeholder="Código o nombre…"
+                  />
+                  <button type="button" class="link-btn cp-nuevo-centro" (click)="abrirNuevoCentro(i)">+ Crear centro de costo</button>
                 </td>
                 <td><input type="text" class="form-control" [ngModel]="it.descripcion" (ngModelChange)="cambiarItem(i, 'descripcion', $event)" [attr.aria-label]="'Detalle del ítem ' + (i + 1)" /></td>
                 <td><input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="it.valor" (ngModelChange)="cambiarItem(i, 'valor', $event)" [attr.aria-label]="'Valor del ítem ' + (i + 1)" /></td>
@@ -245,6 +245,30 @@
       </button>
     </footer>
   </div>
+  @if (nuevoProveedorOpen()) {
+    <app-tercero-rapido rol="proveedor" (creado)="proveedorCreado($event)" (cerrar)="nuevoProveedorOpen.set(false)" />
+  }
+  @if (nuevoCentroOpen()) {
+    <div class="modal-backdrop modal-backdrop--sobre" (click)="creandoCentro() ? null : nuevoCentroOpen.set(false)"></div>
+    <div class="modal modal--sobre" role="dialog" aria-modal="true" aria-labelledby="cpCcTitle">
+      <header class="modal__head"><h3 class="modal__title" id="cpCcTitle">Nuevo centro de costo</h3></header>
+      <div class="modal__body">
+        <div class="form-field">
+          <label class="form-field__label" for="cpCcCodigo">Código *</label>
+          <input id="cpCcCodigo" class="form-control mono" type="text" maxlength="20" [(ngModel)]="centroNuevo.codigo" placeholder="p. ej. BOLIVAR" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="cpCcNombre">Nombre *</label>
+          <input id="cpCcNombre" class="form-control" type="text" maxlength="200" [(ngModel)]="centroNuevo.nombre" placeholder="p. ej. ARL Bolívar" />
+          <p class="form-field__hint">Para enlazarlo con una ARL (documento soporte de las cuentas de cobro), edítelo luego en Contabilidad → Centros de costo.</p>
+        </div>
+      </div>
+      <footer class="modal__footer">
+        <button type="button" class="btn btn--close" (click)="nuevoCentroOpen.set(false)" [disabled]="creandoCentro()">Cancelar</button>
+        <button type="button" class="btn btn--primary" (click)="crearCentro()" [disabled]="creandoCentro()">Crear centro de costo</button>
+      </footer>
+    </div>
+  }
 }
 
 <!-- ============ MODAL · IMPORTAR DESDE EXCEL ============ -->

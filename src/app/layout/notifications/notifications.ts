@@ -160,6 +160,14 @@ export class NotificationsComponent implements OnInit, OnDestroy {
       const periodo = n.datos?.periodo;
       return periodo ? { ruta: ['/precuentas'], params: { periodo } } : { ruta: ['/precuentas'] };
     }
+    // 24-oct-2026 · Los avisos de documentos por vencer: el registro del profesional
+    // se arregla en Profesionales y la cartera en Cartera (por pagar o por cobrar).
+    if (n.tipo === 'REGISTRO_ARL_VENCE' && this.auth.puedeVer('profesionales')) {
+      return { ruta: ['/profesionales'], params: n.datos?.profesional_id ? { profesional: n.datos.profesional_id } : {} };
+    }
+    if (n.tipo === 'CARTERA_VENCE' && this.auth.puedeVer('cartera')) {
+      return { ruta: ['/cartera'], params: { vista: n.datos?.tipo === 'CXP' ? 'por-pagar' : 'por-cobrar' } };
+    }
     const ordenId = n.datos?.orden_id;
     if (ordenId && this.auth.puedeVer('ordenes')) {
       const params: Record<string, string> = { os: ordenId };
@@ -204,6 +212,9 @@ export class NotificationsComponent implements OnInit, OnDestroy {
       case 'RESOLUCION_VENCE':
       case 'RESOLUCION_AGOTA': return 'Resolución de numeración';
       case 'PAQUETE_FE_VENCE': return 'Paquete de facturación';
+      case 'ORDEN_VENCE': return 'Orden por vencer';
+      case 'REGISTRO_ARL_VENCE': return 'Registro ante la ARL';
+      case 'CARTERA_VENCE': return 'Cartera por vencer';
       default: return 'Aviso';
     }
   }

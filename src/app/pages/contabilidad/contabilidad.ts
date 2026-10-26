@@ -262,6 +262,70 @@ export class ContabilidadComponent implements OnInit {
     });
   }
 
+  // ---- 24-oct-2026 · Eliminar cuentas que no se necesitan ----
+  protected readonly seleccion = signal<ReadonlySet<string>>(new Set());
+  protected readonly eliminando = signal(false);
+
+  protected estaMarcada(c: CuentaContable): boolean {
+    return this.seleccion().has(c.id);
+  }
+
+  protected alternarMarca(c: CuentaContable): void {
+    this.seleccion.update((s) => {
+      const n = new Set(s);
+      if (n.has(c.id)) n.delete(c.id); else n.add(c.id);
+      return n;
+    });
+  }
+
+  /** Marca o desmarca todas las filas que se están viendo (con el filtro puesto, solo lo filtrado). */
+  protected alternarTodas(marcar: boolean): void {
+    this.seleccion.set(marcar ? new Set(this.filas().map((c) => c.id)) : new Set());
+  }
+
+  protected readonly todasMarcadas = computed(() => this.filas().length > 0 && this.filas().every((c) => this.seleccion().has(c.id)));
+
+  protected async eliminarSeleccion(): Promise<void> {
+    const ids = [...this.seleccion()];
+    if (!ids.length || this.eliminando()) return;
+    const ok = await this.alerts.confirm({
+      title: `Eliminar ${ids.length} cuenta${ids.length === 1 ? '' : 's'}`,
+      message: 'Se borran del plan las que no tengan subcuentas, movimientos ni reglas que las usen. Las que sí tengan historia se dejan como están (se pueden inactivar). Esto no se puede deshacer.',
+      confirmText: 'Eliminar',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    this.eliminando.set(true);
+    this.api.eliminarCuentas(ids).subscribe({
+      next: (r) => {
+        this.eliminando.set(false);
+        this.seleccion.set(new Set());
+        const { eliminadas, omitidas } = r.data;
+        if (eliminadas.length) this.alerts.success(`${eliminadas.length} cuenta${eliminadas.length === 1 ? '' : 's'} eliminada${eliminadas.length === 1 ? '' : 's'}`);
+        if (omitidas.length) {
+          this.alerts.warning(`${omitidas.length} no se pudo${omitidas.length === 1 ? '' : 'ron'} eliminar`,
+            omitidas.slice(0, 3).map((o) => o.motivo).join(' · ') + (omitidas.length > 3 ? ' …' : ''));
+        }
+        this.cargar();
+      },
+      error: (err) => { this.eliminando.set(false); this.alerts.error('No se pudieron eliminar las cuentas', mensajeError(err, 'Intente de nuevo.')); },
+    });
+  }
+
+  protected async eliminarUna(c: CuentaContable): Promise<void> {
+    const ok = await this.alerts.confirm({
+      title: `Eliminar ${c.codigo}`,
+      message: `Se borra «${c.nombre}» del plan de cuentas. Solo se puede si no tiene subcuentas, movimientos ni reglas que la usen; si no, inactívela. Esto no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    this.api.eliminarCuenta(c.id).subscribe({
+      next: () => { this.alerts.success('Cuenta eliminada', `${c.codigo} · ${c.nombre}`); this.cargar(); },
+      error: (err) => this.alerts.error('No se pudo eliminar la cuenta', mensajeError(err, 'Intente de nuevo.')),
+    });
+  }
+
   protected async alternarActiva(c: CuentaContable): Promise<void> {
     if (c.activa) {
       const ok = await this.alerts.confirm({

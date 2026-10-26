@@ -11,7 +11,7 @@ import {
   ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, opcionesDeCampo,
   problemaCampo, tecleoCampo,
 } from '../../shared/campos-orden';
-import { OpcionCampo, esAxa, esBolivar, etiquetaTipoActividadArl, pistaTipoActividadArl } from '../../core/bolivar';
+import { OpcionCampo, esAxa, esBolivar, esSura, etiquetaTipoActividadArl, pistaTipoActividadArl } from '../../core/bolivar';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
@@ -697,7 +697,8 @@ export class ImportComponent implements OnInit, OnDestroy {
             lote.nombre || archivo,
             'Se procesó pero no se extrajo ninguna orden. En Excel solo se reconoce el ' +
               'formato SIPAB de Bolívar (columnas “Numero Cronograma” y “Actividad ' +
-              'Cronograma”); las órdenes de AXA Colpatria y Colmena se cargan en PDF.',
+              'Cronograma”) y el reporte de tareas de ARL SURA (columnas “ORDEN”, “CONTRATO” y ' +
+              '“PRESTADOR”); las órdenes de AXA Colpatria y Colmena se cargan en PDF.',
           );
         }
 
@@ -1302,10 +1303,10 @@ function buildFields(m: MetadatosExtraccion, arl: string | null): PreviewField[]
   // así que llega vacío. 5-oct-2026 · Dejó de ser obligatorio: AXA no lo exige y
   // no puede frenar la carga. Vacío no es una lectura dudosa de la IA, así que
   // tampoco lleva el 0 % ni el aviso de baja confianza.
-  if (esAxa(arl)) {
+  if (esAxa(arl) || esSura(arl)) {
     const nit = rows[rows.length - 1];
     nit.opcional = true;
-    nit.hint = 'Opcional — las órdenes de AXA no traen el NIT de la empresa. Si lo conoce, escríbalo.';
+    nit.hint = `Opcional — las órdenes de ${esSura(arl) ? 'ARL SURA' : 'AXA'} no traen el NIT de la empresa. Si lo conoce, escríbalo.`;
   }
   // Las horas son obligatorias: de ellas salen las franjas de la visita y el
   // valor que se le paga al profesional. El SIPAB de Bolívar solo las trae
@@ -1339,6 +1340,11 @@ function buildFields(m: MetadatosExtraccion, arl: string | null): PreviewField[]
     modalidad.requiredHint =
       'Campo obligatorio — el documento no lo dice y de él depende qué formatos de Bolívar se envían ' +
       '(el AT-028 solo vale para actividades presenciales).';
+  }
+  // ARL SURA · La modalidad es OPCIONAL: solo cambia la casilla «Domicilio / Virtual» de su registro de asistencia
+  // (sin elegir, sale «Domicilio»).
+  if (esSura(arl)) {
+    pushOpcion('modalidad_ejecucion', 'Forma de entrega del servicio', m.modalidad_ejecucion);
   }
   // El AGR solo lo trae el SIPAB de Bolívar; se enseña para poder corregirlo (el
   // .xls suele llegar con la Ñ dañada) y sale en la casilla 16 del AT-031.

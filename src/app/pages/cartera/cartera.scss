@@ -138,10 +138,45 @@
   font-size: 0.86rem;
 }
 
-.car-editor td:nth-child(5),
-.car-editor td:nth-child(7) {
+.car-editor td:last-child {
   width: 140px;
 }
+
+/* 24-oct-2026 · Lo retenido se calcula solo: se ve, pero no se escribe. */
+.car-bloqueado {
+  background: #f1f4f8;
+  color: var(--text-main);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Desplegable con las retenciones de la factura (varias a la vez). */
+.car-ret {
+  position: relative;
+  min-width: 170px;
+}
+.car-ret summary {
+  cursor: pointer;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.84rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  list-style: none;
+}
+.car-ret summary::-webkit-details-marker { display: none; }
+.car-ret--vacia { color: var(--text-muted); }
+.car-ret__lista {
+  /* En línea, no flotante: la tabla hace scroll y un menú absoluto quedaría recortado. */
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  padding: 0.55rem 0.7rem;
+  background: #f8fafc;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+}
+.car-ret__lista label { display: flex; gap: 0.45rem; align-items: center; font-size: 0.84rem; }
 
 .car-marcada td {
   background: #f3f8ff;

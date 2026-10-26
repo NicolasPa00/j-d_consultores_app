@@ -16,6 +16,9 @@ import { AsientoDocumento,
 import { OpcionBusqueda, SelectorBusquedaComponent } from '../../shared/selector-busqueda/selector-busqueda';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
+import { SelectorMultipleComponent } from '../../shared/selector-multiple/selector-multiple';
+import { TerceroRapidoComponent } from '../../shared/alta-rapida/tercero-rapido';
+import { ProductoRapidoComponent } from '../../shared/alta-rapida/producto-rapido';
 
 type Pestana = 'por-facturar' | 'borradores' | 'emitidas' | 'notas';
 
@@ -62,7 +65,7 @@ const aNumero = (v: string): number => {
 
 @Component({
   selector: 'app-facturacion',
-  imports: [FormsModule, RouterLink, PaginadorComponent, SelectorBusquedaComponent],
+  imports: [FormsModule, RouterLink, PaginadorComponent, SelectorBusquedaComponent, SelectorMultipleComponent, TerceroRapidoComponent, ProductoRapidoComponent],
   templateUrl: './facturacion.html',
   styleUrl: './facturacion.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -180,7 +183,23 @@ export class FacturacionComponent implements OnInit {
   protected readonly manualObs = signal('');
   protected readonly manualLineas = signal<LineaManual[]>([]);
   protected readonly manualDescuento = signal('0');
-  protected readonly manualRetenciones = signal<ReadonlySet<string>>(new Set());
+  /** Ids de las retenciones elegidas (selector con búsqueda, 24-oct-2026). */
+  protected readonly manualRetenciones = signal<string[]>([]);
+  /** Alta rápida sin salir del modal (24-oct-2026). */
+  protected readonly nuevoClienteOpen = signal(false);
+  protected readonly nuevoProductoOpen = signal(false);
+  /** Línea a la que se le pondrá el producto recién creado. */
+  private lineaDelProductoNuevo = 0;
+  protected readonly opcionesRetencion = computed<OpcionBusqueda[]>(() => this.retencionesVenta().map((r) => ({
+    valor: r.id,
+    texto: `${r.nombre} (${+r.tarifa} %)`,
+    detalle: r.tipo === 'RETEICA' ? 'ReteICA: no resta del total, se aplica al pagar' : undefined,
+  })));
+  /** ¿Entre las elegidas hay una ReteICA? Solo para avisar que no cambia el total de la factura. */
+  protected readonly manualTieneReteica = computed(() => {
+    const ids = new Set(this.manualRetenciones());
+    return this.retencionesVenta().some((r) => ids.has(r.id) && r.tipo === 'RETEICA');
+  });
   protected readonly manualForma = signal('');
   protected readonly manualMedio = signal('');
   protected readonly manualPlazo = signal(30);
@@ -206,7 +225,7 @@ export class FacturacionComponent implements OnInit {
       totalIva += linea * (1 - pct / 100) * (iva.get(l.producto_id) ?? 0) / 100;
     }
     const descuento = bruto * pct / 100;
-    return { bruto, descuento, subtotal: bruto - descuento, iva: totalIva };
+    return { bruto, descuento, subtotal: bruto - descuento, iva: totalIva, total: bruto - descuento + totalIva };
   });
   protected readonly manualListo = computed(() => !!this.manualTercero() && this.manualResumen().bruto > 0
     && this.manualLineas().every((l) => l.producto_id && l.descripcion.trim() && aNumero(l.cantidad) > 0 && aNumero(l.valor_unitario) >= 0)
@@ -765,12 +784,13 @@ export class FacturacionComponent implements OnInit {
       },
       error: () => {},
     });
-    // El ReteICA no va en la factura: lo practica el cliente al pagar (se registra en el recibo de caja).
-    this.api.listRetenciones(true).subscribe({ next: (r) => this.retencionesVenta.set(r.data.filter((x) => x.aplica_a === 'VENTA' && x.tipo !== 'RETEICA')), error: () => {} });
+    // 24-oct-2026 · El ReteICA ya se puede poner en la factura manual. No resta del total a pagar
+    // (lo practica el cliente al pagar): queda anotado y el recibo de caja lo propone solo.
+    this.api.listRetenciones(true).subscribe({ next: (r) => this.retencionesVenta.set(r.data.filter((x) => x.aplica_a === 'VENTA')), error: () => {} });
     this.manualTercero.set('');
     this.manualObs.set('');
     this.manualDescuento.set('0');
-    this.manualRetenciones.set(new Set());
+    this.manualRetenciones.set([]);
     this.manualForma.set(this.formasPago().find((f) => f.codigo_dian === '1')?.id ?? '');
     this.manualMedio.set(this.mediosPago().find((m) => m.codigo_dian === 'ZZZ')?.id ?? '');
     this.manualPlazo.set(30);
@@ -800,7 +820,8 @@ export class FacturacionComponent implements OnInit {
         const c = r.data;
         const plazo = Number(c?.plazo_dias) || 0;
         this.manualDescuento.set(String(Number(c?.descuento_comercial_pct) || 0));
-        this.manualRetenciones.set(new Set(c?.retenciones_ids ?? []));
+        // La ReteICA que el cliente practica al pagar viene de sus condiciones: se propone ya elegida.
+        this.manualRetenciones.set([...new Set([...(c?.retenciones_ids ?? []), ...(c?.reteica_pago_id ? [c.reteica_pago_id] : [])])]);
         this.manualForma.set(this.formasPago().find((f) => f.codigo_dian === (plazo > 0 ? '2' : '1'))?.id ?? this.manualForma());
         if (plazo > 0) this.manualPlazo.set(plazo);
       },
@@ -821,10 +842,24 @@ export class FacturacionComponent implements OnInit {
     this.manualLineas.update((ls) => ls.filter((_, j) => j !== i));
   }
 
-  protected alternarRetencionManual(id: string): void {
-    const s = new Set(this.manualRetenciones());
-    if (s.has(id)) s.delete(id); else s.add(id);
-    this.manualRetenciones.set(s);
+  // ---- Alta rápida de cliente y de producto desde el modal ----
+  protected clienteCreado(t: Tercero): void {
+    this.terceros.update((ts) => [...ts, t]);
+    this.nuevoClienteOpen.set(false);
+    this.elegirClienteManual(t.id);
+  }
+
+  /** El producto nuevo se pone en la primera línea que no tiene producto; si todas tienen, en la última. */
+  protected abrirNuevoProducto(): void {
+    const sin = this.manualLineas().findIndex((l) => !l.producto_id);
+    this.lineaDelProductoNuevo = sin >= 0 ? sin : this.manualLineas().length - 1;
+    this.nuevoProductoOpen.set(true);
+  }
+
+  protected productoCreado(p: Producto): void {
+    this.productos.update((ps) => [...ps, p].sort((a, b) => a.codigo.localeCompare(b.codigo)));
+    this.nuevoProductoOpen.set(false);
+    this.cambiarLineaManual(this.lineaDelProductoNuevo, 'producto_id', p.id);
   }
 
   protected guardarManual(): void {
@@ -835,7 +870,7 @@ export class FacturacionComponent implements OnInit {
       items: this.manualLineas(),
       observaciones: this.manualObs().trim() || undefined,
       descuento_comercial_pct: this.manualDescuento(),
-      retenciones_ids: [...this.manualRetenciones()],
+      retenciones_ids: this.manualRetenciones(),
       forma_pago_id: this.manualForma() || undefined,
       medio_pago_id: this.manualMedio() || undefined,
       plazo_dias: this.manualEsCredito() ? this.manualPlazo() : 0,

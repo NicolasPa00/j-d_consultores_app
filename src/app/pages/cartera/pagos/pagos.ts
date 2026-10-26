@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, OnInit, output, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { ApiService } from '../../../core/api.service';
 import { PESOS } from '../../../core/dinero';
 import { mensajeError } from '../../../core/errores';
@@ -10,6 +11,8 @@ import {
 } from '../../../core/models';
 import { paginar } from '../../../shared/paginacion';
 import { PaginadorComponent } from '../../../shared/paginador/paginador';
+import { OpcionBusqueda, SelectorBusquedaComponent } from '../../../shared/selector-busqueda/selector-busqueda';
+import { TerceroRapidoComponent } from '../../../shared/alta-rapida/tercero-rapido';
 import { aCentavos } from '../../contabilidad/comprobantes/comprobantes';
 
 const ETIQUETA_EDAD: Record<EdadCartera, string> = {
@@ -43,7 +46,7 @@ interface FilaEgreso {
  */
 @Component({
   selector: 'app-pagos',
-  imports: [FormsModule, PaginadorComponent],
+  imports: [FormsModule, RouterLink, PaginadorComponent, SelectorBusquedaComponent, TerceroRapidoComponent],
   templateUrl: './pagos.html',
   styleUrl: './pagos.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -153,6 +156,35 @@ export class PagosComponent implements OnInit {
     }
   }
 
+  // ---- Detalle del anticipo y eliminación (24-oct-2026) ----
+  protected readonly anticipo = signal<AnticipoProveedor | null>(null);
+  protected readonly eliminandoAnticipo = signal(false);
+
+  protected abrirAnticipo(a: AnticipoProveedor): void {
+    this.eliminandoAnticipo.set(false);
+    this.motivo = '';
+    this.anticipo.set(a);
+  }
+
+  /**
+   * «Eliminar» un anticipo es anularlo: el comprobante RP conserva su número y
+   * queda como anulado (la contabilidad no borra). Solo se puede si todavía no se
+   * ha cruzado con un egreso; si ya se cruzó, el servidor explica qué anular antes.
+   */
+  protected eliminarAnticipo(a: AnticipoProveedor): void {
+    if (this.motivo.trim().length < 5) { this.alerts.warning('Escriba el motivo (mínimo 5 letras)'); return; }
+    this.trabajando.set(true);
+    this.api.anularAnticipo(a.id, this.motivo.trim()).subscribe({
+      next: () => {
+        this.trabajando.set(false);
+        this.anticipo.set(null);
+        this.alerts.success('Anticipo eliminado', 'Quedó anulado y la plata vuelve al banco en la contabilidad.');
+        this.refrescar();
+      },
+      error: (err) => { this.trabajando.set(false); this.alerts.error('No se pudo eliminar el anticipo', mensajeError(err, 'Intente de nuevo.')); },
+    });
+  }
+
   // ---- Detalle del egreso y anulación ----
   protected readonly egreso = signal<Egreso | null>(null);
   protected readonly anulando = signal(false);
@@ -190,14 +222,47 @@ export class PagosComponent implements OnInit {
   protected aValor = '';
   protected aObs = '';
 
+  /** 24-oct-2026 · Los botones de registrar también salen en «Por pagar» (antes solo en «Egresos y anticipos»). */
+  /** 24-oct-2026 · Proveedor con búsqueda y alta rápida sin salir del formulario. */
+  protected readonly opcionesProveedor = computed<OpcionBusqueda[]>(() =>
+    this.proveedores().map((t) => ({ valor: t.id, texto: t.nombre, detalle: t.numero_documento })));
+  protected readonly nuevoProveedorOpen = signal(false);
+  /** De qué formulario se abrió el alta rápida: 'anticipo' o 'egreso'. */
+  private proveedorPara: 'anticipo' | 'egreso' = 'anticipo';
+  /** Cuenta a la que irá el anticipo, que se muestra apenas se elige el proveedor. */
+  protected readonly cuentaAnticipo = signal<{ id: string | null; codigo: string | null; nombre: string | null; aviso?: string } | null>(null);
+
+  protected elegirProveedorAnticipo(id: string): void {
+    this.aTercero = id;
+    this.cuentaAnticipo.set(null);
+    this.api.cuentaDeAnticipo(id).subscribe({ next: (r) => this.cuentaAnticipo.set(r.data), error: () => {} });
+  }
+
+  protected abrirNuevoProveedor(para: 'anticipo' | 'egreso'): void {
+    this.proveedorPara = para;
+    this.nuevoProveedorOpen.set(true);
+  }
+
+  protected proveedorCreado(t: Tercero): void {
+    this.proveedores.update((ps) => [...ps, t]);
+    this.nuevoProveedorOpen.set(false);
+    if (this.proveedorPara === 'anticipo') this.elegirProveedorAnticipo(t.id); else this.elegirProveedor(t.id);
+  }
+
   protected nuevoAnticipo(): void {
     this.cargarCatalogos();
+    this.cuentaAnticipo.set(null);
+    this.elegirProveedorAnticipoVacio();
     this.aTercero = '';
     this.aFecha = hoyLocal();
     this.aValor = '';
     this.aObs = '';
     this.aBanco = this.bancos().length === 1 ? this.bancos()[0].id : '';
     this.anticipoOpen.set(true);
+  }
+
+  private elegirProveedorAnticipoVacio(): void {
+    this.cuentaAnticipo.set(null);
   }
 
   protected guardarAnticipo(): void {

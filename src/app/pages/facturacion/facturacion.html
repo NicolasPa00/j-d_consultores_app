@@ -345,7 +345,7 @@
           <label class="form-field__label" for="facManCliente">Cliente *</label>
           <app-selector-busqueda idCampo="facManCliente" [opciones]="opcionesCliente()" [valor]="manualTercero()" (valorChange)="elegirClienteManual($event)"
                                  placeholder="Nombre o documento…" />
-          <p class="form-field__hint">Si no aparece, créelo en Terceros con el rol «Cliente».</p>
+          <p class="form-field__hint">¿No aparece? <button type="button" class="link-btn" (click)="nuevoClienteOpen.set(true)">Crear cliente sin salir de esta ventana</button>.</p>
         </div>
         <div class="form-field">
           <label class="form-field__label" for="facManForma">Forma de pago *</label>
@@ -400,20 +400,24 @@
           </div>
         }
       </div>
-      <button type="button" class="btn btn--ghost btn--sm fac-man-agregar" (click)="agregarLineaManual()">+ Agregar línea</button>
+      <div class="fac-man-acciones">
+        <button type="button" class="btn btn--ghost btn--sm fac-man-agregar" (click)="agregarLineaManual()">+ Agregar línea</button>
+        <button type="button" class="btn btn--ghost btn--sm fac-man-agregar" (click)="abrirNuevoProducto()">+ Crear producto nuevo</button>
+      </div>
       @if (!productos().length) {
-        <p class="fac-aviso fac-aviso--warning">No hay productos activos. Créelos en Parametrización → Productos para poder facturar.</p>
+        <p class="fac-aviso fac-aviso--warning">No hay productos activos. <button type="button" class="link-btn" (click)="abrirNuevoProducto()">Cree el primero aquí</button> para poder facturar.</p>
       }
 
       <div class="fac-man-pie">
         <div class="fac-man-pie__izq">
           @if (retencionesVenta().length) {
-            <fieldset class="fac-man-ret">
-              <legend>Retenciones que aplican</legend>
-              @for (r of retencionesVenta(); track r.id) {
-                <label><input type="checkbox" [checked]="manualRetenciones().has(r.id)" (change)="alternarRetencionManual(r.id)" /> {{ r.nombre }} ({{ +r.tarifa }} %)</label>
+            <div class="form-field fac-man-ret">
+              <label class="form-field__label" for="facManRet">Retenciones que aplican</label>
+              <app-selector-multiple idCampo="facManRet" [opciones]="opcionesRetencion()" [(valores)]="manualRetenciones" placeholder="Buscar retefuente, ReteIVA, ReteICA…" />
+              @if (manualTieneReteica()) {
+                <p class="form-field__hint">La ReteICA no cambia el total a pagar de la factura: la practica el cliente al pagar y el recibo de caja la propone sola.</p>
               }
-            </fieldset>
+            </div>
           }
           <div class="form-field">
             <label class="form-field__label" for="facManObs">Observaciones</label>
@@ -421,12 +425,13 @@
           </div>
         </div>
         <div class="fac-totales fac-man-totales">
-          <div><span>Total bruto</span><b>{{ pesos(manualResumen().bruto) }}</b></div>
+          <!-- 24-oct-2026 · Primero el subtotal y DESPUÉS los descuentos: con el descuento primero se confundía. -->
+          <div><span>Subtotal</span><b>{{ pesos(manualResumen().bruto) }}</b></div>
           @if (manualResumen().descuento > 0) {
-            <div><span>Descuento</span><b>− {{ pesos(manualResumen().descuento) }}</b></div>
-            <div><span>Subtotal</span><b>{{ pesos(manualResumen().subtotal) }}</b></div>
+            <div><span>Descuentos</span><b>− {{ pesos(manualResumen().descuento) }}</b></div>
           }
           @if (manualResumen().iva > 0) { <div><span>IVA</span><b>{{ pesos(manualResumen().iva) }}</b></div> }
+          <div><span>Total bruto</span><b>{{ pesos(manualResumen().total) }}</b></div>
           <p class="fac-man-nota">Las retenciones y el total a pagar los calcula el sistema al crear el borrador.</p>
         </div>
       </div>
@@ -438,6 +443,12 @@
       </button>
     </footer>
   </div>
+  @if (nuevoClienteOpen()) {
+    <app-tercero-rapido rol="cliente" (creado)="clienteCreado($event)" (cerrar)="nuevoClienteOpen.set(false)" />
+  }
+  @if (nuevoProductoOpen()) {
+    <app-producto-rapido (creado)="productoCreado($event)" (cerrar)="nuevoProductoOpen.set(false)" />
+  }
 }
 
 <!-- ======================= DETALLE ======================= -->
@@ -624,12 +635,16 @@
       }
 
       <div class="fac-totales">
-        <div><span>Total bruto</span><b>{{ pesos(d.totales.total_bruto) }}</b></div>
-        @if (+d.totales.total_descuento) { <div><span>Descuento</span><b>− {{ pesos(d.totales.total_descuento) }}</b></div> }
-        <div><span>Subtotal</span><b>{{ pesos(d.totales.subtotal) }}</b></div>
+        <!-- 24-oct-2026 · Primero el subtotal y DESPUÉS los descuentos (con el descuento arriba se confundía). -->
+        <div><span>Subtotal</span><b>{{ pesos(d.totales.total_bruto) }}</b></div>
+        @if (+d.totales.total_descuento) { <div><span>Descuentos</span><b>− {{ pesos(d.totales.total_descuento) }}</b></div> }
         <div><span>IVA</span><b>{{ pesos(d.totales.total_iva) }}</b></div>
         @for (r of d.retenciones; track r.codigo) {
-          <div class="fac-totales__ret"><span>{{ r.codigo }} ({{ +r.tarifa }} %)</span><b>− {{ pesos(r.valor) }}</b></div>
+          @if (r.tipo === 'RETEICA') {
+            <div class="fac-totales__ret"><span>{{ r.codigo }} ({{ +r.tarifa }} %) · se aplica al pagar</span><b>{{ pesos(r.valor) }}</b></div>
+          } @else {
+            <div class="fac-totales__ret"><span>{{ r.codigo }} ({{ +r.tarifa }} %)</span><b>− {{ pesos(r.valor) }}</b></div>
+          }
         }
         <div class="fac-totales__final"><span>Total a pagar</span><b>{{ pesos(d.totales.total_a_pagar) }}</b></div>
       </div>

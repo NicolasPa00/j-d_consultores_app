@@ -357,7 +357,7 @@
 <!-- ==================== MODAL DETALLE ==================== -->
 @if (detalle(); as pc) {
   <div class="modal-backdrop" (click)="cerrarDetalle()"></div>
-  <div class="modal modal--lg" role="dialog" aria-modal="true" aria-labelledby="pcTitle">
+  <div class="modal modal--xl" role="dialog" aria-modal="true" aria-labelledby="pcTitle">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="pcTitle">Cuenta de cobro · {{ periodoLargo(pc.periodo) }}</h3>
@@ -398,12 +398,14 @@
           <table class="table">
             <thead>
               <tr>
-                <th>Fecha</th>
+                <th>Fecha de ejecución</th>
                 <th>Orden</th>
+                <th>Actividad</th>
                 <th>Empresa</th>
-                <th>ARL</th>
+                <th>ARL con la que se factura</th>
                 <th>Horas</th>
                 <th>Valor hora</th>
+                <th>Viáticos</th>
                 <th>Subtotal</th>
               </tr>
             </thead>
@@ -412,58 +414,75 @@
                 <tr>
                   <td class="mono">{{ fecha(i.fecha_ejecucion) }}</td>
                   <td class="mono">{{ i.orden_codigo || '—' }}</td>
-                  <td>{{ i.empresa_nombre || '—' }}</td>
+                  <td class="bl-wrap">{{ i.actividad || '—' }}</td>
+                  <td class="bl-wrap">{{ i.empresa_nombre || '—' }}</td>
                   <td>{{ i.arl_nombre || '—' }}</td>
                   <td class="mono">{{ horas(i.horas) }}</td>
                   <td class="mono">
-                    {{ pesos(i.valor_hora_snapshot) }}
-                    @if (i.origen_tarifa === 'profesional') {
-                      <small class="origen" title="No había tarifa para el tipo de actividad: se aplicó el valor hora base del profesional">base</small>
+                    @if (editandoValores()) {
+                      <input class="form-control mono bl-input" type="text" inputmode="numeric" [(ngModel)]="ajustes[i.id].valor_hora" [attr.aria-label]="'Valor hora de ' + i.orden_codigo" />
+                    } @else {
+                      {{ pesos(i.valor_hora_snapshot) }}
+                      @if (i.ajuste_manual) {
+                        <small class="origen" [title]="'Ajustado a mano. Traía ' + pesos(i.valor_hora_original)">ajustado</small>
+                      } @else if (i.origen_tarifa === 'profesional') {
+                        <small class="origen" title="No había tarifa para el tipo de actividad: se aplicó el valor hora base del profesional">base</small>
+                      }
                     }
                   </td>
-                  <td class="mono money">
-                    {{ pesos(i.monto) }}
-                    <!-- El subtotal son HONORARIOS. El viático de esa orden se
-                         paga aparte, así que se anota debajo en vez de sumarlo:
-                         sumado, la columna dejaría de ser horas × valor hora. -->
-                    @if (i.viaticos) {
-                      <small class="viatico-linea" title="Viáticos de esta orden, aparte de los honorarios">
-                        + {{ pesos(i.viaticos) }} viáticos
-                      </small>
+                  <td class="mono">
+                    @if (editandoValores()) {
+                      <input class="form-control mono bl-input" type="text" inputmode="numeric" [(ngModel)]="ajustes[i.id].viaticos" [attr.aria-label]="'Viáticos de ' + i.orden_codigo" />
+                    } @else {
+                      {{ +(i.viaticos ?? 0) ? pesos(i.viaticos) : '—' }}
                     }
                   </td>
+                  <!-- El subtotal son HONORARIOS (horas × valor hora): el viático va en su propia columna. -->
+                  <td class="mono money">{{ editandoValores() ? pesos(montoAjustado(i)) : pesos(i.monto) }}</td>
                 </tr>
               } @empty {
-                <tr><td colspan="7" class="table__empty">Sin órdenes en el periodo.</td></tr>
+                <tr><td colspan="9" class="table__empty">Sin órdenes en el periodo.</td></tr>
               }
             </tbody>
             <!-- Con viáticos, el total NO es la suma de la columna de
                  subtotales: hay que enseñar de qué se compone o la cifra que se
                  le manda al profesional no cuadra con lo que tiene delante. -->
             <tfoot>
-              @if (viaticosDe(pc) > 0) {
+              @if (editandoValores()) {
                 <tr>
-                  <td colspan="4" class="totales__label">Honorarios</td>
+                  <td colspan="5" class="totales__label">Total a pagar con estos valores</td>
                   <td class="mono">{{ horas(pc.total_horas) }}</td>
+                  <td></td>
+                  <td></td>
+                  <td class="mono money">{{ pesos(totalAjustado(pc)) }}</td>
+                </tr>
+              } @else if (viaticosDe(pc) > 0) {
+                <tr>
+                  <td colspan="5" class="totales__label">Honorarios</td>
+                  <td class="mono">{{ horas(pc.total_horas) }}</td>
+                  <td></td>
                   <td></td>
                   <td class="mono money">{{ pesos(honorariosDe(pc)) }}</td>
                 </tr>
                 <tr>
-                  <td colspan="4" class="totales__label">Viáticos</td>
+                  <td colspan="5" class="totales__label">Viáticos</td>
+                  <td></td>
                   <td></td>
                   <td></td>
                   <td class="mono money">{{ pesos(viaticosDe(pc)) }}</td>
                 </tr>
                 <tr>
-                  <td colspan="4" class="totales__label">Total a pagar</td>
+                  <td colspan="5" class="totales__label">Total a pagar</td>
+                  <td></td>
                   <td></td>
                   <td></td>
                   <td class="mono money">{{ pesos(pc.total_monto) }}</td>
                 </tr>
               } @else {
                 <tr>
-                  <td colspan="4" class="totales__label">Totales</td>
+                  <td colspan="5" class="totales__label">Totales</td>
                   <td class="mono">{{ horas(pc.total_horas) }}</td>
+                  <td></td>
                   <td></td>
                   <td class="mono money">{{ pesos(pc.total_monto) }}</td>
                 </tr>
@@ -475,8 +494,18 @@
     </div>
 
     <footer class="modal__footer">
-      <button type="button" class="btn btn--close" (click)="cerrarDetalle()">Cerrar</button>
-      <button type="button" class="btn btn--ghost" (click)="verPdfDe(pc.id)">Ver documento</button>
+      @if (editandoValores()) {
+        <button type="button" class="btn btn--close" (click)="cancelarAjuste()" [disabled]="guardandoAjustes()">Cancelar</button>
+        <button type="button" class="btn btn--primary" (click)="guardarAjustes(pc)" [disabled]="guardandoAjustes()">
+          @if (guardandoAjustes()) { <span class="spinner" aria-hidden="true"></span> Guardando… } @else { Guardar valores }
+        </button>
+      } @else {
+        <button type="button" class="btn btn--close" (click)="cerrarDetalle()">Cerrar</button>
+        @if (puedeAjustar(pc)) {
+          <button type="button" class="btn btn--ghost" (click)="empezarAjuste(pc)" title="Cambiar el valor de la hora o sumar viáticos antes de enviar la cuenta">Ajustar valores y viáticos</button>
+        }
+        <button type="button" class="btn btn--ghost" (click)="verPdfDe(pc.id)">Ver documento</button>
+      }
     </footer>
   </div>
 }

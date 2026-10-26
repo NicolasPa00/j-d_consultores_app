@@ -1,0 +1,12 @@
+{
+  "name": "orbita-ayuda-capturas",
+  "private": true,
+  "type": "module",
+  "description": "Pantallazos con recuadros medidos para el Centro de ayuda (/ayuda). Ver docs/3-planes/plan-centro-de-ayuda.md",
+  "scripts": {
+    "capturar": "node ayuda-capturas.mjs"
+  },
+  "dependencies": {
+    "puppeteer-core": "^23.11.1"
+  }
+}

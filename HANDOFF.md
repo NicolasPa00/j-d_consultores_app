@@ -105,7 +105,7 @@
 > **Para preguntar a JD&D:** el paz y salvo dice «Señores:» sin destinatario y «informó» con tilde (¿así está la carta
 > modelo?); el aviso emergente dice «hay documentos que no se incluyeron» aunque el único aviso sea la firma.
 >
-> **Última actualización:** 21-oct-2026 (madrugada): **▶️ cierre de sesión con lo desplegado y lo pendiente (bloque ▶️ al inicio)**: unir prefacturas de Bolívar en una factura, línea única de Bolívar, actividades del paquete; antes, 20-oct (noche): **📂 formatos corregidos de Bolívar cargados en producción y 📦 prueba del paquete para la ARL** (bloques justo arriba). Antes, 20-oct-2026: **📎 la oficina sube el documento corregido — desplegado** (bloque 📎 justo debajo). Antes, 16-oct-2026: **firma digital de los profesionales y en los formatos (bloque ✍️).** Antes, 9-oct-2026 (cierre): **▶️ PARA QUIEN RETOMA: leer el bloque «TRASPASO DEL 9-OCT» (justo debajo de esta cabecera larga, antes de «DÓNDE RETOMAR (8-oct)»).** Antes, 9-oct-2026 (noche): **lote «parametrización 9-oct» (rama `carga-parametrizacion-9-oct`, bloque 🧾 del 9-oct arriba de «DÓNDE RETOMAR (8-oct)»): retenciones, cargue de terceros y CARGA de la parametrización de JD&D en producción.** Nómina sigue EN PAUSA y sin desplegar. Antes, 7-oct-2026 (cierre): **▶️ ver «DÓNDE RETOMAR» más abajo — rama `peticiones-reunion-7-oct` sin desplegar (7 correcciones, PDF propio de factura en muestra, tareas del audio identificadas).** Antes: **🚀 parte 2 del tercer lote DESPLEGADA (DIAN encendida; FE, DS, NC y NA sincronizadas). Falta parametrizar Finanzas en producción con la contadora (emisor, PUC, reglas, productos, retenciones) antes de la FE-1001.** Detalle (ver `docs/4-despliegue/despliegue-lote3.md`, parte 2). Antes: documento soporte completo, A4-01..03 (bloque ✅ del 7-oct, noche). Antes, 7-oct: **tercer lote (parte 1) DESPLEGADO** (bloque 🚀 del 7-oct). Antes, 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
+> **Última actualización:** 26-oct-2026: **todo lo del 24-oct (🛰️ ARL SURA + tanda del 23-oct, 🎬 centro de ayuda) quedó commiteado y subido, SIN desplegar; para terminar el centro de ayuda en otro equipo: `docs/3-planes/plan-centro-de-ayuda.md`.** Antes, 24-oct-2026: **🛰️ ARL SURA + tanda de peticiones del 23-oct** (bloque 🛰️ justo debajo). Antes, 21-oct-2026 (madrugada): **▶️ cierre de sesión con lo desplegado y lo pendiente (bloque ▶️ al inicio)**: unir prefacturas de Bolívar en una factura, línea única de Bolívar, actividades del paquete; antes, 20-oct (noche): **📂 formatos corregidos de Bolívar cargados en producción y 📦 prueba del paquete para la ARL** (bloques justo arriba). Antes, 20-oct-2026: **📎 la oficina sube el documento corregido — desplegado** (bloque 📎 justo debajo). Antes, 16-oct-2026: **firma digital de los profesionales y en los formatos (bloque ✍️).** Antes, 9-oct-2026 (cierre): **▶️ PARA QUIEN RETOMA: leer el bloque «TRASPASO DEL 9-OCT» (justo debajo de esta cabecera larga, antes de «DÓNDE RETOMAR (8-oct)»).** Antes, 9-oct-2026 (noche): **lote «parametrización 9-oct» (rama `carga-parametrizacion-9-oct`, bloque 🧾 del 9-oct arriba de «DÓNDE RETOMAR (8-oct)»): retenciones, cargue de terceros y CARGA de la parametrización de JD&D en producción.** Nómina sigue EN PAUSA y sin desplegar. Antes, 7-oct-2026 (cierre): **▶️ ver «DÓNDE RETOMAR» más abajo — rama `peticiones-reunion-7-oct` sin desplegar (7 correcciones, PDF propio de factura en muestra, tareas del audio identificadas).** Antes: **🚀 parte 2 del tercer lote DESPLEGADA (DIAN encendida; FE, DS, NC y NA sincronizadas). Falta parametrizar Finanzas en producción con la contadora (emisor, PUC, reglas, productos, retenciones) antes de la FE-1001.** Detalle (ver `docs/4-despliegue/despliegue-lote3.md`, parte 2). Antes: documento soporte completo, A4-01..03 (bloque ✅ del 7-oct, noche). Antes, 7-oct: **tercer lote (parte 1) DESPLEGADO** (bloque 🚀 del 7-oct). Antes, 5-oct-2026: **tres peticiones de JD&D construidas SIN COMMITEAR** (bloque 👥) y alta en el proveedor de facturación en curso (bloque 🧾). Antes, 2-oct-2026: **Fase C construida** en la rama `fase-c-informes` (bloque 📊). Antes, 1-oct-2026 (noche): todo lo del 1-oct COMMITEADO en `fase-b-contabilidad` (los dos repos, sin push): fase visual, auditoría de diseño y dos tandas de peticiones de JD&D (bloques 🧩 🔍 🛠️ 🧪 🧾 🎨). Antes: 30-sep-2026, noche (peticiones de JD&D, reorganización de carpetas, base `jdd_dev` limpia y primeras correcciones de la prueba de punta a punta: ver los bloques 🔧 🧹 🆕🆕🆕 de abajo; antes, Fase B, ver el bloque 🆕🆕; el resto de la cabecera es anterior; ver el bloque de facturación electrónica más abajo
 > para lo último; el resto de esta cabecera es del 16-sep) — **🚀 EL SISTEMA ESTÁ EN
 > PRODUCCIÓN**
 > (desde el 2-sep-2026) y ya lo están usando clientes reales. ORBITA vive en
@@ -115,6 +115,67 @@
 > **`docs/4-despliegue/despliegue-vultr.md`**, y es lo primero que hay que leer para tocar el
 > servidor. **Lo último desplegado:** el Excel SIPAB de Bolívar dejó de leerse
 > cuando llegaba como `.xls` binario (ver §0 punto 2 y la Tanda 23 en §3).
+>
+> 🎬 **24-oct-2026 (tarde) · VIDEO DE INTRODUCCIÓN + CENTRO DE AYUDA CON PANTALLAZOS — COMMITEADO Y SUBIDO el 26-oct (sin desplegar).** Decisión del usuario: NO habrá suite de videos por flujo; solo un video introductorio (piloto «De la orden de la ARL al asesor en campo», 66 s, horizontal y vertical) y el Centro de ayuda `/ayuda` como guía paso a paso con **pantallazos que llevan recuadros numerados** en cada sección. Video: `3-entregables-y-respaldos/videos-ayuda/` (ver su `ESTADO.md`); marcas ya ancladas a la imagen; **falta que el usuario apruebe audio/vista previa, renderizar y poner el MP4 en `/ayuda`**. Ayuda: tipo `Ilustracion` en `ayuda.contenido.ts` (campo `ilustraciones` del tema), marcas en % sobre la imagen (`ayuda.html/scss`), imágenes en `public/ayuda/<tema>/`, datos generados en `pages/ayuda/ilustraciones/<tema>.ts` por `herramientas/ayuda-capturas/ayuda-capturas.mjs <tema>` (movida al repo el 26-oct) (mide cajas con getBoundingClientRect; **escribe fuera de public/ mientras captura, porque ng serve recarga la página y se pierde el estado**). Solo el tema `importar-ordenes` tiene pantallazos; faltan los otros 22 (una receta por tema en `RECETAS`). **Plan para terminarlo en otro equipo, autocontenido: `docs/3-planes/plan-centro-de-ayuda.md`** (preparación, cómo escribir recetas, los 22 temas en lotes, trampas). jdd_dev tiene órdenes de demostración (Sura 109xxxxx).
+> 🛰️ **24-oct-2026 · ARL SURA + TANDA DEL 23-OCT — COMMITEADO Y SUBIDO el 26-oct (front `main`, back `master`), SIN DESPLEGAR** (ramas tal como estaban:
+> front `main`, back `master`; sin migrar producción). Plan/tablero: `docs/3-planes/plan-peticiones-23-oct-2026.md`.
+> Insumos del cliente: `1-cliente-jdd/{ordenes-reales/sura, formatos-arl/ARL SURA, prefacturas/sura, reuniones/2026-10-23-*}`.
+> **Qué entró (todo probado: `scripts/verificar-24-oct.mjs` con ROLLBACK, API por HTTP y capturas en `2-pruebas/herramientas-capturas/shots/24-oct`):**
+> - **ARL SURA (4.ª ARL, `sst.arls` «ARL SURA», formato excel).** La orden NO llega como documento: es el «Reporte estado de las
+>   tareas» (.xls de 21 columnas) que se descarga de su plataforma → `parseExcelSura()`/`esExcelSura()` en `extraction.service.js`
+>   (se reconoce por ORDEN+CONTRATO+PRESTADOR; una fila = una orden; identidad = `numero_orden`; vencimiento = «fecha entrega final de la OC»;
+>   horas = «cantidad pedida»; letra A/C sale de CLASIFICACION; NIT/dirección no vienen y son opcionales; contexto en `metadatos_extraccion.sura`).
+>   Duplicados (`dedup.service.js`) por número de orden. **Formatos** (`entrega-arl.service.js`): capacitación → `asistenciaSura` (PDF
+>   DIBUJADO por `scripts/generar-plantilla-asistencia-sura.mjs`, coordenadas `CASILLAS_ASISTENCIA_SURA`, firma del asesor estampada,
+>   lleva orden de compra, fecha, horario 24 h, lugar, producto, tarea, clasificación, domicilio/virtual, nombre y **cédula** del asesor);
+>   asesoría → `informeSura` (el Word «Modelo de informe» adjunto). Ninguna pide registro fotográfico (lo dijo el cliente en audio).
+>   **Reporte de facturas de Sura** (`prefactura sura.pdf`, FE-1010): `src/modules/prefacturas/sura.reporte.js` lo lee SIN IA (pdfjs por
+>   posiciones; una orden puede partirse entre páginas) y entra por el mismo «Cargar prefactura»; cruza por `numero_orden`
+>   (`prefacturas.service.js` filtra por `datos.arl`). `profesionales.documento_identidad` nueva (fallback: la del usuario enlazado).
+>   **Pendiente con la contadora/JD&D:** crear el tercero «Seguros de Riesgos Laborales Suramericana S.A.» (NIT 800256161-9, verificar con
+>   su RUT) y enlazarlo en `sst.arls.tercero_id` (la migración lo hace sola si ya existe), su ReteICA al pagar, el valor hora de venta
+>   ($82.000 según el reporte) en tarifas, y cargar la cédula de cada asesor.
+> - **Factura manual** (`facturacion`): crear cliente y producto SIN salir (`shared/alta-rapida/*`), retenciones con buscador de chips
+>   (`shared/selector-multiple`), **ReteICA permitida** (se guarda como tributo informativo: NO resta del total, no va a Factus ni al
+>   asiento ni al PDF; `propuestaRecibo` la usa como la ReteICA de ESA factura), totales con **Subtotal primero y Descuentos después**
+>   (pantalla y PDF; antes el PDF ponía Descuentos arriba por pedido de la contadora del 9-oct: ahora manda JD&D del 23-oct).
+> - **Cartera**: recibo de caja con **varias retenciones por factura y valor AUTOMÁTICO bloqueado** (tarifa × base; ReteIVA sobre el IVA;
+>   pesos enteros como Siigo; lo pagado se reajusta solo); «Por pagar» ya tiene Registrar anticipo/egreso/Documento soporte; el anticipo
+>   muestra su **cuenta** (13300501) y el banco, ANTES (`GET /cartera/anticipos/cuenta`) y después, y se puede **eliminar** (= anular;
+>   solo si no se ha cruzado); proveedor con buscador y alta rápida en anticipo y egreso.
+> - **Terceros**: `sst.bancos` (29 bancos, editable al vuelo) y `sst.terceros_cuentas_bancarias` (varias, una principal, borrar de verdad).
+>   Rutas en `terceros.routes.js` (`/terceros/bancos`, `/:id/cuentas`…). Sin pantalla de Excel para cuentas (no se pidió).
+> - **Compras y gastos**: centro de costo **por ítem** (`compra_items.centro_costo_id`; la cabecera queda con el centro común o vacía),
+>   crear proveedor y centro sin salir. **Centros de costo** pueden enlazarse a una ARL (`centros_costo.arl_id`, único activo por ARL):
+>   el **documento soporte** de una cuenta de cobro manda el valor de cada orden al centro de SU ARL (`asientoSoporte`).
+> - **Cuentas de cobro**: el detalle muestra fecha de ejecución, orden, actividad, empresa, ARL y viáticos; **«Ajustar valores y
+>   viáticos»** (`PATCH /precuentas/:id/items`, solo `generada`/`rechazada`, admin) cambia valor hora y viáticos por línea
+>   (`precuenta_items.ajuste_manual`/`valor_hora_original`; el ajuste sobrevive a «Generar» otra vez); PDF NUEVO en hoja horizontal con
+>   actividad y viáticos y texto largo partido en renglones (antes se recortaba).
+> - **Pago a profesionales**: «Documentos soporte» pasó a llamarse así (menú y título) y tiene la pestaña **Facturas electrónicas**
+>   (compras tipo SERVICIO_PROFESIONAL; `/compras?nueva=SERVICIO_PROFESIONAL` abre el formulario). Interpretación MÍA de la nota del
+>   Word «dejar cuentas de cobro y facturas electrónicas»: confirmar con JD&D.
+> - **Contabilidad**: se pueden **eliminar cuentas** sin subcuentas, movimientos ni uso (`DELETE /contabilidad/cuentas/:id` y masivo
+>   `POST /cuentas/eliminar`, checkboxes en el plan). La regla «no hay DELETE» (CNT-01) se levantó por pedido; lo que tiene historia se inactiva.
+> - **Alertas de vencimiento** (`alertas.service.js`): órdenes sin finalizar a 7/3 días y vencidas, registro del asesor ante la ARL a 30/7 días,
+>   y resumen semanal de cartera por cobrar/pagar vencida o por vencer. Tipos nuevos `ORDEN_VENCE`, `REGISTRO_ARL_VENCE`, `CARTERA_VENCE`.
+> - **Centro de ayuda** (`/ayuda`, botón «?» de la barra superior, sin permiso especial): contenido en `pages/ayuda/ayuda.contenido.ts`
+>   (23 temas + buscador). **Regla nueva: al cambiar una pantalla, se actualiza su tema.**
+> - **Asesores**: buscador en la lista del modal de asignación (nombre/especialidad/correo/ARL) y búsqueda ampliada en Profesionales;
+>   campo Cédula. **Firma del AT-031 de Bolívar** un poco más grande (`[0,172,84,215,29]`, no puede subir más: arriba hay texto de la ARL).
+> - **Migraciones** (aplicadas en `jdd_dev`, NO en producción; idempotentes; consolidadas al final de `schema.sql`; se aplican una a una con
+>   `node --import tsx scripts/aplicar-migracion.mjs db/migraciones/<archivo>` —ojo: `npm run migrate` re-siembra profesionales y tipos de demo—):
+>   `2026-10-24-arl-sura.sql`, `…-terceros-bancos.sql`, `…-centros-costo-lineas.sql`, `…-cuenta-cobro-ajustes.sql`. El alta de la ARL también va en `seed.sql`.
+> - **NO hecho / pendiente:** (1) el «formato de registro de asistencia cuando son de JD&D Consultores» (nota del Word): JD&D iba a enviar
+>   la carpeta con el formato — sin él no se pudo construir. (2) «Archivo plano del banco» y la doble aprobación de pagos que se hablaron en el
+>   audio del 23-oct: son ideas, no estaban en la lista escrita. (3) «Cargar facturas de la DIAN recibidas por CUFE sin contabilizar» (pregunta
+>   del audio): sin construir. (4) Los audios de WhatsApp tienen mucho ruido; se transcribieron con Whisper `medium` local (no se guardan).
+>   (5) Contrato de soporte: José/JD&D hablaron de 2 meses de acompañamiento tras los cuales Orbita queda tal cual.
+> - **Trampas nuevas:** (a) `dotenv` carga el `.env` con SMTP real: un script suelto (no el servidor con `EMAIL_DRIVER=console`) puede mandar
+>   correos de verdad. (b) `verificar-compras.mjs` y `verificar-cierre-y-centros.mjs` fallan en `jdd_dev` por una cuenta `236525` que ya existe
+>   en el PUC cargado (ya fallaban antes de esta tanda). (c) En Windows, los heredocs largos con `$`/comillas en el Bash de la herramienta
+>   pueden romperse: escribir el script a un archivo. (d) Las columnas del reporte de Sura caen en x fijas; si Sura cambia su PDF,
+>   revisar `sura.reporte.js`.
 >
 > 📎 **20-oct-2026 · LA OFICINA SUBE EL DOCUMENTO CORREGIDO — ✅ DESPLEGADO EN PRODUCCIÓN el 20-oct** (`master 9809593`,
 > `main c527cb1`, rama `soporte-oficina-20-oct` en local; script `docs/4-despliegue/despliegue-soporte-oficina-20-oct.sh`,

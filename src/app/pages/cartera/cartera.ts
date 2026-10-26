@@ -1,6 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_ID, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { PESOS } from '../../core/dinero';
 import { mensajeError } from '../../core/errores';
@@ -22,7 +24,15 @@ const ETIQUETA_EDAD: Record<EdadCartera, string> = {
   POR_VENCER: 'Por vencer', D1_30: '1 a 30 días', D31_60: '31 a 60', D61_90: '61 a 90', MAS_90: 'Más de 90',
 };
 
-/** Fila del formulario de recibo: una factura abierta del cliente. */
+/**
+ * Fila del formulario de recibo: una factura abierta del cliente.
+ *
+ * 24-oct-2026 · Lo retenido ya no se teclea: se ELIGEN las retenciones que practicó
+ * el cliente (ReteICA, retefuente, ReteIVA… las que sean) y el valor sale de su
+ * tarifa sobre la base de la factura, bloqueado. `base` es el subtotal que falta
+ * por cobrar y `iva` el IVA que falta (la ReteIVA se calcula sobre el IVA); los dos
+ * en centavos.
+ */
 interface FilaRecibo {
   id: string;
   numero: string;
@@ -30,8 +40,9 @@ interface FilaRecibo {
   saldo: string;
   marcada: boolean;
   pagado: string;
-  retencion_id: string;
-  retenido: string;
+  retencion_ids: string[];
+  base: number;
+  iva: number;
 }
 
 /** Fecha de hoy en Colombia (la del navegador), sin pasar por UTC. */
@@ -60,6 +71,8 @@ export class CarteraComponent implements OnInit {
   private readonly alerts = inject(AlertService);
   private readonly auth = inject(AuthService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly etiquetaEdad = ETIQUETA_EDAD;
   protected readonly pestana = signal<Pestana>('por-cobrar');
@@ -72,6 +85,11 @@ export class CarteraComponent implements OnInit {
     this.cargarAntiguedad();
     this.cargarRecibos();
     this.cargarConciliacion();
+    // 24-oct-2026 · La campanita avisa de cartera por vencer y entra a la pestaña que toca.
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((p) => {
+      const v = p.get('vista');
+      if (v === 'por-pagar' || v === 'por-cobrar') this.pestana.set(v);
+    });
   }
 
   protected pesos(v: string | number | null | undefined): string {
@@ -204,6 +222,21 @@ export class CarteraComponent implements OnInit {
   protected rBanco = '';
   protected rObs = '';
 
+  /** Lo que el cliente retuvo en una factura: tarifa de cada retención elegida sobre su base (pesos enteros, como Siigo). */
+  protected retenidoDe(f: FilaRecibo): number {
+    const porId = new Map(this.retenciones().map((r) => [r.id, r]));
+    let total = 0;
+    for (const id of f.retencion_ids) total += this.valorRetencion(porId.get(id), f);
+    return total;
+  }
+
+  /** Valor de UNA retención sobre una factura, en centavos. La ReteIVA va sobre el IVA; las demás, sobre el subtotal. */
+  protected valorRetencion(r: Retencion | undefined, f: FilaRecibo): number {
+    if (!r) return 0;
+    const base = r.tipo === 'RETEIVA' ? f.iva : f.base;
+    return Math.round((Math.max(base, 0) * Number(r.tarifa)) / 100 / 100) * 100;
+  }
+
   /** Totales en vivo (centavos): lo consignado, lo retenido y si alguna fila se pasa de su saldo. */
   protected readonly totales = computed(() => {
     let pagado = 0;
@@ -213,8 +246,8 @@ export class CarteraComponent implements OnInit {
     for (const f of this.filas()) {
       if (!f.marcada) continue;
       const p = aCentavos(f.pagado);
-      const r = aCentavos(f.retenido);
-      if (p == null || r == null) { invalidas++; continue; }
+      if (p == null) { invalidas++; continue; }
+      const r = this.retenidoDe(f);
       pagado += p;
       retenido += r;
       if (p + r > aCentavos(f.saldo)!) excedidas++;
@@ -251,7 +284,7 @@ export class CarteraComponent implements OnInit {
     this.formOpen.set(false);
   }
 
-  /** Al elegir el cliente se traen sus facturas abiertas con la ReteICA que suele practicar. */
+  /** Al elegir el cliente se traen sus facturas abiertas, con la ReteICA que suele practicar ya marcada. */
   protected elegirCliente(id: string): void {
     this.rCliente = id;
     this.propuesta.set(null);
@@ -261,13 +294,14 @@ export class CarteraComponent implements OnInit {
       next: (r) => {
         this.propuesta.set(r.data);
         this.filas.set(r.data.facturas.map((f) => {
-          const ret = aCentavos(f.reteica_sugerida) ?? 0;
-          return {
+          const base = aCentavos(f.base_reteica) ?? 0;
+          const saldo = aCentavos(f.saldo) ?? 0;
+          const fila: FilaRecibo = {
             id: f.id, numero: f.numero, vencimiento: f.vencimiento, saldo: f.saldo, marcada: false,
-            pagado: ((aCentavos(f.saldo)! - ret) / 100).toFixed(2),
-            retencion_id: r.data.reteica?.id ?? '',
-            retenido: ret ? (ret / 100).toFixed(2) : '',
+            pagado: '', retencion_ids: f.reteica_id ? [f.reteica_id] : [], base, iva: Math.max(saldo - base, 0),
           };
+          fila.pagado = ((saldo - this.retenidoDe(fila)) / 100).toFixed(2);
+          return fila;
         }));
       },
       error: (err) => this.alerts.error('No se pudieron traer sus facturas', mensajeError(err, 'Intente de nuevo.')),
@@ -278,6 +312,27 @@ export class CarteraComponent implements OnInit {
     this.filas.update((fs) => fs.map((f, j) => (j === i ? { ...f, [campo]: valor } : f)));
   }
 
+  /**
+   * Marca o desmarca una retención de la factura. Al cambiar lo retenido, lo
+   * pagado se reajusta para que la factura siga quedando saldada (saldo − retenido);
+   * si la consignación fue menor, se corrige a mano en «Pagado».
+   */
+  protected alternarRetencion(i: number, id: string): void {
+    this.filas.update((fs) => fs.map((f, j) => {
+      if (j !== i) return f;
+      const ids = f.retencion_ids.includes(id) ? f.retencion_ids.filter((x) => x !== id) : [...f.retencion_ids, id];
+      const nueva = { ...f, retencion_ids: ids };
+      nueva.pagado = (((aCentavos(f.saldo) ?? 0) - this.retenidoDe(nueva)) / 100).toFixed(2);
+      return nueva;
+    }));
+  }
+
+  /** Nombres de las retenciones marcadas, para el resumen de la celda. */
+  protected resumenRetenciones(f: FilaRecibo): string {
+    const porId = new Map(this.retenciones().map((r) => [r.id, r]));
+    return f.retencion_ids.map((id) => porId.get(id)?.nombre).filter(Boolean).join(' · ');
+  }
+
   protected guardarRecibo(): void {
     const t = this.totales();
     if (!this.rCliente) { this.alerts.warning('Elija el cliente'); return; }
@@ -286,18 +341,18 @@ export class CarteraComponent implements OnInit {
     if (t.invalidas) { this.alerts.warning('Hay valores que no son números'); return; }
     if (t.excedidas) { this.alerts.warning('Lo pagado más lo retenido supera el saldo de alguna factura'); return; }
     if (!t.pagado) { this.alerts.warning('El recibo no tiene plata consignada'); return; }
-    const aplicaciones = this.filas().filter((f) => f.marcada).map((f) => {
-      const ret = aCentavos(f.retenido) ?? 0;
-      return {
-        cartera_documento_id: f.id,
-        valor_pagado: ((aCentavos(f.pagado) ?? 0) / 100).toFixed(2),
-        retenciones: ret && f.retencion_id ? [{ retencion_id: f.retencion_id, valor: (ret / 100).toFixed(2) }] : [],
-      };
-    });
-    if (aplicaciones.some((a, i) => !a.retenciones.length && aCentavos(this.filas().filter((f) => f.marcada)[i].retenido))) {
-      this.alerts.warning('Elija qué retención practicó el cliente');
-      return;
-    }
+    const porId = new Map(this.retenciones().map((r) => [r.id, r]));
+    const aplicaciones = this.filas().filter((f) => f.marcada).map((f) => ({
+      cartera_documento_id: f.id,
+      valor_pagado: ((aCentavos(f.pagado) ?? 0) / 100).toFixed(2),
+      retenciones: f.retencion_ids
+        .map((id) => ({ id, v: this.valorRetencion(porId.get(id), f), tipo: porId.get(id)?.tipo }))
+        .filter((r) => r.v > 0)
+        .map((r) => ({
+          retencion_id: r.id, valor: (r.v / 100).toFixed(2),
+          base: ((r.tipo === 'RETEIVA' ? f.iva : f.base) / 100).toFixed(2),
+        })),
+    }));
     this.guardando.set(true);
     this.api.createRecibo({ tercero_id: this.rCliente, fecha: this.rFecha, cuenta_banco_id: this.rBanco, observaciones: this.rObs.trim() || undefined, aplicaciones }).subscribe({
       next: (r) => {

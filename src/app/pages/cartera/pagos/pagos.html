@@ -4,6 +4,11 @@
     <label class="pg-fecha">Corte <input type="date" class="form-control" [(ngModel)]="corte" (change)="cargarAntiguedad()" /></label>
     <span class="pg-sep"></span>
     <button type="button" class="btn btn--ghost btn--sm" (click)="exportarAntiguedad()">Exportar a Excel</button>
+    @if (puedeOperar()) {
+      <a routerLink="/documentos-soporte" class="btn btn--ghost">Documento soporte</a>
+      <button type="button" class="btn btn--ghost" (click)="nuevoAnticipo()">Registrar anticipo</button>
+      <button type="button" class="btn btn--primary" (click)="nuevoEgreso()">Registrar egreso</button>
+    }
   </div>
   <div class="card">
     <div class="table-wrap">
@@ -81,18 +86,20 @@
     <div class="card__head"><h3 class="card__title">Anticipos a proveedores</h3></div>
     <div class="table-wrap">
       <table class="table">
-        <thead><tr><th>Anticipo</th><th>Fecha</th><th>Proveedor</th><th class="col-num">Valor</th><th class="col-num">Por cruzar</th><th>Estado</th></tr></thead>
+        <thead><tr><th>Anticipo</th><th>Fecha</th><th>Proveedor</th><th>Cuenta</th><th class="col-num">Valor</th><th class="col-num">Por cruzar</th><th>Estado</th><th class="col-actions"></th></tr></thead>
         <tbody>
-          @if (!anticipos().length) { <tr><td colspan="6" class="pg-vacio">No hay anticipos.</td></tr> }
+          @if (!anticipos().length) { <tr><td colspan="8" class="pg-vacio">No hay anticipos.</td></tr> }
           @for (a of anticipos(); track a.id) {
             <tr>
               <td class="mono"><strong>{{ a.numero }}</strong></td>
               <td class="mono">{{ a.fecha }}</td>
               <td>{{ a.tercero_nombre }}</td>
+              <td class="mono pg-cuenta">{{ a.cuenta_codigo }}<small>{{ a.cuenta_nombre }}</small></td>
               <td class="col-num mono">{{ pesos(a.valor) }}</td>
               <td class="col-num mono">{{ pesos(a.saldo) }}</td>
               <td><span class="pill" [class]="a.estado === 'ANULADO' ? 'pill--muted' : +a.saldo ? 'pill--warning' : 'pill--success'">
                 {{ a.estado === 'ANULADO' ? 'Anulado' : +a.saldo ? 'Por cruzar' : 'Cruzado' }}</span></td>
+              <td class="col-actions"><button type="button" class="icon-action" (click)="abrirAnticipo(a)" aria-label="Ver el anticipo" title="Ver el anticipo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
             </tr>
           }
         </tbody>
@@ -184,6 +191,49 @@
   </div>
 }
 
+<!-- ============ MODAL · DETALLE DEL ANTICIPO ============ -->
+@if (anticipo(); as a) {
+  <div class="modal-backdrop" (click)="trabajando() ? null : anticipo.set(null)"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pgAnDetTitle">
+    <header class="modal__head">
+      <div>
+        <h3 class="modal__title" id="pgAnDetTitle">Anticipo {{ a.numero }}</h3>
+        <small class="pg-sub">{{ a.tercero_nombre }} · {{ a.fecha }}</small>
+      </div>
+      <span class="pill" [class]="a.estado === 'ANULADO' ? 'pill--muted' : +a.saldo ? 'pill--warning' : 'pill--success'">
+        {{ a.estado === 'ANULADO' ? 'Anulado' : +a.saldo ? 'Por cruzar' : 'Cruzado' }}</span>
+    </header>
+    <div class="modal__body">
+      <dl class="pg-dl">
+        <div><dt>Valor</dt><dd class="mono">{{ pesos(a.valor) }}</dd></div>
+        <div><dt>Por cruzar</dt><dd class="mono">{{ pesos(a.saldo) }}</dd></div>
+        <div><dt>Cuenta del anticipo</dt><dd class="mono">{{ a.cuenta_codigo }} · {{ a.cuenta_nombre }}</dd></div>
+        <div><dt>Sale del banco</dt><dd class="mono">{{ a.banco_codigo }} · {{ a.banco_nombre }}</dd></div>
+        @if (a.observaciones) { <div><dt>Observaciones</dt><dd>{{ a.observaciones }}</dd></div> }
+        @if (a.motivo_anulacion) { <div><dt>Motivo de la anulación</dt><dd>{{ a.motivo_anulacion }}</dd></div> }
+      </dl>
+      @if (eliminandoAnticipo()) {
+        <div class="form-field">
+          <label class="form-field__label" for="pgAnMotivo">Motivo *</label>
+          <input id="pgAnMotivo" class="form-control" type="text" [(ngModel)]="motivo" placeholder="p. ej. Se registró dos veces" />
+          <p class="form-field__hint">El anticipo queda anulado (no se borra del libro) y la plata vuelve al banco en la contabilidad.</p>
+        </div>
+      }
+    </div>
+    <footer class="modal__footer">
+      @if (puedeOperar() && a.estado === 'CONTABILIZADO') {
+        @if (eliminandoAnticipo()) {
+          <button type="button" class="btn btn--close" (click)="eliminandoAnticipo.set(false)" [disabled]="trabajando()">Cancelar</button>
+          <button type="button" class="btn btn--danger" (click)="eliminarAnticipo(a)" [disabled]="trabajando()">Eliminar anticipo</button>
+        } @else {
+          <button type="button" class="btn btn--danger pg-peligro" (click)="motivo = ''; eliminandoAnticipo.set(true)">Eliminar</button>
+        }
+      }
+      <button type="button" class="btn btn--close" (click)="anticipo.set(null)" [disabled]="trabajando()">Cerrar</button>
+    </footer>
+  </div>
+}
+
 <!-- ============ MODAL · NUEVO ANTICIPO ============ -->
 @if (anticipoOpen()) {
   <div class="modal-backdrop" (click)="anticipoOpen.set(false)"></div>
@@ -192,11 +242,16 @@
     <div class="modal__body">
       <div class="form-field">
         <label class="form-field__label" for="pgAnProv">Proveedor *</label>
-        <select id="pgAnProv" class="form-control" [(ngModel)]="aTercero">
-          <option value="">Elija…</option>
-          @for (t of proveedores(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
-        </select>
+        <app-selector-busqueda idCampo="pgAnProv" [opciones]="opcionesProveedor()" [valor]="aTercero" (valorChange)="elegirProveedorAnticipo($event)" placeholder="Nombre o documento…" />
+        <p class="form-field__hint">¿No aparece? <button type="button" class="link-btn" (click)="abrirNuevoProveedor('anticipo')">Crear proveedor sin salir de esta ventana</button>.</p>
       </div>
+      <!-- 24-oct-2026 · Se ve a qué cuenta va el anticipo ANTES de registrarlo. -->
+      @if (cuentaAnticipo(); as ca) {
+        <p class="pg-ayuda">
+          @if (ca.codigo) { Se contabiliza en la cuenta <strong>{{ ca.codigo }} · {{ ca.nombre }}</strong> (débito) contra el banco que elija abajo (crédito). }
+          @else { {{ ca.aviso }} }
+        </p>
+      }
       <div class="pg-dos">
         <div class="form-field">
           <label class="form-field__label" for="pgAnFecha">Fecha *</label>
@@ -235,10 +290,8 @@
       <div class="pg-tres">
         <div class="form-field">
           <label class="form-field__label" for="pgEgProv">Proveedor *</label>
-          <select id="pgEgProv" class="form-control" [ngModel]="eTercero" (ngModelChange)="elegirProveedor($event)">
-            <option value="">Elija…</option>
-            @for (t of proveedores(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
-          </select>
+          <app-selector-busqueda idCampo="pgEgProv" [opciones]="opcionesProveedor()" [valor]="eTercero" (valorChange)="elegirProveedor($event)" placeholder="Nombre o documento…" />
+          <p class="form-field__hint"><button type="button" class="link-btn" (click)="abrirNuevoProveedor('egreso')">+ Crear proveedor</button></p>
         </div>
         <div class="form-field">
           <label class="form-field__label" for="pgEgFecha">Fecha *</label>
@@ -303,4 +356,9 @@
       </button>
     </footer>
   </div>
+}
+
+<!-- 24-oct-2026 · Alta rápida de proveedor, encima del formulario que la abrió (anticipo o egreso). -->
+@if (nuevoProveedorOpen()) {
+  <app-tercero-rapido rol="proveedor" (creado)="proveedorCreado($event)" (cerrar)="nuevoProveedorOpen.set(false)" />
 }

@@ -56,6 +56,12 @@ export const routes: Routes = [
     loadComponent: () => import('./layout/shell/shell').then((m) => m.ShellComponent),
     children: [
       {
+        // 24-oct-2026 · Centro de ayuda: lo ven todos los roles (no hay vista en la matriz de permisos).
+        path: 'ayuda',
+        title: 'Centro de ayuda',
+        loadComponent: () => import('./pages/ayuda/ayuda').then((m) => m.AyudaComponent),
+      },
+      {
         path: 'dashboard',
         title: 'Inicio',
         canActivate: [permissionGuard],
@@ -119,7 +125,7 @@ export const routes: Routes = [
       {
         // A4-01 · Documentos soporte: el costo de los asesores ante la DIAN (Finanzas).
         path: 'documentos-soporte',
-        title: 'Documentos soporte',
+        title: 'Pago a profesionales',
         canActivate: [permissionGuard],
         data: { vista: 'documentos_soporte' },
         loadComponent: () => import('./pages/documentos-soporte/documentos-soporte').then((m) => m.DocumentosSoporteComponent),

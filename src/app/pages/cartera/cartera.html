@@ -235,7 +235,7 @@
 <!-- ============ MODAL · NUEVO RECIBO ============ -->
 @if (formOpen()) {
   <div class="modal-backdrop" (click)="cerrarForm()"></div>
-  <div class="modal modal--lg" role="dialog" aria-modal="true" aria-labelledby="carNuevoTitle">
+  <div class="modal modal--xl" role="dialog" aria-modal="true" aria-labelledby="carNuevoTitle">
     <header class="modal__head">
       <h3 class="modal__title" id="carNuevoTitle">Registrar recibo de caja</h3>
       <button type="button" class="icon-action" (click)="cerrarForm()" aria-label="Cerrar">
@@ -269,12 +269,13 @@
           <p class="car-vacio">Este cliente no tiene facturas pendientes.</p>
         } @else {
           <p class="car-ayuda">
-            Marque las facturas que cubre la consignación. Lo que el pagador retuvo (ReteICA{{ propuesta()!.reteica ? ' ' + propuesta()!.reteica!.nombre : '' }})
-            no queda como saldo: va a la cuenta de esa retención. Se propone sobre el subtotal de cada factura; corríjalo si el soporte del pago dice otra cifra.
+            Marque las facturas que cubre la consignación y elija las retenciones que practicó el cliente
+            (ReteICA, retefuente, ReteIVA…): el valor se <strong>calcula solo</strong> con la tarifa sobre la base de cada factura y no se
+            digita. Lo retenido no queda como saldo: va a la cuenta de esa retención.
           </p>
           <div class="table-wrap">
             <table class="table car-editor">
-              <thead><tr><th></th><th>Factura</th><th>Vence</th><th class="col-num">Saldo</th><th class="col-num">Pagado</th><th>Retención</th><th class="col-num">Retenido</th></tr></thead>
+              <thead><tr><th></th><th>Factura</th><th>Vence</th><th class="col-num">Saldo</th><th class="col-num">Base</th><th>Retenciones</th><th class="col-num">Retenido</th><th class="col-num">Pagado</th></tr></thead>
               <tbody>
                 @for (f of filas(); track f.id; let i = $index) {
                   <tr [class.car-marcada]="f.marcada">
@@ -282,14 +283,24 @@
                     <td class="mono">{{ f.numero }}</td>
                     <td class="mono">{{ f.vencimiento }}</td>
                     <td class="col-num mono">{{ pesos(f.saldo) }}</td>
-                    <td><input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="f.pagado" (ngModelChange)="cambiarFila(i, 'pagado', $event)" [disabled]="!f.marcada" [attr.aria-label]="'Pagado de ' + f.numero" /></td>
+                    <td class="col-num mono">{{ pesosC(f.base) }}</td>
                     <td>
-                      <select class="form-control" [ngModel]="f.retencion_id" (ngModelChange)="cambiarFila(i, 'retencion_id', $event)" [disabled]="!f.marcada" [attr.aria-label]="'Retención de ' + f.numero">
-                        <option value="">Ninguna</option>
-                        @for (x of retenciones(); track x.id) { <option [value]="x.id">{{ x.nombre }}</option> }
-                      </select>
+                      <details class="car-ret">
+                        <summary [class.car-ret--vacia]="!f.retencion_ids.length" [attr.aria-label]="'Retenciones de ' + f.numero">
+                          {{ f.retencion_ids.length ? resumenRetenciones(f) : 'Ninguna' }}
+                        </summary>
+                        <div class="car-ret__lista">
+                          @for (x of retenciones(); track x.id) {
+                            <label>
+                              <input type="checkbox" [checked]="f.retencion_ids.includes(x.id)" [disabled]="!f.marcada" (change)="alternarRetencion(i, x.id)" />
+                              {{ x.nombre }} <small>({{ +x.tarifa }} %)</small>
+                            </label>
+                          } @empty { <small>No hay retenciones de venta creadas (Parametrización → Retenciones).</small> }
+                        </div>
+                      </details>
                     </td>
-                    <td><input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="f.retenido" (ngModelChange)="cambiarFila(i, 'retenido', $event)" [disabled]="!f.marcada" [attr.aria-label]="'Retenido de ' + f.numero" /></td>
+                    <td class="col-num mono car-bloqueado" title="Se calcula con la tarifa sobre la base; no se digita">{{ f.marcada ? pesosC(retenidoDe(f)) : '' }}</td>
+                    <td><input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="f.pagado" (ngModelChange)="cambiarFila(i, 'pagado', $event)" [disabled]="!f.marcada" [attr.aria-label]="'Pagado de ' + f.numero" /></td>
                   </tr>
                 }
               </tbody>

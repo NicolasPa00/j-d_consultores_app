@@ -92,11 +92,24 @@
   <button type="button" class="btn btn--ghost btn--sm" (click)="desplegarTodo()" [disabled]="!!query() || soloMovimiento()">Expandir</button>
 </div>
 
+@if (puedeEditar() && seleccion().size) {
+  <div class="cnt-masiva" role="status">
+    <span><strong>{{ seleccion().size }}</strong> cuenta{{ seleccion().size === 1 ? '' : 's' }} marcada{{ seleccion().size === 1 ? '' : 's' }}</span>
+    <button type="button" class="btn btn--ghost btn--sm" (click)="alternarTodas(false)">Quitar la marca</button>
+    <button type="button" class="btn btn--danger btn--sm" (click)="eliminarSeleccion()" [disabled]="eliminando()">
+      @if (eliminando()) { <span class="spinner" aria-hidden="true"></span> Eliminando… } @else { Eliminar las marcadas }
+    </button>
+  </div>
+}
+
 <div class="card">
   <div class="table-wrap">
     <table class="table cnt-tabla">
       <thead>
         <tr>
+          @if (puedeEditar()) {
+            <th class="cnt-marca"><input type="checkbox" [checked]="todasMarcadas()" (change)="alternarTodas($any($event.target).checked)" aria-label="Marcar todas las que se ven" /></th>
+          }
           <th>Código</th>
           <th>Nombre</th>
           <th>Naturaleza</th>
@@ -107,18 +120,21 @@
       </thead>
       <tbody>
         @if (loading() && !cuentas().length) {
-          <tr><td [attr.colspan]="puedeEditar() ? 6 : 5" class="cnt-vacio">Cargando el plan de cuentas…</td></tr>
+          <tr><td [attr.colspan]="puedeEditar() ? 7 : 5" class="cnt-vacio">Cargando el plan de cuentas…</td></tr>
         } @else if (!cuentas().length) {
           <tr>
-            <td [attr.colspan]="puedeEditar() ? 6 : 5" class="cnt-vacio">
+            <td [attr.colspan]="puedeEditar() ? 7 : 5" class="cnt-vacio">
               Todavía no hay plan de cuentas. Impórtelo desde el Excel que exporta el software contable actual.
             </td>
           </tr>
         } @else if (!filas().length) {
-          <tr><td [attr.colspan]="puedeEditar() ? 6 : 5" class="cnt-vacio">Ninguna cuenta coincide con la búsqueda.</td></tr>
+          <tr><td [attr.colspan]="puedeEditar() ? 7 : 5" class="cnt-vacio">Ninguna cuenta coincide con la búsqueda.</td></tr>
         }
         @for (c of filas(); track c.id) {
           <tr [class.cnt-fila--grupo]="c.nivel <= 2" [class.cnt-fila--inactiva]="!c.activa">
+            @if (puedeEditar()) {
+              <td class="cnt-marca"><input type="checkbox" [checked]="estaMarcada(c)" (change)="alternarMarca(c)" [attr.aria-label]="'Marcar ' + c.codigo" /></td>
+            }
             <td class="cnt-codigo">
               <span class="cnt-codigo__in" [style.padding-left.rem]="sangria(c)">
                 @if (c.n_hijas && !query() && !soloMovimiento()) {
@@ -168,6 +184,13 @@
                       <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
                     </svg>
                   </button>
+                  @if (!c.n_hijas) {
+                    <button type="button" class="icon-action" (click)="eliminarUna(c)" [attr.aria-label]="'Eliminar ' + c.codigo" title="Eliminar del plan">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6" />
+                      </svg>
+                    </button>
+                  }
                   <button type="button" class="icon-action" (click)="alternarActiva(c)"
                           [attr.aria-label]="(c.activa ? 'Inactivar ' : 'Activar ') + c.codigo" [title]="c.activa ? 'Inactivar' : 'Activar'">
                     @if (c.activa) {

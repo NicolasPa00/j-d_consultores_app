@@ -1,0 +1,103 @@
+<section class="page-head">
+  <div>
+    <h2 class="page-head__title">Centro de ayuda</h2>
+    <p class="page-head__sub">Cómo se hace cada cosa en ORBITA, paso a paso · {{ visibles().length }} tema{{ visibles().length === 1 ? '' : 's' }}</p>
+  </div>
+</section>
+
+<div class="ayu-barra">
+  <div class="ayu-buscar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
+    </svg>
+    <input
+      type="search"
+      class="form-control"
+      placeholder="¿Qué necesita hacer? Por ejemplo: recibo de caja, importar Sura, eliminar cuenta…"
+      [ngModel]="busqueda()"
+      (ngModelChange)="buscar($event)"
+      aria-label="Buscar en el centro de ayuda"
+    />
+  </div>
+  <div class="tabs ayu-grupos" role="tablist">
+    <button type="button" class="tab" role="tab" [class.tab--active]="grupoActivo() === 'todos'" (click)="elegirGrupo('todos')">Todo</button>
+    @for (g of grupos; track g.id) {
+      <button type="button" class="tab" role="tab" [class.tab--active]="grupoActivo() === g.id" (click)="elegirGrupo(g.id)">{{ g.titulo }}</button>
+    }
+  </div>
+</div>
+
+<div class="ayu-layout">
+  <!-- ---- Índice ---- -->
+  <nav class="card ayu-indice" aria-label="Temas">
+    @for (g of grupos; track g.id) {
+      @if (temasDe(g.id).length) {
+        <p class="ayu-indice__grupo">{{ g.titulo }}</p>
+        @for (t of temasDe(g.id); track t.id) {
+          <button type="button" class="ayu-indice__item" [class.ayu-indice__item--activo]="tema()?.id === t.id" (click)="abrir(t)">
+            {{ t.titulo }}
+          </button>
+        }
+      }
+    }
+    @if (!visibles().length) {
+      <p class="ayu-vacio">Nada coincide con «{{ busqueda() }}». Pruebe con una sola palabra («factura», «cuenta», «asesor»).</p>
+    }
+  </nav>
+
+  <!-- ---- Artículo ---- -->
+  <article class="card ayu-articulo">
+    @if (tema(); as t) {
+      <div class="card__body">
+        <span class="pill pill--info">{{ tituloGrupo(t.grupo) }}</span>
+        <h3 class="ayu-articulo__titulo">{{ t.titulo }}</h3>
+        <p class="ayu-articulo__resumen">{{ t.resumen }}</p>
+
+        @if (t.ruta) {
+          <a class="btn btn--primary btn--sm ayu-ir" [routerLink]="t.ruta">Ir a {{ t.rutaTexto || 'la pantalla' }}</a>
+        }
+
+        @if (t.ilustraciones?.length) {
+          <div class="ayu-figuras">
+            @for (f of t.ilustraciones; track f.img; let i = $index) {
+              <figure class="ayu-figura">
+                <div class="ayu-figura__marco">
+                  <img [src]="'/' + f.img" [alt]="f.titulo" loading="lazy" />
+                  @for (m of f.marcas; track m.n) {
+                    <span class="ayu-marca" [style.left.%]="m.caja[0]" [style.top.%]="m.caja[1]" [style.width.%]="m.caja[2]" [style.height.%]="m.caja[3]">
+                      <b>{{ m.n }}</b>
+                    </span>
+                  }
+                </div>
+                <figcaption>
+                  <strong>{{ i + 1 }}. {{ f.titulo }}</strong>
+                  <span>{{ f.texto }}</span>
+                  <ul class="ayu-leyenda">
+                    @for (m of f.marcas; track m.n) { <li><b>{{ m.n }}</b> {{ m.etiqueta }}</li> }
+                  </ul>
+                </figcaption>
+              </figure>
+            }
+          </div>
+        }
+
+        @if (t.pasos?.length) {
+          <ol class="ayu-pasos">
+            @for (p of t.pasos; track $index) { <li>{{ p }}</li> }
+          </ol>
+        }
+
+        @if (t.avisos?.length) {
+          <div class="ayu-avisos" role="note">
+            <p class="ayu-avisos__titulo">Tenga en cuenta</p>
+            <ul>
+              @for (a of t.avisos; track $index) { <li>{{ a }}</li> }
+            </ul>
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="card__body"><p class="ayu-vacio">Elija un tema de la izquierda.</p></div>
+    }
+  </article>
+</div>

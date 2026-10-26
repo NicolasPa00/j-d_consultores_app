@@ -60,6 +60,8 @@ const LETRAS_POR_ARL: Readonly<Record<string, readonly string[]>> = {
   // casilla más: son dos juegos de formatos, pero un solo tipo que elegir.
   colpatria: ['A', 'C'],
   colmena: ['A', 'C'],
+  // 24-oct-2026 · ARL SURA: capacitación (solo la asistencia) o asesoría (el informe con su modelo).
+  sura: ['A', 'C'],
 };
 
 /** Lo que se ofrece cuando la ARL no es ninguna de las tres conocidas. */
@@ -70,7 +72,10 @@ export function carpetaArl(nombre: string | null | undefined): string {
   const slug = String(nombre ?? '')
     .normalize('NFD').replace(/[̀-ͯ]/g, '')
     .trim().toLowerCase();
-  return slug.includes('colpatria') ? 'colpatria' : slug;
+  if (slug.includes('colpatria')) return 'colpatria';
+  // 'ARL SURA' → 'sura' (espejo de `carpetaArl` en el backend).
+  if (/(^|[^a-z])sura([^a-z]|$)/.test(slug)) return 'sura';
+  return slug;
 }
 
 /**
@@ -157,6 +162,12 @@ export function esBolivar(arlNombre: string | null | undefined): boolean {
   return String(arlNombre ?? '')
     .normalize('NFD').replace(/[̀-ͯ]/g, '')
     .toLowerCase().includes('bolivar');
+}
+
+/** ¿Esta ARL es ARL SURA? Espejo de `esSura` en `sst_ws/src/utils/bolivar.js`. */
+export function esSura(arlNombre: string | null | undefined): boolean {
+  const slug = String(arlNombre ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  return /(^|[^a-z])sura([^a-z]|$)/.test(slug);
 }
 
 /** ¿Esta ARL es AXA Colpatria? Espejo de `esAxa` en `sst_ws/src/utils/bolivar.js`. */

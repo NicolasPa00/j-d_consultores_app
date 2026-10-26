@@ -445,7 +445,20 @@ export class ValidationComponent implements OnInit, OnDestroy {
   // ---- Modal de asignación de profesional ----
   protected readonly assignId = signal<string | null>(null);
   protected readonly professionals = signal<Profesional[]>([]);
+  /** 24-oct-2026 · Buscador de la lista de asesores del modal de asignación (JD&D lo pidió: la lista crece con el equipo). */
+  protected readonly profBusqueda = signal('');
   protected readonly selectedProfId = signal<string | null>(null);
+  /** Nombre, especialidad, correo o ARL ante la que está registrado; sin tildes. El elegido siempre se ve. */
+  protected readonly professionalsFiltrados = computed(() => {
+    const norm = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const q = norm(this.profBusqueda().trim());
+    const lista = this.professionals();
+    if (!q) return lista;
+    const elegido = this.selectedProfId();
+    return lista.filter((p) => p.id === elegido || norm([
+      p.nombre, p.especialidad ?? '', p.correo, p.telefono ?? '', ...(p.registros_arl ?? []).map((r) => r.arl_nombre ?? ''),
+    ].join(' ')).includes(q));
+  });
   protected readonly selectedProfSlots = signal<FranjaVista[]>([]);
   protected readonly assigning = signal(false);
 
@@ -1161,7 +1174,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
     input.value = ''; // para poder volver a elegir el MISMO archivo si hace falta reintentar
     if (!file) return;
     if (file.type !== 'application/pdf') {
-      this.alerts.warning('Archivo no válido', 'La prefactura de Bolívar se sube en PDF.');
+      this.alerts.warning('Archivo no válido', 'La prefactura de Bolívar o el reporte de facturas de ARL SURA se suben en PDF.');
       return;
     }
     this.prefacturaArchivo.set(file.name);

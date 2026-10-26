@@ -47,6 +47,8 @@ propósito; los archivos de ejemplo (órdenes, formatos, facturas, prefacturas)
 |---|---|
 | [`plan-facturacion-contabilidad.md`](3-planes/plan-facturacion-contabilidad.md) | **ACTIVO.** Tanda 0 + fases A/B/C de facturación y contabilidad. Su §0 dice dónde retomar. |
 | [`plan-peticiones-22-ago-2026.md`](3-planes/plan-peticiones-22-ago-2026.md) | Cerrado (tanda de peticiones del 22-ago). |
+| [`plan-peticiones-23-oct-2026.md`](3-planes/plan-peticiones-23-oct-2026.md) | Tanda del 23-oct + ARL SURA: construida en local (24-oct), sin desplegar. |
+| [`plan-centro-de-ayuda.md`](3-planes/plan-centro-de-ayuda.md) | **ACTIVO.** Terminar `/ayuda` con pantallazos guiados (22 temas pendientes). Autocontenido para otro equipo. |
 
 ## 4-despliegue — producción
 

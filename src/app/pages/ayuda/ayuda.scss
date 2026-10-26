@@ -1,0 +1,150 @@
+:host { display: block; }
+
+.ayu-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.ayu-buscar {
+  position: relative;
+  flex: 1 1 22rem;
+  max-width: 34rem;
+
+  svg {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    width: 1.05rem;
+    height: 1.05rem;
+    color: var(--text-muted);
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+  input { width: 100%; padding-left: 2.3rem; }
+}
+
+.ayu-layout {
+  display: grid;
+  grid-template-columns: minmax(15rem, 20rem) 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.ayu-indice {
+  position: sticky;
+  top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-height: calc(100vh - 8rem);
+  padding: 0.75rem;
+  overflow-y: auto;
+}
+
+.ayu-indice__grupo {
+  margin: 0.6rem 0.4rem 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.ayu-indice__grupo:first-child { margin-top: 0.1rem; }
+
+.ayu-indice__item {
+  padding: 0.5rem 0.65rem;
+  font: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+  color: var(--text-main);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.ayu-indice__item:hover { background: #eef2fb; }
+.ayu-indice__item--activo { background: #e1e9fb; color: var(--primary-color); font-weight: 600; }
+
+.ayu-articulo__titulo { margin: 0.6rem 0 0.35rem; font-size: 1.35rem; color: var(--primary-color); }
+.ayu-articulo__resumen { margin: 0 0 1rem; font-size: 1rem; color: var(--text-muted); }
+.ayu-ir { margin-bottom: 1rem; }
+
+.ayu-pasos {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0 0 1.25rem;
+  padding-left: 1.4rem;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+.ayu-pasos li::marker { font-weight: 700; color: var(--secondary-color); }
+
+.ayu-avisos {
+  padding: 0.85rem 1rem;
+  background: #fff8e1;
+  border: 1px solid #f1deaa;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.ayu-avisos__titulo { margin: 0 0 0.35rem; font-weight: 700; color: #7a5a00; }
+.ayu-avisos ul { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.3rem; }
+
+.ayu-vacio { margin: 0.5rem; font-size: 0.9rem; color: var(--text-muted); }
+
+@media (max-width: 860px) {
+  .ayu-layout { grid-template-columns: 1fr; }
+  .ayu-indice { position: static; max-height: 16rem; }
+}
+
+.tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.tab {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  padding: 0.5rem 1rem; font: inherit; font-size: 0.88rem; font-weight: 600;
+  color: var(--text-muted); background: transparent; border: 1px solid transparent;
+  border-radius: 999px; cursor: pointer;
+}
+.tab:hover { color: var(--text-main); background: #f1f5f9; }
+.tab--active { color: var(--primary-color); background: rgba(45, 123, 200, 0.1); border-color: var(--accent-color); }
+
+/* Pantallazos con recuadros guía (marcas en % de la imagen: siguen a su botón a cualquier tamaño). */
+.ayu-figuras { display: grid; gap: 1.5rem; margin: 0 0 1.5rem; }
+.ayu-figura { margin: 0; }
+.ayu-figura__marco {
+  position: relative;
+  overflow: hidden;
+  line-height: 0;
+  border: 1px solid var(--border-color, #dbe3f3);
+  border-radius: var(--radius-md);
+  box-shadow: 0 6px 22px rgba(0, 11, 79, 0.1);
+}
+.ayu-figura__marco img { display: block; width: 100%; height: auto; }
+.ayu-marca {
+  position: absolute;
+  border: 2.5px solid var(--secondary-color, #2d7bc8);
+  border-radius: 8px;
+  background: rgba(45, 123, 200, 0.08);
+  box-shadow: 0 0 0 3px rgba(45, 123, 200, 0.22);
+  pointer-events: none;
+}
+.ayu-marca b, .ayu-leyenda b {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.3rem;
+  font-size: 0.78rem;
+  line-height: 1;
+  color: #fff;
+  background: var(--primary-color, #000b4f);
+  border-radius: 999px;
+}
+.ayu-marca b { position: absolute; top: -0.8rem; left: -0.6rem; }
+.ayu-figura figcaption { display: grid; gap: 0.35rem; padding-top: 0.7rem; font-size: 0.92rem; line-height: 1.5; }
+.ayu-figura figcaption strong { color: var(--primary-color); }
+.ayu-leyenda { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin: 0.2rem 0 0; padding: 0; list-style: none; font-size: 0.85rem; color: var(--text-muted); }
+.ayu-leyenda li { display: inline-flex; align-items: center; gap: 0.35rem; }

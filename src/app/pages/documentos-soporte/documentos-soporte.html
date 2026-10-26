@@ -1,7 +1,7 @@
 <section class="page-head fac-head">
   <div>
-    <h2 class="page-head__title">Documentos soporte</h2>
-    <p class="page-head__sub">Lo que JD&amp;D les paga a los asesores, respaldado ante la DIAN · uno por cuenta de cobro aceptada</p>
+    <h2 class="page-head__title">Pago a profesionales</h2>
+    <p class="page-head__sub">Lo que JD&amp;D les paga a los asesores: cuentas de cobro, respaldadas con un documento soporte ante la DIAN, y las facturas electrónicas de quienes facturan</p>
   </div>
   @if (puedeOperar()) {
     <!-- A4-02 · Los DS que no salen de una cuenta de cobro (la contadora, un proveedor que no factura). -->
@@ -19,6 +19,9 @@
     </button>
     <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'pendientes'" (click)="cambiarPestana('pendientes')">
       Pendientes <span class="tab__count">{{ pendientes().length }}</span>
+    </button>
+    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'facturas'" (click)="cambiarPestana('facturas')">
+      Facturas electrónicas
     </button>
     @if (emisionDian) {
       <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'emitidos'" (click)="cambiarPestana('emitidos')">
@@ -90,6 +93,44 @@
       </table>
     </div>
     <app-paginador [pag]="pagPorGenerar" etiqueta="cuentas" />
+  </div>
+}
+
+<!-- ======================= FACTURAS ELECTRÓNICAS DE LOS ASESORES (24-oct-2026) ======================= -->
+@if (pestana() === 'facturas') {
+  <div class="card">
+    <div class="card__head">
+      <h3 class="card__title">Facturas electrónicas de los asesores</h3>
+      <a routerLink="/compras" [queryParams]="{ nueva: 'SERVICIO_PROFESIONAL' }" class="btn btn--primary btn--sm">Registrar factura de un asesor</a>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Fecha</th><th>Asesor</th><th>N.º de factura</th><th>Comprobante</th><th class="num">Total</th><th class="num">Por pagar</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+          @for (c of pagFacturas.visibles(); track c.id) {
+            <tr>
+              <td class="ds-fijo">{{ c.fecha }}</td>
+              <td><span class="who__name">{{ c.tercero_nombre }}</span></td>
+              <td class="mono">{{ c.numero_proveedor || '—' }}</td>
+              <td class="mono">{{ c.comprobante_numero || '—' }}</td>
+              <td class="num"><b>{{ pesos(c.total_a_pagar) }}</b></td>
+              <td class="num">{{ c.cxp_saldo != null ? pesos(c.cxp_saldo) : '—' }}</td>
+              <td><span class="pill" [class]="c.estado === 'ANULADO' ? 'pill--muted' : 'pill--success'">{{ c.estado === 'ANULADO' ? 'Anulada' : 'Contabilizada' }}</span></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="table__empty">
+              @if (cargandoFacturas()) { Cargando… } @else {
+                Todavía no hay facturas de asesores. Los que facturan a JD&amp;D en vez de mandar una cuenta de cobro se registran como
+                <b>servicio profesional</b> en <a routerLink="/compras">Compras y gastos</a>; se pagan desde Cartera → Por pagar.
+              }
+            </td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <app-paginador [pag]="pagFacturas" etiqueta="facturas" />
   </div>
 }
 

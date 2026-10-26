@@ -5,10 +5,11 @@ import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
-import { CondicionPagador, ItemCatalogo, Profesional, ResumenImportTerceros, Retencion, Tercero, TerceroForm } from '../../core/models';
+import { Banco, CondicionPagador, CuentaBancaria, ItemCatalogo, Profesional, ResumenImportTerceros, Retencion, Tercero, TerceroForm } from '../../core/models';
 import { separarNit } from '../../core/nit';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
+import { SelectorBusquedaComponent } from '../../shared/selector-busqueda/selector-busqueda';
 
 type FiltroRol = 'todos' | 'cliente' | 'proveedor' | 'empleado' | 'acreedor';
 
@@ -59,7 +60,7 @@ const CONDICION_VACIA = {
  */
 @Component({
   selector: 'app-terceros',
-  imports: [FormsModule, PaginadorComponent],
+  imports: [FormsModule, PaginadorComponent, SelectorBusquedaComponent],
   templateUrl: './terceros.html',
   styleUrl: './terceros.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -170,6 +171,85 @@ export class TercerosComponent implements OnInit {
         this.savingCondicion.set(false);
         this.alerts.error('No se pudieron guardar las condiciones', mensajeError(err, 'Revise las retenciones y el ReteICA seleccionados.'));
       },
+    });
+  }
+
+  // ---- 24-oct-2026 · Cuentas bancarias del tercero, dentro de la ficha ----
+  protected readonly cuentas = signal<CuentaBancaria[]>([]);
+  protected readonly bancos = signal<Banco[]>([]);
+  protected readonly cargandoCuentas = signal(false);
+  protected readonly guardandoCuenta = signal(false);
+  protected readonly agregandoCuenta = signal(false);
+  protected cuentaDraft = { banco_id: '', banco_nuevo: '', tipo_cuenta: 'AHORROS', numero: '', titular: '' };
+  protected readonly etiquetaTipoCuenta: Record<string, string> = {
+    AHORROS: 'Ahorros', CORRIENTE: 'Corriente', DEPOSITO_ELECTRONICO: 'Depósito electrónico',
+  };
+  protected readonly opcionesBanco = computed(() => this.bancos().map((b) => ({ valor: b.id, texto: b.nombre })));
+
+  /** Los bancos y cuentas solo importan a quien se le PAGA: proveedor, empleado, acreedor (o cualquiera si ya tiene cuentas). */
+  protected cargarCuentas(terceroId: string): void {
+    this.cuentas.set([]);
+    this.agregandoCuenta.set(false);
+    this.cargandoCuentas.set(true);
+    this.api.listCuentasBancarias(terceroId).subscribe({
+      next: (r) => { this.cuentas.set(r.data); this.cargandoCuentas.set(false); },
+      error: () => this.cargandoCuentas.set(false),
+    });
+    if (!this.bancos().length) this.api.listBancos().subscribe({ next: (r) => this.bancos.set(r.data) });
+  }
+
+  protected abrirNuevaCuenta(): void {
+    this.cuentaDraft = { banco_id: '', banco_nuevo: '', tipo_cuenta: 'AHORROS', numero: '', titular: '' };
+    this.agregandoCuenta.set(true);
+  }
+
+  protected guardarCuenta(): void {
+    const t = this.detalle();
+    const d = this.cuentaDraft;
+    if (!t || this.guardandoCuenta()) return;
+    if (!d.banco_id && !d.banco_nuevo.trim()) { this.alerts.warning('Elija el banco', 'O escriba su nombre si no está en la lista.'); return; }
+    if (!d.numero.trim()) { this.alerts.warning('Escriba el número de cuenta'); return; }
+    this.guardandoCuenta.set(true);
+    const crear = (bancoId: string) => this.api.crearCuentaBancaria(t.id, {
+      banco_id: bancoId, tipo_cuenta: d.tipo_cuenta, numero: d.numero, titular: d.titular.trim() || undefined,
+    }).subscribe({
+      next: (r) => {
+        this.guardandoCuenta.set(false);
+        this.agregandoCuenta.set(false);
+        this.cuentas.set(r.data);
+        this.alerts.success('Cuenta bancaria guardada');
+      },
+      error: (err) => {
+        this.guardandoCuenta.set(false);
+        this.alerts.error('No se pudo guardar la cuenta', mensajeError(err, 'Revise el número de cuenta.'));
+      },
+    });
+    // Un banco que no estaba en la lista se crea primero y queda para los próximos.
+    if (d.banco_id) { crear(d.banco_id); return; }
+    this.api.crearBanco(d.banco_nuevo.trim()).subscribe({
+      next: (r) => { this.bancos.update((bs) => bs.some((b) => b.id === r.data.id) ? bs : [...bs, r.data].sort((a, b) => a.nombre.localeCompare(b.nombre))); crear(r.data.id); },
+      error: (err) => { this.guardandoCuenta.set(false); this.alerts.error('No se pudo crear el banco', mensajeError(err, 'Intente de nuevo.')); },
+    });
+  }
+
+  protected hacerPrincipal(c: CuentaBancaria): void {
+    this.api.cuentaBancariaPrincipal(c.tercero_id, c.id).subscribe({
+      next: (r) => this.cuentas.set(r.data),
+      error: (err) => this.alerts.error('No se pudo cambiar la cuenta principal', mensajeError(err, 'Intente de nuevo.')),
+    });
+  }
+
+  protected async eliminarCuenta(c: CuentaBancaria): Promise<void> {
+    const ok = await this.alerts.confirm({
+      title: 'Eliminar la cuenta bancaria',
+      message: `Se borra la cuenta ${c.banco_nombre} ${c.numero}. Esto no afecta pagos ya hechos.`,
+      confirmText: 'Eliminar',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    this.api.eliminarCuentaBancaria(c.tercero_id, c.id).subscribe({
+      next: (r) => { this.cuentas.set(r.data); this.alerts.success('Cuenta eliminada'); },
+      error: (err) => this.alerts.error('No se pudo eliminar la cuenta', mensajeError(err, 'Intente de nuevo.')),
     });
   }
 
@@ -545,6 +625,7 @@ export class TercerosComponent implements OnInit {
     this.condicion.set(null);
     this.editandoCondicion.set(false);
     if (this.esPagador(t)) this.cargarCondicion(t.id);
+    this.cargarCuentas(t.id);
   }
 
   protected closeDetalle(): void {

@@ -377,3 +377,26 @@
 @media (max-width: 760px) {
   .ter-imp__barra { grid-template-columns: 1fr; }
 }
+
+/* 24-oct-2026 · Cuentas bancarias dentro de la ficha. */
+.ter-cuentas {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+.ter-cuenta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.9rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+.ter-cuenta small { color: var(--text-muted); }
+.ter-cuenta__acciones { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.ter-cuenta-form__otro { margin-top: 0.5rem; }

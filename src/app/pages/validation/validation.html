@@ -1155,8 +1155,13 @@
       <div class="assign__col">
        <div class="assign__col-inner">
         <p class="assign__section-title">Profesionales</p>
+        <!-- 24-oct-2026 · Buscar en la base de asesores por nombre, especialidad o ARL. -->
+        <div class="assign__buscar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+          <input type="search" class="form-control" placeholder="Buscar asesor…" [ngModel]="profBusqueda()" (ngModelChange)="profBusqueda.set($event)" aria-label="Buscar asesor" />
+        </div>
         <div class="assign__list">
-        @for (prof of professionals(); track prof.id) {
+        @for (prof of professionalsFiltrados(); track prof.id) {
           <!-- 7-oct-2026 · La fila lleva dos botones hermanos (uno dentro de otro
                no es HTML válido): elegir al profesional y, en el elegido, GUARDAR
                las horas que se le acaban de marcar en la agenda. -->
@@ -1194,7 +1199,7 @@
             }
           </div>
         } @empty {
-          <p class="assign__empty">No hay profesionales activos disponibles.</p>
+          <p class="assign__empty">{{ profBusqueda().trim() ? 'Ningún asesor coincide con «' + profBusqueda() + '».' : 'No hay profesionales activos disponibles.' }}</p>
         }
         </div>
 
@@ -2431,7 +2436,7 @@
   <div class="modal modal--xl" role="dialog" aria-modal="true" aria-labelledby="prefacturaTitle">
     <header class="modal__head">
       <div>
-        <h3 class="modal__title" id="prefacturaTitle">Prefactura {{ pf.numero_prefactura }}</h3>
+        <h3 class="modal__title" id="prefacturaTitle">{{ pf.arl === 'SURA' ? 'Reporte de facturas de ARL SURA' : 'Prefactura' }} {{ pf.numero_prefactura }}</h3>
         <p class="modal__sub">
           {{ pf.plan_descripcion || 'Plan sin descripción' }}
           @if (pf.fecha_corte) { · Corte {{ pf.fecha_corte }} }
@@ -2478,7 +2483,7 @@
           <thead>
             <tr>
               <th class="pf-check" aria-label="Marcar"></th>
-              <th>Cronograma-Secuencia</th>
+              <th>{{ pf.arl === 'SURA' ? 'Orden de Sura' : 'Cronograma-Secuencia' }}</th>
               <th>Empresa</th>
               <th>Valor a facturar</th>
               <th>Orden</th>
@@ -2498,7 +2503,7 @@
                     [attr.aria-label]="'Marcar ' + f.codigo_cronograma + '-' + f.secuencia"
                   />
                 </td>
-                <td class="mono">{{ f.codigo_cronograma }}-{{ f.secuencia }}</td>
+                <td class="mono">{{ pf.arl === 'SURA' ? f.codigo_cronograma : f.codigo_cronograma + '-' + f.secuencia }}</td>
                 <td class="pf-empresa">{{ f.razon_social || '—' }}</td>
                 <td class="mono">{{ pesos(f.valor_a_facturar) }}</td>
                 <td>

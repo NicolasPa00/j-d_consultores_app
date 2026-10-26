@@ -1,0 +1,36 @@
+<div class="sm" [class.sm--abierto]="abierto()">
+  <div class="sm__caja form-control" (click)="abrir()">
+    @for (o of elegidas(); track o.valor) {
+      <span class="sm__chip">
+        {{ o.texto }}
+        <button type="button" class="sm__x" (click)="quitar(o.valor); $event.stopPropagation()" [disabled]="deshabilitado()" [attr.aria-label]="'Quitar ' + o.texto">×</button>
+      </span>
+    }
+    <input
+      class="sm__campo"
+      type="text"
+      role="combobox"
+      autocomplete="off"
+      [attr.id]="idCampo()"
+      [attr.aria-expanded]="abierto()"
+      [value]="busqueda()"
+      [placeholder]="elegidas().length ? '' : placeholder()"
+      [disabled]="deshabilitado()"
+      (focus)="abrir()"
+      (input)="escribir($any($event.target).value)"
+      (keydown)="tecla($event)"
+    />
+  </div>
+  @if (abierto()) {
+    <ul class="sm__lista" role="listbox">
+      @for (o of disponibles(); track o.valor) {
+        <li role="option" class="sm__opcion" (mousedown)="$event.preventDefault(); agregar(o.valor)">
+          <span>{{ o.texto }}</span>
+          @if (o.detalle) { <small>{{ o.detalle }}</small> }
+        </li>
+      } @empty {
+        <li class="sm__nada">{{ opciones().length === elegidas().length ? 'Ya están todas elegidas.' : 'Sin coincidencias con «' + busqueda() + '».' }}</li>
+      }
+    </ul>
+  }
+</div>

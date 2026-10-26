@@ -8,6 +8,10 @@
     <div class="card__body cc-form__fila">
       <input class="form-control mono" type="text" [(ngModel)]="codigo" placeholder="Código (p. ej. TRANSP)" maxlength="20" aria-label="Código" />
       <input class="form-control" type="text" [(ngModel)]="nombre" placeholder="Nombre (p. ej. Transporte a visitas)" aria-label="Nombre" />
+      <select class="form-control cc-arl" [(ngModel)]="arlId" aria-label="ARL a la que representa (opcional)" title="Si es el centro de costo de una ARL, el valor de sus órdenes en los documentos soporte va aquí">
+        <option value="">Sin ARL</option>
+        @for (a of arls(); track a.id) { <option [value]="a.id">{{ a.nombre }}</option> }
+      </select>
       @if (editando()) { <button type="button" class="btn btn--close" (click)="cancelar()" [disabled]="guardando()">Cancelar</button> }
       <button type="button" class="btn btn--primary" (click)="guardar()" [disabled]="guardando()">{{ editando() ? 'Guardar cambios' : 'Crear centro de costo' }}</button>
     </div>
@@ -17,13 +21,14 @@
 <div class="card">
   <div class="table-wrap">
     <table class="table">
-      <thead><tr><th>Código</th><th>Nombre</th><th class="col-num">Movimientos</th><th>Estado</th>@if (puedeEditar()) { <th class="col-actions">Acciones</th> }</tr></thead>
+      <thead><tr><th>Código</th><th>Nombre</th><th>ARL</th><th class="col-num">Movimientos</th><th>Estado</th>@if (puedeEditar()) { <th class="col-actions">Acciones</th> }</tr></thead>
       <tbody>
-        @if (!centros().length) { <tr><td [attr.colspan]="puedeEditar() ? 5 : 4" class="cc-vacio">Todavía no hay centros de costo.</td></tr> }
+        @if (!centros().length) { <tr><td [attr.colspan]="puedeEditar() ? 6 : 5" class="cc-vacio">Todavía no hay centros de costo.</td></tr> }
         @for (c of centros(); track c.id) {
           <tr>
             <td class="mono"><strong>{{ c.codigo }}</strong></td>
             <td>{{ c.nombre }}</td>
+            <td>{{ c.arl_nombre || '—' }}</td>
             <td class="col-num">{{ c.n_movimientos }}</td>
             <td><span class="pill" [class]="c.activo ? 'pill--success' : 'pill--muted'">{{ c.activo ? 'Activo' : 'Inactivo' }}</span></td>
             @if (puedeEditar()) {

@@ -1,0 +1,3 @@
+node_modules/
+# Lleva un token de acceso: nunca se versiona.
+sesion.json

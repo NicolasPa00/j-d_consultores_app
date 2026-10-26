@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { EstadisticasPeriodo, ActivoFijo, ActivoFijoForm, CorridaDepreciacion, FichaActivoFijo, VistaPreviaDepreciacion, AuxiliarPorCuenta, BalanceComprobacion, FiltrosInformeContable, InformePorTercero, LibroAuxiliar, VentasPorCliente, EstadoSituacionFinanciera, EstadoResultados, ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, Coasesor, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, InfoPaqueteArl, DetalleSoporte, DocumentoFactura, DocumentoSoporte, RadicadoOrden, ResumenImportSoportes, ResumenImportTerceros, SoportePorGenerar, VisitaProxima, Especialidad, PagadorPorFacturar, OrdenManualForm, FacturaManualForm, DetalleCobroOrden, ValoresCobroForm } from './models';
+import { EstadisticasPeriodo, ActivoFijo, ActivoFijoForm, CorridaDepreciacion, FichaActivoFijo, VistaPreviaDepreciacion, AuxiliarPorCuenta, BalanceComprobacion, FiltrosInformeContable, InformePorTercero, LibroAuxiliar, VentasPorCliente, EstadoSituacionFinanciera, EstadoResultados, ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, Banco, CuentaBancaria, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, Coasesor, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, InfoPaqueteArl, DetalleSoporte, DocumentoFactura, DocumentoSoporte, RadicadoOrden, ResumenImportSoportes, ResumenImportTerceros, SoportePorGenerar, VisitaProxima, Especialidad, PagadorPorFacturar, OrdenManualForm, FacturaManualForm, DetalleCobroOrden, ValoresCobroForm } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -436,7 +436,7 @@ export class ApiService {
         numero_prefactura: prev.numero_prefactura, plan_codigo: prev.plan_codigo,
         plan_descripcion: prev.plan_descripcion, fecha_corte: prev.fecha_corte,
         valor_total: prev.valor_total, nombre_archivo: prev.nombre_archivo,
-        filas: prev.filas, filas_marcadas: filasMarcadas,
+        filas: prev.filas, filas_marcadas: filasMarcadas, arl: prev.arl,
       },
     );
   }
@@ -500,6 +500,11 @@ export class ApiService {
     });
   }
   /** PRE-04 · Envía el PDF y el enlace de aceptación al profesional. */
+  /** 24-oct-2026 · Ajusta el valor hora y los viáticos de las líneas antes de enviar la cuenta. */
+  ajustarItemsPrecuenta(id: string, items: { id: string; valor_hora: number; viaticos: number }[]): Observable<Wrap<Precuenta>> {
+    return this.http.patch<Wrap<Precuenta>>(`${this.base}/precuentas/${id}/items`, { items });
+  }
+
   enviarPrecuenta(id: string): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.base}/precuentas/${id}/send`, {});
   }
@@ -731,6 +736,26 @@ export class ApiService {
   /** Catálogo de referencia. Los municipios se piden de a departamento (`departamento_id`). */
   listCatalogo(nombre: string, filtros: { q?: string; departamento_id?: string; limit?: number } = {}): Observable<{ data: ItemCatalogo[]; total: number }> {
     return this.http.get<{ data: ItemCatalogo[]; total: number }>(`${this.base}/parametros/catalogos/${nombre}${queryString(filtros)}`);
+  }
+
+  // ---- 24-oct-2026 · Bancos y cuentas bancarias de un tercero ----
+  listBancos(): Observable<Wrap<Banco[]>> {
+    return this.http.get<Wrap<Banco[]>>(`${this.base}/terceros/bancos`);
+  }
+  crearBanco(nombre: string): Observable<Wrap<Banco>> {
+    return this.http.post<Wrap<Banco>>(`${this.base}/terceros/bancos`, { nombre });
+  }
+  listCuentasBancarias(terceroId: string): Observable<Wrap<CuentaBancaria[]>> {
+    return this.http.get<Wrap<CuentaBancaria[]>>(`${this.base}/terceros/${terceroId}/cuentas`);
+  }
+  crearCuentaBancaria(terceroId: string, body: { banco_id: string; tipo_cuenta: string; numero: string; titular?: string; principal?: boolean }): Observable<Wrap<CuentaBancaria[]>> {
+    return this.http.post<Wrap<CuentaBancaria[]>>(`${this.base}/terceros/${terceroId}/cuentas`, body);
+  }
+  cuentaBancariaPrincipal(terceroId: string, cuentaId: string): Observable<Wrap<CuentaBancaria[]>> {
+    return this.http.patch<Wrap<CuentaBancaria[]>>(`${this.base}/terceros/${terceroId}/cuentas/${cuentaId}/principal`, {});
+  }
+  eliminarCuentaBancaria(terceroId: string, cuentaId: string): Observable<Wrap<CuentaBancaria[]>> {
+    return this.http.delete<Wrap<CuentaBancaria[]>>(`${this.base}/terceros/${terceroId}/cuentas/${cuentaId}`);
   }
 
   /** Todos los terceros (la pantalla filtra y pagina en memoria). */
@@ -1282,7 +1307,15 @@ export class ApiService {
   updateCuenta(id: string, body: Partial<CuentaForm>): Observable<Wrap<CuentaContable>> {
     return this.http.put<Wrap<CuentaContable>>(`${this.base}/contabilidad/cuentas/${id}`, body);
   }
-  /** Una cuenta no se borra: se inactiva. */
+  /** 24-oct-2026 · Elimina una cuenta que nada usa (sin subcuentas, movimientos ni reglas). */
+  eliminarCuenta(id: string): Observable<Wrap<{ id: string; codigo: string; nombre: string }>> {
+    return this.http.delete<Wrap<{ id: string; codigo: string; nombre: string }>>(`${this.base}/contabilidad/cuentas/${id}`);
+  }
+  /** Elimina varias; las que no se pueden vuelven en `omitidas` con el motivo. */
+  eliminarCuentas(ids: string[]): Observable<Wrap<{ eliminadas: { id: string; codigo: string; nombre: string }[]; omitidas: { codigo: string; motivo: string }[] }>> {
+    return this.http.post<Wrap<{ eliminadas: { id: string; codigo: string; nombre: string }[]; omitidas: { codigo: string; motivo: string }[] }>>(`${this.base}/contabilidad/cuentas/eliminar`, { ids });
+  }
+  /** Inactiva o reactiva una cuenta (la que ya tiene historia no se puede eliminar). */
   setCuentaActiva(id: string, activa: boolean): Observable<Wrap<CuentaContable>> {
     return this.http.patch<Wrap<CuentaContable>>(`${this.base}/contabilidad/cuentas/${id}/activa`, { activa });
   }
@@ -1427,6 +1460,10 @@ export class ApiService {
       `${this.base}/cartera/anticipos${queryString({ tercero_id: f.tercero_id, con_saldo: f.con_saldo ? 'true' : undefined })}`,
     );
   }
+  /** 24-oct-2026 · Cuenta contable a la que irá el anticipo de este proveedor. */
+  cuentaDeAnticipo(terceroId: string): Observable<Wrap<{ id: string | null; codigo: string | null; nombre: string | null; aviso?: string } | null>> {
+    return this.http.get<Wrap<{ id: string | null; codigo: string | null; nombre: string | null; aviso?: string } | null>>(`${this.base}/cartera/anticipos/cuenta${queryString({ tercero_id: terceroId })}`);
+  }
   createAnticipo(body: { tercero_id: string; fecha: string; cuenta_banco_id: string; valor: string; observaciones?: string }): Observable<Wrap<AnticipoProveedor>> {
     return this.http.post<Wrap<AnticipoProveedor>>(`${this.base}/cartera/anticipos`, body);
   }
@@ -1457,10 +1494,10 @@ export class ApiService {
   listCentrosCosto(soloActivos = false): Observable<{ data: CentroCosto[]; total: number }> {
     return this.http.get<{ data: CentroCosto[]; total: number }>(`${this.base}/contabilidad/centros-costo${queryString({ activos: soloActivos ? 'true' : undefined })}`);
   }
-  createCentroCosto(body: { codigo: string; nombre: string }): Observable<Wrap<CentroCosto>> {
+  createCentroCosto(body: { codigo: string; nombre: string; arl_id?: string | null }): Observable<Wrap<CentroCosto>> {
     return this.http.post<Wrap<CentroCosto>>(`${this.base}/contabilidad/centros-costo`, body);
   }
-  updateCentroCosto(id: string, body: { codigo: string; nombre: string }): Observable<Wrap<CentroCosto>> {
+  updateCentroCosto(id: string, body: { codigo: string; nombre: string; arl_id?: string | null }): Observable<Wrap<CentroCosto>> {
     return this.http.put<Wrap<CentroCosto>>(`${this.base}/contabilidad/centros-costo/${id}`, body);
   }
   setCentroCostoActivo(id: string, activo: boolean): Observable<Wrap<CentroCosto>> {
