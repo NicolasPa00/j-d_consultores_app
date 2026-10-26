@@ -84,6 +84,11 @@ export class SettingsComponent implements OnInit {
   protected diaCorte = 5;
   protected readonly savingCorte = signal(false);
 
+  // P3 (26-oct-2026) · Permitir enviar formatos con la programación incompleta
+  // (una orden repartida a medias). Nace activado.
+  protected readonly envioParcial = signal(true);
+  protected readonly savingEnvioParcial = signal(false);
+
   // ----- CFG-04 · Tipos de orden y su valor hora -----
   //
   // Era una lista escrita a mano que no se guardaba en ninguna parte. Ahora es
@@ -471,6 +476,8 @@ export class SettingsComponent implements OnInit {
         if (Number.isFinite(t)) this.threshold.set(t);
         const c = Number(r.data['precuenta_dia_corte']);
         if (Number.isFinite(c)) this.diaCorte = c;
+        // P3 · Solo se apaga si está explícitamente en false; sin la clave, activado.
+        this.envioParcial.set(r.data['envio_parcial_permitido'] !== false);
       });
       this.cargarTipos();
       this.cargarTiposViatico();
@@ -1039,6 +1046,28 @@ export class SettingsComponent implements OnInit {
       error: (err) => {
         this.savingCorte.set(false);
         this.alerts.error('No se pudo guardar el día de corte', mensajeError(err, 'El valor debe estar entre 1 y 28.'));
+      },
+    });
+  }
+
+  /** P3 · Activa o apaga el envío de formatos con la programación incompleta. */
+  protected guardarEnvioParcial(value: boolean): void {
+    if (this.savingEnvioParcial()) return;
+    this.savingEnvioParcial.set(true);
+    this.api.setEnvioParcial(value).subscribe({
+      next: () => {
+        this.savingEnvioParcial.set(false);
+        this.envioParcial.set(value);
+        this.alerts.success(
+          value ? 'Envío parcial activado' : 'Envío parcial desactivado',
+          value
+            ? 'Al asignar una orden repartida a medias aparecerá «Enviar lo programado» para mandar lo ya marcado.'
+            : 'Las órdenes solo enviarán formatos cuando las franjas cubran todas sus horas.',
+        );
+      },
+      error: (err) => {
+        this.savingEnvioParcial.set(false);
+        this.alerts.error('No se pudo guardar el ajuste', mensajeError(err, 'Intente de nuevo.'));
       },
     });
   }

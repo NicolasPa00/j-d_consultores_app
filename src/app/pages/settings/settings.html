@@ -167,6 +167,33 @@
       </p>
     </div>
   </div>
+
+  <!-- P3 (26-oct-2026) · Enviar formatos con la programación incompleta. -->
+  <div class="card">
+    <div class="card__head">
+      <h3 class="card__title">Programación de órdenes a medias</h3>
+      <span class="card__hint">Órdenes repartidas en varias tandas</span>
+    </div>
+    <div class="card__body">
+      <label class="form-field" style="flex-direction: row; align-items: center; gap: .6rem;">
+        <input
+          type="checkbox"
+          [checked]="envioParcial()"
+          [disabled]="savingEnvioParcial()"
+          (change)="guardarEnvioParcial($any($event.target).checked)"
+        />
+        <span class="form-field__label" style="margin: 0;">Permitir enviar los formatos con la programación incompleta</span>
+      </label>
+      <p class="form-note">
+        Con esto activado, al asignar una orden cuyas franjas todavía no cubren todas sus horas
+        (por ejemplo 16 de 21&nbsp;h, repartidas entre dos asesores) aparece el botón
+        <strong>«Enviar lo programado»</strong>: se mandan el correo y los formatos de lo ya
+        marcado y la orden queda <strong>PROGRAMADA</strong> con un aviso de las horas que faltan,
+        que se programan y envían más adelante. Apagado, una orden solo envía sus formatos cuando
+        se reparten <strong>todas</strong> sus horas.
+      </p>
+    </div>
+  </div>
   </div>
 
   <!-- CFG-04 · Tipos de orden y su valor hora.

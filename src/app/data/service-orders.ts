@@ -42,6 +42,14 @@ export interface ServiceOrder {
   osId?: string | null;
   osCode?: string | null;
   osEstado?: string | null;
+  /**
+   * P3 (26-oct-2026) · Programación parcial: una orden PROGRAMADA cuyos formatos
+   * se enviaron a medias. `osMinutosProgramados` son los minutos repartidos en
+   * franjas y `osMinutosOrden` los minutos contratados; si el primero es menor,
+   * faltan horas por programar y enviar después.
+   */
+  osMinutosProgramados?: number | null;
+  osMinutosOrden?: number | null;
   /** Asignación vigente (M5): profesional y fecha/hora de ejecución en ISO. */
   assignedProfId?: string | null;
   scheduledAt?: string | null;

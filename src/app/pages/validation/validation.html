@@ -178,6 +178,14 @@
             </td>
             <td>
               <span class="pill" [class]="estadoClass(order)">{{ estadoLabel(order) }}</span>
+              <!-- P3 · Programación parcial: la orden se envió a medias y sigue
+                   necesitando las horas que faltan. Se marca aquí para que no se
+                   confunda con una PROGRAMADA completa. -->
+              @if (esProgramacionParcial(order)) {
+                <span class="pill pill--warning pill--sm" [title]="'Se enviaron los formatos de parte de las horas; faltan ' + faltanParcialTexto(order) + ' por programar y enviar.'">
+                  Parcial · faltan {{ faltanParcialTexto(order) }}
+                </span>
+              }
             </td>
             <!-- T0-07 · Aprobación de la ARL. Sin OS no hay nada que aprobar. En
                  Bolívar, el n.º de prefactura se ve al pasar el cursor. -->
@@ -465,6 +473,10 @@
           <div class="card__head">
             <span class="card__title">Estado de la orden</span>
             <span class="pill" [class]="pillEstado(order.osEstado)">{{ order.osEstado }}</span>
+            <!-- P3 · Programación parcial: faltan horas por programar y enviar. -->
+            @if (esProgramacionParcial(order)) {
+              <span class="pill pill--warning pill--sm">Programación parcial · faltan {{ faltanParcialTexto(order) }}</span>
+            }
           </div>
 
           <div class="card__body">
@@ -1570,10 +1582,11 @@
           Elija a nombre de qué profesional registrado salen los formatos, o quite la marca.
         } @else if (!visitaCompleta()) {
           <!-- ASG-02 · No es un bloqueo: se puede guardar el avance (o solo el
-               cambio de profesional) y volver luego a repartir el resto. -->
+               cambio de profesional) y volver luego a repartir el resto.
+               P3 · Y, si la empresa lo permite, enviar lo ya programado. -->
           Faltan {{ duracionTexto(minutosPorRepartir()) }} por repartir de
           {{ duracionTexto(duracionVisita()) }}. Se guarda el avance, pero la orden no pasa a
-          PROGRAMADA ni sale el correo hasta cubrirlas todas.
+          PROGRAMADA ni sale el correo hasta cubrirlas todas@if (order.osId && puedeEnviarParcial()) {<span>, salvo que use «Enviar lo programado» para mandar ya lo marcado y dejar el resto para después</span>}.
         } @else if (!order.osId) {
           <!-- El borrador solo guarda un instante: las franjas se pactan al
                validar la OS, que es cuando existe la orden a la que cuelgan. -->
@@ -1629,6 +1642,23 @@
                 Guardar avance
               } @else {
                 Asignar profesional
+              }
+            </button>
+          }
+          <!-- P3 · Enviar lo programado a medias: manda correo y formatos de lo
+               marcado y deja la orden PROGRAMADA con las horas que falten. Solo
+               cuando hay avance sin cubrir todo y la empresa lo permite. -->
+          @if (order.osId && !visitaCompleta() && puedeEnviarParcial()) {
+            <button
+              type="button"
+              class="btn btn--primary"
+              [disabled]="assigning() || (usarSuplente() && !formatosProfId())"
+              (click)="enviarLoProgramado()"
+            >
+              @if (assigning()) {
+                <span class="spinner" aria-hidden="true"></span> Enviando…
+              } @else {
+                Enviar lo programado ({{ duracionTexto(minutosProgramados()) }} de {{ duracionTexto(duracionVisita()) }})
               }
             </button>
           }

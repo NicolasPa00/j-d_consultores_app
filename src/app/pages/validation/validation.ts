@@ -105,6 +105,11 @@ interface ResultadoAsignacion {
    * recibió nada.
    */
   completa: boolean;
+  /**
+   * P3 · true cuando se envió lo programado a medias: la OS quedó PROGRAMADA con
+   * correo y formatos de lo repartido, pero faltan horas por programar y enviar.
+   */
+  parcial: boolean;
   /** Minutos que faltan según el SERVIDOR, que es quien decide. */
   faltan: number | null;
   /** Minutos que tiene la orden según el servidor. */
@@ -461,6 +466,12 @@ export class ValidationComponent implements OnInit, OnDestroy {
   });
   protected readonly selectedProfSlots = signal<FranjaVista[]>([]);
   protected readonly assigning = signal(false);
+  /**
+   * P3 (26-oct-2026) · ¿La empresa permite enviar formatos con la programación
+   * incompleta? Sale del ajuste global `envio_parcial_permitido` (nace activado).
+   * Decide si aparece el botón «Enviar lo programado» cuando faltan horas.
+   */
+  protected readonly envioParcialPermitido = signal(true);
 
   // ---- Vista previa de formatos antes de enviar (pedido de JD&D, 29-sep-2026) ----
   // Con la visita completa, "Continuar" no envía: lleva a un segundo paso del
@@ -843,6 +854,12 @@ export class ValidationComponent implements OnInit, OnDestroy {
     // valor del query param, así la apertura queda en cola hasta tener el listado.
     this.load();
     this.cargarProximas();
+    // P3 · El ajuste global que habilita el envío parcial. Si falla la lectura se
+    // queda en el valor por defecto (activado): es lo que JD&D pidió.
+    this.api.getSettings().subscribe({
+      next: (r) => this.envioParcialPermitido.set((r.data?.['envio_parcial_permitido'] ?? true) !== false),
+      error: () => {},
+    });
     // Pulsar la campanita estando YA en Órdenes solo cambia el query param —el
     // componente no se reconstruye—, así que se escuchan los cambios en vez de
     // leer el snapshot una única vez.
@@ -2749,10 +2766,13 @@ export class ValidationComponent implements OnInit, OnDestroy {
   }
 
   /** Lo que viaja en la asignación, igual para la vista previa y para el envío. */
-  private cuerpoAsignacion(profId: string, fechaProgramada: string | null) {
+  private cuerpoAsignacion(profId: string, fechaProgramada: string | null, enviarParcial = false) {
     return {
       profesional_id: profId,
       fecha_programada: fechaProgramada ?? undefined,
+      // P3 · Solo viaja cuando se pulsa «Enviar lo programado»: el servidor manda
+      // correo y formatos aunque falten horas (si el ajuste global lo permite).
+      enviar_parcial: enviarParcial || undefined,
       // ASG-02 · La visita entera, franja a franja. El servidor las
       // reemplaza en bloque y deriva `fecha_programada` de la primera.
       // 7-oct-2026 · Cada una dice de qué asesor es.
@@ -3273,7 +3293,53 @@ export class ValidationComponent implements OnInit, OnDestroy {
    * Único punto donde se escribe en BD. Hasta aquí, todo lo marcado en la agenda
    * vive solo en pantalla: cerrar el modal no deja nada a medias.
    */
-  protected confirmAssign(): void {
+  /**
+   * P3 · ¿Se puede enviar lo programado a medias? Hay franjas pero no cubren
+   * todas las horas, y la empresa lo permite. Es el gatillo del botón «Enviar lo
+   * programado» del modal de asignación.
+   */
+  protected readonly puedeEnviarParcial = computed(() =>
+    this.envioParcialPermitido()
+    && this.minutosProgramados() > 0
+    && this.duracionVisita() > 0
+    && this.minutosProgramados() < this.duracionVisita()
+    && !!this.principalId());
+
+  /**
+   * P3 · Envía los formatos de lo que lleva marcado aunque falten horas. Confirma
+   * primero diciendo cuántas horas quedan: la orden pasa a PROGRAMADA parcial y
+   * las horas restantes se programan y envían después.
+   */
+  protected async enviarLoProgramado(): Promise<void> {
+    if (!this.puedeEnviarParcial() || this.assigning()) return;
+    const faltan = this.duracionTexto(this.minutosPorRepartir());
+    const marcado = this.duracionTexto(this.minutosProgramados());
+    const total = this.duracionTexto(this.duracionVisita());
+    const ok = await this.alerts.confirm({
+      title: 'Enviar lo programado',
+      message: `Se enviarán los formatos y el enlace de las ${marcado} marcadas (de ${total}). ` +
+        `La orden quedará PROGRAMADA y faltarán ${faltan} por programar y enviar más adelante. ¿Continuar?`,
+      confirmText: 'Enviar lo programado',
+    });
+    if (ok) this.confirmAssign(true);
+  }
+
+  /**
+   * P3 · ¿Esta orden quedó con una programación parcial? Está PROGRAMADA pero sus
+   * franjas no cubren todavía todas sus horas (se envió lo programado a medias).
+   */
+  protected esProgramacionParcial(o: ServiceOrder): boolean {
+    return o.osEstado === 'PROGRAMADA'
+      && o.osMinutosOrden != null && o.osMinutosProgramados != null
+      && o.osMinutosProgramados > 0 && o.osMinutosProgramados < o.osMinutosOrden;
+  }
+
+  /** P3 · «faltan N h» de una orden con programación parcial. */
+  protected faltanParcialTexto(o: ServiceOrder): string {
+    return this.duracionTexto(Math.max(0, (o.osMinutosOrden ?? 0) - (o.osMinutosProgramados ?? 0)));
+  }
+
+  protected confirmAssign(enviarParcial = false): void {
     const order = this.assignOrder();
     if (this.pendienteDeGuardar()) this.guardarProgreso();
     const profId = this.principalId();
@@ -3302,7 +3368,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
     // suscribir. Antes lo unificaba el `switchMap` que envolvía la llamada.
     const asignacion: Observable<ResultadoAsignacion> = order.osId
       ? this.api
-          .assignOrder(order.osId, this.cuerpoAsignacion(profId, fechaProgramada))
+          .assignOrder(order.osId, this.cuerpoAsignacion(profId, fechaProgramada, enviarParcial))
           .pipe(
             map((r) => ({
               os: r.data,
@@ -3313,6 +3379,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
               formatosProf: r.profesional_formatos ?? null,
               coasesores: (r.data.coasesores ?? []).map((c) => ({ profesional_id: c.profesional_id, nombre: c.nombre, horas: Number(c.horas) })),
               completa: r.completa !== false,
+              parcial: r.parcial === true,
               faltan: r.faltan_minutos ?? null,
               horasOrden: r.minutos_orden ?? null,
             })),
@@ -3324,7 +3391,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
           })
           .pipe(map((r) => ({
             os: null, borrador: r.data, correo: true, formatos: null, completa: true,
-            faltan: null, horasOrden: null,
+            parcial: false, faltan: null, horasOrden: null,
           })));
 
     asignacion.subscribe({
@@ -3340,6 +3407,10 @@ export class ValidationComponent implements OnInit, OnDestroy {
                 ? {
                     ...o,
                     osEstado: os.estado,
+                    // P3 · Minutos repartidos vs. contratados, para que el
+                    // indicador «programación parcial» aparezca sin recargar.
+                    osMinutosProgramados: this.minutosProgramados(),
+                    osMinutosOrden: this.duracionVisita() || o.osMinutosOrden,
                     assignedProf: os.profesional_nombre ?? nombreProf,
                     assignedProfId: profId,
                     // ASG · La suplencia sale de la respuesta y no del formulario:
@@ -3372,7 +3443,19 @@ export class ValidationComponent implements OnInit, OnDestroy {
         const franjas = res.os && visita > 1
           ? ` La visita quedó repartida en ${visita} franjas.`
           : '';
-        if (res.os && !res.completa) {
+        if (res.os && res.parcial) {
+          // P3 · Envío parcial: la OS quedó PROGRAMADA, el correo y los formatos
+          // de lo repartido salieron, pero faltan horas por programar y enviar
+          // después. Se dice como aviso (no éxito a secas) para que quien asigna
+          // recuerde que la orden sigue necesitando las horas que faltan.
+          const faltanMin = res.faltan ?? Math.max(0, duracionObjetivo - minutosMarcados);
+          this.alerts.warning(
+            'Se envió lo programado · programación parcial',
+            `${nombreProf} recibió los formatos y el enlace de lo que lleva marcado. La orden quedó ` +
+            `PROGRAMADA, pero faltan ${this.duracionTexto(faltanMin)} por programar y enviar más ` +
+            `adelante.${franjas}`,
+          );
+        } else if (res.os && !res.completa) {
           // ASG-02 · Avance guardado: la OS sigue SIN PROGRAMAR y nadie recibió
           // nada. Se avisa como aviso y no como éxito para que quien asigna no
           // se quede pensando que el profesional ya está notificado.
@@ -3386,7 +3469,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
             'Avance guardado, la orden sigue SIN PROGRAMAR',
             `${nombreProf} queda anotado en la orden con lo que lleva marcado, pero faltan ` +
             `${this.duracionTexto(faltanMin)} por repartir.${total} No se envió el correo ni se ` +
-            `generaron los formatos: salen cuando la visita cubra todas las horas.`,
+            `generaron los formatos: salen cuando la visita cubra todas las horas${this.envioParcialPermitido() ? ', o use «Enviar lo programado» para mandar lo que ya marcó' : ''}.`,
           );
         } else if (res.os && !res.correo) {
           // La asignación quedó guardada; lo único que falló fue el envío.
@@ -4368,6 +4451,9 @@ function toServiceOrder(b: Borrador): ServiceOrder {
     osId: b.orden_servicio_id ?? null,
     osCode: b.os_codigo ?? null,
     osEstado: b.os_estado ?? null,
+    // P3 · Minutos repartidos vs. contratados, para marcar la programación parcial.
+    osMinutosProgramados: b.os_minutos_programados ?? null,
+    osMinutosOrden: b.os_horas_asignadas != null ? Math.round(Number(b.os_horas_asignadas) * 60) : null,
     tipoOrdenId: b.tipo_orden_id ?? null,
     tipoOrden: b.tipo_orden ?? null,
     valorHoraCobro: b.valor_hora_cobro != null ? Number(b.valor_hora_cobro) : null,

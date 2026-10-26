@@ -66,12 +66,19 @@ type RespuestaAsignacion = Wrap<Orden & { coasesores?: Coasesor[] }> & {
    * ni correo ni formatos. Es un guardado válido, no un error.
    */
   completa?: boolean;
+  /**
+   * P3 (26-oct-2026) · `true` cuando se envió lo programado sin cubrir todas las
+   * horas (programación parcial): se mandó correo y formatos de lo repartido y la
+   * orden quedó PROGRAMADA, pero faltan horas por programar y enviar después.
+   */
+  parcial?: boolean;
   correo_enviado?: boolean;
   correo_error?: string | null;
   formatos_generados?: number;
-  /** Minutos que faltan por repartir; solo viene cuando `completa` es false. */
+  /** Minutos que faltan por repartir; viene cuando `completa` es false o es parcial. */
   faltan_minutos?: number;
   minutos_orden?: number;
+  minutos_programados?: number;
   /**
    * FOR/SUP · Qué decidió la matriz de la ARL para esta orden: con qué tipo de
    * actividad la clasificó, qué formatos salieron y qué soportes se le pedirán
@@ -224,6 +231,13 @@ export class ApiService {
        * Reemplaza la lista entera: un arreglo vacío deja la orden con un solo asesor.
        */
       coasesores?: { profesional_id: string; horas: number }[];
+      /**
+       * P3 (26-oct-2026) · Enviar los formatos aunque las franjas no cubran todas
+       * las horas de la orden (programación parcial). El servidor lo acepta solo
+       * si el ajuste global `envio_parcial_permitido` está activado; la orden
+       * queda PROGRAMADA con las horas que falten.
+       */
+      enviar_parcial?: boolean;
     },
   ): Observable<RespuestaAsignacion> {
     return this.http.post<RespuestaAsignacion>(`${this.base}/orders/${id}/assign`, body);
@@ -1047,6 +1061,10 @@ export class ApiService {
   /** CFG-05 · Día del mes en que se cierran las pre-cuentas (1-28). */
   setDiaCorte(value: number): Observable<unknown> {
     return this.http.put(`${this.base}/settings/precuenta-dia-corte`, { value });
+  }
+  /** P3 · Permitir enviar formatos con la programación incompleta. */
+  setEnvioParcial(value: boolean): Observable<unknown> {
+    return this.http.put(`${this.base}/settings/envio-parcial`, { value });
   }
 
   /** Catálogo de ARLs (Bolívar, AXA Colpatria, Colmena). */

@@ -196,6 +196,12 @@ export interface Borrador {
   /** Estado real de esa OS (EST-01) y su código legible OS-AAAA-NNNN. */
   os_estado?: EstadoOrden | null;
   os_codigo?: string | null;
+  /**
+   * P3 · Horas de la OS y minutos ya repartidos en franjas, para marcar una
+   * «programación parcial» (orden PROGRAMADA enviada a medias).
+   */
+  os_horas_asignadas?: number | string | null;
+  os_minutos_programados?: number | null;
   /** Asignación vigente de la OS (M5). Manda sobre la del borrador. */
   os_fecha_programada?: string | null;
   os_profesional_id?: string | null;
