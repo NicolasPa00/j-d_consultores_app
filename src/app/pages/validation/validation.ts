@@ -663,6 +663,14 @@ export class ValidationComponent implements OnInit, OnDestroy {
       if (!q) return true;
       // El cronograma (30-sep-2026) es por lo que pregunta Bolívar y lo que trae
       // la prefactura; la OS y el n.º de orden, por lo que preguntan AXA y Colmena.
+      // P1 (26-oct-2026) · El cliente busca Bolívar por «cronograma_secuencia»
+      // («1390041_26»), que la lista muestra con guion («1390041-128»): se
+      // unifican guion y guion bajo a un solo separador para que las dos formas
+      // encuentren la misma orden.
+      const crono = String(o.fields.codigoCronograma.value ?? '').trim();
+      const sec = String(o.fields.secuencia?.value ?? '').trim();
+      const refBolivar = crono && sec ? `${crono}-${sec}` : '';
+      const qn = q.replace(/_/g, '-');
       return [
         o.company,
         o.arl,
@@ -673,7 +681,10 @@ export class ValidationComponent implements OnInit, OnDestroy {
         String(o.fields.numeroOrden?.value ?? '').replace(/\s+/g, ''),
         o.osCode,
         o.numeroRadicado,
-      ].some((v) => String(v ?? '').toLowerCase().includes(q));
+      ].some((v) => String(v ?? '').toLowerCase().includes(q))
+        // La referencia combinada se compara con el texto ya normalizado, para que
+        // «1390041_26» y «1390041-26» coincidan con «1390041-26».
+        || (!!refBolivar && refBolivar.toLowerCase().includes(qn));
     });
   });
 

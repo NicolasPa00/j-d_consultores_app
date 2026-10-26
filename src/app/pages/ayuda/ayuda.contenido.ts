@@ -120,8 +120,9 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     avisos: [
       'La orden pasa a «Programada» solo cuando las franjas cubren todas sus horas.',
       'El correo y la agenda son de quien ejecuta; los formatos pueden salir a nombre de otro asesor registrado.',
+      'En la lista de Órdenes puede buscar una orden de Bolívar por «cronograma_secuencia» (por ejemplo 1390041_26) o con guion (1390041-26), además de por empresa, NIT, número de orden o código OS.',
     ],
-    sinonimos: ['asesor', 'profesional', 'agenda', 'franja', 'formato', 'programar', 'reprogramar', 'coasesor'],
+    sinonimos: ['asesor', 'profesional', 'agenda', 'franja', 'formato', 'programar', 'reprogramar', 'coasesor', 'cronograma', 'secuencia', 'buscar'],
   },
   {
     id: 'formatos-arl',
@@ -149,7 +150,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     ruta: '/ordenes',
     rutaTexto: 'Órdenes → Verificar soportes',
     pasos: [
-      'El asesor abre el enlace del correo (sin usuario), sube un archivo por casilla y envía. La orden pasa a «Ejecutada» y llega un aviso a la campanita.',
+      'El asesor abre el enlace del correo (sin usuario), sube un archivo por casilla y envía. La orden pasa a «Ejecutada» y llega un aviso a la campanita que nombra la orden por su cronograma y secuencia (Bolívar) o su número de orden, con la empresa.',
       'En Órdenes → Ejecutadas abra «Verificar soportes». Puede ver cada documento y descargar varios en un solo PDF.',
       'Aceptar: la orden pasa a «Finalizada», se manda la encuesta de satisfacción al cliente y el trabajo entra en la cuenta de cobro del asesor.',
       'Devolver: marque cuáles documentos se rechazan y escriba el motivo; el asesor recibe un correo y solo se le abren esas casillas.',
@@ -215,7 +216,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     titulo: 'Alertas de documentos por vencer',
     resumen: 'La campanita avisa antes de que algo se venza, para no enterarse tarde.',
     pasos: [
-      'Órdenes de servicio sin finalizar: aviso a 7 y a 3 días de su fecha de vencimiento, y cuando ya está vencida. Le llega a administradores y administrativos.',
+      'Órdenes de servicio sin finalizar: aviso a 7 y a 3 días de su fecha de vencimiento, y cuando ya está vencida. Nombra la orden por su cronograma y secuencia (Bolívar) o su número de orden. Le llega a administradores y administrativos.',
       'Registro de un asesor ante una ARL: aviso a 30 y 7 días de su vigencia y cuando vence.',
       'Cuentas por cobrar y por pagar: un resumen semanal con cuántas están vencidas y cuántas vencen en los próximos 7 días. Le llega a administradores y contadores.',
       'Resoluciones de numeración de la DIAN y paquete del proveedor de facturación: 30 y 7 días antes, y cuando vencen.',
