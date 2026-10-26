@@ -115,7 +115,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
       'En la agenda semanal marque las franjas de la visita. La suma debe cubrir todas las horas de la orden; una visita puede repartirse en varios días o varios asesores.',
       'Si el asesor no está registrado ante esa ARL, elija a nombre de qué asesor registrado salen los formatos (Bolívar solo acepta radicados a nombre de sus registrados).',
       'Pulse «Ver formatos» para revisar y ajustar lo que va escrito antes de enviar, y luego «Asignar profesional».',
-      'El asesor recibe un correo con los formatos, una invitación de calendario y el enlace para subir los soportes.',
+      'El asesor recibe un correo con el cronograma, la secuencia y la actividad a desarrollar, los formatos, una invitación de calendario y el enlace para subir los soportes.',
     ],
     avisos: [
       'La orden pasa a «Programada» solo cuando las franjas cubren todas sus horas.',
