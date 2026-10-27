@@ -5,6 +5,13 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
+> 🎬 **27-oct-2026 (tarde) · VIDEO DE BIENVENIDA EN /ayuda — DESPLEGADO (front `main 1087f41`).** «La vida de una orden en ORBITA»
+> (62,7 s, 1080p) en la cabecera de `/ayuda`: `public/ayuda/video/introduccion.mp4` (4,2 MB, −16 LUFS, faststart) +
+> `introduccion.jpg` de póster; sin autoplay, `preload="none"`. Fuente FUERA del repo: `3-entregables-y-respaldos/videos-ayuda/
+> 00-introduccion` (render original en `out/`). **Trampa:** el `pop.wav` del video era una VOZ diciendo «Soft pop»; se cambió por
+> un pop sintetizado (`_motor/intro_pop.py`). Humo: video 200/206 `video/mp4`, póster 200. **No se vio por pantalla** (hace falta
+> sesión). Queda: versión vertical (se decidió no hacerla por ahora) y la serie de videos cortos.
+>
 > 🩹 **27-oct-2026 · CORRECCIÓN P3 (audio de la cliente): «Enviar lo programado» se saltaba la vista previa — DESPLEGADA
 > EN PRODUCCIÓN (front `main 51743a8`, junto con el centro de ayuda d594f5e).** En una orden repartida a medias el botón enviaba directo (`confirmAssign(true)`), sin el paso «Revisar formatos
 > antes de enviar» ni las casillas editables que sí salen con «Continuar». Ahora lleva a ese paso (`previsualizarFormatos(true)`,
