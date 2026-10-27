@@ -5,6 +5,8 @@
 #   · d594f5e  Centro de ayuda con pantallazos guiados (20 de 23 temas).
 #   · 51743a8  P3: «Enviar lo programado» pasa por la vista previa de formatos
 #              (lo reportó JD&D por audio: enviaba sin dejar revisar ni editar).
+#   · 2.ª pasada (27-oct tarde): video de bienvenida en la cabecera de /ayuda
+#     (public/ayuda/video/, 4,2 MB, preload="none"). Comprobación del paso 1 por ese commit.
 # Sin migraciones, sin cambios en el backend ni en dependencias: no hace falta respaldo
 # de la base ni npm ci. Solo git pull + build + reinicio de orbita-web.
 #
@@ -24,8 +26,8 @@ echo "== 1. Comprobar que origin/main trae la corrección"
 cd /opt/orbita/frontend && git fetch -q
 echo "   en producción: $(git log --oneline -1)"
 git log --oneline HEAD..origin/main
-[[ "$(git log origin/main --oneline -10)" == *"pasa por la vista previa"* ]] \
-  || { echo "✗ origin/main no trae 51743a8: haga push primero."; exit 1; }
+[[ "$(git log origin/main --oneline -10)" == *"video de bienvenida"* ]] \
+  || { echo "✗ origin/main no trae el video de bienvenida: haga push primero."; exit 1; }
 
 echo "== 2. Traer el código y compilar"
 git pull --ff-only
@@ -43,6 +45,7 @@ echo "login:    $(curl -s -o /dev/null -w '%{http_code}' https://orbita.jddconsu
 echo "ayuda:    $(curl -s -o /dev/null -w '%{http_code}' https://orbita.jddconsultores.com/ayuda)"
 IMG=$(ls /opt/orbita/frontend/public/ayuda/*/* 2>/dev/null | head -1 | sed 's|/opt/orbita/frontend/public||')
 echo "imagen $IMG: $(curl -s -o /dev/null -w '%{http_code}' "https://orbita.jddconsultores.com$IMG")"
+echo "video:    $(curl -s -o /dev/null -w "%{http_code} %{size_download}" -r 0-1023 https://orbita.jddconsultores.com/ayuda/video/introduccion.mp4)"
 REMOTO
 
 echo "Listo."

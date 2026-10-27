@@ -1,5 +1,33 @@
 :host { display: block; }
 
+// Video de bienvenida: al lado del texto en escritorio, encima en el celular.
+.ayu-bienvenida {
+  display: grid;
+  grid-template-columns: minmax(0, 36rem) 1fr;
+  gap: 1.25rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 1rem;
+}
+
+.ayu-bienvenida__video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-md);
+  background: #103d66;
+}
+
+.ayu-bienvenida__texto p { margin: 0.5rem 0 0; color: var(--text-muted); line-height: 1.5; }
+
+.ayu-bienvenida__titulo { margin: 0.6rem 0 0; font-size: 1.15rem; color: var(--text-main); }
+
+.ayu-bienvenida .ayu-bienvenida__nota { font-size: 0.78rem; }
+
+@media (max-width: 860px) {
+  .ayu-bienvenida { grid-template-columns: 1fr; }
+}
+
 .ayu-barra {
   display: flex;
   flex-wrap: wrap;
