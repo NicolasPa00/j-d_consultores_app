@@ -5,15 +5,15 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> 🩹 **27-oct-2026 · CORRECCIÓN P3 (audio de la cliente): «Enviar lo programado» se saltaba la vista previa — COMMITEADO, SIN
-> DESPLEGAR.** En una orden repartida a medias el botón enviaba directo (`confirmAssign(true)`), sin el paso «Revisar formatos
+> 🩹 **27-oct-2026 · CORRECCIÓN P3 (audio de la cliente): «Enviar lo programado» se saltaba la vista previa — DESPLEGADA
+> EN PRODUCCIÓN (front `main 51743a8`, junto con el centro de ayuda d594f5e).** En una orden repartida a medias el botón enviaba directo (`confirmAssign(true)`), sin el paso «Revisar formatos
 > antes de enviar» ni las casillas editables que sí salen con «Continuar». Ahora lleva a ese paso (`previsualizarFormatos(true)`,
 > señal `envioParcialEnCurso` en `validation.ts`) y el envío sale de «Confirmar y enviar lo programado», que conserva el diálogo
 > de «faltan N h». Solo frontend: el backend ya aceptaba `enviar_parcial` en `POST /orders/:id/assign/preview` (probado el 26-oct
 > con `verificar-26-oct.mjs`). `ng build` OK; **no se probó por pantalla** (túnel a `jdd_dev` cerrado). Ayuda actualizada.
-> Desplegar: solo frontend, sin migraciones (va junto con el centro de ayuda pendiente).
+> Desplegado el 27-oct con `docs/4-despliegue/despliegue-ayuda-y-envio-parcial-27-oct.sh` (solo frontend; humo: health/login/ayuda/imagen 200, el paquete trae el botón nuevo). Backend sigue en 17c3409.
 >
-> 📖 **27-oct-2026 · CENTRO DE AYUDA CON PANTALLAZOS EN 20 DE 23 TEMAS — COMMITEADO, SIN DESPLEGAR.** 37 figuras con recuadros
+> 📖 **27-oct-2026 · CENTRO DE AYUDA CON PANTALLAZOS EN 20 DE 23 TEMAS — DESPLEGADO el 27-oct (front 51743a8).** 37 figuras con recuadros
 > numerados (imagen en `public/ayuda/<tema>/`, datos en `pages/ayuda/ilustraciones/<tema>.ts`), revisadas una a una DENTRO de
 > `/ayuda` a 1440 y 390 px; `novedades`, `glosario` y `problemas` siguen en texto a propósito. En el celular la captura conserva
 > 640 px y se desliza de lado dentro de su marco (`ayuda.scss`, `.ayu-figura__desliza`). Herramienta reorganizada: recetas en
