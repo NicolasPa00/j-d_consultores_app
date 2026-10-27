@@ -488,6 +488,12 @@ export class ValidationComponent implements OnInit, OnDestroy {
   /** Las casillas abiertas del formato que se está viendo en el visor. */
   protected readonly formatoEnVisor = computed(() => this.formatosPrevios()[this.formatoVisto()] ?? null);
   protected readonly previsualizando = signal(false);
+  /**
+   * 27-oct-2026 · El paso de formatos se abrió con «Enviar lo programado»: la
+   * vista previa y el envío final viajan con `enviar_parcial`. Antes ese botón
+   * enviaba directo y la oficina no veía ni podía editar los formatos.
+   */
+  protected readonly envioParcialEnCurso = signal(false);
   /** Hay observaciones o casillas escritas que la vista previa todavía no muestra. */
   protected readonly observacionesSinAplicar = signal(false);
   /**
@@ -2802,8 +2808,12 @@ export class ValidationComponent implements OnInit, OnDestroy {
    * "Continuar" / "Actualizar vista previa": pide los formatos tal como saldrían.
    * El servidor ejecuta la asignación entera y la deshace, así que lo que se ve
    * aquí es exactamente lo que se enviará.
+   *
+   * `parcial`: desde la agenda, «Continuar» pasa false y «Enviar lo programado»
+   * true; «Actualizar vista previa» no lo pasa y conserva el modo con que se entró.
    */
-  protected previsualizarFormatos(): void {
+  protected previsualizarFormatos(parcial?: boolean): void {
+    if (parcial !== undefined && !this.previsualizando()) this.envioParcialEnCurso.set(parcial);
     const order = this.assignOrder();
     // Lo marcado y aún sin guardar se da por guardado: es lo que se va a enviar.
     if (this.pendienteDeGuardar()) this.guardarProgreso();
@@ -2816,7 +2826,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
     }
     const primeraVez = this.pasoAsignacion() === 'agenda';
     this.previsualizando.set(true);
-    this.api.previsualizarAsignacion(order.osId, this.cuerpoAsignacion(profId, fechaProgramada)).subscribe({
+    this.api.previsualizarAsignacion(order.osId, this.cuerpoAsignacion(profId, fechaProgramada, this.envioParcialEnCurso())).subscribe({
       next: (r) => {
         this.previsualizando.set(false);
         this.formatosPrevios.set(r.data.formatos);
@@ -2932,6 +2942,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.observacionesFormatos.set({});
     this.camposFormatos.set({});
     this.observacionesSinAplicar.set(false);
+    this.envioParcialEnCurso.set(false);
     this.pasoAsignacion.set('agenda');
   }
 
@@ -3306,11 +3317,27 @@ export class ValidationComponent implements OnInit, OnDestroy {
     && !!this.principalId());
 
   /**
+   * P3 · «Enviar lo programado» de la agenda. Igual que «Continuar», lleva al
+   * paso de formatos (27-oct-2026: antes enviaba directo, sin vista previa ni
+   * casillas editables); el envío sale de «Confirmar y enviar lo programado».
+   */
+  protected enviarLoProgramado(): void {
+    if (!this.puedeEnviarParcial() || this.assigning()) return;
+    this.previsualizarFormatos(true);
+  }
+
+  /** «Confirmar y enviar» del paso de formatos, completo o parcial. */
+  protected confirmarEnvio(): void {
+    if (this.envioParcialEnCurso()) void this.confirmarEnvioParcial();
+    else this.confirmAssign();
+  }
+
+  /**
    * P3 · Envía los formatos de lo que lleva marcado aunque falten horas. Confirma
    * primero diciendo cuántas horas quedan: la orden pasa a PROGRAMADA parcial y
    * las horas restantes se programan y envían después.
    */
-  protected async enviarLoProgramado(): Promise<void> {
+  private async confirmarEnvioParcial(): Promise<void> {
     if (!this.puedeEnviarParcial() || this.assigning()) return;
     const faltan = this.duracionTexto(this.minutosPorRepartir());
     const marcado = this.duracionTexto(this.minutosProgramados());

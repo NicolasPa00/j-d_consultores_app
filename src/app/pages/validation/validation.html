@@ -1571,7 +1571,11 @@
 
     <footer class="modal__footer">
       <span class="modal__status">
-        @if (pasoAsignacion() === 'formatos') {
+        @if (pasoAsignacion() === 'formatos' && envioParcialEnCurso()) {
+          Programación parcial: {{ duracionTexto(minutosProgramados()) }} de {{ duracionTexto(duracionVisita()) }}.
+          Revise cada documento; al confirmar salen estos formatos y faltarán
+          {{ duracionTexto(minutosPorRepartir()) }} por programar y enviar después.
+        } @else if (pasoAsignacion() === 'formatos') {
           Revise cada documento. Al confirmar, la orden se guarda y el correo sale con estos formatos.
         } @else if (!principalId()) {
           Marque las franjas en la agenda y elija un profesional para poder asignar.
@@ -1604,9 +1608,11 @@
           <button type="button" class="btn btn--secondary" (click)="previsualizarFormatos()" [disabled]="assigning() || previsualizando()">
             @if (previsualizando()) { <span class="spinner" aria-hidden="true"></span> Actualizando… } @else { Actualizar vista previa }
           </button>
-          <button type="button" class="btn btn--primary" (click)="confirmAssign()" [disabled]="assigning() || previsualizando()">
+          <button type="button" class="btn btn--primary" (click)="confirmarEnvio()" [disabled]="assigning() || previsualizando()">
             @if (assigning()) {
               <span class="spinner" aria-hidden="true"></span> Enviando…
+            } @else if (envioParcialEnCurso()) {
+              Confirmar y enviar lo programado
             } @else {
               {{ esReprogramacion(order) ? 'Confirmar y reenviar' : 'Confirmar y enviar' }}
             }
@@ -1624,7 +1630,7 @@
               type="button"
               class="btn btn--primary"
               [disabled]="!principalId() || previsualizando() || (usarSuplente() && !formatosProfId())"
-              (click)="previsualizarFormatos()"
+              (click)="previsualizarFormatos(false)"
             >
               @if (previsualizando()) { <span class="spinner" aria-hidden="true"></span> Preparando formatos… } @else { Continuar }
             </button>
@@ -1647,16 +1653,18 @@
           }
           <!-- P3 · Enviar lo programado a medias: manda correo y formatos de lo
                marcado y deja la orden PROGRAMADA con las horas que falten. Solo
-               cuando hay avance sin cubrir todo y la empresa lo permite. -->
+               cuando hay avance sin cubrir todo y la empresa lo permite.
+               27-oct-2026 · Como «Continuar», lleva primero a la vista previa de
+               formatos; el envío sale de ahí. -->
           @if (order.osId && !visitaCompleta() && puedeEnviarParcial()) {
             <button
               type="button"
               class="btn btn--primary"
-              [disabled]="assigning() || (usarSuplente() && !formatosProfId())"
+              [disabled]="assigning() || previsualizando() || (usarSuplente() && !formatosProfId())"
               (click)="enviarLoProgramado()"
             >
-              @if (assigning()) {
-                <span class="spinner" aria-hidden="true"></span> Enviando…
+              @if (previsualizando()) {
+                <span class="spinner" aria-hidden="true"></span> Preparando formatos…
               } @else {
                 Enviar lo programado ({{ duracionTexto(minutosProgramados()) }} de {{ duracionTexto(duracionVisita()) }})
               }

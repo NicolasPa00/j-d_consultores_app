@@ -88,7 +88,7 @@ export const ILUSTRACIONES: Ilustracion[] = [
   },
   {
     "titulo": "Si solo se programa una parte",
-    "texto": "Con la agenda incompleta puede usar «Enviar lo programado»: salen los formatos y el correo de esas horas y la orden queda PROGRAMADA con el aviso «Parcial · faltan N h». El resto se programa después con «Reprogramar orden».",
+    "texto": "Con la agenda incompleta puede usar «Enviar lo programado»: lleva a la vista previa de los formatos y, al confirmar, salen los formatos y el correo de esas horas y la orden queda PROGRAMADA con el aviso «Parcial · faltan N h». El resto se programa después con «Reprogramar orden».",
     "img": "ayuda/asignar-orden/3.webp",
     "marcas": [
       {

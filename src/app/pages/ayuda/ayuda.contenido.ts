@@ -141,7 +141,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     ],
     avisos: [
       'La orden pasa a «Programada» solo cuando las franjas cubren todas sus horas.',
-      'Si una orden se reparte en varias tandas (por ejemplo 16 de 21 horas, entre dos asesores), marque las franjas de lo que va ahora y pulse «Enviar lo programado»: salen los formatos de lo marcado y la orden queda «Programada» con un aviso «parcial · faltan N h». Las horas restantes se programan y envían después. (Se puede apagar en Configuración → Sistema.)',
+      'Si una orden se reparte en varias tandas (por ejemplo 16 de 21 horas, entre dos asesores), marque las franjas de lo que va ahora y pulse «Enviar lo programado»: igual que con «Continuar», primero se ven los formatos para revisarlos y completarlos; al pulsar «Confirmar y enviar lo programado» salen los formatos de lo marcado y la orden queda «Programada» con un aviso «parcial · faltan N h». Las horas restantes se programan y envían después. (Se puede apagar en Configuración → Sistema.)',
       'El correo y la agenda son de quien ejecuta; los formatos pueden salir a nombre de otro asesor registrado.',
       'En la lista de Órdenes puede buscar una orden de Bolívar por «cronograma_secuencia» (por ejemplo 1390041_26) o con guion (1390041-26), además de por empresa, NIT, número de orden o código OS.',
     ],
