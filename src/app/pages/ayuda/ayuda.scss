@@ -123,6 +123,12 @@
   box-shadow: 0 6px 22px rgba(0, 11, 79, 0.1);
 }
 .ayu-figura__marco img { display: block; width: 100%; height: auto; }
+/* En el celular una pantalla completa a 360 px no se lee: se deja a 640 px y se desliza de lado. */
+.ayu-figura__desliza { padding-top: 0.8rem; }
+@media (max-width: 600px) {
+  .ayu-figura__desliza { overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+  .ayu-figura__marco { min-width: 640px; }
+}
 .ayu-marca {
   position: absolute;
   border: 2.5px solid var(--secondary-color, #2d7bc8);

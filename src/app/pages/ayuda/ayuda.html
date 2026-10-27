@@ -61,13 +61,17 @@
           <div class="ayu-figuras">
             @for (f of t.ilustraciones; track f.img; let i = $index) {
               <figure class="ayu-figura">
-                <div class="ayu-figura__marco">
-                  <img [src]="'/' + f.img" [alt]="f.titulo" loading="lazy" />
-                  @for (m of f.marcas; track m.n) {
-                    <span class="ayu-marca" [style.left.%]="m.caja[0]" [style.top.%]="m.caja[1]" [style.width.%]="m.caja[2]" [style.height.%]="m.caja[3]">
-                      <b>{{ m.n }}</b>
-                    </span>
-                  }
+                <!-- En el celular la captura conserva un ancho legible y se desliza de lado
+                     dentro de este marco (la página no se mueve); los recuadros van con ella. -->
+                <div class="ayu-figura__desliza">
+                  <div class="ayu-figura__marco">
+                    <img [src]="'/' + f.img" [alt]="f.titulo" loading="lazy" />
+                    @for (m of f.marcas; track m.n) {
+                      <span class="ayu-marca" [style.left.%]="m.caja[0]" [style.top.%]="m.caja[1]" [style.width.%]="m.caja[2]" [style.height.%]="m.caja[3]">
+                        <b>{{ m.n }}</b>
+                      </span>
+                    }
+                  </div>
                 </div>
                 <figcaption>
                   <strong>{{ i + 1 }}. {{ f.titulo }}</strong>

@@ -16,10 +16,11 @@
 - **Decisión del usuario (24-oct):** el centro de ayuda es la guía paso a paso de TODA la plataforma, con **pantallazos
   reales (datos inventados) y recuadros numerados** sobre los botones que importan. **No** habrá una serie de videos por
   flujo: solo **un video de introducción** (ver §7, que NO se puede hacer desde otro equipo).
-- **Hecho:** el formato completo (modelo de datos, vista, herramienta de capturas) y **un tema piloto**:
-  `importar-ordenes` (2 pantallazos).
-- **Falta (lo que hay que ejecutar):** pantallazos para los otros **22 temas**, en cuatro lotes (§5), revisarlos en
-  escritorio y móvil, `ng build` y actualizar `HANDOFF.md`. **No se despliega** hasta que el usuario lo diga.
+- **✅ 27-oct-2026: HECHO.** **20 de los 23 temas tienen pantallazos** (37 figuras), revisadas una a una DENTRO de
+  `/ayuda` en escritorio (1440 px) y móvil (390 px), sin datos reales. Los otros 3 (`novedades`, `glosario`, `problemas`)
+  son texto a propósito. En el celular la captura se desliza de lado dentro de su marco para que se lea.
+- **Para mantenerlo:** cuando una pantalla cambie, regenerar su tema (§2–§3) y revisarlo con `revisar.mjs`.
+- **Sigue pendiente:** el video de introducción (§7), que solo se puede terminar en el equipo de Nicolás.
 
 ---
 
@@ -30,10 +31,13 @@
 | Contenido | `src/app/pages/ayuda/ayuda.contenido.ts` | Lista `TEMAS_AYUDA`: cada tema tiene `id`, `grupo`, `titulo`, `resumen`, `ruta`/`rutaTexto` (botón «Ir a la pantalla»), `pasos`, `avisos`, `sinonimos` (para el buscador) y, opcional, **`ilustraciones`**. |
 | Tipos | mismo archivo | `Ilustracion { titulo, texto, img, marcas[] }` y `MarcaAyuda { n, etiqueta, caja: [x, y, ancho, alto] }`. **La caja va en % de la imagen**, por eso la marca cae sobre su botón a cualquier tamaño de pantalla. |
 | Datos de pantallazos | `src/app/pages/ayuda/ilustraciones/<tema>.ts` | **Generados por la herramienta, no se editan a mano.** Exportan `ILUSTRACIONES`. |
-| Imágenes | `public/ayuda/<tema>/<n>.webp` | Generadas por la herramienta. Se sirven como `/ayuda/<tema>/<n>.webp`. Pesan poco (~40 KB c/u): **sí van al repo**. |
+| Imágenes | `public/ayuda/<tema>/<n>.webp` | Generadas por la herramienta. Se sirven como `/ayuda/<tema>/<n>.webp` y cargan solo al abrir el tema. ~100 KB c/u (3,6 MB las 37): **sí van al repo**. |
 | Vista | `src/app/pages/ayuda/ayuda.html` / `.scss` / `.ts` | Pinta cada figura: imagen + recuadros HTML encima (`.ayu-marca`, posición en %), pie con título, texto y leyenda numerada. En móvil (≤860 px) la leyenda baja debajo de la imagen. |
-| Herramienta | `herramientas/ayuda-capturas/ayuda-capturas.mjs` | Abre la app con Chrome headless (puppeteer-core), ejecuta la **receta** del tema, **mide** cada elemento con `getBoundingClientRect`, recorta la imagen alrededor de las marcas y escribe imagen + `.ts`. |
-| Datos demo | `sst_ws/scripts/generar-orden-sura-demo.mjs` | Escribe `2-pruebas/ordenes/sura/demo-sura-estado-tareas.xlsx` (6 órdenes de ARL SURA **inventadas**, números `10995011`–`10995016`). |
+| Herramienta | `herramientas/ayuda-capturas/ayuda-capturas.mjs` | Abre la app con Chrome headless (puppeteer-core), ejecuta la **receta** del tema, **sustituye en la página los nombres/NIT/correos/celulares que pueden ser reales** (lista `SUSTITUCIONES`), **mide** cada elemento con `getBoundingClientRect`, recorta y escribe imagen + `.ts`. `node … <tema> [<tema>…]` o `todos`. |
+| Recetas | `herramientas/ayuda-capturas/recetas/*.mjs` | Una por tema, agrupadas por lote (`0-importar`, `1-operacion`, `2-terceros-parametrizacion`, `3-finanzas`, `4-referencia`). |
+| Revisor | `herramientas/ayuda-capturas/revisar.mjs` | `node … <carpeta-salida> <tema>…`: fotografía cada figura TAL COMO SE VE en `/ayuda` (imagen + recuadros) a 1440 y 390 px y avisa si la página se desborda en móvil. Es la prueba que vale: el ✓ de la herramienta solo dice que encontró un elemento. |
+| Datos demo (estados) | `sst_ws/scripts/generar-datos-ayuda.mjs` | Recorre el flujo REAL por la API y deja en `jdd_dev` 6 órdenes de ARL SURA inventadas, una por estado: `10998001` sin programar, `…002` programada, `…003` parcial (8 de 12 h, dos asesores), `…004` ejecutada con soportes, `…005` finalizada, `…006` ejecutada. Idempotente; se niega a correr fuera de `jdd_dev`. Las recetas de Operación las buscan por número. |
+| Datos demo (Excel) | `sst_ws/scripts/generar-orden-sura-demo.mjs` | Escribe `2-pruebas/ordenes/sura/demo-sura-estado-tareas.xlsx` (órdenes inventadas `10995011`–`10995016`) para la receta `importar-ordenes`. |
 
 Flujo de un tema: **escribir receta → correr la herramienta → importar el `.ts` en `ayuda.contenido.ts` → revisar en
 `/ayuda?tema=<id>`**.
@@ -77,15 +81,18 @@ SSH al VPS de desarrollo (`jdd_dev`). Estructura esperada:
    ```bash
    node --input-type=module -e "
    import 'dotenv/config'; import fs from 'node:fs'; import { pool } from './src/config/db.js'; import { signToken } from './src/utils/security.js';
-   const a=(await pool.query(\"select id, nombre, correo from sst.usuarios where rol='admin' order by creado_en limit 1\")).rows[0];
-   const tk=signToken({ id:a.id, correo:a.correo, rol:'admin', nombre:a.nombre });
+   const a=(await pool.query(\"select id, nombre, correo from sst.usuarios where es_maestro order by creado_en limit 1\")).rows[0];
+   const tk=signToken({ id:a.id, correo:a.correo, rol:'admin', nombre:a.nombre, es_maestro:true });
    const me=await (await fetch('http://localhost:4000/api/auth/me',{headers:{Authorization:'Bearer '+tk}})).json();
    fs.writeFileSync('../jdd_consultores_app/herramientas/ayuda-capturas/sesion.json', JSON.stringify({ token: tk, usuario: me.usuario, permisos: me.permisos }));
    await pool.end();"
    ```
    En Windows, si las comillas se rompen en la terminal, pegar el código en un archivo `.mjs` dentro de `sst_ws` y
    correrlo con `node`. El token caduca: si las capturas salen en la pantalla de login, regenerarlo.
-6. **Excel demo:** `cd sst_ws && node scripts/generar-orden-sura-demo.mjs`. La herramienta lo copia sola a la carpeta
+   ⚠️ **Tiene que ser el Administrador Maestro y llevar `es_maestro: true` en el token** (como arriba): sin eso la pestaña
+   «Roles y permisos» sale con el error «exclusiva del Administrador Maestro» y faltan pestañas de Configuración.
+6. **Datos demo:** con el backend arriba (correo en consola), `cd sst_ws && node --import tsx scripts/generar-datos-ayuda.mjs`
+   (órdenes en cada estado) y `node scripts/generar-orden-sura-demo.mjs` (Excel para `importar-ordenes`). La herramienta lo copia sola a la carpeta
    temporal (Chrome headless no sube archivos desde el Escritorio/OneDrive). Otra ruta: variable `AYUDA_EXCEL`.
 7. **Prueba de humo:** `node herramientas/ayuda-capturas/ayuda-capturas.mjs importar-ordenes` (desde la raíz del
    frontend). Debe imprimir `✓ importar-ordenes 1 …` y `✓ importar-ordenes 2 …` y reescribir los dos `.webp` y el `.ts`.
@@ -97,39 +104,43 @@ SSH al VPS de desarrollo (`jdd_dev`). Estructura esperada:
 
 ## 3. Cómo escribir una receta
 
-Cada tema es una entrada de `RECETAS` en `ayuda-capturas.mjs`, con la **misma clave que el `id` del tema**:
+Cada tema es una entrada del objeto que exporta un archivo de `recetas/`, con la **misma clave que el `id` del tema**.
+La receta recibe `c` con las utilidades (ver `crearCtx` en `ayuda-capturas.mjs`): `c.ir(ruta, 'operacion'|'finanzas')`,
+`c.clic(texto)`, `c.clicSel(selector, n)`, `c.escribir(selector, texto)`, `c.elegirOpcion(selectorSelect, indice)`,
+`c.centrar(css, texto)`, `c.espera(ms)`, `c.p` (la página de puppeteer) y `c.foto(figura)`:
 
 ```js
-'asignar-orden': async (p, ctx) => {
-  const figs = [];
-  await p.goto(`${URL_BASE}/ordenes`, { waitUntil: 'networkidle2' });
-  await espera(1500);
-  figs.push({
-    titulo: 'Abra la orden sin programar',            // corto, en imperativo y de usted
-    texto: 'En la pestaña «Sin programar» pulse la fila de la orden.',   // 1–2 frases
+'cobro-orden': async (c) => {
+  await c.ir('ordenes');
+  await c.clic('Finalizadas');
+  await c.escribir('input[placeholder^="Buscar"]', '10998005');   // deja una sola orden en la tabla
+  await c.foto({
+    titulo: 'Abra el cobro desde la columna «Cobro»',               // corto, en imperativo y de usted
+    texto: 'Cada orden finalizada tiene su botón de cobro…',        // 1–2 frases
     marcas: [
-      { css: 'button, a', texto: 'Sin programar', etiqueta: 'Pestaña de pendientes' },
-      { css: 'tr', texto: '10995011', etiqueta: 'La orden' },
+      { css: 'button', texto: 'Finalizadas', etiqueta: 'Órdenes finalizadas' },
+      { css: 'button.cobro-btn', etiqueta: 'Cobro de la orden' },
     ],
   });
-  await foto(p, tema, 1, figs[0]);
-  await clic(p, 'Asignar');          // pulsa el 1.er botón/enlace cuyo texto EMPIEZA por «Asignar»
-  await espera(1500);
-  // … figura 2, foto(p, tema, 2, figs[1]) …
-  return figs;
+  await c.clicSel('button.cobro-btn', 0, 2500);
+  await c.foto({ titulo: '…', texto: '…', completa: true, marcas: [ /* … */ ] });
 },
 ```
 
+Escape NO cierra los modales: para pasar a otra pantalla, `c.ir(...)` (recarga). Los botones de icono se marcan y se pulsan
+por su `aria-label`/`title` (p. ej. `[aria-label="Asignar profesional"]`).
+
 Reglas de las marcas (así las resuelve `foto()`):
 
-- `css` = qué etiquetas son candidatas; `texto` = texto que debe CONTENER el elemento. De los candidatos se toma **el más
+- `css` = qué etiquetas son candidatas; `texto` = texto que debe CONTENER el elemento (sin distinguir mayúsculas: muchos
+  títulos salen en mayúsculas solo por CSS). De los candidatos se toma **el más
   pequeño** (el de menos texto), que es el botón y no la tarjeta que lo envuelve. Si toma otro, afinar `css`
   (`'th'`, `'button'`, `'.clase-concreta'`) o usar `nth` (índice entre los candidatos ordenados).
 - Sin `texto`, la marca es el primer elemento que case con `css`.
 - `pad` (px, por defecto 5) = aire del recuadro alrededor del elemento.
 - Si una marca no se encuentra, la consola dice `✗ no encontré «…»` y la figura sale **sin esa marca**: revisar siempre.
-- **Recorte:** por defecto la imagen se recorta a la zona de las marcas (+70 px, mínimo 820×480) para que el texto se lea.
-  `completa: true` = pantalla entera (1440×810); `margen: N` = más o menos aire.
+- **Recorte:** por defecto, el área de contenido entera a lo ancho (sin el menú lateral) y en vertical la franja de las
+  marcas (+70 px, mínimo 480). `completa: true` = pantalla entera (1440×810), para modales; `margen: N` = más o menos aire.
 - **Entre 2 y 4 figuras por tema y 1 a 4 marcas por figura.** Más satura; la leyenda numerada ya explica cada marca.
 - Para estados que exigen datos (una orden ejecutada, una factura en borrador…), prepararlos **dentro de la receta** con
   la propia UI o con `p.evaluate(fetch(...))` contra la API (el token está en `localStorage.sst_token`), **siempre con
@@ -160,7 +171,7 @@ botón, la imagen legible, el texto de la figura coherente con los `pasos` del t
 
 ---
 
-## 5. Temas pendientes, en lotes (orden de ejecución)
+## 5. Temas, en lotes (✅ hechos el 27-oct salvo los de texto del lote 4; las recetas reales están en `recetas/`)
 
 Ruta = pantalla donde se captura. «Figuras sugeridas» es un punto de partida: comprobar los textos reales de cada botón
 en la pantalla antes de escribir la receta.

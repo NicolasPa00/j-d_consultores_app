@@ -11,6 +11,25 @@
  */
 
 import { ILUSTRACIONES as ILU_IMPORTAR } from './ilustraciones/importar-ordenes';
+import { ILUSTRACIONES as ILU_ASIGNAR_ORDEN } from './ilustraciones/asignar-orden';
+import { ILUSTRACIONES as ILU_FORMATOS_ARL } from './ilustraciones/formatos-arl';
+import { ILUSTRACIONES as ILU_SOPORTES } from './ilustraciones/soportes';
+import { ILUSTRACIONES as ILU_COBRO_ORDEN } from './ilustraciones/cobro-orden';
+import { ILUSTRACIONES as ILU_CUENTAS_DE_COBRO } from './ilustraciones/cuentas-de-cobro';
+import { ILUSTRACIONES as ILU_PROFESIONALES } from './ilustraciones/profesionales';
+import { ILUSTRACIONES as ILU_ALERTAS } from './ilustraciones/alertas';
+import { ILUSTRACIONES as ILU_QUE_ES_ORBITA } from './ilustraciones/que-es-orbita';
+import { ILUSTRACIONES as ILU_ROLES } from './ilustraciones/roles';
+import { ILUSTRACIONES as ILU_TERCEROS } from './ilustraciones/terceros';
+import { ILUSTRACIONES as ILU_PARAMETRIZACION } from './ilustraciones/parametrizacion';
+import { ILUSTRACIONES as ILU_FACTURAR } from './ilustraciones/facturar';
+import { ILUSTRACIONES as ILU_FACTURA_MANUAL } from './ilustraciones/factura-manual';
+import { ILUSTRACIONES as ILU_PAGO_PROFESIONALES } from './ilustraciones/pago-profesionales';
+import { ILUSTRACIONES as ILU_COMPRAS } from './ilustraciones/compras';
+import { ILUSTRACIONES as ILU_CARTERA_COBRAR } from './ilustraciones/cartera-cobrar';
+import { ILUSTRACIONES as ILU_CARTERA_PAGAR } from './ilustraciones/cartera-pagar';
+import { ILUSTRACIONES as ILU_CONTABILIDAD } from './ilustraciones/contabilidad';
+import { ILUSTRACIONES as ILU_INFORMES_CONTABLES } from './ilustraciones/informes-contables';
 
 /** Recuadro numerado sobre un pantallazo; `caja` va en % de la imagen [x, y, ancho, alto]. */
 export interface MarcaAyuda { n: number; etiqueta: string; caja: [number, number, number, number]; }
@@ -52,6 +71,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     grupo: 'inicio',
     titulo: 'Qué es ORBITA y cómo se mueve uno',
     resumen: 'ORBITA tiene dos sistemas: Operación (las órdenes que mandan las ARL) y Finanzas (facturar, cobrar, pagar y contabilizar).',
+    ilustraciones: ILU_QUE_ES_ORBITA,
     pasos: [
       'Al iniciar sesión, si su rol tiene los dos sistemas, elige a cuál entrar. Para cambiar después use el botón «Cambiar de sistema» de la barra superior.',
       'El menú de la izquierda cambia según el sistema. Si una opción no aparece, su rol no tiene permiso para esa pantalla (lo define el administrador en Configuración → Roles y permisos).',
@@ -68,6 +88,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     resumen: 'Administrador, administrativo, contador y auditor ven y pueden cosas distintas.',
     ruta: '/configuracion',
     rutaTexto: 'Configuración → Roles y permisos',
+    ilustraciones: ILU_ROLES,
     pasos: [
       'Administrador: todo, incluida la configuración y la generación de cuentas de cobro.',
       'Administrativo: opera las órdenes (importar, programar, verificar soportes) sin ver lo financiero.',
@@ -109,6 +130,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     resumen: 'Se elige el asesor, se marcan las franjas en la agenda y ORBITA le envía los formatos de la ARL ya diligenciados.',
     ruta: '/ordenes',
     rutaTexto: 'Órdenes',
+    ilustraciones: ILU_ASIGNAR_ORDEN,
     pasos: [
       'En Órdenes, pulse el icono de asignar en la fila de la orden.',
       'Elija al asesor en la lista de la izquierda. Use el buscador para encontrarlo por nombre, especialidad o ARL.',
@@ -130,6 +152,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     grupo: 'operacion',
     titulo: 'Qué formatos salen según la ARL',
     resumen: 'Cada ARL pide formatos distintos según el tipo de actividad; ORBITA elige y diligencia los que corresponden.',
+    ilustraciones: ILU_FORMATOS_ARL,
     pasos: [
       'Bolívar: el AT-031 (seguimiento de la visita) siempre; el AT-028 (registro de asistencia) solo en capacitaciones presenciales; el informe de gestión en asistencias técnicas.',
       'AXA Colpatria: registro de asistencia más la ficha de gestión (asesorías de hasta 16 horas) o el informe técnico (más de 16).',
@@ -150,6 +173,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     resumen: 'El asesor sube sus documentos firmados desde un enlace; la oficina los revisa y los acepta o los devuelve.',
     ruta: '/ordenes',
     rutaTexto: 'Órdenes → Verificar soportes',
+    ilustraciones: ILU_SOPORTES,
     pasos: [
       'El asesor abre el enlace del correo (sin usuario), sube un archivo por casilla y envía. La orden pasa a «Ejecutada» y llega un aviso a la campanita que nombra la orden por su cronograma y secuencia (Bolívar) o su número de orden, con la empresa.',
       'En Órdenes → Ejecutadas abra «Verificar soportes». Puede ver cada documento y descargar varios en un solo PDF.',
@@ -167,6 +191,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     resumen: 'Antes de facturar una orden finalizada, operación confirma que lo que se cobra cuadra con lo ejecutado y con la prefactura de la ARL.',
     ruta: '/ordenes',
     rutaTexto: 'Órdenes → columna Cobro',
+    ilustraciones: ILU_COBRO_ORDEN,
     pasos: [
       'En la columna «Cobro» pulse la etiqueta de la orden finalizada.',
       'Revise las horas por el valor hora, los gastos que traía la ARL y la comparación con la prefactura.',
@@ -181,6 +206,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     resumen: 'Cada mes se arma, por asesor, la cuenta de lo que se le debe; el asesor la acepta o la rechaza desde un enlace.',
     ruta: '/precuentas',
     rutaTexto: 'Cuentas de cobro',
+    ilustraciones: ILU_CUENTAS_DE_COBRO,
     pasos: [
       'Entre por año y mes. Cada fila es un asesor con trabajo aceptado por cobrar; la fila nace sola cuando se aceptan los soportes de su primera orden.',
       'Pulse «Generar» para congelar la cifra. Pulse el ojo para ver el detalle: fecha de ejecución, orden, actividad, empresa, ARL con la que se factura, horas, valor hora, viáticos y valor.',
@@ -202,6 +228,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     resumen: 'La ficha de cada asesor: contacto, cédula, especialidad, registro ante cada ARL, tarifas y firma digital.',
     ruta: '/profesionales',
     rutaTexto: 'Profesionales',
+    ilustraciones: ILU_PROFESIONALES,
     pasos: [
       'Use el buscador de la parte superior: encuentra por nombre, correo, teléfono, cédula, especialidad o ARL de registro.',
       '«Nuevo profesional» crea la ficha. La cédula la imprime el formato de ARL SURA junto a la firma.',
@@ -216,6 +243,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     grupo: 'operacion',
     titulo: 'Alertas de documentos por vencer',
     resumen: 'La campanita avisa antes de que algo se venza, para no enterarse tarde.',
+    ilustraciones: ILU_ALERTAS,
     pasos: [
       'Órdenes de servicio sin finalizar: aviso a 7 y a 3 días de su fecha de vencimiento, y cuando ya está vencida. Nombra la orden por su cronograma y secuencia (Bolívar) o su número de orden. Le llega a administradores y administrativos.',
       'Registro de un asesor ante una ARL: aviso a 30 y 7 días de su vigencia y cuando vence.',
@@ -235,6 +263,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     resumen: 'Un tercero es la identidad fiscal de a quién se factura o se paga. Un mismo tercero puede ser cliente y proveedor.',
     ruta: '/terceros',
     rutaTexto: 'Terceros',
+    ilustraciones: ILU_TERCEROS,
     pasos: [
       '«Nuevo tercero» pide tipo de persona, documento, nombre, dirección, municipio y correo de facturación. El dígito de verificación del NIT se calcula solo.',
       'Marque sus roles: cliente, proveedor, empleado o acreedor.',
@@ -253,6 +282,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     resumen: 'Los datos con los que se factura: emisor, productos, retenciones, numeración y tarifas.',
     ruta: '/parametrizacion',
     rutaTexto: 'Parametrización',
+    ilustraciones: ILU_PARAMETRIZACION,
     pasos: [
       'Emisor: razón social, NIT y datos de JD&D como aparecen en la factura.',
       'Productos: lo que se vende, con su IVA (gravado, exento o excluido). Desde la factura manual también se puede crear uno al vuelo.',
@@ -269,6 +299,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     resumen: 'Se arma un borrador con lo ya aprobado, se revisa y se emite ante la DIAN.',
     ruta: '/facturacion',
     rutaTexto: 'Facturación',
+    ilustraciones: ILU_FACTURAR,
     pasos: [
       'Por facturar: las órdenes aprobadas, por pagador. En Bolívar se factura por prefactura; en las demás ARL se eligen las órdenes. «Crear factura» arma el borrador.',
       'Pendientes: revise el cálculo (subtotal, descuentos, IVA, retenciones, total) y el PDF antes de emitir. Puede corregir el IVA, las retenciones y la forma de pago.',
@@ -290,6 +321,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     resumen: 'Para facturar algo que no viene de una orden de servicio.',
     ruta: '/facturacion',
     rutaTexto: 'Facturación → Nueva factura manual',
+    ilustraciones: ILU_FACTURA_MANUAL,
     pasos: [
       'Elija el cliente. Si no existe, pulse «Crear cliente sin salir de esta ventana».',
       'Al elegirlo se proponen sus condiciones: descuento, retenciones, plazo y forma de pago. Todo se puede cambiar.',
@@ -309,6 +341,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     resumen: 'A los asesores se les paga con una cuenta de cobro (respaldada con un documento soporte) o con su propia factura electrónica.',
     ruta: '/documentos-soporte',
     rutaTexto: 'Pago a profesionales',
+    ilustraciones: ILU_PAGO_PROFESIONALES,
     pasos: [
       'Cuentas de cobro: las que el asesor aceptó aparecen en «Por generar». «Generar» crea el documento soporte (borrador). Revíselo y emítalo ante la DIAN.',
       'Al contabilizar el documento soporte, el valor de cada orden va al centro de costo de su ARL (se enlaza en Contabilidad → Centros de costo).',
@@ -325,6 +358,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     resumen: 'Cada compra, servicio o gasto se contabiliza al registrarlo y, si es a crédito, queda por pagar.',
     ruta: '/compras',
     rutaTexto: 'Compras y gastos',
+    ilustraciones: ILU_COMPRAS,
     pasos: [
       'Elija el tipo (compra, servicio, servicio profesional o gasto interno) y el proveedor. ¿No está? Créelo desde el mismo formulario.',
       'Escriba el número de la factura del proveedor, la fecha y la forma de pago: a crédito (con vencimiento) o de contado (desde qué banco o caja).',
@@ -341,6 +375,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     resumen: 'Lo que deben los clientes y cómo se registra lo que pagan.',
     ruta: '/cartera',
     rutaTexto: 'Cartera → Por cobrar',
+    ilustraciones: ILU_CARTERA_COBRAR,
     pasos: [
       'Por cobrar muestra la antigüedad por cliente. El ojo abre su estado de cuenta.',
       '«Registrar recibo de caja»: elija el cliente, la fecha y el banco donde entró la plata.',
@@ -358,6 +393,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     resumen: 'Lo que JD&D debe a sus proveedores y asesores, y cómo se les paga.',
     ruta: '/cartera',
     rutaTexto: 'Cartera → Por pagar',
+    ilustraciones: ILU_CARTERA_PAGAR,
     pasos: [
       'En «Por pagar» están los botones para registrar un anticipo o un egreso (también en «Egresos y anticipos»).',
       'Anticipo: elija al proveedor, la fecha, el valor y el banco. El formulario muestra la cuenta contable a la que se registra el anticipo antes de guardar.',
@@ -373,6 +409,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     resumen: 'El libro contable: cuentas, reglas de contabilización, comprobantes, periodos y activos.',
     ruta: '/contabilidad',
     rutaTexto: 'Contabilidad',
+    ilustraciones: ILU_CONTABILIDAD,
     pasos: [
       'Plan de cuentas: importe el PUC de Siigo, cree cuentas o inactívelas. Para limpiar las que no se necesitan, marque una o varias y pulse «Eliminar las marcadas».',
       'Solo se elimina lo que nada usa: sin subcuentas, sin movimientos y sin reglas. Lo que ya tiene historia no se borra; se inactiva.',
@@ -390,6 +427,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     resumen: 'Balance de comprobación, movimiento por cuenta, por tercero, libros auxiliares, ventas por cliente y estados financieros.',
     ruta: '/informes-contables',
     rutaTexto: 'Informes contables',
+    ilustraciones: ILU_INFORMES_CONTABLES,
     pasos: [
       'Elija el informe en las pestañas y el rango de fechas.',
       'Todos se exportan a Excel (con números de verdad) y a PDF.',

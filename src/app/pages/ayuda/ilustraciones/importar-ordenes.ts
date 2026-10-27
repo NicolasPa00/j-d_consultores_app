@@ -11,9 +11,9 @@ export const ILUSTRACIONES: Ilustracion[] = [
         "n": 1,
         "etiqueta": "Zona para soltar archivos",
         "caja": [
-          6.47,
+          4.41,
           32.45,
-          89.22,
+          91.19,
           16.14
         ]
       },
@@ -21,9 +21,9 @@ export const ILUSTRACIONES: Ilustracion[] = [
         "n": 2,
         "etiqueta": "Archivo elegido",
         "caja": [
-          6.47,
+          4.41,
           58.88,
-          20.36,
+          20.81,
           8.67
         ]
       },
@@ -31,9 +31,9 @@ export const ILUSTRACIONES: Ilustracion[] = [
         "n": 3,
         "etiqueta": "Leer el archivo",
         "caja": [
-          83.38,
+          83.01,
           56.22,
-          12.31,
+          12.58,
           11.33
         ]
       }
@@ -48,9 +48,9 @@ export const ILUSTRACIONES: Ilustracion[] = [
         "n": 1,
         "etiqueta": "ARL reconocida",
         "caja": [
-          18.53,
+          43.38,
           44.48,
-          19.57,
+          13.6,
           11.04
         ]
       },
@@ -58,9 +58,9 @@ export const ILUSTRACIONES: Ilustracion[] = [
         "n": 2,
         "etiqueta": "Tipo de orden",
         "caja": [
-          36.87,
+          56.13,
           44.48,
-          22.23,
+          15.45,
           11.04
         ]
       },
@@ -68,9 +68,9 @@ export const ILUSTRACIONES: Ilustracion[] = [
         "n": 3,
         "etiqueta": "Qué tan segura está",
         "caja": [
-          67.61,
+          77.49,
           44.48,
-          14.83,
+          10.3,
           11.04
         ]
       },
@@ -78,9 +78,9 @@ export const ILUSTRACIONES: Ilustracion[] = [
         "n": 4,
         "etiqueta": "Comparar con el original",
         "caja": [
-          81.22,
+          86.95,
           44.48,
-          14.39,
+          10,
           11.04
         ]
       }
