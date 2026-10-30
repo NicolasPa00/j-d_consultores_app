@@ -5,7 +5,8 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> 🧾 **30-oct-2026 · NÓMINA: correcciones que pidió la contadora por teléfono — COMMITEADAS EN LOCAL, SIN DESPLEGAR.**
+> 🧾 **30-oct-2026 · NÓMINA: correcciones que pidió la contadora por teléfono — DESPLEGADAS EN PRODUCCIÓN (back `3d4b570`, front `c6195d5`; script `docs/4-despliegue/despliegue-nomina-30-oct.sh`, sin migraciones; respaldo `~/respaldos/orbita-antes-nomina30oct-*.dump`). Guía para la contadora (HTML + PDF, 5 págs.) en `3-entregables-y-respaldos/entregas-cliente/2026-10-30-guia-nomina-ajustes/`; capturas con `herramientas/ayuda-capturas/guia-nomina-30-oct.mjs` y datos inventados de `sst_ws/scripts/guia-nomina-30-oct-datos.mjs` (ya borrados de `jdd_dev`; `--borrar` los quita).**
+> **Causa probable de lo que vio la contadora:** el modal abría SIEMPRE en el mes anterior; con alguien que ingresó en octubre la vista previa era solo un error (sin salud, pensión ni auxilio). Ahora abre en el mes en curso desde el día 20 y, al elegir a quien ingresó después del mes marcado, salta a su mes de ingreso; el error dice el mes y «Cambie el mes arriba». Visto por pantalla en local (capturas de la guía).
 > Lo que anotó el usuario: «que le deje calcular la salud y pensión», «la nómina de Lorena es 2.200.000», «no le deja agregar el
 > auxilio de transporte», «lo de la chica nueva será editable porque no es todo el mes: si entra el 19, por días nada más».
 > (1) Los días del mes salen de la ficha: `diasConContrato()` en `liquidaciones.service.js` (mes comercial de 30; entra el 19 →
