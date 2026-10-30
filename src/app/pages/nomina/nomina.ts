@@ -236,6 +236,18 @@ export class NominaComponent implements OnInit {
   }
 
   // ================= Liquidar =================
+  /** Al elegir a alguien que ingresó DESPUÉS del mes elegido, se pasa a su mes de ingreso: antes no trabajó. */
+  protected elegirEmpleadoLiq(id: string): void {
+    this.liqEmpleado.set(id);
+    const ingreso = this.empleadoElegido()?.fecha_ingreso;
+    const elegido = `${this.liqAnio()}-${String(this.liqMes()).padStart(2, '0')}`;
+    if (ingreso && ingreso.slice(0, 7) > elegido) {
+      this.liqAnio.set(Number(ingreso.slice(0, 4)));
+      this.liqMes.set(Number(ingreso.slice(5, 7)));
+    }
+    this.programarPrevia(0);
+  }
+
   protected abrirLiquidar(l: LiquidacionNomina | null = null): void {
     this.editandoId.set(l?.id ?? null);
     this.previa.set(null);
@@ -249,8 +261,10 @@ export class NominaComponent implements OnInit {
       this.nov.set(this.aFormulario(l.novedades));
       this.detalle.set(null);
     } else {
-      // Por defecto, el mes pasado: la nómina se liquida a mes vencido.
-      const ref = new Date(this.hoy.getFullYear(), this.hoy.getMonth() - 1, 1);
+      // 30-oct-2026 · Desde el día 20 se abre en el mes en curso: JD&D liquida y paga al cierre del mes (la
+      // contadora liquidó octubre el 30-oct). Antes del 20, el mes pasado. Abrir siempre en el mes pasado dejaba
+      // a quien ingresó este mes con un error en vez de la liquidación (sin salud, pensión ni auxilio a la vista).
+      const ref = new Date(this.hoy.getFullYear(), this.hoy.getMonth() - (this.hoy.getDate() >= 20 ? 0 : 1), 1);
       this.liqEmpleado.set(this.opcionesEmpleado().length === 1 ? this.opcionesEmpleado()[0].valor : '');
       this.liqAnio.set(ref.getFullYear());
       this.liqMes.set(ref.getMonth() + 1);

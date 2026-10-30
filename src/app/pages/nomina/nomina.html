@@ -305,7 +305,7 @@
               <input id="nomLiqEmp" class="form-control" type="text" [value]="empleadoElegido()?.nombre ?? ''" disabled />
             } @else {
               <app-selector-busqueda idCampo="nomLiqEmp" [opciones]="opcionesEmpleado()" [valor]="liqEmpleado()"
-                                     (valorChange)="liqEmpleado.set($event); programarPrevia(0)" placeholder="Nombre o documento…" />
+                                     (valorChange)="elegirEmpleadoLiq($event)" placeholder="Nombre o documento…" />
             }
           </div>
           <div class="form-field">
@@ -339,25 +339,25 @@
             <div class="form-field">
               <label class="form-field__label" for="nomLiqDias">Días a liquidar</label>
               <input id="nomLiqDias" class="form-control num" type="number" min="1" max="30" step="1"
-                     [placeholder]="'Automático: ' + (previa()?.diasMes ?? 30)" [ngModel]="nov().diasLaborados" (ngModelChange)="cambiarNov(asignar('diasLaborados', $event))" />
+                     [placeholder]="'' + (previa()?.diasMes ?? 30)" [ngModel]="nov().diasLaborados" (ngModelChange)="cambiarNov(asignar('diasLaborados', $event))" />
             </div>
             <div class="form-field">
               <label class="form-field__label" for="nomLiqAux">Auxilio de transporte</label>
               <select id="nomLiqAux" class="form-control" [ngModel]="nov().auxilio" (ngModelChange)="cambiarNov(asignar('auxilio', $event))">
-                <option value="auto">Automático (hasta 2 mínimos)</option>
+                <option value="auto">Automático</option>
                 <option value="si">Pagarlo</option>
                 <option value="no">No pagarlo</option>
               </select>
             </div>
             <div class="form-field">
-              <label class="form-field__label" for="nomLiqSalud">Salud</label>
+              <label class="form-field__label" for="nomLiqSalud">Salud <small>(vacío = 4 %)</small></label>
               <input id="nomLiqSalud" class="form-control num" type="text" inputmode="decimal"
-                     [placeholder]="'Automático: ' + (previa() ? pesos(previa()!.deducciones.salud.valor) : '4 %')" [ngModel]="nov().salud" (ngModelChange)="cambiarNov(asignar('salud', $event))" />
+                     [placeholder]="previa() ? pesos(previa()!.deducciones.salud.valor) : ''" [ngModel]="nov().salud" (ngModelChange)="cambiarNov(asignar('salud', $event))" />
             </div>
             <div class="form-field">
-              <label class="form-field__label" for="nomLiqPension">Pensión</label>
+              <label class="form-field__label" for="nomLiqPension">Pensión <small>(vacío = 4 %)</small></label>
               <input id="nomLiqPension" class="form-control num" type="text" inputmode="decimal"
-                     [placeholder]="'Automático: ' + (previa() ? pesos(previa()!.deducciones.pension.valor) : '4 %')" [ngModel]="nov().pension" (ngModelChange)="cambiarNov(asignar('pension', $event))" />
+                     [placeholder]="previa() ? pesos(previa()!.deducciones.pension.valor) : ''" [ngModel]="nov().pension" (ngModelChange)="cambiarNov(asignar('pension', $event))" />
             </div>
             @if (nov().auxilio === 'si') {
               <div class="form-field">
@@ -367,7 +367,7 @@
               </div>
             }
           </div>
-          <p class="form-field__hint">Deje vacío lo que deba calcular el sistema. Los días salen de la fecha de ingreso (quien entra el 19 liquida 12); las vacaciones, licencias e incapacidades se descuentan de ellos.</p>
+          <p class="form-field__hint">Deje vacío lo que deba calcular el sistema. El auxilio automático se paga a quien gana hasta 2 salarios mínimos. Los días salen de la fecha de ingreso (quien entra el 19 liquida 12); las vacaciones, licencias e incapacidades se descuentan de ellos.</p>
         </section>
 
         <!-- Horas extra y recargos -->
