@@ -407,23 +407,57 @@
                 <th>Valor hora</th>
                 <th>Viáticos</th>
                 <th>Subtotal</th>
+                @if (puedeAjustar(pc) && !editandoValores()) { <th aria-label="Quitar"></th> }
               </tr>
             </thead>
             <tbody>
               @for (i of pc.items || []; track i.id) {
                 <tr>
                   <td class="mono">{{ fecha(i.fecha_ejecucion) }}</td>
-                  <td class="mono">{{ i.orden_codigo || '—' }}</td>
-                  <td class="bl-wrap">{{ i.actividad || '—' }}</td>
-                  <td class="bl-wrap">{{ i.empresa_nombre || '—' }}</td>
+                  <!-- 29-oct-2026 · La orden como la conoce la ARL («134803-67»); el código OS va debajo, pequeño. -->
+                  <td class="mono">
+                    @if (editandoValores() && i.manual) {
+                      <input class="form-control bl-input bl-input--texto" type="text" maxlength="300" [(ngModel)]="ajustes[i.id].orden_referencia" aria-label="Referencia de la línea manual" placeholder="Referencia" />
+                    } @else {
+                      {{ i.orden_referencia || i.orden_codigo || '—' }}
+                      @if (i.manual) {
+                        <small class="origen" title="Línea agregada a mano: no viene de una orden de la ARL">manual</small>
+                      } @else if (i.orden_codigo && i.orden_codigo !== i.orden_referencia) {
+                        <small class="bl-os">{{ i.orden_codigo }}</small>
+                      }
+                    }
+                  </td>
+                  <td class="bl-wrap">
+                    @if (editandoValores() && i.manual) {
+                      <input class="form-control bl-input bl-input--texto" type="text" maxlength="300" [(ngModel)]="ajustes[i.id].actividad" aria-label="Actividad de la línea manual" />
+                    } @else {
+                      {{ i.actividad || '—' }}
+                    }
+                  </td>
+                  <td class="bl-wrap">
+                    @if (editandoValores() && i.manual) {
+                      <input class="form-control bl-input bl-input--texto" type="text" maxlength="300" [(ngModel)]="ajustes[i.id].empresa_nombre" aria-label="Empresa de la línea manual" />
+                    } @else {
+                      {{ i.empresa_nombre || '—' }}
+                    }
+                  </td>
                   <td>{{ i.arl_nombre || '—' }}</td>
-                  <td class="mono">{{ horas(i.horas) }}</td>
                   <td class="mono">
                     @if (editandoValores()) {
-                      <input class="form-control mono bl-input" type="text" inputmode="numeric" [(ngModel)]="ajustes[i.id].valor_hora" [attr.aria-label]="'Valor hora de ' + i.orden_codigo" />
+                      <input class="form-control mono bl-input bl-input--corto" type="text" inputmode="decimal" [(ngModel)]="ajustes[i.id].horas" [attr.aria-label]="'Horas a pagar de ' + (i.orden_referencia || i.orden_codigo || i.actividad)" />
+                    } @else {
+                      {{ horas(i.horas) }}
+                      @if (horasCambiadas(i)) {
+                        <small class="origen" [title]="'Horas editadas a mano. La orden traía ' + horas(i.horas_original) + ' h'">ajustado</small>
+                      }
+                    }
+                  </td>
+                  <td class="mono">
+                    @if (editandoValores()) {
+                      <input class="form-control mono bl-input" type="text" inputmode="numeric" [(ngModel)]="ajustes[i.id].valor_hora" [attr.aria-label]="'Valor hora de ' + (i.orden_referencia || i.orden_codigo || i.actividad)" />
                     } @else {
                       {{ pesos(i.valor_hora_snapshot) }}
-                      @if (i.ajuste_manual) {
+                      @if (i.ajuste_manual && i.valor_hora_original != null) {
                         <small class="origen" [title]="'Ajustado a mano. Traía ' + pesos(i.valor_hora_original)">ajustado</small>
                       } @else if (i.origen_tarifa === 'profesional') {
                         <small class="origen" title="No había tarifa para el tipo de actividad: se aplicó el valor hora base del profesional">base</small>
@@ -432,13 +466,23 @@
                   </td>
                   <td class="mono">
                     @if (editandoValores()) {
-                      <input class="form-control mono bl-input" type="text" inputmode="numeric" [(ngModel)]="ajustes[i.id].viaticos" [attr.aria-label]="'Viáticos de ' + i.orden_codigo" />
+                      <input class="form-control mono bl-input" type="text" inputmode="numeric" [(ngModel)]="ajustes[i.id].viaticos" [attr.aria-label]="'Viáticos de ' + (i.orden_referencia || i.orden_codigo || i.actividad)" />
                     } @else {
                       {{ +(i.viaticos ?? 0) ? pesos(i.viaticos) : '—' }}
                     }
                   </td>
                   <!-- El subtotal son HONORARIOS (horas × valor hora): el viático va en su propia columna. -->
                   <td class="mono money">{{ editandoValores() ? pesos(montoAjustado(i)) : pesos(i.monto) }}</td>
+                  @if (puedeAjustar(pc) && !editandoValores()) {
+                    <td>
+                      <button type="button" class="icon-action icon-action--danger" (click)="quitarLinea(pc, i)" [disabled]="guardandoAjustes()"
+                              [attr.aria-label]="'Quitar de la cuenta ' + (i.orden_referencia || i.orden_codigo || i.actividad)" title="Quitar de la cuenta">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+                        </svg>
+                      </button>
+                    </td>
+                  }
                 </tr>
               } @empty {
                 <tr><td colspan="9" class="table__empty">Sin órdenes en el periodo.</td></tr>
@@ -451,7 +495,7 @@
               @if (editandoValores()) {
                 <tr>
                   <td colspan="5" class="totales__label">Total a pagar con estos valores</td>
-                  <td class="mono">{{ horas(pc.total_horas) }}</td>
+                  <td class="mono">{{ horas(horasAjustadas(pc)) }}</td>
                   <td></td>
                   <td></td>
                   <td class="mono money">{{ pesos(totalAjustado(pc)) }}</td>
@@ -463,6 +507,7 @@
                   <td></td>
                   <td></td>
                   <td class="mono money">{{ pesos(honorariosDe(pc)) }}</td>
+                  @if (puedeAjustar(pc)) { <td></td> }
                 </tr>
                 <tr>
                   <td colspan="5" class="totales__label">Viáticos</td>
@@ -470,6 +515,7 @@
                   <td></td>
                   <td></td>
                   <td class="mono money">{{ pesos(viaticosDe(pc)) }}</td>
+                  @if (puedeAjustar(pc)) { <td></td> }
                 </tr>
                 <tr>
                   <td colspan="5" class="totales__label">Total a pagar</td>
@@ -477,6 +523,7 @@
                   <td></td>
                   <td></td>
                   <td class="mono money">{{ pesos(pc.total_monto) }}</td>
+                  @if (puedeAjustar(pc)) { <td></td> }
                 </tr>
               } @else {
                 <tr>
@@ -485,11 +532,79 @@
                   <td></td>
                   <td></td>
                   <td class="mono money">{{ pesos(pc.total_monto) }}</td>
+                  @if (puedeAjustar(pc)) { <td></td> }
                 </tr>
               }
             </tfoot>
           </table>
         </div>
+
+        <!-- 29-oct-2026 · Actividad que no llegó como orden de la ARL (p. ej. la gestión en Comtexaco y Gmaz). -->
+        @if (lineaNueva(); as l) {
+          <fieldset class="bl-manual">
+            <legend class="bl-manual__titulo">Agregar actividad manual</legend>
+            <div class="bl-manual__grid">
+              <label class="form-field bl-manual__ancho">
+                <span>Actividad *</span>
+                <input class="form-control" type="text" maxlength="300" [(ngModel)]="l.actividad" placeholder="Ej.: Gestión SG-SST en Comtexaco" />
+              </label>
+              <label class="form-field">
+                <span>Empresa</span>
+                <input class="form-control" type="text" maxlength="300" [(ngModel)]="l.empresa_nombre" />
+              </label>
+              <label class="form-field">
+                <span>N.º de orden o referencia</span>
+                <input class="form-control" type="text" maxlength="300" [(ngModel)]="l.orden_referencia" />
+              </label>
+              <label class="form-field">
+                <span>Fecha</span>
+                <input class="form-control" type="date" [min]="limitesMes(pc.periodo).min" [max]="limitesMes(pc.periodo).max" [(ngModel)]="l.fecha_ejecucion" />
+              </label>
+              <label class="form-field">
+                <span>Horas *</span>
+                <input class="form-control mono" type="text" inputmode="decimal" [(ngModel)]="l.horas" />
+              </label>
+              <label class="form-field">
+                <span>Valor hora *</span>
+                <input class="form-control mono" type="text" inputmode="numeric" [(ngModel)]="l.valor_hora" />
+              </label>
+              <label class="form-field">
+                <span>Viáticos</span>
+                <input class="form-control mono" type="text" inputmode="numeric" [(ngModel)]="l.viaticos" placeholder="0" />
+              </label>
+            </div>
+            <div class="bl-manual__pie">
+              <span class="detalle__meta">Subtotal: <strong>{{ pesos(montoLineaNueva()) }}</strong> · sin fecha, queda el último día del mes</span>
+              <span class="bl-manual__acciones">
+                <button type="button" class="btn btn--close" (click)="lineaNueva.set(null)" [disabled]="guardandoAjustes()">Cancelar</button>
+                <button type="button" class="btn btn--primary" (click)="guardarLineaManual(pc)" [disabled]="guardandoAjustes()">
+                  @if (guardandoAjustes()) { <span class="spinner" aria-hidden="true"></span> Guardando… } @else { Agregar a la cuenta }
+                </button>
+              </span>
+            </div>
+          </fieldset>
+        }
+
+        <!-- 29-oct-2026 · Órdenes quitadas de la cuenta (ya pagadas por fuera de ORBITA): no vuelven solas al generar. -->
+        @if (pc.excluidas?.length) {
+          <details class="bl-excluidas">
+            <summary>Órdenes apartadas del cobro ({{ pc.excluidas!.length }})</summary>
+            <ul>
+              @for (x of pc.excluidas; track x.orden_id) {
+                <li>
+                  <span>
+                    <strong class="mono">{{ x.orden_referencia }}</strong>
+                    · {{ x.empresa_nombre || '—' }} · {{ x.actividad || '—' }} · {{ fecha(x.fecha_ejecucion) }}
+                    @if (x.motivo) { <small class="detalle__meta"> — {{ x.motivo }}</small> }
+                  </span>
+                  @if (puedeGestionar()) {
+                    <button type="button" class="btn btn--ghost btn--sm" (click)="restaurarExcluida(pc, x)" [disabled]="guardandoAjustes()">Volver a incluir</button>
+                  }
+                </li>
+              }
+            </ul>
+          </details>
+        }
       }
     </div>
 
@@ -502,7 +617,10 @@
       } @else {
         <button type="button" class="btn btn--close" (click)="cerrarDetalle()">Cerrar</button>
         @if (puedeAjustar(pc)) {
-          <button type="button" class="btn btn--ghost" (click)="empezarAjuste(pc)" title="Cambiar el valor de la hora o sumar viáticos antes de enviar la cuenta">Ajustar valores y viáticos</button>
+          @if (!lineaNueva()) {
+            <button type="button" class="btn btn--ghost" (click)="abrirLineaManual()" title="Sumar a esta cuenta una actividad que no llegó como orden">Agregar actividad manual</button>
+          }
+          <button type="button" class="btn btn--ghost" (click)="empezarAjuste(pc)" title="Cambiar las horas, el valor de la hora o sumar viáticos antes de enviar la cuenta">Ajustar horas y valores</button>
         }
         <button type="button" class="btn btn--ghost" (click)="verPdfDe(pc.id)">Ver documento</button>
       }

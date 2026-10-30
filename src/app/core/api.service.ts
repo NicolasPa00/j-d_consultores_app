@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { EstadisticasPeriodo, ActivoFijo, ActivoFijoForm, CorridaDepreciacion, FichaActivoFijo, VistaPreviaDepreciacion, AuxiliarPorCuenta, BalanceComprobacion, FiltrosInformeContable, InformePorTercero, LibroAuxiliar, VentasPorCliente, EstadoSituacionFinanciera, EstadoResultados, ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, Banco, CuentaBancaria, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, Coasesor, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, InfoPaqueteArl, DetalleSoporte, DocumentoFactura, DocumentoSoporte, RadicadoOrden, ResumenImportSoportes, ResumenImportTerceros, SoportePorGenerar, VisitaProxima, Especialidad, PagadorPorFacturar, OrdenManualForm, FacturaManualForm, DetalleCobroOrden, ValoresCobroForm } from './models';
+import { EstadisticasPeriodo, ActivoFijo, ActivoFijoForm, CorridaDepreciacion, FichaActivoFijo, VistaPreviaDepreciacion, AuxiliarPorCuenta, BalanceComprobacion, FiltrosInformeContable, InformePorTercero, LibroAuxiliar, VentasPorCliente, EstadoSituacionFinanciera, EstadoResultados, ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, Banco, CuentaBancaria, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, Coasesor, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, LineaManualCobro, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, InfoPaqueteArl, DetalleSoporte, DocumentoFactura, DocumentoSoporte, RadicadoOrden, ResumenImportSoportes, ResumenImportTerceros, SoportePorGenerar, VisitaProxima, Especialidad, PagadorPorFacturar, OrdenManualForm, FacturaManualForm, DetalleCobroOrden, ValoresCobroForm } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -515,8 +515,27 @@ export class ApiService {
   }
   /** PRE-04 · Envía el PDF y el enlace de aceptación al profesional. */
   /** 24-oct-2026 · Ajusta el valor hora y los viáticos de las líneas antes de enviar la cuenta. */
-  ajustarItemsPrecuenta(id: string, items: { id: string; valor_hora: number; viaticos: number }[]): Observable<Wrap<Precuenta>> {
+  /** 24/29-oct-2026 · Horas, valor hora y viáticos por línea (y la descripción de las manuales). */
+  ajustarItemsPrecuenta(id: string, items: {
+    id: string; horas: number; valor_hora: number; viaticos: number;
+    actividad?: string; empresa_nombre?: string; orden_referencia?: string;
+  }[]): Observable<Wrap<Precuenta>> {
     return this.http.patch<Wrap<Precuenta>>(`${this.base}/precuentas/${id}/items`, { items });
+  }
+
+  /** 29-oct-2026 · Línea manual (sin orden) en una cuenta abierta. */
+  agregarLineaPrecuenta(id: string, linea: LineaManualCobro): Observable<Wrap<Precuenta>> {
+    return this.http.post<Wrap<Precuenta>>(`${this.base}/precuentas/${id}/items`, linea);
+  }
+
+  /** 29-oct-2026 · Quita una línea; si es de una orden, queda apartada del cobro de ese asesor. */
+  quitarLineaPrecuenta(id: string, itemId: string, motivo?: string): Observable<Wrap<Precuenta>> {
+    return this.http.delete<Wrap<Precuenta>>(`${this.base}/precuentas/${id}/items/${itemId}`, { body: { motivo } });
+  }
+
+  /** 29-oct-2026 · Devuelve al cobro una orden apartada. */
+  restaurarOrdenCobro(ordenId: string, profesionalId: string): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.base}/precuentas/exclusiones/${ordenId}/${profesionalId}`);
   }
 
   enviarPrecuenta(id: string): Observable<{ message: string }> {

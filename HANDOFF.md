@@ -5,6 +5,20 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
+> 💸 **29-oct-2026 · CUENTAS DE COBRO: 5 peticiones de JD&D — CONSTRUIDAS, SIN COMMIT Y SIN DESPLEGAR.** Migración
+> `sst_ws/db/migraciones/2026-10-29-cuenta-cobro-lineas.sql` (aditiva; **NO aplicada en `jdd_dev`**: el permiso se denegó,
+> se probó dentro de BEGIN…ROLLBACK). (1/5) cada línea lleva `orden_referencia` = `referenciaOrden(o, { separador: '-' })`
+> («134803-67»; avisos siguen con «_») y `actividad` = `tema_actividad` → `tipo_actividad` (el «Tema y/o actividad a realizar»
+> del AT-028), no el tipo de orden; la migración rellena la referencia en todas y el tema solo en cuentas generada/rechazada.
+> (2) Papelera por línea: una línea de orden pasa a `sst.cobro_exclusiones` (orden×profesional) y `vw_horas_por_cobrar` y
+> `generarPrecuentas` la ignoran; el modal lista «Órdenes apartadas del cobro» con «Volver a incluir». Causa del caso de José:
+> órdenes ya pagadas por fuera a las que se subió el formato el 20-oct para facturar (no se revisó producción). (3) Horas
+> editables (`horas_original` guarda las de la orden). (4) Líneas manuales: `precuenta_items.orden_id` ahora NULLABLE +
+> `manual`; sobreviven a «Generar». Rutas: `POST /precuentas/:id/items`, `DELETE /precuentas/:id/items/:itemId`,
+> `DELETE /precuentas/exclusiones/:ordenId/:profesionalId`. Prueba: `node --import tsx scripts/verificar-29-oct.mjs` (22/22 OK,
+> ROLLBACK). **Sin probar:** «Generar» de nuevo sobre una cuenta con manuales/horas editadas (usa el pool) y la pantalla.
+> Pendiente: una cuenta con SOLO líneas manuales (asesor sin órdenes en el mes) no se puede crear todavía.
+>
 > 🎬 **27-oct-2026 (tarde) · VIDEO DE BIENVENIDA EN /ayuda — DESPLEGADO (front `main 1087f41`).** «La vida de una orden en ORBITA»
 > (62,7 s, 1080p) en la cabecera de `/ayuda`: `public/ayuda/video/introduccion.mp4` (4,2 MB, −16 LUFS, faststart) +
 > `introduccion.jpg` de póster; sin autoplay, `preload="none"`. Fuente FUERA del repo: `3-entregables-y-respaldos/videos-ayuda/

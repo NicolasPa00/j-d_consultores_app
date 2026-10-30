@@ -41,7 +41,7 @@ export const ILUSTRACIONES: Ilustracion[] = [
   },
   {
     "titulo": "Revise el detalle",
-    "texto": "Fecha de ejecución, orden, actividad, empresa, ARL, horas, valor hora y viáticos de cada línea. Mientras no se haya enviado (o si el asesor la rechazó), «Ajustar valores y viáticos» permite corregir una línea.",
+    "texto": "Fecha de ejecución, orden, actividad, empresa, ARL, horas, valor hora y viáticos de cada línea. Mientras no se haya enviado (o si el asesor la rechazó), «Ajustar horas y valores» permite corregir una línea; también se pueden agregar actividades manuales y quitar órdenes ya pagadas.",
     "img": "ayuda/cuentas-de-cobro/2.webp",
     "marcas": [
       {

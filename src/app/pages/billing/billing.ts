@@ -7,7 +7,7 @@ import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
-import { CuentaDelMes, EstadoPrecuenta, Precuenta, PrecuentaItem, Profesional, Tarifa, TipoOrden } from '../../core/models';
+import { CuentaDelMes, EstadoPrecuenta, OrdenExcluidaCobro, Precuenta, PrecuentaItem, Profesional, Tarifa, TipoOrden } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
@@ -373,13 +373,17 @@ export class BillingComponent implements OnInit {
     if (this.guardandoAjustes()) return;
     this.detalle.set(null);
     this.editandoValores.set(false);
+    this.lineaNueva.set(null);
   }
 
-  // ---- 24-oct-2026 · Ajustar valor hora y viáticos antes de enviar ----
+  // ---- 24/29-oct-2026 · Ajustar horas, valor hora y viáticos antes de enviar ----
   protected readonly editandoValores = signal(false);
   protected readonly guardandoAjustes = signal(false);
-  /** Lo que se está escribiendo por línea (texto, como se teclea). */
-  protected ajustes: Record<string, { valor_hora: string; viaticos: string }> = {};
+  /** Lo que se está escribiendo por línea (texto, como se teclea). La descripción solo en las manuales. */
+  protected ajustes: Record<string, {
+    horas: string; valor_hora: string; viaticos: string;
+    actividad: string; empresa_nombre: string; orden_referencia: string;
+  }> = {};
 
   /** Solo se ajusta mientras la cuenta no se ha enviado ni aceptado, y solo lo hace el administrador. */
   protected puedeAjustar(pc: Precuenta): boolean {
@@ -388,9 +392,14 @@ export class BillingComponent implements OnInit {
 
   protected empezarAjuste(pc: Precuenta): void {
     this.ajustes = Object.fromEntries((pc.items ?? []).map((i) => [i.id, {
+      horas: String(Number(i.horas) || 0),
       valor_hora: String(Math.round(Number(i.valor_hora_snapshot) || 0)),
       viaticos: String(Math.round(Number(i.viaticos) || 0)),
+      actividad: i.actividad ?? '',
+      empresa_nombre: i.empresa_nombre ?? '',
+      orden_referencia: i.orden_referencia ?? '',
     }]));
+    this.lineaNueva.set(null);
     this.editandoValores.set(true);
   }
 
@@ -408,7 +417,17 @@ export class BillingComponent implements OnInit {
   /** Lo que valdría la línea con lo que se está escribiendo (horas × valor hora), para verlo antes de guardar. */
   protected montoAjustado(i: PrecuentaItem): number {
     const v = this.numero(this.ajustes[i.id]?.valor_hora);
-    return Number.isFinite(v) ? Math.round((Number(i.horas) || 0) * v) : 0;
+    const h = this.numero(this.ajustes[i.id]?.horas);
+    return Number.isFinite(v) && Number.isFinite(h) ? Math.round(h * v) : 0;
+  }
+
+  protected horasAjustadas(pc: Precuenta): number {
+    return (pc.items ?? []).reduce((t, i) => t + (this.numero(this.ajustes[i.id]?.horas) || 0), 0);
+  }
+
+  /** 29-oct-2026 · Horas editadas a mano: la orden traía otras. */
+  protected horasCambiadas(i: PrecuentaItem): boolean {
+    return i.horas_original != null && Number(i.horas_original) !== Number(i.horas);
   }
 
   protected totalAjustado(pc: Precuenta): number {
@@ -416,9 +435,21 @@ export class BillingComponent implements OnInit {
   }
 
   protected guardarAjustes(pc: Precuenta): void {
-    const items = (pc.items ?? []).map((i) => ({
-      id: i.id, valor_hora: this.numero(this.ajustes[i.id]?.valor_hora), viaticos: this.numero(this.ajustes[i.id]?.viaticos) || 0,
-    }));
+    const items = (pc.items ?? []).map((i) => {
+      const a = this.ajustes[i.id];
+      return {
+        id: i.id,
+        horas: this.numero(a?.horas),
+        valor_hora: this.numero(a?.valor_hora),
+        viaticos: this.numero(a?.viaticos) || 0,
+        // La descripción solo viaja en las manuales: la de una orden sale de la orden.
+        ...(i.manual ? { actividad: a?.actividad ?? '', empresa_nombre: a?.empresa_nombre ?? '', orden_referencia: a?.orden_referencia ?? '' } : {}),
+      };
+    });
+    if (items.some((i) => !Number.isFinite(i.horas) || i.horas <= 0)) {
+      this.alerts.warning('Revise las horas', 'Las horas deben ser mayores a cero. Si una orden no se paga, quítela de la cuenta.');
+      return;
+    }
     if (items.some((i) => !Number.isFinite(i.valor_hora) || i.valor_hora < 0 || i.viaticos < 0)) {
       this.alerts.warning('Revise los valores', 'El valor hora y los viáticos deben ser números iguales o mayores a cero.');
       return;
@@ -437,6 +468,115 @@ export class BillingComponent implements OnInit {
         this.alerts.error('No se pudieron guardar los valores', mensajeError(err, 'Intente de nuevo.'));
       },
     });
+  }
+
+  // ---- 29-oct-2026 · Quitar líneas, líneas manuales y órdenes apartadas del cobro ----
+
+  /**
+   * Quita una línea. Si es de una orden queda APARTADA del cobro de este asesor (ya pagada por fuera de
+   * ORBITA): no vuelve al generar otra vez. Se puede devolver desde la lista de abajo.
+   */
+  protected async quitarLinea(pc: Precuenta, i: PrecuentaItem): Promise<void> {
+    const cual = i.manual ? (i.actividad || 'esta línea') : `la orden ${i.orden_referencia || i.orden_codigo}`;
+    const ok = await this.alerts.confirm({
+      title: 'Quitar de la cuenta',
+      message: i.manual
+        ? `Se borrará ${cual} de la cuenta.`
+        : `Se quitará ${cual} de esta cuenta y quedará apartada del cobro de ${pc.profesional_nombre} ` +
+          `(por ejemplo, porque ya se le pagó por fuera de ORBITA). No volverá a entrar al generar; ` +
+          `si fue un error, se puede devolver desde «Órdenes apartadas del cobro».`,
+      confirmText: 'Quitar',
+    });
+    if (!ok) return;
+    this.guardandoAjustes.set(true);
+    this.api.quitarLineaPrecuenta(pc.id, i.id).subscribe({
+      next: (r) => {
+        this.guardandoAjustes.set(false);
+        this.detalle.set(r.data);
+        this.alerts.success('Línea quitada', 'Los totales de la cuenta se recalcularon.');
+        this.cargar();
+      },
+      error: (err) => {
+        this.guardandoAjustes.set(false);
+        this.alerts.error('No se pudo quitar la línea', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  protected restaurarExcluida(pc: Precuenta, x: OrdenExcluidaCobro): void {
+    this.guardandoAjustes.set(true);
+    this.api.restaurarOrdenCobro(x.orden_id, x.profesional_id).subscribe({
+      next: (r) => {
+        this.guardandoAjustes.set(false);
+        this.detalle.update((d) => d && { ...d, excluidas: (d.excluidas ?? []).filter((e) => e.orden_id !== x.orden_id) });
+        this.alerts.success('Orden devuelta al cobro', r.message);
+        this.cargar();
+      },
+      error: (err) => {
+        this.guardandoAjustes.set(false);
+        this.alerts.error('No se pudo devolver la orden', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  /** Formulario de la línea manual abierto (o null). Textos como se teclean. */
+  protected readonly lineaNueva = signal<{
+    actividad: string; empresa_nombre: string; orden_referencia: string; fecha_ejecucion: string;
+    horas: string; valor_hora: string; viaticos: string;
+  } | null>(null);
+
+  protected abrirLineaManual(): void {
+    this.lineaNueva.set({ actividad: '', empresa_nombre: '', orden_referencia: '', fecha_ejecucion: '', horas: '', valor_hora: '', viaticos: '' });
+  }
+
+  protected montoLineaNueva(): number {
+    const l = this.lineaNueva();
+    const h = this.numero(l?.horas);
+    const v = this.numero(l?.valor_hora);
+    return Number.isFinite(h) && Number.isFinite(v) ? Math.round(h * v) : 0;
+  }
+
+  protected guardarLineaManual(pc: Precuenta): void {
+    const l = this.lineaNueva();
+    if (!l) return;
+    const horas = this.numero(l.horas);
+    const valorHora = this.numero(l.valor_hora);
+    const viaticos = this.numero(l.viaticos) || 0;
+    if (!l.actividad.trim()) {
+      this.alerts.warning('Falta la actividad', 'Escriba qué actividad se le paga al asesor.');
+      return;
+    }
+    if (!(horas > 0) || !(valorHora > 0) || viaticos < 0) {
+      this.alerts.warning('Revise los valores', 'Las horas y el valor hora deben ser mayores a cero.');
+      return;
+    }
+    this.guardandoAjustes.set(true);
+    this.api.agregarLineaPrecuenta(pc.id, {
+      actividad: l.actividad.trim(),
+      empresa_nombre: l.empresa_nombre.trim() || undefined,
+      orden_referencia: l.orden_referencia.trim() || undefined,
+      fecha_ejecucion: l.fecha_ejecucion || undefined,
+      horas, valor_hora: valorHora, viaticos,
+    }).subscribe({
+      next: (r) => {
+        this.guardandoAjustes.set(false);
+        this.lineaNueva.set(null);
+        this.detalle.set(r.data);
+        this.alerts.success('Línea agregada', 'Quedó en la cuenta con los totales recalculados.');
+        this.cargar();
+      },
+      error: (err) => {
+        this.guardandoAjustes.set(false);
+        this.alerts.error('No se pudo agregar la línea', mensajeError(err, 'Intente de nuevo.'));
+      },
+    });
+  }
+
+  /** Primer y último día del mes de la cuenta, para acotar la fecha de la línea manual. */
+  protected limitesMes(periodo: string): { min: string; max: string } {
+    const [y, m] = periodo.split('-').map(Number);
+    const ultimo = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    return { min: `${periodo}-01`, max: `${periodo}-${String(ultimo).padStart(2, '0')}` };
   }
 
   protected verPdf(f: CuentaDelMes): void {

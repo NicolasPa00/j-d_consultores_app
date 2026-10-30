@@ -746,8 +746,14 @@ export interface CuentaDelMes {
 /** Una orden ejecutada dentro de la pre-cuenta, ya valorada. */
 export interface PrecuentaItem {
   id: string;
-  orden_id: string;
+  /** Nulo en una línea MANUAL (29-oct-2026): trabajo que no llegó como orden de la ARL. */
+  orden_id: string | null;
   orden_codigo?: string | null;
+  /** 29-oct-2026 · La orden como la conoce la ARL: «134803-67» en Bolívar, el número de orden en las demás. */
+  orden_referencia?: string | null;
+  manual?: boolean;
+  /** Horas que traía la orden antes de editarlas; nulo si no se tocaron. */
+  horas_original?: string | number | null;
   empresa_nombre?: string | null;
   arl_nombre?: string | null;
   actividad?: string | null;
@@ -783,6 +789,32 @@ export interface Precuenta {
   respondido_en?: string | null;
   creado_en?: string;
   items?: PrecuentaItem[];
+  /** 29-oct-2026 · Órdenes de este asesor y mes apartadas del cobro (ya pagadas por fuera de ORBITA). */
+  excluidas?: OrdenExcluidaCobro[];
+}
+
+export interface OrdenExcluidaCobro {
+  orden_id: string;
+  profesional_id: string;
+  orden_codigo: string;
+  orden_referencia: string;
+  empresa_nombre?: string | null;
+  actividad?: string | null;
+  fecha_ejecucion?: string | null;
+  motivo?: string | null;
+  excluido_en: string;
+}
+
+/** 29-oct-2026 · Línea manual de una cuenta de cobro. */
+export interface LineaManualCobro {
+  actividad: string;
+  horas: number;
+  valor_hora: number;
+  viaticos?: number;
+  empresa_nombre?: string;
+  orden_referencia?: string;
+  arl_nombre?: string;
+  fecha_ejecucion?: string;
 }
 
 /**
@@ -884,6 +916,7 @@ export interface PrecuentaPublica {
   respondido_en?: string | null;
   items: {
     orden_codigo?: string | null;
+    orden_referencia?: string | null;
     empresa_nombre?: string | null;
     arl_nombre?: string | null;
     actividad?: string | null;

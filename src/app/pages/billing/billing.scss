@@ -432,3 +432,47 @@
 /* 24-oct-2026 · Detalle de la cuenta: texto largo en varias líneas (no se corta) y ajuste de valores. */
 .bl-wrap { min-width: 150px; white-space: normal; }
 .bl-input { max-width: 110px; padding: 0.35rem 0.5rem; text-align: right; }
+
+/* 29-oct-2026 · Referencia de la orden ante la ARL arriba; el código OS, pequeño debajo. */
+.bl-os { display: block; font-size: 0.72rem; color: var(--text-muted); }
+.bl-input--corto { max-width: 70px; }
+.bl-input--texto { max-width: none; min-width: 140px; text-align: left; }
+
+/* Línea manual y órdenes apartadas del cobro, debajo de la tabla. */
+.bl-manual {
+  margin: 1rem 0 0;
+  padding: 1rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+}
+.bl-manual__titulo { padding: 0 0.4rem; font-weight: 700; color: var(--primary-color); }
+.bl-manual__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+.bl-manual__ancho { grid-column: 1 / -1; }
+.bl-manual__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+.bl-manual__acciones { display: flex; gap: 0.5rem; }
+
+.bl-excluidas {
+  margin-top: 1rem;
+  summary { cursor: pointer; font-weight: 600; color: var(--text-muted); }
+  ul { list-style: none; margin: 0.6rem 0 0; padding: 0; }
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    border-top: 1px solid var(--border-soft);
+  }
+}
