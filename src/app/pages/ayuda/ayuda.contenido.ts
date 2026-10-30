@@ -456,6 +456,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
       'Cuentas de cobro (29-oct): número de orden de la ARL y tema del registro de asistencia en cada línea, horas editables, actividades manuales y quitar órdenes ya pagadas.',
       'Cuentas de cobro (29-oct): cada orden cae en el mes de su visita, no en el de la subida de soportes.',
       'Nómina electrónica (29-oct): Finanzas → Nómina, con empleados, liquidación mensual, desprendible y emisión ante la DIAN.',
+      'Nómina (30-oct): quien entra a mitad de mes se liquida solo por sus días (desde la fecha de ingreso) y en la liquidación se pueden escribir a mano los días, el auxilio de transporte, la salud y la pensión.',
       'Contador de documentos (29-oct): Facturación, Pago a profesionales y Nómina muestran cuántos documentos electrónicos van de los incluidos en el año.',
       'Pago a profesionales: cuentas de cobro y facturas electrónicas de los asesores.',
       'Contabilidad: eliminar cuentas que no se necesitan.',

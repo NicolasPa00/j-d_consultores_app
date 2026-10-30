@@ -331,6 +331,45 @@
           }
         }
 
+        <!-- 30-oct-2026 · Pedido de la contadora: días (quien entra a mitad de mes), auxilio y salud/pensión editables.
+             Vacío = lo calcula el sistema; el valor automático se ve como texto de ayuda dentro del campo. -->
+        <section class="nom-nov">
+          <header><h4>Días, auxilio de transporte y seguridad social</h4></header>
+          <div class="nom-grid nom-grid--cuatro">
+            <div class="form-field">
+              <label class="form-field__label" for="nomLiqDias">Días a liquidar</label>
+              <input id="nomLiqDias" class="form-control num" type="number" min="1" max="30" step="1"
+                     [placeholder]="'Automático: ' + (previa()?.diasMes ?? 30)" [ngModel]="nov().diasLaborados" (ngModelChange)="cambiarNov(asignar('diasLaborados', $event))" />
+            </div>
+            <div class="form-field">
+              <label class="form-field__label" for="nomLiqAux">Auxilio de transporte</label>
+              <select id="nomLiqAux" class="form-control" [ngModel]="nov().auxilio" (ngModelChange)="cambiarNov(asignar('auxilio', $event))">
+                <option value="auto">Automático (hasta 2 mínimos)</option>
+                <option value="si">Pagarlo</option>
+                <option value="no">No pagarlo</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label class="form-field__label" for="nomLiqSalud">Salud</label>
+              <input id="nomLiqSalud" class="form-control num" type="text" inputmode="decimal"
+                     [placeholder]="'Automático: ' + (previa() ? pesos(previa()!.deducciones.salud.valor) : '4 %')" [ngModel]="nov().salud" (ngModelChange)="cambiarNov(asignar('salud', $event))" />
+            </div>
+            <div class="form-field">
+              <label class="form-field__label" for="nomLiqPension">Pensión</label>
+              <input id="nomLiqPension" class="form-control num" type="text" inputmode="decimal"
+                     [placeholder]="'Automático: ' + (previa() ? pesos(previa()!.deducciones.pension.valor) : '4 %')" [ngModel]="nov().pension" (ngModelChange)="cambiarNov(asignar('pension', $event))" />
+            </div>
+            @if (nov().auxilio === 'si') {
+              <div class="form-field">
+                <label class="form-field__label" for="nomLiqAuxValor">Valor del auxilio</label>
+                <input id="nomLiqAuxValor" class="form-control num" type="text" inputmode="decimal"
+                       placeholder="Proporcional a los días" [ngModel]="nov().auxilioValor" (ngModelChange)="cambiarNov(asignar('auxilioValor', $event))" />
+              </div>
+            }
+          </div>
+          <p class="form-field__hint">Deje vacío lo que deba calcular el sistema. Los días salen de la fecha de ingreso (quien entra el 19 liquida 12); las vacaciones, licencias e incapacidades se descuentan de ellos.</p>
+        </section>
+
         <!-- Horas extra y recargos -->
         <section class="nom-nov">
           <header><h4>Horas extra y recargos</h4><button type="button" class="btn btn--ghost btn--sm" (click)="agregar('horas')">+ Agregar</button></header>

@@ -5,6 +5,20 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
+> 🧾 **30-oct-2026 · NÓMINA: correcciones que pidió la contadora por teléfono — COMMITEADAS EN LOCAL, SIN DESPLEGAR.**
+> Lo que anotó el usuario: «que le deje calcular la salud y pensión», «la nómina de Lorena es 2.200.000», «no le deja agregar el
+> auxilio de transporte», «lo de la chica nueva será editable porque no es todo el mes: si entra el 19, por días nada más».
+> (1) Los días del mes salen de la ficha: `diasConContrato()` en `liquidaciones.service.js` (mes comercial de 30; entra el 19 →
+> 12 días; el 31 y el último de febrero cuentan como 30); antes siempre eran 30. (2) En la liquidación hay una sección nueva
+> «Días, auxilio de transporte y seguridad social»: días a liquidar, auxilio (automático / pagarlo / no pagarlo, con valor
+> opcional), salud y pensión. **Vacío = automático** (el placeholder enseña el valor calculado); lo escrito viaja en `novedades`
+> (`diasLaborados`, `auxilioTransporte {incluir, valor}`, `salud`, `pension`) y `calculo.js` lo respeta; `salud.manual` marca el
+> valor escrito. El IBC mínimo ahora es proporcional a los días a liquidar, no a 30. Prueba: `verificar-nomina.mjs` con 6
+> comprobaciones nuevas, todo OK en `jdd_dev`; `ng build` OK. **No se vio por pantalla.** **Sin confirmar:** con salario 2.200.000
+> el cálculo automático YA daba auxilio (249.095) y salud/pensión (88.000 c/u), así que lo que le falló a la contadora puede ser
+> otra cosa (salario mal en la ficha de Lorena, la vista previa con error…): no se pudo mirar producción (el permiso automático
+> bloqueó la consulta). Revisar la ficha de Lorena en prod al desplegar.
+>
 > 🔢 **29-oct-2026 · CONTADOR DE DOCUMENTOS («va en X de Y») — DESPLEGADO EN PRODUCCIÓN (back `332260e`, front `c805eff`); en prod: 15 de 1.000 y 0 de 60.**
 > `GET /facturacion/cupos` (`facturacion/cupos.service.js`) cuenta lo que llegó a la DIAN (CUFE/CUNE, aunque se anulara después)
 > contra `sst.configuracion.cupos_documentos`: facturación **1.000/año** (tope de la anualidad, decisión del usuario; FE+NC+DS+NA,

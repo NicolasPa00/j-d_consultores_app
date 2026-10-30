@@ -37,9 +37,16 @@ interface NovedadesForm {
   bonificacion: string;
   primaDias: string;
   cesantiasDias: string;
+  /** 30-oct-2026 · Vacíos = automáticos (días según la fecha de ingreso, auxilio según el salario, 4 % de la base). */
+  diasLaborados: string;
+  auxilio: 'auto' | 'si' | 'no';
+  auxilioValor: string;
+  salud: string;
+  pension: string;
 }
 const NOVEDADES_VACIAS = (): NovedadesForm => ({
   horas: [], vacaciones: [], licencias: [], incapacidades: [], otrosDevengados: [], otrasDeducciones: [], comisiones: '', bonificacion: '', primaDias: '', cesantiasDias: '',
+  diasLaborados: '', auxilio: 'auto', auxilioValor: '', salud: '', pension: '',
 });
 
 /** Las listas de filas del formulario de novedades. */
@@ -274,6 +281,11 @@ export class NominaComponent implements OnInit {
       bonificacion: n.bonificacion ? String(n.bonificacion) : '',
       primaDias: n.prima?.dias ? String(n.prima.dias) : '',
       cesantiasDias: n.cesantias?.dias ? String(n.cesantias.dias) : '',
+      diasLaborados: n.diasLaborados ? String(n.diasLaborados) : '',
+      auxilio: n.auxilioTransporte ? (n.auxilioTransporte.incluir ? 'si' : 'no') : 'auto',
+      auxilioValor: n.auxilioTransporte?.valor != null ? String(n.auxilioTransporte.valor) : '',
+      salud: n.salud != null ? String(n.salud) : '',
+      pension: n.pension != null ? String(n.pension) : '',
     };
   }
 
@@ -290,6 +302,12 @@ export class NominaComponent implements OnInit {
       otrasDeducciones: f.otrasDeducciones.map((o) => ({ tipo: o.tipo, valor: num(o.valor), descripcion: o.descripcion.trim() || undefined })),
       comisiones: num(f.comisiones), bonificacion: num(f.bonificacion),
       prima: { dias: Number(f.primaDias) || 0 }, cesantias: { dias: Number(f.cesantiasDias) || 0 },
+      // Un campo vacío no se manda: así el servidor lo calcula solo.
+      diasLaborados: f.diasLaborados.trim() ? Number(f.diasLaborados) : undefined,
+      auxilioTransporte: f.auxilio === 'auto' ? undefined
+        : { incluir: f.auxilio === 'si', valor: f.auxilio === 'si' && f.auxilioValor.trim() ? num(f.auxilioValor) : undefined },
+      salud: f.salud.trim() ? num(f.salud) : undefined,
+      pension: f.pension.trim() ? num(f.pension) : undefined,
     };
   }
 
@@ -300,7 +318,7 @@ export class NominaComponent implements OnInit {
   }
 
   /** Para los campos sueltos de las novedades (comisiones, días de prima…). */
-  protected asignar(campo: 'comisiones' | 'bonificacion' | 'primaDias' | 'cesantiasDias', valor: string | number | null): (n: NovedadesForm) => NovedadesForm {
+  protected asignar(campo: 'comisiones' | 'bonificacion' | 'primaDias' | 'cesantiasDias' | 'diasLaborados' | 'auxilio' | 'auxilioValor' | 'salud' | 'pension', valor: string | number | null): (n: NovedadesForm) => NovedadesForm {
     return (n) => ({ ...n, [campo]: valor == null ? '' : String(valor) });
   }
 
@@ -618,8 +636,8 @@ export class NominaComponent implements OnInit {
   protected deduccionesDe(r: ResultadoLiquidacion): { concepto: string; detalle: string; valor: number }[] {
     const x = r.deducciones;
     const filas = [
-      { concepto: 'Salud', detalle: `${x.salud.porcentaje} %`, valor: x.salud.valor },
-      { concepto: 'Pensión', detalle: `${x.pension.porcentaje} %`, valor: x.pension.valor },
+      { concepto: 'Salud', detalle: x.salud.manual ? 'escrita a mano' : `${x.salud.porcentaje} %`, valor: x.salud.valor },
+      { concepto: 'Pensión', detalle: x.pension.manual ? 'escrita a mano' : `${x.pension.porcentaje} %`, valor: x.pension.valor },
     ];
     if (x.fondoSolidaridad) filas.push({ concepto: 'Fondo de solidaridad pensional', detalle: `${x.fondoSolidaridad.porcentaje} %`, valor: x.fondoSolidaridad.valor });
     for (const o of x.otras ?? []) {

@@ -1773,11 +1773,18 @@ export interface NovedadesNomina {
   cesantias?: { dias: number };
   otrosDevengados?: { tipo: string; valor: number; descripcion?: string | null }[];
   otrasDeducciones?: { tipo: string; valor: number; descripcion?: string | null }[];
+  /** 30-oct-2026: lo que la contadora escribe a mano; si falta, el servidor lo calcula. */
+  diasLaborados?: number;
+  auxilioTransporte?: { incluir: boolean; valor?: number };
+  salud?: number;
+  pension?: number;
 }
 
 /** Lo que devuelve `nomina/calculo.js`: el desprendible. */
 export interface ResultadoLiquidacion {
   diasTrabajados: number;
+  /** Días del mes a liquidar antes de descontar ausencias (las liquidaciones viejas no lo traen). */
+  diasMes?: number;
   ibc: number;
   devengados: {
     sueldo: number;
@@ -1794,8 +1801,8 @@ export interface ResultadoLiquidacion {
     otros?: { tipo: string; valor: number; descripcion: string | null; salarial: boolean }[];
   };
   deducciones: {
-    salud: { porcentaje: number; valor: number };
-    pension: { porcentaje: number; valor: number };
+    salud: { porcentaje: number; valor: number; manual?: boolean };
+    pension: { porcentaje: number; valor: number; manual?: boolean };
     fondoSolidaridad: { porcentaje: number; valor: number } | null;
     otras?: { tipo: string; valor: number; descripcion: string | null }[];
   };
