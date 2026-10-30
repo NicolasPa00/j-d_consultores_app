@@ -14,6 +14,7 @@ import { AsientoDocumento, CausalNotaCredito, Compra, CuentaContable, DetalleSop
 import { OpcionBusqueda, SelectorBusquedaComponent } from '../../shared/selector-busqueda/selector-busqueda';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
+import { CupoDocumentosComponent } from '../../shared/cupo-documentos/cupo-documentos';
 
 type Pestana = 'por-generar' | 'pendientes' | 'emitidos' | 'notas' | 'facturas';
 type VistaDocumento = 'ver' | 'pdf' | 'historial' | 'contab';
@@ -44,7 +45,7 @@ interface PasoDocumento {
  */
 @Component({
   selector: 'app-documentos-soporte',
-  imports: [FormsModule, RouterLink, PaginadorComponent, SelectorBusquedaComponent],
+  imports: [FormsModule, RouterLink, PaginadorComponent, SelectorBusquedaComponent, CupoDocumentosComponent],
   templateUrl: './documentos-soporte.html',
   styleUrls: ['../facturacion/facturacion.scss', './documentos-soporte.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

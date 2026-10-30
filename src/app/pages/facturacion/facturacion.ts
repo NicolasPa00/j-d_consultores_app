@@ -19,6 +19,7 @@ import { PaginadorComponent } from '../../shared/paginador/paginador';
 import { SelectorMultipleComponent } from '../../shared/selector-multiple/selector-multiple';
 import { TerceroRapidoComponent } from '../../shared/alta-rapida/tercero-rapido';
 import { ProductoRapidoComponent } from '../../shared/alta-rapida/producto-rapido';
+import { CupoDocumentosComponent } from '../../shared/cupo-documentos/cupo-documentos';
 
 type Pestana = 'por-facturar' | 'borradores' | 'emitidas' | 'notas';
 
@@ -65,7 +66,7 @@ const aNumero = (v: string): number => {
 
 @Component({
   selector: 'app-facturacion',
-  imports: [FormsModule, RouterLink, PaginadorComponent, SelectorBusquedaComponent, SelectorMultipleComponent, TerceroRapidoComponent, ProductoRapidoComponent],
+  imports: [FormsModule, RouterLink, PaginadorComponent, SelectorBusquedaComponent, SelectorMultipleComponent, TerceroRapidoComponent, ProductoRapidoComponent, CupoDocumentosComponent],
   templateUrl: './facturacion.html',
   styleUrl: './facturacion.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

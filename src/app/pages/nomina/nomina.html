@@ -3,6 +3,7 @@
     <h2 class="page-head__title">Nómina</h2>
     <p class="page-head__sub">Nómina electrónica ante la DIAN · una liquidación por empleado y mes</p>
   </div>
+  <app-cupo-documentos tipo="nomina" class="cupo-cabecera" />
   @if (puedeOperar()) {
     <div class="nom-head__acciones">
       <button type="button" class="btn btn--secondary" (click)="abrirEmpleado()">Nuevo empleado</button>

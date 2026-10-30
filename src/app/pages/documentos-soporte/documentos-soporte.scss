@@ -92,3 +92,7 @@
 
 /* Mes, fecha: no se parten en tres renglones cuando la tabla va justa de ancho. */
 .ds-fijo { white-space: nowrap; }
+
+/* 29-oct-2026 · El contador de documentos va a la derecha, junto a los botones. */
+.cupo-cabecera { margin-left: auto; }
+.fac-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }

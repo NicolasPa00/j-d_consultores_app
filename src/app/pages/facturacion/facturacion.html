@@ -4,6 +4,7 @@
     <p class="page-head__sub">Facturas electrónicas ante la DIAN · por pagador y a partir de las órdenes finalizadas</p>
   </div>
   <div class="fac-head-acciones">
+  <app-cupo-documentos tipo="facturacion" />
   @if (puedeOperar() && emisionDian) {
     <!-- 7-oct-2026 · Botón con cuerpo (antes era un texto sin borde y no se veía). -->
     <button type="button" class="btn btn--secondary fac-btn-eventos" (click)="actualizarEventos()" [disabled]="actualizandoEventos()"

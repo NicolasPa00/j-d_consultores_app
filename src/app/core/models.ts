@@ -2758,3 +2758,15 @@ export interface EstadisticasPeriodo {
   por_tipo: { tipo: string; ordenes: number; horas: number }[];
   por_ciudad: { ciudad: string; ordenes: number; horas: number }[];
 }
+
+/** 29-oct-2026 · Cupo de documentos electrónicos de un periodo: «vas X de Y». */
+export interface CupoDocumentos {
+  total: number;
+  usados: number;
+  disponibles: number;
+  /** AAAA-MM-DD, inclusive. */
+  desde: string;
+  hasta: string;
+  vigente: boolean;
+  detalle: Record<string, number>;
+}

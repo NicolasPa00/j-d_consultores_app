@@ -13,6 +13,7 @@ import {
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 import { OpcionBusqueda, SelectorBusquedaComponent } from '../../shared/selector-busqueda/selector-busqueda';
+import { CupoDocumentosComponent } from '../../shared/cupo-documentos/cupo-documentos';
 
 type Pestana = 'liquidaciones' | 'empleados' | 'parametros';
 
@@ -56,7 +57,7 @@ type ListaNovedad = 'horas' | 'vacaciones' | 'licencias' | 'incapacidades' | 'ot
  */
 @Component({
   selector: 'app-nomina',
-  imports: [FormsModule, RouterLink, NgTemplateOutlet, PaginadorComponent, SelectorBusquedaComponent],
+  imports: [FormsModule, RouterLink, NgTemplateOutlet, PaginadorComponent, SelectorBusquedaComponent, CupoDocumentosComponent],
   templateUrl: './nomina.html',
   styleUrl: './nomina.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
