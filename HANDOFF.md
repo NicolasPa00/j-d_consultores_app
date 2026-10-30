@@ -667,6 +667,149 @@
 > cesantías, vacaciones, licencia, horas extra y recargos, meses diferentes); al terminar se les avisa y habilitan la nota
 > de ajuste. API: `POST /v2/payrolls`, `POST /v2/adjustment-payrolls` (solo documentan la de eliminación),
 > `/v2/numbering-ranges/payrolls`; docs en `developers.factus.com.co/nomina/…`. No se ha enviado ninguna nómina.
+> **✅ 8-oct (~14:35) · LAS 20 PRUEBAS DE NÓMINA VALIDADAS en el ambiente de pruebas con las credenciales propias del
+> NIT:** `NEF1`…`NEF20`, 20 de 20 validadas y sin avisos (comprobado listando `/v2/payrolls`). Cuerpos y respuestas en
+> `2-pruebas/nomina/sandbox-26100819*/`. **Siguiente paso: el usuario le avisa al proveedor** para que habilite la nota
+> de ajuste (rango `NAN` ya creado en el sandbox). Tres hallazgos que la documentación no dice:
+> (1) **el proveedor a veces responde 500 después de crear la nómina**: queda con número y CUNE pero sin validar,
+> bloquea las siguientes con 409 «pendiente por enviar a la DIAN» y **no se deja eliminar**; se destraba **repitiendo el
+> mismo envío con la misma `reference_code`** (devuelve la misma, ya validada) — el módulo tiene que reintentar así,
+> nunca con otra referencia; (2) **`deductions.dedu` (fondo de solidaridad) es una LISTA**: una fila tipo 1 (0,5 %) y
+> otra tipo 2 (el resto); (3) las horas extra se aceptan con la fecha `AAAA-MM-DD HH:MM:SS` (con espacio).
+> Las credenciales de producción NO sirven en el ambiente de pruebas («Client authentication failed»): las de pruebas
+> están en el panel de aliados, tarjeta «Sandbox», y quedaron en `sst_ws/.env` como `FACTUS_NOMINA_*`.
+> **📩 8-oct (tarde) · TRES OBSERVACIONES DE LA CONTADORA** (sobre una factura manual que armó en producción para
+> Transporte de Sandoná, borrador de $2.075.820,01, comparada con la FV-1-807 de su software anterior):
+> 1. **Orden de los totales de la factura:** escribió «primero iría el subtotal - iva - Total bruto». **SIN ACLARAR** qué
+>    quiere exactamente (¿Subtotal → IVA → Total bruto, siendo «total bruto» el subtotal + IVA?). Hoy ORBITA muestra
+>    Total bruto → Subtotal → IVA → Total a pagar. **No se cambió nada**; el usuario le va a preguntar.
+> 2. **«Falta la autorretención»:** su asiento trae 13551816 / 23657502 por $19.188,25 (1,1 % del subtotal). **No es un
+>    fallo de código:** la contabilización ya la calcula sola en todas las ventas (`autorretencion()` en
+>    `contabilizacion.service.js`) **si existe una retención activa de tipo AUTORRETENCION**, y en producción no hay
+>    NINGUNA retención creada (consultado el 8-oct: 0 retenciones, 0 empresa emisora, 2 productos, reglas
+>    FV_AUTORRET_DB/CR sí están). Se arregla creando en Parametrización → Retenciones la autorretención del 1,1 % (en
+>    `jdd_dev`: código `AUTO-1.1`, «AUTORRETENCIÓN ESPECIAL», tipo AUTORRETENCION, 1,1 %, aplica a VENTA). **No se creó:**
+>    es dato de producción y falta la orden del usuario.
+> 3. **Comprobante de nómina de su software anterior** (abril de 2026, una empleada): sirve de modelo y de prueba.
+>    **(a)** `liquidar()` da EXACTAMENTE lo mismo en sueldo (27 días), vacaciones (3 días), salud y pensión, y confirma
+>    el auxilio de transporte de 2026 ($249.095, proporcional a los días laborados). Única diferencia: ellos muestran el
+>    auxilio en $224.185 y ORBITA en $224.185,50 (**su software redondea a pesos; SIN decidir si ORBITA debe hacerlo y
+>    cómo**). **(b)** El desprendible se rehízo con ESE formato (`desprendible.service.js`, backend `e999ccd`); muestra
+>    con los mismos datos en `3-entregables-y-respaldos/propuesta-comprobante-nomina/`.
+> También escribió **«NE-12 CONSECUTIVO DE NOMINA ELECTRONICA-DEPENDIENDO»**: el prefijo de nómina electrónica es **NE**;
+> **falta saber si el 12 es el último emitido o el siguiente** (el comprobante de abril era el n.º 6) y el consecutivo de
+> la nota de ajuste. Con eso se crean los rangos (`factus-rango-crear-nomina.mjs`).
+>
+> **⏸️ 8-oct (cierre) · NÓMINA EN PAUSA, POR DECISIÓN DEL USUARIO: NO DESPLEGAR hasta que el módulo esté completo.** Se
+> retoma cuando responda la contadora (¿emitían nómina electrónica desde el software anterior, con qué prefijo y último
+> número?; cómo se reporta un mes completo de vacaciones o licencia; revisión de las fórmulas; cuentas para la
+> contabilización; retiro y quincenal). Sin ella no queda nada de peso por hacer: solo liquidar a todos los empleados de
+> una vez (poco útil con uno solo), la guía para el cliente (mejor con el módulo desplegado) y los casos del API sin
+> explorar (necesitan que el proveedor reactive la nómina en el ambiente de pruebas).
+>
+> **8-oct (~15:35) · NÓMINA: PARÁMETROS EDITABLES, CORREO DEL DESPRENDIBLE Y SCRIPT DE DESPLIEGUE.**
+> · **Pestaña «Parámetros»** (Nómina): salario mínimo y auxilio de transporte por año en `sst.nomina_parametros`
+>   (sembrados 2025 = 1.423.500 / 200.000 y 2026 = 1.750.905 / 249.095; **❓ confirmar con la contadora**). `liquidar()`
+>   los recibe del servicio (`parametros.service.js`); los de `calculo.js` quedan solo como respaldo para scripts.
+>   Cambiar un año no recalcula las nóminas guardadas. Sin el año cargado no se puede liquidar ese año.
+> · **«Enviar al empleado»** en el detalle de una nómina VALIDADA: correo con el desprendible en PDF
+>   (`enviarDesprendible`, `POST /nomina/liquidaciones/:id/enviar`). La ficha del empleado tiene ahora `correo`
+>   (columna nueva `empleados.correo`); se puede escribir otro al enviar. Probado con el correo en modo consola.
+> · La migración `2026-10-08-nomina.sql` creció (tabla de parámetros + columna correo): **sigue siendo UNA sola y no se
+>   ha desplegado**. Script listo y sin ejecutar: `bash docs/4-despliegue/despliegue-nomina.sh` (respaldo, ensayo,
+>   migración, pull, `npm ci`, build, reinicio y humo); antes hay que fusionar `nomina-electronica` en `master`/`main`
+>   y hacer push. Revisión por pantalla: `revision-nomina-parametros.mjs`.
+>
+> **8-oct (~15:25) · NÓMINA: «OTROS PAGOS» Y «OTRAS DEDUCCIONES».** Dos secciones nuevas al liquidar: pagos (auxilio
+> salarial o no, viáticos, bonificación no salarial, otro pago con descripción) y deducciones (libranza con descripción,
+> retención en la fuente, embargo, cooperativa, anticipo, deuda con la empresa, pensión voluntaria, AFC, otra). Lo
+> salarial entra a la base de cotización y lo no salarial no (**sin aplicar el tope del 40 % de la Ley 1393: ❓
+> contadora**); el neto no puede quedar negativo. Tablas `OTROS_DEVENGADOS` / `OTRAS_DEDUCCIONES` en `calculo.js`; en el
+> documento van a `boni/auxi/tra/otro` y a `libr/anti/otra` (listas) o `rete/emba/coop/deud/pevo/afco` (objeto: varias
+> del mismo tipo se suman). **⚠️ El formato de estos conceptos sale de la documentación del proveedor y NO se probó en el
+> ambiente de pruebas** (la doc ya falló en `dedu` y `terc`): la primera vez que se usen puede haber un rechazo de
+> formato. Verificado en `verificar-nomina.mjs` y por pantalla (`revision-nomina-otros.mjs`).
+>
+> **8-oct (~15:20) · NÓMINA: EMISIÓN Y ANULACIÓN VERIFICADAS CON UN PROVEEDOR SIMULADO + DESPRENDIBLE EN PDF.**
+> `node --import tsx scripts/verificar-nomina.mjs [carpeta]` recorre el módulo entero sin hablar con el proveedor
+> (sustituye sus tres métodos por un guion): 500 y luego validada con la misma referencia, rechazo de la DIAN
+> (queda RECHAZADO, se elimina en el proveedor, se corrige y se reemite con OTRA referencia), sin respuesta (queda
+> ENVIANDO y se retoma), negativa 403 (vuelve a borrador), empleado al que le falta la dirección (no se llama al
+> proveedor), anulación y volver a liquidar el mes. Todo pasa y borra sus datos. **Con esto no hace falta reactivar la
+> nómina en el ambiente de pruebas para confiar en el flujo**; lo único que sigue sin verse es el clic real en la
+> pantalla contra el proveedor. **Desprendible:** `nomina/desprendible.service.js`,
+> `GET /nomina/liquidaciones/:id/desprendible`, botón «Desprendible en PDF» en el detalle; hoja carta con logo, datos del
+> empleado, devengados, deducciones, neto, y CUNE + QR si está validada (marca «BORRADOR» o «ANULADA» si no).
+>
+> **8-oct (15:01) · EL PROVEEDOR HABILITÓ LA NÓMINA EN PRODUCCIÓN para el NIT 901203812.** Comprobado en solo lectura
+> desde el servidor: `/v2/payrolls`, `/v2/adjustment-payrolls` y `/v2/numbering-ranges/payrolls` responden 200 y **no hay
+> ningún rango de nómina**: hay que crearlos (documento **26** nómina, **27** nota de ajuste) con
+> `scripts/factus-rango-crear-nomina.mjs <nomina|ajuste> PREFIJO INICIO` (simula; `--confirmar` crea). **El prefijo y el
+> número de inicio los decide la contadora** (si ya emitían nómina electrónica desde el software anterior, se continúa
+> ese consecutivo); no se creó nada. Sobre el mes completo de vacaciones/licencia y los aprendices, el proveedor remitió
+> a la contadora («consulta con tu contador cómo debes realizar el reporte»): sigue sin resolver. En el ambiente de
+> pruebas la creación de nóminas sigue apagada (no se ha pedido reactivarla).
+>
+> **🆕 8-oct (~15:15) · MÓDULO DE NÓMINA (A5-01) CONSTRUIDO — rama `nomina-electronica` de los DOS repos, commiteado en
+> local, SIN push, SIN merge y SIN desplegar.** Pantalla **Finanzas → Nómina** (`/nomina`, vista `nomina` en la matriz de
+> permisos: admin, contador y auditor). Dos pestañas:
+> · **Empleados**: ficha laboral de un tercero persona natural (cargo, salario, integral, contrato, tipo de trabajador,
+>   ingreso/retiro, medio de pago con banco y cuenta, seguridad social informativa). Crearla marca al tercero como
+>   «Empleado». Avisa qué le falta en Terceros para emitirle (documento solo numérico, dirección, municipio…).
+> · **Liquidaciones**: «Liquidar nómina» → empleado, mes, fecha de pago y novedades (horas extra y recargos,
+>   vacaciones, licencias, incapacidad, comisiones, bonificación, días de prima y de cesantías); el desprendible se
+>   liquida EN EL SERVIDOR mientras se escribe (`POST /nomina/liquidaciones/previa`). Se guarda en BORRADOR, se emite,
+>   y una validada se **anula** con nota de ajuste (para corregir: anular y volver a liquidar el mes).
+> Backend en `sst_ws/src/modules/nomina/` (`empleados.service.js`, `liquidaciones.service.js`, `nomina.routes.js`,
+> `catalogos.js`, `calculo.js`); **migración `2026-10-08-nomina.sql`** (`sst.empleados`, `sst.nomina_liquidaciones`,
+> permisos; aplicada solo en `jdd_dev`). La emisión reintenta con la misma referencia, deja ENVIANDO si no hay respuesta
+> (se retoma con «Reintentar el envío») y, si la DIAN rechaza, elimina la nómina en el proveedor y queda RECHAZADO con el
+> motivo. ORBITA valida lo que la DIAN no: mes futuro, fecha de ingreso/retiro y una sola nómina viva por empleado y mes.
+> **Probado:** build de producción y recorrido por pantalla con `2-pruebas/herramientas-capturas/revision-nomina.mjs`
+> (crear empleado, liquidar con novedades, guardar, abrir el detalle). **⚠️ SIN PROBAR: la emisión y la anulación desde
+> la pantalla**, porque el proveedor tiene apagada la creación de nóminas en el ambiente de pruebas (403); el mensaje de
+> ese rechazo sí se vio y devuelve la nómina a borrador. Hay que pedirle al proveedor que la reactive para probarlo.
+> **Falta:** PDF/desprendible para el empleado, contabilización (B6-01), nómina quincenal, conceptos no salariales y
+> deducciones opcionales (libranza, embargo…), liquidación final por retiro, meses completos de vacaciones/licencia y
+> aprendices (el API exige ≥ 1 día y sueldo > 0), rangos de nómina en producción y validar las fórmulas con la contadora.
+>
+> **✅ 8-oct (~14:52) · NOTAS DE AJUSTE DE NÓMINA: 4 de 4 VALIDADAS** (`NAN1`…`NAN4`, eliminan NEF30, NEF29, NEF28 y
+> NEF27; respuestas en `2-pruebas/nomina/notas-ajuste-261008/`). El proveedor confirmó por WhatsApp que **con 4 notas
+> validadas el entorno queda habilitado y se puede pasar a producción**, que el 403 al crear nóminas era por haber
+> pasado a la fase de notas (habilita un documento a la vez) y que **«es muy común que quede sin validar en sandbox; se
+> resuelve enviando la misma petición»**. `POST /v2/adjustment-payrolls { payroll_number, reference_code }`; la nómina
+> queda con `related_documents.adjustment_payroll`; una segunda nota sobre la misma nómina o sobre una que no existe
+> responde 422. Solo existe la nota de ELIMINACIÓN: corregir = eliminar y volver a emitir. `emitirNotaAjusteNomina()` ya
+> está en el adaptador. **Falta para producción:** que el usuario confirme con el proveedor que quedó habilitado, crear
+> los rangos de nómina y de nota de ajuste en producción (prefijos por decidir con la contadora) y **construir el
+> módulo** (hoy solo hay fórmulas, adaptador y scripts).
+> **8-oct (~14:45) · EXPLORACIÓN DEL API** (`scripts/nomina-exploracion-sandbox.mjs`, 47 casos raros; resultados en
+> `2-pruebas/nomina/exploracion-2610081942/resumen.json`). Solo llegaron a probarse de verdad los primeros 18: a mitad de
+> la corrida **el proveedor dejó de permitir crear nóminas** (403 «La empresa no tiene habilitada la creación de este
+> documento»; sin confirmar si es porque pasó el ambiente a la fase de nota de ajuste). Quedaron 30 nóminas validadas
+> (NEF1…NEF30) y ninguna pendiente. **Lo aprendido:** `pay_period_half` es un ENTERO 1/2 (la doc dice texto) y la
+> quincenal valida; **`days_worked` mínimo 1 y `suel.amount` mínimo 0,01** → un mes entero de vacaciones o de licencia, o
+> un aprendiz que solo recibe apoyo de sostenimiento, NO se puede enviar con ceros (**sin resolver cómo se reporta**:
+> preguntar al proveedor); el número de documento del trabajador debe ser numérico (la DIAN rechaza un pasaporte con
+> letras, regla NIE045); **un rechazo de la DIAN deja la nómina creada y pendiente y bloquea las demás con 409: hay que
+> eliminarla con `DELETE /v2/payrolls/reference/:reference_code`**; `deductions.terc` es lista; las horas solo aceptan
+> `AAAA-MM-DD HH:MM:SS`. Validaron: periodo de un año anterior, periodo futuro, pago en otro mes, ingreso a mitad de mes,
+> liquidación final con `retirement_date`, pensionado sin aporte a pensión, tiempo parcial y cédula de extranjería.
+> **Sin probar (bloqueados):** alto riesgo, un solo apellido, tildes y ñ, incapacidades 2 y 3, pagos no salariales,
+> viáticos y dotación, horas con fracción o sin fechas, porcentaje de recargo distinto al de la tabla, huelga, todas las
+> deducciones opcionales, neto negativo, salario alto sin fondo de solidaridad, medios de pago, importes sin decimales,
+> salario bajo el mínimo, dos nóminas del mismo trabajador en el mes y reenvío de una referencia ya validada.
+> **8-oct (tarde) · PRIMER BLOQUE DE A5-01, rama `nomina-electronica` del backend, commiteado en local, sin push:**
+> `src/modules/nomina/calculo.js` (liquidación mensual: sueldo por días, auxilio de transporte, 7 tipos de horas extra
+> y recargos, vacaciones, licencias, incapacidad, comisiones, bonificación, prima, cesantías e intereses, salud,
+> pensión y fondo de solidaridad; **las fórmulas y lo marcado con ❓ las valida la contadora**: SMMLV 2026 = 1.750.905,
+> auxilio 249.095, jornada 220/210 h, recargo dominical al 75 % de la tabla DIAN), `cuerpoNomina()` /
+> `emitirNominaElectronica()` / `listarRangosNomina()` en el adaptador, y el cliente del proveedor con **cuenta aparte
+> para nómina** (`FACTUS_NOMINA_*`; sin ellas usa las `FACTUS_*`, que es lo correcto en producción).
+> **Las 20 pruebas:** `node --import tsx scripts/nomina-pruebas-sandbox.mjs` simula (arma, revisa que cuadren y guarda
+> los cuerpos en `2-pruebas/nomina/`); con `--enviar --solo=1` manda una y con `--enviar` las 20. Se niega a enviar fuera
+> del ambiente de pruebas o sin las credenciales propias del NIT. **Falta de A5-01:** tablas (`sst.empleados`,
+> `sst.nomina_liquidaciones`), pantalla, nota de ajuste, PDF, contabilización (B6-01) y el rango de nómina en producción.
 >
 > 🆕 **8-oct-2026 (tarde) · TRES PETICIONES NUEVAS — construidas en la rama `peticiones-8-oct` y DESPLEGADAS en producción el 8-oct (~14:09 hora Colombia)** con `docs/4-despliegue/despliegue-peticiones-8-oct.sh`: respaldo `~/respaldos/orbita-antes-peticiones-8oct-20261008-1408.dump` (+ storage), ensayo de la migración con conteos idénticos, servidor en `master b3b15d1` / `main 0d6d0fb`, servicios activos, health y login 200. Sin probar por pantalla en producción. Revertir: `git reset --hard c6df1ae` / `521664d`, build y restart (la columna nueva no estorba).
 > 1. **Factura manual** (Facturación → «Nueva factura manual»): un borrador sin órdenes. Cliente (terceros con rol
