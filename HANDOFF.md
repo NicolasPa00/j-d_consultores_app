@@ -5,6 +5,25 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
+> 👷 **29-oct-2026 (noche) · NÓMINA ELECTRÓNICA DESPLEGADA EN PRODUCCIÓN (back `master 0abec49`, front `main 123ae41`).**
+> La rama `nomina-electronica` se fusionó en master/main (conflictos solo en `schema.sql`, el import de `api.service.ts`
+> y el menú) y se desplegó con `docs/4-despliegue/despliegue-nomina.sh` (respaldo + ensayo en copia, conteos iguales).
+> Antes: `verificar-nomina.mjs`, `verificar-documento-soporte.mjs`, `verificar-24-oct` y `verificar-29-oct` en verde en
+> `jdd_dev`. Humo: `/nomina` 200, `/api/nomina/catalogos` 401 sin sesión, 2 años de parámetros, 4 permisos, 0 empleados.
+> Usa la cuenta de FACTURACIÓN del proveedor en producción (no hay `FACTUS_NOMINA_*` en el `.env` de prod, a propósito).
+> ⚠️ **Sin rangos en el proveedor: no se puede EMITIR todavía.** Confirmados por la contadora: NE desde 13 y NAN desde 1;
+> crear con `node scripts/factus-rango-crear-nomina.mjs nomina NE 13 --confirmar` y `… ajuste NAN 1 --confirmar` (la
+> simulación en prod del 29-oct dice «ninguno»). Sigue faltando: contabilización, quincenal, liquidación por retiro, tope
+> del 40 % no salarial, mes completo de ausencia; los «otros pagos/deducciones» nunca se probaron contra el proveedor.
+>
+> 📅 **29-oct-2026 · El mes de la cuenta de cobro es el de la VISITA (back `3eec63a`, DESPLEGADO).** `fecha_ejecucion` la
+> pone el trigger en now() al pasar a EJECUTADA (subida de soportes); el 20-oct eso metió visitas de jul–sep en las cuentas
+> de octubre (17/18 líneas de José Luis Guacas, 7 asesores). `vw_horas_ejecutadas` usa ahora la última franja de visita.
+> La migración `2026-10-29-periodo-por-visita.sql` sacó 24 líneas de las cuentas ABIERTAS de octubre (ensayada antes con
+> ROLLBACK en prod), borró 3 cuentas que quedaron vacías (Ana Cristina Cuaspud, Angélica Hormaza, Leonardo Pérez) y ese
+> trabajo volvió a quedar por cobrar en jul/ago/sep. Respaldo: `~/respaldos/orbita-antes-periodo-visita-20261029-2206.dump`.
+> Ojo: el informe de prefactura de Bolívar (`reports.routes.js` ~397) sigue usando `o.fecha_ejecucion`.
+>
 > 💸 **29-oct-2026 · CUENTAS DE COBRO: 5 peticiones de JD&D — DESPLEGADAS EN PRODUCCIÓN (back `master f092fd8`, front
 > `main 453cbfe`; script `docs/4-despliegue/despliegue-cuentas-cobro-29-oct.sh`; respaldo `~/respaldos/orbita-antes-29oct-*.dump`).**
 > Humo: health/login 200, `/api/precuentas` 401, `sst.cobro_exclusiones` creada, `orden_id` nullable, 38/38 líneas con
