@@ -5,7 +5,7 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> 🔢 **29-oct-2026 · CONTADOR DE DOCUMENTOS («va en X de Y») — COMMITEADO, SIN DESPLEGAR (back `332260e`, front `a4df36f`).**
+> 🔢 **29-oct-2026 · CONTADOR DE DOCUMENTOS («va en X de Y») — DESPLEGADO EN PRODUCCIÓN (back `332260e`, front `c805eff`); en prod: 15 de 1.000 y 0 de 60.**
 > `GET /facturacion/cupos` (`facturacion/cupos.service.js`) cuenta lo que llegó a la DIAN (CUFE/CUNE, aunque se anulara después)
 > contra `sst.configuracion.cupos_documentos`: facturación **1.000/año** (tope de la anualidad, decisión del usuario; FE+NC+DS+NA,
 > del 6-oct-2026 al 5-oct-2027) y nómina **60** (paquete, 7-oct-2026 a 6-oct-2027). Al renovar se cambian `desde`/`hasta` en esa
