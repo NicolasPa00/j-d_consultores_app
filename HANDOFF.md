@@ -5,9 +5,11 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> 💸 **29-oct-2026 · CUENTAS DE COBRO: 5 peticiones de JD&D — CONSTRUIDAS, SIN COMMIT Y SIN DESPLEGAR.** Migración
-> `sst_ws/db/migraciones/2026-10-29-cuenta-cobro-lineas.sql` (aditiva; **NO aplicada en `jdd_dev`**: el permiso se denegó,
-> se probó dentro de BEGIN…ROLLBACK). (1/5) cada línea lleva `orden_referencia` = `referenciaOrden(o, { separador: '-' })`
+> 💸 **29-oct-2026 · CUENTAS DE COBRO: 5 peticiones de JD&D — DESPLEGADAS EN PRODUCCIÓN (back `master f092fd8`, front
+> `main 453cbfe`; script `docs/4-despliegue/despliegue-cuentas-cobro-29-oct.sh`; respaldo `~/respaldos/orbita-antes-29oct-*.dump`).**
+> Humo: health/login 200, `/api/precuentas` 401, `sst.cobro_exclusiones` creada, `orden_id` nullable, 38/38 líneas con
+> referencia, sin errores en journalctl. Migración `sst_ws/db/migraciones/2026-10-29-cuenta-cobro-lineas.sql` aplicada también
+> en `jdd_dev`. **No se vio por pantalla.** (1/5) cada línea lleva `orden_referencia` = `referenciaOrden(o, { separador: '-' })`
 > («134803-67»; avisos siguen con «_») y `actividad` = `tema_actividad` → `tipo_actividad` (el «Tema y/o actividad a realizar»
 > del AT-028), no el tipo de orden; la migración rellena la referencia en todas y el tema solo en cuentas generada/rechazada.
 > (2) Papelera por línea: una línea de orden pasa a `sst.cobro_exclusiones` (orden×profesional) y `vw_horas_por_cobrar` y
@@ -16,7 +18,8 @@
 > editables (`horas_original` guarda las de la orden). (4) Líneas manuales: `precuenta_items.orden_id` ahora NULLABLE +
 > `manual`; sobreviven a «Generar». Rutas: `POST /precuentas/:id/items`, `DELETE /precuentas/:id/items/:itemId`,
 > `DELETE /precuentas/exclusiones/:ordenId/:profesionalId`. Prueba: `node --import tsx scripts/verificar-29-oct.mjs` (22/22 OK,
-> ROLLBACK). **Sin probar:** «Generar» de nuevo sobre una cuenta con manuales/horas editadas (usa el pool) y la pantalla.
+> ROLLBACK) y `verificar-29-oct-http.mjs` (por HTTP contra :4010, incluye regenerar: conserva horas editadas y manuales y no
+> vuelve a meter la apartada; borra lo que crea): todo OK.
 > Pendiente: una cuenta con SOLO líneas manuales (asesor sin órdenes en el mes) no se puede crear todavía.
 >
 > 🎬 **27-oct-2026 (tarde) · VIDEO DE BIENVENIDA EN /ayuda — DESPLEGADO (front `main 1087f41`).** «La vida de una orden en ORBITA»
