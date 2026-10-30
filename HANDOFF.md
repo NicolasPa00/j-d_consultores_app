@@ -5,6 +5,15 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
+> 🔢 **29-oct-2026 · CONTADOR DE DOCUMENTOS («va en X de Y») — COMMITEADO, SIN DESPLEGAR (back `332260e`, front `a4df36f`).**
+> `GET /facturacion/cupos` (`facturacion/cupos.service.js`) cuenta lo que llegó a la DIAN (CUFE/CUNE, aunque se anulara después)
+> contra `sst.configuracion.cupos_documentos`: facturación **1.000/año** (tope de la anualidad, decisión del usuario; FE+NC+DS+NA,
+> del 6-oct-2026 al 5-oct-2027) y nómina **60** (paquete, 7-oct-2026 a 6-oct-2027). Al renovar se cambian `desde`/`hasta` en esa
+> fila. Componente `shared/cupo-documentos` en las cabeceras de Facturación, Pago a profesionales y Nómina (naranja ≥80 %, rojo
+> agotado/vencido); visto por pantalla en dev a 1440 y 390 px. Desplegar con `docs/4-despliegue/despliegue-cupos-29-oct.sh`
+> (el permiso automático lo bloqueó). En prod contaría 15 de 1.000. **Guía para la contadora** (HTML + PDF, 8 págs.) en
+> `3-entregables-y-respaldos/entregas-cliente/2026-10-29-guia-nomina-electronica/`.
+>
 > 👷 **29-oct-2026 (noche) · NÓMINA ELECTRÓNICA DESPLEGADA EN PRODUCCIÓN (back `master 0abec49`, front `main 123ae41`).**
 > La rama `nomina-electronica` se fusionó en master/main (conflictos solo en `schema.sql`, el import de `api.service.ts`
 > y el menú) y se desplegó con `docs/4-despliegue/despliegue-nomina.sh` (respaldo + ensayo en copia, conteos iguales).
