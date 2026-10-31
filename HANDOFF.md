@@ -5,6 +5,16 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
+> 🔎 **30-oct-2026 (noche) · Por qué a la contadora «no le salía el auxilio»: las fichas de empleado de producción tenían
+> marcado «Salario integral».** Con integral `calculo.js` no da auxilio y cotiza sobre el 70 % (por eso tampoco cuadraban salud y
+> pensión). Es un error de captura: el integral exige ≥ 13 SMMLV. Los borradores de octubre se guardaron ANTES del despliegue
+> (30 días cada uno) y hay que reabrirlos con «Cambiar novedades». Se le explicó al usuario para que la contadora desmarque la
+> casilla; **no se tocaron datos de prod**. Queda por confirmar con ella si un salario de ½ SMMLV es medio tiempo o se escribió a
+> mano para pagar por días.
+> ⏸️ **PENDIENTE (decisión del usuario: documentar, no construir todavía):** bloquear «Salario integral» con salario < 13 SMMLV
+> del año (en `validarEmpleado` de `empleados.service.js`, con `parametrosDelAnio`, y aviso junto a la casilla en la ficha).
+> Va en la **revisión general de Finanzas de ORBITA** que el usuario quiere hacer en otra sesión.
+>
 > 🧾 **30-oct-2026 · NÓMINA: correcciones que pidió la contadora por teléfono — DESPLEGADAS EN PRODUCCIÓN (back `3d4b570`, front `c6195d5`; script `docs/4-despliegue/despliegue-nomina-30-oct.sh`, sin migraciones; respaldo `~/respaldos/orbita-antes-nomina30oct-*.dump`). Guía para la contadora (HTML + PDF, 5 págs.) en `3-entregables-y-respaldos/entregas-cliente/2026-10-30-guia-nomina-ajustes/`; capturas con `herramientas/ayuda-capturas/guia-nomina-30-oct.mjs` y datos inventados de `sst_ws/scripts/guia-nomina-30-oct-datos.mjs` (ya borrados de `jdd_dev`; `--borrar` los quita).**
 > **Causa probable de lo que vio la contadora:** el modal abría SIEMPRE en el mes anterior; con alguien que ingresó en octubre la vista previa era solo un error (sin salud, pensión ni auxilio). Ahora abre en el mes en curso desde el día 20 y, al elegir a quien ingresó después del mes marcado, salta a su mes de ingreso; el error dice el mes y «Cambie el mes arriba». Visto por pantalla en local (capturas de la guía).
 > Lo que anotó el usuario: «que le deje calcular la salud y pensión», «la nómina de Lorena es 2.200.000», «no le deja agregar el
