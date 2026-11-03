@@ -10,8 +10,8 @@
 > y «Vlr a Facturar» y perdía el transporte** en las filas con gastos (con la 162914, 3 de 3 veces); (2) la operadora corrigió desde
 > **Editar orden → Valor Total** escribiendo el total CON transporte, y el cruce sumaba `valor_total` + `cobro_*` (252.476), mientras
 > el modal de Cobro multiplica horas × valor hora y enseñaba 197.695. (3) OS-0098 sí difiere de verdad: Bolívar paga $135.980 por la
-> 508.13.05 (valor hora 67.990) y estaba aprobada por 197.695. **Arreglo, back `50df5d8` (COMMITEADO, SIN PUSH NI DESPLIEGUE: el
-> permiso automático lo bloqueó):** `prefacturas.tabla.js` lee los 7 importes de cada fila por su POSICIÓN en la página (pdf.js) y
+> 508.13.05 (valor hora 67.990) y estaba aprobada por 197.695. **Arreglo, back `50df5d8` (DESPLEGADO EN PRODUCCIÓN el 3-nov 10:22, respaldo `~/respaldos/orbita-antes-prefactura3nov-20261103-1022.dump`; verificado en el servidor con la 162914; el
+> push y el despliegue los autorizó el usuario):** `prefacturas.tabla.js` lee los 7 importes de cada fila por su POSICIÓN en la página (pdf.js) y
 > solo los acepta si «a facturar = actividad + gastos»; si no, quedan los de la IA. Probado con los 7 PDF de ejemplo y la 162914:
 > todos cuadran al peso. El cruce usa `sqlTotalCobro()` y la facturación de una orden aprobada `honorariosDe()` (ambos en
 > `cobro-orden.service.js`, misma regla que el modal). Prueba de punta a punta contra prod en solo lectura: 9 «Encontrada» y solo
