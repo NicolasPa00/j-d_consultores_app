@@ -5,6 +5,22 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
+> 💲 **3-nov-2026 · Prefactura de Bolívar 162914: OS-2026-0009 y 0098 (IPS Los Ángeles, con transporte) salían «Valor distinto».**
+> Diagnóstico verificado contra producción (solo lectura) y re-ejecutando la extracción: (1) **la IA intercambiaba «Vlr Actividad»
+> y «Vlr a Facturar» y perdía el transporte** en las filas con gastos (con la 162914, 3 de 3 veces); (2) la operadora corrigió desde
+> **Editar orden → Valor Total** escribiendo el total CON transporte, y el cruce sumaba `valor_total` + `cobro_*` (252.476), mientras
+> el modal de Cobro multiplica horas × valor hora y enseñaba 197.695. (3) OS-0098 sí difiere de verdad: Bolívar paga $135.980 por la
+> 508.13.05 (valor hora 67.990) y estaba aprobada por 197.695. **Arreglo, back `50df5d8` (COMMITEADO, SIN PUSH NI DESPLIEGUE: el
+> permiso automático lo bloqueó):** `prefacturas.tabla.js` lee los 7 importes de cada fila por su POSICIÓN en la página (pdf.js) y
+> solo los acepta si «a facturar = actividad + gastos»; si no, quedan los de la IA. Probado con los 7 PDF de ejemplo y la 162914:
+> todos cuadran al peso. El cruce usa `sqlTotalCobro()` y la facturación de una orden aprobada `honorariosDe()` (ambos en
+> `cobro-orden.service.js`, misma regla que el modal). Prueba de punta a punta contra prod en solo lectura: 9 «Encontrada» y solo
+> OS-0098 «Valor distinto» (correcto). Script: `docs/4-despliegue/despliegue-prefactura-transporte-3-nov.sh`. Guía para operación:
+> `3-entregables-y-respaldos/entregas-cliente/2026-11-03-guia-prefactura-valor-distinto/`. **Pendientes:** (a) OS-0009 conserva
+> `valor_total`=197.695, ya inofensivo para cruce y factura, pero Informes lo suma; (b) **18 órdenes de AXA tienen `valor_unitario` =
+> el TOTAL** (p. ej. OS-2026-0356: 70 h × 4.119.920): al finalizarlas, el modal de Cobro enseñará honorarios absurdos; hay que
+> revisar la extracción de AXA; (c) `PUT /orders/:id` sigue dejando editar `valor_total`, horas y valor hora sin anular el visto bueno.
+>
 > 🔎 **30-oct-2026 (noche) · Por qué a la contadora «no le salía el auxilio»: las fichas de empleado de producción tenían
 > marcado «Salario integral».** Con integral `calculo.js` no da auxilio y cotiza sobre el 70 % (por eso tampoco cuadraban salud y
 > pensión). Es un error de captura: el integral exige ≥ 13 SMMLV. Los borradores de octubre se guardaron ANTES del despliegue
@@ -4772,6 +4788,13 @@ jdd_consultores_app/          ← raíz del monorepo (sin git)
     parcial deja de funcionar. OJO: una orden parcial sigue valorando
     `horas_asignadas` enteras en la cuenta de cobro; aún NO se impide FINALIZARLA a
     medias (pendiente de P3, ver bloque 🧭).
+
+97. **El texto plano de la prefactura de Bolívar NO conserva el orden de las columnas (3-nov-2026).**
+    pdf.js entrega `$0 $0 $197,695 <NIT> <actividad> <razón> $142,914 $0 $54,781 $0`, y la IA, con temperatura 0, confundía
+    actividad y total en las filas con gastos. Los importes salen ahora de `prefacturas.tabla.js` (por coordenadas: la página viene
+    GIRADA, así que la «línea» de la fila es la x y la columna la y; se prueban los dos ejes). Y el «valor de la orden» que se compara
+    o se factura es SIEMPRE el del modal de Cobro (`sqlTotalCobro` / `honorariosDe`), nunca `valor_total` a secas: ese campo se edita
+    a mano desde la orden y puede no coincidir con horas × valor hora.
 
 ## 7. Cómo mantener este archivo
 
