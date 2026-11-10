@@ -5,6 +5,12 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
+> ✉️ **10-nov-2026 · «Enviar la factura al cliente» llega con el correo precargado** (pedido de la contadora). El detalle de la
+> factura (`DOCUMENTO_SELECT` en `borrador.service.js`) trae `tercero_correo_facturacion` y el modal lo precarga, editable; vacío
+> solo si el tercero no tiene correo. El backend conserva el respaldo al correo del tercero. **DESPLEGADO el 10-nov** (back `e071537`
+> / front `dfbc5e8`, sin migraciones, respaldo `~/respaldos/orbita-antes-correo10nov-20261110-1857.dump`); script
+> `docs/4-despliegue/despliegue-correo-envio-10-nov.sh`. Health 200; **sin ver por pantalla en producción**.
+>
 > 💲 **3-nov-2026 · Prefactura de Bolívar 162914: OS-2026-0009 y 0098 (IPS Los Ángeles, con transporte) salían «Valor distinto».**
 > Diagnóstico verificado contra producción (solo lectura) y re-ejecutando la extracción: (1) **la IA intercambiaba «Vlr Actividad»
 > y «Vlr a Facturar» y perdía el transporte** en las filas con gastos (con la 162914, 3 de 3 veces); (2) la operadora corrigió desde
