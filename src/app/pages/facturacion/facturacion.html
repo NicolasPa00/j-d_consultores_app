@@ -777,7 +777,7 @@
     <div class="modal__body">
       <label class="form-field">
         <span class="form-field__label">Correo del cliente</span>
-        <input class="form-control" type="email" placeholder="Vacío = correo de facturación del tercero"
+        <input class="form-control" type="email" placeholder="El tercero no tiene correo de facturación: escriba uno"
                [ngModel]="correoReenvio()" (ngModelChange)="correoReenvio.set($event)" (keydown.enter)="reenviar()" />
       </label>
       <p class="card__hint">Se envía el PDF y el XML de la factura, con el logo de JD&amp;D en el correo.</p>

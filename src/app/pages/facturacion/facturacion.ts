@@ -486,6 +486,8 @@ export class FacturacionComponent implements OnInit {
       next: (r) => {
         this.cargandoDetalle.set(false);
         this.detalle.set(r.data);
+        // 10-nov-2026 · La contadora pidió ver precargado el correo al que se envía por defecto.
+        this.correoReenvio.set(r.data.tercero_correo_facturacion ?? '');
         // Las ventanas que necesitan algo más lo piden al abrirse.
         if (vista === 'contab') this.verAsiento(r.data);
         if (vista === 'pdf') this.verPdf();
@@ -509,6 +511,7 @@ export class FacturacionComponent implements OnInit {
     const d = this.detalle();
     if (!d) return;
     this.panelDesdeDetalle = true;
+    if (vista === 'enviar') this.correoReenvio.set(d.tercero_correo_facturacion ?? '');
     this.vista.set(vista);
     if (vista === 'contab' && !this.asiento()) this.verAsiento(d);
     if (vista === 'paquete') this.cargarPaquete(d);

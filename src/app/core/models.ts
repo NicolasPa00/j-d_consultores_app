@@ -1645,6 +1645,8 @@ export interface DocumentoFactura {
   prefijo: string | null;
   tercero_id: string;
   tercero_nombre: string;
+  /** Correo de facturación de la ficha del tercero (a donde se envía por defecto). */
+  tercero_correo_facturacion?: string | null;
   prefactura_id: string | null;
   numero_prefactura: string | null;
   fecha_emision: string | null;
