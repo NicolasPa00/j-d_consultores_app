@@ -291,6 +291,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
       'Productos: lo que se vende, con su IVA (gravado, exento o excluido). Desde la factura manual también se puede crear uno al vuelo.',
       'Retenciones: retefuente, ReteIVA, ReteICA y autorretención, con su tarifa y su cuenta contable.',
       'Resoluciones: los rangos de numeración que la DIAN autoriza. ORBITA avisa cuando están por vencerse o agotarse.',
+      'Numeración: «Sincronizar con el proveedor» trae también los rangos de nómina electrónica y de nota de ajuste de nómina. Esos no llevan resolución de la DIAN y solo se consultan.',
       'Tarifas de venta y formas y medios de pago.',
     ],
     sinonimos: ['emisor', 'productos', 'retenciones', 'resolucion', 'numeracion', 'iva'],

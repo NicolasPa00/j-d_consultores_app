@@ -5,6 +5,22 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
+> 🔢 **12-nov-2026 · Los rangos de NÓMINA salen en Parametrización → Numeración** (pedido de la contadora: crearon el rango de
+> nómina en el proveedor y no aparecía). Causa: el proveedor los guarda en otra lista (`GET /v2/numbering-ranges/payrolls`) y
+> «Sincronizar con el proveedor» solo leía `/v2/numbering-ranges`. Ahora `sincronizarResoluciones` lee las dos (si la de nómina
+> falla, guarda la de facturación y avisa con `errorNomina`). En esa lista **el id del rango es texto** (`01m48rk…`), así que va a
+> la columna nueva `rango_ref`; `factus_rango_id` (BIGINT) queda solo para facturación, que es la que lo manda al emitir. Migración
+> `sst_ws/db/migraciones/2026-11-12-numeracion-nomina.sql` (tipo `NOTA_AJUSTE_NOMINA`, `factus_lista`, `rango_ref`, única por
+> lista+ref); ya aplicada en `jdd_dev` y probada contra el sandbox (NEF y NAN aparecen; la 2.ª sincronización no duplica). Las filas
+> de nómina no tienen el botón de activar/desactivar: la emisión de nómina no manda rango y usa el activo del proveedor. **Sin
+> commitear ni desplegar**; en producción: aplicar la migración, desplegar y pulsar «Sincronizar».
+>
+> ✍️ **12-nov-2026 · Firmas más grandes en los formatos** (JD&D: «están super pequeñas»; la captura era el registro de ejecución
+> PSP-F-006 de Colmena, caja de 15 pt). `formatos-arl.service.js`: Colmena registro `[[0, 497, 93, 166, 28]]` (casi el doble; se monta
+> sobre el borde inferior del recuadro de Observaciones y su 3.er renglón se acortó a 425 de ancho para no chocar); AXA asistencia
+> `[[0, 165, 133, 190, 34]]` (cruza la raya hacia abajo). Revisado en PNG con la firma de `2-pruebas/firmas-16-oct/` y observaciones
+> llenas. El resto (seguimiento Bolívar, ficha AXA, SURA, prestación Colmena) ya salía a buen tamaño y no se tocó.
+>
 > ✉️ **10-nov-2026 · «Enviar la factura al cliente» llega con el correo precargado** (pedido de la contadora). El detalle de la
 > factura (`DOCUMENTO_SELECT` en `borrador.service.js`) trae `tercero_correo_facturacion` y el modal lo precarga, editable; vacío
 > solo si el tercero no tiene correo. El backend conserva el respaldo al correo del tercero. **DESPLEGADO el 10-nov** (back `e071537`

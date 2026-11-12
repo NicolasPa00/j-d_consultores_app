@@ -326,7 +326,7 @@
               <td class="col-num mono">{{ r.porcentaje_restante ?? '—' }}</td>
               <td><span class="pill" [class]="r.activa ? 'pill--success' : 'pill--muted'">{{ r.activa ? 'Activa' : 'Inactiva' }}</span></td>
               <td class="col-actions">
-                @if (puedeEditar()) {
+                @if (puedeEditar() && r.factus_lista !== 'NOMINA') {
                   <button type="button" class="icon-action" (click)="toggleResolucion(r)" [attr.aria-label]="r.activa ? 'Desactivar' : 'Activar'">⏻</button>
                 }
               </td>
@@ -336,6 +336,7 @@
           }
         </tbody>
       </table>
+      <p class="form-field__hint">Los rangos de nómina no llevan resolución de la DIAN y se administran con el proveedor tecnológico: aquí solo se consultan.</p>
     </div>
   </div>
 }

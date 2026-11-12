@@ -1505,7 +1505,7 @@ export interface EstadoProveedor {
 
 // ─── A0-08 · Resoluciones de numeración ─────────────────────────────────────────────────────
 
-export type TipoDocumentoFE = 'FACTURA' | 'NOTA_CREDITO' | 'DOC_SOPORTE' | 'NOTA_AJUSTE_DS' | 'NOMINA';
+export type TipoDocumentoFE = 'FACTURA' | 'NOTA_CREDITO' | 'DOC_SOPORTE' | 'NOTA_AJUSTE_DS' | 'NOMINA' | 'NOTA_AJUSTE_NOMINA';
 
 /** Espejo de `sst.resoluciones_numeracion`, con los cálculos de vigencia y consumo ya resueltos. */
 export interface ResolucionNumeracion {
@@ -1519,7 +1519,9 @@ export interface ResolucionNumeracion {
   fecha_desde: string | null;
   fecha_hasta: string | null;
   dias_para_vencer: number | null;
-  factus_rango_id: string | number;
+  factus_rango_id: string | number | null;
+  /** De qué lista del proveedor vino el rango (los de nómina van aparte). */
+  factus_lista: 'FACTURACION' | 'NOMINA';
   activa: boolean;
   sincronizada_en: string | null;
   numeros_restantes: string | number | null;
@@ -1530,6 +1532,8 @@ export interface SincronizacionResoluciones {
   creadas: number;
   actualizadas: number;
   omitidas: { documento: string; prefijo: string | null; motivo: string }[];
+  /** Si la lista de rangos de nómina falló (los de facturación se guardaron igual). */
+  errorNomina?: string | null;
 }
 
 // ---- Vista previa de formatos antes de asignar (pedido de JD&D, 29-sep-2026) ----

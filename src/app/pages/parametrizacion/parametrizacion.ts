@@ -21,7 +21,8 @@ const EMISOR_VACIO: EmisorForm = {
 
 const NOMBRE_TIPO_DOC: Record<string, string> = {
   FACTURA: 'Factura de venta', NOTA_CREDITO: 'Nota crédito', DOC_SOPORTE: 'Documento soporte',
-  NOTA_AJUSTE_DS: 'Nota de ajuste', NOMINA: 'Nómina electrónica',
+  NOTA_AJUSTE_DS: 'Nota de ajuste (doc. soporte)', NOMINA: 'Nómina electrónica',
+  NOTA_AJUSTE_NOMINA: 'Nota de ajuste de nómina',
 };
 
 const CATALOGOS_CONSULTA: { clave: string; label: string }[] = [
@@ -519,6 +520,9 @@ export class ParametrizacionComponent implements OnInit {
         this.resoluciones.set(r.data);
         const omitidas = r.resumen.omitidas.length ? ` (omitidas: ${r.resumen.omitidas.map((o) => o.documento).join(', ')})` : '';
         this.alerts.success('Sincronizado con el proveedor', `${r.resumen.creadas} nueva(s), ${r.resumen.actualizadas} actualizada(s)${omitidas}.`);
+        if (r.resumen.errorNomina) {
+          this.alerts.warning('No se pudieron traer los rangos de nómina', 'Los de facturación sí se actualizaron. Intente de nuevo en unos minutos.');
+        }
       },
       error: (err) => {
         this.sincronizando.set(false);
