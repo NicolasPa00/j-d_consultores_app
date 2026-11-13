@@ -264,7 +264,7 @@
                   @if (d.estado === 'VALIDADO' || d.estado === 'ANULADO') {
                     <button type="button" class="icon-action" (click)="abrir(d.id, 'pdf')" aria-label="Ver el PDF de la factura" title="Factura (PDF)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></svg></button>
                     @if (d.estado === 'VALIDADO' && puedeOperar()) {
-                      <button type="button" class="icon-action" (click)="abrir(d.id, 'enviar')" aria-label="Enviar la factura al cliente" title="Enviar al cliente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v12H4z" /><path d="m4 7 8 6 8-6" /></svg></button>
+                      <button type="button" class="icon-action" (click)="abrir(d.id, 'enviar')" [attr.aria-label]="esNota(d) ? 'Enviar la nota crédito al cliente' : 'Enviar la factura al cliente'" title="Enviar al cliente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v12H4z" /><path d="m4 7 8 6 8-6" /></svg></button>
                     }
                     <button type="button" class="icon-action" (click)="abrir(d.id, 'contab')" aria-label="Ver la contabilización" title="Contabilización"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z" /><path d="M4 9h16M10 9v11" /></svg></button>
                   }
@@ -767,7 +767,7 @@
   <div class="modal modal--sm" role="dialog" aria-modal="true" aria-labelledby="facEnviarTitulo">
     <header class="modal__head">
       <div>
-        <h3 class="modal__title" id="facEnviarTitulo">Enviar la factura al cliente</h3>
+        <h3 class="modal__title" id="facEnviarTitulo">Enviar {{ esNota(d) ? 'la nota crédito' : 'la factura' }} al cliente</h3>
         <p class="modal__sub">{{ numeroDe(d) }} · {{ d.tercero_nombre }}</p>
       </div>
       <button type="button" class="icon-action" (click)="cerrarPanel()" aria-label="Cerrar" [disabled]="!!accion()">
@@ -780,7 +780,7 @@
         <input class="form-control" type="email" placeholder="El tercero no tiene correo de facturación: escriba uno"
                [ngModel]="correoReenvio()" (ngModelChange)="correoReenvio.set($event)" (keydown.enter)="reenviar()" />
       </label>
-      <p class="card__hint">Se envía el PDF y el XML de la factura, con el logo de JD&amp;D en el correo.</p>
+      <p class="card__hint">Se envía el correo oficial de la DIAN: un .zip con el PDF de ORBITA (con las retenciones) y el XML, con el logo de JD&amp;D en el correo.</p>
     </div>
     <footer class="modal__footer">
       <button type="button" class="btn btn--close" (click)="cerrarPanel()" [disabled]="!!accion()">Cancelar</button>

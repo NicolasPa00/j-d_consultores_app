@@ -15,6 +15,20 @@
 > de nómina no tienen el botón de activar/desactivar: la emisión de nómina no manda rango y usa el activo del proveedor. **Sin
 > commitear ni desplegar**; en producción: aplicar la migración, desplegar y pulsar «Sincronizar».
 >
+> 📧 **12-nov-2026 · El correo al cliente lleva el PDF de ORBITA (con retenciones), también en notas crédito.** La contadora vio la
+> NC93 sin retención en lo que le llegó a SURA. Verificado en prod (solo lectura): la ReteRenta SÍ va en el XML a la DIAN (FE1021/NC93
+> $162.360); lo que no la imprime es el PDF del proveedor, que era el del correo automático (`send_email: true`). Cambios: (1)
+> `pdfFactura` admite `clase: 'NOTA_CREDITO'` (mismo formato Siigo: título, «Fecha y hora Nota», leyenda con la factura que corrige y
+> la causal, CUDE) y `pdfPropioFactura` arma también las NC → «Ver nota»/PDF ya son propios. (2) Se emite con `send_email:false`
+> (bandera `FACTUS_CORREO_PDF_PROPIO`, por defecto activa; `=false` vuelve atrás) y, tras validar y contabilizar,
+> `enviarTrasValidar` (envio.service.js) pide `GET /v2/{bills|credit-notes}/:n/email-content` (asunto DIAN + ZIP con
+> AttachedDocument), cambia el PDF del ZIP por el propio y lo manda ORBITA por su SMTP: asunto oficial y **un solo adjunto .zip**
+> (los buzones de recepción de las ARL lo leen solos). Evento CORREO_ENVIADO o CORREO_FALLIDO (el paso «Enviada al cliente» queda en
+> rojo). «Enviar al cliente» manda ese mismo correo y ahora sirve para NC. ⚠️ El `POST /…/send-email` que documenta el proveedor
+> falló en el sandbox (NC: «Method Not Allowed»; FE: «Error de validación»): no se usa. ⚠️ El correo ahora depende del SMTP de
+> ORBITA (Gmail). Probado: PDF de la NC1271 del sandbox, ZIP con el PDF propio y XML intacto, reenvío con driver console. **Sin
+> desplegar; tras desplegar, reenviar la NC93 con «Enviar al cliente».**
+>
 > ✍️ **12-nov-2026 · Firmas más grandes en los formatos** (JD&D: «están super pequeñas»; la captura era el registro de ejecución
 > PSP-F-006 de Colmena, caja de 15 pt). `formatos-arl.service.js`: Colmena registro `[[0, 497, 93, 166, 28]]` (casi el doble; se monta
 > sobre el borde inferior del recuadro de Observaciones y su 3.er renglón se acortó a 425 de ancho para no chocar); AXA asistencia

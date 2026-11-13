@@ -988,7 +988,7 @@ export class FacturacionComponent implements OnInit {
       this.alerts.warning('Correo no válido', 'Revise la dirección o déjela vacía para usar la del tercero.');
       return;
     }
-    this.ejecutar('reenviar', this.api.reenviarFactura(d.id, correo || undefined), 'Factura reenviada');
+    this.ejecutar('reenviar', this.api.reenviarFactura(d.id, correo || undefined), this.esNota(d) ? 'Nota crédito enviada' : 'Factura enviada');
   }
 
   protected descargar(tipo: 'pdf' | 'xml'): void {
@@ -1123,10 +1123,11 @@ export class FacturacionComponent implements OnInit {
   /**
    * 1-oct-2026 · Pasos del documento, arriba del modal (como la barra de Siigo,
    * con lo nuestro). Salen del estado y de los eventos que ya se guardan:
-   * ENVIANDO, VALIDADO, RECHAZADO, CORREO_ENVIADO, CONTABILIZACION_PENDIENTE.
-   * «Enviada al cliente» queda hecha al validarse porque el proveedor manda su
-   * propio correo al emitir (`send_email`, A1-06); el reenvío de ORBITA suma la
-   * fecha más reciente.
+   * ENVIANDO, VALIDADO, RECHAZADO, CORREO_ENVIADO, CORREO_FALLIDO, CONTABILIZACION_PENDIENTE.
+   * «Enviada al cliente»: desde el 12-nov-2026 el correo lo manda ORBITA al validarse (con
+   * el PDF propio) y deja CORREO_ENVIADO o CORREO_FALLIDO. Los documentos anteriores no
+   * tienen ninguno de los dos —los mandaba el proveedor al emitir—, así que cuentan como
+   * enviados desde la validación.
    */
   protected pasosDe(d: DetalleFactura): PasoDocumento[] {
     const ultimo = (codigo: string): string | null =>
@@ -1146,11 +1147,17 @@ export class FacturacionComponent implements OnInit {
         estado: validada ? 'hecho' : d.estado === 'RECHAZADO' ? 'error' : d.estado === 'ENVIANDO' ? 'actual' : 'pendiente',
         fecha: ultimo(validada ? 'VALIDADO' : 'RECHAZADO'),
       },
-      {
-        etiqueta: 'Enviada al cliente',
-        estado: validada ? 'hecho' : 'pendiente',
-        fecha: ultimo('CORREO_ENVIADO') ?? (validada ? ultimo('VALIDADO') : null),
-      },
+      (() => {
+        const enviadoEn = ultimo('CORREO_ENVIADO');
+        const fallidoEn = ultimo('CORREO_FALLIDO');
+        // Falló y no se ha vuelto a enviar con éxito después: queda en rojo hasta «Enviar al cliente».
+        const fallo = validada && !!fallidoEn && (!enviadoEn || enviadoEn < fallidoEn);
+        return {
+          etiqueta: fallo ? 'Correo al cliente sin enviar' : 'Enviada al cliente',
+          estado: !validada ? 'pendiente' : fallo ? 'error' : 'hecho',
+          fecha: fallo ? fallidoEn : enviadoEn ?? (validada && !fallidoEn ? ultimo('VALIDADO') : null),
+        } as PasoDocumento;
+      })(),
       {
         etiqueta: sinContabilizar ? 'Contabilidad pendiente' : 'Contabilizada',
         estado: !validada ? 'pendiente' : sinContabilizar ? 'error' : 'hecho',

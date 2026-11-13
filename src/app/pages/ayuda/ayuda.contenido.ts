@@ -307,9 +307,9 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     pasos: [
       'Por facturar: las órdenes aprobadas, por pagador. En Bolívar se factura por prefactura; en las demás ARL se eligen las órdenes. «Crear factura» arma el borrador.',
       'Pendientes: revise el cálculo (subtotal, descuentos, IVA, retenciones, total) y el PDF antes de emitir. Puede corregir el IVA, las retenciones y la forma de pago.',
-      'Emitir: envía la factura a la DIAN. Queda «Validada» con su CUFE; se puede reenviar al cliente por correo.',
+      'Emitir: envía la factura a la DIAN. Queda «Validada» con su CUFE y ORBITA le manda el correo al cliente con el PDF de ORBITA (con las retenciones) y el XML. Si el correo falla, el paso «Enviada al cliente» queda en rojo: use «Enviar al cliente».',
       'Emitidas: estado ante la DIAN, PDF y XML, reenvío y eventos de la DIAN.',
-      'Notas crédito: desde una factura validada, total o parcial, con su causal.',
+      'Notas crédito: desde una factura validada, total o parcial, con su causal. Al validarse le llega al cliente igual que la factura, con su propio PDF.',
       'Paquete para la ARL: desde una factura emitida, descargue los soportes que pide cada ARL.',
     ],
     avisos: [
