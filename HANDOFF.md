@@ -5,6 +5,19 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
+> 🧾 **13-nov-2026 (16:35) · Cartera: MODIFICAR un recibo de caja conservando su número** (pedido de la contadora: el RC-1 quedó
+> en «11100501 Moneda nacional» y la plata puede entrar a caja u otra cuenta). Detalle del recibo → «Modificar»: reabre el formulario
+> precargado; se cambia todo (cliente, fecha, cuenta, facturas, valores, retenciones, observaciones) y el RC conserva su número.
+> `modificarRecibo` (cartera.service.js) devuelve los saldos, valida con `prepararRecibo` (compartido con el registro), reescribe el
+> asiento con `reescribirComprobanteDeRecibo` y guarda antes/después en `sst.recibos_caja_cambios`. La base sigue bloqueando lo
+> contabilizado: la excepción solo vale para comprobantes RECIBO_CAJA marcados en la transacción con
+> `set_config('sst.reescribir_comprobante', id, true)` y con los dos meses abiertos (migración `2026-11-13-modificar-recibo-caja.sql`).
+> La cuenta del recibo ahora es cualquiera del grupo 11 que reciba movimiento (antes solo `es_banco`, y en prod solo 11100501 lo
+> estaba). **Egresos y anticipos siguen pidiendo `es_banco`.** Verificación `scripts/verificar-modificar-recibo.mjs` (25/25, ROLLBACK).
+> **DESPLEGADO el 13-nov** (back `ffc8d3c` / front `6ce5837`, con migración; respaldo `~/respaldos/orbita-antes-recibos13nov-20261113-1635.dump`).
+> Verificado en prod: foto contable (comprobantes, movimientos, cartera, libro, RC-1 y consecutivos) idéntica antes/después; prueba con
+> el RC-1 real en ROLLBACK (sin cambios = mismo asiento; a Caja general = solo cambia la cuenta; cuadra). Sin verlo por pantalla.
+>
 > 🔢 **13-nov-2026 (14:43) · Nómina: `worker.days_worked` va como ENTERO.** Con los rangos ya creados, la contadora pulsó «Emitir» y
 > el proveedor de producción respondió 400 «El campo worker.days worked debe ser un número entero» (4 intentos, 14:31–14:32): ORBITA
 > mandaba `"12.00"` (`dosDec`), que el sandbox sí aceptaba. Ahora `Math.round(Number(...))`. Las 2 liquidaciones de octubre siguen en
