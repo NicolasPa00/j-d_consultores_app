@@ -5,6 +5,12 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
+> 🔢 **13-nov-2026 (14:43) · Nómina: `worker.days_worked` va como ENTERO.** Con los rangos ya creados, la contadora pulsó «Emitir» y
+> el proveedor de producción respondió 400 «El campo worker.days worked debe ser un número entero» (4 intentos, 14:31–14:32): ORBITA
+> mandaba `"12.00"` (`dosDec`), que el sandbox sí aceptaba. Ahora `Math.round(Number(...))`. Las 2 liquidaciones de octubre siguen en
+> BORRADOR (los datos eran 12 y 30, bien) y el rechazo no crea nada en el proveedor. **DESPLEGADO el 13-nov** (back `a147e45`, solo
+> backend, respaldo `~/respaldos/orbita-antes-nominadias13nov-20261113-1443.dump`). Falta que la contadora vuelva a pulsar «Emitir».
+>
 > 🔢 **12-nov-2026 · Los rangos de NÓMINA salen en Parametrización → Numeración** (pedido de la contadora: crearon el rango de
 > nómina en el proveedor y no aparecía). Causa: el proveedor los guarda en otra lista (`GET /v2/numbering-ranges/payrolls`) y
 > «Sincronizar con el proveedor» solo leía `/v2/numbering-ranges`. Ahora `sincronizarResoluciones` lee las dos (si la de nómina
