@@ -28,6 +28,8 @@ export class NotificationsService {
   private readonly _error = signal<string | null>(null);
   private readonly _filtro = signal<FiltroNotificaciones>('todas');
   private readonly _conteos = signal<ConteosNotificaciones>({ no_leidas: 0, leidas: 0, eliminadas: 0 });
+  /** 13-nov-2026 · Texto del buscador de la bandeja ('' = sin buscar). */
+  private readonly _busqueda = signal('');
 
   readonly items = this._items.asReadonly();
   readonly unread = this._unread.asReadonly();
@@ -36,6 +38,7 @@ export class NotificationsService {
   /** Recorte visible. 'todas' = la bandeja viva (sin las eliminadas). */
   readonly filtro = this._filtro.asReadonly();
   readonly conteos = this._conteos.asReadonly();
+  readonly busqueda = this._busqueda.asReadonly();
 
   /** El badge no muestra números de tres cifras: por encima de 99 se corta. */
   readonly badge = computed(() => {
@@ -70,6 +73,16 @@ export class NotificationsService {
     });
   }
 
+  /**
+   * 13-nov-2026 · Busca en la bandeja (título y mensaje, en el servidor: la lista sin
+   * buscar solo trae las 50 últimas). Se combina con el recorte activo.
+   */
+  buscar(texto: string): void {
+    if (texto === this._busqueda()) return;
+    this._busqueda.set(texto);
+    this.load();
+  }
+
   /** Cambia el recorte visible y lo recarga. */
   verFiltro(f: FiltroNotificaciones): void {
     this._filtro.set(f);
@@ -81,8 +94,11 @@ export class NotificationsService {
     if (!this.isBrowser) return;
     this._loading.set(true);
     this._error.set(null);
-    this.api.listNotifications(this._filtro()).subscribe({
+    const busqueda = this._busqueda();
+    this.api.listNotifications(this._filtro(), busqueda).subscribe({
       next: (r) => {
+        // Si mientras llegaba la respuesta se escribió otra cosa, esta ya no vale.
+        if (busqueda !== this._busqueda()) return;
         this._items.set(r.data ?? []);
         // El badge sale de los conteos y no de la lista: mirando "Leídas" la
         // lista no tiene ninguna sin leer, y contarlas ahí lo dejaría en cero.

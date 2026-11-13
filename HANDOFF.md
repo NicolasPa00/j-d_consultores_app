@@ -16,6 +16,11 @@
 > **DESPLEGADO el 12-nov con la migración. ⚠️ En producción la lista de nómina del proveedor llega VACÍA** (`/v2/numbering-ranges/payrolls`
 > con la cuenta de facturación, la misma que usa la nómina): el rango que dicen haber creado no está en esa cuenta. Sin rango, la nómina no se puede emitir.
 >
+> 🔎 **13-nov-2026 · Buscador en la campanita** (JD&D: «son bastantes»). `GET /notifications?q=` busca con ILIKE en título y mensaje
+> de TODO el recorte (sin buscar solo vienen las 50 últimas; buscando, hasta 100); `-` y `_` valen lo mismo (`patronBusqueda`). En
+> la bandeja, input bajo las pestañas con espera de 300 ms; al cerrar el panel se limpia. Probado contra `jdd_dev` con un JWT
+> firmado a mano; **sin verlo por pantalla y sin desplegar** (va en `despliegue-nomina-errores-13-nov.sh`).
+>
 > 🧾 **13-nov-2026 · Rangos de nómina CREADOS en el proveedor de producción: NE desde 13 (id `01m7avspbsbe1psghab243qajf`) y NAN
 > desde 1 (id `01m7avsqswbxzgd2rmj6kbmnqw`)**, con `scripts/factus-rango-crear-nomina.mjs`, y sincronizados (salen en Numeración).
 > Nunca se habían creado: entre el 3 y el 12-nov la contadora intentó emitir las 2 liquidaciones de octubre **9 veces, todas 400**, y

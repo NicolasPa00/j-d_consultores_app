@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Despliegue del 13-nov-2026 a PRODUCCIÓN: la nómina guarda y muestra por qué no se envió el último
-# intento de emitir (back fd714b7 / front dfad9cf). SIN migraciones.
+# Despliegue del 13-nov-2026 a PRODUCCIÓN, SIN migraciones:
+#   · la nómina guarda y muestra por qué no se envió el último intento de emitir (back fd714b7 / front dfad9cf);
+#   · buscador en la campanita de notificaciones (busca en el servidor, título y mensaje).
 # Contexto: entre el 3 y el 12-nov se intentó emitir 9 veces sin rango de nómina en el proveedor; los
 # rangos NE (desde 13) y NAN (desde 1) se crearon el 13-nov y ya están sincronizados.
 # USO, desde la raíz del monorepo:  bash jdd_consultores_app/docs/4-despliegue/despliegue-nomina-errores-13-nov.sh

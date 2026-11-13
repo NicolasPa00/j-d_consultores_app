@@ -695,8 +695,10 @@ export class ApiService {
     */
   listNotifications(
     estado?: FiltroNotificaciones,
+    busqueda?: string,
   ): Observable<Wrap<Notificacion[]> & { conteos: ConteosNotificaciones }> {
-    const q = estado && estado !== 'todas' ? `?estado=${estado}` : '';
+    // 13-nov-2026 · `q`: buscador de la bandeja; el servidor busca en título y mensaje.
+    const q = queryString({ estado: estado && estado !== 'todas' ? estado : undefined, q: busqueda?.trim() || undefined });
     return this.http.get<Wrap<Notificacion[]> & { conteos: ConteosNotificaciones }>(
       `${this.base}/notifications${q}`,
     );

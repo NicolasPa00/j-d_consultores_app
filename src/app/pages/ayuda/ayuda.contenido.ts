@@ -76,6 +76,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
       'Al iniciar sesión, si su rol tiene los dos sistemas, elige a cuál entrar. Para cambiar después use el botón «Cambiar de sistema» de la barra superior.',
       'El menú de la izquierda cambia según el sistema. Si una opción no aparece, su rol no tiene permiso para esa pantalla (lo define el administrador en Configuración → Roles y permisos).',
       'La campanita de la barra superior avisa de lo que requiere atención: soportes cargados, cuentas de cobro respondidas y documentos por vencer.',
+      'En la campanita, el buscador encuentra un aviso por número de orden, cronograma, empresa o asesor, dentro de la pestaña que esté abierta (No leídas, Leídas o Eliminadas).',
       'El signo de interrogación de la barra superior abre este centro de ayuda desde cualquier pantalla.',
     ],
     avisos: ['En el celular el menú pasa a una barra inferior con los cuatro módulos más usados y un botón «Más».'],

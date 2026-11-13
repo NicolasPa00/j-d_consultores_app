@@ -57,6 +57,27 @@
         }
       </div>
 
+      <!-- 13-nov-2026 · Buscador: busca en el servidor (título y mensaje) dentro de la pestaña activa. -->
+      <div class="tray__buscar" role="search">
+        <svg class="tray__buscar-icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
+        </svg>
+        <input
+          type="search"
+          class="tray__buscar-input"
+          placeholder="Buscar por orden, empresa o asesor…"
+          aria-label="Buscar en las notificaciones"
+          [value]="textoBusqueda()"
+          (input)="escribirBusqueda($any($event.target).value)"
+          (keydown.escape)="$event.stopPropagation(); limpiarBusqueda()"
+        />
+        @if (textoBusqueda()) {
+          <button type="button" class="tray__buscar-limpiar" (click)="limpiarBusqueda()" aria-label="Borrar la búsqueda" title="Borrar la búsqueda">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          </button>
+        }
+      </div>
+
       <div class="tray__body">
         @if (store.loading()) {
           <div class="tray__state">
@@ -76,6 +97,10 @@
                 <path d="M13.7 21a2 2 0 0 1-3.4 0" />
               </svg>
             </span>
+            @if (store.busqueda()) {
+              <p>Ninguna notificación coincide</p>
+              <small>No hay avisos con «{{ store.busqueda() }}» en esta pestaña.</small>
+            } @else {
             @switch (store.filtro()) {
               @case ('no-leidas') {
                 <p>No hay avisos sin leer</p>
@@ -93,6 +118,7 @@
                 <p>No tiene notificaciones</p>
                 <small>Aquí aparecerán las asignaciones, reprogramaciones y soportes recibidos.</small>
               }
+            }
             }
           </div>
         } @else {

@@ -396,3 +396,57 @@
     width: auto;
   }
 }
+
+/* 13-nov-2026 · Buscador de la bandeja. */
+.tray__buscar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.tray__buscar-icono {
+  position: absolute;
+  left: 22px;
+  width: 15px;
+  height: 15px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.tray__buscar-input {
+  width: 100%;
+  min-width: 0;
+  padding: 7px 30px 7px 32px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-main);
+  background: #fff;
+
+  &::placeholder { color: var(--text-muted); }
+  &:focus { outline: none; border-color: var(--secondary-color); box-shadow: 0 0 0 3px rgba(45, 123, 200, 0.15); }
+  /* El aspa propia del navegador sobra: hay un botón de borrar. */
+  &::-webkit-search-cancel-button { display: none; }
+}
+
+.tray__buscar-limpiar {
+  position: absolute;
+  right: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+
+  svg { width: 13px; height: 13px; }
+  &:hover { background: var(--border-soft); color: var(--text-main); }
+}

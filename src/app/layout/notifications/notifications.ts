@@ -50,6 +50,25 @@ export class NotificationsComponent implements OnInit, OnDestroy {
 
   protected close(): void {
     this.open.set(false);
+    // Al volver a abrir, la bandeja sale completa: una búsqueda olvidada escondería avisos nuevos.
+    this.limpiarBusqueda();
+  }
+
+  // ---- 13-nov-2026 · Buscador (JD&D: «son bastantes y es más fácil para filtrar») ----
+  protected readonly textoBusqueda = signal('');
+  private esperaBusqueda: ReturnType<typeof setTimeout> | null = null;
+
+  /** Se busca al dejar de escribir (300 ms), no con cada tecla. */
+  protected escribirBusqueda(texto: string): void {
+    this.textoBusqueda.set(texto);
+    if (this.esperaBusqueda) clearTimeout(this.esperaBusqueda);
+    this.esperaBusqueda = setTimeout(() => this.store.buscar(texto.trim()), 300);
+  }
+
+  protected limpiarBusqueda(): void {
+    if (this.esperaBusqueda) clearTimeout(this.esperaBusqueda);
+    this.textoBusqueda.set('');
+    if (this.store.busqueda()) this.store.buscar('');
   }
 
   /** Un click fuera del componente cierra el panel (comportamiento de menú). */
