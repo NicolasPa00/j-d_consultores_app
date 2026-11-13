@@ -19,15 +19,16 @@
 > 🔎 **13-nov-2026 · Buscador en la campanita** (JD&D: «son bastantes»). `GET /notifications?q=` busca con ILIKE en título y mensaje
 > de TODO el recorte (sin buscar solo vienen las 50 últimas; buscando, hasta 100); `-` y `_` valen lo mismo (`patronBusqueda`). En
 > la bandeja, input bajo las pestañas con espera de 300 ms; al cerrar el panel se limpia. Probado contra `jdd_dev` con un JWT
-> firmado a mano; **sin verlo por pantalla y sin desplegar** (va en `despliegue-nomina-errores-13-nov.sh`).
+> firmado a mano; sin verlo por pantalla. **DESPLEGADO el 13-nov** (back `c34fb70` / front `5b1e4f2`).
 >
 > 🧾 **13-nov-2026 · Rangos de nómina CREADOS en el proveedor de producción: NE desde 13 (id `01m7avspbsbe1psghab243qajf`) y NAN
 > desde 1 (id `01m7avsqswbxzgd2rmj6kbmnqw`)**, con `scripts/factus-rango-crear-nomina.mjs`, y sincronizados (salen en Numeración).
 > Nunca se habían creado: entre el 3 y el 12-nov la contadora intentó emitir las 2 liquidaciones de octubre **9 veces, todas 400**, y
 > el motivo no quedaba guardado. Revisado en solo lectura: ambas siguen en BORRADOR, el proveedor no tiene NINGUNA nómina (nada a
 > medias) y ninguna factura lleva conceptos de nómina. Arreglo: `volverABorrador` guarda el motivo en `errores` y lo registra, y el
-> borrador lo muestra (back `fd714b7` / front `dfad9cf`); **sin desplegar** (script `docs/4-despliegue/despliegue-nomina-errores-13-nov.sh`).
-> Lo que sigue: que la contadora vuelva a pulsar «Emitir» en las dos de octubre.
+> borrador lo muestra (back `fd714b7` / front `dfad9cf`); **DESPLEGADO el 13-nov** (respaldo `~/respaldos/orbita-antes-nomina13nov-20261113-1137.dump`).
+> Verificado en prod sin enviar: las 2 liquidaciones de octubre no tienen faltantes en la ficha y ORBITA no manda `numbering_range_id`,
+> así que el proveedor usa su único rango activo (NE → NE13 y NE14; la nota de ajuste, NAN1). Lo que sigue: que la contadora pulse «Emitir».
 >
 > 📧 **12-nov-2026 · El correo al cliente lleva el PDF de ORBITA (con retenciones), también en notas crédito.** La contadora vio la
 > NC93 sin retención en lo que le llegó a SURA. Verificado en prod (solo lectura): la ReteRenta SÍ va en el XML a la DIAN (FE1021/NC93
