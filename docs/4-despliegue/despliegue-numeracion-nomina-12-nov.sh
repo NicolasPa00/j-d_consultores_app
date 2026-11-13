@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# Despliegue del 12-nov-2026 a PRODUCCIÓN: rangos de nómina en Parametrización → Numeración y firmas
-# más grandes en el registro de ejecución de Colmena y la asistencia de AXA.
-# Entra: back 0d23e79 y front 480dbf0. UNA migración: db/migraciones/2026-11-12-numeracion-nomina.sql.
-# Después de desplegar, pulsar «Sincronizar con el proveedor» (o lo hace el paso 4 de este script).
+# Despliegue del 12-nov-2026 a PRODUCCIÓN:
+#   · rangos de nómina en Parametrización → Numeración (back 0d23e79 / front 480dbf0, con migración);
+#   · firmas más grandes en el registro de ejecución de Colmena y la asistencia de AXA (0d23e79);
+#   · correo al cliente con el PDF de ORBITA y PDF propio de nota crédito (back 9988034 / front b30741c).
+# UNA migración: db/migraciones/2026-11-12-numeracion-nomina.sql. Sin variables nuevas en el .env
+# (FACTUS_CORREO_PDF_PROPIO viene activa por defecto; =false vuelve al correo del proveedor).
+# Después: el paso 4 sincroniza la numeración; reenviar la NC93 desde «Enviar al cliente».
 # USO, desde la raíz del monorepo:  bash jdd_consultores_app/docs/4-despliegue/despliegue-numeracion-nomina-12-nov.sh
 set -euo pipefail
 
