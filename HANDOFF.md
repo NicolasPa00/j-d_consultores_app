@@ -32,6 +32,8 @@
 > de TODO el recorte (sin buscar solo vienen las 50 últimas; buscando, hasta 100); `-` y `_` valen lo mismo (`patronBusqueda`). En
 > la bandeja, input bajo las pestañas con espera de 300 ms; al cerrar el panel se limpia. Probado contra `jdd_dev` con un JWT
 > firmado a mano; sin verlo por pantalla. **DESPLEGADO el 13-nov** (back `c34fb70` / front `5b1e4f2`).
+> Ampliado (back `d30bfa1`, script `despliegue-buscador-orden-13-nov.sh`): busca también en la ORDEN del aviso (`datos.orden_id`:
+> número ARL, cronograma-secuencia, código OS, empresa), porque los avisos anteriores al 26-oct solo nombraban el código OS.
 >
 > 🧾 **13-nov-2026 · Rangos de nómina CREADOS en el proveedor de producción: NE desde 13 (id `01m7avspbsbe1psghab243qajf`) y NAN
 > desde 1 (id `01m7avsqswbxzgd2rmj6kbmnqw`)**, con `scripts/factus-rango-crear-nomina.mjs`, y sincronizados (salen en Numeración).
