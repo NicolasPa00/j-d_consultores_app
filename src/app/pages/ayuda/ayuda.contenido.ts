@@ -112,6 +112,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     pasos: [
       'Bolívar: suba el Excel del SIPAB (.xlsx o .xls). Trae todas las órdenes en una sola hoja.',
       'ARL SURA: suba el «Reporte estado de las tareas» que se descarga de su plataforma (.xls). Cada fila es una orden; se reconoce por las columnas ORDEN, CONTRATO y PRESTADOR.',
+      'ARL SURA también se puede subir orden por orden con el PDF «Carta orden de compra» que envía Sura: se reconoce solo y se lee completo (orden, contrato, empresa, tarea, horas, valores, fechas, lugar y contacto). Si un nombre trae «¿» en lugar de la Ñ o una tilde, corríjalo en la revisión.',
       'AXA Colpatria y Colmena: suba el PDF de cada orden. La inteligencia artificial lee los campos y marca los dudosos.',
       'Puede subir varios archivos a la vez. Si una orden ya estaba cargada, se aparta y se le avisa con su estado.',
       'En la vista previa revise cada orden: el tipo de orden (de él sale el valor de la hora), las horas, la fecha de vencimiento y, en Bolívar, si es presencial o virtual.',
@@ -119,7 +120,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     ],
     avisos: [
       'El Excel del SIPAB no trae fecha de vencimiento: se escribe a mano orden por orden. En ARL SURA sí: es la «fecha entrega final de la OC».',
-      'ARL SURA no entrega el NIT de la empresa ni su dirección: son opcionales y se completan si se conocen.',
+      'ARL SURA no entrega el NIT de la empresa: es opcional y se completa si se conoce. La dirección sí viene en el PDF de la orden de compra, no en el Excel.',
       'Sin tipos de orden creados (Configuración → Sistema) no se puede importar nada.',
     ],
     sinonimos: ['cargar', 'subir', 'excel', 'pdf', 'sipab', 'sura', 'axa', 'colmena', 'bolivar', 'archivo'],

@@ -134,6 +134,9 @@ export function pistaTipoActividadArl(arlNombre: string | null | undefined): str
  * 1-oct-2026 · AXA Colpatria también, con su número de orden ("EXTERNA NÚMERO:
  * 71 - 0001146755" → "EMPRESA (71-0001146755)"), a pedido del cliente. Colmena
  * sigue sin paréntesis: no lo pidieron.
+ *
+ * 13-nov-2026 · ARL SURA también, con su número de orden de compra ("PRONACON SAS
+ * (10758170)"): JD&D vio sus órdenes sin número «no salen como axa o como bolivar».
  */
 export function etiquetaEmpresa(
   empresaNombre: string | null | undefined,
@@ -143,8 +146,9 @@ export function etiquetaEmpresa(
   numeroOrden?: string | null,
 ): string {
   const nombre = String(empresaNombre ?? '').trim() || '—';
-  if (carpetaArl(arlNombre) === 'colpatria') {
-    // El PDF lo trae con espacios alrededor del guion ("71 - 0001146755").
+  const carpeta = carpetaArl(arlNombre);
+  if (carpeta === 'colpatria' || carpeta === 'sura') {
+    // El PDF de AXA lo trae con espacios alrededor del guion ("71 - 0001146755").
     const numero = String(numeroOrden ?? '').trim().replace(/\s*-\s*/g, '-');
     return numero ? `${nombre} (${numero})` : nombre;
   }

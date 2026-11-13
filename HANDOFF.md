@@ -16,6 +16,16 @@
 > **DESPLEGADO el 12-nov con la migración. ⚠️ En producción la lista de nómina del proveedor llega VACÍA** (`/v2/numbering-ranges/payrolls`
 > con la cuenta de facturación, la misma que usa la nómina): el rango que dicen haber creado no está en esa cuenta. Sin rango, la nómina no se puede emitir.
 >
+> 🟢 **13-nov-2026 · ARL SURA en PDF («Carta orden de compra») y su número junto a la razón social.** (1) El PDF de Sura entraba por
+> el camino de AXA/Colmena: `classifyByContent` solo contaba axa/colmena y Gemini solo responde esas dos, así que salía como AXA o
+> Colmena. Nuevo `sst_ws/src/services/sura-orden-pdf.js`: reconoce la orden de compra (SURAMERICANA S.A. + «ORDEN DE COMPRA No.» +
+> «PRESTADOR:») y la lee SIN IA por posición (pdf.js), con la misma forma que `parseExcelSura` (contrato = el número tras «EMPRESA:»,
+> tarea sin código, «Elaborado por» = `sura.profesional_arl`, vencimiento = «FECHA DE ENTREGA FINAL»). `runExtraction` lo prueba antes
+> del clasificador; el clasificador por contenido ya reconoce Sura para otros PDF. Probado con la OC 10758170 (copia en
+> `1-cliente-jdd/ordenes-reales/sura/`): ARL SURA 99 %, confianza general 96 %; 27 PDF de AXA/Colmena/prefacturas NO se confunden.
+> Sura escribe la Ñ como «¿» (MU¿OZ): esos campos bajan a 70 % para que se corrijan. (2) `etiquetaEmpresa` (core/bolivar.ts) añade
+> `(número)` también en Sura, como en AXA (Colmena sigue sin él: no lo pidieron).
+>
 > 🔎 **13-nov-2026 · Buscador en la campanita** (JD&D: «son bastantes»). `GET /notifications?q=` busca con ILIKE en título y mensaje
 > de TODO el recorte (sin buscar solo vienen las 50 últimas; buscando, hasta 100); `-` y `_` valen lo mismo (`patronBusqueda`). En
 > la bandeja, input bajo las pestañas con espera de 300 ms; al cerrar el panel se limpia. Probado contra `jdd_dev` con un JWT
