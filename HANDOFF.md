@@ -12,8 +12,9 @@
 > la columna nueva `rango_ref`; `factus_rango_id` (BIGINT) queda solo para facturación, que es la que lo manda al emitir. Migración
 > `sst_ws/db/migraciones/2026-11-12-numeracion-nomina.sql` (tipo `NOTA_AJUSTE_NOMINA`, `factus_lista`, `rango_ref`, única por
 > lista+ref); ya aplicada en `jdd_dev` y probada contra el sandbox (NEF y NAN aparecen; la 2.ª sincronización no duplica). Las filas
-> de nómina no tienen el botón de activar/desactivar: la emisión de nómina no manda rango y usa el activo del proveedor. **Sin
-> commitear ni desplegar**; en producción: aplicar la migración, desplegar y pulsar «Sincronizar».
+> de nómina no tienen el botón de activar/desactivar: la emisión de nómina no manda rango y usa el activo del proveedor.
+> **DESPLEGADO el 12-nov con la migración. ⚠️ En producción la lista de nómina del proveedor llega VACÍA** (`/v2/numbering-ranges/payrolls`
+> con la cuenta de facturación, la misma que usa la nómina): el rango que dicen haber creado no está en esa cuenta. Sin rango, la nómina no se puede emitir.
 >
 > 📧 **12-nov-2026 · El correo al cliente lleva el PDF de ORBITA (con retenciones), también en notas crédito.** La contadora vio la
 > NC93 sin retención en lo que le llegó a SURA. Verificado en prod (solo lectura): la ReteRenta SÍ va en el XML a la DIAN (FE1021/NC93
@@ -26,8 +27,9 @@
 > (los buzones de recepción de las ARL lo leen solos). Evento CORREO_ENVIADO o CORREO_FALLIDO (el paso «Enviada al cliente» queda en
 > rojo). «Enviar al cliente» manda ese mismo correo y ahora sirve para NC. ⚠️ El `POST /…/send-email` que documenta el proveedor
 > falló en el sandbox (NC: «Method Not Allowed»; FE: «Error de validación»): no se usa. ⚠️ El correo ahora depende del SMTP de
-> ORBITA (Gmail). Probado: PDF de la NC1271 del sandbox, ZIP con el PDF propio y XML intacto, reenvío con driver console. **Sin
-> desplegar; tras desplegar, reenviar la NC93 con «Enviar al cliente».**
+> ORBITA (Gmail). Probado: PDF de la NC1271 del sandbox, ZIP con el PDF propio y XML intacto, reenvío con driver console.
+> **DESPLEGADO el 12-nov** (back `9988034` / front `85882ba`, respaldo `~/respaldos/orbita-antes-numeracion12nov-20261112-2157.dump`):
+> en prod el PDF propio de la NC93 sale bien y `email-content` responde. Falta que la contadora reenvíe la NC93 con «Enviar al cliente».
 >
 > ✍️ **12-nov-2026 · Firmas más grandes en los formatos** (JD&D: «están super pequeñas»; la captura era el registro de ejecución
 > PSP-F-006 de Colmena, caja de 15 pt). `formatos-arl.service.js`: Colmena registro `[[0, 497, 93, 166, 28]]` (casi el doble; se monta
