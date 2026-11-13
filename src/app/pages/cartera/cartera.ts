@@ -221,6 +221,9 @@ export class CarteraComponent implements OnInit {
   protected rFecha = hoyLocal();
   protected rBanco = '';
   protected rObs = '';
+  /** 13-nov-2026 · Recibo que se está modificando (null = uno nuevo). Conserva su número. */
+  protected readonly editando = signal<ReciboCaja | null>(null);
+  protected rMotivo = '';
 
   /** Lo que el cliente retuvo en una factura: tarifa de cada retención elegida sobre su base (pesos enteros, como Siigo). */
   protected retenidoDe(f: FilaRecibo): number {
@@ -256,32 +259,65 @@ export class CarteraComponent implements OnInit {
   });
 
   protected nuevoRecibo(): void {
+    this.editando.set(null);
     this.rCliente = '';
     this.rFecha = hoyLocal();
+    this.rBanco = '';
     this.rObs = '';
+    this.rMotivo = '';
     this.propuesta.set(null);
     this.filas.set([]);
+    this.cargarListasRecibo();
+    this.formOpen.set(true);
+  }
+
+  /** 13-nov-2026 · Abre el formulario con todo lo del recibo para cambiar lo que haga falta. */
+  protected modificarRecibo(r: ReciboCaja): void {
+    this.editando.set(r);
+    this.recibo.set(null);
+    this.rCliente = r.tercero_id ?? '';
+    this.rFecha = r.fecha;
+    this.rBanco = r.cuenta_banco_id ?? '';
+    this.rObs = r.observaciones ?? '';
+    this.rMotivo = '';
+    this.cargarListasRecibo();
+    this.formOpen.set(true);
+    this.elegirCliente(this.rCliente);
+  }
+
+  /**
+   * Clientes, cuentas y retenciones del formulario. La cuenta puede ser cualquiera del
+   * disponible (grupo 11: caja general, cajas menores, bancos, ahorros…), no solo la marcada
+   * como banco; esa se propone sola cuando el recibo es nuevo.
+   */
+  private cargarListasRecibo(): void {
     if (!this.clientes().length) {
       this.api.listTerceros().subscribe({ next: (r) => this.clientes.set(r.data.filter((t) => t.activo && (t.es_cliente || t.es_arl))) });
     }
     if (!this.bancos().length) {
       this.api.listCuentas().subscribe({
         next: (r) => {
-          const b = r.data.filter((c) => c.es_banco && c.acepta_movimiento && c.activa);
+          const b = r.data
+            .filter((c) => (c.es_banco || c.codigo.startsWith('11')) && c.acepta_movimiento && c.activa)
+            .sort((x, y) => x.codigo.localeCompare(y.codigo));
           this.bancos.set(b);
-          if (b.length === 1) this.rBanco = b[0].id;
+          const marcadas = b.filter((c) => c.es_banco);
+          if (!this.rBanco && marcadas.length === 1) this.rBanco = marcadas[0].id;
         },
       });
+    } else if (!this.rBanco) {
+      const marcadas = this.bancos().filter((c) => c.es_banco);
+      if (marcadas.length === 1) this.rBanco = marcadas[0].id;
     }
     if (!this.retenciones().length) {
       this.api.listRetenciones(true).subscribe({ next: (r) => this.retenciones.set(r.data.filter((x) => x.aplica_a === 'VENTA' && x.tipo !== 'AUTORRETENCION')) });
     }
-    this.formOpen.set(true);
   }
 
   protected cerrarForm(): void {
     if (this.guardando()) return;
     this.formOpen.set(false);
+    this.editando.set(null);
   }
 
   /** Al elegir el cliente se traen sus facturas abiertas, con la ReteICA que suele practicar ya marcada. */
@@ -290,9 +326,13 @@ export class CarteraComponent implements OnInit {
     this.propuesta.set(null);
     this.filas.set([]);
     if (!id) return;
-    this.api.propuestaRecibo(id).subscribe({
+    // Al modificar, las facturas del recibo vuelven con el saldo que tendrían sin él (si es el mismo cliente).
+    const ed = this.editando();
+    const reciboId = ed && ed.tercero_id === id ? ed.id : undefined;
+    this.api.propuestaRecibo(id, reciboId).subscribe({
       next: (r) => {
         this.propuesta.set(r.data);
+        const actual = new Map((r.data.actual ?? []).map((a) => [a.cartera_documento_id, a]));
         this.filas.set(r.data.facturas.map((f) => {
           const base = aCentavos(f.base_reteica) ?? 0;
           const saldo = aCentavos(f.saldo) ?? 0;
@@ -301,6 +341,12 @@ export class CarteraComponent implements OnInit {
             pagado: '', retencion_ids: f.reteica_id ? [f.reteica_id] : [], base, iva: Math.max(saldo - base, 0),
           };
           fila.pagado = ((saldo - this.retenidoDe(fila)) / 100).toFixed(2);
+          const a = actual.get(f.id);
+          if (a) {
+            fila.marcada = true;
+            fila.retencion_ids = [...a.retencion_ids];
+            fila.pagado = Number(a.valor_pagado).toFixed(2);
+          }
           return fila;
         }));
       },
@@ -336,7 +382,7 @@ export class CarteraComponent implements OnInit {
   protected guardarRecibo(): void {
     const t = this.totales();
     if (!this.rCliente) { this.alerts.warning('Elija el cliente'); return; }
-    if (!this.rBanco) { this.alerts.warning('Elija la cuenta de banco'); return; }
+    if (!this.rBanco) { this.alerts.warning('Elija la cuenta donde entró la plata'); return; }
     if (!t.marcadas) { this.alerts.warning('Marque al menos una factura'); return; }
     if (t.invalidas) { this.alerts.warning('Hay valores que no son números'); return; }
     if (t.excedidas) { this.alerts.warning('Lo pagado más lo retenido supera el saldo de alguna factura'); return; }
@@ -354,16 +400,20 @@ export class CarteraComponent implements OnInit {
         })),
     }));
     this.guardando.set(true);
-    this.api.createRecibo({ tercero_id: this.rCliente, fecha: this.rFecha, cuenta_banco_id: this.rBanco, observaciones: this.rObs.trim() || undefined, aplicaciones }).subscribe({
+    const cuerpo = { tercero_id: this.rCliente, fecha: this.rFecha, cuenta_banco_id: this.rBanco, observaciones: this.rObs.trim() || undefined, aplicaciones };
+    const ed = this.editando();
+    const peticion = ed ? this.api.updateRecibo(ed.id, { ...cuerpo, motivo: this.rMotivo.trim() || undefined }) : this.api.createRecibo(cuerpo);
+    peticion.subscribe({
       next: (r) => {
         this.guardando.set(false);
         this.formOpen.set(false);
-        this.alerts.success(`Recibo ${r.data.numero} registrado`, `${this.pesos(r.data.valor_consignado)} consignados.`);
+        this.editando.set(null);
+        this.alerts.success(`Recibo ${r.data.numero} ${ed ? 'modificado' : 'registrado'}`, `${this.pesos(r.data.valor_consignado)} consignados.`);
         this.refrescarTodo();
       },
       error: (err) => {
         this.guardando.set(false);
-        this.alerts.error('No se pudo registrar el recibo', mensajeError(err, 'Intente de nuevo.'));
+        this.alerts.error(ed ? 'No se pudo modificar el recibo' : 'No se pudo registrar el recibo', mensajeError(err, 'Intente de nuevo.'));
       },
     });
   }

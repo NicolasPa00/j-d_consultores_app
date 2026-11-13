@@ -197,6 +197,11 @@
     <div class="modal__body">
       @if (r.motivo_anulacion) { <p class="car-anulado">Anulado: {{ r.motivo_anulacion }}</p> }
       @if (r.observaciones) { <p class="car-sub">{{ r.observaciones }}</p> }
+      @if (r.cambios?.length) {
+        <p class="car-sub">
+          Modificado {{ r.cambios!.length === 1 ? '' : r.cambios!.length + ' veces · la última' }} el {{ r.cambios![0].fecha }}@if (r.cambios![0].usuario) { por {{ r.cambios![0].usuario }} }@if (r.cambios![0].motivo) { · {{ r.cambios![0].motivo }} }
+        </p>
+      }
       <table class="table">
         <thead><tr><th>Factura</th><th class="col-num">Pagado</th><th>Retenido</th></tr></thead>
         <tbody>
@@ -225,6 +230,7 @@
           <button type="button" class="btn btn--danger" (click)="confirmarAnular(r)" [disabled]="trabajando()">Anular recibo</button>
         } @else {
           <button type="button" class="btn btn--danger car-peligro" (click)="motivo = ''; anulando.set(true)">Anular</button>
+          <button type="button" class="btn btn--secondary" (click)="modificarRecibo(r)">Modificar</button>
         }
       }
       <button type="button" class="btn btn--close" (click)="recibo.set(null)" [disabled]="trabajando()">Cerrar</button>
@@ -237,7 +243,7 @@
   <div class="modal-backdrop" (click)="cerrarForm()"></div>
   <div class="modal modal--xl" role="dialog" aria-modal="true" aria-labelledby="carNuevoTitle">
     <header class="modal__head">
-      <h3 class="modal__title" id="carNuevoTitle">Registrar recibo de caja</h3>
+      <h3 class="modal__title" id="carNuevoTitle">{{ editando() ? 'Modificar recibo ' + editando()!.numero : 'Registrar recibo de caja' }}</h3>
       <button type="button" class="icon-action" (click)="cerrarForm()" aria-label="Cerrar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
       </button>
@@ -256,8 +262,8 @@
           <input id="carFecha" type="date" class="form-control" [(ngModel)]="rFecha" />
         </div>
         <div class="form-field">
-          <label class="form-field__label" for="carBanco">Banco *</label>
-          <select id="carBanco" class="form-control" [(ngModel)]="rBanco">
+          <label class="form-field__label" for="carBanco">Cuenta donde entró la plata *</label>
+          <select id="carBanco" class="form-control" [(ngModel)]="rBanco" title="Caja general, cajas menores, bancos, ahorros… (cuentas del grupo 11)">
             <option value="">Elija…</option>
             @for (b of bancos(); track b.id) { <option [value]="b.id">{{ b.codigo }} · {{ b.nombre }}</option> }
           </select>
@@ -315,13 +321,20 @@
             <label class="form-field__label" for="carObs">Observaciones</label>
             <input id="carObs" type="text" class="form-control" [(ngModel)]="rObs" placeholder="p. ej. número de la transferencia" />
           </div>
+          @if (editando()) {
+            <div class="form-field">
+              <label class="form-field__label" for="carMotivoCambio">Motivo del cambio</label>
+              <input id="carMotivoCambio" type="text" class="form-control" [(ngModel)]="rMotivo" placeholder="p. ej. el pago entró a la caja, no al banco" />
+              <p class="form-field__hint">El recibo conserva su número {{ editando()!.numero }}; su asiento contable se reescribe con lo nuevo y el cambio queda registrado.</p>
+            </div>
+          }
         }
       }
     </div>
     <footer class="modal__footer">
       <button type="button" class="btn btn--close" (click)="cerrarForm()" [disabled]="guardando()">Cancelar</button>
       <button type="button" class="btn btn--primary" (click)="guardarRecibo()" [disabled]="guardando() || !totales().marcadas">
-        @if (guardando()) { <span class="spinner" aria-hidden="true"></span> Registrando… } @else { Registrar y contabilizar }
+        @if (guardando()) { <span class="spinner" aria-hidden="true"></span> {{ editando() ? 'Guardando…' : 'Registrando…' }} } @else { {{ editando() ? 'Guardar cambios' : 'Registrar y contabilizar' }} }
       </button>
     </footer>
   </div>

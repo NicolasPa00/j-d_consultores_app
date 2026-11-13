@@ -2288,6 +2288,8 @@ export interface ConciliacionCartera {
 export interface PropuestaRecibo {
   reteica: { id: string; codigo: string; nombre: string; tarifa: string; cuenta_id: string | null } | null;
   facturas: (DocumentoCartera & { base_reteica: string; reteica_sugerida: string; reteica_id: string | null })[];
+  /** 13-nov-2026 · Al modificar un recibo (?recibo_id=): lo que ese recibo aplicó a cada factura. */
+  actual?: { cartera_documento_id: string; valor_pagado: string; valor_retenciones: string; retencion_ids: string[] }[];
 }
 
 export interface ReciboCaja {
@@ -2305,7 +2307,11 @@ export interface ReciboCaja {
   observaciones?: string | null;
   motivo_anulacion?: string | null;
   comprobante_id?: string | null;
-  aplicaciones?: { id: string; numero: string; valor_pagado: string; valor_retenciones: string; anulada: boolean; retenciones: { retencion: string; nombre: string; valor: string }[] }[];
+  cuenta_banco_id?: string;
+  modificado_en?: string | null;
+  aplicaciones?: { id: string; cartera_documento_id?: string; numero: string; valor_pagado: string; valor_retenciones: string; anulada: boolean; retenciones: { retencion_id?: string; retencion: string; nombre: string; valor: string }[] }[];
+  /** 13-nov-2026 · Historial de modificaciones (lo más reciente primero). */
+  cambios?: { fecha: string; usuario: string | null; motivo: string | null }[];
 }
 
 export interface AplicacionReciboForm {

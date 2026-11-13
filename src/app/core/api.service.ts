@@ -1521,8 +1521,9 @@ export class ApiService {
   conciliacionCartera(tipo: 'CXC' | 'CXP' = 'CXC'): Observable<Wrap<ConciliacionCartera>> {
     return this.http.get<Wrap<ConciliacionCartera>>(`${this.base}/cartera/conciliacion${queryString({ tipo: tipo === 'CXP' ? 'CXP' : undefined })}`);
   }
-  propuestaRecibo(terceroId: string): Observable<Wrap<PropuestaRecibo>> {
-    return this.http.get<Wrap<PropuestaRecibo>>(`${this.base}/cartera/propuesta/${terceroId}`);
+  /** Con `reciboId` (al modificar ese recibo), sus facturas entran con el saldo que tendrían sin él. */
+  propuestaRecibo(terceroId: string, reciboId?: string): Observable<Wrap<PropuestaRecibo>> {
+    return this.http.get<Wrap<PropuestaRecibo>>(`${this.base}/cartera/propuesta/${terceroId}${queryString({ recibo_id: reciboId })}`);
   }
   listRecibos(f: { tercero_id?: string; desde?: string; hasta?: string } = {}): Observable<{ data: ReciboCaja[]; total: number }> {
     return this.http.get<{ data: ReciboCaja[]; total: number }>(`${this.base}/cartera/recibos${queryString(f)}`);
@@ -1532,6 +1533,10 @@ export class ApiService {
   }
   createRecibo(body: { tercero_id: string; fecha: string; cuenta_banco_id: string; observaciones?: string; aplicaciones: AplicacionReciboForm[] }): Observable<Wrap<ReciboCaja>> {
     return this.http.post<Wrap<ReciboCaja>>(`${this.base}/cartera/recibos`, body);
+  }
+  /** 13-nov-2026 · Modifica un recibo contabilizado; conserva su número. */
+  updateRecibo(id: string, body: { tercero_id: string; fecha: string; cuenta_banco_id: string; observaciones?: string; motivo?: string; aplicaciones: AplicacionReciboForm[] }): Observable<Wrap<ReciboCaja>> {
+    return this.http.put<Wrap<ReciboCaja>>(`${this.base}/cartera/recibos/${id}`, body);
   }
   anularRecibo(id: string, motivo: string): Observable<Wrap<ReciboCaja>> {
     return this.http.post<Wrap<ReciboCaja>>(`${this.base}/cartera/recibos/${id}/anular`, { motivo });

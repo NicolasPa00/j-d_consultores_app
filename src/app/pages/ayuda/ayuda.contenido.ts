@@ -384,13 +384,14 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     ilustraciones: ILU_CARTERA_COBRAR,
     pasos: [
       'Por cobrar muestra la antigüedad por cliente. El ojo abre su estado de cuenta.',
-      '«Registrar recibo de caja»: elija el cliente, la fecha y el banco donde entró la plata.',
+      '«Registrar recibo de caja»: elija el cliente, la fecha y la cuenta donde entró la plata (caja general, cajas menores, banco, ahorros…).',
       'Marque las facturas que cubre la consignación. En cada una elija las retenciones que el cliente practicó (ReteICA, retefuente, ReteIVA…).',
       'El valor retenido se calcula solo —tarifa por la base de la factura— y no se digita; lo pagado se ajusta para que la factura quede saldada.',
       'Registrar y contabilizar: queda el recibo (RC), la factura se cancela y lo retenido va a la cuenta de cada retención.',
+      'Para corregir un recibo: Recibos de caja → ojo → «Modificar». Se puede cambiar todo (cliente, fecha, cuenta, facturas, valores y retenciones); conserva su número y el cambio queda registrado.',
     ],
     avisos: ['La ReteICA propuesta es la que se eligió en la factura manual o, si no, la que el cliente tiene en sus condiciones.'],
-    sinonimos: ['recibo de caja', 'retencion', 'reteica', 'pago cliente', 'cobrar', 'antiguedad'],
+    sinonimos: ['recibo de caja', 'retencion', 'reteica', 'pago cliente', 'cobrar', 'antiguedad', 'modificar recibo', 'editar recibo', 'caja'],
   },
   {
     id: 'cartera-pagar',
