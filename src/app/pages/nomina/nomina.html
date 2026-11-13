@@ -546,6 +546,12 @@
           <ul>@for (e of erroresDe(d); track $index) { <li>{{ e }}</li> }</ul>
         </div>
       }
+      @if (d.estado === 'BORRADOR' && erroresDe(d).length) {
+        <div class="nom-aviso nom-aviso--warning" role="status">
+          <b>El último intento de emitir no se envió:</b>
+          <ul>@for (e of erroresDe(d); track $index) { <li>{{ e }}</li> }</ul>
+        </div>
+      }
       @if (d.estado === 'ENVIANDO') {
         <p class="nom-aviso nom-aviso--warning">Se envió y la DIAN todavía no responde. Pulse «Reintentar el envío»: se retoma el mismo, no se duplica.</p>
       }
