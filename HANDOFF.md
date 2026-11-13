@@ -25,6 +25,8 @@
 > `1-cliente-jdd/ordenes-reales/sura/`): ARL SURA 99 %, confianza general 96 %; 27 PDF de AXA/Colmena/prefacturas NO se confunden.
 > Sura escribe la Ñ como «¿» (MU¿OZ): esos campos bajan a 70 % para que se corrijan. (2) `etiquetaEmpresa` (core/bolivar.ts) añade
 > `(número)` también en Sura, como en AXA (Colmena sigue sin él: no lo pidieron).
+> **DESPLEGADO el 13-nov** (back `9f35e95` / front `cb9ff85`, respaldo `~/respaldos/orbita-antes-sura13nov-20261113-1151.dump`);
+> verificado en el servidor con la OC 10758170 (ARL SURA 99 %, sin IA, confianza 96 %).
 >
 > 🔎 **13-nov-2026 · Buscador en la campanita** (JD&D: «son bastantes»). `GET /notifications?q=` busca con ILIKE en título y mensaje
 > de TODO el recorte (sin buscar solo vienen las 50 últimas; buscando, hasta 100); `-` y `_` valen lo mismo (`patronBusqueda`). En
