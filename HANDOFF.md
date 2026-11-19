@@ -5,6 +5,8 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
+> 📎 **19-nov-2026 · Paquete de Bolívar: el anexo «3.ACTIVIDADES REALIZADAS» no cuadraba con la factura** (FE1027: anexo 8.238.575 frente a 16.129.617). Cada actividad tomaba `cobro_aprobado_total` (lo de operación, sin gastos o vacío); ahora toma el `valor_a_facturar` de su fila de prefactura, que es lo que suma la línea única. **DESPLEGADO el 19-nov** (back `5d4e80c`, sin migración) y verificado en prod: FE1027 anexo = 16.129.617 en 32 actividades. La oficina debe volver a descargar el paquete.
+>
 > 🧾 **13-nov-2026 (16:35) · Cartera: MODIFICAR un recibo de caja conservando su número** (pedido de la contadora: el RC-1 quedó
 > en «11100501 Moneda nacional» y la plata puede entrar a caja u otra cuenta). Detalle del recibo → «Modificar»: reabre el formulario
 > precargado; se cambia todo (cliente, fecha, cuenta, facturas, valores, retenciones, observaciones) y el RC conserva su número.
