@@ -49,7 +49,8 @@
   height: 20px;
 }
 
-/* Contador: acción con texto blanco (9,28:1) y anillo blanco de 2 px. Mínimo
+/* Contador: rojo de error con texto blanco (6,57:1) y anillo blanco de 2 px.
+   Cierre · En azul de marca se leía como decoración, no como algo por atender. Mínimo
    16 px; con más de 99 dice «99+» (lo corta el servicio). */
 .icon-btn__badge {
   position: absolute;
@@ -60,7 +61,7 @@
   height: 17px;
   padding: 0 4px;
   border-radius: var(--r-completo);
-  background: var(--accion);
+  background: var(--error);
   color: #ffffff;
   box-shadow: 0 0 0 2px var(--superficie);
   font-size: 11px;

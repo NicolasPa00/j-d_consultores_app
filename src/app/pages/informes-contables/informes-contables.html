@@ -4,9 +4,9 @@
     <p class="page-head__sub">{{ subtitulo[pestana()] }}</p>
   </div>
   <div class="ic-head__actions">
-    <button type="button" class="btn btn--ghost" (click)="exportarPdf()" [disabled]="cargando()">Exportar a PDF</button>
+    <button type="button" class="btn btn--ghost" (click)="exportarPdf()" [disabled]="cargando()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5" /><path d="M9 13h6M9 17h4" /></svg> Exportar a PDF</button>
     <button type="button" class="btn btn--ghost" (click)="exportarExcel()" [disabled]="cargando() || exportando()">
-      @if (exportando()) { <span class="spinner" aria-hidden="true"></span> } Exportar a Excel
+      @if (exportando()) { <span class="spinner" aria-hidden="true"></span> } @else { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5" /><path d="m9.5 12.5 5 5M14.5 12.5l-5 5" /></svg> } Exportar a Excel
     </button>
   </div>
 </section>
@@ -297,7 +297,7 @@
             <th class="col-num">Débito</th>
             <th class="col-num">Crédito</th>
             <th class="col-num">Saldo final</th>
-            <th class="col-actions" aria-label="Acciones"></th>
+            <th class="col-actions">Acciones</th>
           </tr>
         </thead>
         <tbody>

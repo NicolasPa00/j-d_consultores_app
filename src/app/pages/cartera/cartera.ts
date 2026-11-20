@@ -16,6 +16,7 @@ import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 import { aCentavos } from '../contabilidad/comprobantes/comprobantes';
 import { PagosComponent } from './pagos/pagos';
+import { FechaDmyPipe } from '../../shared/fecha-dmy.pipe';
 
 /** B4-01 añade lo que JD&D debe a sus proveedores (por pagar) y cómo les paga. */
 type Pestana = 'por-cobrar' | 'recibos' | 'por-pagar' | 'egresos';
@@ -61,7 +62,7 @@ function hoyLocal(): string {
  */
 @Component({
   selector: 'app-cartera',
-  imports: [FormsModule, PaginadorComponent, PagosComponent],
+  imports: [FormsModule, PaginadorComponent, PagosComponent, FechaDmyPipe],
   templateUrl: './cartera.html',
   styleUrl: './cartera.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

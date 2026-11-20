@@ -105,15 +105,8 @@
      con su conteo y las próximas visitas. Sin tabla de órdenes. -->
 @if (!esProfesional()) {
 <div class="inicio">
-  <!-- Franja del saludo: el único momento de marca del Inicio. -->
+  <!-- Franja del saludo: una línea (saludo, lo pendiente y la fecha), sin órbitas. -->
   <section class="saludo" aria-labelledby="inicio-saludo">
-    <svg class="saludo__orbitas" viewBox="0 0 560 300" aria-hidden="true" focusable="false">
-      <ellipse cx="300" cy="150" rx="250" ry="92" transform="rotate(-14 300 150)" class="orb orb--1" />
-      <ellipse cx="300" cy="150" rx="205" ry="64" transform="rotate(20 300 150)" class="orb orb--2" />
-      <ellipse cx="300" cy="150" rx="300" ry="150" class="orb orb--3" />
-      <circle cx="62" cy="200" r="5" class="orb-punto" />
-      <circle cx="500" cy="60" r="3.5" class="orb-punto orb-punto--accion" />
-    </svg>
     <div class="saludo__texto">
       <h2 class="saludo__titulo" id="inicio-saludo">{{ saludo() }}</h2>
       @if (mensaje(); as m) {
@@ -191,6 +184,20 @@
                   }
                 </div>
               }
+            </div>
+          }
+        </section>
+      }
+
+      <!-- ---------- Tira de KPI (cierre del rediseño): los cuatro números de
+           Indicadores, compactos, encima de lo pendiente. Sin enlaces nuevos. ---------- -->
+      @if (veKpisResumen() && kpis().length) {
+        <section class="kpi-tira" aria-label="Indicadores de órdenes">
+          @for (kpi of kpis(); track kpi.label) {
+            <div class="kpi-tira__item">
+              <span class="kpi-tira__label">{{ kpi.label }}</span>
+              <strong class="kpi-tira__valor">{{ kpi.value }}</strong>
+              @if (kpi.hint) { <span class="kpi-tira__pista">{{ kpi.hint }}</span> }
             </div>
           }
         </section>
@@ -359,7 +366,7 @@
                       <div class="graf__col" [class.graf__col--actual]="b.actual">
                         @if (b.horas > 0) {
                           <div class="graf__barra" [style.height.%]="b.alto">
-                            <span>{{ b.horas.toLocaleString('es-CO') }}</span>
+                            <span>{{ b.horas.toLocaleString('es-CO') }} h</span>
                           </div>
                         } @else {
                           <!-- Mes en cero: un trazo en la base, sin cifra suelta. -->

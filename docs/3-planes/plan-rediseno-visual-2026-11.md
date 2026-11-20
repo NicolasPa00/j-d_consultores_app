@@ -37,7 +37,7 @@ Decisiones del dueño: identidad ORBITA · Inicio por rol · rama local sin desp
 | 2 | Cimientos: tokens ORBITA (`src/styles/_tokens.scss`, con los 77 nombres viejos como alias), Inter autoalojada (`public/fonts/`), componentes globales (`.tabs`, `.estado-vacio`, `.kpi-card`, `.seg`, tablas tabulares, pills), limpieza de hex en todas las hojas | front `07ba766` |
 | 3 | Shell en «noche» con grupos, segmentado Operación/Finanzas en la barra superior, «Contraer menú» al pie · Login / recuperar / reset / sistemas partidos en dos con escena (`pages/login/escena-acceso.*`) · **Inicio por rol** (Resumen: accesos según permisos + «Requiere su atención» + «Próximas a ejecutar»; pestaña Indicadores con los KPI) — se eliminó `loadOrders()` (`GET /orders` sin filtros) | front `c0f5811` · back `e041f48` |
 | 4 | Piel de todas las vistas de trabajo: Órdenes (fila en dos niveles, columna Opciones fija a ~1093 px, FINALIZADA con visto), Operación (importar, profesionales, cuentas de cobro, empresas, estadísticas, configuración, portal, encuesta, ayuda), Finanzas (facturación, DS, nómina, cartera, compras, contabilidad y subvistas, informes contables, terceros, parametrización) | front `c0f5811` |
-| 5 | Refutación final: juez de coherencia + abogado del diablo + corrector + juez final | ver §4 |
+| 5 | Refutación final: juez de coherencia (7) + abogado del diablo (7: «no encuentro ninguna regresión grave») → corrector de cierre (fechas dd/mm/aaaa en Compras y Comprobantes, «Acciones» en todas las tablas, íconos en botones de importar/exportar, cabeceras uniformes en celular, saludo del Inicio en una línea + tira de KPI en Resumen, «Nuevo empleado» primario) → juez final **8** | ver §4 y `rediseno-visual-defectos-abiertos.md` |
 
 Endpoint nuevo: `GET /api/reports/inicio` (`sst_ws/src/modules/reports/reports.routes.js`). Una sola consulta con los
 conteos de «Requiere su atención» usando LAS MISMAS definiciones de cada vista; filtra por `sst.permisos_rol` (lo no
@@ -74,7 +74,15 @@ Están detalladas en **`DESIGN.md` §11 «Pendientes del dueño»**. Resumen:
 3. **Estado ARL «Pendiente» en neutro** (antes ámbar).
 4. **Barrido tú → usted** del resto de la app (§12 de DESIGN) — y con él rehacer las capturas del centro de ayuda.
 5. Funciones que quedaron fuera a propósito (filtros nuevos en Órdenes, Semana/Mes/Año, Órdenes apiladas en celular…).
-6. Cuándo desplegar.
+6. Surgidas en la refutación final (detalle en `rediseno-visual-defectos-abiertos.md`):
+   - **Facturación:** «Actualizar eventos DIAN» y «Nueva factura manual» quedaron a la DERECHA (antes a la izquierda, junto al contador).
+   - **Órdenes:** el buscador quedó en una fila propia, encima de los filtros.
+   Los dos casos son cambios de posición; si el dueño no los quiere, se revierten en la hoja de cada vista.
+   - Acción «Ver» como ojo solo (hoy) o con la palabra «Ver»; botón Ver en Configuración › Usuarios (necesita modal nuevo).
+   - Contadores en todas las pestañas de Pago a profesionales y Cartera (pide datos nuevos) o quitarlos.
+   - Mayúsculas de tipo oración en «Nuevo Profesional» y en las pestañas de Configuración (va con el barrido de textos).
+   - ¿Un bloque corto de «Órdenes recientes» en el Inicio? Hoy la tira de KPI recupera los números al entrar.
+7. Cuándo desplegar.
 
 ## 6. Pendientes técnicos tras la aprobación
 

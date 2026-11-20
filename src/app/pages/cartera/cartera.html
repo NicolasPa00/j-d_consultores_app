@@ -49,7 +49,7 @@
       @if (c.cuadra) { <span class="pill doc-estado pill--success" title="El saldo de la cartera es igual al de la cuenta de clientes">Cuadra con la contabilidad</span> }
     }
     <span class="car-sep"></span>
-    <button type="button" class="btn btn--ghost" (click)="exportarAntiguedad()">Exportar a Excel</button>
+    <button type="button" class="btn btn--ghost" (click)="exportarAntiguedad()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5" /><path d="m9.5 12.5 5 5M14.5 12.5l-5 5" /></svg> Exportar a Excel</button>
   </div>
 
   <div class="card">
@@ -111,7 +111,7 @@
           @for (r of pagRecibos.visibles(); track r.id) {
             <tr>
               <td class="td-id nowrap">{{ r.numero }}</td>
-              <td class="mono">{{ r.fecha }}</td>
+              <td class="mono">{{ r.fecha | fechaDmy }}</td>
               <td class="car-nombre">{{ r.tercero_nombre }}</td>
               <td class="mono car-facturas">{{ r.facturas }}</td>
               <td class="col-num mono">{{ pesos(r.valor_consignado) }}</td>
@@ -152,7 +152,7 @@
           <tbody>
             @for (d of e.documentos; track d.id) {
               <tr class="car-doc">
-                <td class="mono">{{ d.fecha }}</td>
+                <td class="mono">{{ d.fecha | fechaDmy }}</td>
                 <td><strong>Factura {{ d.numero }}</strong>
                   @if (+d.saldo > 0 && d.dias_vencido > 0) { <span class="pill pill--warning">vencida {{ d.dias_vencido }} d</span> }</td>
                 <td class="mono">{{ d.vencimiento }}</td>
@@ -162,7 +162,7 @@
               </tr>
               @for (m of d.movimientos; track $index) {
                 <tr>
-                  <td class="mono">{{ m.fecha }}</td>
+                  <td class="mono">{{ m.fecha | fechaDmy }}</td>
                   <td class="car-mov">{{ m.origen_tipo === 'NOTA_CREDITO' ? 'Nota crédito' : m.origen_tipo === 'NOTA_AJUSTE' ? 'Nota de ajuste' : m.origen_tipo === 'EGRESO' ? 'Egreso' : 'Recibo de caja' }} {{ m.soporte }}
                     @if (+m.valor_retenciones) { <small>(retenido {{ pesos(m.valor_retenciones) }})</small> }</td>
                   <td></td>
@@ -177,7 +177,7 @@
       </div>
     </div>
     <footer class="modal__footer">
-      <button type="button" class="btn btn--ghost" (click)="exportarEstado(e)">Exportar a Excel</button>
+      <button type="button" class="btn btn--ghost" (click)="exportarEstado(e)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5" /><path d="m9.5 12.5 5 5M14.5 12.5l-5 5" /></svg> Exportar a Excel</button>
       <button type="button" class="btn btn--close" (click)="estado.set(null)">Cerrar</button>
     </footer>
   </div>
@@ -192,7 +192,7 @@
         <h3 class="modal__title" id="carRcTitle">Recibo {{ r.numero }}
           <span class="pill doc-estado" [class]="'pill doc-estado ' + (r.estado === 'ANULADO' ? 'pill--muted' : 'pill--success')">{{ r.estado === 'ANULADO' ? 'Anulado' : 'Contabilizado' }}</span>
         </h3>
-        <p class="modal__sub">{{ r.tercero_nombre }} · {{ r.fecha }} · {{ r.cuenta_banco_codigo }} {{ r.cuenta_banco_nombre }}</p>
+        <p class="modal__sub">{{ r.tercero_nombre }} · {{ r.fecha | fechaDmy }} · {{ r.cuenta_banco_codigo }} {{ r.cuenta_banco_nombre }}</p>
       </div>
     </header>
     <div class="modal__body">
@@ -200,7 +200,7 @@
       @if (r.observaciones) { <p class="car-sub">{{ r.observaciones }}</p> }
       @if (r.cambios?.length) {
         <p class="car-sub">
-          Modificado {{ r.cambios!.length === 1 ? '' : r.cambios!.length + ' veces · la última' }} el {{ r.cambios![0].fecha }}@if (r.cambios![0].usuario) { por {{ r.cambios![0].usuario }} }@if (r.cambios![0].motivo) { · {{ r.cambios![0].motivo }} }
+          Modificado {{ r.cambios!.length === 1 ? '' : r.cambios!.length + ' veces · la última' }} el {{ r.cambios![0].fecha | fechaDmy }}@if (r.cambios![0].usuario) { por {{ r.cambios![0].usuario }} }@if (r.cambios![0].motivo) { · {{ r.cambios![0].motivo }} }
         </p>
       }
       <div class="table-wrap table-wrap--modal">

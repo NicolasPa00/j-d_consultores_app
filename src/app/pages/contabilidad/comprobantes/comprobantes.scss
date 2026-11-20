@@ -23,6 +23,27 @@
   width: auto;
 }
 
+/* Cierre · Celular: los filtros a todo el ancho, como en Terceros y Órdenes.
+   La etiqueta Desde/Hasta va en una columna fija, así los dos campos de fecha
+   arrancan en la misma x. */
+@media (max-width: 640px) {
+  .cmp-filtros > select.form-control {
+    flex: 1 1 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .cmp-fecha {
+    display: grid;
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+    flex: 1 1 100%;
+  }
+
+  .cmp-fecha .form-control {
+    width: 100%;
+  }
+}
+
 /* El marcador «Número, descripción o documento…» cabe entero (DESIGN §7). */
 .cmp-filtros > .cmp-q {
   flex-basis: 260px;

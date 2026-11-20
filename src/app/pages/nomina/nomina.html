@@ -9,7 +9,13 @@
     <app-cupo-documentos tipo="nomina" />
     @if (puedeOperar()) {
       <div class="nom-head__acciones">
-        <button type="button" class="btn btn--secondary" (click)="abrirEmpleado()">Nuevo empleado</button>
+        <!-- Cierre · Crear va en primario con «+», como «Nuevo tercero» o «Nueva
+             cuenta»: mientras no hay empleados, Liquidar está deshabilitado y la
+             vista se quedaba sin ninguna acción sólida. -->
+        <button type="button" class="btn btn--primary" (click)="abrirEmpleado()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+          Nuevo empleado
+        </button>
         <button type="button" class="btn btn--primary" (click)="abrirLiquidar()" [disabled]="!opcionesEmpleado().length"
                 [title]="opcionesEmpleado().length ? '' : 'Primero cree la ficha de un empleado'">Liquidar nómina</button>
       </div>

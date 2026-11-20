@@ -443,6 +443,13 @@ export class DashboardComponent implements OnInit {
   /** «Próximas a ejecutar» sale de Órdenes: sin esa vista no hay a dónde llevarla. */
   protected readonly veProximas = computed(() => this.auth.puedeVer('ordenes'));
   /** Sin nada que hacer en el Resumen (p. ej. administrativo con solo Estadísticas), se abre Indicadores sin pestañas. */
+  /**
+   * Cierre del rediseño · La tira de los cuatro KPI también va en Resumen (antes
+   * solo estaban en Indicadores y el administrador los consultaba a diario al
+   * entrar). Son de órdenes: solo los ve quien ve Órdenes. Misma petición
+   * (`GET /reports/dashboard`) que Indicadores, pedida una sola vez.
+   */
+  protected readonly veKpisResumen = computed(() => this.auth.puedeVer('ordenes'));
   protected readonly resumenVacio = computed(() => !this.hayAccesos() && !this.veAtencion() && !this.veProximas());
 
   /** La línea bajo el saludo: una sola, sin razón social (el detalle va en la tarjeta). */
@@ -602,6 +609,7 @@ export class DashboardComponent implements OnInit {
       return;
     }
     this.cargarResumen();
+    if (this.veKpisResumen()) this.cargarIndicadores();
     if (this.veProximas()) this.cargarProximas();
     else this.cargandoProximas.set(false);
   }

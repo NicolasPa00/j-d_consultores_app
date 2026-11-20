@@ -277,6 +277,7 @@
             <button
               type="button"
               [class.seg--on]="segmentoActivo(s.id)"
+              [class.seg--procedencia]="enRutaCompartida() && sistemas.activo().id === s.id"
               [attr.aria-pressed]="segmentoActivo(s.id)"
               [title]="segmentoActivo(s.id) ? 'Está en ' + s.nombre : 'Ir a ' + s.nombre"
               (click)="irASistema(s.id)"

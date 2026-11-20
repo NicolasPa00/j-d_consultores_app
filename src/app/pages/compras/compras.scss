@@ -34,6 +34,27 @@
   width: auto;
 }
 
+/* Cierre · Celular: los filtros a todo el ancho, como en Terceros y Órdenes.
+   La etiqueta Desde/Hasta va en una columna fija, así los dos campos de fecha
+   arrancan en la misma x. */
+@media (max-width: 640px) {
+  .cp-filtros > select.form-control {
+    flex: 1 1 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .cp-fecha {
+    display: grid;
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+    flex: 1 1 100%;
+  }
+
+  .cp-fecha .form-control {
+    width: 100%;
+  }
+}
+
 /* Montos tabulares; el número de factura del proveedor y el comprobante, no. */
 .mono {
   font-variant-numeric: normal;
@@ -181,10 +202,6 @@
 @media (max-width: 640px) {
   .cp-head__acciones {
     width: 100%;
-  }
-
-  .cp-head__acciones .btn {
-    flex: 1 1 9rem;
   }
 }
 

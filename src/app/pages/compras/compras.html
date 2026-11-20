@@ -5,7 +5,7 @@
   </div>
   @if (puedeOperar()) {
     <div class="cp-head__acciones">
-    <button type="button" class="btn btn--ghost" (click)="abrirImportar()">Importar desde Excel</button>
+    <button type="button" class="btn btn--ghost" (click)="abrirImportar()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5" /><path d="M12 11v6M9 14l3-3 3 3" /></svg> Importar desde Excel</button>
     <button type="button" class="btn btn--primary" (click)="nueva()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
       Registrar compra o gasto
@@ -27,7 +27,7 @@
   <div class="table-wrap">
     <table class="table">
       <thead>
-        <tr><th>Comprobante</th><th>Fecha</th><th>Proveedor</th><th>Tipo</th><th>Factura</th><th class="col-num">Total</th><th class="col-num">Por pagar</th><th>Estado</th><th class="col-actions" aria-label="Acciones"></th></tr>
+        <tr><th>Comprobante</th><th>Fecha</th><th>Proveedor</th><th>Tipo</th><th>Factura</th><th class="col-num">Total</th><th class="col-num">Por pagar</th><th>Estado</th><th class="col-actions">Acciones</th></tr>
       </thead>
       <tbody>
         @if (loading() && !compras().length) {
@@ -38,7 +38,7 @@
         @for (c of pag.visibles(); track c.id) {
           <tr>
             <td class="mono td-id">{{ c.comprobante_numero }}</td>
-            <td class="mono">{{ c.fecha }}</td>
+            <td class="mono">{{ c.fecha | fechaDmy }}</td>
             <td>{{ c.tercero_nombre }}</td>
             <td>{{ etiquetaTipo[c.tipo] }}</td>
             <td class="mono">{{ c.numero_proveedor || '—' }}</td>
@@ -61,7 +61,7 @@
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="cpDetTitle">{{ etiquetaTipo[c.tipo] }} {{ c.numero_proveedor ?? '' }}</h3>
-        <small class="cp-sub">{{ c.tercero_nombre }} · {{ c.fecha }} · {{ c.comprobante_numero }}
+        <small class="cp-sub">{{ c.tercero_nombre }} · {{ c.fecha | fechaDmy }} · {{ c.comprobante_numero }}
           · {{ c.forma_pago === 'CONTADO' ? 'de contado' : 'a crédito, vence ' + c.vencimiento }}</small>
       </div>
       <div class="modal__head-actions">

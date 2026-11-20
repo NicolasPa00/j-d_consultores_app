@@ -3,7 +3,7 @@
   <div class="pg-filtros">
     <label class="pg-fecha">Corte <input type="date" class="form-control" [(ngModel)]="corte" (change)="cargarAntiguedad()" /></label>
     <span class="pg-sep"></span>
-    <button type="button" class="btn btn--ghost" (click)="exportarAntiguedad()">Exportar a Excel</button>
+    <button type="button" class="btn btn--ghost" (click)="exportarAntiguedad()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5" /><path d="m9.5 12.5 5 5M14.5 12.5l-5 5" /></svg> Exportar a Excel</button>
     @if (puedeOperar()) {
       <a routerLink="/documentos-soporte" class="btn btn--ghost">Documento soporte</a>
       <button type="button" class="btn btn--ghost" (click)="nuevoAnticipo()">Registrar anticipo</button>
@@ -66,7 +66,7 @@
           @for (e of pagEgresos.visibles(); track e.id) {
             <tr>
               <td class="td-id nowrap">{{ e.numero }}</td>
-              <td class="mono">{{ e.fecha }}</td>
+              <td class="mono">{{ e.fecha | fechaDmy }}</td>
               <td class="car-nombre">{{ e.tercero_nombre }}</td>
               <td class="mono pg-lista">{{ e.obligaciones }}</td>
               <td class="col-num mono">{{ pesos(e.valor_pagado) }}</td>
@@ -92,7 +92,7 @@
           @for (a of anticipos(); track a.id) {
             <tr>
               <td class="td-id nowrap">{{ a.numero }}</td>
-              <td class="mono">{{ a.fecha }}</td>
+              <td class="mono">{{ a.fecha | fechaDmy }}</td>
               <td class="car-nombre">{{ a.tercero_nombre }}</td>
               <td class="mono pg-cuenta">{{ a.cuenta_codigo }}<small>{{ a.cuenta_nombre }}</small></td>
               <td class="col-num mono">{{ pesos(a.valor) }}</td>
@@ -125,12 +125,12 @@
         <tbody>
           @for (d of e.documentos; track d.id) {
             <tr class="pg-doc">
-              <td class="mono">{{ d.fecha }}</td><td><strong>Obligación {{ d.numero }}</strong></td><td class="mono">{{ d.vencimiento }}</td>
+              <td class="mono">{{ d.fecha | fechaDmy }}</td><td><strong>Obligación {{ d.numero }}</strong></td><td class="mono">{{ d.vencimiento | fechaDmy }}</td>
               <td class="col-num mono">{{ pesos(d.valor) }}</td><td></td><td class="col-num mono"><strong>{{ pesos(d.saldo) }}</strong></td>
             </tr>
             @for (m of d.movimientos; track $index) {
               <tr>
-                <td class="mono">{{ m.fecha }}</td>
+                <td class="mono">{{ m.fecha | fechaDmy }}</td>
                 <td class="pg-mov">Egreso {{ m.soporte }}
                   @if (+m.valor_retenciones) { <small>(retenido {{ pesos(m.valor_retenciones) }})</small> }
                   @if (+(m.valor_anticipo ?? 0)) { <small>(anticipo {{ pesos(m.valor_anticipo) }})</small> }</td>
@@ -144,7 +144,7 @@
       </div>
     </div>
     <footer class="modal__footer">
-      <button type="button" class="btn btn--ghost" (click)="exportarEstado(e)">Exportar a Excel</button>
+      <button type="button" class="btn btn--ghost" (click)="exportarEstado(e)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5" /><path d="m9.5 12.5 5 5M14.5 12.5l-5 5" /></svg> Exportar a Excel</button>
       <button type="button" class="btn btn--close" (click)="estado.set(null)">Cerrar</button>
     </footer>
   </div>
@@ -159,7 +159,7 @@
         <h3 class="modal__title" id="pgEgTitle">Egreso {{ e.numero }}
           <span class="pill doc-estado" [class]="'pill doc-estado ' + (e.estado === 'ANULADO' ? 'pill--muted' : 'pill--success')">{{ e.estado === 'ANULADO' ? 'Anulado' : 'Contabilizado' }}</span>
         </h3>
-        <p class="modal__sub">{{ e.tercero_nombre }} · {{ e.fecha }}{{ e.cuenta_banco_codigo ? ' · ' + e.cuenta_banco_codigo + ' ' + e.cuenta_banco_nombre : '' }}</p>
+        <p class="modal__sub">{{ e.tercero_nombre }} · {{ e.fecha | fechaDmy }}{{ e.cuenta_banco_codigo ? ' · ' + e.cuenta_banco_codigo + ' ' + e.cuenta_banco_nombre : '' }}</p>
       </div>
     </header>
     <div class="modal__body">
@@ -206,7 +206,7 @@
           <span class="pill doc-estado" [class]="'pill doc-estado ' + (a.estado === 'ANULADO' ? 'pill--muted' : +a.saldo ? 'pill--info' : 'pill--success')">
             {{ a.estado === 'ANULADO' ? 'Anulado' : +a.saldo ? 'Por cruzar' : 'Cruzado' }}</span>
         </h3>
-        <p class="modal__sub">{{ a.tercero_nombre }} · {{ a.fecha }}</p>
+        <p class="modal__sub">{{ a.tercero_nombre }} · {{ a.fecha | fechaDmy }}</p>
       </div>
     </header>
     <div class="modal__body">

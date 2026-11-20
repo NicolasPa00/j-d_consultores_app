@@ -11,6 +11,7 @@ import {
 } from '../../../core/models';
 import { paginar } from '../../../shared/paginacion';
 import { PaginadorComponent } from '../../../shared/paginador/paginador';
+import { FechaDmyPipe } from '../../../shared/fecha-dmy.pipe';
 import { OpcionBusqueda, SelectorBusquedaComponent } from '../../../shared/selector-busqueda/selector-busqueda';
 import { TerceroRapidoComponent } from '../../../shared/alta-rapida/tercero-rapido';
 import { aCentavos } from '../../contabilidad/comprobantes/comprobantes';
@@ -46,7 +47,7 @@ interface FilaEgreso {
  */
 @Component({
   selector: 'app-pagos',
-  imports: [FormsModule, RouterLink, PaginadorComponent, SelectorBusquedaComponent, TerceroRapidoComponent],
+  imports: [FormsModule, RouterLink, PaginadorComponent, SelectorBusquedaComponent, TerceroRapidoComponent, FechaDmyPipe],
   templateUrl: './pagos.html',
   styleUrl: './pagos.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

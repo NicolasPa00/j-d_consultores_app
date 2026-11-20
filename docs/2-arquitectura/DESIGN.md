@@ -230,6 +230,8 @@ Hay un `:focus-visible` global: `outline: 2px solid var(--accion)` (9,28:1), `ou
   - `--danger`: relleno de peligro, solo dentro de una confirmación.
   - `--icon`: 36 × 36.
 - **Deshabilitado, sin opacidad.** Fondo `--hundida`, texto `--tinta-3` (4,60) y `cursor: not-allowed`. La razón va al lado o en el `title`.
+- **Íconos de los secundarios de archivo (cierre, 20-nov-2026).** Todo secundario que importa o exporta lleva a la izquierda el ícono de hoja de 16 px, igual que en Estadísticas: hoja con aspa para Excel («Exportar a Excel», «Excel»), hoja con renglones para PDF («Exportar a PDF», «PDF») y hoja con flecha hacia arriba para cargar («Importar desde Excel», «Cargar desde Excel», «Cargar prefactura»). El texto y la posición no cambian. Crear lleva `+` y va en `--primary` («Nuevo empleado», «Nueva cuenta», «Nuevo tercero»).
+- **Cabecera en el celular (≤ 640 px, regla global al final de `styles.scss`).** Los secundarios comparten una fila a partes iguales (uno solo ocupa todo el ancho) y el primario va debajo, a todo el ancho, como en Órdenes. Las hojas de vista no le ponen `flex` propio a los botones de la cabecera.
 
 ### Enlace de acción `.ir-a` [A]
 

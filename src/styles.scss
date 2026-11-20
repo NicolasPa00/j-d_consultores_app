@@ -761,9 +761,12 @@ textarea.form-control {
    `.pill--finalizada` = `.pill--success` + visto, en una sola clase:
      <span class="pill pill--finalizada">FINALIZADA</span>
    (o `pill pill--success pill--visto`). */
+/* Cierre · FINALIZADA va además en relleno sólido (blanco sobre --ok, 6,82:1):
+   al escanear diez filas no puede depender solo del glifo de 10 px para no
+   confundirse con EJECUTADA, que es verde tenue con punto. */
 .pill--finalizada {
-  background: var(--ok-fondo);
-  color: var(--ok);
+  background: var(--ok);
+  color: var(--superficie);
 }
 
 .pill--finalizada::before,
@@ -1626,6 +1629,16 @@ textarea.form-control {
   box-shadow: var(--sombra-1);
 }
 
+/* Pantalla compartida (Configuración, Ayuda): ningún segmento está «encendido»,
+   pero el sistema del que viene la persona queda marcado con un contorno, para
+   que siempre se sepa en qué sistema está. Sin relleno ni sombra: no es el
+   estado activo. */
+.seg > button.seg--procedencia {
+  color: var(--tinta);
+  font-weight: 500;
+  box-shadow: inset 0 0 0 1px var(--borde-campo);
+}
+
 /* ============================================================
    Estado vacío (DESIGN §7) · lo único que se centra
      <div class="estado-vacio [estado-vacio--ok]">
@@ -2321,6 +2334,35 @@ textarea.form-control {
 
   :where(div):has(> .tabs + select.form-control) > .tabs + select.form-control {
     margin-bottom: 6px;
+  }
+}
+
+/* ============================================================
+   Botones de la cabecera en el celular (cierre del rediseño)
+   UNA sola regla para todas las vistas, como en Órdenes: hasta 640 px los
+   secundarios comparten fila a partes iguales (50/50; uno solo, a todo lo
+   ancho) y el primario va a TODO EL ANCHO, en su propia fila. No se reordena
+   nada: en todas las cabeceras el primario ya es el último del DOM.
+   Las hojas de vista ya no le ponen `flex` propio a estos botones.
+   ============================================================ */
+@media (max-width: 640px) {
+  .page-head :where(div):has(> .btn) {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    gap: var(--e-2);
+  }
+
+  .page-head > .btn,
+  .page-head :where(div) > .btn {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+  }
+
+  .page-head > .btn--primary,
+  .page-head :where(div) > .btn--primary {
+    flex: 1 0 100%;
   }
 }
 

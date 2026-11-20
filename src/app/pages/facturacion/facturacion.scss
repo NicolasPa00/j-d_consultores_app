@@ -25,7 +25,6 @@
    y si no, cada uno a todo lo ancho (sin borde derecho dentado). */
 @media (max-width: 640px) {
   .fac-head-botones { width: 100%; }
-  .fac-head-botones > .btn { flex: 1 1 auto; }
 }
 
 /* 7-oct-2026 · Pestañas y filtro de estado en una sola fila.

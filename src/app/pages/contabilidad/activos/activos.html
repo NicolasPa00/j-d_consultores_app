@@ -53,7 +53,7 @@
   @if (corridas().length) {
     <div class="table-wrap af-corridas">
       <table class="table">
-        <thead><tr><th>Mes</th><th>Comprobante</th><th class="col-num">Activos</th><th class="col-num">Total</th><th class="col-actions" aria-label="Acciones"></th></tr></thead>
+        <thead><tr><th>Mes</th><th>Comprobante</th><th class="col-num">Activos</th><th class="col-num">Total</th><th class="col-actions">Acciones</th></tr></thead>
         <tbody>
           @for (c of corridas(); track c.id; let primero = $first) {
             <tr>
@@ -86,7 +86,7 @@
         <th class="col-num">Depreciación acumulada</th>
         <th class="col-num">Valor en libros</th>
         <th>Cuotas</th>
-        <th class="col-actions" aria-label="Acciones"></th>
+        <th class="col-actions">Acciones</th>
       </tr>
     </thead>
     <tbody>

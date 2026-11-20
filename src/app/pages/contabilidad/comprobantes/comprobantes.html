@@ -58,7 +58,7 @@
           <th class="col-num">Débitos</th>
           <th class="col-num">Créditos</th>
           <th>Estado</th>
-          <th class="col-actions" aria-label="Acciones"></th>
+          <th class="col-actions">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -73,7 +73,7 @@
               <strong class="mono td-id">{{ c.numero_completo ?? c.tipo_codigo + ' · borrador' }}</strong>
               <small class="cmp-sub">{{ c.tipo_nombre }}</small>
             </td>
-            <td class="mono">{{ c.fecha }}</td>
+            <td class="mono">{{ c.fecha | fechaDmy }}</td>
             <td class="cmp-desc">{{ c.descripcion || '—' }}</td>
             <td class="col-num mono">{{ pesos(c.total_debito) }}</td>
             <td class="col-num mono">{{ pesos(c.total_credito) }}</td>
@@ -94,7 +94,7 @@
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="cmpTitle">{{ c.numero_completo ?? 'Borrador de ' + c.tipo_nombre.toLowerCase() }}</h3>
-        <small class="cmp-sub">{{ c.tipo_nombre }} · {{ c.fecha }}{{ c.creado_por_nombre ? ' · ' + c.creado_por_nombre : '' }}</small>
+        <small class="cmp-sub">{{ c.tipo_nombre }} · {{ c.fecha | fechaDmy }}{{ c.creado_por_nombre ? ' · ' + c.creado_por_nombre : '' }}</small>
       </div>
       <div class="modal__head-actions">
         <span class="pill" [class]="tonoEstado(c.estado)">{{ etiquetaEstado[c.estado] }}</span>

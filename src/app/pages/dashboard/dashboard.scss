@@ -18,68 +18,36 @@
   max-width: 1128px;
 }
 
-/* ---------- Franja del saludo: el único momento de marca ----------
-   El saludo (30/600) domina la pantalla; el sistema orbital entra por el
-   borde derecho, se recorta en tres bordes y cruza por DETRÁS de la fecha. */
+/* ---------- Franja del saludo (cierre del rediseño) ----------
+   Una sola línea de ~56 px: saludo, lo pendiente y la fecha en la misma fila.
+   Sin órbitas: no daban información y empujaban los números y lo pendiente
+   por debajo del pliegue. La marca vive en la barra lateral. */
 .saludo {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--e-10);
-  min-height: 132px;
-  padding: 26px var(--e-10) 26px 36px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px var(--e-6);
+  min-height: 56px;
+  padding: 14px var(--e-5);
   background: var(--cielo);
-  border-radius: var(--r-modal);
-}
-
-/* Anclado a la derecha: en lo ancho entra 440 px como en la maqueta, y en lo
-   angosto (~1093 px, o un nombre largo a 1280) nunca pasa del 38 % derecho del
-   saludo. El borde izquierdo se desvanece con una máscara: las órbitas son
-   decoración y no cruzan la línea de lo pendiente (§10). */
-.saludo__orbitas {
-  position: absolute;
-  z-index: -1;
-  left: max(calc(100% - 440px), 62%);
-  top: 50%;
-  width: 560px;
-  height: 300px;
-  transform: translateY(-50%);
-  pointer-events: none;
-  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 90px);
-  mask-image: linear-gradient(to right, transparent 0, #000 90px);
-}
-
-.orb {
-  fill: none;
-  stroke: var(--cian-trazo);
-  stroke-width: 1.5;
-}
-
-.orb--1 { stroke-opacity: 0.5; }
-.orb--2 { stroke-opacity: 0.3; }
-.orb--3 { stroke-opacity: 0.12; stroke-width: 1; }
-
-.orb-punto {
-  fill: var(--cian-trazo);
-}
-
-.orb-punto--accion {
-  fill: var(--accion);
+  border-radius: var(--r-tarjeta);
 }
 
 .saludo__texto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px var(--e-4);
   min-width: 0;
 }
 
 .saludo__titulo {
   margin: 0;
-  font-size: 30px;
+  font-size: 18px;
   font-weight: 600;
-  line-height: 1.15;
-  letter-spacing: -0.025em;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
   color: var(--tinta);
 }
 
@@ -89,9 +57,8 @@
   align-items: baseline;
   column-gap: var(--e-3);
   row-gap: 2px;
-  margin: var(--e-2) 0 0;
-  min-height: 22px;
-  font-size: 15px;
+  margin: 0;
+  font-size: var(--fs-base);
   color: var(--tinta-2);
 }
 
@@ -124,18 +91,14 @@
 }
 
 .saludo__fecha {
-  position: relative;
   margin: 0;
-  text-align: right;
   font-size: var(--fs-celda);
-  line-height: 1.45;
   color: var(--tinta-2);
   white-space: nowrap;
 }
 
 .saludo__fecha b {
-  display: block;
-  font-size: var(--fs-tarjeta);
+  margin-right: 6px;
   font-weight: 600;
   color: var(--tinta);
 }
@@ -400,6 +363,106 @@
 
   .grupo__acceso:hover .ico {
     color: var(--accion);
+  }
+}
+
+/* ---------- Tira de KPI (cierre del rediseño) ----------
+   Los cuatro números de Indicadores en una franja de ~72 px, encima de lo
+   pendiente: el administrador los consultaba a diario al entrar. Una sola
+   tarjeta partida por divisores, cifra 22/600 tabular. */
+.kpi-tira {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: var(--e-6);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
+}
+
+.kpi-tira__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'label valor' 'pista valor';
+  align-items: center;
+  column-gap: var(--e-3);
+  padding: 12px var(--e-5);
+  min-width: 0;
+}
+
+.kpi-tira__item + .kpi-tira__item {
+  border-left: 1px solid var(--borde);
+}
+
+.kpi-tira__label {
+  grid-area: label;
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
+}
+
+.kpi-tira__valor {
+  grid-area: valor;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--tinta);
+}
+
+.kpi-tira__pista {
+  grid-area: pista;
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
+}
+
+#panel-resumen > .kpi-tira:first-child {
+  margin-top: 0;
+}
+
+.kpi-tira + .rejilla {
+  margin-top: var(--e-6);
+}
+
+@media (max-width: 1100px) {
+  .kpi-tira {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .kpi-tira__item:nth-child(3) {
+    border-left: 0;
+  }
+
+  .kpi-tira__item:nth-child(n + 3) {
+    border-top: 1px solid var(--borde);
+  }
+}
+
+/* Celular: primero lo accionable. Orden de lectura: saludo → «Requiere su
+   atención» → números → accesos → próximas. La rejilla se disuelve
+   (`display: contents`, nunca en una celda) para que atención y próximas
+   tomen su lugar en la columna del panel. */
+@media (max-width: 640px) {
+  #panel-resumen {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e-4);
+  }
+
+  #panel-resumen > .rejilla {
+    display: contents;
+  }
+
+  #panel-resumen > * ,
+  #panel-resumen > .rejilla > * {
+    margin-top: 0;
+  }
+
+  #panel-resumen .atencion { order: 1; }
+  #panel-resumen > .kpi-tira { order: 2; }
+  #panel-resumen > .accesos { order: 3; }
+  #panel-resumen .agenda { order: 4; }
+
+  .kpi-tira__item {
+    padding: 10px var(--e-4);
   }
 }
 
@@ -720,13 +783,14 @@
   }
 }
 
-/* Dos columnas que terminan a la MISMA altura: la gráfica toma el alto que
-   deja la columna derecha (DESIGN §7 «Gráficas»). */
+/* Cierre · La gráfica ya no se estira a la altura de la columna derecha: con
+   un solo mes con horas quedaba media pantalla de barras vacías. Lienzo fijo
+   de 220 px y cada columna con su propio alto. */
 .ind {
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
   gap: var(--e-6);
-  align-items: stretch;
+  align-items: start;
   margin-top: var(--e-6);
 }
 
@@ -799,10 +863,10 @@
 }
 
 .graf {
-  flex: 1;
+  flex: none;
   display: flex;
   flex-direction: column;
-  min-height: 200px;
+  height: 220px;
   margin-top: 28px;
 }
 
@@ -1103,56 +1167,7 @@
 
 @media (max-width: 820px) {
   .saludo {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--e-2);
-    min-height: 0;
-    padding: 18px 18px var(--e-4);
-  }
-
-  .saludo__titulo {
-    font-size: var(--fs-pagina);
-  }
-
-  .saludo__mensaje {
-    font-size: var(--fs-base);
-  }
-
-
-  .saludo__fecha {
-    text-align: left;
-  }
-
-  .saludo__fecha b {
-    display: inline;
-    margin-right: 6px;
-    font-size: var(--fs-base);
-  }
-
-  /* Celular: el texto ocupa todo el ancho, así que las órbitas se repliegan a
-     la esquina superior derecha, por encima del título y muy tenues: son
-     decoración y no pueden cruzar la línea de lo pendiente ni la fecha. */
-  .saludo__orbitas {
-    left: auto;
-    right: -150px;
-    top: -92px;
-    width: 280px;
-    height: 150px;
-    transform: none;
-    -webkit-mask-image: none;
-    mask-image: none;
-  }
-
-  .orb--1,
-  .orb--2 {
-    stroke-opacity: 0.15;
-  }
-
-  .orb--3 {
-    stroke-opacity: 0.08;
-  }
-
-  .orb-punto {
-    display: none;
+    padding: 12px var(--e-4);
   }
 
   .inicio__tabs {

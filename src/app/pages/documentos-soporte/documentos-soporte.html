@@ -10,7 +10,7 @@
     @if (puedeOperar()) {
       <!-- A4-02 · Los DS que no salen de una cuenta de cobro (la contadora, un proveedor que no factura). -->
       <div class="fac-head-botones">
-        <button type="button" class="btn btn--secondary" (click)="abrirImport()">Cargar desde Excel</button>
+        <button type="button" class="btn btn--secondary" (click)="abrirImport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5" /><path d="M12 11v6M9 14l3-3 3 3" /></svg> Cargar desde Excel</button>
         <button type="button" class="btn btn--primary fac-btn-nueva" (click)="abrirManual()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
           Nuevo documento soporte
@@ -124,7 +124,7 @@
         <tbody>
           @for (c of pagFacturas.visibles(); track c.id) {
             <tr>
-              <td class="ds-fijo">{{ c.fecha }}</td>
+              <td class="ds-fijo">{{ c.fecha | fechaDmy }}</td>
               <td><span class="who__name">{{ c.tercero_nombre }}</span></td>
               <td class="mono">{{ c.numero_proveedor || '—' }}</td>
               <td class="mono">{{ c.comprobante_numero || '—' }}</td>
