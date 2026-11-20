@@ -5,6 +5,14 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
+> ✨ **20-nov-2026 · REDISEÑO VISUAL COMPLETO («glamur» de la clienta) en la rama `rediseno-visual` de LOS DOS repos — SUBIDO, SIN DESPLEGAR.**
+> Tablero para retomar: **`docs/3-planes/plan-rediseno-visual-2026-11.md`** (cómo levantarlo, qué vistas mirar, decisiones pendientes).
+> Dirección de diseño: `docs/2-arquitectura/DESIGN.md` (paleta ORBITA con contrastes medidos, Inter autoalojada, componentes; **§11 = decisiones
+> pendientes del dueño**). Piel nueva con el MISMO flujo en todas las vistas; el Inicio cambió: va por rol, con accesos directos según permisos,
+> «Requiere su atención» y pestaña Indicadores, y ya NO lista órdenes (`loadOrders()` eliminado). Backend: solo `GET /api/reports/inicio` (lectura,
+> sin migración, PG ≥ 16). Trampa: en `main`/`master` no está nada de esto; hacer `git checkout rediseno-visual` en `sst_ws` y en el frontend.
+> Desplegar back y front JUNTOS cuando se apruebe, y después rehacer las capturas del centro de ayuda.
+>
 > 📎 **19-nov-2026 · Paquete de Bolívar: el anexo «3.ACTIVIDADES REALIZADAS» no cuadraba con la factura** (FE1027: anexo 8.238.575 frente a 16.129.617). Cada actividad tomaba `cobro_aprobado_total` (lo de operación, sin gastos o vacío); ahora toma el `valor_a_facturar` de su fila de prefactura, que es lo que suma la línea única. **DESPLEGADO el 19-nov** (back `5d4e80c`, sin migración) y verificado en prod: FE1027 anexo = 16.129.617 en 32 actividades. La oficina debe volver a descargar el paquete.
 >
 > 🧾 **13-nov-2026 (16:35) · Cartera: MODIFICAR un recibo de caja conservando su número** (pedido de la contadora: el RC-1 quedó
