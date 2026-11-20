@@ -60,13 +60,25 @@
                 <span class="pill" [class]="pillEstado(l.estado)">{{ etiquetaEstado(l.estado) }}</span>
                 @if (l.numero) { <small class="nom-sub">{{ l.numero }}</small> }
               </td>
-              <td class="col-actions"><button type="button" class="btn btn--ghost btn--sm" (click)="abrir(l)">Ver</button></td>
+              <td class="col-actions"><button type="button" class="icon-action icon-action--ver" (click)="abrir(l)" aria-label="Ver la liquidación" title="Ver la liquidación"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg></button></td>
             </tr>
           } @empty {
-            <tr><td colspan="8" class="table__empty">
+            <tr><td colspan="8" class="table__empty table__empty--estado">
               @if (cargando()) { Cargando… }
-              @else if (!empleados().length) { Todavía no hay empleados. Cree la ficha del primero en la pestaña <b>Empleados</b>. }
-              @else { No hay nóminas en ese periodo. Use <b>Liquidar nómina</b> para crear la primera. }
+              @else if (!empleados().length) {
+                <div class="estado-vacio">
+                  <span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6" /></svg></span>
+                  <p class="estado-vacio__titulo">Todavía no hay empleados</p>
+                  <p class="estado-vacio__texto">Cree la ficha del primero en la pestaña <b>Empleados</b>.</p>
+                </div>
+              }
+              @else {
+                <div class="estado-vacio">
+                  <span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></svg></span>
+                  <p class="estado-vacio__titulo">No hay nóminas en este periodo</p>
+                  <p class="estado-vacio__texto">Use <b>Liquidar nómina</b> para crear la primera.</p>
+                </div>
+              }
             </td></tr>
           }
         </tbody>

@@ -64,7 +64,12 @@
         <small class="cp-sub">{{ c.tercero_nombre }} · {{ c.fecha }} · {{ c.comprobante_numero }}
           · {{ c.forma_pago === 'CONTADO' ? 'de contado' : 'a crédito, vence ' + c.vencimiento }}</small>
       </div>
-      <span class="pill" [class]="c.estado === 'ANULADO' ? 'pill--muted' : 'pill--success'">{{ c.estado === 'ANULADO' ? 'Anulada' : 'Contabilizada' }}</span>
+      <div class="modal__head-actions">
+        <span class="pill" [class]="c.estado === 'ANULADO' ? 'pill--muted' : 'pill--success'">{{ c.estado === 'ANULADO' ? 'Anulada' : 'Contabilizada' }}</span>
+        <button type="button" class="icon-action" (click)="detalle.set(null)" [disabled]="trabajando()" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        </button>
+      </div>
     </header>
     <div class="modal__body">
       @if (c.motivo_anulacion) { <p class="cp-anulado">Anulada: {{ c.motivo_anulacion }}</p> }
@@ -98,7 +103,7 @@
           <button type="button" class="btn btn--close" (click)="anulando.set(false)" [disabled]="trabajando()">Cancelar</button>
           <button type="button" class="btn btn--danger" (click)="confirmarAnular(c)" [disabled]="trabajando()">Anular compra</button>
         } @else {
-          <button type="button" class="btn btn--danger cp-peligro" (click)="motivo = ''; anulando.set(true)">Anular</button>
+          <button type="button" class="btn btn--peligro-contorno cp-peligro" (click)="motivo = ''; anulando.set(true)">Anular</button>
         }
       }
       <button type="button" class="btn btn--close" (click)="detalle.set(null)" [disabled]="trabajando()">Cerrar</button>

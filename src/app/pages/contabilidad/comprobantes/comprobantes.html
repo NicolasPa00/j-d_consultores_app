@@ -143,7 +143,7 @@
     @if (puedeEditar() && !cargandoDetalle()) {
       <footer class="modal__footer">
         @if (c.estado === 'BORRADOR') {
-          <button type="button" class="btn btn--danger cmp-peligro" (click)="eliminar(c)" [disabled]="accionando()">Eliminar</button>
+          <button type="button" class="btn btn--peligro-contorno cmp-peligro" (click)="eliminar(c)" [disabled]="accionando()">Eliminar</button>
           <button type="button" class="btn btn--ghost" (click)="editarBorrador(c)" [disabled]="accionando()">Editar</button>
           <button type="button" class="btn btn--primary" (click)="contabilizar(c)" [disabled]="accionando()">
             @if (accionando()) { <span class="spinner" aria-hidden="true"></span> } Contabilizar
@@ -155,7 +155,7 @@
               @if (accionando()) { <span class="spinner" aria-hidden="true"></span> } Anular comprobante
             </button>
           } @else {
-            <button type="button" class="btn btn--danger cmp-peligro" (click)="empezarAnular()">Anular</button>
+            <button type="button" class="btn btn--peligro-contorno cmp-peligro" (click)="empezarAnular()">Anular</button>
           }
         } @else if (c.estado === 'CONTABILIZADO') {
           <p class="cmp-sub">Lo generó un documento: se anula desde ese documento.</p>

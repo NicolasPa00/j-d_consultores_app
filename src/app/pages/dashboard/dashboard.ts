@@ -46,15 +46,15 @@ interface EstadoStat {
   value: number;
   share: number;
   width: number;
-  tone: 'slate' | 'blue' | 'amber' | 'green' | 'red';
+  tone: 'slate' | 'blue' | 'amber' | 'green' | 'accion' | 'red';
 }
 
 /** Estados de OS del backend, en orden de ciclo de vida. */
 const ESTADOS: { key: string; label: string; tone: EstadoStat['tone'] }[] = [
-  { key: 'SIN PROGRAMAR', label: 'Sin programar', tone: 'slate' },
+  { key: 'SIN PROGRAMAR', label: 'Sin programar', tone: 'amber' },
   { key: 'PROGRAMADA', label: 'Programadas', tone: 'blue' },
-  { key: 'EJECUTADA', label: 'Ejecutadas', tone: 'amber' },
-  { key: 'FINALIZADA', label: 'Finalizadas', tone: 'green' },
+  { key: 'EJECUTADA', label: 'Ejecutadas', tone: 'green' },
+  { key: 'FINALIZADA', label: 'Finalizadas', tone: 'accion' },
 ];
 
 /**

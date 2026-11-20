@@ -14,18 +14,27 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.22rem 0.6rem;
-  border: 1.5px solid #94a3b8;
-  border-radius: var(--radius-sm, 6px);
-  background: transparent;
-  color: #475569;
+  min-height: 26px;
+  padding: 0 0.55rem;
+  /* En reposo lleva marco de botón secundario: en táctil no hay hover que
+     avise de que se puede pulsar (juez de flujo, ronda 2). */
+  border: 1px solid var(--borde-control);
+  border-radius: var(--r-control);
+  background: var(--superficie);
+  /* Sin sombra en reposo (DESIGN §10); el marco basta para leerse pulsable. */
+  box-shadow: none;
+  color: var(--tinta-2);
   cursor: pointer;
   font: inherit;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  letter-spacing: 0;
   white-space: nowrap;
-  transition: border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color var(--t-media) ease,
+    color var(--t-media) ease,
+    background-color var(--t-media) ease,
+    transform var(--t-rapida) var(--ease-out);
 
   svg {
     width: 0.95rem;
@@ -34,24 +43,42 @@
   }
 
   &--ok {
-    border-color: var(--success);
-    color: var(--success);
+    border-color: var(--ok-borde);
+    border-radius: var(--r-completo);
+    background: var(--ok-fondo);
+    box-shadow: none;
+    color: var(--ok);
+    font-weight: 600;
   }
 
-  &:hover:not(:disabled) {
-    border-color: var(--secondary-color);
-    color: var(--secondary-color);
-    box-shadow: 0 0 0 2px rgba(45, 123, 200, 0.15);
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled) {
+      border-color: var(--borde-campo);
+      background: var(--hundida);
+      color: var(--tinta);
+    }
+
+    &--ok:hover:not(:disabled) {
+      border-color: var(--ok);
+      background: var(--ok-fondo-hover);
+      color: var(--ok);
+    }
   }
 
   &:focus-visible {
-    outline: 2px solid var(--secondary-color);
+    outline: var(--anillo);
     outline-offset: 2px;
   }
 
   &:disabled {
-    cursor: default;
-    opacity: 0.55;
+    cursor: not-allowed;
+    color: var(--tinta-3);
+    background: var(--hundida);
+    box-shadow: none;
   }
 }
 
@@ -64,15 +91,22 @@
   padding: 0;
   border: 0;
   background: none;
-  color: var(--secondary-color);
+  color: var(--accion);
   cursor: pointer;
   font: inherit;
   font-size: 0.68rem;
   font-weight: 600;
   text-align: left;
+  flex-wrap: wrap;
+  column-gap: 0.25rem;
+
+  /* El número no se parte en el guion: si no cabe, baja entero. */
+  &__num {
+    white-space: nowrap;
+  }
 
   &--vacio {
-    color: var(--text-muted);
+    color: var(--tinta-3);
     font-weight: 500;
   }
 
@@ -86,7 +120,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid var(--secondary-color);
+    outline: var(--anillo);
     outline-offset: 2px;
   }
 }
@@ -120,30 +154,38 @@
   /* Sin marcar tiene que leerse como una casilla VACÍA, no como un hueco: borde
      sólido gris medio y el ✓ insinuado en gris claro (antes, borde punteado en
      el gris de los separadores, que casi no se veía). */
-  border: 2px solid #94a3b8;
+  border: 2px solid var(--borde-campo);
   border-radius: 50%;
-  background: #fff;
-  color: #cbd5e1;
+  background: var(--superficie);
+  color: var(--borde-control);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background-color var(--t-media) ease,
+    color var(--t-media) ease,
+    border-color var(--t-media) ease,
+    transform var(--t-rapida) var(--ease-out);
 
   svg {
     width: 0.85rem;
     height: 0.85rem;
   }
 
+  &:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+
   &:hover:not(:disabled) {
-    border-color: var(--success);
-    color: var(--success);
+    border-color: var(--ok);
+    color: var(--ok);
   }
 
   &--ok {
-    border: 2px solid var(--success);
-    background: var(--success);
-    color: #fff;
+    border: 2px solid var(--ok);
+    background: var(--ok);
+    color: var(--superficie);
 
     &:hover:not(:disabled) {
-      color: #fff;
+      color: var(--superficie);
       filter: brightness(0.92);
     }
   }
@@ -156,13 +198,14 @@
      que no se confunda con una casilla que sí se puede marcar. */
   &:disabled:not(.validado--ok) {
     border-style: dashed;
-    border-color: #cbd5e1;
-    background: #f8fafc;
+    border-color: var(--borde-control);
+    background: var(--hundida);
     color: transparent;
+    cursor: not-allowed;
   }
 
   &:focus-visible {
-    outline: 2px solid var(--secondary-color);
+    outline: var(--anillo);
     outline-offset: 2px;
   }
 }.cobro__cargando {
@@ -219,9 +262,9 @@
 
 .cobro__seccion {
   padding: 1rem 1.1rem;
-  border: 1px solid var(--border-soft, #e2e8f0);
-  border-radius: var(--radius-md, 10px);
-  background: var(--card-bg, #fff);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
+  background: var(--superficie);
 }
 
 .cobro__titulo {
@@ -230,8 +273,8 @@
   gap: 0.5rem;
   margin: 0 0 0.6rem;
   font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text-main);
+  font-weight: 600;
+  color: var(--tinta);
 }
 
 .cobro__origen {
@@ -287,11 +330,12 @@
   align-items: baseline;
   margin: 0.8rem 0 0;
   padding: 0.6rem 0.8rem;
-  border-radius: var(--radius-sm, 6px);
-  background: rgba(45, 123, 200, 0.07);
+  border-radius: var(--r-control);
+  background: var(--accion-tenue);
 
   strong {
     font-size: 1.05rem;
+    font-weight: 600;
   }
 }
 
@@ -305,7 +349,7 @@
 
 .cobro__pendiente {
   font-size: 0.75rem;
-  color: var(--warning);
+  color: var(--tinta-2);
   font-weight: 600;
 }
 
@@ -316,8 +360,8 @@
 }
 
 .cobro__difiere td {
-  color: var(--danger);
-  background: rgba(239, 68, 68, 0.06);
+  color: var(--error);
+  background: var(--error-fondo);
 }
 
 .cobro__estado {
@@ -348,7 +392,7 @@
 .unir {
   margin-top: 0.9rem;
   padding-top: 0.9rem;
-  border-top: 1px solid var(--border-soft, #e2e8f0);
+  border-top: 1px solid var(--borde);
 
   > .btn svg {
     width: 1rem;
@@ -385,8 +429,8 @@
   justify-content: space-between;
   gap: 0.5rem;
   padding: 0.35rem 0.5rem;
-  border: 1px solid var(--border-soft, #e2e8f0);
-  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-control);
 
   &--off {
     opacity: 0.55;
@@ -442,16 +486,16 @@
   flex: 0 0 auto;
   width: 0.95rem;
   height: 0.95rem;
-  border: 1.5px solid #b6c0cf;
+  border: 1.5px solid var(--borde-campo);
   border-radius: 50%;
   color: transparent;
 
   svg { width: 0.6rem; height: 0.6rem; }
 
   &--ok {
-    border-color: var(--success);
-    background: var(--success);
-    color: #fff;
+    border-color: var(--ok);
+    background: var(--ok);
+    color: var(--superficie);
   }
 }
 .radicado-form {
@@ -466,17 +510,17 @@
   gap: 0.4rem;
   height: 2.6rem;
   padding: 0 0.8rem;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-control, 8px);
-  background: #fff;
-  color: var(--text-muted);
+  border: 1px solid var(--borde-control);
+  border-radius: var(--r-control);
+  background: var(--superficie);
+  color: var(--tinta-2);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
 
-  &--si { border-color: var(--success); color: var(--success); }
-  &:disabled { cursor: default; opacity: 0.7; }
+  &--si { border-color: var(--ok-borde); background: var(--ok-fondo); color: var(--ok); }
+  &:disabled { cursor: not-allowed; background: var(--hundida); color: var(--tinta-3); }
 }
 .radicado-lista {
   display: flex;
@@ -484,8 +528,8 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md, 10px);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
 }
 .radicado-lista__item {
   display: flex;
@@ -495,9 +539,9 @@
   border-bottom: 1px solid var(--border-soft);
 
   &:last-child { border-bottom: 0; }
-  &--vigente { background: #f5f7fd; }
+  &--vigente { background: var(--accion-tenue); }
 }
-.radicado-lista__num { font-weight: 700; }
+.radicado-lista__num { font-weight: 600; }
 .radicado-lista__meta { flex: 1 1 auto; color: var(--text-muted); font-size: 0.8rem; }
 @media (max-width: 600px) {
   .radicado-form { grid-template-columns: 1fr; }
@@ -512,12 +556,13 @@
   height: 1.25rem;
   margin-left: 0.3rem;
   padding: 0 0.3rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.28);
+  border-radius: var(--r-completo);
+  background: color-mix(in srgb, var(--superficie) 28%, transparent);
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 
-  &--urgente { background: var(--danger); color: #fff; }
+  &--urgente { background: var(--error); color: var(--superficie); }
 }
 .prox-leyenda { display: flex; flex-wrap: wrap; gap: 0.4rem 0.9rem; font-size: 0.76rem; color: var(--text-muted); }
 .prox-leyenda__i {
@@ -536,36 +581,134 @@
   align-items: center;
   width: 100%;
   padding: 0.65rem 0.85rem;
-  border: 1px solid var(--border-soft);
+  border: 1px solid var(--borde);
   border-left: 5px solid var(--prox);
-  border-radius: var(--radius-md, 10px);
-  background: #fff;
+  border-radius: var(--r-tarjeta);
+  background: var(--superficie);
   font: inherit;
   text-align: left;
   cursor: pointer;
+  transition: background-color var(--t-rapida) ease;
 
-  &:hover { background: #f5f7fd; }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: var(--fila-hover); }
+  }
 }
 .prox__cuando, .prox__que { display: flex; flex-direction: column; min-width: 0; }
-.prox__cuando b { text-transform: capitalize; }
+.prox__cuando b { font-weight: 600; text-transform: capitalize; }
+.prox__que b { font-weight: 600; }
 .prox__cuando span, .prox__que span { font-size: 0.8rem; color: var(--text-muted); }
 .prox__que b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .prox__que small { color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .prox__falta {
   padding: 0.2rem 0.6rem;
-  border-radius: 999px;
+  border-radius: var(--r-completo);
   background: var(--prox);
-  color: var(--prox-texto, #fff);
+  color: var(--prox-texto, var(--superficie));
   font-size: 0.76rem;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
 }
-.prox--atrasada { --prox: #b42318; }
-.prox--en-curso, .prox--muy-pronto { --prox: #e04f16; }
-.prox--hoy { --prox: #f59e0b; --prox-texto: #3b2600; }
-.prox--manana { --prox: #fcd34d; --prox-texto: #3b2600; }
-.prox--despues { --prox: #2d7bc8; }
+.prox--atrasada { --prox: var(--error); }
+.prox--en-curso, .prox--muy-pronto { --prox: var(--naranja); }
+/* «En curso» se separa de «Atrasada» por la forma, no solo por el matiz:
+   contorno en la leyenda, raya doble en la fila y pastilla de contorno. */
+.prox-leyenda__i.prox--muy-pronto::before,
+.prox-leyenda__i.prox--en-curso::before {
+  background: var(--naranja-fondo);
+  box-shadow: inset 0 0 0 2px var(--naranja);
+}
+.prox.prox--muy-pronto, .prox.prox--en-curso { border-left-style: double; border-left-width: 6px; }
+.prox--muy-pronto .prox__falta, .prox--en-curso .prox__falta {
+  background: var(--naranja-fondo);
+  color: var(--naranja);
+  box-shadow: inset 0 0 0 1px var(--naranja);
+}
+.prox--hoy { --prox: var(--ambar); --prox-texto: var(--noche); }
+.prox--manana { --prox: var(--aviso-borde); --prox-texto: var(--aviso); }
+.prox--despues { --prox: var(--info); }
 @media (max-width: 700px) {
   .prox { grid-template-columns: 1fr; gap: 0.35rem; }
   .prox__falta { justify-self: start; }
+}
+
+.cobro__pendiente::before {
+  content: '';
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 0.3em;
+  vertical-align: -0.12em;
+  background: var(--ambar);
+  -webkit-mask: var(--icono-alerta) center / contain no-repeat;
+  mask: var(--icono-alerta) center / contain no-repeat;
+}
+
+
+/* ============ Rediseño (ronda 2) · van aquí por el presupuesto de validation.scss ============ */
+
+/* Solo lectura: es un dato con su etiqueta, no un campo apagado. Va en
+   superficie con borde suave; --hundida queda para lo deshabilitado de verdad. */
+.form-control[readonly] {
+  background: var(--superficie);
+  border-color: var(--borde);
+  color: var(--tinta);
+  cursor: default;
+}
+
+/* Detalle de la orden en modo lectura: los select van `disabled` solo porque
+   un select no admite `readonly`; se leen como dato, igual que los inputs. */
+.modal--lectura .form-control:disabled,
+.modal--lectura .form-control[readonly] {
+  background: var(--superficie);
+  border-color: var(--borde);
+  color: var(--tinta);
+  cursor: default;
+  opacity: 1;
+}
+
+@media (max-width: 680px) {
+  /* Celular: buscador a lo ancho, los dos selects compartiendo fila y los
+     botones en una fila que arranca a la izquierda (sin borde dentado). */
+  .ord-head__actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+
+  .ord-search,
+  .ord-head__botones {
+    grid-column: 1 / -1;
+  }
+
+  .ord-search__input {
+    width: 100%;
+  }
+
+  .ord-head__filtro {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Sin «Cobro» (pestaña Cobradas) el de Estado ARL ocupa la fila entera. */
+  .ord-search + .ord-head__filtro:nth-last-child(2) {
+    grid-column: 1 / -1;
+  }
+
+  .ord-head__botones {
+    justify-content: flex-start;
+    margin-left: 0;
+    gap: 0.6rem;
+  }
+
+  .ord-head__botones > .btn--secondary {
+    flex: 1 1 calc(50% - 0.3rem);
+    justify-content: center;
+  }
+
+  .ord-head__botones > .btn--primary {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
 }

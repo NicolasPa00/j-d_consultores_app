@@ -19,6 +19,12 @@
   flex-wrap: wrap;
 }
 
+/* El grupo de botones no es caja propia: los botones siguen en la fila de los
+   filtros, como antes del rediseño. */
+.ter-head__botones {
+  display: contents;
+}
+
 .ter-head__actions .btn svg {
   width: 17px;
   height: 17px;
@@ -46,16 +52,16 @@
   font-family: inherit;
   font-size: 0.9rem;
   color: var(--text-main);
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
-  border-radius: 10px;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  background: var(--superficie);
+  border: 1px solid var(--borde-campo);
+  border-radius: var(--r-control);
+  transition: border-color var(--t-media) ease, box-shadow var(--t-media) ease;
 }
 
 .ter-search__input:focus {
   outline: none;
-  border-color: var(--secondary-color);
-  box-shadow: 0 0 0 3px rgba(45, 123, 200, 0.15);
+  border-color: var(--accion);
+  box-shadow: inset 0 0 0 1px var(--accion), var(--halo);
 }
 
 .ter-toggle {
@@ -70,9 +76,18 @@
 
 /* ===== Tabla =====
    Estructura y columna de acciones vienen del design system (`styles.scss`). */
+/* NIT, teléfonos y códigos: Inter normal, sin cifras tabulares ni otra familia
+   (DESIGN §3 y §10: no se suman con nada; la monoespaciada rompía la textura). */
 .mono {
-  font-variant-numeric: tabular-nums;
+  font-family: inherit;
+  font-variant-numeric: normal;
+  letter-spacing: 0;
 }
+
+/* Lista principal: el nombre del tercero se queda con la mayor parte del ancho y el
+   municipio no se parte en dos líneas a 1280 px (el correo cede primero). */
+.card > .table-wrap > .table > thead th:nth-child(1) { width: 30%; }
+.card > .table-wrap > .table > thead th:nth-child(3) { width: 8.5rem; }
 
 /* Toda la fila abre la ficha, así que el puntero lo anuncia. */
 .col-num {
@@ -107,9 +122,9 @@
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  background: var(--primary-color);
-  color: #ffffff;
-  font-weight: 700;
+  background: var(--accion-tenue);
+  color: var(--accion);
+  font-weight: 600;
   font-size: 0.95rem;
 }
 
@@ -130,12 +145,12 @@
 }/* Baja definitiva: se distingue del resto de acciones del pie. */
 .btn--danger {
   color: var(--danger);
-  border-color: rgba(239, 68, 68, 0.35);
+  border-color: var(--error-borde);
   margin-right: auto;
 }
 
 .btn--danger:hover {
-  background: rgba(239, 68, 68, 0.08);
+  background: var(--error-fondo);
 }
 
 /* ===== Ficha ===== */
@@ -162,8 +177,6 @@
 .ficha-datos dt {
   font-size: 0.75rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
   color: var(--text-muted);
   margin-bottom: 0.15rem;
 }
@@ -177,7 +190,7 @@
 
 .ficha-sub {
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--primary-color);
   padding-top: 0.5rem;
   border-top: 1px solid var(--border-soft);
@@ -257,10 +270,6 @@
   gap: 0.5rem;
 }
 
-.btn[disabled] {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
 
 /* ===== Responsive ===== */
 @media (max-width: 720px) {
@@ -272,6 +281,19 @@
     width: 100%;
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .ter-search {
+    flex: none;
+  }
+
+  .ter-filtro {
+    width: 100%;
+  }
+
+  .ter-head__botones {
+    justify-content: flex-start;
+    margin-left: 0;
   }
 
   .ter-search__input {
@@ -302,8 +324,7 @@
   margin: 0 0 1rem;
   padding: 0.6rem 0.8rem;
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--warning) 14%, transparent);
-  border: 1px solid color-mix(in srgb, var(--warning) 45%, transparent);
+  background: var(--aviso-fondo);
   font-size: 0.85rem;
 }
 
@@ -359,7 +380,7 @@
 }
 
 .ter-lista-prof button:hover {
-  background: color-mix(in srgb, var(--accent-color) 14%, transparent);
+  background: var(--accion-tenue);
 }
 
 /* 7-oct-2026 · Cargue de terceros por Excel. */
@@ -373,7 +394,7 @@
 .ter-imp__rol { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.78rem; color: var(--text-muted); }
 .ter-imp__resumen { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
 .ter-imp__mal td { color: var(--danger); }
-.ter-imp__aviso { display: block; color: var(--warning); }
+.ter-imp__aviso { display: block; color: var(--tinta-2); font-weight: 600; }
 @media (max-width: 760px) {
   .ter-imp__barra { grid-template-columns: 1fr; }
 }
@@ -395,8 +416,58 @@
   font-size: 0.9rem;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
-  background: #fff;
+  background: var(--superficie);
 }
 .ter-cuenta small { color: var(--text-muted); }
 .ter-cuenta__acciones { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
 .ter-cuenta-form__otro { margin-top: 0.5rem; }
+
+.ter-imp__aviso::before {
+  content: '';
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 0.3em;
+  vertical-align: -0.12em;
+  background: var(--ambar);
+  -webkit-mask: var(--icono-alerta) center / contain no-repeat;
+  mask: var(--icono-alerta) center / contain no-repeat;
+}
+
+/* Roles (Cliente, ARL, Proveedor): etiqueta sin punto, radio 6. El punto queda
+   solo para el estado (DESIGN §7). */
+.ter-roles .pill--info {
+  gap: 0;
+  border-radius: var(--r-control);
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--tinta-2);
+  background: var(--hundida);
+}
+
+.ter-roles .pill--info::before {
+  content: none;
+}
+
+/* Activar/desactivar: en un tercero activo el ícono va en ok, como antes del
+   rediseño; al pasar el ratón sigue tiñéndose de rojo (lo va a desactivar). */
+.icon-action.icon-action--on {
+  color: var(--ok);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .icon-action.icon-action--on:hover:not(:disabled) {
+    color: var(--error);
+    background: var(--error-fondo);
+  }
+}
+
+/* Acciones de la ficha («Agregar cuenta bancaria», «Editar condiciones»):
+   secundario normal, ancho de su texto y alineado a la izquierda. */
+.ter-ficha-btn {
+  align-self: flex-start;
+  justify-self: start;
+  width: auto;
+  margin-top: var(--e-2);
+}

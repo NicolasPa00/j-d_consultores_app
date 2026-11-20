@@ -161,15 +161,17 @@
     </header>
     <div class="modal__body">
       @if (e.motivo_anulacion) { <p class="pg-anulado">Anulado: {{ e.motivo_anulacion }}</p> }
-      <table class="table">
-        <thead><tr><th>Obligación</th><th class="col-num">Pagado</th><th class="col-num">Anticipo</th><th class="col-num">Retenido</th></tr></thead>
-        <tbody>
-          @for (a of e.aplicaciones ?? []; track a.id) {
-            <tr><td class="mono">{{ a.numero }}</td><td class="col-num mono">{{ pesos(a.valor_pagado) }}</td>
-              <td class="col-num mono">{{ +a.valor_anticipo ? pesos(a.valor_anticipo) : '' }}</td><td class="col-num mono">{{ +a.valor_retenciones ? pesos(a.valor_retenciones) : '' }}</td></tr>
-          }
-        </tbody>
-      </table>
+      <div class="table-wrap table-wrap--modal">
+        <table class="table">
+          <thead><tr><th>Obligación</th><th class="col-num">Pagado</th><th class="col-num">Anticipo</th><th class="col-num">Retenido</th></tr></thead>
+          <tbody>
+            @for (a of e.aplicaciones ?? []; track a.id) {
+              <tr><td class="mono">{{ a.numero }}</td><td class="col-num mono">{{ pesos(a.valor_pagado) }}</td>
+                <td class="col-num mono">{{ +a.valor_anticipo ? pesos(a.valor_anticipo) : '' }}</td><td class="col-num mono">{{ +a.valor_retenciones ? pesos(a.valor_retenciones) : '' }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
       @if (anulando()) {
         <div class="form-field">
           <label class="form-field__label" for="pgMotivo">Motivo de la anulación *</label>
@@ -183,7 +185,7 @@
           <button type="button" class="btn btn--close" (click)="anulando.set(false)" [disabled]="trabajando()">Cancelar</button>
           <button type="button" class="btn btn--danger" (click)="confirmarAnular(e)" [disabled]="trabajando()">Anular egreso</button>
         } @else {
-          <button type="button" class="btn btn--danger pg-peligro" (click)="motivo = ''; anulando.set(true)">Anular</button>
+          <button type="button" class="btn btn--peligro-contorno pg-peligro" (click)="motivo = ''; anulando.set(true)">Anular</button>
         }
       }
       <button type="button" class="btn btn--close" (click)="egreso.set(null)" [disabled]="trabajando()">Cerrar</button>
@@ -226,7 +228,7 @@
           <button type="button" class="btn btn--close" (click)="eliminandoAnticipo.set(false)" [disabled]="trabajando()">Cancelar</button>
           <button type="button" class="btn btn--danger" (click)="eliminarAnticipo(a)" [disabled]="trabajando()">Eliminar anticipo</button>
         } @else {
-          <button type="button" class="btn btn--danger pg-peligro" (click)="motivo = ''; eliminandoAnticipo.set(true)">Eliminar</button>
+          <button type="button" class="btn btn--peligro-contorno pg-peligro" (click)="motivo = ''; eliminandoAnticipo.set(true)">Eliminar</button>
         }
       }
       <button type="button" class="btn btn--close" (click)="anticipo.set(null)" [disabled]="trabajando()">Cerrar</button>

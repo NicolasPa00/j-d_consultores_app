@@ -13,21 +13,7 @@
 }
 .ic-head__actions { display: flex; gap: 0.5rem; }
 
-/* ===== Pestañas (mismo aspecto que Contabilidad y Facturación) ===== */
-.tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap; }
-.tab {
-  padding: 0.5rem 0.95rem;
-  font: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  cursor: pointer;
-}
-.tab:hover { color: var(--text-main); background: #f1f5fa; }
-.tab--active { color: var(--primary-color); background: rgba(45, 123, 200, 0.1); border-color: var(--accent-color); }
+/* Pestañas: usan .tabs/.tab globales (styles.scss). */
 
 /* ===== Filtros ===== */
 .ic-filtros {
@@ -83,8 +69,8 @@
   padding: 0.2rem 0.3rem 0.2rem 0.65rem;
   font-size: 0.8rem;
   color: var(--primary-color);
-  background: rgba(45, 123, 200, 0.1);
-  border: 1px solid var(--accent-color);
+  background: var(--accion-tenue);
+  border: 1px solid var(--accion-tenue-hover);
   border-radius: 999px;
 
   button { border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 0.75rem; padding: 0 0.3rem; }
@@ -123,9 +109,9 @@
 /* El signo menos basta: en los libros un saldo crédito es normal (ingresos, IVA por
    pagar), y en rojo se leía como error. El rojo queda para la pérdida. */
 .ic-neg { color: inherit; }
-.ic-perdida { color: #9f1239; }
+.ic-perdida { color: var(--error); }
 .ic-var { color: var(--text-muted); }
-.ic-aux tbody tr.ic-subtotal td { font-weight: 700; border-top: 1px solid var(--border-soft); }
+.ic-aux tbody tr.ic-subtotal td { font-weight: 600; border-top: 1px solid var(--border-soft); }
 
 /* Filas más bajas que en el resto del sistema: un informe se lee entero. */
 .ic-tabla tbody td, .ic-tabla tfoot td { padding: 0.5rem 0.75rem; }
@@ -159,17 +145,17 @@
 .ic-nombre[data-nivel='6'] { padding-left: 2.7rem; }
 .ic-nombre[data-nivel='8'],
 .ic-nombre[data-nivel='10'] { padding-left: 3.6rem; }
-.ic-fila--clase td { font-weight: 700; color: var(--primary-color); }
+.ic-fila--clase td { font-weight: 600; color: var(--primary-color); }
 .ic-fila--grupo td { font-weight: 600; }
 
 /* Auxiliar: cada cuenta es un <tbody> con su cabecera y su total. */
 .ic-aux tbody tr.ic-cuenta-fila td {
-  background: var(--table-head-bg, #eef2fb);
+  background: var(--cabecera-tabla);
   color: var(--primary-color);
-  font-weight: 700;
+  font-weight: 600;
 }
 .ic-aux tbody tr.ic-total-cuenta td {
-  font-weight: 700;
+  font-weight: 600;
   border-bottom: 2px solid var(--border-soft);
 }
 .ic-celda-cuenta { display: flex; flex-direction: column; gap: 0.1rem; }
@@ -209,16 +195,16 @@
 /* Un solo estilo de grupo para todos los informes (tono de la cabecera de tabla);
    el nivel 2 —la cuenta dentro de un tercero— va más claro y sangrado. */
 .ic-aux tbody tr.ic-tercero-fila td {
-  background: #dfe6f6;
+  background: var(--accion-tenue);
   color: var(--primary-color);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 1rem;
   padding-top: 0.7rem;
   padding-bottom: 0.7rem;
-  border-top: 3px solid var(--primary-color);
+  border-top: 1px solid var(--borde-control);
 }
 .ic-aux tbody tr.ic-cuenta-fila.ic-cuenta-fila--anidada td {
-  background: #fbfcfe;
+  background: var(--pie-modal);
   color: var(--text-main);
   font-weight: 600;
   font-size: 0.86rem;
@@ -243,7 +229,7 @@
   margin: 0 0 0.75rem;
   padding: 0.6rem 0.85rem;
   font-size: 0.84rem;
-  color: var(--state-warning-strong, #92400e);
-  background: var(--state-warning-bg, #fef3c7);
+  color: var(--tinta);
+  background: var(--aviso-fondo);
   border-radius: 8px;
 }

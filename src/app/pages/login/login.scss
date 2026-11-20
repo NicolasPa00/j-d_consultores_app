@@ -25,10 +25,10 @@
   align-items: center;
   justify-content: center;
   padding: 3rem;
-  background: var(--gradient-brand);
+  background: var(--noche);
 }
 
-/* Halos muy tenues que evocan las órbitas del logo; sin ellos el degradado
+/* Anillos muy tenues que evocan las órbitas del logo (sin degradados, DESIGN §10); sin ellos el fondo
    oscuro queda plano. Van por debajo del 5 % para no competir con el logo. */
 .login__brand::before,
 .login__brand::after {
@@ -36,7 +36,7 @@
   position: absolute;
   border-radius: 50%;
   pointer-events: none;
-  border: 1px solid rgba(136, 178, 232, 0.12);
+  border: 1px solid color-mix(in srgb, var(--cian-niebla) 14%, transparent);
 }
 
 .login__brand::before {
@@ -44,7 +44,6 @@
   height: 520px;
   top: -180px;
   right: -160px;
-  background: radial-gradient(circle, rgba(45, 123, 200, 0.12) 0%, transparent 70%);
 }
 
 .login__brand::after {
@@ -52,7 +51,6 @@
   height: 380px;
   bottom: -150px;
   left: -120px;
-  background: radial-gradient(circle, rgba(45, 123, 200, 0.08) 0%, transparent 70%);
 }
 
 .login__brand-inner {
@@ -60,7 +58,7 @@
   z-index: 1;
   max-width: 420px;
   text-align: center;
-  color: #ffffff;
+  color: var(--superficie);
 }
 
 /* El logo va DIRECTO sobre el degradado, sin la caja blanca de antes: es la
@@ -76,15 +74,15 @@
   width: 240px;
   max-width: 100%;
   height: auto;
-  filter: drop-shadow(0 12px 32px rgba(0, 0, 0, 0.35));
+  filter: drop-shadow(0 12px 32px var(--velo));
 }
 
 /* Título del panel (Recuperar y Restablecer contraseña; el Login no lo lleva). */
 .brand-title {
   margin: 0;
-  color: #ffffff;
+  color: var(--superficie);
   font-size: 1.6rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.25;
 }
@@ -95,16 +93,15 @@
   text-transform: none;
   font-size: 0.95rem;
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--texto-noche);
 }
 
 .brand-text {
   margin: 0;
   font-size: 0.9rem;
   font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0;
+  color: var(--texto-noche);
 }
 
 /* ===================== Formulario (derecha) ===================== */
@@ -121,9 +118,9 @@
   width: 100%;
   max-width: 420px;
   background: var(--card-bg);
-  border: 1px solid var(--input-border);
+  border: 1px solid var(--borde);
   border-radius: var(--radius-card);
-  box-shadow: 0 10px 30px -10px rgba(3, 14, 46, 0.12);
+  box-shadow: var(--sombra-1);
   padding: 2.5rem;
 }
 
@@ -134,7 +131,7 @@
 .login-card__title {
   margin: 0;
   font-size: 1.6rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--primary-color);
   letter-spacing: -0.01em;
 }

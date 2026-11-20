@@ -35,6 +35,7 @@
     </label>
 
     @if (puedeEditar()) {
+      <div class="ter-head__botones">
       <button type="button" class="btn btn--ghost" (click)="abrirImport()">Cargar desde Excel</button>
       <button type="button" class="btn btn--ghost" (click)="openElegirProfesional()">Desde un profesional</button>
       <button type="button" class="btn btn--primary" (click)="openNew()">
@@ -43,6 +44,7 @@
         </svg>
         Nuevo tercero
       </button>
+      </div>
     }
   </div>
 </section>
@@ -246,7 +248,7 @@
         }
         @if (puedeEditar()) {
           @if (!agregandoCuenta()) {
-            <button type="button" class="btn btn--ghost btn--sm" (click)="abrirNuevaCuenta()">+ Agregar cuenta bancaria</button>
+            <button type="button" class="btn btn--secondary ter-ficha-btn" (click)="abrirNuevaCuenta()">+ Agregar cuenta bancaria</button>
           } @else {
             <form class="par-form ter-cuenta-form">
               <div class="form-field">
@@ -306,7 +308,7 @@
             <p class="ficha-vacio">Sin condiciones configuradas todavía. Sin ellas, {{ t.nombre }} se factura sin descuento, sin retenciones y de contado.</p>
           }
           @if (puedeEditar()) {
-            <button type="button" class="btn btn--ghost btn--sm" (click)="openEditarCondicion()">
+            <button type="button" class="btn btn--secondary ter-ficha-btn" (click)="openEditarCondicion()">
               {{ condicion() ? 'Editar condiciones' : 'Configurar condiciones' }}
             </button>
           }

@@ -1,7 +1,9 @@
-/* Pie de paginación. Comparte tokens con el design system de styles.scss para
-   que se vea igual dentro de una `.card`, de un `.panel` o de un modal.
-   1-oct-2026: va POR FUERA de la tabla (sin borde superior ni relleno lateral
-   de fila); styles.scss quita la caja de la tarjeta que envuelve ambos. */
+/* Pie de paginación (DESIGN §7, Paginador). Va POR FUERA de la tabla, 14 px por
+   debajo; styles.scss quita la caja de la tarjeta que envuelve ambos.
+   - La página activa va en blanco con --borde-campo (3,03:1), no rellena: el
+     relleno de color queda para la acción.
+   - Las flechas deshabilitadas van en --tinta-inactiva (3,00:1) con
+     `not-allowed`: se leen inactivas, no rotas (sin opacidad). */
 :host {
   display: block;
 }
@@ -11,20 +13,25 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 0.6rem 1rem;
-  padding: 0.75rem 0.25rem 0;
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  gap: 10px 16px;
+  padding: 14px 0 0;
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
+}
+
+.pager__rango {
+  font-variant-numeric: tabular-nums;
 }
 
 .pager__rango strong {
-  color: var(--text-main);
+  color: var(--tinta);
+  font-weight: 600;
 }
 
 .pager__nav {
   display: flex;
   align-items: center;
-  gap: 0.2rem;
+  gap: var(--e-1);
 }
 
 .pager__btn,
@@ -32,73 +39,85 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 30px;
-  height: 30px;
-  padding: 0 0.45rem;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--r-control);
   background: transparent;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--fs-celda);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--tinta-2);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background-color var(--t-rapida) ease,
+    color var(--t-rapida) ease,
+    border-color var(--t-rapida) ease;
 }
 
 .pager__btn svg {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
 }
 
-.pager__btn:hover:not([disabled]),
-.pager__num:hover:not(.pager__num--activa) {
-  background: rgba(45, 123, 200, 0.08);
-  color: var(--secondary-color);
+@media (hover: hover) and (pointer: fine) {
+  .pager__btn:hover:not([disabled]),
+  .pager__num:hover:not(.pager__num--activa) {
+    background: var(--hundida);
+    color: var(--tinta);
+  }
 }
 
 .pager__btn[disabled] {
-  opacity: 0.4;
+  color: var(--tinta-inactiva);
   cursor: not-allowed;
 }
 
-/* La página vigente se marca con el azul de marca: es el mismo recurso que usan
-   las pestañas y el sidebar para decir "estás aquí". */
 .pager__num--activa {
-  background: var(--primary-color);
-  border-color: var(--primary-color);
-  color: #ffffff;
+  background: var(--superficie);
+  border-color: var(--borde-campo);
+  color: var(--tinta);
+  font-weight: 600;
 }
 
 .pager__elipsis {
-  padding: 0 0.15rem;
-  color: var(--text-muted);
+  padding: 0 2px;
+  color: var(--tinta-3);
 }
 
 .pager__tamano {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 10px;
 }
 
 .pager__tamano-label {
-  font-size: 0.75rem;
+  font-size: var(--fs-celda);
 }
 
 .pager__select {
-  height: 30px;
-  padding: 0 1.4rem 0 0.5rem;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  font-size: 0.8rem;
-  color: var(--text-main);
+  height: 32px;
+  padding: 0 28px 0 10px;
+  appearance: none;
+  border: 1px solid var(--borde-campo);
+  border-radius: var(--r-control);
+  background: var(--superficie)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235c6f84' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 8px center / 14px 14px;
+  font: inherit;
+  font-size: var(--fs-celda);
+  font-variant-numeric: tabular-nums;
+  color: var(--tinta);
   cursor: pointer;
+  transition: border-color var(--t-media) ease, box-shadow var(--t-media) ease;
 }
 
-.pager__select:focus {
+.pager__select:focus-visible {
   outline: none;
-  border-color: var(--secondary-color);
-  box-shadow: 0 0 0 3px rgba(45, 123, 200, 0.15);
+  border-color: var(--accion);
+  box-shadow: 0 0 0 1px var(--accion), var(--halo);
 }
 
 /* En pantalla estrecha el rango y el selector se van a los extremos y los
@@ -106,12 +125,18 @@
    pulsarse con el dedo. */
 @media (max-width: 640px) {
   .pager {
-    justify-content: center;
+    justify-content: space-between;
   }
 
   .pager__nav {
     order: 3;
     width: 100%;
     justify-content: center;
+  }
+
+  .pager__btn,
+  .pager__num {
+    min-width: 36px;
+    height: 36px;
   }
 }

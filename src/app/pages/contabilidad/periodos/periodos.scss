@@ -36,7 +36,7 @@
 }
 
 .per-mes--cerrado {
-  background: #f5f7fa;
+  background: var(--hundida);
 }
 
 .per-mes__top {
@@ -52,7 +52,7 @@
 }
 
 .per-borr {
-  color: #9a6a00;
+  color: var(--tinta-2);
   font-weight: 600;
 }
 
@@ -98,7 +98,7 @@
 
 .per-ok {
   margin: 0;
-  color: #1e6b3a;
+  color: var(--ok);
   font-weight: 600;
 }
 
@@ -106,9 +106,9 @@
   margin: 0 0 0.75rem;
   padding: 0.55rem 0.8rem;
   font-size: 0.86rem;
-  color: #7a5a00;
-  background: #fff8e1;
-  border-radius: 8px;
+  color: var(--tinta);
+  background: var(--aviso-fondo);
+  border-radius: var(--r-alerta);
 }
 
 .per-cierre__tabla {
@@ -138,4 +138,17 @@
   .per-cierre__cuentas {
     grid-template-columns: 1fr;
   }
+}
+
+/* Aviso fuera de pastilla: tinta-2 con reloj ámbar (DESIGN §10). */
+.per-borr::before {
+  content: '';
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 0.3em;
+  vertical-align: -0.12em;
+  background: var(--ambar);
+  -webkit-mask: var(--icono-reloj) center / contain no-repeat;
+  mask: var(--icono-reloj) center / contain no-repeat;
 }

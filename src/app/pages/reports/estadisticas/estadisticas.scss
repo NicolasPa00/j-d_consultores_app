@@ -10,14 +10,15 @@
  */
 :host {
   display: block;
-  --serie-1: #2a78d6; /* azul · tono único de las magnitudes y de la tendencia */
-  /* Rampa ordinal del mismo azul para los cuatro estados (claro = menos avanzada). */
-  --paso-1: #86b6ef;
-  --paso-2: #5598e7;
-  --paso-3: #256abf;
-  --paso-4: #104281;
-  --est-rejilla: #e8ecf2;
-  --est-superficie: var(--card-bg, #ffffff);
+  --serie-1: var(--serie); /* acción · tono único de las magnitudes y de la tendencia (DESIGN §7 Gráficas) */
+  /* Rampa ordinal del azul de acción para los cuatro estados (claro = menos avanzada).
+     Pasos 1-2 llevan texto tinta encima; 3-4 texto blanco (ver estadisticas.ts). */
+  --paso-1: var(--contexto);
+  --paso-2: color-mix(in srgb, var(--accion) 40%, var(--superficie));
+  --paso-3: var(--accion);
+  --paso-4: var(--noche);
+  --est-rejilla: var(--borde);
+  --est-superficie: var(--superficie);
 }
 
 /* ---- Filtros: una fila, encima de todo ---- */
@@ -43,49 +44,11 @@
   margin-left: auto;
 }
 
-/* Control segmentado (periodo y medida). */
-.est-segmento {
-  display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  background: var(--est-superficie);
-}
-
-.est-segmento__op {
-  padding: 0.4rem 0.95rem;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--text-muted);
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.est-segmento__op:hover {
-  color: var(--primary-color);
-}
-
-.est-segmento__op--activa {
-  background: var(--primary-color);
-  color: #ffffff;
-}
-
-.est-segmento__op--activa:hover {
-  color: #ffffff;
-}
-
-.est-segmento__op:focus-visible {
-  outline: 2px solid var(--secondary-color);
-  outline-offset: 2px;
-}
-
-.est-segmento--sm .est-segmento__op {
-  padding: 0.28rem 0.75rem;
-  font-size: 0.78rem;
+/* Segmentado: el global `.seg` (activa en blanco con --sombra-1, DESIGN §7). */
+.est-filtros .btn svg,
+.est-filtros__acciones .btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .est-rango {
@@ -106,7 +69,7 @@
   display: inline-block;
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(45, 123, 200, 0.25);
+  border: 2px solid var(--accion-tenue-hover);
   border-top-color: var(--secondary-color);
   border-radius: 50%;
   animation: est-giro 0.7s linear infinite;
@@ -117,14 +80,15 @@
 }
 
 /* ---- Cifras ---- */
+/* Tarjeta dividida global (`.kpi-grid`). Son cinco cifras: con celdas de 170 px
+   caben en una fila a 1280 px y no queda la quinta sola debajo. */
 .est-kpis {
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-}
-
-.est-kpis .kpi-card {
-  padding: 1.1rem 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  align-items: stretch;
+  /* Cifras cortas (conteos, horas, «4,5 / 5»): con el ancho supuesto de 12
+     caracteres la regla global las bajaba a ~22 px; con 6 salen en 32/500,
+     como en Inicio y Cuentas de cobro (DESIGN §1.4). */
+  --n: 6;
 }
 
 .est-kpi__nota {
@@ -132,12 +96,6 @@
   color: var(--text-muted);
 }
 
-.est-kpi__de {
-  margin-left: 0.3rem;
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--text-muted);
-}
 
 .est-vacio {
   padding: 2.5rem 1.5rem;
@@ -182,7 +140,7 @@
 .est-tarjeta__titulo {
   margin: 0;
   font-size: 1.02rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-strong, var(--text-main));
 }
 
@@ -255,9 +213,9 @@
   min-width: 7rem;
   padding: 0.5rem 0.7rem;
   border-radius: var(--radius-sm);
-  background: #0f172a;
-  color: #ffffff;
-  box-shadow: 0 8px 24px -6px rgba(15, 23, 42, 0.45);
+  background: var(--noche);
+  color: var(--superficie);
+  box-shadow: var(--sombra-3);
   pointer-events: none;
   transform: translate(12px, -110%);
   white-space: nowrap;
@@ -271,7 +229,7 @@
 .est-tooltip__fecha,
 .est-tooltip__unidad {
   font-size: 0.72rem;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--texto-noche);
 }
 
 .est-tooltip__valor {
@@ -378,7 +336,7 @@
   display: block;
   height: 12px;
   border-radius: 0 4px 4px 0;
-  background: #f1f4f8;
+  background: var(--hundida);
 }
 
 /* Recta en la base, redondeada en la punta. */
@@ -441,6 +399,11 @@
 }
 
 @media (max-width: 520px) {
+  /* Cinco cifras en dos columnas: la última ocupa la fila entera, sin hueco. */
+  .est-kpis > .kpi-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
   .est-tarjeta {
     padding: 1rem;
   }

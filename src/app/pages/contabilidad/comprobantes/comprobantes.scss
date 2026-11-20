@@ -69,13 +69,13 @@
   margin: 0;
   padding: 0.6rem 0.8rem;
   font-size: 0.88rem;
-  color: #7a1f1f;
-  background: #fdecec;
-  border-radius: 8px;
+  color: var(--error);
+  background: var(--error-fondo);
+  border-radius: var(--r-alerta);
 }
 
 .cmp-total {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .cmp-mov td small {
@@ -121,14 +121,14 @@
   padding: 0.6rem 0.8rem;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #7a5a00;
-  background: #fff8e1;
-  border-radius: 8px;
+  color: var(--tinta);
+  background: var(--aviso-fondo);
+  border-radius: var(--r-alerta);
 }
 
 .cmp-cuadre--ok {
-  color: #1e6b3a;
-  background: #e8f6ee;
+  color: var(--ok);
+  background: var(--ok-fondo);
 }.btn[disabled] {
   opacity: 0.6;
   cursor: not-allowed;
@@ -137,6 +137,48 @@
 @media (max-width: 720px) {
   .cmp-cabecera {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Celular: cada filtro a lo ancho (sin pasarse de la medianera de 16 px) y
+   Limpiar + Nueva nota interna juntos en una fila que arranca a la izquierda. */
+@media (max-width: 680px) {
+  .cmp-filtros {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+
+  .cmp-filtros > select.form-control,
+  .cmp-q {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .cmp-fecha {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+
+  .cmp-fecha .form-control {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .cmp-sep {
+    display: none;
+  }
+
+  .cmp-filtros > .btn {
+    justify-content: center;
+  }
+
+  .cmp-filtros > .btn--primary {
+    grid-column: auto;
   }
 }
 
@@ -149,10 +191,9 @@
   margin-bottom: 1rem;
   padding: 0.75rem 0.95rem;
   font-size: 0.88rem;
-  color: #7a5a00;
-  background: #fff8e1;
-  border-left: 4px solid #f1c40f;
-  border-radius: 0 8px 8px 0;
+  color: var(--tinta);
+  background: var(--aviso-fondo);
+  border-radius: var(--r-alerta);
 }
 
 .cmp-pendientes ul {
@@ -161,5 +202,18 @@
 }
 
 .cmp-pendientes__error {
-  color: #8a3a00;
+  color: var(--error);
+}
+
+/* Descuadre: alerta con fondo de aviso, texto en tinta e ícono ámbar (DESIGN §7 y §10). */
+.cmp-cuadre:not(.cmp-cuadre--ok)::before {
+  content: '';
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 0.3em;
+  vertical-align: -0.12em;
+  background: var(--ambar);
+  -webkit-mask: var(--icono-alerta) center / contain no-repeat;
+  mask: var(--icono-alerta) center / contain no-repeat;
 }

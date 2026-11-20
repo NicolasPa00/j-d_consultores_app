@@ -30,10 +30,10 @@
 .ds-resumen {
   margin: 0.75rem 0;
   padding: 0.6rem 0.8rem;
-  border-radius: var(--radius-control, 8px);
-  background: rgba(22, 163, 74, 0.08);
+  border-radius: var(--r-alerta);
+  background: var(--ok-fondo);
 }
-.ds-resumen--mal { background: rgba(220, 38, 38, 0.08); }
+.ds-resumen--mal { background: var(--error-fondo); }
 .ds-fila-mal td { color: var(--danger); }
 
 /* 7-oct-2026 · Líneas del documento manual en REJILLA, no en tabla: una tabla con el
@@ -41,8 +41,8 @@
    propia barra (reporte del usuario). En celular cada línea se apila. */
 .ds-lineas {
   border: 1px solid var(--border-soft);
-  border-radius: 12px;
-  background: #fff;
+  border-radius: var(--r-tarjeta);
+  background: var(--superficie);
 }
 .ds-linea {
   display: grid;
@@ -57,14 +57,13 @@
 }
 .ds-linea--cab {
   padding: 0.7rem 0.75rem;
-  background: var(--table-head-bg, #eef2fb);
-  color: var(--primary-color);
-  border-bottom: 2px solid var(--primary-color);
-  border-radius: 12px 12px 0 0;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  /* Como la cabecera de tabla global: 12/600 tinta-2, sin mayúsculas. */
+  background: var(--cabecera-tabla);
+  color: var(--tinta-2);
+  border-bottom: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta) var(--r-tarjeta) 0 0;
+  font-size: var(--fs-meta);
+  font-weight: 600;
 }
 .ds-linea__rotulo { display: none; }
 /* La ventana guarda alto para que la lista del selector (16 rem) quepa aunque el
@@ -93,6 +92,10 @@
 /* Mes, fecha: no se parten en tres renglones cuando la tabla va justa de ancho. */
 .ds-fijo { white-space: nowrap; }
 
-/* 29-oct-2026 · El contador de documentos va a la derecha, junto a los botones. */
-.cupo-cabecera { margin-left: auto; }
-.fac-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+/* 20-nov-2026 · La misma disposición que Facturación: título y subtítulo a lo
+   ancho y, debajo, el contador de documentos con los botones, a la izquierda y
+   alineados en una sola fila. */
+.fac-head > div:first-child { flex: 1 1 100%; min-width: 0; }
+.cupo-cabecera { margin-left: 0; }
+.ds-head-acciones { align-self: center; align-items: center; }
+.fac-head { display: flex; align-items: flex-start; justify-content: flex-start; gap: 0.75rem 0.6rem; flex-wrap: wrap; }

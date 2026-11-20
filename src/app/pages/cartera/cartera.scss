@@ -19,23 +19,13 @@
   margin: 0 0 1rem;
   padding: 0.75rem 0.95rem;
   font-size: 0.9rem;
-  color: #7a1f1f;
-  background: #fdecec;
-  border-left: 4px solid var(--danger);
-  border-radius: 0 8px 8px 0;
+  /* Como la alerta del DESIGN: fondo del estado, radio 8, sin raya lateral. */
+  color: var(--error);
+  background: var(--error-fondo);
+  border-radius: var(--r-alerta);
 }
 
-/* ===== Pestañas (mismo aspecto que Facturación) ===== */
-.tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap; }
-.tab {
-  display: inline-flex; align-items: center; gap: 0.45rem;
-  padding: 0.55rem 1.1rem; font: inherit; font-size: 0.9rem; font-weight: 600;
-  color: var(--text-muted); background: transparent; border: 1px solid transparent;
-  border-radius: 999px; cursor: pointer;
-}
-.tab:hover { color: var(--text-main); background: #f1f5f9; }
-.tab--active { color: var(--primary-color); background: rgba(45, 123, 200, 0.1); border-color: var(--accent-color); }
-.tab__count { font-size: 0.75rem; padding: 0 0.45rem; border-radius: 999px; background: #e8eef6; color: var(--text-main); }
+/* ===== Pestañas: las globales (`.tabs`/`.tab`, raya cian), 20-nov-2026 ===== */
 
 .car-filtros {
   display: flex;
@@ -70,8 +60,9 @@
   white-space: nowrap;
 }
 
+/* «Vencida» va en error 600 (DESIGN §7, vencimiento). */
 .car-vencido {
-  color: #9a3a00;
+  color: var(--error);
   font-weight: 600;
 }
 
@@ -94,7 +85,7 @@
 }
 
 .car-doc td {
-  background: #f7f9fc;
+  background: var(--papel);
 }
 
 .car-mov {
@@ -110,9 +101,9 @@
   margin: 0;
   padding: 0.6rem 0.8rem;
   font-size: 0.88rem;
-  color: #7a1f1f;
-  background: #fdecec;
-  border-radius: 8px;
+  color: var(--error);
+  background: var(--error-fondo);
+  border-radius: var(--r-alerta);
 }
 
 .car-peligro {
@@ -144,7 +135,7 @@
 
 /* 24-oct-2026 · Lo retenido se calcula solo: se ve, pero no se escribe. */
 .car-bloqueado {
-  background: #f1f4f8;
+  background: var(--hundida);
   color: var(--text-main);
   font-weight: 600;
   white-space: nowrap;
@@ -159,9 +150,9 @@
   cursor: pointer;
   padding: 0.4rem 0.55rem;
   font-size: 0.84rem;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-sm);
-  background: #fff;
+  border: 1px solid var(--borde-campo);
+  border-radius: var(--r-control);
+  background: var(--superficie);
   list-style: none;
 }
 .car-ret summary::-webkit-details-marker { display: none; }
@@ -172,32 +163,31 @@
   gap: 0.4rem;
   margin-top: 0.35rem;
   padding: 0.55rem 0.7rem;
-  background: #f8fafc;
+  background: var(--papel);
   border: 1px solid var(--border-soft);
-  border-radius: var(--radius-sm);
+  border-radius: var(--r-control);
 }
 .car-ret__lista label { display: flex; gap: 0.45rem; align-items: center; font-size: 0.84rem; }
 
 .car-marcada td {
-  background: #f3f8ff;
+  background: var(--accion-tenue);
 }
 
 .car-cuadre {
   margin: 0;
   padding: 0.6rem 0.8rem;
   font-size: 0.9rem;
-  color: #1e4d7a;
-  background: #eef5fd;
-  border-radius: 8px;
+  color: var(--info);
+  background: var(--info-fondo);
+  border-radius: var(--r-alerta);
 }
 
 .car-cuadre--mal {
-  color: #7a5a00;
-  background: #fff8e1;
-}.btn[disabled] {
-  opacity: 0.6;
-  cursor: not-allowed;
+  color: var(--tinta);
+  background: var(--aviso-fondo);
 }
+
+/* El botón deshabilitado lo pinta la regla global (sin opacidad). */
 
 @media (max-width: 720px) {
   .car-cabecera {
@@ -208,7 +198,21 @@
 /* 1-oct-2026 · El cliente/proveedor es la primera columna de todas las tablas de
    Cartera: sin mínimo, «COMPAÑIA DE SEGUROS BOLIVAR S A» dejaba la «A» sola en
    otra línea en cuanto las cifras pedían un poco más de ancho. */
-/* Solo en los listados: en el editor del recibo la primera columna es el check. */
+/* Solo en los listados: en el editor del recibo la primera columna es el check.
+   20-nov-2026 · 192 px: con 240 la tabla se desbordaba a ~1093 px útiles; a dos
+   líneas la razón social sigue leyéndose entera. */
 .table:not(.car-editor) tbody td:first-child {
-  min-width: 240px;
+  min-width: 12rem;
+}
+
+.car-cuadre--mal::before {
+  content: '';
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 0.3em;
+  vertical-align: -0.12em;
+  background: var(--ambar);
+  -webkit-mask: var(--icono-alerta) center / contain no-repeat;
+  mask: var(--icono-alerta) center / contain no-repeat;
 }

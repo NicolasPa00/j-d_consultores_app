@@ -38,21 +38,25 @@ import { CupoDocumentos } from '../../core/models';
     }
   `,
   styles: [`
+    /* DESIGN §7 (Facturación): caja hundida, sin borde, a la altura de los botones;
+       la cifra en tinta y la barra en acción. */
     :host { display: block; }
     .cupo {
-      min-width: 230px; max-width: 320px; padding: 0.55rem 0.8rem;
-      border: 1px solid var(--border-soft); border-radius: var(--radius-md); background: #fff;
-      font-size: 0.8rem; color: var(--text-muted);
+      min-width: 230px; max-width: 320px; padding: 7px 14px 8px;
+      border: 1px solid transparent; border-radius: var(--r-control); background: var(--hundida);
+      font-size: var(--fs-meta); line-height: 1.35; color: var(--tinta-2);
     }
-    .cupo__linea { display: flex; justify-content: space-between; gap: 0.75rem; align-items: baseline; }
-    .cupo__titulo { font-weight: 600; color: var(--text-main); }
-    .cupo__cifra strong { color: var(--primary-color); font-size: 0.95rem; }
-    .cupo__barra { height: 6px; margin: 0.4rem 0 0.3rem; border-radius: 999px; background: #e8edf5; overflow: hidden; }
-    .cupo__barra span { display: block; height: 100%; border-radius: inherit; background: var(--secondary-color); }
-    .cupo--alerta .cupo__barra span { background: var(--warning); }
-    .cupo--agotado { border-color: var(--danger); }
-    .cupo--agotado .cupo__barra span { background: var(--danger); }
-    .cupo--agotado .cupo__pie { color: var(--danger); }
+    .cupo__linea { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; font-size: var(--fs-celda); }
+    .cupo__titulo { font-weight: 500; color: var(--tinta-2); }
+    .cupo__cifra { font-variant-numeric: tabular-nums; }
+    .cupo__cifra strong { color: var(--tinta); font-weight: 600; }
+    .cupo__barra { height: 4px; margin: 6px 0 4px; border-radius: 2px; background: var(--carril); overflow: hidden; }
+    .cupo__barra span { display: block; min-width: 3px; height: 100%; border-radius: inherit; background: var(--accion); }
+    .cupo__pie { color: var(--tinta-3); }
+    .cupo--alerta .cupo__barra span { background: var(--ambar); }
+    .cupo--agotado { background: var(--error-fondo); border-color: var(--error-borde); }
+    .cupo--agotado .cupo__barra span { background: var(--error); }
+    .cupo--agotado .cupo__pie { color: var(--error); font-weight: 500; }
   `],
 })
 export class CupoDocumentosComponent implements OnInit {

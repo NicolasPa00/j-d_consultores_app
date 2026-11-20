@@ -12,9 +12,9 @@
 .sidebar {
   width: 260px;
   flex-shrink: 0;
-  background: #ffffff;
-  border-right: 1px solid #e2e8f0;
-  color: #475569;
+  background: var(--superficie);
+  border-right: 1px solid var(--borde);
+  color: var(--tinta-2);
   display: flex;
   flex-direction: column;
 }
@@ -26,8 +26,8 @@
   align-items: center;
   justify-content: center;
   padding: 0 1.25rem;
-  background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borde);
 }
 
 .sidebar__logo {
@@ -57,6 +57,12 @@
   flex-direction: column;
   gap: 6px;
   overflow-y: auto;
+  /* Cuando la lista no cabe (Finanzas a 900 px de alto) el último ítem no se
+     corta seco contra el pie: se desvanece en los 28 px finales, que sin
+     desplazamiento son solo el relleno inferior. */
+  padding-bottom: 28px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
 }
 
 /* =================== T0-14 · Sidebar colapsable a voluntad ===================
@@ -106,14 +112,14 @@
   border: none;
   border-radius: 10px;
   background: transparent;
-  color: #475569;
+  color: var(--tinta-2);
   cursor: pointer;
   transition: background 0.18s ease, color 0.18s ease;
 }
 
 .menu-toggle:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: var(--hundida);
+  color: var(--tinta);
 }
 
 .menu-toggle svg {
@@ -134,14 +140,14 @@
   gap: 14px;
   padding: 0.7rem 0.85rem;
   border-radius: 10px;
-  color: #64748b;
+  color: var(--tinta-3);
   text-decoration: none;
   transition: background 0.18s ease, color 0.18s ease;
 }
 
 .nav-link:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: var(--hundida);
+  color: var(--tinta);
   text-decoration: none;
 }
 
@@ -152,8 +158,8 @@
 .nav-link--active,
 .nav-link--active:hover {
   background: var(--state-info-bg);
-  color: var(--primary-color);
-  box-shadow: inset 4px 0 0 var(--primary-color);
+  color: var(--accion);
+  box-shadow: inset 4px 0 0 var(--accion);
   border-radius: 4px var(--radius-control) var(--radius-control) 4px;
 }
 
@@ -185,10 +191,14 @@
 
 .nav-link__hint {
   margin-top: 2px;
-  font-size: 11px;
+  /* Inter es ~8 % más ancha que la Segoe UI de antes: 10,5 px con tracking
+     cerrado devuelve las pistas enteras («Lo que se les debe a los asesores»)
+     mientras la fase del menú no quite los subtítulos. */
+  font-size: 10.5px;
+  letter-spacing: -0.01em;
   font-weight: 400;
   line-height: 1.25;
-  color: #94a3b8;
+  color: var(--tinta-3);
   /* 1-oct-2026 · En Finanzas varias pistas ocupaban dos líneas y el menú no
      cabía a 768 px de alto («Configuración» quedaba cortada): una sola línea. */
   white-space: nowrap;
@@ -200,7 +210,7 @@
    entre ítems para que los nueve de Finanzas quepan sin scroll. */
 @media (max-height: 820px) {
   .sidebar__nav {
-    padding: 14px 16px;
+    padding: 14px 16px 28px;
     gap: 2px;
   }
 
@@ -210,12 +220,12 @@
 }
 
 .nav-link--active .nav-link__hint {
-  color: #64748b;
+  color: var(--tinta-3);
 }
 
 .sidebar__footer {
   padding: 12px 16px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--borde);
 }
 
 .logout-btn {
@@ -227,7 +237,7 @@
   border: none;
   border-radius: 10px;
   background: transparent;
-  color: #64748b;
+  color: var(--tinta-3);
   font-family: inherit;
   font-size: 0.9rem;
   font-weight: 500;
@@ -236,8 +246,8 @@
 }
 
 .logout-btn:hover {
-  background: #fef2f2;
-  color: var(--danger);
+  background: var(--error-fondo);
+  color: var(--error);
 }
 
 .logout-btn__icon {
@@ -270,8 +280,8 @@
   width: calc(100% - 260px);
   height: 72px;
   z-index: 20;
-  background-color: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
+  background-color: var(--superficie);
+  border-bottom: 1px solid var(--borde);
   display: flex;
   align-items: center;
   gap: 24px;
@@ -289,9 +299,9 @@
 .navbar__title-main {
   margin: 0;
   font-size: 1.05rem;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.2;
-  color: var(--primary-color);
+  color: var(--accion);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -301,7 +311,7 @@
 .navbar__title-sub {
   font-size: 0.76rem;
   font-weight: 500;
-  color: var(--text-muted);
+  color: var(--tinta-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -333,13 +343,13 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--secondary-color);
-  color: #ffffff;
+  background: var(--accion);
+  color: var(--superficie);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.03em;
 }
 
@@ -351,14 +361,14 @@
   height: 10px;
   border-radius: 50%;
   background: var(--success);
-  border: 2px solid #ffffff;
+  border: 2px solid var(--superficie);
 }
 
 /* ---- Contenido con scroll independiente ---- */
 .content {
   flex: 1;
   overflow-y: auto;
-  background: #f8fafc;
+  background: var(--papel);
   padding: 112px 40px 40px;
 }
 
@@ -415,7 +425,7 @@
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.45);
+    background: var(--velo);
     z-index: 40;
   }
 
@@ -424,7 +434,7 @@
     inset: 0 auto 0 0;
     width: 260px;
     z-index: 50;
-    box-shadow: 4px 0 20px rgba(15, 23, 42, 0.25);
+    box-shadow: 4px 0 20px rgb(15 42 68 / 25%);
   }
 
   .sidebar--movil-abierto .sidebar__brand {
@@ -457,19 +467,19 @@
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  border: 1px solid var(--border-soft);
+  border: 1px solid var(--borde);
   border-radius: 999px;
-  background: #f4f7fb;
-  color: var(--primary-color);
+  background: var(--papel);
+  color: var(--accion);
   cursor: pointer;
   font: inherit;
   font-size: 0.8rem;
 
   svg { width: 16px; height: 16px; }
-  &:hover { background: #e8f0fb; }
+  &:hover { background: var(--accion-tenue); }
 }
-.sistema-btn__nombre { font-weight: 700; }
-.sistema-btn__accion { color: var(--text-muted); }
+.sistema-btn__nombre { font-weight: 600; }
+.sistema-btn__accion { color: var(--tinta-3); }
 
 @media (max-width: 820px) {
   .sistema-btn__accion { display: none; }
@@ -522,9 +532,9 @@
     grid-template-columns: repeat(5, 1fr);
     height: calc(64px + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom);
-    background: #ffffff;
-    border-top: 1px solid #e2e8f0;
-    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.06);
+    background: var(--superficie);
+    border-top: 1px solid var(--borde);
+    box-shadow: 0 -4px 16px rgb(15 42 68 / 6%);
   }
 
   .bottom-nav__item {
@@ -537,7 +547,7 @@
     padding: 6px 2px;
     border: 0;
     background: transparent;
-    color: #64748b;
+    color: var(--tinta-3);
     font: inherit;
     font-size: 0.68rem;
     font-weight: 600;
@@ -565,9 +575,9 @@
   }
 
   .bottom-nav__item--activo {
-    color: var(--primary-color);
+    color: var(--accion);
 
-    .bottom-nav__icono { background: rgba(45, 123, 200, 0.14); }
+    .bottom-nav__icono { background: var(--accion-tenue); }
   }
 
   /* Hoja «Más»: sube desde abajo, encima de la barra. */
@@ -576,7 +586,7 @@
     position: fixed;
     inset: 0;
     z-index: 40;
-    background: rgba(15, 23, 42, 0.45);
+    background: var(--velo);
   }
 
   .hoja-mas {
@@ -587,9 +597,9 @@
     max-height: 80vh;
     overflow-y: auto;
     padding: 10px 16px calc(16px + env(safe-area-inset-bottom));
-    background: #ffffff;
+    background: var(--superficie);
     border-radius: 20px 20px 0 0;
-    box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.2);
+    box-shadow: 0 -10px 30px rgb(15 42 68 / 20%);
     animation: hoja-sube 0.18s ease-out;
   }
 
@@ -599,16 +609,15 @@
     height: 4px;
     margin: 0 auto 12px;
     border-radius: 999px;
-    background: #cbd5e1;
+    background: var(--borde-control);
   }
 
   .hoja-mas__titulo {
     margin: 0 0 10px;
     font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--text-muted);
+    font-weight: 600;
+    letter-spacing: 0;
+    color: var(--tinta-3);
   }
 
   .hoja-mas__grid {
@@ -624,8 +633,8 @@
     gap: 6px;
     padding: 12px 6px;
     border-radius: 14px;
-    background: #f8fafc;
-    color: var(--text-main);
+    background: var(--papel);
+    color: var(--tinta);
     font-size: 0.78rem;
     font-weight: 600;
     text-align: center;
@@ -633,8 +642,8 @@
   }
 
   .hoja-mas__item--activo {
-    color: var(--primary-color);
-    background: rgba(45, 123, 200, 0.12);
+    color: var(--accion);
+    background: var(--accion-tenue);
   }
 
   .hoja-mas__icono svg { width: 24px; height: 24px; }
@@ -645,7 +654,7 @@
     gap: 4px;
     margin-top: 14px;
     padding-top: 10px;
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid var(--borde);
   }
 
   .hoja-mas__accion {
@@ -656,7 +665,7 @@
     border: 0;
     border-radius: 10px;
     background: transparent;
-    color: var(--text-main);
+    color: var(--tinta);
     font: inherit;
     font-size: 0.9rem;
     text-align: left;
@@ -665,7 +674,7 @@
     svg { width: 20px; height: 20px; }
   }
 
-  .hoja-mas__accion--salir { color: #9f1239; }
+  .hoja-mas__accion--salir { color: var(--error); }
 }
 
 @keyframes hoja-sube {
@@ -679,11 +688,11 @@
   place-items: center;
   width: 40px;
   height: 40px;
-  color: var(--text-muted);
+  color: var(--tinta-3);
   border-radius: 50%;
   text-decoration: none;
   transition: background-color 0.15s ease, color 0.15s ease;
 
   svg { width: 22px; height: 22px; }
-  &:hover, &:focus-visible { background: #eef2fb; color: var(--primary-color); }
+  &:hover, &:focus-visible { background: var(--accion-tenue); color: var(--accion); }
 }

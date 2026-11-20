@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/api.service';
 import { AlertService } from '../../../core/alert.service';
 import { mensajeError } from '../../../core/errores';
-import { escapeHtml, imprimirHtml } from '../../../core/imprimir';
+import { COLOR_IMPRESION, escapeHtml, imprimirHtml } from '../../../core/imprimir';
 import { EstadisticasPeriodo } from '../../../core/models';
 
 type Periodo = 'hoy' | '7d' | 'mes' | 'rango';
@@ -22,10 +22,10 @@ const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'o
  * confunden (naranja y amarillo); en una rampa cualquier par vecino se distingue.
  */
 const ESTADOS: { clave: string; nombre: string; color: string; tinta: string }[] = [
-  { clave: 'FINALIZADA', nombre: 'Finalizadas', color: 'var(--paso-4)', tinta: '#ffffff' },
-  { clave: 'EJECUTADA', nombre: 'Ejecutadas', color: 'var(--paso-3)', tinta: '#ffffff' },
-  { clave: 'PROGRAMADA', nombre: 'Programadas', color: 'var(--paso-2)', tinta: '#0b0b0b' },
-  { clave: 'SIN PROGRAMAR', nombre: 'Sin programar', color: 'var(--paso-1)', tinta: '#0b0b0b' },
+  { clave: 'FINALIZADA', nombre: 'Finalizadas', color: 'var(--paso-4)', tinta: 'var(--superficie)' },
+  { clave: 'EJECUTADA', nombre: 'Ejecutadas', color: 'var(--paso-3)', tinta: 'var(--superficie)' },
+  { clave: 'PROGRAMADA', nombre: 'Programadas', color: 'var(--paso-2)', tinta: 'var(--tinta)' },
+  { clave: 'SIN PROGRAMAR', nombre: 'Sin programar', color: 'var(--paso-1)', tinta: 'var(--tinta)' },
 ];
 
 /** 'YYYY-MM-DD' en la hora local del navegador (no UTC: a las 8 p. m. sería mañana). */
@@ -295,7 +295,7 @@ export class EstadisticasComponent implements OnInit {
       ).join('');
     imprimirHtml(
       `Estadísticas ${d.desde} a ${d.hasta}`, cuerpo,
-      'h2 { font-size: 13px; color: #000b50; margin: 18px 0 0; } .num { text-align: right; } table { margin-top: 6px; } tbody { page-break-inside: auto; }',
+      `h2 { font-size: 13px; color: ${COLOR_IMPRESION.accion}; margin: 18px 0 0; } .num { text-align: right; } table { margin-top: 6px; } tbody { page-break-inside: auto; }`,
     );
   }
 }

@@ -2,45 +2,7 @@
   display: block;
 }
 
-/* ===== Pestañas ===== */
-.tabs {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.tab {
-  position: relative;
-  padding: 0.75rem 1.1rem;
-  font-family: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: color 0.18s ease;
-}
-
-.tab:hover {
-  color: var(--text-main);
-}
-
-.tab--active {
-  color: var(--primary-color);
-}
-
-.tab--active::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--secondary-color);
-}
+/* ===== Pestañas: son las globales `.tabs` / `.tab` (styles.scss, DESIGN §7) ===== */
 
 /* ===== Pestaña Perfil ===== */
 .profile-grid {
@@ -64,11 +26,11 @@
   align-items: center;
   justify-content: center;
   font-size: 2.4rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.03em;
-  color: #ffffff;
-  background: linear-gradient(150deg, #000b50 0%, #2d7bc8 100%);
-  box-shadow: 0 10px 24px -10px rgba(0, 11, 80, 0.5);
+  color: var(--accion);
+  background: var(--accion-tenue);
+  box-shadow: none;
 }
 
 .profile-form {
@@ -164,7 +126,7 @@
   padding: 0;
   border: none;
   border-radius: 999px;
-  background: #cbd5e1;
+  background: var(--borde-campo);
   cursor: pointer;
   position: relative;
   transition: background 0.2s ease;
@@ -181,8 +143,8 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.3);
+  background: var(--superficie);
+  box-shadow: var(--sombra-2);
   transition: transform 0.2s ease;
 }
 
@@ -249,13 +211,11 @@
 }
 
 /* ===== Roles y permisos ===== */
+/* Selector de rol: el segmentado global `.seg` (DESIGN §7). */
 .role-picker {
-  display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  max-width: 100%;
   margin-bottom: 1.5rem;
-  padding-bottom: 1.25rem;
-  border-bottom: 1px solid var(--border-soft);
 }
 
 /* Dos vistas por fila en pantallas amplias; una sola cuando no hay espacio.
@@ -274,17 +234,24 @@
 
 .permiso-row {
   padding: 0.85rem 1rem;
-  background: #f8fafc;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
   cursor: pointer;
+  transition: background-color var(--t-rapida) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .permiso-row:hover {
+    background: var(--fila-hover);
+  }
 }
 
 .permiso-row__checkbox {
   flex-shrink: 0;
   width: 20px;
   height: 20px;
-  accent-color: var(--secondary-color);
+  accent-color: var(--accion);
   cursor: pointer;
 }
 
@@ -307,14 +274,14 @@
   margin-right: auto;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--warning);
+  color: var(--tinta-2);
 }
 
 .form-note {
   margin: 0;
   padding: 0.85rem 1rem;
-  background: rgba(45, 123, 200, 0.08);
-  border: 1px solid rgba(45, 123, 200, 0.2);
+  background: var(--info-fondo);
+  border: 1px solid var(--info-borde);
   border-radius: var(--radius-md);
   color: var(--text-main);
   font-size: 0.85rem;
@@ -410,4 +377,16 @@
 .tipo-nuevo .form-field {
   margin: 0;
   flex: 1 1 180px;
+}
+
+.permisos-actions__dirty::before {
+  content: '';
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 0.3em;
+  vertical-align: -0.12em;
+  background: var(--ambar);
+  -webkit-mask: var(--icono-alerta) center / contain no-repeat;
+  mask: var(--icono-alerta) center / contain no-repeat;
 }

@@ -17,10 +17,9 @@
   margin-bottom: 1rem;
   padding: 0.7rem 0.9rem;
   font-size: 0.88rem;
-  color: #7a5a00;
-  background: #fff8e1;
-  border-left: 4px solid #f1c40f;
-  border-radius: 0 8px 8px 0;
+  color: var(--tinta);
+  background: var(--aviso-fondo);
+  border-radius: var(--r-alerta);
 }
 
 .rg-grid {
@@ -38,7 +37,7 @@
 }
 
 .rg-falta td {
-  background: #fff8e1;
+  background: var(--aviso-fondo);
 }
 
 .rg-grid .form-control {

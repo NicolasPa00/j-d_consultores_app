@@ -73,19 +73,25 @@
   </div>
 
   @if (filas().length) {
-    <div class="resumen">
-      <div class="resumen__item">
-        <span class="resumen__label">Cuentas</span>
-        <strong class="resumen__value">{{ filas().length }}</strong>
-      </div>
-      <div class="resumen__item">
-        <span class="resumen__label">Horas</span>
-        <strong class="resumen__value">{{ horas(horasVisibles()) }}</strong>
-      </div>
-      <div class="resumen__item resumen__item--money">
-        <span class="resumen__label">Total</span>
-        <strong class="resumen__value">{{ pesos(totalVisible()) }}</strong>
-      </div>
+    <div class="kpi-grid resumen">
+      <article class="kpi-card">
+        <div class="kpi-card__info">
+          <span class="kpi-card__label">Cuentas</span>
+          <strong class="kpi-card__value">{{ filas().length }}</strong>
+        </div>
+      </article>
+      <article class="kpi-card">
+        <div class="kpi-card__info">
+          <span class="kpi-card__label">Horas</span>
+          <strong class="kpi-card__value">{{ horas(horasVisibles()) }}</strong>
+        </div>
+      </article>
+      <article class="kpi-card">
+        <div class="kpi-card__info">
+          <span class="kpi-card__label">Total</span>
+          <strong class="kpi-card__value">{{ pesos(totalVisible()) }}</strong>
+        </div>
+      </article>
     </div>
   }
 
@@ -96,9 +102,9 @@
           <tr>
             <th>Mes</th>
             <th>Profesional</th>
-            <th>Órdenes</th>
-            <th>Horas</th>
-            <th>Total a pagar</th>
+            <th class="num">Órdenes</th>
+            <th class="num">Horas</th>
+            <th class="num">Total a pagar</th>
             <th>Estado</th>
             <th class="col-actions">Opciones</th>
           </tr>
@@ -113,8 +119,8 @@
                   <span class="who__name">{{ f.profesional_nombre }}</span>
                 </div>
               </td>
-              <td class="mono">{{ f.total_ordenes }}</td>
-              <td class="mono">{{ horas(f.total_horas) }}</td>
+              <td class="num">{{ f.total_ordenes }}</td>
+              <td class="num">{{ horas(f.total_horas) }}</td>
               <td class="mono money">
                 {{ pesos(f.total_monto) }}
                 <!-- Con viáticos el total deja de ser horas × tarifa: se dice de
@@ -169,6 +175,8 @@
                         <path d="M9 13h6M9 17h4" />
                       </svg>
                     </button>
+                  } @else {
+                    <span class="icon-action icon-action--hueco" aria-hidden="true"></span><span class="icon-action icon-action--hueco" aria-hidden="true"></span>
                   }
                   @if (puedeGestionar()) {
                     @if (!f.precuenta_id || f.estado === 'rechazada') {
@@ -185,6 +193,8 @@
                           <path d="M12 12v5M9.5 14.5h5" />
                         </svg>
                       </button>
+                    } @else {
+                      <span class="icon-action icon-action--hueco" aria-hidden="true"></span>
                     }
                     @if (puedeEnviar(f)) {
                       <button
@@ -199,6 +209,8 @@
                           <path d="M22 2 11 13" />
                         </svg>
                       </button>
+                    } @else {
+                      <span class="icon-action icon-action--hueco" aria-hidden="true"></span>
                     }
                   }
                 </div>

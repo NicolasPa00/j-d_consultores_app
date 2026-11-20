@@ -6,16 +6,9 @@
   display: flex; align-items: center; justify-content: space-between; gap: 0.75rem 1rem; flex-wrap: wrap;
   margin-bottom: 1rem;
 }
-.tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-.tab {
-  display: inline-flex; align-items: center; gap: 0.45rem;
-  padding: 0.55rem 1.1rem; font: inherit; font-size: 0.9rem; font-weight: 600;
-  color: var(--text-muted); background: transparent; border: 1px solid transparent;
-  border-radius: 999px; cursor: pointer;
-  &:hover { color: var(--text-main); background: #f1f5f9; }
-}
-.tab--active { color: var(--primary-color); background: rgba(45, 123, 200, 0.1); border-color: var(--accent-color); }
-.tab__count { font-size: 0.75rem; padding: 0 0.45rem; border-radius: 999px; background: #e8eef6; color: var(--text-main); }
+/* 20-nov-2026 · Las pestañas son las globales (`.tabs`/`.tab`); solo se quita su
+   margen para que compartan fila con el selector de periodo. */
+.nom-barra .tabs { margin-bottom: 0; flex: 1 1 auto; min-width: 0; }
 .nom-periodo { display: flex; gap: 0.5rem; .form-control { width: auto; } }
 
 .nom-sub { display: block; color: var(--text-muted); font-size: 0.72rem; }
@@ -41,25 +34,26 @@
 .nom-modal-selector .modal__body { min-height: min(30rem, calc(100vh - 14rem)); }
 
 .nom-aviso {
-  margin: 0 0 0.9rem; padding: 0.6rem 0.85rem; border: 1px solid; border-left-width: 4px;
-  border-radius: var(--radius-sm, 6px); font-size: 0.85rem;
+  /* Como la alerta del DESIGN: fondo del estado, radio 8, sin borde ni raya. */
+  margin: 0 0 0.9rem; padding: 0.6rem 0.85rem; border: 0;
+  border-radius: var(--r-alerta); font-size: 0.85rem;
   ul { margin: 0.35rem 0 0; padding-left: 1.1rem; }
-  &--warning { border-color: #f0d38a; background: #fffaeb; color: #8a5a00; }
-  &--error { border-color: #f1b0aa; background: #fef3f2; color: #a8231a; }
-  &--muted { border-color: var(--border-soft); background: #f8fafc; color: var(--text-muted); }
+  &--warning { background: var(--aviso-fondo); color: var(--aviso); }
+  &--error { background: var(--error-fondo); color: var(--error); }
+  &--muted { background: var(--hundida); color: var(--tinta-2); }
 }
 
 /* ───────── Liquidar: novedades a la izquierda, desprendible a la derecha ───────── */
 .nom-liq { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(300px, 1fr); gap: 1.25rem; align-items: start; }
 .nom-liq__previa {
   position: sticky; top: 0;
-  padding: 1rem; border: 1px solid var(--accent-color); border-radius: 12px; background: #f8fbff;
-  h4 { margin: 0 0 0.75rem; font-size: 0.95rem; color: var(--primary-color); display: flex; align-items: center; gap: 0.5rem; }
+  padding: 1rem; border: 1px solid var(--borde-control); border-radius: var(--r-tarjeta); background: var(--papel);
+  h4 { margin: 0 0 0.75rem; font-size: 0.95rem; color: var(--accion); display: flex; align-items: center; gap: 0.5rem; }
 }
 .nom-vacio { margin: 0; color: var(--text-muted); font-size: 0.88rem; }
 
 .nom-nov {
-  margin-bottom: 0.9rem; padding: 0.7rem 0.85rem; border: 1px solid var(--border-soft); border-radius: 12px; background: #fff;
+  margin-bottom: 0.9rem; padding: 0.7rem 0.85rem; border: 1px solid var(--border-soft); border-radius: var(--r-tarjeta); background: var(--superficie);
   > header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
   h4 { margin: 0; font-size: 0.88rem; }
   > .nom-grid { margin-top: 0.6rem; }
@@ -77,15 +71,15 @@
 /* ───────── Desprendible ───────── */
 .nom-desp__tabla {
   width: 100%; border-collapse: collapse; font-size: 0.86rem;
-  th { padding: 0.5rem 0.3rem 0.3rem; text-align: left; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--primary-color); border-bottom: 2px solid var(--primary-color); }
+  th { padding: 0.5rem 0.3rem 0.3rem; text-align: left; font-size: var(--fs-meta); font-weight: 600; color: var(--tinta-2); border-bottom: 1px solid var(--borde-control); }
   th.num { text-align: right; }
   td { padding: 0.32rem 0.3rem; border-bottom: 1px solid var(--border-soft); }
 }
 .nom-desp__det { color: var(--text-muted); font-size: 0.78rem; white-space: nowrap; }
-.nom-desp__sub td { font-weight: 700; border-bottom: 0; }
+.nom-desp__sub td { font-weight: 600; border-bottom: 0; }
 .nom-desp__neto {
   display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
-  margin-top: 0.75rem; padding: 0.7rem 0.85rem; border-radius: 10px; background: var(--primary-color); color: #fff;
+  margin-top: 0.75rem; padding: 0.7rem 0.85rem; border-radius: var(--r-tarjeta); background: var(--accion); color: var(--superficie);
   b { font-size: 1.15rem; }
 }
 .nom-desp__nota { margin: 0.5rem 0 0; font-size: 0.76rem; color: var(--text-muted); }

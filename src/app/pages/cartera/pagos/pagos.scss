@@ -35,8 +35,9 @@
   white-space: nowrap;
 }
 
+/* «Vencida» va en error 600 (DESIGN §7, vencimiento). */
 .pg-vencido {
-  color: #9a3a00;
+  color: var(--error);
   font-weight: 600;
 }
 
@@ -63,7 +64,7 @@
 }
 
 .pg-doc td {
-  background: #f7f9fc;
+  background: var(--papel);
 }
 
 .pg-mov {
@@ -79,9 +80,9 @@
   margin: 0;
   padding: 0.6rem 0.8rem;
   font-size: 0.88rem;
-  color: #7a1f1f;
-  background: #fdecec;
-  border-radius: 8px;
+  color: var(--error);
+  background: var(--error-fondo);
+  border-radius: var(--r-alerta);
 }
 
 .pg-peligro {
@@ -119,25 +120,24 @@
 }
 
 .pg-marcada td {
-  background: #f3f8ff;
+  background: var(--accion-tenue);
 }
 
 .pg-cuadre {
   margin: 0;
   padding: 0.6rem 0.8rem;
   font-size: 0.9rem;
-  color: #1e4d7a;
-  background: #eef5fd;
-  border-radius: 8px;
+  color: var(--info);
+  background: var(--info-fondo);
+  border-radius: var(--r-alerta);
 }
 
 .pg-cuadre--mal {
-  color: #7a5a00;
-  background: #fff8e1;
-}.btn[disabled] {
-  opacity: 0.6;
-  cursor: not-allowed;
+  color: var(--tinta);
+  background: var(--aviso-fondo);
 }
+
+/* El botón deshabilitado lo pinta la regla global (sin opacidad). */
 
 @media (max-width: 720px) {
   .pg-dos,
@@ -170,4 +170,16 @@
 .pg-dl dd { margin: 0; }
 @media (max-width: 560px) {
   .pg-dl > div { grid-template-columns: 1fr; gap: 0.1rem; }
+}
+
+.pg-cuadre--mal::before {
+  content: '';
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 0.3em;
+  vertical-align: -0.12em;
+  background: var(--ambar);
+  -webkit-mask: var(--icono-alerta) center / contain no-repeat;
+  mask: var(--icono-alerta) center / contain no-repeat;
 }

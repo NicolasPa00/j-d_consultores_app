@@ -3,44 +3,13 @@
 }
 
 /* Pill neutro (Inactivo) + tonos de estado */
-.tone-slate { --tone: #64748b; }
-.tone-blue { --tone: var(--secondary-color); }
-.tone-amber { --tone: var(--warning); }
+.tone-slate { --tone: var(--tinta-3); }
+.tone-blue { --tone: var(--info); }
+.tone-amber { --tone: var(--ambar); }
 .tone-green { --tone: var(--success); }
 .tone-red { --tone: var(--danger); }
 
-/* ===== Segmentado ===== */
-.tabs {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 1rem;
-}
-
-.tab {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.55rem 1.1rem;
-  font-family: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
-}
-
-.tab:hover {
-  color: var(--text-main);
-  background: #f1f5f9;
-}
-
-.tab--active {
-  color: var(--primary-color);
-  background: rgba(45, 123, 200, 0.1);
-  border-color: var(--accent-color);
-}
+/* ===== Pestañas: las globales `.tabs` / `.tab` (styles.scss, DESIGN §7) ===== */
 
 /* ===== Toolbar ===== */
 .toolbar {
@@ -95,9 +64,8 @@
 .filters__label {
   min-width: 58px;
   font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0;
   color: var(--text-muted);
 }
 
@@ -106,32 +74,7 @@
   color: var(--text-muted);
 }
 
-.chip {
-  padding: 0.35rem 0.75rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  background: #fff;
-  color: var(--text-main);
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-}
-
-.chip:hover {
-  border-color: var(--secondary-color);
-  color: var(--secondary-color);
-}
-
-.chip--on {
-  background: var(--primary-color);
-  border-color: var(--primary-color);
-  color: #fff;
-}
-
-.chip--on:hover {
-  color: #fff;
-}
+/* Los filtros son `.chip.chip--filtro` / `.chip--on` globales (DESIGN §7). */
 
 .btn--sm svg {
   width: 15px;
@@ -186,8 +129,8 @@
   justify-content: center;
   border-radius: 50%;
   background: var(--primary-color);
-  color: #fff;
-  font-weight: 700;
+  color: var(--superficie);
+  font-weight: 600;
   font-size: 0.9rem;
 }
 
@@ -235,7 +178,7 @@
 .icon-action svg { width: 17px; height: 17px; }
 
 .icon-action:hover {
-  background: #f1f5f9;
+  background: var(--accion-tenue);
   color: var(--secondary-color);
   border-color: var(--accent-color);
 }.summary__p {
@@ -257,7 +200,7 @@
 .skeleton__line {
   height: 12px;
   border-radius: 6px;
-  background: linear-gradient(90deg, #eef2f7 25%, #e2e8f0 37%, #eef2f7 63%);
+  background: linear-gradient(90deg, var(--hundida) 25%, var(--borde) 37%, var(--hundida) 63%);
   background-size: 400% 100%;
   animation: shimmer 1.3s ease infinite;
 }
@@ -270,48 +213,7 @@
 }
 
 /* ===== Satisfacción (M8 · ENC-05) ===== */
-.kpis {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-}
-
-.kpi {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  padding: 1.1rem 1.25rem;
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-}
-
-.kpi__label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.kpi__value {
-  font-size: 1.7rem;
-  font-weight: 700;
-  line-height: 1.1;
-  color: var(--primary-color);
-}
-
-.kpi__value small {
-  margin-left: 2px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.kpi__hint {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
+/* `.kpis > .kpi` y sus partes son globales (styles.scss, DESIGN §7 KPI). */
 
 /* Mini-histograma de notas 1-5 */
 .spark {
@@ -427,7 +329,7 @@
 .barra__track {
   height: 12px;
   border-radius: 999px;
-  background: #eef2f7;
+  background: var(--hundida);
   overflow: hidden;
 }
 
@@ -443,12 +345,12 @@
 .barra__fill.pill--success { background: var(--success); }
 .barra__fill.pill--warning { background: var(--warning); }
 .barra__fill.pill--danger { background: var(--danger); }
-.barra__fill.pill--muted { background: #cbd5e1; }
-.barra__fill--azul { background: linear-gradient(90deg, var(--secondary-color), var(--primary-color)); }
+.barra__fill.pill--muted { background: var(--borde-control); }
+.barra__fill--azul { background: var(--accion); }
 
 .barra__valor {
   font-variant-numeric: tabular-nums;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-main);
   white-space: nowrap;
 }
@@ -470,7 +372,7 @@
 .venc {
   display: block;
   font-size: 0.66rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--danger);
 }
 

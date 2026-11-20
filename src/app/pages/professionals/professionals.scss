@@ -4,7 +4,7 @@
 
 /* Pill neutro para estado Inactivo (extiende .pill del DS global) */
 .pill--muted {
-  background: #eef2f7;
+  background: var(--hundida);
   color: var(--text-muted);
 }
 
@@ -48,7 +48,8 @@
 }
 
 .prof-search__input {
-  width: 280px;
+  width: 310px; /* Inter es más ancha: el placeholder entra entero */
+  text-overflow: ellipsis;
   max-width: 100%;
   padding: 0.65rem 0.9rem 0.65rem 2.5rem;
   font-family: inherit;
@@ -63,7 +64,7 @@
 .prof-search__input:focus {
   outline: none;
   border-color: var(--secondary-color);
-  box-shadow: 0 0 0 3px rgba(45, 123, 200, 0.15);
+  box-shadow: var(--halo);
 }
 
 /* ===== Tabla =====
@@ -89,9 +90,9 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: var(--primary-color);
-  color: #ffffff;
-  font-weight: 700;
+  background: var(--accion-tenue);
+  color: var(--accion);
+  font-weight: 600;
   font-size: 0.95rem;
 }
 
@@ -134,7 +135,7 @@
   justify-content: center;
   border: 1px dashed var(--border-soft);
   border-radius: var(--radius-sm);
-  background: #fff;
+  background: var(--superficie);
   padding: 0.5rem;
 }
 
@@ -158,8 +159,8 @@
 .spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.45);
-  border-top-color: #ffffff;
+  border: 2px solid color-mix(in srgb, var(--superficie) 45%, transparent);
+  border-top-color: var(--superficie);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -243,7 +244,7 @@
 .rating__stars {
   display: inline-flex;
   gap: 1px;
-  color: #d1d5db;
+  color: var(--borde-control);
 }
 
 .star {
@@ -252,12 +253,12 @@
 }
 
 .star--on {
-  color: #f59e0b;
+  color: var(--ambar);
 }
 
 .rating__valor {
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-main);
 }
 
@@ -289,7 +290,7 @@
 .ratings__aprox {
   margin-left: 0.3rem;
   font-size: 0.66rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-muted);
   cursor: help;
 }

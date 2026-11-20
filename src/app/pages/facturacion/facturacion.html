@@ -227,8 +227,14 @@
               <td class="col-actions"><button type="button" class="btn btn--ghost btn--sm" (click)="abrir(d.id)">Revisar</button></td>
             </tr>
           } @empty {
-            <tr><td colspan="6" class="table__empty">
-              @if (cargandoListas()) { Cargando… } @else { No hay facturas pendientes de emitir. Se crean desde «Por facturar». }
+            <tr><td colspan="6" class="table__empty table__empty--estado">
+              @if (cargandoListas()) { Cargando… } @else {
+                <div class="estado-vacio estado-vacio--ok">
+                  <span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg></span>
+                  <p class="estado-vacio__titulo">No hay facturas pendientes de emitir</p>
+                  <p class="estado-vacio__texto">Se crean desde «Por facturar».</p>
+                </div>
+              }
             </td></tr>
           }
         </tbody>
@@ -244,15 +250,15 @@
     <div class="table-wrap">
       <table class="table">
         <thead>
-          <tr><th>Número</th><th>Cliente</th><th>Emisión</th><th>Vence</th><th class="num">Total a pagar</th><th>Estado</th><th class="col-actions">Acciones</th></tr>
+          <tr><th>Número</th><th class="fac-col-cliente">Cliente</th><th>Emisión</th><th>Vence</th><th class="num">Total a pagar</th><th>Estado</th><th class="col-actions">Acciones</th></tr>
         </thead>
         <tbody>
           @for (d of pagEmitidas.visibles(); track d.id) {
             <tr>
-              <td><b>{{ numeroDe(d) }}</b></td>
+              <td class="nowrap"><b>{{ numeroDe(d) }}</b></td>
               <td>{{ d.tercero_nombre }}</td>
-              <td>{{ fecha(d.fecha_emision) }}</td>
-              <td>{{ fecha(d.fecha_vencimiento) }}</td>
+              <td class="nowrap">{{ fecha(d.fecha_emision) }}</td>
+              <td class="nowrap">{{ fecha(d.fecha_vencimiento) }}</td>
               <td class="num">{{ pesos(d.total_a_pagar) }}</td>
               <td><span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
               <td class="col-actions">
@@ -260,13 +266,17 @@
                      documento; el PDF, el envío, la contabilización y el historial se
                      abren desde aquí sin pasar por él. -->
                 <span class="fac-acciones">
-                  <button type="button" class="btn btn--ghost btn--sm" (click)="abrir(d.id)">Ver</button>
+                  <button type="button" class="icon-action icon-action--ver" (click)="abrir(d.id)" aria-label="Ver el documento" title="Ver el documento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg></button>
                   @if (d.estado === 'VALIDADO' || d.estado === 'ANULADO') {
                     <button type="button" class="icon-action" (click)="abrir(d.id, 'pdf')" aria-label="Ver el PDF de la factura" title="Factura (PDF)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></svg></button>
                     @if (d.estado === 'VALIDADO' && puedeOperar()) {
                       <button type="button" class="icon-action" (click)="abrir(d.id, 'enviar')" [attr.aria-label]="esNota(d) ? 'Enviar la nota crédito al cliente' : 'Enviar la factura al cliente'" title="Enviar al cliente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v12H4z" /><path d="m4 7 8 6 8-6" /></svg></button>
+                    } @else {
+                      <span class="icon-action icon-action--hueco" aria-hidden="true"></span>
                     }
                     <button type="button" class="icon-action" (click)="abrir(d.id, 'contab')" aria-label="Ver la contabilización" title="Contabilización"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z" /><path d="M4 9h16M10 9v11" /></svg></button>
+                  } @else {
+                    <span class="icon-action icon-action--hueco" aria-hidden="true"></span><span class="icon-action icon-action--hueco" aria-hidden="true"></span><span class="icon-action icon-action--hueco" aria-hidden="true"></span>
                   }
                   <button type="button" class="icon-action" (click)="abrir(d.id, 'historial')" aria-label="Ver el historial" title="Historial"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg></button>
                 </span>
@@ -290,13 +300,13 @@
     <div class="table-wrap">
       <table class="table">
         <thead>
-          <tr><th>Número</th><th>Factura</th><th>Cliente</th><th>Causal</th><th class="num">Valor</th><th>Estado</th><th class="col-actions">Acciones</th></tr>
+          <tr><th>Número</th><th>Factura</th><th class="fac-col-cliente">Cliente</th><th>Causal</th><th class="num">Valor</th><th>Estado</th><th class="col-actions">Acciones</th></tr>
         </thead>
         <tbody>
           @for (d of pagNotas.visibles(); track d.id) {
             <tr>
-              <td><b>{{ d.numero ? numeroDe(d) : d.reference_code }}</b></td>
-              <td>{{ referenciaDe(d) }}</td>
+              <td class="nowrap"><b>{{ d.numero ? numeroDe(d) : d.reference_code }}</b></td>
+              <td class="nowrap">{{ referenciaDe(d) }}</td>
               <td>{{ d.tercero_nombre }}</td>
               <td><small>{{ nombreCausal(d.causal) }}</small></td>
               <td class="num">{{ pesos(d.total_a_pagar) }}</td>
@@ -306,10 +316,12 @@
                      documento; el PDF, el envío, la contabilización y el historial se
                      abren desde aquí sin pasar por él. -->
                 <span class="fac-acciones">
-                  <button type="button" class="btn btn--ghost btn--sm" (click)="abrir(d.id)">Ver</button>
+                  <button type="button" class="icon-action icon-action--ver" (click)="abrir(d.id)" aria-label="Ver el documento" title="Ver el documento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg></button>
                   @if (d.estado === 'VALIDADO' || d.estado === 'ANULADO') {
                     <button type="button" class="icon-action" (click)="abrir(d.id, 'pdf')" aria-label="Ver el PDF de la nota" title="Nota (PDF)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></svg></button>
                     <button type="button" class="icon-action" (click)="abrir(d.id, 'contab')" aria-label="Ver la contabilización" title="Contabilización"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z" /><path d="M4 9h16M10 9v11" /></svg></button>
+                  } @else {
+                    <span class="icon-action icon-action--hueco" aria-hidden="true"></span><span class="icon-action icon-action--hueco" aria-hidden="true"></span>
                   }
                   <button type="button" class="icon-action" (click)="abrir(d.id, 'historial')" aria-label="Ver el historial" title="Historial"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg></button>
                 </span>

@@ -65,9 +65,9 @@
   margin: 0;
   padding: 0.6rem 0.8rem;
   font-size: 0.88rem;
-  color: #7a1f1f;
-  background: #fdecec;
-  border-radius: 8px;
+  color: var(--error);
+  background: var(--error-fondo);
+  border-radius: var(--r-alerta);
 }
 
 .cp-peligro {
@@ -167,19 +167,19 @@
   margin: 0;
   padding: 0.6rem 0.8rem;
   font-size: 0.9rem;
-  color: #1e4d7a;
-  background: #eef5fd;
-  border-radius: 8px;
+  color: var(--tinta);
+  background: var(--info-fondo);
+  border-radius: var(--r-alerta);
 }
 
 .cp-resumen--mal {
-  color: #7a5a00;
-  background: #fff8e1;
+  color: var(--tinta);
+  background: var(--aviso-fondo);
 }
 
 .cp-fila-mal td {
-  color: #8a2a00;
-  background: #fff4f0;
+  color: var(--error);
+  background: var(--error-fondo);
 }
 
 /* 7-oct-2026 · La lista del selector de cuenta se abre POR FUERA de la tabla: con

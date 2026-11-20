@@ -2,11 +2,7 @@
   display: block;
 }
 
-/* Pill neutro para estado Deshabilitada (extiende .pill del DS global) */
-.pill--muted {
-  background: #eef2f7;
-  color: var(--text-muted);
-}
+/* .pill--muted (Deshabilitada): la cubre la global de styles.scss. */
 
 /* ===== Cabecera ===== */
 .ord-head {
@@ -23,6 +19,12 @@
   justify-content: flex-end;
   flex-wrap: wrap;
   gap: 0.75rem;
+}
+
+/* El grupo de botones no es una caja propia: sus botones siguen siendo hijos
+   de la fila de filtros, como antes del rediseño (no se mueven de fila). */
+.ord-head__botones {
+  display: contents;
 }
 
 .ord-search {
@@ -47,94 +49,26 @@
   font-family: inherit;
   font-size: 0.9rem;
   color: var(--text-main);
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
-  border-radius: 10px;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  background: var(--superficie);
+  border: 1px solid var(--borde-campo);
+  border-radius: var(--r-control);
+  transition: border-color var(--t-media) ease, box-shadow var(--t-media) ease;
 }
 
 .ord-search__input:focus {
   outline: none;
-  border-color: var(--secondary-color);
-  box-shadow: 0 0 0 3px rgba(45, 123, 200, 0.15);
+  border-color: var(--accion);
+  box-shadow: inset 0 0 0 1px var(--accion), var(--halo);
 }
 
-/* ===== Pestañas Activas / Deshabilitadas ===== */
-.tabs {
-  display: flex;
-  gap: 0.4rem;
-  margin: 0 0 1rem;
-}
-
-.tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.55rem 1rem;
-  font-family: inherit;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
-}
-
-.tab:hover {
-  color: var(--text-main);
-  background: #f1f5f9;
-}
-
-.tab--active {
-  color: var(--primary-color);
-  background: rgba(45, 123, 200, 0.1);
-  border-color: var(--accent-color);
-}
-
-.tab__count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 0.35rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  background: #eef2f7;
-  border-radius: 999px;
-}
-
-.tab--active .tab__count {
-  color: #ffffff;
-  background: var(--primary-color);
-}
+/* Pestañas: la global .tabs/.tab de styles.scss (raya cian de 3 px, DESIGN §7). */
 
 /* ===== Tabla ===== */
-.table-wrap {
-  width: 100%;
-  overflow-x: auto;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
 /* Tabla: la global de styles.scss (estandarizada el 30-sep-2026); aquí ya no se redefine. */
-
-.table__empty {
-  padding: 2rem 1rem !important;
-  text-align: center;
-  color: var(--text-muted);
-}
 
 .mono {
   font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
+  color: var(--tinta-3);
 }
 
 /* T0-06 · Con nueve columnas (Estado ARL es nueva) el padding de `.table`
@@ -142,24 +76,12 @@
    tras el borde. Se acota SOLO aquí (no en el `.table` global, que usan todas
    las tablas de la app) para recuperar el ancho que ocupan los pills largos
    ("SIN PROGRAMAR", "NO FACTURADA") y los iconos de la última columna. */
-.ord-table th,
-.ord-table td {
-  /* 1-oct-2026 · 0.5rem a los lados (antes 0.6): con el botón de Cobro y el
-     encabezado «Estado ARL/Plataforma» la tabla se pasaba 24 px a 1366. */
-  padding: 0.75rem 0.5rem;
-}
-
 /* 1-oct-2026 · La razón social se partía en 4-5 líneas a 1366 px: las demás
    columnas no ceden (encabezados sin salto) y ella absorbía todo el recorte. */
 .ord-table td:first-child {
-  min-width: 210px;
-}
-
-/* Los pills de estado ("SIN PROGRAMAR", "NO FACTURADA"…) son el otro tramo
-   ancho: se acortan solo en esta tabla, sin tocar `.pill` global. */
-.ord-table .pill {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.7rem;
+  /* 20-nov-2026 · 180 px: la razón social sigue siendo la columna flexible
+     (se lleva el resto), pero a 1280 px ya no empuja Opciones fuera del borde. */
+  min-width: 180px;
 }
 
 .col-num {
@@ -167,8 +89,10 @@
   text-align: center;
 }
 
+/* Sin ancho fijo: mide lo que miden sus íconos (28 px cada uno, DESIGN §7). */
 .col-actions {
-  width: 172px;
+  width: 1%;
+  white-space: nowrap;
   text-align: right;
 }
 
@@ -180,25 +104,27 @@
 }
 
 .who__name {
-  font-weight: 600;
-  color: var(--text-main);
+  font-weight: 500;
+  color: var(--tinta);
 }
 
 /* T0-06 · El NIT, que antes tenía su propia columna: se movió aquí para que la
    tabla quepa sin scroll horizontal a 1366-1440 px (ver .col-actions). */
 .who__nit {
-  font-size: 0.76rem;
-  color: var(--text-muted);
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
+  font-variant-numeric: normal;
 }
 
 .who__assigned {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0 0.3rem;
   margin-top: 0.15rem;
-  font-size: 0.78rem;
-  color: var(--secondary-color);
-  font-weight: 600;
+  font-size: var(--fs-meta);
+  color: var(--tinta-2);
+  font-weight: 500;
 }
 
 .who__assigned svg {
@@ -210,18 +136,18 @@
    días que faltan (o que ya pasaron) van en el `title`, no ocupan ancho. El
    color de la fecha es el mismo aviso que antes llevaba el bloque completo. */
 .venc {
-  font-size: 0.86rem;
-  color: var(--text-main);
+  font-size: var(--fs-celda);
+  color: var(--tinta);
   cursor: help;
 }
 
 .venc--warn {
-  color: var(--warning);
-  font-weight: 600;
+  color: var(--tinta-2);
+  font-weight: 500;
 }
 
 .venc--danger {
-  color: var(--danger);
+  color: var(--error);
   font-weight: 600;
 }
 
@@ -236,56 +162,17 @@
   gap: 0.35rem;
 }
 
-.icon-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  color: var(--text-muted);
-  background: transparent;
-  border: 1px solid var(--border-soft);
-  border-radius: 9px;
-  cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
-}
+/* .icon-action: la global de styles.scss (28 px, sin marco hasta el hover). */
 
-.icon-action svg {
-  width: 17px;
-  height: 17px;
-}
-
-.icon-action:hover {
-  background: #f1f5f9;
-  color: var(--secondary-color);
-  border-color: var(--accent-color);
-}
-
-.icon-action--on {
-  color: var(--success);
-  border-color: rgba(16, 185, 129, 0.35);
-  background: rgba(16, 185, 129, 0.08);
-}
-
-.icon-action--on:hover {
-  color: var(--success);
-  border-color: rgba(16, 185, 129, 0.5);
-  background: rgba(16, 185, 129, 0.14);
-}
-
-.icon-action--danger:hover {
-  color: var(--danger);
-  border-color: rgba(239, 68, 68, 0.4);
-  background: rgba(239, 68, 68, 0.08);
-}/* ===== Detalle (dentro del modal) ===== */
+/* ===== Detalle (dentro del modal) ===== */
 /* Documento en fila compacta (arriba del detalle) */
 .doc-row {
   display: flex;
   align-items: center;
   gap: 0.85rem;
   padding: 0.7rem 0.9rem;
-  background: #f8fafc;
-  border: 1px solid var(--border-soft);
+  background: var(--papel);
+  border: 1px solid var(--borde);
   border-radius: var(--radius-md);
 }
 
@@ -297,13 +184,13 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
-  background: rgba(239, 68, 68, 0.08);
-  color: var(--danger);
+  background: var(--error-fondo);
+  color: var(--error);
 }
 
 .doc-row__icon--excel {
-  background: rgba(16, 185, 129, 0.1);
-  color: var(--success);
+  background: var(--ok-fondo);
+  color: var(--ok);
 }
 
 .doc-row__icon svg {
@@ -320,7 +207,7 @@
 }
 
 .doc-row__name {
-  font-weight: 700;
+  font-weight: 600;
   font-size: 0.9rem;
   color: var(--text-main);
   white-space: nowrap;
@@ -386,19 +273,18 @@
 }
 
 .form-control[readonly] {
-  background: #f8fafc;
-  color: var(--text-main);
   cursor: default;
 }
 
 .form-control--alert {
-  border-color: rgba(239, 68, 68, 0.55);
-  background: rgba(239, 68, 68, 0.04);
+  border-color: var(--error);
+  background: var(--superficie);
 }
 
+/* Error: borde y anillo en error (DESIGN §7). */
 .form-control--alert:focus {
-  border-color: var(--danger);
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+  border-color: var(--error);
+  box-shadow: inset 0 0 0 1px var(--error), 0 0 0 4px color-mix(in srgb, var(--error) 16%, transparent);
 }
 
 .field__alert {
@@ -435,11 +321,9 @@
 
 .assign__section-title {
   margin: 0 0 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  color: var(--tinta-3);
 }
 
 .assign__list {
@@ -468,15 +352,17 @@
   transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 
-.prof-pick:hover {
-  border-color: #cbd9ea;
-  box-shadow: var(--shadow-card);
+@media (hover: hover) and (pointer: fine) {
+  .prof-pick:hover {
+    border-color: var(--borde-control-hover);
+    background: var(--fila-hover);
+  }
 }
 
 .prof-pick--active {
-  border-left-color: var(--primary-color);
-  border-color: var(--accent-color);
-  background: rgba(45, 123, 200, 0.06);
+  border-left-color: var(--accion);
+  border-color: var(--borde-control);
+  background: var(--accion-tenue);
 }
 
 .prof-pick__avatar {
@@ -487,9 +373,9 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: var(--primary-color);
-  color: #ffffff;
-  font-weight: 700;
+  background: var(--accion-tenue);
+  color: var(--accion);
+  font-weight: 600;
   font-size: 0.9rem;
 }
 
@@ -518,11 +404,11 @@
   margin-left: auto;
   flex-shrink: 0;
   padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-  background: var(--secondary-color);
-  color: #ffffff;
-  font-size: 0.72rem;
-  font-weight: 700;
+  border-radius: var(--r-completo);
+  background: var(--accion);
+  color: var(--superficie);
+  font-size: var(--fs-meta);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
@@ -547,15 +433,16 @@
 
 .prof-guardar:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  background: var(--hundida);
+  color: var(--tinta-inactiva);
 }
 
 /* Hay horas marcadas sin guardar: el botón se enciende para pedir el clic. */
 .prof-guardar--pendiente {
-  border-color: var(--primary-color);
-  background: var(--primary-color);
-  color: #ffffff;
-  box-shadow: 0 0 0 3px rgba(45, 123, 200, 0.22);
+  border-color: var(--accion);
+  background: var(--accion);
+  color: var(--superficie);
+  box-shadow: var(--halo);
 }
 
 .prof-guardar--pendiente:hover {
@@ -572,7 +459,7 @@
     width: 0.9rem;
     height: 0.9rem;
     vertical-align: -0.15rem;
-    color: var(--primary-color);
+    color: var(--accion);
   }
 }
 
@@ -615,7 +502,7 @@
 .assign__placeholder svg {
   width: 40px;
   height: 40px;
-  color: var(--accent-color);
+  color: var(--tinta-3);
 }
 
 .assign__placeholder p {
@@ -653,7 +540,7 @@
 .cal__slots-title {
   margin: 0 0 0.6rem;
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-main);
 }
 
@@ -661,8 +548,8 @@
   margin: 0;
   padding: 0.85rem;
   font-size: 0.82rem;
-  color: var(--success);
-  background: rgba(16, 185, 129, 0.08);
+  color: var(--ok);
+  background: var(--ok-fondo);
   border-radius: var(--radius-sm);
 }
 
@@ -672,8 +559,8 @@
   gap: 0.55rem;
   padding: 0.55rem 0.75rem;
   margin-bottom: 0.5rem;
-  background: rgba(245, 158, 11, 0.08);
-  border: 1px solid rgba(245, 158, 11, 0.25);
+  background: var(--aviso-fondo);
+  border: 1px solid var(--aviso-borde);
   border-radius: var(--radius-sm);
 }
 
@@ -681,7 +568,7 @@
   flex-shrink: 0;
   width: 16px;
   height: 16px;
-  color: var(--warning);
+  color: var(--ambar);
 }
 
 .cal-slot__text {
@@ -706,8 +593,8 @@
 }
 
 .cal-slot__remove:hover {
-  color: var(--danger);
-  background: rgba(239, 68, 68, 0.1);
+  color: var(--error);
+  background: var(--error-fondo);
 }
 
 .cal-slot__remove svg {
@@ -718,13 +605,13 @@
 /* Franja agregada en el modal y todavía no persistida. Borde punteado y acento
    azul para distinguirla a simple vista de las ya registradas (ámbar). */
 .cal-slot--pending {
-  background: rgba(45, 123, 200, 0.08);
+  background: var(--accion-tenue);
   border-style: dashed;
-  border-color: rgba(45, 123, 200, 0.45);
+  border-color: var(--borde-campo);
 }
 
 .cal-slot--pending .cal-slot__icon {
-  color: var(--secondary-color);
+  color: var(--accion);
 }
 
 .cal-slot__badge {
@@ -737,33 +624,13 @@
   padding: 0.6rem 0.75rem;
   font-size: 0.8rem;
   font-weight: 600;
-  color: var(--danger);
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: var(--error);
+  background: var(--error-fondo);
+  border: 1px solid var(--error-borde);
   border-radius: var(--radius-sm);
 }
 
-/* ===== Spinner (patrón compartido) ===== */
-.spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.45);
-  border-top-color: #ffffff;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-
-.btn[disabled] {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* ===== Animaciones ===== */
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+/* Spinner y botón deshabilitado: los globales de styles.scss. */
 
 /* ===== ASG-02 · Agenda del profesional =====
    Variables de la rejilla: tienen que cuadrar con las constantes del
@@ -785,8 +652,8 @@
   gap: 0.6rem 1rem;
   padding: 0.85rem 1rem;
   margin-bottom: 0.9rem;
-  background: linear-gradient(135deg, rgba(0, 11, 80, 0.05), rgba(45, 123, 200, 0.07));
-  border: 1px solid rgba(45, 123, 200, 0.22);
+  background: var(--cielo);
+  border: 1px solid var(--borde);
   border-radius: var(--radius-md);
 }
 
@@ -801,7 +668,7 @@
   flex-shrink: 0;
   width: 26px;
   height: 26px;
-  color: var(--secondary-color);
+  color: var(--accion);
 }
 
 .cita-bar__texto {
@@ -812,16 +679,14 @@
 }
 
 .cita-bar__label {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  color: var(--tinta-2);
 }
 
 .cita-bar__valor {
   font-size: 0.95rem;
-  color: var(--primary-color);
+  color: var(--tinta);
 }
 
 /* Sin fecha la cita no es un dato todavía: se pinta apagada para que no compita
@@ -852,15 +717,15 @@
   align-items: center;
   gap: 0.15rem;
   padding: 0.2rem 0.3rem 0.2rem 0.25rem;
-  background: var(--surface);
-  border: 1px solid rgba(45, 123, 200, 0.35);
-  border-radius: 999px;
-  box-shadow: var(--shadow-card);
+  background: var(--superficie);
+  border: 1px solid var(--borde-control);
+  border-radius: var(--r-completo);
+  box-shadow: var(--sombra-1);
 }
 
 .equipo-chip--activo {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(45, 123, 200, 0.25);
+  border-color: var(--accion);
+  box-shadow: inset 0 0 0 1px var(--accion);
 }
 
 .equipo-chip__nombre {
@@ -876,7 +741,8 @@
   cursor: pointer;
 
   strong {
-    color: var(--primary-color);
+    color: var(--accion);
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
 }
@@ -887,21 +753,19 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: var(--primary-color);
-  color: #ffffff;
+  background: var(--accion-tenue);
+  color: var(--accion);
   font-size: 0.68rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .equipo-chip__rol {
   padding: 0.05rem 0.4rem;
-  border-radius: 999px;
-  background: rgba(45, 123, 200, 0.12);
-  color: var(--secondary-color);
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  border-radius: var(--r-completo);
+  background: var(--accion-tenue);
+  color: var(--accion);
+  font-size: 0.7rem;
+  font-weight: 600;
 }
 
 .equipo-chip__quitar {
@@ -913,8 +777,8 @@
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: rgba(100, 116, 139, 0.16);
-  color: var(--text-muted);
+  background: var(--hundida);
+  color: var(--tinta-2);
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 
@@ -925,8 +789,8 @@
 }
 
 .equipo-chip__quitar:hover {
-  background: var(--danger);
-  color: #ffffff;
+  background: var(--error-fondo);
+  color: var(--error);
 }
 
 /* Las franjas ya programadas: se leen de corrido y cada una se quita sin tener
@@ -940,7 +804,7 @@
   gap: 0.4rem;
   margin: 0;
   padding: 0.6rem 0 0;
-  border-top: 1px solid rgba(45, 123, 200, 0.18);
+  border-top: 1px solid var(--borde);
   list-style: none;
 }
 
@@ -951,9 +815,9 @@
   padding: 0.28rem 0.35rem 0.28rem 0.65rem;
   font-size: 0.78rem;
   font-variant-numeric: tabular-nums;
-  color: #ffffff;
-  background: var(--secondary-color);
-  border-radius: 999px;
+  color: var(--superficie);
+  background: var(--accion);
+  border-radius: var(--r-completo);
 }
 
 .franja-chip__quitar {
@@ -964,7 +828,7 @@
   height: 18px;
   padding: 0;
   color: inherit;
-  background: rgba(255, 255, 255, 0.22);
+  background: color-mix(in srgb, var(--superficie) 22%, transparent);
   border: none;
   border-radius: 50%;
   cursor: pointer;
@@ -972,7 +836,7 @@
 }
 
 .franja-chip__quitar:hover {
-  background: var(--danger);
+  background: var(--peligro);
 }
 
 .franja-chip__quitar svg {
@@ -1003,7 +867,7 @@
 .agenda__rango {
   margin: 0 0 0 0.4rem;
   font-size: 0.88rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-main);
   white-space: nowrap;
 }
@@ -1013,21 +877,21 @@
 .agenda__duracion {
   padding: 0.3rem 0.75rem;
   font-size: 0.78rem;
-  color: var(--text-muted);
-  background: #eef2f7;
-  border-radius: 999px;
+  color: var(--tinta-2);
+  background: var(--hundida);
+  border-radius: var(--r-completo);
   white-space: nowrap;
 }
 
 .agenda__duracion strong {
-  color: var(--primary-color);
+  color: var(--tinta);
 }
 
 /* Sin profesional la agenda se puede usar igual (las franjas son de la orden),
    pero no hay disponibilidad que mostrar: se avisa sin bloquear nada. */
 .agenda__duracion--aviso {
-  color: #92400e;
-  background: rgba(245, 158, 11, 0.14);
+  color: var(--tinta);
+  background: var(--aviso-fondo);
 }
 
 .agenda__hint {
@@ -1087,31 +951,31 @@
 }
 
 .agenda__dia-nombre {
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  color: var(--tinta-3);
 }
 
 .agenda__dia-num {
   font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text-main);
+  font-weight: 600;
+  color: var(--tinta);
 }
 
 .agenda__dia--finde .agenda__dia-num,
 .agenda__dia--finde .agenda__dia-nombre {
-  color: #94a3b8;
+  color: var(--tinta-3);
 }
 
+/* Hoy: la marca cian de 3 px y el día en acción (DESIGN §1, «aquí está usted ahora»). */
 .agenda__dia--hoy {
-  background: rgba(45, 123, 200, 0.08);
+  background: var(--accion-tenue);
+  box-shadow: inset 0 -3px 0 var(--cian-trazo);
 }
 
 .agenda__dia--hoy .agenda__dia-num,
 .agenda__dia--hoy .agenda__dia-nombre {
-  color: var(--secondary-color);
+  color: var(--accion);
 }
 
 /* El relleno vertical deja aire para las etiquetas de hora, que van centradas
@@ -1140,16 +1004,16 @@
   border-left: 1px solid var(--border-soft);
   cursor: pointer;
   background-image:
-    repeating-linear-gradient(to bottom, var(--border-soft) 0 1px, transparent 1px var(--ag-hora)),
-    repeating-linear-gradient(to bottom, #f1f5f9 0 1px, transparent 1px var(--ag-media));
+    repeating-linear-gradient(to bottom, var(--borde) 0 1px, transparent 1px var(--ag-hora)),
+    repeating-linear-gradient(to bottom, var(--hundida) 0 1px, transparent 1px var(--ag-media));
 }
 
 .agenda__col--finde {
-  background-color: #fafbfd;
+  background-color: var(--papel);
 }
 
 .agenda__col--hoy {
-  background-color: rgba(45, 123, 200, 0.04);
+  background-color: color-mix(in srgb, var(--accion) 4%, transparent);
 }
 
 /* ---- Bloques ---- */
@@ -1169,7 +1033,7 @@
 }
 
 .ag-block__hora {
-  font-weight: 700;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1181,9 +1045,9 @@
 
 /* Franja bloqueada: ámbar, el mismo código de color que la lista de franjas. */
 .ag-block--ocupado {
-  background: rgba(245, 158, 11, 0.16);
-  border-left-color: var(--warning);
-  color: #92400e;
+  background: var(--aviso-fondo);
+  border-left-color: var(--ambar);
+  color: var(--tinta-2);
 }
 
 /* Todavía no está en la BD: se raya en diagonal para que se note que ese hueco
@@ -1192,29 +1056,29 @@
   background:
     repeating-linear-gradient(
       45deg,
-      rgba(245, 158, 11, 0.22) 0 6px,
-      rgba(245, 158, 11, 0.08) 6px 12px
+      var(--aviso-borde) 0 6px,
+      var(--aviso-fondo) 6px 12px
     );
-  border: 1px dashed rgba(245, 158, 11, 0.75);
-  border-left: 3px solid var(--warning);
+  border: 1px dashed var(--ambar);
+  border-left: 3px solid var(--ambar);
 }
 
 /* Otra OS del profesional: contexto, en gris azulado para no competir con la
    visita que se está programando. */
 .ag-block--otra {
-  background: #eef2f8;
-  border-left-color: rgba(0, 11, 80, 0.45);
-  color: #475569;
+  background: var(--hundida);
+  border-left-color: var(--borde-campo);
+  color: var(--tinta-2);
 }
 
 /* 7-oct-2026 · Horas de OTRO asesor de esta misma orden: contexto, con borde
    discontinuo, y sin capturar el puntero (se puede marcar encima: dos asesores
    pueden ir a la misma franja). */
 .ag-block--equipo {
-  background: rgba(45, 123, 200, 0.1);
-  border: 1px dashed var(--secondary-color);
-  border-left: 3px solid var(--secondary-color);
-  color: var(--primary-color);
+  background: var(--accion-tenue);
+  border: 1px dashed var(--accion);
+  border-left: 3px solid var(--accion);
+  color: var(--accion);
   pointer-events: none;
 }
 
@@ -1249,15 +1113,15 @@
 }
 
 .ag-block--visita .ag-persona--activa {
-  background: rgba(255, 255, 255, 0.22);
+  background: color-mix(in srgb, var(--superficie) 22%, transparent);
 }
 
 /* La visita de esta orden es el protagonista de la pantalla. */
 .ag-block--visita {
-  background: var(--secondary-color);
-  border-left-color: var(--primary-color);
-  color: #ffffff;
-  box-shadow: 0 4px 10px rgba(0, 11, 80, 0.25);
+  background: var(--accion);
+  border-left-color: var(--cian);
+  color: var(--superficie);
+  box-shadow: var(--sombra-2);
   z-index: 1;
 }
 
@@ -1272,7 +1136,7 @@
   height: 16px;
   padding: 0;
   color: inherit;
-  background: rgba(255, 255, 255, 0.7);
+  background: color-mix(in srgb, var(--superficie) 70%, transparent);
   border: none;
   border-radius: 4px;
   opacity: 0;
@@ -1285,8 +1149,8 @@
 }
 
 .ag-block__quitar:hover {
-  background: var(--danger);
-  color: #ffffff;
+  background: var(--peligro);
+  color: var(--superficie);
 }
 
 .ag-block__quitar svg {
@@ -1306,13 +1170,13 @@
   padding-top: 1px;
   border-radius: 6px;
   font-size: 0.65rem;
-  font-weight: 700;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   pointer-events: none;
   z-index: 2;
-  background: rgba(45, 123, 200, 0.18);
-  border: 1px dashed var(--secondary-color);
-  color: var(--primary-color);
+  background: var(--accion-tenue-hover);
+  border: 1px dashed var(--accion);
+  color: var(--accion);
 }
 
 /* ---- Leyenda y ajuste manual ---- */
@@ -1340,25 +1204,27 @@
 }
 
 .agenda__punto--visita {
-  background: var(--secondary-color);
+  background: var(--accion);
 }
 
 .agenda__punto--otra {
-  background: #cbd5e1;
+  background: var(--hundida);
+  border: 1px solid var(--borde-campo);
 }
 
 .agenda__punto--equipo {
-  background: rgba(45, 123, 200, 0.15);
-  border: 1px dashed var(--secondary-color);
+  background: var(--accion-tenue);
+  border: 1px dashed var(--accion);
 }
 
 .agenda__punto--ocupado {
-  background: rgba(245, 158, 11, 0.55);
+  background: var(--aviso-fondo);
+  border: 1px solid var(--ambar);
 }
 
 .agenda__punto--nueva {
-  background: repeating-linear-gradient(45deg, rgba(245, 158, 11, 0.6) 0 3px, transparent 3px 6px);
-  border: 1px dashed var(--warning);
+  background: repeating-linear-gradient(45deg, var(--aviso-borde) 0 3px, transparent 3px 6px);
+  border: 1px dashed var(--ambar);
 }
 
 .agenda__manual {
@@ -1381,11 +1247,9 @@
 
 .agenda__manual-title {
   margin: 0 0 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  color: var(--tinta-3);
 }
 
 .agenda__manual-title--sep {
@@ -1401,12 +1265,12 @@
 }
 
 .cal__slots-empty--muted {
-  color: var(--text-muted);
-  background: #f8fafc;
+  color: var(--tinta-3);
+  background: var(--hundida);
 }
 
 .agenda__manual-hint strong {
-  color: var(--warning);
+  color: var(--tinta);
 }
 
 .agenda__manual[open] .agenda__manual-head {
@@ -1458,8 +1322,8 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--secondary-color);
-  box-shadow: 0 0 0 3px var(--surface);
+  background: var(--accion);
+  box-shadow: 0 0 0 3px var(--superficie);
 }
 
 .timeline__head {
@@ -1491,9 +1355,9 @@
   padding: 0.5rem 0.65rem;
   font-size: 0.85rem;
   line-height: 1.45;
-  color: var(--text-main);
-  background: #f8fafc;
-  border-left: 3px solid var(--border-soft);
+  color: var(--tinta);
+  background: var(--papel);
+  border-left: 3px solid var(--borde-control);
   border-radius: var(--radius-sm);
 }
 
@@ -1546,9 +1410,11 @@
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
-.soporte-fila:hover {
-  border-color: var(--accent-color);
-  box-shadow: var(--shadow-card);
+@media (hover: hover) and (pointer: fine) {
+  .soporte-fila:hover {
+    border-color: var(--borde-control-hover);
+    background: var(--fila-hover);
+  }
 }
 
 .soporte-fila__texto {
@@ -1575,8 +1441,8 @@
 .soporte-fila__accion {
   flex-shrink: 0;
   font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--secondary-color);
+  font-weight: 600;
+  color: var(--accion);
 }
 
 /* Icono de archivo en el mismo hueco donde el profesional lleva su avatar. */
@@ -1587,8 +1453,8 @@
   width: 34px;
   height: 34px;
   border-radius: var(--radius-sm);
-  background: #eef3fb;
-  color: var(--primary-color);
+  background: var(--accion-tenue);
+  color: var(--accion);
 }
 
 .sup-pick__icon svg {
@@ -1604,12 +1470,7 @@
   flex-wrap: wrap;
 }
 
-/* Pastilla pequeña: acompaña a la etiqueta sin competir con ella. */
-.pill--sm {
-  padding: 0.1rem 0.45rem;
-  font-size: 0.68rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
+/* .pill--sm: la global de styles.scss (sin monoespaciada: ensanchaba la tabla). */
 
 /* El nombre del archivo, junto al título del visor, en segundo plano. */
 .verify__filename {
@@ -1626,7 +1487,7 @@
   padding: 0.75rem;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
-  background: #f8fafc;
+  background: var(--papel);
 }
 
 /* El visor nativo del PDF necesita alto propio: sin él el iframe colapsa. */
@@ -1635,7 +1496,7 @@
   height: 56vh;
   border: 0;
   border-radius: var(--radius-sm);
-  background: #fff;
+  background: var(--superficie);
 }
 
 .verify__acciones {
@@ -1649,7 +1510,7 @@
   max-width: 100%;
   max-height: 56vh;
   border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-card);
+  border: 1px solid var(--borde);
 }
 
 .doc-state {
@@ -1683,14 +1544,17 @@
   transition: border-color 0.16s ease, background 0.16s ease;
 }
 
-.reject-cat:hover {
-  background: #f8fafc;
+@media (hover: hover) and (pointer: fine) {
+  .reject-cat:hover {
+    background: var(--fila-hover);
+  }
 }
 
 /* Marcada = se devuelve. Se tiñe en rojo porque es lo que va a pasar. */
-.reject-cat--on {
-  border-color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 7%, transparent);
+.reject-cat--on,
+.reject-cat--on:hover {
+  border-color: var(--error-borde);
+  background: var(--error-fondo);
 }
 
 .reject-cat__box {
@@ -1698,7 +1562,7 @@
   margin-top: 0.15rem;
   width: 16px;
   height: 16px;
-  accent-color: var(--danger);
+  accent-color: var(--error);
   cursor: pointer;
 }
 
@@ -1721,9 +1585,13 @@
 
 /* ===== Responsive ===== */
 @media (max-width: 900px) {
+  /* 20-nov-2026 · minmax(0, 1fr) y filas a su contenido: con 1fr la agenda
+     (min-width 620 px) ensanchaba la columna más allá del modal y, con el cuerpo
+     de alto fijo, la fila de la lista se encogía y se montaba sobre la agenda. */
   .assign,
   .verify {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: max-content;
   }
 
   /* Apiladas ya no hay nada que igualar: la lista vuelve a medir por su
@@ -1768,13 +1636,6 @@
     align-items: stretch;
   }
 
-  .ord-head__actions {
-    width: 100%;
-  }
-
-  .ord-search__input {
-    width: 100%;
-  }
 
   .fields {
     grid-template-columns: 1fr;
@@ -1805,6 +1666,7 @@
   }
 
   .modal__footer-actions {
+    flex-wrap: wrap;
     justify-content: flex-end;
   }
 }
@@ -1816,7 +1678,7 @@
   margin-top: 0.15rem;
   font-size: 0.74rem;
   font-weight: 600;
-  color: var(--warning);
+  color: var(--tinta-2);
 }
 
 /* ===== EST-03 · Acordeón del historial =====
@@ -1836,8 +1698,10 @@
   cursor: pointer;
 }
 
-.acordeon__cabecera:hover {
-  background: #f8fafc;
+@media (hover: hover) and (pointer: fine) {
+  .acordeon__cabecera:hover {
+    background: var(--fila-hover);
+  }
 }
 
 .acordeon__texto {
@@ -1873,8 +1737,8 @@
 
 .tipo-orden__valor {
   font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--primary-color);
+  font-weight: 600;
+  color: var(--accion);
   cursor: help;
 }
 
@@ -1913,7 +1777,7 @@
   margin: 0;
   font-size: 0.76rem;
   line-height: 1.4;
-  color: var(--warning);
+  color: var(--tinta-2);
 }
 
 .check {
@@ -1926,7 +1790,7 @@
     width: 15px;
     height: 15px;
     margin-top: 2px;
-    accent-color: var(--primary-color);
+    accent-color: var(--accion);
     cursor: pointer;
     flex: 0 0 auto;
   }
@@ -2007,17 +1871,18 @@
   padding: 8px 10px;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
-  background: #fff;
+  background: var(--superficie);
   cursor: pointer;
 
   &:disabled {
     cursor: default;
-    opacity: 0.7;
+    background: var(--hundida);
   }
 
   &--activo {
-    border-color: var(--secondary-color);
-    box-shadow: 0 0 0 1px var(--secondary-color);
+    border-color: var(--accion);
+    box-shadow: inset 0 0 0 1px var(--accion);
+    background: var(--accion-tenue);
   }
 }
 
@@ -2056,7 +1921,7 @@
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
   overflow: hidden;
-  background: #f4f6f9;
+  background: var(--papel);
 
   iframe {
     flex: 1 1 auto;
@@ -2125,8 +1990,8 @@
 .prefactura-carga__nota { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
 
 // Casilla de la vista previa que sigue vacía: lo que falta completar.
-.vista-formatos__obs--vacia .form-control { border-color: var(--warning); background: #fffaf0; }
-.vista-formatos__pendientes { color: var(--warning); font-weight: 600; }
+.vista-formatos__obs--vacia .form-control { border-color: var(--ambar); background: var(--aviso-fondo); }
+.vista-formatos__pendientes { color: var(--tinta-2); font-weight: 600; }
 
 // A3-01 · Formulario de la orden manual: dos columnas, una en el móvil.
 .manual-grid {
@@ -2153,11 +2018,17 @@
   transition: filter 0.15s ease, box-shadow 0.15s ease;
 }
 
-.pill--boton:hover,
+@media (hover: hover) and (pointer: fine) {
+  .pill--boton:hover {
+    filter: brightness(0.96);
+    box-shadow: inset 0 0 0 1px var(--borde-campo);
+  }
+}
+
 .pill--boton:focus-visible {
-  filter: brightness(0.95);
-  box-shadow: 0 0 0 2px rgba(45, 123, 200, 0.25);
-  outline: none;
+  outline: var(--anillo);
+  outline-offset: 2px;
+  box-shadow: var(--halo);
 }
 
 /* 7-oct-2026 · Modal de prefactura: la columna del check mide lo que mide el
@@ -2186,7 +2057,7 @@
 
 .pf-tabla .pf-check input:disabled {
   cursor: not-allowed;
-  opacity: 0.45;
+  opacity: 0.45; /* casilla nativa: sin opacidad no se distingue la bloqueada */
 }
 
 /* El código de la orden y su estado no van pegados. */
@@ -2206,7 +2077,7 @@
 .reject-cat__asesor,
 .soporte-asesor {
   font-weight: 500;
-  color: var(--secondary-color);
+  color: var(--accion);
 }
 
 /* 24-oct-2026 · Buscador de la lista de asesores del modal de asignación. */
@@ -2225,4 +2096,142 @@
     pointer-events: none;
   }
   input { width: 100%; padding-left: 2.1rem; }
+}
+
+/* Avisos fuera de pastilla: tinta-2 con ícono ámbar (DESIGN §10). */
+.cita-bar__falta::before {
+  content: '';
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 0.3em;
+  vertical-align: -0.12em;
+  background: var(--ambar);
+  -webkit-mask: var(--icono-alerta) center / contain no-repeat;
+  mask: var(--icono-alerta) center / contain no-repeat;
+}
+
+.suplente__aviso::before {
+  content: '';
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 0.3em;
+  vertical-align: -0.12em;
+  background: var(--ambar);
+  -webkit-mask: var(--icono-alerta) center / contain no-repeat;
+  mask: var(--icono-alerta) center / contain no-repeat;
+}
+
+.vista-formatos__pendientes::before {
+  content: '';
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 0.3em;
+  vertical-align: -0.12em;
+  background: var(--ambar);
+  -webkit-mask: var(--icono-alerta) center / contain no-repeat;
+  mask: var(--icono-alerta) center / contain no-repeat;
+}
+
+/* ===== Ronda 3 del rediseño (20-nov-2026) ===== */
+/* Ámbar solo para SIN PROGRAMAR (DESIGN §1.3 y §10). «Pendiente» de Estado ARL
+   es un estado de espera, no una alerta: neutro hundido con texto tinta-2. */
+.ord-table .pill--boton.pill--warning {
+  background: var(--hundida);
+  color: var(--tinta-2);
+}
+
+.ord-table .pill--boton.pill--warning::before {
+  background: var(--tinta-3);
+}
+
+/* «Parcial · faltan 4 h»: etiqueta neutra (.tag) con el reloj ámbar como único
+   acento; así no grita lo mismo que SIN PROGRAMAR. */
+.ord-table td .pill--warning.pill--sm {
+  gap: 5px;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: var(--r-control);
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--tinta-2);
+  background: var(--hundida);
+}
+
+.ord-table td .pill--warning.pill--sm::before {
+  width: 12px;
+  height: 12px;
+  border-radius: 0;
+  background: var(--ambar);
+  -webkit-mask: var(--icono-reloj) center / contain no-repeat;
+  mask: var(--icono-reloj) center / contain no-repeat;
+}
+
+/* ARL y las cabeceras cortas en una sola línea («ARL SURA», «Estado
+   ARL/Plataforma»): el ancho que sobra lo absorbe la razón social. */
+.ord-table td:nth-child(2) {
+  white-space: nowrap;
+}
+
+.ord-table thead th.th--wrap {
+  white-space: nowrap;
+  height: 38px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.ord-table thead th.th--wrap br {
+  display: none;
+}
+
+/* Cada coasesor con su «·» delante: nunca queda el separador solo al inicio
+   de la línea siguiente. */
+.who__co {
+  white-space: nowrap;
+}
+
+/* A 1280-1366 px: menos aire lateral en las columnas cortas y un botón de
+   Cobro más compacto devuelven unos 70 px a la razón social. */
+@media (max-width: 1365px) {
+  .ord-table thead th,
+  .ord-table tbody td {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .ord-table thead th:first-child,
+  .ord-table tbody td:first-child {
+    padding-left: 12px;
+  }
+
+  .ord-table .cobro-btn {
+    gap: 0.25rem;
+    padding: 0 0.5rem;
+  }
+
+  /* El marco ya dice que es un botón: a este ancho el ícono de factura cede
+     sus 18 px a la razón social. */
+  .ord-table .cobro-btn > svg {
+    display: none;
+  }
+
+  .ord-table .col-actions .icon-action {
+    width: 26px;
+  }
+
+  .ord-table td:first-child {
+    min-width: 200px;
+  }
+}
+
+/* La etiqueta «Parcial» va en su propia línea bajo el estado: así la columna
+   Estado mide lo que su pastilla más ancha y no le roba a la razón social el
+   ancho de las dos puestas en fila. */
+.ord-table td .pill + .pill--warning.pill--sm {
+  display: flex;
+  width: max-content;
+  margin-top: 4px;
 }

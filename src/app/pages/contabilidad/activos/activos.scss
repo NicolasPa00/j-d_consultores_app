@@ -43,7 +43,7 @@
   gap: 0.35rem;
   padding: 1rem 0;
 
-  svg { width: 2.25rem; height: 2.25rem; color: var(--accent-color); }
+  svg { width: 2.25rem; height: 2.25rem; color: var(--tinta-3); }
   p { margin: 0; }
 }
 
@@ -78,16 +78,16 @@
 
   img { border: 1px solid var(--border-soft); border-radius: 8px; }
 }
-.af-qr__cod { margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--primary-color); }
+.af-qr__cod { margin: 0; font-size: 1.1rem; font-weight: 600; color: var(--primary-color); }
 .af-proyectada td { color: var(--text-muted); }
 
 .af-aviso {
   margin: 0 0 0.75rem;
   padding: 0.6rem 0.8rem;
   font-size: 0.85rem;
-  color: var(--state-warning-strong, #92400e);
-  background: var(--state-warning-bg, #fef3c7);
-  border-radius: 8px;
+  color: var(--tinta);
+  background: var(--aviso-fondo);
+  border-radius: var(--r-alerta);
 }
 .af-grid {
   display: grid;

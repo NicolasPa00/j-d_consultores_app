@@ -7,21 +7,30 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem;
-  min-height: 2.5rem;
-  padding: 0.3rem 0.5rem;
+  min-height: 40px;
+  padding: 5px 8px;
   cursor: text;
+}
+
+/* La caja es un `.form-control` sin foco propio: el foco lo tiene el campo de
+   dentro, así que la caja lo refleja con `:focus-within`. */
+.sm__caja:focus-within {
+  border-color: var(--accion);
+  box-shadow: 0 0 0 1px var(--accion), var(--halo);
 }
 
 .sm__chip {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.15rem 0.2rem 0.15rem 0.55rem;
-  font-size: 0.82rem;
-  color: var(--primary-color);
-  background: #eef2fb;
-  border: 1px solid #d5def5;
-  border-radius: 999px;
+  min-height: 24px;
+  padding: 0 3px 0 10px;
+  font-size: var(--fs-celda);
+  font-weight: 500;
+  color: var(--accion);
+  background: var(--accion-tenue);
+  border: 0;
+  border-radius: var(--r-completo);
 }
 
 .sm__x {
@@ -32,21 +41,24 @@
   padding: 0;
   font-size: 1rem;
   line-height: 1;
-  color: var(--text-muted);
+  color: var(--accion);
   background: transparent;
   border: 0;
   border-radius: 50%;
   cursor: pointer;
+  transition: background-color var(--t-rapida) ease;
 }
-.sm__x:hover { background: #d5def5; color: var(--primary-color); }
+@media (hover: hover) and (pointer: fine) {
+  .sm__x:hover { background: var(--accion-tenue-hover); color: var(--accion-hover); }
+}
 
 .sm__campo {
   flex: 1 1 9rem;
   min-width: 8rem;
   padding: 0.2rem 0.25rem;
   font: inherit;
-  font-size: 0.88rem;
-  color: var(--text-main);
+  font-size: var(--fs-base);
+  color: var(--tinta);
   background: transparent;
   border: 0;
   outline: none;
@@ -63,23 +75,26 @@
   padding: 4px;
   overflow-y: auto;
   list-style: none;
-  background: #ffffff;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-control, 8px);
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
+  box-shadow: var(--sombra-2);
 }
 
 .sm__opcion {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  padding: 0.45rem 0.6rem;
-  border-radius: 6px;
-  font-size: 0.88rem;
-  color: var(--text-main);
+  padding: 7px 10px;
+  border-radius: var(--r-control);
+  font-size: var(--fs-base);
+  color: var(--tinta);
   cursor: pointer;
+  transition: background-color var(--t-rapida) ease;
 
-  small { font-size: 0.75rem; color: var(--text-muted); }
+  small { font-size: var(--fs-meta); color: var(--tinta-3); }
 }
-.sm__opcion:hover { background: #eef2fb; }
-.sm__nada { padding: 0.6rem; font-size: 0.85rem; color: var(--text-muted); }
+@media (hover: hover) and (pointer: fine) {
+  .sm__opcion:hover { background: var(--hundida); }
+}
+.sm__nada { padding: 10px; font-size: var(--fs-celda); color: var(--tinta-3); }

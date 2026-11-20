@@ -6,48 +6,7 @@
   display: block;
 }
 
-/* ===== Segmentado ===== */
-.tabs {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 1rem;
-}
-
-.tab {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.55rem 1.1rem;
-  font-family: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
-}
-
-.tab:hover {
-  color: var(--text-main);
-  background: #f1f5f9;
-}
-
-.tab--active {
-  color: var(--primary-color);
-  background: rgba(45, 123, 200, 0.1);
-  border-color: var(--accent-color);
-}
-
-.tab__count {
-  margin-left: 0.45rem;
-  padding: 0.05rem 0.45rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: inherit;
-  background: rgba(15, 23, 42, 0.08);
-  border-radius: 999px;
-}
+/* 20-nov-2026 · Las pestañas son las globales (`.tabs`/`.tab`, raya cian). */
 
 /* ===== Año + meses =====
    Es el mando de la vista: se entra por aquí y todo lo de abajo obedece. */
@@ -84,11 +43,13 @@
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+  transition: background var(--t-media) var(--ease-out), border-color var(--t-media) var(--ease-out), box-shadow var(--t-media) var(--ease-out);
 }
 
-.mes:hover {
-  background: #f1f5f9;
+@media (hover: hover) and (pointer: fine) {
+  .mes:hover {
+    background: var(--hundida);
+  }
 }
 
 .mes--on {
@@ -101,13 +62,19 @@
   opacity: 0.55;
 }
 
+/* «Tiene pendientes»: borde de aviso, que no se confunde con el mes elegido
+   (ese es el único con trazo de acción). */
 .mes--pendiente {
-  border-color: color-mix(in srgb, var(--warning) 55%, transparent);
+  border-color: var(--aviso-borde);
+}
+
+.mes--pendiente.mes--on {
+  border-color: var(--primary-color);
 }
 
 .mes__nombre {
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-main);
 }
 
@@ -124,7 +91,7 @@
 .mes__pend {
   font-size: 0.7rem;
   font-weight: 600;
-  color: var(--warning);
+  color: var(--tinta-2);
 }
 
 .mes__ok {
@@ -150,9 +117,9 @@
   margin-left: 0.4rem;
   padding: 0.05rem 0.4rem;
   font-size: 0.68rem;
-  font-weight: 700;
-  color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  font-weight: 600;
+  color: var(--error);
+  background: var(--error-fondo);
   border-radius: 999px;
   cursor: help;
 }
@@ -167,78 +134,28 @@
   height: 15px;
 }
 
-.btn[disabled] {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+/* El deshabilitado lo pinta la regla global (`--hundida` + `--tinta-3`, sin opacidad). */
 
 /* ===== Totales del recorte visible ===== */
+/* Resumen del recorte: la tarjeta dividida global de KPI (`.kpi-grid`), la
+   misma del Inicio y de Estadísticas. */
 .resumen {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   margin-bottom: 1rem;
 }
 
-.resumen__item {
-  flex: 1 1 150px;
-  padding: 0.85rem 1.1rem;
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-card);
-}
-
-.resumen__label {
-  display: block;
-  font-size: 0.74rem;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.resumen__value {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--text-main);
-}
-
-.resumen__item--money .resumen__value {
-  color: var(--primary-color);
-}
-
-/* ===== Tabla ===== */
-.table-wrap {
-  width: 100%;
-  overflow-x: auto;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-/* Tabla: la global de styles.scss (estandarizada el 30-sep-2026); aquí ya no se redefine. */
+/* ===== Tabla =====
+   La global de styles.scss (estandarizada el 30-sep-2026; contenedor, celdas,
+   `.table__empty`, `td.mono`, `td.money` e `.icon-action` incluidos). */
 
 .totales__label {
   text-align: right;
   color: var(--text-muted);
 }
 
-.table__empty {
-  padding: 2rem 1rem !important;
-  text-align: center;
-  color: var(--text-muted);
-}
-
-.mono {
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
-}
-
-/* Las cifras de dinero mandan en esta vista: se leen en oscuro y en negrita. */
+/* Las cifras de dinero mandan en esta vista: se leen en oscuro y en 600. */
 .money {
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-main);
 }
 
@@ -263,9 +180,9 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: var(--primary-color);
-  color: #fff;
-  font-weight: 700;
+  background: var(--accion-tenue);
+  color: var(--accion);
+  font-weight: 600;
   font-size: 0.9rem;
 }
 
@@ -279,9 +196,9 @@
   margin-left: 4px;
   padding: 1px 5px;
   border-radius: 4px;
-  background: #eef2f7;
+  background: var(--hundida);
   font-size: 0.62rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-muted);
 }
 
@@ -310,7 +227,7 @@
   flex-wrap: wrap;
   margin: 1rem 0 1.25rem;
   padding: 1rem;
-  background: #f8fafc;
+  background: var(--papel);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
 }
@@ -319,35 +236,11 @@
   margin: 0;
   min-width: 160px;
   flex: 1 1 160px;
-}.icon-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  color: var(--text-muted);
-  background: transparent;
-  border: 1px solid var(--border-soft);
-  border-radius: 9px;
-  cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
-}
-
-.icon-action svg { width: 17px; height: 17px; }
-
-.icon-action:hover:not([disabled]) {
-  background: #f1f5f9;
-  color: var(--secondary-color);
-  border-color: var(--accent-color);
 }
 
 /* Deshabilitado con motivo: la acción existe pero hoy no se puede (una cuenta
-   sin tarifa). Se deja visible y con `title` en vez de esconderla, para que se
-   vea que falta algo en vez de que la opción simplemente no esté. */
-.icon-action[disabled] {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
+   sin tarifa). Se deja visible y con `title` en vez de esconderla. Los iconos
+   de fila (normal, hover, deshabilitado) son los globales de `.icon-action`. */
 
 /* Misma disposición que en Órdenes: los iconos alineados a la derecha. */
 .row-actions {
@@ -395,9 +288,9 @@
   margin-left: 0.4rem;
   padding: 0.05rem 0.4rem;
   font-size: 0.68rem;
-  font-weight: 700;
-  color: var(--secondary-color);
-  background: rgba(45, 123, 200, 0.12);
+  font-weight: 600;
+  color: var(--accion);
+  background: var(--accion-tenue);
   border-radius: 999px;
   cursor: help;
 }
@@ -405,11 +298,11 @@
 /* La fila que trajo el aviso de la campanita. Se apaga sola a los pocos
    segundos: es una señal de "esto es lo que acaba de cambiar", no un estado. */
 .fila--destacada > td {
-  background: color-mix(in srgb, var(--secondary-color, var(--primary-color)) 10%, transparent);
+  background: color-mix(in srgb, var(--accion) 10%, transparent);
   transition: background 400ms ease;
 }
 .fila--destacada > td:first-child {
-  box-shadow: inset 3px 0 0 var(--secondary-color, var(--primary-color));
+  box-shadow: inset 3px 0 0 var(--accion);
 }
 
 // A4-01 · Estado del documento soporte de una cuenta aceptada (lleva a la pantalla).
@@ -418,15 +311,15 @@
   margin-left: 0.4rem;
   padding: 0.05rem 0.45rem;
   font-size: 0.68rem;
-  font-weight: 700;
-  color: var(--secondary-color);
-  background: rgba(45, 123, 200, 0.12);
+  font-weight: 600;
+  color: var(--accion);
+  background: var(--accion-tenue);
   border-radius: 999px;
   text-decoration: none;
 
   &:hover { text-decoration: underline; }
-  &--ok { color: var(--success); background: rgba(22, 163, 74, 0.12); }
-  &--falta { color: var(--warning); background: rgba(217, 119, 6, 0.12); }
+  &--ok { color: var(--ok); background: var(--ok-fondo); }
+  &--falta { color: var(--aviso); background: var(--aviso-fondo); }
 }
 
 /* 24-oct-2026 · Detalle de la cuenta: texto largo en varias líneas (no se corta) y ajuste de valores. */
@@ -445,7 +338,7 @@
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
 }
-.bl-manual__titulo { padding: 0 0.4rem; font-weight: 700; color: var(--primary-color); }
+.bl-manual__titulo { padding: 0 0.4rem; font-weight: 600; color: var(--accion); }
 .bl-manual__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -475,4 +368,25 @@
     padding: 0.5rem 0;
     border-top: 1px solid var(--border-soft);
   }
+}
+
+/* Aviso fuera de pastilla: tinta-2 con reloj ámbar (DESIGN §10). */
+.mes__pend::before {
+  content: '';
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 0.3em;
+  vertical-align: -0.12em;
+  background: var(--ambar);
+  -webkit-mask: var(--icono-reloj) center / contain no-repeat;
+  mask: var(--icono-reloj) center / contain no-repeat;
+}
+
+
+/* Opciones: los huecos van delante, así la acción propia de cada estado
+   (generar o enviar) cae siempre en la última ranura, pegada a la derecha, y
+   ver/documento quedan en las mismas columnas en todas las filas. */
+.row-actions > .icon-action--hueco {
+  order: -1;
 }

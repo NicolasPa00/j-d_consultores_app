@@ -1,119 +1,31 @@
 /* ============================================================
-   JD&D Consultores · Gestión de Órdenes de Servicio (SST)
-   Estilos globales y guía de marca
+   ORBITA · Estilos globales (fase A del rediseño, 20-nov-2026)
+   Fuente de verdad: docs/2-arquitectura/DESIGN.md.
+
+   - Los tokens viven en src/styles/_tokens.scss, con los ALIAS de las
+     variables viejas para que ninguna vista se rompa (DESIGN §9).
+   - Aquí van las primitivas globales [A] del §7. Las vistas NO las
+     redeclaran: la encapsulación de Angular hace que una regla local
+     le gane a la global, así que cada estilo local repetido tapa la piel
+     nueva (eso es lo que limpia la fase A2).
+   - Movimiento: 120–160 ms, solo transform/opacity/color/fondo/borde;
+     todo hover dentro de @media (hover: hover) and (pointer: fine).
    ============================================================ */
 
-:root {
-  /* Paleta corporativa */
-  --primary-color: #000b4f;   /* Azul Marino Profundo · identidad JD&D (30-sep-2026) */
-  --primary-hover: #1a2b70;   /* Hover de todo lo que va en color primario */
-  --secondary-color: #2d7bc8; /* Azul Enfoque / Rey */
-  --accent-color: #88b2e8;    /* Celeste de apoyo / ondas */
+@use 'styles/tokens';
 
-  /* Superficies y fondos */
-  --bg-app: #f4f7fa;          /* Gris claro para fondo general */
-  --surface: #ffffff;         /* Blanco puro para tarjetas y tablas */
-
-  /* Texto */
-  --text-main: #1e293b;       /* Gris pizarra muy oscuro para lectura */
-  --text-muted: #64748b;      /* Gris medio para placeholders/bordes */
-
-  /* Estados */
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-
-  /* Tokens de apoyo derivados */
-  --border-soft: #e2e8f0;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-elevated: 0 10px 30px rgba(0, 11, 80, 0.12);
-  --font-base: 'Segoe UI', Roboto, Arial, sans-serif;
-
-  /* ---- Identidad corporativa JD&D (30-sep-2026) ----
-     Lineamientos del cliente para estandarizar las vistas. Todo lo nuevo se
-     escribe contra ESTOS tokens, no con valores sueltos: el inventario del
-     30-sep contó 60 tonos de color distintos escritos a mano. */
-  --gradient-brand: linear-gradient(135deg, #030e2e 0%, #081e3d 100%); /* fondo de pantallas de marca */
-  --card-bg: #ffffff;
-  --radius-card: 16px;        /* tarjetas */
-  --radius-control: 8px;      /* inputs y botones */
-  --radius-chip: 6px;         /* chips / etiquetas */
-  --input-bg: #f9fafb;
-  --input-border: #e5e7eb;
-  --focus-ring: 0 0 0 3px rgba(0, 11, 79, 0.14);
-  --chip-bg: #f3f4f6;
-  --chip-text: #374151;
-  --fs-xs: 0.75rem;           /* 12px: chips, notas al pie */
-  --shadow-card-hover: 0 22px 44px -12px rgba(0, 0, 0, 0.45);
-
-  /* ---- Estados y tablas (30-sep-2026, segundo pedido) ----
-     Esquemas accesibles fondo/texto/borde (escala Tailwind) para TODOS los
-     estados de la app. Las píldoras y los KPI los leen de aquí. */
-  --text-strong: #0f172a;
-  --state-success-bg: #ecfdf5;  --state-success-text: #047857;  --state-success-border: #a7f3d0;  --state-success-strong: #059669;
-  --state-info-bg: #eff6ff;     --state-info-text: #1d4ed8;     --state-info-border: #bfdbfe;     --state-info-strong: #2563eb;
-  --state-neutral-bg: #f1f5f9;  --state-neutral-text: #334155;  --state-neutral-border: #e2e8f0;  --state-neutral-strong: #475569;
-  --state-warning-bg: #fffbeb;  --state-warning-text: #b45309;  --state-warning-border: #fde68a;  --state-warning-strong: #d97706;
-  --state-danger-bg: #fef2f2;   --state-danger-text: #b91c1c;   --state-danger-border: #fecaca;   --state-danger-strong: #dc2626;
-  /* Tabla corporativa (30-sep-2026, tercer pedido; 1-oct variante B): cabecera
-     clara con tinte azul, texto navy y línea inferior navy de 2 px (la cabecera
-     navy sólida contrastaba demasiado); cebra muy suave. El hover NO usa el
-     tinte de la cabecera (se confundían): solo un fondo casi blanco. */
-  --table-head-bg: #eef2fb;
-  --table-head-text: #000b4f;
-  --table-head-rule: 2px solid var(--primary-color);
-  --table-row-border: #e2e8f0;
-  --table-row-alt: #fafbfe;
-  --table-row-hover: #f5f7fd;
-  --table-radius: 12px;
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  --table-card-border: rgba(226, 232, 240, 0.8);
-
-  /* Badges de estado ("chips vibrantes"): fondo semisaturado (-100), texto
-     oscuro (-800/-900) y borde visible (-300). Son APARTE de --state-*, que son
-     los fondos suaves del menú y de los KPI. */
-  --badge-success-bg: #d1fae5;  --badge-success-text: #065f46;  --badge-success-border: #6ee7b7;
-  --badge-warning-bg: #fef3c7;  --badge-warning-text: #78350f;  --badge-warning-border: #fcd34d;
-  --badge-info-bg: #e0f2fe;     --badge-info-text: #0c4a6e;     --badge-info-border: #7dd3fc;
-  --badge-danger-bg: #fee2e2;   --badge-danger-text: #991b1b;   --badge-danger-border: #fca5a5;
-  --badge-neutral-bg: #f1f5f9;  --badge-neutral-text: #334155;  --badge-neutral-border: #cbd5e1;
-
-  /* Modales (1-oct-2026): un solo armazón global. Cabecera con el mismo tinte
-     de la tabla y la misma línea navy; cuerpo blanco y plano; cinco anchos que
-     se eligen por el CONTENIDO, no por la pantalla que abre el modal. */
-  --modal-backdrop: rgba(0, 11, 79, 0.45);
-  --modal-radius: var(--radius-card);
-  --modal-shadow: 0 24px 48px -12px rgba(0, 11, 79, 0.3);
-  --modal-head-bg: var(--table-head-bg);
-  --modal-head-rule: var(--table-head-rule);
-  --modal-divider: #e2e8f0;
-  --modal-pad-x: 1.5rem;
-  --modal-w-sm: 480px;    /* confirmaciones y formularios de 1-3 campos */
-  --modal-w-md: 640px;    /* formulario de una columna (por defecto) */
-  --modal-w-lg: 880px;    /* formulario de dos columnas o ficha de detalle */
-  --modal-w-xl: 1200px;   /* detalle con tablas de líneas */
-  --modal-w-full: 1600px; /* visores lado a lado y agenda */
-
-  /* Subtítulo de sección dentro de un modal: etiqueta navy con punta redondeada. */
-  --section-tag-bg: var(--primary-color);
-  --section-tag-text: #ffffff;
-  --section-tag-h: 28px;
-
-  /* Botones (1-oct-2026): Cerrar/Cancelar en rojo TENUE (sale sin hacer nada);
-     las acciones destructivas en rojo sólido y más oscuro, para no confundirse. */
-  --btn-close-bg: #fdf1f0;
-  --btn-close-text: #b42318;
-  --btn-close-border: #f4c7c3;
-  --btn-close-hover-bg: #fbe2df;
-  --btn-danger-bg: #b91c1c;
-  --btn-danger-hover: #991b1b;
+/* ============================================================
+   Base
+   ============================================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-* {
-  box-sizing: border-box;
+html {
+  -webkit-text-size-adjust: 100%;
+  scrollbar-color: var(--borde-control) transparent;
 }
 
 html,
@@ -124,215 +36,283 @@ body {
 }
 
 body {
-  font-family: var(--font-base);
-  background-color: var(--bg-app);
-  color: var(--text-main);
-  font-size: 15px;
+  font-family: var(--fuente);
+  background-color: var(--papel);
+  color: var(--tinta);
+  font-size: var(--fs-base);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* El navegador también lleva la marca (DESIGN §2). */
+  accent-color: var(--accion);
+  caret-color: var(--accion);
+}
+
+::selection {
+  background: var(--seleccion);
+  color: var(--tinta);
 }
 
 a {
-  color: var(--secondary-color);
+  color: var(--accion);
   text-decoration: none;
+  text-underline-offset: 3px;
 }
 
-a:hover {
-  text-decoration: underline;
+@media (hover: hover) and (pointer: fine) {
+  a:hover {
+    text-decoration: underline;
+  }
 }
 
 h1,
 h2,
 h3,
 h4 {
-  color: var(--text-main);
+  color: var(--tinta);
   margin: 0;
 }
 
-/* ============================================================
-   Primitivas de UI reutilizables (design system)
-   Compartidas por las vistas del sistema. Ver README.
-   ============================================================ */
+/* Cifras tabulares SOLO donde se comparan columnas de números (montos,
+   horas, conteos). NIT y códigos NO las llevan (DESIGN §3). */
+.num {
+  font-variant-numeric: tabular-nums;
+}
 
-/* ---- Cabecera de página ---- */
+/* Unidad de una cifra ($, h, %, MM): en tinta-3 al 0,55 em. */
+.unidad {
+  font-size: 0.55em;
+  font-weight: 500;
+  color: var(--tinta-3);
+  letter-spacing: 0;
+}
+
+/* ---- Foco visible (DESIGN §6) ----
+   Anillo de 2 px en acción (9,28:1) + halo. `:where` deja la especificidad
+   en cero para que cualquier componente lo pueda ajustar. */
+:where(a, button, summary, [tabindex], input[type='checkbox'], input[type='radio']):focus-visible {
+  outline: var(--anillo);
+  outline-offset: 2px;
+  box-shadow: var(--halo);
+}
+
+/* ============================================================
+   Cabecera de página
+   ============================================================ */
 .page-head {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--e-6);
 }
 
 .page-head__title {
-  font-size: 1.4rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--text-main);
+  font-size: var(--fs-pagina);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  color: var(--tinta);
 }
 
 .page-head__sub {
-  margin: 0.25rem 0 0;
-  color: var(--text-muted);
-  font-size: 0.9rem;
+  margin: var(--e-1) 0 0;
+  color: var(--tinta-2);
+  font-size: var(--fs-base);
 }
 
-/* ---- Tarjeta / panel ---- */
+/* ============================================================
+   Tarjeta / panel
+   Blanca, 1 px de borde, radio 10 y SIN sombra (DESIGN §7).
+   ============================================================ */
 .card {
-  background: var(--card-bg);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-card);
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
+  box-shadow: none;
 }
 
 .card__head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 1.1rem 1.4rem;
-  border-bottom: 1px solid var(--border-soft);
+  flex-wrap: wrap;
+  gap: var(--e-2) var(--e-4);
+  padding: 18px var(--e-5) 14px;
+  background: transparent;
+  border-bottom: 1px solid var(--borde);
 }
 
 .card__title {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--text-main);
+  font-size: var(--fs-tarjeta);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--tinta);
 }
 
 .card__hint {
-  font-size: 0.75rem;
-  color: var(--text-muted);
+  font-size: var(--fs-celda);
+  color: var(--tinta-3);
 }
 
 .card__body {
-  padding: 1.4rem;
+  padding: var(--e-5);
 }
 
-/* ---- Botones ---- */
+/* ============================================================
+   Botones (DESIGN §7)
+   36 px (30 en --sm), radio 6, 14/500, ícono de 16.
+   Nota de mapeo: en el código, `.btn--ghost` es desde 2026 el botón de
+   CONTORNO (113 usos) y `.btn--secondary` era un relleno #2d7bc8 que se
+   retira; los dos se pintan como el secundario del DESIGN. El botón de solo
+   texto en acción es `.btn--texto`.
+   ============================================================ */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.7rem 1.1rem;
+  gap: var(--e-2);
+  min-height: 36px;
+  padding: 0 14px;
   font-family: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: var(--fs-base);
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--tinta);
+  background: var(--superficie);
   border: 1px solid transparent;
-  border-radius: var(--radius-control);
+  border-radius: var(--r-control);
   cursor: pointer;
   text-decoration: none;
   /* 1-oct-2026 · Un botón partido en dos líneas («Cargar / prefactura») se lee
      como dos cosas: si no cabe, que baje entero a la fila siguiente. */
   white-space: nowrap;
-  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.05s ease;
-}
-
-.btn:hover {
-  text-decoration: none;
-}
-
-.btn:active {
-  transform: translateY(1px);
+  transition:
+    background-color var(--t-media) ease,
+    border-color var(--t-media) ease,
+    color var(--t-media) ease,
+    transform var(--t-rapida) var(--ease-out);
 }
 
 .btn svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover {
+    text-decoration: none;
+  }
 }
 
 .btn--primary {
-  background: var(--primary-color);
+  background: var(--accion);
   color: #ffffff;
 }
 
-.btn--primary:hover {
-  background: var(--primary-hover);
+.btn--secondary,
+.btn--ghost {
+  background: var(--superficie);
+  color: var(--tinta);
+  border-color: var(--borde-control);
+  /* Sin sombra en reposo (DESIGN §10): el borde ya dice que es un control. */
+  box-shadow: none;
 }
 
-.btn--primary:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
+/* Terciario: solo texto en acción. */
+.btn--texto {
+  background: transparent;
+  color: var(--accion);
 }
 
-/* Botón de contorno sobre un fondo OSCURO (cabeceras de las pantallas de marca:
-   "Cerrar sesión" del selector de sistema). */
+/* Cerrar / Cancelar (1-oct-2026): rojo TENUE. Sale sin hacer nada, así que no
+   compite con el primario ni se confunde con una destructiva. */
+.btn--close {
+  background: var(--cerrar-fondo);
+  color: var(--error);
+  border-color: transparent;
+}
+
+/* Destructivo sólido: solo dentro de una confirmación (Anular, Eliminar, Rechazar). */
+.btn--danger {
+  background: var(--peligro);
+  color: #ffffff;
+  border-color: var(--peligro);
+}
+
+/* Primer paso de una acción destructiva (Anular, Eliminar en el pie de un
+   modal): contorno rojo. El relleno de peligro queda para la confirmación. */
+.btn--peligro-contorno {
+  /* Es un secundario con el texto en error: junto a «Cerrar» (rojo tenue) no
+     debe leerse como una segunda acción destructiva, y va separado a la
+     izquierda del pie (cada vista le pone margin-right: auto). */
+  background: var(--superficie);
+  color: var(--error);
+  border-color: var(--borde-control);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn--peligro-contorno:hover:not(:disabled) {
+    background: var(--error-fondo);
+    border-color: var(--error);
+  }
+}
+
+/* Contorno sobre fondo OSCURO (pantallas de marca: «Cerrar sesión» del selector). */
 .btn--outline-light {
   background: transparent;
   color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.45);
-}
-
-.btn--outline-light:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.7);
+  border-color: rgb(255 255 255 / 45%);
 }
 
 .btn--outline-light:focus-visible {
-  outline: 2px solid #ffffff;
-  outline-offset: 2px;
+  outline-color: var(--cian);
+  box-shadow: none;
 }
 
-/* Botón alto, para la acción única de una tarjeta de formulario ("Ingresar"). */
+@media (hover: hover) and (pointer: fine) {
+  .btn--primary:hover:not(:disabled) {
+    background: var(--accion-hover);
+  }
+
+  .btn--secondary:hover:not(:disabled),
+  .btn--ghost:hover:not(:disabled) {
+    background: var(--papel);
+    border-color: var(--borde-control-hover);
+  }
+
+  .btn--texto:hover:not(:disabled) {
+    background: var(--hundida);
+  }
+
+  .btn--close:hover:not(:disabled) {
+    background: var(--error-fondo);
+  }
+
+  .btn--danger:hover:not(:disabled) {
+    background: var(--peligro-hover);
+    border-color: var(--peligro-hover);
+  }
+
+  .btn--outline-light:hover:not(:disabled) {
+    background: rgb(255 255 255 / 12%);
+    border-color: rgb(255 255 255 / 70%);
+  }
+}
+
+/* Botón alto: la acción única de una tarjeta de formulario («Ingresar»). */
 .btn--lg {
-  padding: 0.85rem 1.25rem;
-  font-size: 0.98rem;
-}
-
-.btn--secondary {
-  background: var(--secondary-color);
-  color: #ffffff;
-}
-
-.btn--secondary:hover {
-  background: #2569ac;
-}
-
-.btn--ghost {
-  background: var(--surface);
-  color: var(--text-main);
-  border-color: var(--border-soft);
-}
-
-.btn--ghost:hover {
-  background: #f1f5f9;
-}
-
-/**
- * Acción destructiva o de rechazo (Anular, Eliminar, Rechazar). Existe porque
- * "Rechazar" no puede parecerse a "Cancelar". Desde el 1-oct-2026 va RELLENA en
- * rojo oscuro: Cancelar/Cerrar pasaron a rojo tenue (`.btn--close`) y un
- * contorno rojo se habría confundido con ellos.
- */
-.btn--danger {
-  background: var(--btn-danger-bg);
-  color: #ffffff;
-  border-color: var(--btn-danger-bg);
-}
-
-.btn--danger:hover {
-  background: var(--btn-danger-hover);
-  border-color: var(--btn-danger-hover);
-}
-
-/* Cerrar / Cancelar (1-oct-2026): rojo tenue. Sale de la ventana sin hacer
-   nada, así que no compite con la acción principal (navy) ni se confunde con
-   una destructiva (rojo sólido). */
-.btn--close {
-  background: var(--btn-close-bg);
-  color: var(--btn-close-text);
-  border-color: var(--btn-close-border);
-}
-
-.btn--close:hover {
-  background: var(--btn-close-hover-bg);
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  min-height: 44px;
+  padding: 0 var(--e-5);
+  font-size: 15px;
 }
 
 .btn--sm {
-  padding: 0.45rem 0.8rem;
-  font-size: 0.82rem;
+  min-height: 30px;
+  padding: 0 10px;
+  gap: 6px;
+  font-size: var(--fs-celda);
 }
 
 .btn--sm svg {
@@ -340,49 +320,142 @@ h4 {
   height: 15px;
 }
 
+.btn--icon {
+  width: 36px;
+  padding: 0;
+  background: transparent;
+  color: var(--tinta-2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn--icon:hover:not(:disabled) {
+    background: var(--hundida);
+    color: var(--tinta);
+  }
+}
+
 .btn--block {
   width: 100%;
 }
 
-/* ---- Controles de formulario ---- */
+/* Deshabilitado legible, SIN opacidad: fondo hundido y tinta-3 (4,60:1).
+   La razón va al lado o en el `title`. */
+.btn:disabled,
+.btn[aria-disabled='true'] {
+  background: var(--hundida);
+  color: var(--tinta-3);
+  border-color: var(--borde);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Enlace de acción `.ir-a`: terciario de las listas (30 px, 13/500, chevron). */
+.ir-a {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 30px;
+  padding: 0 6px 0 10px;
+  border: 0;
+  border-radius: var(--r-control);
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-celda);
+  font-weight: 500;
+  color: var(--accion);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--t-rapida) ease;
+}
+
+.ir-a svg {
+  width: 15px;
+  height: 15px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ir-a:hover {
+    background: var(--accion-tenue);
+    text-decoration: none;
+  }
+}
+
+/* ============================================================
+   Controles de formulario (DESIGN §7)
+   40 px, fondo blanco, borde --borde-campo (3,03:1), radio 6.
+   ============================================================ */
 .form-field {
   display: block;
 }
 
 .form-field__label {
   display: block;
-  margin-bottom: 0.4rem;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-main);
+  margin-bottom: 6px;
+  font-size: var(--fs-celda);
+  font-weight: 500;
+  color: var(--tinta-2);
 }
 
 .form-control {
   width: 100%;
-  padding: 0.65rem 0.85rem;
+  min-height: 40px;
+  padding: 0.5rem 0.75rem;
   font-family: inherit;
-  font-size: 0.92rem;
-  color: var(--text-main);
-  background: var(--input-bg);
-  border: 1px solid var(--input-border);
-  border-radius: var(--radius-control);
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  font-size: var(--fs-base);
+  line-height: 1.4;
+  color: var(--tinta);
+  background: var(--superficie);
+  border: 1px solid var(--borde-campo);
+  border-radius: var(--r-control);
+  transition:
+    border-color var(--t-media) ease,
+    box-shadow var(--t-media) ease,
+    background-color var(--t-media) ease;
+}
+
+select.form-control {
+  appearance: none;
+  padding-right: 2.25rem;
+  /* Opción larga en un select estrecho (celular): termina en «…», no cortada. */
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235c6f84' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+  background-size: 16px 16px;
+  cursor: pointer;
+}
+
+select.form-control[multiple] {
+  padding-right: 0.75rem;
+  background-image: none;
+}
+
+textarea.form-control {
+  min-height: 76px;
+  line-height: 1.45;
+  resize: vertical;
 }
 
 .form-control::placeholder {
-  color: var(--text-muted);
+  color: var(--tinta-3);
 }
 
-.form-control:focus {
+/* Foco del campo: borde en acción + anillo interior de 1 px + halo (DESIGN §6). */
+.form-control:focus,
+.form-control:focus-visible {
   outline: none;
-  background: var(--surface);
-  border-color: var(--primary-color);
-  box-shadow: var(--focus-ring);
+  border-color: var(--accion);
+  box-shadow: 0 0 0 1px var(--accion), var(--halo);
 }
 
-.form-control:disabled {
-  background: #f1f5f9;
-  color: var(--text-muted);
+.form-control:disabled,
+.form-control[readonly].form-control--bloqueado {
+  background: var(--hundida);
+  color: var(--tinta-2);
+  border-color: var(--borde);
   cursor: not-allowed;
 }
 
@@ -390,86 +463,313 @@ h4 {
   /* `block` explícito: dentro de un <label> el hint debe ir en <span>, y sin
      esto el margen superior no se aplicaría. */
   display: block;
-  margin: 0.35rem 0 0;
-  font-size: 0.75rem;
-  color: var(--text-muted);
+  margin: 6px 0 0;
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
 }
 
 /* Campo rechazado por validación (dato duplicado, formato inválido…). */
 .form-control--error,
 .form-control--error:focus {
-  border-color: var(--danger);
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+  border-color: var(--error);
+  box-shadow: 0 0 0 1px var(--error);
 }
 
 .form-field__hint--error {
-  color: var(--danger);
-  font-weight: 600;
+  color: var(--error);
+  font-weight: 500;
 }
 
-/* ---- Píldoras / badges ---- */
-/* Píldora de ESTADO (30-sep-2026): fondo tenue + texto oscuro + borde suave, los
-   tres del mismo tono, para que se lea igual en cualquier tabla. Sin variante
-   cae en neutro. Para cifras (porcentajes, confianza) va con `.pill--metric`. */
+/* Rejilla opcional de dos columnas para formularios de modal (DESIGN §7, Modal). */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px var(--e-6);
+}
+
+.form-grid__full {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 640px) {
+  .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- Campo con acción interna (p. ej. el ojo de contraseña) --- */
+.field-wrap {
+  position: relative;
+  display: block;
+}
+
+.form-control--with-action {
+  padding-right: 2.8rem;
+}
+
+.field-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.4rem;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--tinta-3);
+  background: transparent;
+  border: none;
+  border-radius: var(--r-control);
+  cursor: pointer;
+  transition: color var(--t-media) ease, background-color var(--t-media) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .field-toggle:hover {
+    color: var(--accion);
+    background: var(--hundida);
+  }
+}
+
+.field-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ============================================================
+   Pastillas de estado (DESIGN §7)
+   22 px, radio completo, 11,5/600 y punto de 6 px. Las MAYÚSCULAS no se
+   fuerzan: los estados de OS ya llegan escritos así (vocabulario de la ARL).
+   Sin variante cae en neutro (COBRADA, deshabilitada).
+   ============================================================ */
 .pill {
   display: inline-flex;
   align-items: center;
-  padding: 0.2rem 0.65rem;
-  border: 1px solid var(--badge-neutral-border);
-  border-radius: 999px;
-  font-size: 0.75rem;
+  gap: 6px;
+  min-height: 22px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--r-completo);
+  font-size: var(--fs-pastilla);
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
   white-space: nowrap;
-  color: var(--badge-neutral-text);
-  background: var(--badge-neutral-bg);
+  color: var(--tinta-2);
+  background: var(--hundida);
+}
+
+.pill::before {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .pill--info {
-  background: var(--badge-info-bg);
-  color: var(--badge-info-text);
-  border-color: var(--badge-info-border);
+  background: var(--info-fondo);
+  color: var(--info);
 }
 
 .pill--success {
-  background: var(--badge-success-bg);
-  color: var(--badge-success-text);
-  border-color: var(--badge-success-border);
+  background: var(--ok-fondo);
+  color: var(--ok);
 }
 
+/* SIN PROGRAMAR: texto ámbar oscuro (6,24:1) con el punto en relleno ámbar. */
 .pill--warning {
-  background: var(--badge-warning-bg);
-  color: var(--badge-warning-text);
-  border-color: var(--badge-warning-border);
+  background: var(--aviso-fondo);
+  color: var(--aviso);
+}
+
+.pill--warning::before {
+  background: var(--ambar);
 }
 
 .pill--danger {
-  background: var(--badge-danger-bg);
-  color: var(--badge-danger-text);
-  border-color: var(--badge-danger-border);
+  background: var(--error-fondo);
+  color: var(--error);
 }
 
-/* Cifra (porcentaje, confianza): compacta, sin borde y peso medio, para que no
-   compita con la píldora de estado de la misma fila. */
+.pill--muted {
+  background: var(--hundida);
+  color: var(--tinta-2);
+}
+
+.pill--muted::before {
+  content: none;
+}
+
+/* FINALIZADA: el punto se vuelve un visto (el estado nunca depende solo del color). */
+.pill--visto::before {
+  width: 10px;
+  height: 10px;
+  border-radius: 0;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.pill--sin-punto::before {
+  content: none;
+}
+
+.pill--sm {
+  min-height: 20px;
+  padding: 0 7px;
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+/* Cifra (porcentaje, confianza): radio 6, sin punto, 12/600 tabular.
+   Confianza: ≥80 ok · 70–79 naranja rojizo · <70 error (DESIGN §7). */
 .pill--metric {
-  padding: 0.12rem 0.5rem;
-  border-color: transparent;
-  font-weight: 500;
+  min-width: 44px;
+  justify-content: center;
+  padding: 0 7px;
+  border-radius: var(--r-control);
+  font-size: var(--fs-meta);
+  letter-spacing: 0;
   font-variant-numeric: tabular-nums;
 }
 
-.pill--metric.pill--success { color: var(--state-success-strong); background: var(--state-success-bg); }
-.pill--metric.pill--warning { color: var(--state-warning-strong); background: var(--state-warning-bg); }
-.pill--metric.pill--danger  { color: var(--state-danger-strong);  background: var(--state-danger-bg); }
-
-/* ===== Helpers globales añadidos para vistas conectadas al backend ===== */
-.pill--muted {
-  background: var(--badge-neutral-bg);
-  color: var(--badge-neutral-text);
-  border-color: var(--badge-neutral-border);
+.pill--metric::before {
+  content: none;
 }
 
-/* Spinner reutilizable (botones en estado de carga) */
+.pill--metric.pill--warning {
+  color: var(--naranja);
+  background: var(--naranja-fondo);
+}
+
+/* Confianza IA con su propio nombre (para las plantillas que se toquen en fase B). */
+.conf {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 22px;
+  padding: 0 7px;
+  border-radius: var(--r-control);
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.conf--alta {
+  background: var(--ok-fondo);
+  color: var(--ok);
+}
+
+.conf--media {
+  background: var(--naranja-fondo);
+  color: var(--naranja);
+}
+
+.conf--baja {
+  background: var(--error-fondo);
+  color: var(--error);
+}
+
+/* Etiqueta secundaria (no es un estado de OS): radio 6, 12/500, sin borde.
+   Ej.: estado ante la DIAN (Validada, Rechazada, Anulada). */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: var(--r-control);
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--tinta-2);
+  background: var(--hundida);
+}
+
+.tag svg {
+  width: 13px;
+  height: 13px;
+}
+
+.tag--ok {
+  background: var(--ok-fondo);
+  color: var(--ok);
+}
+
+.tag--aviso {
+  background: var(--aviso-fondo);
+  color: var(--aviso);
+}
+
+.tag--error {
+  background: var(--error-fondo);
+  color: var(--error);
+}
+
+.tag--info {
+  background: var(--info-fondo);
+  color: var(--info);
+}
+
+/* Chip: etiqueta pequeña y neutra (funcionalidades, categorías, filtros
+   aplicados). No es un estado: para estados está `.pill`.
+   `.chip--filtro` es el chip pulsable de 28 px; `.chip--on`, el activo. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+  padding: 0 8px;
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--tinta-2);
+  background: var(--hundida);
+  border-radius: var(--r-control);
+  white-space: nowrap;
+}
+
+.chip--filtro {
+  min-height: 28px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
+  background: var(--superficie);
+  border: 1px solid var(--borde-control);
+  border-radius: var(--r-completo);
+  cursor: pointer;
+  transition: background-color var(--t-media) ease, border-color var(--t-media) ease, color var(--t-media) ease;
+}
+
+.chip--on {
+  color: var(--accion);
+  background: var(--accion-tenue);
+  border-color: var(--accion);
+  font-weight: 500;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .chip--filtro:not(.chip--on):hover {
+    background: var(--papel);
+    border-color: var(--borde-control-hover);
+  }
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ============================================================
+   Spinner (botones en estado de carga)
+   ============================================================ */
 .spinner {
   display: inline-block;
   width: 15px;
@@ -481,35 +781,35 @@ h4 {
   border-radius: 50%;
   animation: sst-spin 0.7s linear infinite;
 }
+
 @keyframes sst-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ============================================================
-   SISTEMA GLOBAL DE ALERTAS
-   Un solo lenguaje visual para toda la app: franja lateral del
-   color del estado (tonos apagados, acordes a la identidad),
-   título y detalle opcional.
-   - Inline (banners dentro de una vista):  .alert.alert--<tono>
-   - Flotantes (toasts):                    las pinta <app-alert-host>
-     reutilizando estas mismas clases + barra de progreso.
+   Alertas (DESIGN §7)
+   Fondo del estado, radio 8, SIN borde ni franja lateral. Ícono de 18 px,
+   título 13/600 en tinta y texto en tinta-2.
+   - Inline (banners dentro de una vista): .alert.alert--<tono>
+   - Flotantes (toasts): las pinta <app-alert-host> sobre noche.
    ============================================================ */
 .alert {
-  --al-accent: var(--secondary-color);
-  --al-bg: rgba(45, 123, 200, 0.07);
-  --al-border: rgba(45, 123, 200, 0.22);
+  --al-accent: var(--info);
+  --al-bg: var(--info-fondo);
+  --al-border: transparent;
 
   display: flex;
   align-items: flex-start;
-  gap: 0.7rem;
-  padding: 0.8rem 1rem;
+  gap: 10px;
+  padding: 11px 14px;
   background: var(--al-bg);
-  border: 1px solid var(--al-border);
-  border-left: 5px solid var(--al-accent);
-  border-radius: var(--radius-sm);
-  font-size: 0.86rem;
+  border: 0;
+  border-radius: var(--r-alerta);
+  font-size: var(--fs-celda);
   line-height: 1.45;
-  color: var(--text-main);
+  color: var(--tinta);
 }
 
 .alert__icon {
@@ -531,80 +831,68 @@ h4 {
 
 .alert__title {
   margin: 0;
-  font-weight: 700;
-  color: var(--text-main);
+  font-weight: 600;
+  color: var(--tinta);
 }
 
-/* Descripción detallada del suceso (segunda línea, tono suave). */
+/* Descripción detallada del suceso (segunda línea). */
 .alert__detail {
-  margin: 0.2rem 0 0;
-  font-size: 0.82rem;
-  color: var(--text-muted);
+  margin: 2px 0 0;
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
   overflow-wrap: anywhere;
 }
 
-/* --- Tonos (desaturados a propósito para no competir con la marca) --- */
 .alert--success {
-  --al-accent: #2f8f6b;
-  --al-bg: rgba(47, 143, 107, 0.08);
-  --al-border: rgba(47, 143, 107, 0.22);
+  --al-accent: var(--ok);
+  --al-bg: var(--ok-fondo);
 }
 
 .alert--error {
-  --al-accent: #c0485a;
-  --al-bg: rgba(192, 72, 90, 0.08);
-  --al-border: rgba(192, 72, 90, 0.22);
+  --al-accent: var(--error);
+  --al-bg: var(--error-fondo);
 }
 
 .alert--warning {
-  --al-accent: #bd8626;
-  --al-bg: rgba(189, 134, 38, 0.09);
-  --al-border: rgba(189, 134, 38, 0.24);
+  --al-accent: var(--aviso);
+  --al-bg: var(--aviso-fondo);
 }
 
 .alert--info {
-  --al-accent: var(--secondary-color);
-  --al-bg: rgba(45, 123, 200, 0.07);
-  --al-border: rgba(45, 123, 200, 0.22);
+  --al-accent: var(--info);
+  --al-bg: var(--info-fondo);
 }
 
 /* Variante compacta para huecos estrechos (una sola línea). */
 .alert--sm {
-  padding: 0.6rem 0.8rem;
-  font-size: 0.82rem;
+  padding: 8px 12px;
+  font-size: var(--fs-meta);
 }
 
 /* ============================================================
-   IDENTIDAD DE TABLAS Y MODALES
-   Los encabezados llevan el azul de marca en tono suave para que
-   la app se lea como un sistema propio sin perder sobriedad.
-   Se define UNA vez aquí; las vistas ya no repiten estos estilos.
+   Tablas (DESIGN §7)
+   Cabecera hundida de 38 px, 12/600 tinta-2, sin mayúsculas; filas de
+   10 × 12 con borde de 1 px, SIN cebra; hover visible solo con ratón y sin
+   cursor de mano (la fila no abre nada). Nunca `display` en td/th.
+   El ancho de columnas es automático: las columnas de texto se reparten el
+   resto, así la razón social nunca queda en 0 a 1280/1366 px.
    ============================================================ */
-
-/* --- Base de tablas ---
-   Estructura común a TODAS las tablas de la app (contenedor con scroll
-   horizontal, tipografía, celdas y estado vacío). Las vistas ya no deben
-   redeclararla: basta con `.table-wrap > .table`. */
-/* Contenedor de tabla = tarjeta blanca con sombra proyectada y esquinas de
-   12 px (30-sep-2026). `overflow` recorta la cabecera azul a ese radio y deja el
-   scroll horizontal de las tablas anchas. */
 .table-wrap {
   width: 100%;
   overflow: auto;
-  background: var(--card-bg);
-  border: 1px solid var(--table-card-border);
-  border-radius: var(--table-radius);
-  box-shadow: var(--shadow-md);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
+  box-shadow: none;
 }
 
 /* Tabla suelta dentro de una tarjeta (sin título encima, p. ej. /ordenes): la
-   tarjeta ES el contenedor. Se le pasa el aspecto y la envoltura interior se
-   aplana, para no dibujar una caja dentro de otra. */
+   tarjeta ES el contenedor y la envoltura interior se aplana. */
 .card:has(> .table-wrap:first-child) {
   overflow: hidden;
-  border-color: var(--table-card-border);
-  border-radius: var(--table-radius);
-  box-shadow: var(--shadow-md);
+  border-color: var(--borde);
+  border-radius: var(--r-tarjeta);
+  box-shadow: none;
 }
 
 .card > .table-wrap:first-child {
@@ -614,9 +902,8 @@ h4 {
 }
 
 /* Tabla con paginador (1-oct-2026): el paginador va POR FUERA de la tabla, sobre
-   el fondo de la página, no como una fila más. La tarjeta que envuelve tabla y
-   paginador deja de ser caja, y la tabla vuelve a ser la tarjeta. Las reglas
-   repiten `.card:has(> .table-wrap:first-child)` para ganarle en especificidad. */
+   el fondo de la página. La tarjeta que envuelve tabla y paginador deja de ser
+   caja y la tabla vuelve a ser la tarjeta. */
 .card:has(> .table-wrap:first-child):has(> .table-wrap + app-paginador) {
   overflow: visible;
   background: transparent;
@@ -626,101 +913,195 @@ h4 {
 }
 
 .card:has(> .table-wrap:first-child) > .table-wrap:first-child:has(+ app-paginador) {
-  border: 1px solid var(--table-card-border);
-  border-radius: var(--table-radius);
-  box-shadow: var(--shadow-md);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
+  box-shadow: none;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: var(--fs-celda);
 }
 
-/* Tabla estándar (30-sep-2026): cabecera neutra clara, filas con aire, divisor
-   sutil y hover suave. Las vistas NO la redefinen (antes cuatro lo hacían). */
-.table tbody td {
-  padding: 0.875rem 1rem;
-  color: var(--text-main);
-  border-bottom: 1px solid var(--table-row-border);
+.table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 38px;
+  padding: 0 12px;
+  background: var(--cabecera-tabla);
+  color: var(--tinta-2);
+  border-bottom: 1px solid var(--borde);
+  text-align: left;
+  font-weight: 600;
+  font-size: var(--fs-meta);
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
   vertical-align: middle;
 }
 
-/* Identificador / nombre principal de la fila: azul corporativo y semibold.
-   `.who__name` es el nombre con avatar (órdenes, profesionales, empresas…);
-   `.td-id` marca la celda principal en las tablas que no lo usan. */
-/* `td` en el selector: le gana a la regla `.who__name` que cada vista trae en
-   su propia hoja (las de componente cargan después y empatarían). */
-.table td .who__name,
-.table td.td-id,
-.table td .td-id {
-  color: var(--primary-color);
-  font-weight: 600;
+.table tbody td {
+  padding: 10px 12px;
+  color: var(--tinta);
+  border-bottom: 1px solid var(--borde);
+  vertical-align: middle;
+  line-height: 1.35;
+}
+
+.table thead th:first-child,
+.table tbody td:first-child,
+.table tfoot td:first-child {
+  padding-left: 16px;
+}
+
+.table tbody tr {
+  background: var(--superficie);
+  transition: background-color var(--t-rapida) ease;
+}
+
+/* Sin cebra (DESIGN §4). */
+.table tbody tr:nth-child(even) {
+  background: var(--superficie);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .table tbody tr:hover {
+    background: var(--fila-hover);
+  }
 }
 
 .table tbody tr:last-child td {
   border-bottom: none;
 }
 
-/* Fila única de "no hay resultados" (va con colspan). El selector incluye `td`
-   para ganarle al padding de `.table tbody td` sin recurrir a !important. */
-.table td.table__empty {
-  padding: 2rem 1rem;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 0.88rem;
+/* Densidad a 1280-1366 px y con escala 125 % (~1093 px útiles), DESIGN §11.5:
+   8 px a los lados recuperan ~8 px por columna, que era justo lo que les
+   faltaba a Contabilidad y Profesionales para no desplazarse de lado. */
+@media (max-width: 1365px) {
+  .table thead th,
+  .table tbody td,
+  .table tfoot td {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .table thead th:first-child,
+  .table tbody td:first-child,
+  .table tfoot td:first-child {
+    padding-left: 12px;
+  }
 }
 
-.table thead th {
-  background: var(--table-head-bg);
-  color: var(--table-head-text);
-  border-bottom: var(--table-head-rule);
-  text-align: left;
+/* Nombre principal de la fila (razón social, profesional…): 13/500 en tinta.
+   `td` en el selector: le gana a la regla `.who__name` de cada vista. */
+.table td .who__name {
+  color: var(--tinta);
+  font-weight: 500;
+}
+
+/* Número de documento / identificador principal: 600. */
+.table td.td-id,
+.table td .td-id {
+  color: var(--tinta);
   font-weight: 600;
-  font-size: var(--fs-xs);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  padding: 0.75rem 1rem;
-  white-space: nowrap;
 }
 
-/* Fila de totales (1-oct-2026). Vivía solo en Cuentas de cobro: en Cartera,
-   Pagos, Comprobantes y Facturación el <tfoot> salía con el relleno de 1 px del
-   navegador, pegado al borde y descuadrado frente a las columnas. Mismo relleno
-   que el cuerpo para que las cifras caigan bajo su encabezado. */
+/* Fila única de «no hay resultados» (va con colspan). */
+.table td.table__empty {
+  padding: var(--e-8) var(--e-4);
+  text-align: center;
+  color: var(--tinta-3);
+  font-size: var(--fs-celda);
+  white-space: normal;
+}
+
+/* La misma fila con un `.estado-vacio` dentro: el estado vacío pone su propio
+   aire, y la fila no cambia de fondo al pasar el ratón. */
+.table td.table__empty--estado {
+  padding: 0;
+}
+
+.table td.table__empty .estado-vacio__texto a {
+  color: var(--accion);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .table tbody tr:has(> td.table__empty):hover {
+    background: var(--superficie);
+  }
+}
+
+/* Fila de totales (1-oct-2026): mismo relleno que el cuerpo para que las cifras
+   caigan bajo su encabezado. */
 .table tfoot td {
-  padding: 0.875rem 1rem;
-  border-top: 2px solid var(--border-soft);
-  font-weight: 700;
-  color: var(--text-main);
+  padding: 10px 12px;
+  border-top: 1px solid var(--borde-control);
+  background: var(--cabecera-tabla);
+  font-weight: 600;
+  color: var(--tinta);
   vertical-align: middle;
+}
+
+/* El pie también estrecha sus lados a 1280-1366 px: con 12 px los totales
+   quedaban 4 px a la izquierda de las cifras de su columna. */
+@media (max-width: 1365px) {
+  .table tfoot td {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .table tfoot td:first-child {
+    padding-left: 12px;
+  }
 }
 
 /* Encabezado largo que puede ir en dos líneas (con <br>) sin ensanchar la columna. */
 .table thead th.th--wrap {
   white-space: normal;
   line-height: 1.3;
+  height: auto;
+  padding-top: 8px;
+  padding-bottom: 8px;
 }
 
-/* Datos que no se parten: teléfonos, códigos OS, montos. Las celdas `.mono`
-   de las tablas son justamente eso, así que no se parten nunca (1-oct-2026:
-   «+57 300 111 / 2233» y «OS-2026- / 0008» salían en dos líneas a 1366 px). */
+/* Datos que no se parten: teléfonos, NIT, códigos OS. Sin cifras tabulares:
+   un NIT no se suma con nada (DESIGN §3). */
 .nowrap,
 .table td.mono {
   white-space: nowrap;
+}
+
+.table td.mono:not(.num):not(.col-num) {
+  font-variant-numeric: normal;
 }
 
 .table td.mono.mono--wrap {
   white-space: normal;
 }
 
+/* Columnas numéricas (montos, horas, conteos): a la derecha y tabulares. */
+.table td.num,
+.table th.num,
+.table td.col-num,
+.table th.col-num,
+.table td.money,
+.table th.money {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.table td.money small {
+  margin-right: 3px;
+  font-weight: 400;
+  color: var(--tinta-3);
+}
+
 /* --- Tabla con título encima (card__head / panel__head) ---
-   30-sep-2026: SIN contenedor exterior. Antes la tarjeta envolvía el título y,
-   dentro, la tabla como otra tarjeta con margen (caja dentro de caja, y la tabla
-   se salía por la derecha). Ahora la tarjeta exterior desaparece: el título y
-   sus acciones quedan como encabezado de sección sobre el fondo, y la tabla es
-   la ÚNICA tarjeta. El `:has()` lo aplica solo donde el título va pegado a la
-   tabla; una tarjeta con título y otro contenido (gráficos, formularios) no cambia. */
+   30-sep-2026: SIN contenedor exterior. El título y sus acciones quedan como
+   encabezado de sección sobre el fondo, y la tabla es la ÚNICA tarjeta. */
 .card:has(> .card__head + .table-wrap),
 .panel:has(> .panel__head + .table-wrap) {
   background: transparent;
@@ -733,7 +1114,7 @@ h4 {
 .card:has(> .card__head + .table-wrap) > .card__head,
 .panel:has(> .panel__head + .table-wrap) > .panel__head {
   align-items: center;
-  padding: 0 0 0.75rem;
+  padding: 0 0 var(--e-3);
   background: transparent;
   border: 0;
   border-radius: 0;
@@ -745,139 +1126,367 @@ h4 {
   margin: 0;
 }
 
-/* Dos tablas seguidas en el mismo bloque (Informes → "Por ARL y por mes"): sin
-   la caja exterior quedarían pegadas una a la otra. */
+/* Tabla dentro de un modal: en el celular se desplaza de lado dentro de su
+   caja en vez de recortar la última columna contra el borde. */
+.table-wrap--modal {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-wrap--modal > .table {
+  min-width: 30rem;
+}
+
+/* La barra de desplazamiento se ve siempre (no la superpuesta que se oculta):
+   en el celular es la única pista de que quedan columnas a la derecha. */
+@media (max-width: 640px) {
+  .table-wrap--modal {
+    padding-bottom: 2px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--borde-campo) var(--hundida);
+  }
+
+  .table-wrap--modal::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .table-wrap--modal::-webkit-scrollbar-track {
+    background: var(--hundida);
+  }
+
+  .table-wrap--modal::-webkit-scrollbar-thumb {
+    background: var(--borde-campo);
+    border-radius: 3px;
+  }
+}
+
+/* Dos tablas seguidas en el mismo bloque (Informes → «Por ARL y por mes»). */
 .table-wrap + .table-wrap {
-  margin-top: 1rem;
+  margin-top: var(--e-4);
 }
 
-.table tbody tr {
-  background: var(--card-bg);
-  transition: background-color 0.15s ease;
-}
-
-/* Cebra: impares blancas, pares con tinte azul tenue. */
-.table tbody tr:nth-child(even) {
-  background: var(--table-row-alt);
-}
-
-.table tbody tr:hover {
-  background: var(--table-row-hover);
-}
-
-.table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-/* --- Columna de acciones por fila ---
-   Lenguaje único en toda la app: NUNCA botones de texto dentro de la tabla,
-   siempre iconos cuadrados con `title` + `aria-label` describiendo la acción. */
+/* ============================================================
+   Acciones de fila (DESIGN §7)
+   NUNCA botones de texto dentro de la tabla: íconos de 28 px con `title` +
+   `aria-label`. El ojo «Ver» lleva fondo acción tenue; los demás van sin
+   marco hasta el hover. Deshabilitar/eliminar se tiñen de rojo al pasar.
+   ============================================================ */
 .col-actions {
-  width: 110px;
+  width: 1%;
   text-align: right;
+  white-space: nowrap;
 }
 
 .row-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.4rem;
+  align-items: center;
+  gap: var(--e-1);
 }
 
 .icon-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  color: var(--text-muted);
+  flex: none;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--tinta-2);
   background: transparent;
-  border: 1px solid var(--border-soft);
-  border-radius: 9px;
+  border: 0;
+  border-radius: var(--r-control);
   cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+  transition:
+    background-color var(--t-media) ease,
+    color var(--t-media) ease,
+    transform var(--t-rapida) var(--ease-out);
 }
 
 .icon-action svg {
-  width: 17px;
-  height: 17px;
+  width: 16px;
+  height: 16px;
 }
 
-.icon-action:hover {
-  background: #f1f5f9;
-  color: var(--secondary-color);
-  border-color: var(--accent-color);
+.icon-action:active:not(:disabled) {
+  transform: scale(0.94);
 }
 
+/* «Ver»: el ojo es la acción protagonista de la fila. Se reconoce por su
+   trazo (mientras las plantillas no lleven `.icon-action--ver`). */
+.icon-action--ver,
+.icon-action:has(> svg path[d^='M2 12s']) {
+  background: var(--accion-tenue);
+  color: var(--accion);
+}
+
+/* Estado «encendido» (registro activo): sin marco ni color propio en reposo,
+   como los demás íconos (DESIGN §7: solo «Ver» lleva fondo). El estado ya lo
+   dice la pastilla Activo de la fila. */
+.icon-action--on {
+  color: var(--tinta-2);
+  background: transparent;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .icon-action:hover:not(:disabled) {
+    background: var(--hundida);
+    color: var(--tinta);
+  }
+
+  .icon-action--ver:hover:not(:disabled),
+  .icon-action:has(> svg path[d^='M2 12s']):hover:not(:disabled) {
+    background: var(--accion-tenue-hover);
+    color: var(--accion-hover);
+  }
+
+  /* Al pasar sobre «encendido» avisa de que el clic lo va a desactivar:
+     se tiñe de rojo, como Deshabilitar (DESIGN §7). */
+  .icon-action--on:hover:not(:disabled) {
+    color: var(--error);
+    background: var(--error-fondo);
+  }
+
+  .icon-action--danger:hover:not(:disabled) {
+    color: var(--error);
+    background: var(--error-fondo);
+  }
+}
+
+.icon-action:disabled,
 .icon-action[disabled] {
-  opacity: 0.55;
+  color: var(--tinta-inactiva);
+  background: transparent;
   cursor: not-allowed;
+}
+
+/* Hueco de una acción que no aplica a esa fila: conserva la columna para que
+   el ojo no cambie de sitio (DESIGN §7). */
+.icon-action--hueco {
+  visibility: hidden;
   pointer-events: none;
 }
 
-/* Estado "encendido" (registro activo): en verde, y al pasar el puntero avisa
-   en naranja de que el clic lo va a desactivar. */
-.icon-action--on {
-  color: var(--success);
-  border-color: rgba(16, 185, 129, 0.35);
-  background: rgba(16, 185, 129, 0.08);
+/* ============================================================
+   Pestañas (DESIGN §7)
+   `.tabs` cuando cambia la sección: raya CIAN de 3 px en la activa y
+   contador en tinta. `.seg` cuando se filtra lo mismo.
+     <div class="tabs" role="tablist">
+       <button type="button" class="tab tab--active" role="tab" aria-selected="true">
+         Sin programar <span class="tab__count">13</span>
+       </button>
+     </div>
+   ============================================================ */
+.tabs {
+  display: flex;
+  gap: 28px;
+  margin: 0 0 var(--e-4);
+  border-bottom: 1px solid var(--borde);
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-.icon-action--on:hover {
-  color: var(--warning);
-  border-color: rgba(245, 158, 11, 0.4);
-  background: rgba(245, 158, 11, 0.1);
+.tabs::-webkit-scrollbar {
+  display: none;
 }
 
-/* Acción destructiva (eliminar): neutra en reposo, roja al pasar el puntero. */
-.icon-action--danger:hover {
-  color: var(--danger);
-  border-color: rgba(239, 68, 68, 0.35);
-  background: rgba(239, 68, 68, 0.08);
+.tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  flex: none;
+  padding: 10px 0 12px;
+  font-family: inherit;
+  font-size: var(--fs-base);
+  font-weight: 500;
+  color: var(--tinta-3);
+  background: none;
+  border: 0;
+  border-radius: 0;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--t-media) ease;
 }
 
-/* --- Cabeceras de drawers --- */
+@media (hover: hover) and (pointer: fine) {
+  .tab:hover {
+    color: var(--tinta);
+  }
+}
+
+.tab--active,
+.tab[aria-selected='true'] {
+  color: var(--tinta);
+  font-weight: 600;
+}
+
+.tab--active::after,
+.tab[aria-selected='true']::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--cian-trazo);
+  border-radius: 3px 3px 0 0;
+}
+
+.tab__count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--hundida);
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  color: var(--tinta-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.tab--active .tab__count,
+.tab[aria-selected='true'] .tab__count {
+  background: var(--tinta);
+  color: #ffffff;
+}
+
+.tab:focus-visible {
+  outline-offset: -2px;
+  box-shadow: none;
+}
+
+/* Segmentado: filtra lo mismo o cambia de sistema. */
+.seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--hundida);
+  border-radius: 8px;
+}
+
+.seg > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
+  background: none;
+  border: 0;
+  border-radius: var(--r-control);
+  cursor: pointer;
+  transition: background-color var(--t-media) ease, color var(--t-media) ease;
+}
+
+.seg > button.seg--on,
+.seg > button[aria-pressed='true'] {
+  background: var(--superficie);
+  color: var(--tinta);
+  font-weight: 600;
+  box-shadow: var(--sombra-1);
+}
+
+/* ============================================================
+   Estado vacío (DESIGN §7) · lo único que se centra
+     <div class="estado-vacio [estado-vacio--ok]">
+       <span class="estado-vacio__icono" aria-hidden="true"><svg>…</svg></span>
+       <h3 class="estado-vacio__titulo">No hay órdenes sin programar</h3>
+       <p class="estado-vacio__texto">Por qué está vacío y qué hacer.</p>
+       <div class="estado-vacio__accion"><button class="btn btn--secondary">…</button></div>
+     </div>
+   ============================================================ */
+.estado-vacio {
+  padding: var(--e-8) var(--e-6) 28px;
+  text-align: center;
+}
+
+.estado-vacio__icono {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto var(--e-3);
+  border-radius: var(--r-tarjeta);
+  background: var(--hundida);
+  color: var(--tinta-3);
+}
+
+.estado-vacio__icono svg {
+  width: 22px;
+  height: 22px;
+}
+
+.estado-vacio__titulo {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.estado-vacio__texto {
+  max-width: 360px;
+  margin: var(--e-1) auto 0;
+  font-size: var(--fs-celda);
+  color: var(--tinta-3);
+}
+
+.estado-vacio__accion {
+  margin-top: 14px;
+}
+
+/* «Todo al día». */
+.estado-vacio--ok .estado-vacio__icono {
+  background: var(--ok-fondo);
+  color: var(--ok);
+}
+
+/* ============================================================
+   Drawers (ya no queda ninguno; se conserva por compatibilidad)
+   ============================================================ */
 .drawer__head {
-  background: #f4f8fd;
-  border-bottom: 1px solid rgba(45, 123, 200, 0.22);
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borde);
 }
 
 .modal__title,
 .drawer__title,
 .card__title,
 .panel__title {
-  color: var(--primary-color);
+  color: var(--tinta);
 }
 
-/* Filete de marca vertical al costado de los drawers laterales. Los modales
-   lo perdieron el 1-oct-2026: su cabecera ya lleva la línea navy. */
 .drawer::before {
   content: '';
   position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
-  width: 3px;
-  background: linear-gradient(180deg, var(--primary-color), var(--secondary-color));
+  width: 1px;
+  background: var(--borde);
   z-index: 2;
 }
 
 /* ============================================================
-   MODAL ESTÁNDAR (1-oct-2026)
-   Un solo armazón para toda la app; las pantallas solo eligen el tamaño
-   (`.modal--sm|lg|xl|full`; sin clase = mediano) y ponen el contenido.
+   MODAL ESTÁNDAR (DESIGN §7)
+   Siempre centrado; 480/640/880/1200/1600; radio 12. Cabecera blanca con
+   título 17/600; cuerpo con scroll propio; pie en #fbfcfd con lo que falta a
+   la izquierda y Cerrar (`--close`) + primario a la derecha.
      .modal-backdrop + .modal
        .modal__head   (.modal__title, .modal__sub, .modal__head-actions, ✕)
-       .modal__body   (las `.card` de dentro son SECCIONES planas con etiqueta)
-       .modal__footer (.modal__status a la izquierda; botones a la derecha:
-                       Cancelar/Cerrar `.btn--close`, acción `.btn--primary`)
-   No redeclarar nada de esto en las hojas de cada pantalla.
+       .modal__body
+       .modal__footer (.modal__status a la izquierda; botones a la derecha)
    ============================================================ */
 .modal-backdrop {
   position: fixed;
   inset: 0;
   z-index: 50;
-  background: var(--modal-backdrop);
-  animation: modal-fade-in 0.2s ease;
+  background: var(--velo);
+  animation: modal-fade-in var(--t-media) ease;
 }
 
 .modal {
@@ -890,11 +1499,12 @@ h4 {
   flex-direction: column;
   width: min(var(--modal-w-md), calc(100vw - 2rem));
   max-height: calc(100vh - 2rem);
-  background: var(--surface);
-  border-radius: var(--modal-radius);
-  box-shadow: var(--modal-shadow);
+  max-height: calc(100dvh - 2rem);
+  background: var(--superficie);
+  border-radius: var(--r-modal);
+  box-shadow: var(--sombra-modal);
   overflow: hidden;
-  animation: modal-in 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: modal-in var(--t-media) var(--ease-out);
 }
 
 .modal--sm { width: min(var(--modal-w-sm), calc(100vw - 2rem)); }
@@ -906,10 +1516,10 @@ h4 {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 1.25rem var(--modal-pad-x);
-  background: var(--modal-head-bg);
-  border-bottom: var(--modal-head-rule);
+  gap: 14px;
+  padding: 18px var(--e-4) var(--e-4) var(--e-6);
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borde);
 }
 
 .modal__head > div,
@@ -922,17 +1532,18 @@ h4 {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.6rem;
+  gap: 10px;
   margin: 0;
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--primary-color);
+  font-size: var(--fs-modal);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--tinta);
 }
 
 .modal__sub {
-  margin: 0.2rem 0 0;
-  font-size: 0.85rem;
-  color: var(--text-muted);
+  margin: 3px 0 0;
+  font-size: var(--fs-celda);
+  color: var(--tinta-3);
 }
 
 .modal__head > .modal__head-actions {
@@ -942,7 +1553,7 @@ h4 {
 .modal__head-actions {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 10px;
   flex-shrink: 0;
 }
 
@@ -951,26 +1562,30 @@ h4 {
   height: 15px;
 }
 
-/* La ✕ de la cabecera avisa en rojo tenue al pasar el puntero, igual que Cerrar. */
-.modal__head .icon-action[aria-label='Cerrar']:hover {
-  background: var(--btn-close-bg);
-  color: var(--btn-close-text);
-  border-color: var(--btn-close-border);
+/* La ✕ de la cabecera: 32 px y rojo tenue al pasar, igual que Cerrar. */
+.modal__head .icon-action[aria-label='Cerrar'] {
+  width: 32px;
+  height: 32px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .modal__head .icon-action[aria-label='Cerrar']:hover {
+    background: var(--cerrar-fondo);
+    color: var(--error);
+  }
 }
 
 .modal__body {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--e-4);
   flex: 1 1 auto;
   overflow-y: auto;
-  padding: var(--modal-pad-x);
+  padding: var(--e-5) var(--e-6);
 }
 
 /* 1-oct-2026 · Lo que va dentro del cuerpo no se encoge: el que hace scroll es
-   el cuerpo. Sin esto, una `.table-wrap` (overflow: auto) directamente aquí se
-   aplastaba a ~90 px con su propia barra cuando el contenido no cabía (la tabla
-   de ítems del detalle de factura). */
+   el cuerpo (si no, una `.table-wrap` directa se aplastaba a ~90 px). */
 .modal__body > * {
   flex-shrink: 0;
 }
@@ -980,35 +1595,34 @@ h4 {
   align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  padding: 1rem var(--modal-pad-x);
-  border-top: 1px solid var(--modal-divider);
+  gap: 10px;
+  padding: 14px var(--e-6);
+  background: var(--pie-modal);
+  border-top: 1px solid var(--borde);
 }
 
 /* Leyenda de estado del pie: va a la izquierda y empuja los botones. */
 .modal__status {
   margin-right: auto;
-  font-size: 0.82rem;
-  color: var(--text-muted);
+  font-size: var(--fs-celda);
+  color: var(--tinta-3);
 }
 
 .modal__status strong {
-  color: var(--primary-color);
-  letter-spacing: 0.03em;
+  color: var(--tinta);
+  font-weight: 600;
 }
 
 .modal__footer-actions {
   display: flex;
-  gap: 0.75rem;
+  gap: 10px;
 }
 
 /* --- Secciones dentro del modal ---
-   Una `.card` directa del cuerpo NO es una caja: es una sección plana. Su
-   título es una etiqueta navy con punta redondeada, seguida de una línea fina
-   que llega hasta la píldora de estado de la derecha (si la hay). Así el
-   contenido aprovecha todo el ancho y los subtítulos se ven de lejos. */
+   Una `.card` directa del cuerpo NO es una caja: es una sección plana con su
+   título 14/600 en tinta seguido de una línea fina. */
 .modal__body:has(> .card) {
-  gap: 1.75rem;
+  gap: 28px;
 }
 
 .modal__body > .card {
@@ -1021,9 +1635,10 @@ h4 {
 
 .modal__body > .card > .card__head {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  gap: var(--e-3);
+  margin-bottom: 14px;
   padding: 0;
   background: transparent;
   border: 0;
@@ -1035,7 +1650,7 @@ h4 {
   order: 1;
   flex: 1;
   height: 1px;
-  background: var(--modal-divider);
+  background: var(--borde);
 }
 
 .modal__body > .card > .card__head > :not(.card__title) {
@@ -1046,15 +1661,16 @@ h4 {
   padding: 0;
 }
 
-/* Sección plegable (acordeón, p. ej. "Historial de estados"): la misma
-   etiqueta y la misma línea; el chevrón queda al final de la línea. */
+/* Sección plegable (acordeón, p. ej. «Historial de estados»). */
 .modal__body > .card > .acordeon__cabecera {
-  gap: 0.75rem;
+  gap: var(--e-3);
   padding: 0;
 }
 
-.modal__body > .card > .acordeon__cabecera:hover {
-  background: none;
+@media (hover: hover) and (pointer: fine) {
+  .modal__body > .card > .acordeon__cabecera:hover {
+    background: none;
+  }
 }
 
 .modal__body > .card > .acordeon__cabecera::after {
@@ -1062,7 +1678,7 @@ h4 {
   order: 1;
   flex: 1;
   height: 1px;
-  background: var(--modal-divider);
+  background: var(--borde);
 }
 
 .modal__body > .card > .acordeon__cabecera > svg {
@@ -1070,62 +1686,48 @@ h4 {
 }
 
 .modal__body > .card > .acordeon__cabecera + .card__body {
-  margin-top: 1rem;
+  margin-top: 14px;
 }
 
 /* Subtítulo de sección suelto (dentro de un formulario o de un detalle):
-   <h4 class="section-head"><span class="section-tag">Datos fiscales</span></h4>
-   La misma etiqueta y la misma línea que las secciones del modal. */
+   <h4 class="section-head"><span class="section-tag">Datos fiscales</span></h4> */
 .section-head {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin: 0.5rem 0 0;
+  gap: var(--e-3);
+  margin: var(--e-2) 0 0;
 }
 
 .section-head::after {
   content: '';
   flex: 1;
   height: 1px;
-  background: var(--modal-divider);
+  background: var(--borde);
 }
 
-/* Etiqueta de sección. La punta es un cuadrado girado 45° con las esquinas
-   redondeadas: queda como una flecha suave, no como un pico. */
+/* Título de sección: 14/600 en tinta, sin fondo ni mayúsculas (DESIGN §7). */
 .section-tag,
 .modal__body > .card > .acordeon__cabecera .card__title,
 .modal__body > .card > .card__head > .card__title {
-  position: relative;
-  isolation: isolate;
   display: inline-flex;
   align-items: center;
+  gap: var(--e-2);
   flex-shrink: 0;
-  height: var(--section-tag-h);
-  margin-right: calc(var(--section-tag-h) / 2);
-  padding: 0 0.4rem 0 0.85rem;
-  background: var(--section-tag-bg);
-  color: var(--section-tag-text);
-  border-radius: 6px 0 0 6px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--tinta);
+  font-size: var(--fs-base);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
   white-space: nowrap;
 }
 
-.section-tag::after,
-.modal__body > .card > .acordeon__cabecera .card__title::after,
-.modal__body > .card > .card__head > .card__title::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  right: calc(var(--section-tag-h) * -0.35);
-  width: calc(var(--section-tag-h) * 0.72);
-  height: calc(var(--section-tag-h) * 0.72);
-  background: inherit;
-  border-radius: 2px 6px 2px 6px;
-  transform: translateY(-50%) rotate(45deg);
-  z-index: -1;
+.section-tag svg {
+  width: 16px;
+  height: 16px;
+  color: var(--accion);
 }
 
 @keyframes modal-fade-in {
@@ -1134,229 +1736,259 @@ h4 {
 }
 
 @keyframes modal-in {
-  from { opacity: 0; transform: translate(-50%, -48%) scale(0.98); }
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.98); }
   to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
-/* Cabecera de las cards: acompaña con un tinte apenas perceptible */
-.card__head {
-  background: rgba(45, 123, 200, 0.04);
-  border-bottom-color: rgba(45, 123, 200, 0.18);
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
+/* Celular: margen de 12 px y pie fijo sobre la zona segura. */
+@media (max-width: 640px) {
+  .modal,
+  .modal--sm,
+  .modal--lg,
+  .modal--xl,
+  .modal--full {
+    width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+
+  .modal__head {
+    padding: var(--e-4) var(--e-3) 14px var(--e-4);
+  }
+
+  .modal__body {
+    padding: var(--e-4);
+  }
+
+  .modal__footer {
+    padding: var(--e-3) var(--e-4) calc(var(--e-3) + env(safe-area-inset-bottom));
+  }
+
+  .form-control {
+    min-height: 44px;
+    font-size: 16px; /* 16 px para que el celular no haga zoom al enfocar */
+  }
 }
 
-/* --- Campo con acción interna (p. ej. el ojo de contraseña) --- */
-.field-wrap {
-  position: relative;
-  display: block;
-}
+/* 24-oct-2026 · Un modal que se abre ENCIMA de otro (alta rápida de tercero o
+   producto): queda por delante del modal que lo abrió. */
+.modal-backdrop--sobre { z-index: 70; }
+.modal--sobre { z-index: 71; }
 
-.form-control--with-action {
-  padding-right: 2.8rem;
-}
+/* ============================================================
+   Componentes de identidad
+   ============================================================ */
 
-.field-toggle {
-  position: absolute;
-  top: 50%;
-  right: 0.5rem;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  color: var(--text-muted);
-  background: transparent;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: color 0.18s ease, background 0.18s ease;
-}
-
-.field-toggle:hover {
-  color: var(--secondary-color);
-  background: rgba(45, 123, 200, 0.1);
-}
-
-.field-toggle svg {
-  width: 18px;
-  height: 18px;
-}
-
-/* =====================================================================
-   Componentes de identidad (30-sep-2026)
-   Nacieron con el Login y el Selector de sistema, pero son globales a
-   propósito: cualquier vista los reutiliza en vez de redefinirlos.
-   ===================================================================== */
-
-/* Pantalla de marca: el degradado corporativo a pantalla completa. */
+/* Pantalla de marca: noche plana a pantalla completa (sin degradado). */
 .brand-screen {
   min-height: 100vh;
   min-height: 100dvh;
-  background: var(--gradient-brand);
+  background: var(--noche);
   color: #ffffff;
 }
 
-/* Chip: etiqueta pequeña y neutra (funcionalidades, categorías, filtros
-   aplicados). No es un estado: para estados está `.pill`. */
-.chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.55rem;
-  font-size: var(--fs-xs);
-  font-weight: 500;
-  line-height: 1.4;
-  color: var(--chip-text);
-  background: var(--chip-bg);
-  border-radius: var(--radius-chip);
-  white-space: nowrap;
-}
-
-.chip-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-/* Tarjeta que se pulsa entera (selector de sistema y similares): se eleva al
-   pasar el cursor. Va con `.card` o con su propio fondo. */
+/* Tarjeta que se pulsa entera (selector de sistema): ya no se eleva; el
+   fondo cambia de tono y el foco va en cian sobre noche. */
 .card--interactive {
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: background-color var(--t-media) ease, border-color var(--t-media) ease;
 }
 
-.card--interactive:hover,
-.card--interactive:focus-visible {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-card-hover);
-  outline: none;
-}
-
-.card--interactive:focus-visible {
-  box-shadow: 0 0 0 3px var(--accent-color), var(--shadow-card-hover);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .card--interactive,
+@media (hover: hover) and (pointer: fine) {
   .card--interactive:hover {
-    transition: none;
-    transform: none;
+    border-color: var(--borde-control);
+    box-shadow: var(--sombra-2);
   }
 }
 
-/* Enlace de acción en color primario ("Entrar a Operación →"). */
+.card--interactive:focus-visible {
+  outline: 2px solid var(--cian);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* Enlace de acción en color primario («Entrar a Operación →»). */
 .link-cta {
-  font-weight: 600;
-  color: var(--primary-color);
-}
-
-/* ---- Tarjeta de métrica (KPI) · 30-sep-2026 ----
-   Borde superior de 3 px con el color del estado, cifra grande en
-   `--text-strong` e icono en un círculo tenue. Acentos: --primary (totales),
-   --info, --warning (pendientes), --success (ejecutadas), --neutral. */
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.25rem;
-  margin-bottom: 1.75rem;
-}
-
-.kpi-card {
-  --kpi-accent: var(--primary-color);
-  --kpi-icon-bg: var(--state-info-bg);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.35rem 1.5rem;
-  background: var(--card-bg);
-  border: 1px solid var(--border-soft);
-  border-top: 3px solid var(--kpi-accent);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
-}
-
-.kpi-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 28px -4px rgba(15, 23, 42, 0.1);
-}
-
-.kpi-card--primary { --kpi-accent: var(--primary-color);        --kpi-icon-bg: var(--state-info-bg); }
-.kpi-card--info    { --kpi-accent: var(--state-info-strong);    --kpi-icon-bg: var(--state-info-bg); }
-.kpi-card--warning { --kpi-accent: var(--state-warning-strong); --kpi-icon-bg: var(--state-warning-bg); }
-.kpi-card--success { --kpi-accent: var(--state-success-strong); --kpi-icon-bg: var(--state-success-bg); }
-.kpi-card--neutral { --kpi-accent: var(--state-neutral-strong); --kpi-icon-bg: var(--state-neutral-bg); }
-
-.kpi-card__info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  min-width: 0;
-}
-
-.kpi-card__label {
-  font-size: 0.82rem;
   font-weight: 500;
-  color: var(--text-muted);
+  color: var(--accion);
 }
-
-.kpi-card__value {
-  font-size: 1.875rem;
-  font-weight: 700;
-  line-height: 1.1;
-  color: var(--text-strong);
-  font-variant-numeric: tabular-nums;
-}
-
-.kpi-card__icon {
-  flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--kpi-icon-bg);
-  color: var(--kpi-accent);
-}
-
-.kpi-card__icon svg {
-  width: 22px;
-  height: 22px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .kpi-card,
-  .kpi-card:hover {
-    transition: none;
-    transform: none;
-  }
-}
-
-/* 24-oct-2026 · Un modal que se abre ENCIMA de otro (alta rápida de tercero o producto
-   desde la factura manual, compras, egresos…): queda por delante del modal que lo abrió. */
-.modal-backdrop--sobre { z-index: 70; }
-.modal--sobre { z-index: 71; }
 
 /* 24-oct-2026 · Enlace en línea (crear sin salir del modal). */
 .link-btn {
   padding: 0;
   font: inherit;
-  font-weight: 600;
-  color: var(--secondary-color, #2d7bc8);
+  font-weight: 500;
+  color: var(--accion);
   background: none;
   border: 0;
   cursor: pointer;
   text-decoration: underline;
+  text-underline-offset: 3px;
 }
-.link-btn:hover { color: var(--primary-color); }
 
-/* 24-oct-2026 · Dos o más campos en una fila dentro de las altas rápidas (cliente, proveedor, producto). */
+@media (hover: hover) and (pointer: fine) {
+  .link-btn:hover {
+    color: var(--accion-hover);
+  }
+}
+
+/* 24-oct-2026 · Dos o más campos en una fila dentro de las altas rápidas. */
 .alta-fila {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-  gap: 1rem;
-  margin-bottom: 0.25rem;
+  gap: var(--e-4);
+  margin-bottom: var(--e-1);
+}
+
+/* ============================================================
+   KPI (DESIGN §7) · un solo diseño para `.kpi-card` (Inicio, Estadísticas,
+   Activos) y `.kpi` (Informes).
+   Las cifras van en UNA tarjeta dividida: cada celda es un contenedor y la
+   cifra se achica sola si no cabe (`--n` = caracteres del valor formateado,
+   lo pone el componente <orb-kpi-valor> de la fase B; 12 por defecto).
+     <section class="kpi-grid">
+       <article class="kpi-card">
+         <div class="kpi-card__info">
+           <span class="kpi-card__label">Órdenes sin programar</span>
+           <strong class="kpi-card__value">13</strong>
+           <span class="kpi-card__hint">1 vencida</span>
+         </div>
+         <span class="kpi-card__icon" aria-hidden="true"><svg>…</svg></span>  ← opcional
+       </article>
+     </section>
+   Una `.kpi-card` suelta (fuera de `.kpi-grid`) es su propia tarjeta.
+   ============================================================ */
+.kpi-grid,
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0;
+  margin-bottom: var(--e-6);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
+  overflow: hidden;
+}
+
+.kpi-card,
+.kpi {
+  --kpi-accent: var(--accion);
+  --kpi-icon-bg: transparent;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--e-3);
+  min-width: 0;
+  padding: var(--e-5) var(--e-6) 18px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
+  box-shadow: none;
+  container-type: inline-size;
+}
+
+.kpi {
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0;
+}
+
+/* Dentro de la rejilla: sin caja propia; los divisores son una sombra de 1 px
+   a la izquierda y arriba que la rejilla recorta en sus bordes exteriores, así
+   funciona igual en una fila que cuando las celdas bajan a la siguiente. */
+.kpi-grid > .kpi-card,
+.kpis > .kpi {
+  border: 0;
+  border-radius: 0;
+  box-shadow: -1px 0 0 var(--borde), 0 -1px 0 var(--borde);
+}
+
+.kpi-card--primary,
+.kpi-card--info,
+.kpi-card--warning,
+.kpi-card--success,
+.kpi-card--neutral {
+  --kpi-accent: var(--accion);
+}
+
+.kpi-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.kpi-card__label,
+.kpi__label {
+  font-size: var(--fs-celda);
+  font-weight: 400;
+  color: var(--tinta-2);
+}
+
+.kpi-card__value,
+.kpi__value {
+  font-size: min(var(--fs-kpi), calc(100cqi / (var(--n, 12) * 0.52)));
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--tinta);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.kpi__value {
+  margin-top: 6px;
+}
+
+.kpi-card__value small,
+.kpi__value small {
+  margin: 0 0 0 3px;
+  font-size: 0.55em;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--tinta-3);
+}
+
+.kpi-card__hint,
+.kpi__hint {
+  margin-top: var(--e-1);
+  font-size: var(--fs-celda);
+  color: var(--tinta-3);
+}
+
+/* Ícono de línea, sin recuadro teñido (DESIGN §10). */
+.kpi-card__icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  background: none;
+  color: var(--tinta-3);
+}
+
+.kpi-card__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ============================================================
+   Movimiento reducido (DESIGN §5): transiciones a 1 ms y sin
+   transformaciones. El spinner y la barra del toast siguen, porque
+   comunican que algo pasa.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *:not(.spinner):not(.al-toast__progress-bar),
+  *::before,
+  *::after {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .btn:active,
+  .icon-action:active {
+    transform: none;
+  }
 }

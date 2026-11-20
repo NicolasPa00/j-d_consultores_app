@@ -1,0 +1,324 @@
+/* ============================================================
+   ORBITA · Tokens del sistema de diseño (fase A, 20-nov-2026)
+   Fuente de verdad: docs/2-arquitectura/DESIGN.md (§2–§6 y §9).
+
+   Reglas:
+   - Cada color lleva anotado su contraste medido (WCAG 2.x).
+   - Ninguna hoja de página escribe un hex: si falta un color, se crea
+     aquí un token semántico con su contraste (DESIGN §13).
+   - Las variables VIEJAS siguen definidas al final como ALIAS de las
+     nuevas, para que las ~31 vistas no se rompan mientras se limpian
+     (fase A2). No se borra ninguna sin buscar antes sus usos.
+   ============================================================ */
+
+/* ---- Inter autoalojada (DESIGN §3) ----
+   Subconjunto latino de @fontsource/inter 5.1.0 en /public/fonts.
+   `swap`: decisión del dueño (prevalece sobre el `optional` del DESIGN).
+   El archivo 600 cubre también el 700: el sistema no usa 700, pero las hojas
+   de página que aún lo piden (hasta la fase A2) no deben salir con negrita
+   sintética, que en Inter se ve emborronada. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/inter-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/inter-latin-500-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600 700;
+  font-display: swap;
+  src: url('/fonts/inter-latin-600-normal.woff2') format('woff2');
+}
+
+/* Respaldo con las métricas de Inter sobre Arial (las que calcula next/font):
+   mientras Inter llega, el texto ocupa casi lo mismo y no salta la maqueta. */
+@font-face {
+  font-family: 'Inter Respaldo';
+  src: local('Arial');
+  size-adjust: 107.12%;
+  ascent-override: 90.44%;
+  descent-override: 22.52%;
+  line-gap-override: 0%;
+}
+
+:root {
+  /* =========================================================
+     1. Paleta (DESIGN §2)
+     ========================================================= */
+
+  /* Papel y superficies */
+  --papel: #f6f8fa;            /* fondo de la app */
+  --superficie: #ffffff;       /* tarjetas, tablas, modales */
+  --hundida: #eef2f6;          /* carriles, deshabilitado, contador · tinta-3 encima 4,60:1 · 1,12:1 contra blanco */
+  --cielo: #e9f1f8;            /* franja del saludo · tinta 12,82 · acción 8,14 · tinta-2 6,51 */
+  --borde: #e1e7ee;            /* divisores y tarjetas (decorativo, 1,27:1) */
+  --borde-control: #c3ceda;    /* botón secundario y chips (decorativo: el control lleva texto y sombra) */
+  --borde-control-hover: #aebdcc;
+  --borde-campo: #8496aa;      /* input, select, página activa, eje de gráficas · 3,03:1 (1.4.11) */
+
+  /* Tinta */
+  --tinta: #0f2a44;            /* texto principal · 14,63 blanco · 13,75 papel */
+  --tinta-2: #44576c;          /* secundario y etiquetas · 7,43 blanco · 6,61 hundida */
+  --tinta-3: #5c6f84;          /* ayudas, metadatos, unidades · 5,17 blanco · 4,86 papel · 4,60 hundida */
+  --tinta-inactiva: #8a96a6;   /* flechas deshabilitadas del paginador · 3,00:1: se leen inactivas, no rotas */
+
+  /* Marca ORBITA: un solo azul de acción (= marca = enlace) */
+  --accion: #13497a;           /* primario, enlace, «Ver», foco · blanco encima 9,28 · como texto 9,28 */
+  --accion-hover: #0e3a62;     /* hover y pulsado · blanco 11,66 */
+  --accion-tenue: #e6eef6;     /* fondo de «Ver», chip activo, avatar · acción encima 7,93 */
+  --accion-tenue-hover: #d6e3ef;
+  --texto-sobre-accion: #c9dcee; /* línea secundaria sobre acción · 6,57:1 */
+
+  /* Cian del logo: SOLO trazos y rellenos, NUNCA texto. Significa «aquí está usted ahora». */
+  --cian: #1f9fcb;             /* sobre noche: marca del menú 4,19 en noche-alzada · foco 5,47 */
+  --cian-trazo: #1890bb;       /* sobre claro: raya de pestaña, marca de hoy · 3,65 blanco · 3,43 papel */
+  --seleccion: rgb(31 159 203 / 22%);
+
+  /* Noche: barra lateral, escena del login, toast */
+  --noche: #0b1f33;            /* blanco encima 16,69 */
+  --noche-alzada: #163450;     /* ítem activo · blanco 12,80 · texto-noche 8,31 */
+  --texto-noche: #c3d2e2;      /* 10,84 sobre noche */
+  --texto-noche-2: #9fb3c6;    /* grupos del menú · 7,74 */
+  --icono-noche: #8fa6bd;      /* íconos del menú · 6,64 */
+  --cian-niebla: #8fd3ea;      /* enlaces y acento sobre noche · 10,07 */
+  --contador: #f2b13c;         /* ÚNICO contador de pendientes (menú y barra inferior) · noche encima 8,85 */
+  --contador-tinta: #0b1f33;
+  /* Íconos de estado sobre noche (toast). Trazos ≥3:1 sobre --noche. */
+  --ok-noche: #6fcf97;         /* 8,78:1 */
+  --error-noche: #ff9b8f;      /* 8,22:1 */
+  --aviso-noche: var(--contador);
+  --info-noche: var(--cian-niebla);
+
+  /* Estados (texto sobre su propio fondo) */
+  --aviso: #7a5200;            /* SIN PROGRAMAR (texto) · 6,24 sobre su fondo · 6,92 blanco */
+  --aviso-fondo: #fdf3d2;
+  --aviso-borde: #ecd48f;
+  --ambar: #c27c0e;            /* SIN PROGRAMAR (relleno: punto, barra) y reloj de «vence pronto» · 3,40 blanco · 3,19 papel */
+  --naranja: #b54708;          /* confianza 70–79 · 4,66 sobre su fondo · 5,43 blanco */
+  --naranja-fondo: #ffeadb;
+  --info: #1f5fc4;             /* PROGRAMADA y alertas informativas · 5,20 · 6,01 blanco */
+  --info-fondo: #e7effd;
+  --info-borde: #c3d5f6;
+  --ok: #13683f;               /* EJECUTADA, FINALIZADA, aprobado, confianza ≥80 · 5,95 · 6,82 blanco */
+  --ok-fondo: #e4f3eb;
+  --ok-fondo-hover: #d7ecdf;
+  --ok-borde: #8cc3a4;
+  --error: #b42318;            /* errores, vencida, confianza <70 · 5,75 · 6,57 blanco */
+  --error-fondo: #fdecea;
+  --error-borde: #f4c7c3;
+  --cerrar-fondo: #fdf1f0;     /* .btn--close · error encima 5,95 */
+  --peligro: #b91c1c;          /* destructivo sólido · blanco 6,47 */
+  --peligro-hover: #991b1b;
+
+  /* Íconos de aviso como máscara (DESIGN §10: el texto ámbar solo vive en la
+     pastilla SIN PROGRAMAR). Un aviso fuera de ella va en tinta-2 600 con uno
+     de estos íconos pintado en --ambar:
+       &::before { content: ''; … background: var(--ambar); mask: var(--icono-alerta) center / contain no-repeat; } */
+  --icono-alerta: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z'/%3E%3Cpath d='M12 9v4M12 17h.01'/%3E%3C/svg%3E");
+  --icono-reloj: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E");
+
+  /* Series de gráfica */
+  --serie: var(--accion);      /* periodo en curso: relleno acción + tapa cian de 3 px */
+  --contexto: #cfdae5;         /* periodos anteriores: relleno liso, sin contorno (cada barra lleva su valor) */
+  --carril: #d5dee8;           /* pista de barras finas (contador de documentos) */
+
+  /* Tabla */
+  --cabecera-tabla: #f3f6f9;   /* cabecera hundida clara · tinta-2 encima 6,85 · tinta-3 4,77 */
+  --fila-hover: #ebf0f5;       /* 1,15:1 contra blanco (decisión del dueño: ≥1,12) · tinta-3 encima 4,51 · tinta 12,76 */
+  --pie-modal: #fbfcfd;
+
+  /* =========================================================
+     2. Tipografía (DESIGN §3)
+     ========================================================= */
+  --fuente: 'Inter', 'Inter Respaldo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --fs-pastilla: 11.5px;
+  --fs-meta: 12px;             /* cabecera de tabla, metadatos, título de grupo */
+  --fs-celda: 13px;            /* celdas, pistas, etiquetas de campo */
+  --fs-base: 14px;             /* base, botones, pestañas */
+  --fs-tarjeta: 16px;          /* título de tarjeta */
+  --fs-modal: 17px;            /* título de modal */
+  --fs-pagina: 24px;           /* título de página */
+  --fs-kpi: 32px;
+
+  /* =========================================================
+     3. Espaciado, radios, sombras (DESIGN §4)
+     ========================================================= */
+  --e-1: 4px;
+  --e-2: 8px;
+  --e-3: 12px;
+  --e-4: 16px;
+  --e-5: 20px;
+  --e-6: 24px;
+  --e-8: 32px;
+  --e-10: 40px;
+  --e-12: 48px;
+  --e-14: 56px;
+
+  --r-control: 6px;            /* controles */
+  --r-item: 7px;               /* ítems del menú y accesos de lista */
+  --r-alerta: 8px;
+  --r-tarjeta: 10px;           /* tarjetas y tablas */
+  --r-modal: 12px;             /* modales y franja del saludo */
+  --r-hoja: 24px;              /* hoja del login en el celular */
+  --r-completo: 999px;         /* pastillas, chips */
+
+  /* Sombras teñidas de tinta (rgb 15 42 68), nunca negras. Nada lleva sombra en reposo
+     salvo el botón secundario. */
+  --sombra-1: 0 1px 2px rgb(15 42 68 / 6%);
+  --sombra-2: 0 2px 8px rgb(15 42 68 / 8%);
+  --sombra-3: 0 12px 32px -12px rgb(15 42 68 / 24%);
+  --sombra-modal: 0 24px 56px -20px rgb(15 42 68 / 38%), 0 2px 6px rgb(15 42 68 / 8%);
+  --velo: rgb(11 31 51 / 50%);
+
+  /* =========================================================
+     4. Movimiento (DESIGN §5)
+     ========================================================= */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --t-rapida: 120ms;           /* pulsado y fondos de lista */
+  --t-media: 160ms;            /* color y borde; entrada de modal */
+
+  /* =========================================================
+     5. Foco (DESIGN §6)
+     ========================================================= */
+  --halo: 0 0 0 4px rgb(19 73 122 / 16%);
+  --anillo: 2px solid var(--accion);
+
+  /* =========================================================
+     6. ALIAS de los tokens viejos (DESIGN §9). No escribir código nuevo
+        contra ellos: existen para que nada se rompa hasta la fase A2.
+     ========================================================= */
+  --primary-color: var(--accion);
+  --primary-hover: var(--accion-hover);
+  --secondary-color: var(--accion);       /* #2d7bc8 se retira */
+  --accent-color: var(--cian-trazo);
+
+  --bg-app: var(--papel);
+  --surface: var(--superficie);
+  --card-bg: var(--superficie);
+
+  --text-main: var(--tinta);
+  --text-strong: var(--tinta);
+  --text-muted: var(--tinta-3);           /* pasa de 4,43 a 4,86 sobre papel */
+
+  --success: var(--ok);
+  --warning: var(--aviso);
+  --danger: var(--error);
+
+  --border-soft: var(--borde);
+  /* Tres que algunas hojas piden con respaldo propio (ayuda, contabilidad,
+     importar): se definen para que el respaldo hex deje de mandar. */
+  --border-color: var(--borde);
+  --danger-color: var(--error);
+  --warning-color: var(--aviso);
+  --table-row-border: var(--borde);
+  --modal-divider: var(--borde);
+  --table-card-border: var(--borde);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-card: var(--r-tarjeta);
+  --table-radius: var(--r-tarjeta);
+  --radius-control: var(--r-control);
+  --radius-chip: var(--r-control);
+
+  --shadow-card: none;
+  --shadow-card-hover: var(--sombra-2);
+  --shadow-md: none;
+  --shadow-elevated: var(--sombra-3);
+
+  --font-base: var(--fuente);
+  --fs-xs: 0.75rem;
+  --gradient-brand: var(--noche);         /* plano: sin degradados */
+
+  --input-bg: var(--superficie);
+  --input-border: var(--borde-campo);
+  --focus-ring: var(--halo);
+
+  --chip-bg: var(--hundida);
+  --chip-text: var(--tinta-2);
+
+  --sidebar-bg: var(--noche);
+  --sidebar-text: var(--texto-noche);
+  --sidebar-active-bg: var(--noche-alzada);
+
+  --state-success-bg: var(--ok-fondo);
+  --state-success-text: var(--ok);
+  --state-success-border: var(--ok-borde);
+  --state-success-strong: var(--ok);
+  --state-info-bg: var(--info-fondo);
+  --state-info-text: var(--info);
+  --state-info-border: var(--info-borde);
+  --state-info-strong: var(--info);
+  --state-warning-bg: var(--aviso-fondo);
+  --state-warning-text: var(--aviso);
+  --state-warning-border: var(--aviso-borde);
+  --state-warning-strong: var(--ambar);
+  --state-danger-bg: var(--error-fondo);
+  --state-danger-text: var(--error);
+  --state-danger-border: var(--error-borde);
+  --state-danger-strong: var(--error);
+  --state-neutral-bg: var(--hundida);
+  --state-neutral-text: var(--tinta-2);
+  --state-neutral-border: var(--borde);
+  --state-neutral-strong: var(--tinta-3);
+
+  --badge-success-bg: var(--state-success-bg);
+  --badge-success-text: var(--state-success-text);
+  --badge-success-border: var(--state-success-border);
+  --badge-warning-bg: var(--state-warning-bg);
+  --badge-warning-text: var(--state-warning-text);
+  --badge-warning-border: var(--state-warning-border);
+  --badge-info-bg: var(--state-info-bg);
+  --badge-info-text: var(--state-info-text);
+  --badge-info-border: var(--state-info-border);
+  --badge-danger-bg: var(--state-danger-bg);
+  --badge-danger-text: var(--state-danger-text);
+  --badge-danger-border: var(--state-danger-border);
+  --badge-neutral-bg: var(--state-neutral-bg);
+  --badge-neutral-text: var(--state-neutral-text);
+  --badge-neutral-border: var(--state-neutral-border);
+
+  --table-head-bg: var(--cabecera-tabla);
+  --table-head-text: var(--tinta-2);
+  --table-head-rule: 1px solid var(--borde);
+  --table-row-alt: transparent;           /* sin cebra */
+  --table-row-hover: var(--fila-hover);
+
+  --modal-backdrop: var(--velo);
+  --modal-shadow: var(--sombra-modal);
+  --modal-radius: var(--r-modal);
+  --modal-head-bg: var(--superficie);
+  --modal-head-rule: 1px solid var(--borde);
+  --modal-pad-x: 1.5rem;
+  --modal-w-sm: 480px;    /* confirmaciones y formularios de 1-3 campos */
+  --modal-w-md: 640px;    /* formulario de una columna (por defecto) */
+  --modal-w-lg: 880px;    /* formulario de dos columnas o ficha de detalle */
+  --modal-w-xl: 1200px;   /* detalle con tablas de líneas */
+  --modal-w-full: 1600px; /* visores lado a lado y agenda */
+
+  --section-tag-bg: transparent;
+  --section-tag-text: var(--tinta);
+  --section-tag-h: 28px;
+
+  --btn-close-bg: var(--cerrar-fondo);
+  --btn-close-text: var(--error);
+  --btn-close-border: transparent;
+  --btn-close-hover-bg: var(--error-fondo);
+  --btn-danger-bg: var(--peligro);
+  --btn-danger-hover: var(--peligro-hover);
+
+  --kpi-accent: var(--accion);
+  --kpi-icon-bg: transparent;
+}

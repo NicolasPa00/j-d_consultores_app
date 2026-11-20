@@ -4,7 +4,7 @@
 
 .portal {
   min-height: 100vh;
-  background: #f4f7fa;
+  background: var(--papel);
   padding: 1.5rem 1rem 2.5rem;
   display: flex;
   justify-content: center;
@@ -29,30 +29,30 @@
 
 /* Encabezado de orden */
 .portal__head {
-  background: linear-gradient(150deg, #000b50 0%, #2d7bc8 100%);
+  background: var(--noche);
   border-radius: 16px;
   padding: 1.5rem;
-  color: #ffffff;
+  color: var(--superficie);
   text-align: center;
-  box-shadow: 0 14px 34px -14px rgba(0, 11, 80, 0.45);
+  box-shadow: none;
 }
 
 .portal__head .pill {
-  background: rgba(255, 255, 255, 0.18);
-  color: #ffffff;
+  background: var(--noche-alzada);
+  color: var(--superficie);
 }
 
 .portal__title {
   margin: 0.75rem 0 0.2rem;
   font-size: 1.5rem;
-  font-weight: 700;
-  color: #ffffff;
+  font-weight: 600;
+  color: var(--superficie);
 }
 
 .portal__company {
   margin: 0;
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--texto-noche);
 }
 
 /* Mientras se resuelve el token: sobre el fondo azul del portal, en claro. */
@@ -60,7 +60,7 @@
   margin: 1.5rem 0;
   text-align: center;
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--texto-noche);
 }
 
 /* Tarjeta de carga */
@@ -69,13 +69,13 @@
   background: var(--surface);
   border: 1px solid var(--border-soft);
   border-radius: 16px;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+  box-shadow: none;
   padding: 1.5rem;
 }
 
 .upload-card__title {
   font-size: 1.1rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-main);
 }
 
@@ -102,7 +102,7 @@
 
 .slot:hover {
   border-color: var(--secondary-color);
-  background: rgba(45, 123, 200, 0.04);
+  background: color-mix(in srgb, var(--accion) 4%, var(--superficie));
 }
 
 .slot__info {
@@ -120,7 +120,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  background: rgba(45, 123, 200, 0.1);
+  background: var(--accion-tenue);
   color: var(--secondary-color);
 }
 
@@ -158,7 +158,7 @@
 .slot__action {
   flex-shrink: 0;
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--secondary-color);
 }
 
@@ -186,9 +186,9 @@
 .success {
   margin-top: 1.25rem;
   background: var(--surface);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  border: 1px solid var(--ok-borde);
   border-radius: 16px;
-  box-shadow: 0 4px 20px -2px rgba(16, 185, 129, 0.12);
+  box-shadow: none;
   padding: 2.25rem 1.5rem;
   text-align: center;
 }
@@ -201,7 +201,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(16, 185, 129, 0.12);
+  background: var(--ok-fondo);
   color: var(--success);
 }
 
@@ -212,7 +212,7 @@
 
 .success__title {
   font-size: 1.2rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-main);
 }
 
@@ -245,17 +245,17 @@
 /* Cerrada porque ese documento ya se aceptó: se ve, no se toca. */
 .slot--locked {
   cursor: default;
-  background: #f8fafc;
+  background: var(--papel);
   border-style: dashed;
 }
 
 .slot--locked:hover {
   border-color: var(--border-soft);
-  background: #f8fafc;
+  background: var(--papel);
 }
 
 .slot--locked .slot__icon {
-  background: rgba(15, 23, 42, 0.06);
+  background: var(--hundida);
   color: var(--text-muted);
 }
 
@@ -274,11 +274,10 @@
   margin-left: 0.4rem;
   padding: 0.05rem 0.4rem;
   font-size: 0.66rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  font-weight: 600;
+  letter-spacing: 0;
   color: var(--warning);
-  background: rgba(217, 119, 6, 0.12);
+  background: var(--aviso-fondo);
   border-radius: 999px;
   vertical-align: middle;
 }
@@ -286,7 +285,7 @@
 /* Opcional no es un aviso: va en gris para no competir con lo que sí falta. */
 .slot__tag--opcional {
   color: var(--text-muted);
-  background: rgba(100, 116, 139, 0.12);
+  background: var(--hundida);
 }
 
 /* Lo ya enviado, colgando de su casilla. */
@@ -335,7 +334,8 @@
 .portal__falta {
   margin: 0 0 0.6rem;
   font-size: 0.82rem;
-  color: var(--warning);
+  font-weight: 600;
+  color: var(--tinta-2);
 }
 
 /* SUP-05 · Lo entregado, cuando el enlace ya no admite subidas. */
@@ -363,4 +363,16 @@
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-main);
+}
+
+.portal__falta::before {
+  content: '';
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 0.3em;
+  vertical-align: -0.12em;
+  background: var(--ambar);
+  -webkit-mask: var(--icono-alerta) center / contain no-repeat;
+  mask: var(--icono-alerta) center / contain no-repeat;
 }

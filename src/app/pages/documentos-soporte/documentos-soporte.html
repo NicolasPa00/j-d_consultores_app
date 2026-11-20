@@ -83,10 +83,13 @@
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="8" class="table__empty">
+            <tr><td colspan="8" class="table__empty table__empty--estado">
               @if (cargando()) { Cargando… } @else {
-                No hay cuentas de cobro por respaldar. Aparecen aquí las que el asesor ya <b>aceptó</b> en
-                <a routerLink="/precuentas">Cuentas de cobro</a> y todavía no tienen documento soporte.
+                <div class="estado-vacio estado-vacio--ok">
+                  <span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg></span>
+                  <p class="estado-vacio__titulo">No hay cuentas de cobro por respaldar</p>
+                  <p class="estado-vacio__texto">Aparecen aquí las que el asesor ya <b>aceptó</b> en <a routerLink="/precuentas">Cuentas de cobro</a> y todavía no tienen documento soporte.</p>
+                </div>
               }
             </td></tr>
           }
@@ -102,7 +105,7 @@
   <div class="card">
     <div class="card__head">
       <h3 class="card__title">Facturas electrónicas de los asesores</h3>
-      <a routerLink="/compras" [queryParams]="{ nueva: 'SERVICIO_PROFESIONAL' }" class="btn btn--primary btn--sm">Registrar factura de un asesor</a>
+      <a routerLink="/compras" [queryParams]="{ nueva: 'SERVICIO_PROFESIONAL' }" class="btn btn--secondary btn--sm">Registrar factura de un asesor</a>
     </div>
     <div class="table-wrap">
       <table class="table">
@@ -153,7 +156,7 @@
               <td class="num">{{ d.total_lineas }}</td>
               <td class="num"><b>{{ pesos(d.total_a_pagar) }}</b></td>
               <td><span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
-              <td class="col-actions"><button type="button" class="btn btn--ghost btn--sm" (click)="abrir(d.id)">Ver</button></td>
+              <td class="col-actions"><button type="button" class="icon-action icon-action--ver" (click)="abrir(d.id)" aria-label="Ver el documento" title="Ver el documento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg></button></td>
             </tr>
           } @empty {
             <tr><td colspan="8" class="table__empty">
@@ -191,12 +194,16 @@
               </td>
               <td class="col-actions">
                 <span class="fac-acciones">
-                  <button type="button" class="btn btn--ghost btn--sm" (click)="abrir(d.id)">Ver</button>
+                  <button type="button" class="icon-action icon-action--ver" (click)="abrir(d.id)" aria-label="Ver el documento" title="Ver el documento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg></button>
                   @if (d.tiene_pdf) {
                     <button type="button" class="icon-action" (click)="abrir(d.id, 'pdf')" aria-label="Ver el PDF del documento soporte" title="Documento soporte (PDF)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></svg></button>
+                  } @else {
+                    <span class="icon-action icon-action--hueco" aria-hidden="true"></span>
                   }
                   @if (d.contabilizado) {
                     <button type="button" class="icon-action" (click)="abrir(d.id, 'contab')" aria-label="Ver la contabilización" title="Contabilización"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z" /><path d="M4 9h16M10 9v11" /></svg></button>
+                  } @else {
+                    <span class="icon-action icon-action--hueco" aria-hidden="true"></span>
                   }
                   <button type="button" class="icon-action" (click)="abrir(d.id, 'historial')" aria-label="Ver el historial" title="Historial"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg></button>
                 </span>
@@ -233,9 +240,11 @@
               <td><span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
               <td class="col-actions">
                 <span class="fac-acciones">
-                  <button type="button" class="btn btn--ghost btn--sm" (click)="abrir(d.id)">Ver</button>
+                  <button type="button" class="icon-action icon-action--ver" (click)="abrir(d.id)" aria-label="Ver el documento" title="Ver el documento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg></button>
                   @if (d.tiene_pdf) {
                     <button type="button" class="icon-action" (click)="abrir(d.id, 'pdf')" aria-label="Ver el PDF de la nota" title="Nota (PDF)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></svg></button>
+                  } @else {
+                    <span class="icon-action icon-action--hueco" aria-hidden="true"></span>
                   }
                   <button type="button" class="icon-action" (click)="abrir(d.id, 'historial')" aria-label="Ver el historial" title="Historial"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg></button>
                 </span>

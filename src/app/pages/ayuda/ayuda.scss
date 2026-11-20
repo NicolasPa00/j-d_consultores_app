@@ -15,7 +15,7 @@
   width: 100%;
   aspect-ratio: 16 / 9;
   border-radius: var(--radius-md);
-  background: #103d66;
+  background: var(--noche);
 }
 
 .ayu-bienvenida__texto p { margin: 0.5rem 0 0; color: var(--text-muted); line-height: 1.5; }
@@ -76,9 +76,8 @@
 .ayu-indice__grupo {
   margin: 0.6rem 0.4rem 0.2rem;
   font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0;
   color: var(--text-muted);
 }
 .ayu-indice__grupo:first-child { margin-top: 0.1rem; }
@@ -94,8 +93,10 @@
   border-radius: var(--radius-sm);
   cursor: pointer;
 }
-.ayu-indice__item:hover { background: #eef2fb; }
-.ayu-indice__item--activo { background: #e1e9fb; color: var(--primary-color); font-weight: 600; }
+@media (hover: hover) {
+  .ayu-indice__item:hover { background: var(--fila-hover); }
+}
+.ayu-indice__item--activo { background: var(--accion-tenue); color: var(--primary-color); font-weight: 600; }
 
 .ayu-articulo__titulo { margin: 0.6rem 0 0.35rem; font-size: 1.35rem; color: var(--primary-color); }
 .ayu-articulo__resumen { margin: 0 0 1rem; font-size: 1rem; color: var(--text-muted); }
@@ -109,17 +110,17 @@
   font-size: 0.95rem;
   line-height: 1.55;
 }
-.ayu-pasos li::marker { font-weight: 700; color: var(--secondary-color); }
+.ayu-pasos li::marker { font-weight: 600; color: var(--secondary-color); }
 
 .ayu-avisos {
   padding: 0.85rem 1rem;
-  background: #fff8e1;
-  border: 1px solid #f1deaa;
+  background: var(--aviso-fondo);
+  border: 1px solid var(--aviso-borde);
   border-radius: var(--radius-md);
   font-size: 0.9rem;
   line-height: 1.5;
 }
-.ayu-avisos__titulo { margin: 0 0 0.35rem; font-weight: 700; color: #7a5a00; }
+.ayu-avisos__titulo { margin: 0 0 0.35rem; font-weight: 600; color: var(--tinta); }
 .ayu-avisos ul { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.3rem; }
 
 .ayu-vacio { margin: 0.5rem; font-size: 0.9rem; color: var(--text-muted); }
@@ -129,15 +130,11 @@
   .ayu-indice { position: static; max-height: 16rem; }
 }
 
-.tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-.tab {
-  display: inline-flex; align-items: center; gap: 0.45rem;
-  padding: 0.5rem 1rem; font: inherit; font-size: 0.88rem; font-weight: 600;
-  color: var(--text-muted); background: transparent; border: 1px solid transparent;
-  border-radius: 999px; cursor: pointer;
+/* Pestañas: las globales `.tabs` / `.tab` (DESIGN §7). Los grupos son muchos:
+   en escritorio se parten en dos líneas en vez de esconderse a la derecha. */
+@media (min-width: 861px) {
+  .ayu-grupos { flex-wrap: wrap; row-gap: 0; }
 }
-.tab:hover { color: var(--text-main); background: #f1f5f9; }
-.tab--active { color: var(--primary-color); background: rgba(45, 123, 200, 0.1); border-color: var(--accent-color); }
 
 /* Pantallazos con recuadros guía (marcas en % de la imagen: siguen a su botón a cualquier tamaño). */
 .ayu-figuras { display: grid; gap: 1.5rem; margin: 0 0 1.5rem; }
@@ -146,9 +143,9 @@
   position: relative;
   overflow: hidden;
   line-height: 0;
-  border: 1px solid var(--border-color, #dbe3f3);
+  border: 1px solid var(--borde);
   border-radius: var(--radius-md);
-  box-shadow: 0 6px 22px rgba(0, 11, 79, 0.1);
+  box-shadow: var(--sombra-2);
 }
 .ayu-figura__marco img { display: block; width: 100%; height: auto; }
 /* En el celular una pantalla completa a 360 px no se lee: se deja a 640 px y se desliza de lado. */
@@ -159,10 +156,10 @@
 }
 .ayu-marca {
   position: absolute;
-  border: 2.5px solid var(--secondary-color, #2d7bc8);
+  border: 2.5px solid var(--cian-trazo);
   border-radius: 8px;
-  background: rgba(45, 123, 200, 0.08);
-  box-shadow: 0 0 0 3px rgba(45, 123, 200, 0.22);
+  background: color-mix(in srgb, var(--cian) 8%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cian) 22%, transparent);
   pointer-events: none;
 }
 .ayu-marca b, .ayu-leyenda b {
@@ -173,8 +170,8 @@
   padding: 0 0.3rem;
   font-size: 0.78rem;
   line-height: 1;
-  color: #fff;
-  background: var(--primary-color, #000b4f);
+  color: var(--superficie);
+  background: var(--accion);
   border-radius: 999px;
 }
 .ayu-marca b { position: absolute; top: -0.8rem; left: -0.6rem; }
@@ -182,3 +179,15 @@
 .ayu-figura figcaption strong { color: var(--primary-color); }
 .ayu-leyenda { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin: 0.2rem 0 0; padding: 0; list-style: none; font-size: 0.85rem; color: var(--text-muted); }
 .ayu-leyenda li { display: inline-flex; align-items: center; gap: 0.35rem; }
+
+.ayu-avisos__titulo::before {
+  content: '';
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 0.3em;
+  vertical-align: -0.12em;
+  background: var(--ambar);
+  -webkit-mask: var(--icono-alerta) center / contain no-repeat;
+  mask: var(--icono-alerta) center / contain no-repeat;
+}

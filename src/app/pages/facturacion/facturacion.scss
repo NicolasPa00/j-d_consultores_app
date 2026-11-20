@@ -5,13 +5,14 @@
 
 .fac-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 
-.tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap; }
-
-/* 7-oct-2026 · Pestañas y filtro de estado en una sola fila. */
+/* 7-oct-2026 · Pestañas y filtro de estado en una sola fila.
+   20-nov-2026 · Las pestañas son las globales (`.tabs`/`.tab`, raya cian); aquí
+   solo se quita su margen para que compartan fila con el filtro. */
 .fac-barra {
   display: flex; align-items: center; justify-content: space-between; gap: 0.75rem 1rem; flex-wrap: wrap;
   margin-bottom: 1rem;
-  .tabs { margin-bottom: 0; }
+  /* Base 0: el filtro de estado no baja a otra fila mientras las pestañas quepan. */
+  .tabs { margin-bottom: 0; flex: 1 1 0; min-width: 12rem; }
 }
 
 /* El botón de eventos, con icono. */
@@ -19,36 +20,27 @@
   white-space: nowrap;
   svg { width: 1rem; height: 1rem; flex-shrink: 0; }
 }
-.tab {
-  display: inline-flex; align-items: center; gap: 0.45rem;
-  padding: 0.55rem 1.1rem; font: inherit; font-size: 0.9rem; font-weight: 600;
-  color: var(--text-muted); background: transparent; border: 1px solid transparent;
-  border-radius: 999px; cursor: pointer;
-  &:hover { color: var(--text-main); background: #f1f5f9; }
-}
-.tab--active { color: var(--primary-color); background: rgba(45, 123, 200, 0.1); border-color: var(--accent-color); }
-.tab__count { font-size: 0.75rem; padding: 0 0.45rem; border-radius: 999px; background: #e8eef6; color: var(--text-main); }
 
 .fac-vacio { padding: 1.5rem; color: var(--text-muted); display: flex; gap: 0.6rem; align-items: center; }
 
-/* 7-oct-2026 · Cada ARL es una SECCIÓN: borde de color, cabecera teñida y
-   compacta. Antes era una tarjeta blanca igual a las demás y no se leía dónde
-   terminaba una ARL y empezaba la otra. */
+/* 7-oct-2026 · Cada ARL es una SECCIÓN: cabecera teñida y compacta. Antes era
+   una tarjeta blanca igual a las demás y no se leía dónde terminaba una ARL y
+   empezaba la otra. 20-nov-2026 · Sin la raya de color a la izquierda (el
+   DESIGN no admite rayas en tarjetas): la separa la cabecera en acción tenue. */
 .fac-pagador {
   margin-bottom: 1.5rem;
   overflow: hidden;
-  border: 1px solid var(--accent-color);
-  border-left: 5px solid var(--primary-color);
+  border: 1px solid var(--borde-control);
 }
 .fac-pagador__head {
   display: flex; align-items: center; gap: 0.75rem 1rem; flex-wrap: wrap;
   padding: 0.6rem 1.25rem;
-  background: rgba(45, 123, 200, 0.1);
-  border-bottom: 1px solid var(--accent-color);
+  background: var(--accion-tenue);
+  border-bottom: 1px solid var(--borde-control);
 }
 .fac-pagador__nombre {
   display: inline-flex; align-items: center; gap: 0.5rem; margin: 0;
-  font-size: 1rem; font-weight: 700; color: var(--primary-color);
+  font-size: var(--fs-tarjeta); font-weight: 600; color: var(--accion);
   svg { width: 1.15rem; height: 1.15rem; flex-shrink: 0; }
 }
 .fac-pagador__resumen { margin-left: auto; font-size: 0.8rem; font-weight: 600; color: var(--text-main); }
@@ -57,10 +49,10 @@
 .fac-grupo:first-of-type { border-top: 0; }
 .fac-grupo__titulo {
   display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
-  padding: 0.75rem 1.25rem; background: #f8fafc; font-size: 0.9rem;
+  padding: 0.75rem 1.25rem; background: var(--papel); font-size: 0.9rem;
 }
 .fac-grupo__resumen { color: var(--text-muted); font-size: 0.8rem; }
-.fac-grupo__sin-orden { color: var(--warning); font-weight: 600; font-size: 0.8rem; }
+.fac-grupo__sin-orden { color: var(--tinta-2); font-weight: 600; font-size: 0.8rem; }
 .fac-grupo__acciones {
   display: flex; align-items: center; justify-content: flex-end; gap: 0.6rem; flex-wrap: wrap;
   padding: 0.75rem 1.25rem; border-top: 1px dashed var(--border-soft);
@@ -70,14 +62,14 @@
 // 20-oct-2026 · Varias prefacturas de Bolívar en una sola factura.
 .fac-grupo__unir {
   display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer;
-  font-size: 0.8rem; font-weight: 600; color: var(--secondary-color);
+  font-size: 0.8rem; font-weight: 600; color: var(--accion);
 }
 .fac-union {
   display: flex; align-items: center; justify-content: flex-end; gap: 0.6rem; flex-wrap: wrap;
   padding: 0.6rem 1.25rem; border-bottom: 1px dashed var(--border-soft);
   font-size: 0.85rem; color: var(--text-muted);
 }
-.fac-union--activa { background: rgba(45, 123, 200, 0.06); color: var(--text-main); }
+.fac-union--activa { background: var(--accion-tenue); color: var(--text-main); }
 .fac-union__texto { margin-right: auto; }
 
 .fac-tabla .col-check { width: 36px; }
@@ -91,18 +83,25 @@
   font-size: 0.76rem; font-weight: 600; line-height: 1.3; white-space: normal; text-align: left;
   border-radius: var(--radius-sm);
 }
-.fac-filtro { max-width: 240px; }
+.fac-filtro { max-width: 240px; width: auto; flex: none; }
 
 /* Acciones de una fila emitida. */
 .fac-acciones { display: inline-flex; align-items: center; justify-content: flex-end; gap: 0.2rem; }
 .fac-acciones .icon-action svg { width: 1.05rem; height: 1.05rem; }
+
+/* Cliente: la razón social larga («COMPAÑIA DE SEGUROS BOLIVAR S A») no deja
+   una letra huérfana a 1280 px; número y fechas no se parten. */
+.table th.fac-col-cliente { min-width: 16rem; }
+@media (max-width: 680px) {
+  .table th.fac-col-cliente { min-width: 12rem; }
+}
 
 /* El documento, en una columna. */
 .fac-doc { display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; }
 
 .spinner--oscuro {
   display: inline-block; width: 14px; height: 14px;
-  border: 2px solid rgba(45, 123, 200, 0.25); border-top-color: var(--secondary-color);
+  border: 2px solid color-mix(in srgb, var(--accion) 25%, transparent); border-top-color: var(--accion);
   border-radius: 50%; animation: fac-giro 0.7s linear infinite;
 }
 @keyframes fac-giro { to { transform: rotate(360deg); } }
@@ -123,8 +122,8 @@
   div { display: flex; justify-content: space-between; gap: 2rem; font-size: 0.9rem; }
   span { color: var(--text-muted); }
 }
-.fac-totales__ret b { color: #b42318; }
-.fac-totales__final { border-top: 1px solid var(--border-soft); padding-top: 0.4rem; font-size: 1.05rem !important; span { color: var(--text-main) !important; font-weight: 700; } }
+.fac-totales__ret b { color: var(--error); }
+.fac-totales__final { border-top: 1px solid var(--border-soft); padding-top: 0.4rem; font-size: 1.05rem !important; span { color: var(--text-main) !important; font-weight: 600; } }
 
 .fac-obs { margin: 0; font-size: 0.88rem; }
 .fac-eventos { margin: 0; padding-left: 1.1rem; font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.25rem; }
@@ -133,7 +132,7 @@
 .fac-reenvio { display: flex; align-items: flex-end; gap: 0.6rem; .form-field { flex: 1; margin: 0; } }
 
 /* A2-01 · formulario de nota crédito dentro del detalle */
-.fac-nota { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem; border: 1px solid var(--border-soft); border-radius: var(--radius-md, 10px); background: #fafbfd; }
+.fac-nota { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem; border: 1px solid var(--border-soft); border-radius: var(--r-tarjeta); background: var(--pie-modal); }
 .fac-nota__aviso { margin: 0; font-size: 0.85rem; }
 .fac-nota__acciones { display: flex; justify-content: flex-end; gap: 0.6rem; }
 .fac-cant { width: 90px; text-align: right; display: inline-block; }
@@ -155,8 +154,8 @@
   margin-bottom: 1.1rem;
   padding: 1rem 1.1rem 0.9rem;
   border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md, 10px);
-  background: var(--card-bg, #fff);
+  border-radius: var(--r-tarjeta);
+  background: var(--superficie);
 }
 
 .fac-pasos {
@@ -205,7 +204,7 @@
     right: 50%;
     left: -50%;
     height: 3px;
-    background: #d6dde6;
+    background: var(--carril);
     z-index: 0;
   }
 
@@ -223,15 +222,15 @@
   place-items: center;
   width: 22px;
   height: 22px;
-  border: 2px solid #c3ccd8;
+  border: 2px solid var(--borde-control);
   border-radius: 50%;
-  background: #fff;
-  color: #fff;
+  background: var(--superficie);
+  color: var(--superficie);
 
   svg { width: 13px; height: 13px; }
 
   .fac-paso--hecho & { border-color: var(--success); background: var(--success); }
-  .fac-paso--actual & { border-color: var(--secondary-color); box-shadow: 0 0 0 4px rgba(45, 123, 200, 0.18); }
+  .fac-paso--actual & { border-color: var(--accion); box-shadow: var(--halo); }
   .fac-paso--error & { border-color: var(--danger); background: var(--danger); }
 }
 
@@ -240,7 +239,7 @@
   font-weight: 600;
 
   .fac-paso--hecho & { color: var(--text-main); }
-  .fac-paso--actual & { color: var(--secondary-color); }
+  .fac-paso--actual & { color: var(--accion); }
   .fac-paso--error & { color: var(--danger); }
 }
 
@@ -249,22 +248,23 @@
   color: var(--text-muted);
 }
 
-/* Aviso bajo la barra: dónde está el documento y qué sigue. */
+/* Aviso bajo la barra: dónde está el documento y qué sigue.
+   20-nov-2026 · Como la alerta del DESIGN: fondo del estado, radio 8, sin borde
+   ni raya lateral. */
 .fac-aviso {
   padding: 0.6rem 0.85rem;
-  border: 1px solid;
-  border-left-width: 4px;
-  border-radius: var(--radius-sm, 6px);
+  border: 0;
+  border-radius: var(--r-alerta);
   font-size: 0.85rem;
 
   p { margin: 0; }
   .fac-errores { margin: 0.4rem 0 0; }
 
-  &--ok { border-color: #9fd9b4; background: #f0faf3; color: #17633a; }
-  &--info { border-color: #b7d3f0; background: #f2f7fd; color: #1d4f86; }
-  &--warning { border-color: #f0d38a; background: #fffaeb; color: #8a5a00; }
-  &--error { border-color: #f1b0aa; background: #fef3f2; color: #a8231a; }
-  &--muted { border-color: var(--border-soft); background: #f8fafc; color: var(--text-muted); }
+  &--ok { background: var(--ok-fondo); color: var(--ok); }
+  &--info { background: var(--info-fondo); color: var(--info); }
+  &--warning { background: var(--aviso-fondo); color: var(--aviso); }
+  &--error { background: var(--error-fondo); color: var(--error); }
+  &--muted { background: var(--hundida); color: var(--tinta-2); }
 }
 
 /* Documento a la izquierda (más ancho), acciones e historial a la derecha. */
@@ -289,14 +289,14 @@
 .fac-panel {
   padding: 0.9rem 1rem;
   border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md, 10px);
-  background: var(--card-bg, #fff);
+  border-radius: var(--r-tarjeta);
+  background: var(--superficie);
 }
 
 .fac-panel__titulo {
   margin: 0 0 0.6rem;
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-main);
 }
 
@@ -331,9 +331,9 @@
   width: 14px;
   height: 14px;
   margin-top: 2px;
-  border: 3px solid var(--secondary-color);
+  border: 3px solid var(--accion);
   border-radius: 50%;
-  background: #fff;
+  background: var(--superficie);
 }
 
 .fac-historial__titulo { font-size: 0.84rem; font-weight: 600; color: var(--text-main); }
@@ -350,7 +350,7 @@
   cursor: pointer;
   list-style: none;
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-main);
 
   &::-webkit-details-marker { display: none; }
@@ -363,7 +363,7 @@
     border-right: 2px solid currentColor;
     border-bottom: 2px solid currentColor;
     transform: rotate(-45deg);
-    transition: transform 0.15s ease;
+    transition: transform var(--t-media) var(--ease-out);
   }
 
   .fac-acordeon[open] > &::before { transform: rotate(45deg); }
@@ -423,10 +423,9 @@
 .fac-paq__aviso {
   margin: 0 0 0.75rem;
   padding: 0.6rem 0.8rem;
-  border-radius: 8px;
-  background: #fff7e6;
-  border: 1px solid #f5d490;
-  color: #7a4b00;
+  border-radius: var(--r-alerta);
+  background: var(--aviso-fondo);
+  color: var(--tinta);
   font-size: 0.875rem;
 
   ul { margin: 0.35rem 0 0; padding-left: 1.1rem; }
@@ -455,8 +454,8 @@
 .fac-man-grid__ancho { grid-column: span 2; }
 .fac-man-lineas {
   border: 1px solid var(--border-soft);
-  border-radius: 12px;
-  background: #fff;
+  border-radius: var(--r-tarjeta);
+  background: var(--superficie);
 }
 .fac-man-linea {
   display: grid;
@@ -471,14 +470,14 @@
 }
 .fac-man-linea--cab {
   padding: 0.7rem 0.75rem;
-  background: var(--table-head-bg, #eef2fb);
-  color: var(--primary-color);
-  border-bottom: 2px solid var(--primary-color);
-  border-radius: 12px 12px 0 0;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  /* Igual que la cabecera de tabla global: 12/600 tinta-2, sin mayúsculas ni
+     línea de 2 px. */
+  background: var(--cabecera-tabla);
+  color: var(--tinta-2);
+  border-bottom: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta) var(--r-tarjeta) 0 0;
+  font-size: var(--fs-meta);
+  font-weight: 600;
 }
 .fac-man-linea__rotulo { display: none; }
 .fac-man-agregar { margin: 0.6rem 0 1rem; }
@@ -542,3 +541,37 @@
 .fac-imp__rets { display: flex; flex-wrap: wrap; gap: 0.35rem 1.1rem; margin-bottom: 0.6rem; font-size: 0.84rem; }
 .fac-imp__acciones { display: flex; justify-content: flex-end; gap: 0.5rem; }
 @media (max-width: 640px) { .fac-imp__linea { grid-template-columns: 1fr; } }
+
+/* Avisos fuera de pastilla: tinta con ícono ámbar (DESIGN §10). */
+.fac-grupo__sin-orden::before {
+  content: '';
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 0.3em;
+  vertical-align: -0.12em;
+  background: var(--ambar);
+  -webkit-mask: var(--icono-alerta) center / contain no-repeat;
+  mask: var(--icono-alerta) center / contain no-repeat;
+}
+
+/* Tabla anidada en la tarjeta del pagador: sin segundo marco ni sangría; en el
+   celular se desplaza de lado dentro de la tarjeta (la pastilla de estado ya
+   no queda recortada y Empresa no se parte en cuatro líneas). */
+.fac-pagador .fac-grupo > .table-wrap {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 680px) {
+  .fac-pagador .fac-tabla {
+    min-width: 40rem;
+  }
+
+  .fac-pagador .fac-tabla td:nth-child(3) {
+    min-width: 10rem;
+  }
+}

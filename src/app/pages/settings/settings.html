@@ -600,6 +600,8 @@
                             <path d="M10 11v6M14 11v6" />
                           </svg>
                         </button>
+                      } @else {
+                        <span class="icon-action icon-action--hueco" aria-hidden="true"></span><span class="icon-action icon-action--hueco" aria-hidden="true"></span>
                       }
                     </div>
                   </td>
@@ -852,13 +854,12 @@
     </div>
     <div class="card__body">
       <!-- Selector de rol -->
-      <div class="role-picker">
+      <div class="seg role-picker" role="group" aria-label="Rol">
         @for (r of roles; track r) {
           <button
             type="button"
-            class="btn"
-            [class.btn--primary]="rolSeleccionado() === r"
-            [class.btn--ghost]="rolSeleccionado() !== r"
+            [class.seg--on]="rolSeleccionado() === r"
+            [attr.aria-pressed]="rolSeleccionado() === r"
             (click)="selectRol(r)"
           >
             {{ rolLabel(r) }}

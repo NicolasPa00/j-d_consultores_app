@@ -8,7 +8,7 @@
   top: 50%;
   width: 1rem;
   height: 1rem;
-  color: var(--text-muted);
+  color: var(--tinta-3);
   transform: translateY(-50%);
   pointer-events: none;
 }
@@ -26,10 +26,10 @@
   top: 50%;
   width: 1rem;
   height: 1rem;
-  color: var(--text-muted);
+  color: var(--tinta-3);
   transform: translateY(-50%);
   pointer-events: none;
-  transition: transform 0.15s ease;
+  transition: transform var(--t-media) var(--ease-out);
 }
 .sb--abierto .sb__flecha { transform: translateY(-50%) rotate(180deg); }
 
@@ -44,36 +44,38 @@
   padding: 4px;
   overflow-y: auto;
   list-style: none;
-  background: #ffffff;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-control, 8px);
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
+  box-shadow: var(--sombra-2);
 }
 
 .sb__opcion {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  padding: 0.45rem 0.6rem;
-  border-radius: 6px;
-  font-size: 0.88rem;
-  color: var(--text-main);
+  padding: 7px 10px;
+  border-radius: var(--r-control);
+  font-size: var(--fs-base);
+  color: var(--tinta);
   cursor: pointer;
+  transition: background-color var(--t-rapida) ease;
 
-  small { font-size: 0.75rem; color: var(--text-muted); }
+  small { font-size: var(--fs-meta); color: var(--tinta-3); }
 }
-.sb__opcion--vacio { color: var(--text-muted); font-style: italic; }
-.sb__opcion--resaltada { background: #eef2fb; }
-.sb__opcion--elegida { color: var(--primary-color); font-weight: 600; }
-.sb__nada { padding: 0.6rem; font-size: 0.85rem; color: var(--text-muted); }
-.sb__opcion mark { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 1px; }
+.sb__opcion--vacio { color: var(--tinta-3); font-style: italic; }
+.sb__opcion--resaltada { background: var(--hundida); }
+.sb__opcion--elegida { color: var(--accion); font-weight: 600; }
+.sb__nada { padding: 10px; font-size: var(--fs-celda); color: var(--tinta-3); }
+/* Coincidencia resaltada: el fondo de aviso, no un amarillo suelto. */
+.sb__opcion mark { background: var(--aviso-fondo); color: inherit; border-radius: 2px; padding: 0 1px; }
 .sb__pie {
   position: sticky;
   bottom: -4px;
   margin: 4px -4px -4px;
   padding: 0.4rem 0.6rem;
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  background: #f8fafc;
-  border-top: 1px solid var(--border-soft);
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
+  background: var(--papel);
+  border-top: 1px solid var(--borde);
 }

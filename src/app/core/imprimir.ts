@@ -6,6 +6,29 @@
  * Solo en el navegador: quien la llame ya comprobó `isPlatformBrowser`.
  */
 
+/**
+ * Colores de impresión. El informe se imprime dentro de un iframe propio, que no
+ * hereda las variables CSS de la app, así que aquí van los hex del sistema de
+ * diseño (docs/2-arquitectura/DESIGN.md §2) escritos a mano. Si cambia un token,
+ * se cambia también aquí.
+ */
+export const COLOR_IMPRESION = {
+  /** --tinta: texto principal. */
+  tinta: '#0f2a44',
+  /** --accion: títulos, cabecera de tabla y filas de grupo (blanco encima 9,28:1). */
+  accion: '#13497a',
+  /** --tinta-3: metadatos y bordes punteados. */
+  tinta3: '#5c6f84',
+  /** --borde: divisores de fila. */
+  borde: '#e1e7ee',
+  /** --papel: fila alterna, solo en papel para seguir la línea al leer. */
+  papel: '#f6f8fa',
+  /** --cabecera-tabla: fila de cuenta dentro de un informe. */
+  cabecera: '#f3f6f9',
+  /** --superficie: texto sobre acción. */
+  blanco: '#ffffff',
+} as const;
+
 export function escapeHtml(v: unknown): string {
   return String(v ?? '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -24,13 +47,13 @@ export function imprimirHtml(titulo: string, cuerpoHtml: string, cssExtra = ''):
     `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${escapeHtml(titulo)}</title>` +
     `<style>
       * { box-sizing: border-box; }
-      body { font-family: Arial, Helvetica, sans-serif; color: #0f172a; margin: 28px; }
-      h1 { font-size: 18px; color: #000b50; margin: 0 0 4px; }
-      .meta { font-size: 11px; color: #64748b; margin: 0 0 4px; }
+      body { font-family: Arial, Helvetica, sans-serif; color: ${COLOR_IMPRESION.tinta}; margin: 28px; }
+      h1 { font-size: 18px; color: ${COLOR_IMPRESION.accion}; margin: 0 0 4px; }
+      .meta { font-size: 11px; color: ${COLOR_IMPRESION.tinta3}; margin: 0 0 4px; }
       table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 11px; }
-      th { background: #000b50; color: #fff; text-align: left; padding: 7px 9px; }
-      td { padding: 6px 9px; border-bottom: 1px solid #e2e8f0; }
-      tr:nth-child(even) td { background: #f8fafc; }
+      th { background: ${COLOR_IMPRESION.accion}; color: ${COLOR_IMPRESION.blanco}; text-align: left; padding: 7px 9px; }
+      td { padding: 6px 9px; border-bottom: 1px solid ${COLOR_IMPRESION.borde}; }
+      tr:nth-child(even) td { background: ${COLOR_IMPRESION.papel}; }
       p { line-height: 1.5; font-size: 12px; }
       ${cssExtra}
     </style></head><body>${cuerpoHtml}</body></html>`,

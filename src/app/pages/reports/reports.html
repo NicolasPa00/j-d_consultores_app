@@ -216,7 +216,7 @@
       @for (a of arlOptions(); track a) {
         <button
           type="button"
-          class="chip"
+          class="chip chip--filtro"
           [class.chip--on]="arlsSel().includes(a)"
           [attr.aria-pressed]="arlsSel().includes(a)"
           (click)="toggleArl(a)"
@@ -233,7 +233,7 @@
       @for (e of estadoOptions(); track e) {
         <button
           type="button"
-          class="chip"
+          class="chip chip--filtro"
           [class.chip--on]="estadosSel().includes(e)"
           [attr.aria-pressed]="estadosSel().includes(e)"
           (click)="toggleEstado(e)"

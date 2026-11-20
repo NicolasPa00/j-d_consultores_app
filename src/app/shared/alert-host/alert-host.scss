@@ -3,9 +3,9 @@
 }
 
 /* ===== Toasts =====
-   El aspecto (franja lateral, tonos, título/detalle) viene del primitivo
-   global .alert en styles.scss. Aquí solo va lo propio del toast:
-   posicionamiento flotante, cierre y barra de progreso. */
+   La anatomía (ícono, título, detalle) viene del primitivo global .alert de
+   styles.scss; aquí va lo propio del toast: la piel en noche, la posición
+   flotante, el cierre y la barra de progreso. */
 .toast-stack {
   position: fixed;
   right: 1.5rem;
@@ -13,32 +13,44 @@
   z-index: 80;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 8px;
   width: 400px;
   max-width: calc(100vw - 3rem);
 }
 
+/* Toast sobre NOCHE (DESIGN §7): fondo noche, texto claro, ícono del estado en
+   su versión para fondo oscuro y `--sombra-3`. Entra subiendo 8 px. */
 .al-toast {
+  --al-accent: var(--info-noche);
   position: relative;
   overflow: hidden;
-  padding: 0.9rem 1rem 1rem;
-  background: var(--surface);
-  box-shadow: var(--shadow-elevated);
-  animation: al-in 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  align-items: center;
+  padding: 12px 10px 14px 16px;
+  background: var(--noche);
+  color: #ffffff;
+  border: 0;
+  border-radius: var(--r-tarjeta);
+  box-shadow: var(--sombra-3);
+  animation: al-in var(--t-media) var(--ease-out);
 }
 
-/* Velo del color del estado sobre el blanco: mantiene el tono sin gritar. */
-.al-toast::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--al-bg);
-  pointer-events: none;
+.al-toast.alert--success { --al-accent: var(--ok-noche); }
+.al-toast.alert--error { --al-accent: var(--error-noche); }
+.al-toast.alert--warning { --al-accent: var(--aviso-noche); }
+.al-toast.alert--info { --al-accent: var(--info-noche); }
+
+.al-toast .alert__title {
+  color: #ffffff;
+  font-weight: 500;
 }
 
-.al-toast > * {
-  position: relative;
-  z-index: 1;
+.al-toast .alert__detail {
+  color: var(--texto-noche);
+}
+
+.al-toast .alert__body a {
+  color: var(--cian-niebla);
+  font-weight: 500;
 }
 
 .al-toast__close {
@@ -46,19 +58,27 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--texto-noche-2);
   background: transparent;
   border: none;
-  border-radius: 7px;
+  border-radius: var(--r-control);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background-color var(--t-rapida) ease, color var(--t-rapida) ease;
 }
 
-.al-toast__close:hover {
-  color: var(--text-main);
-  background: rgba(15, 23, 42, 0.08);
+@media (hover: hover) and (pointer: fine) {
+  .al-toast__close:hover {
+    color: #ffffff;
+    background: rgb(255 255 255 / 10%);
+  }
+}
+
+.al-toast__close:focus-visible {
+  outline-color: var(--cian);
+  box-shadow: none;
 }
 
 .al-toast__close svg {
@@ -73,7 +93,7 @@
   right: 0;
   bottom: 0;
   height: 3px;
-  background: rgba(15, 23, 42, 0.08);
+  background: rgb(255 255 255 / 10%);
   z-index: 2;
 }
 
@@ -103,8 +123,8 @@
   position: fixed;
   inset: 0;
   z-index: 90;
-  background: var(--modal-backdrop);
-  animation: al-fade 0.2s ease;
+  background: var(--velo);
+  animation: al-fade var(--t-media) ease;
 }
 
 .al-dialog {
@@ -113,57 +133,58 @@
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 91;
-  width: 420px;
-  max-width: calc(100vw - 2rem);
-  padding: 1.75rem 1.75rem 1.4rem;
+  width: 440px;
+  max-width: calc(100vw - 24px);
+  padding: 28px 24px 20px;
   text-align: center;
-  background: var(--surface);
-  border-radius: var(--modal-radius);
-  box-shadow: var(--modal-shadow);
-  animation: al-pop 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--superficie);
+  border-radius: var(--r-modal);
+  box-shadow: var(--sombra-modal);
+  animation: al-pop var(--t-media) var(--ease-out);
   overflow: hidden;
 }
 
 .al-dialog__icon {
-  width: 58px;
-  height: 58px;
-  margin: 0 auto 1rem;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  color: var(--primary-color);
-  background: var(--modal-head-bg);
+  border-radius: var(--r-tarjeta);
+  color: var(--accion);
+  background: var(--accion-tenue);
 }
 
 .al-dialog__icon svg {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
 }
 
 .al-dialog--danger .al-dialog__icon {
-  color: var(--btn-close-text);
-  background: var(--btn-close-bg);
+  color: var(--error);
+  background: var(--error-fondo);
 }
 
 .al-dialog__title {
   margin: 0;
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--primary-color);
+  font-size: var(--fs-modal);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--tinta);
 }
 
 .al-dialog__msg {
-  margin: 0.5rem 0 1.5rem;
-  font-size: 0.92rem;
+  margin: 6px 0 22px;
+  font-size: var(--fs-base);
   line-height: 1.5;
-  color: var(--text-muted);
+  color: var(--tinta-2);
 }
 
 .al-dialog__actions {
   display: flex;
   justify-content: center;
-  gap: 0.75rem;
+  gap: 10px;
 }
 
 .al-dialog__actions .btn {
@@ -172,8 +193,8 @@
 
 /* ===== Animaciones ===== */
 @keyframes al-in {
-  from { opacity: 0; transform: translateX(16px); }
-  to { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes al-fade {
@@ -182,7 +203,7 @@
 }
 
 @keyframes al-pop {
-  from { opacity: 0; transform: translate(-50%, -48%) scale(0.96); }
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.98); }
   to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 

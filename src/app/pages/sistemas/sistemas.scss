@@ -49,21 +49,21 @@
 
 .sistemas__saludo {
   margin: 0;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--texto-noche);
 }
 
 .sistemas__titulo {
-  // Explícito: el h1 global es oscuro y sobre el degradado no se leería.
+  // Explícito: el h1 global es oscuro y sobre la noche no se leería.
   margin: 0.4rem 0 0.5rem;
-  color: #ffffff;
+  color: var(--superficie);
   font-size: 1.9rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 
 .sistemas__sub {
   margin: 0 0 2rem;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--texto-noche-2);
   font-size: 0.95rem;
 }
 
@@ -84,7 +84,7 @@
 .tarjeta {
   --tarjeta-acento: var(--primary-color);
   --tarjeta-acento-hover: var(--primary-hover);
-  --tarjeta-tenue: rgba(0, 11, 79, 0.07);
+  --tarjeta-tenue: var(--accion-tenue);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -96,25 +96,12 @@
   color: var(--text-main);
   font: inherit;
   border: 2px solid transparent;
-  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 12px 32px -8px var(--velo);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-
-  // Franja superior con el color del sistema.
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 5px;
-    background: var(--tarjeta-acento);
-  }
 }
 
-// Finanzas conserva su acento verde para distinguirse de un vistazo.
-.tarjeta--finanzas {
-  --tarjeta-acento: #047857;
-  --tarjeta-acento-hover: #065f46;
-  --tarjeta-tenue: rgba(16, 185, 129, 0.12);
-}
+// Sin franja superior de color (DESIGN §10: nada de rayas en tarjetas) y sin el
+// acento verde que llevaba Finanzas: las dos tarjetas van en acción.
 
 .tarjeta:hover,
 .tarjeta:focus-visible {
@@ -125,31 +112,22 @@
   transform: translateY(-1px);
 }
 
+/* Ícono suelto de 20 px en acción, sin recuadro teñido (DESIGN §10: nada de
+   filas de tarjetas iguales con ícono en caja pastel). La jerarquía la lleva
+   el título. */
 .tarjeta__icono {
-  width: 52px;
-  height: 52px;
-  display: grid;
-  place-items: center;
-  border-radius: 14px;
-  background: var(--tarjeta-tenue);
-  color: var(--tarjeta-acento);
-  transition: background 0.2s ease, color 0.2s ease;
+  display: inline-flex;
+  color: var(--accion);
 
   svg {
-    width: 28px;
-    height: 28px;
+    width: 20px;
+    height: 20px;
   }
-}
-
-.tarjeta:hover .tarjeta__icono,
-.tarjeta:focus-visible .tarjeta__icono {
-  background: var(--tarjeta-acento);
-  color: #ffffff;
 }
 
 .tarjeta__nombre {
   font-size: 1.35rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--tarjeta-acento);
 }
 
@@ -174,7 +152,7 @@
   padding: 0.8rem 1rem;
   border-radius: var(--radius-sm);
   background: var(--tarjeta-acento);
-  color: #ffffff;
+  color: var(--superficie);
   font-weight: 600;
   font-size: 0.95rem;
   transition: background 0.2s ease;

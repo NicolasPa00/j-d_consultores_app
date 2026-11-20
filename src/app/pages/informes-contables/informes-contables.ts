@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { AlertService } from '../../core/alert.service';
 import { mensajeError } from '../../core/errores';
-import { escapeHtml, imprimirHtml } from '../../core/imprimir';
+import { COLOR_IMPRESION, escapeHtml, imprimirHtml } from '../../core/imprimir';
 import {
   AuxiliarPorCuenta, BalanceComprobacion, CentroCosto, Comprobante, CuentaDeTercero, FiltrosInformeContable,
   InformePorTercero, LibroAuxiliar, LibroAuxiliarClave, MovimientoAuxiliarConBase, Tercero, TerceroInforme,
@@ -523,9 +523,9 @@ export class InformesContablesComponent implements OnInit {
       `<p class="meta">${escapeHtml(this.lineaFiltros())} · Saldos: débito positivo, crédito negativo</p>` + tabla,
       `.n { text-align: right; white-space: nowrap; }
        tr.b td { font-weight: 700; }
-       tfoot td { border-top: 2px solid #000b50; }
-       tr.cta td { background: #eef2fb !important; color: #000b50; font-weight: 700; }
-       tr.ter td { background: #000b50 !important; color: #fff; font-weight: 700; }`,
+       tfoot td { border-top: 2px solid ${COLOR_IMPRESION.accion}; }
+       tr.cta td { background: ${COLOR_IMPRESION.cabecera} !important; color: ${COLOR_IMPRESION.accion}; font-weight: 700; }
+       tr.ter td { background: ${COLOR_IMPRESION.accion} !important; color: ${COLOR_IMPRESION.blanco}; font-weight: 700; }`,
     );
   }
 }

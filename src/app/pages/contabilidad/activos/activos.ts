@@ -5,7 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../../core/api.service';
 import { AlertService } from '../../../core/alert.service';
 import { mensajeError } from '../../../core/errores';
-import { escapeHtml, imprimirHtml } from '../../../core/imprimir';
+import { COLOR_IMPRESION, escapeHtml, imprimirHtml } from '../../../core/imprimir';
 import {
   ActivoFijo, ActivoFijoForm, CentroCosto, CorridaDepreciacion, CuentaContable, FichaActivoFijo, Tercero, VistaPreviaDepreciacion,
 } from '../../../core/models';
@@ -201,9 +201,9 @@ export class ActivosComponent implements OnInit, OnDestroy {
         `<div class="etq"><img src="${dataUrl}" alt="QR ${escapeHtml(a.codigo)}" /><div><p class="cod">${escapeHtml(a.codigo)}</p>` +
         `<p class="desc">${escapeHtml(a.descripcion)}</p>${a.serial ? `<p class="meta">Serial ${escapeHtml(a.serial)}</p>` : ''}` +
         `<p class="meta">JD&amp;D Consultores · Activo fijo</p></div></div>`,
-        `.etq { display: flex; gap: 14px; align-items: center; border: 1px dashed #94a3b8; padding: 12px; width: 9cm; }
+        `.etq { display: flex; gap: 14px; align-items: center; border: 1px dashed ${COLOR_IMPRESION.tinta3}; padding: 12px; width: 9cm; }
          .etq img { width: 3.2cm; height: 3.2cm; }
-         .cod { font-size: 20px; font-weight: 700; color: #000b50; margin: 0; }
+         .cod { font-size: 20px; font-weight: 700; color: ${COLOR_IMPRESION.accion}; margin: 0; }
          .desc { font-size: 12px; margin: 4px 0; }`,
       );
     });

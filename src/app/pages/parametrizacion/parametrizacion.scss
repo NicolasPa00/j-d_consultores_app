@@ -5,38 +5,7 @@
   display: block;
 }
 
-.tabs {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-}
-
-.tab {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.55rem 1.1rem;
-  font-family: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
-}
-
-.tab:hover {
-  color: var(--text-main);
-  background: #f1f5f9;
-}
-
-.tab--active {
-  color: var(--primary-color);
-  background: rgba(45, 123, 200, 0.1);
-  border-color: var(--accent-color);
-}
+/* Pestañas: usan .tabs/.tab globales (styles.scss). */
 
 .card {
   margin-bottom: 1.25rem;
@@ -45,18 +14,18 @@
 .par-aviso {
   margin: 0 0 1rem;
   padding: 0.6rem 0.8rem;
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--warning) 14%, transparent);
-  border: 1px solid color-mix(in srgb, var(--warning) 45%, transparent);
+  border-radius: var(--r-alerta);
+  color: var(--tinta);
+  background: var(--aviso-fondo);
   font-size: 0.85rem;
 }
 
 .par-ok {
   margin: 0 0 1rem;
   padding: 0.6rem 0.8rem;
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--success) 14%, transparent);
-  border: 1px solid color-mix(in srgb, var(--success) 45%, transparent);
+  border-radius: var(--r-alerta);
+  color: var(--tinta);
+  background: var(--ok-fondo);
   font-size: 0.85rem;
 }
 
@@ -95,7 +64,7 @@
 }
 
 .par-vence {
-  color: var(--warning);
+  color: var(--tinta-2);
   font-weight: 600;
 }
 
@@ -125,4 +94,29 @@
 .par-sub { display: block; color: var(--text-muted); font-size: 0.72rem; }
 .par-cuentas__fila { display: block; line-height: 1.35; }
 .par-cuentas__fila + .par-cuentas__fila { margin-top: 0.2rem; }
-.par-cuentas__fila small { display: block; color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.02em; }
+.par-cuentas__fila small { display: block; color: var(--text-muted); font-size: 0.72rem; }
+
+.par-vence::before {
+  content: '';
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 0.3em;
+  vertical-align: -0.12em;
+  background: var(--ambar);
+  -webkit-mask: var(--icono-reloj) center / contain no-repeat;
+  mask: var(--icono-reloj) center / contain no-repeat;
+}
+
+/* La tabla ES la tarjeta: sin el relleno de `.card__body` (doble marco) y la
+   cabecera llega a los bordes como en el resto de vistas. La nota al pie va
+   dentro, con su propio relleno. */
+.card__body.table-wrap {
+  padding: 0;
+}
+
+.card__body.table-wrap > .form-field__hint {
+  margin: 0;
+  padding: 10px 16px;
+  border-top: 1px solid var(--borde);
+}

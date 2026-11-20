@@ -26,10 +26,9 @@
   margin: 0 0 1rem;
   padding: 0.7rem 0.9rem;
   font-size: 0.88rem;
-  color: #7a5a00;
-  background: #fff8e1;
-  border-left: 4px solid #f1c40f;
-  border-radius: 0 8px 8px 0;
+  color: var(--tinta);
+  background: var(--aviso-fondo);
+  border-radius: var(--r-alerta);
 }
 
 .cnt-aviso--inline {
@@ -79,7 +78,7 @@
 .cnt-search__input:focus {
   outline: none;
   border-color: var(--secondary-color);
-  box-shadow: 0 0 0 3px rgba(45, 123, 200, 0.15);
+  box-shadow: var(--halo);
 }
 
 .cnt-toggle {
@@ -93,9 +92,12 @@
 }
 
 /* ===== Árbol ===== */
+/* NIT, teléfonos y códigos: Inter normal, sin cifras tabulares ni otra familia
+   (DESIGN §3 y §10: no se suman con nada; la monoespaciada rompía la textura). */
 .mono {
-  font-variant-numeric: tabular-nums;
-  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-family: inherit;
+  font-variant-numeric: normal;
+  letter-spacing: 0;
 }
 
 .cnt-codigo {
@@ -123,7 +125,7 @@
 }
 
 .cnt-caret:hover {
-  background: #eef3f9;
+  background: var(--accion-tenue);
 }
 
 .cnt-caret svg {
@@ -146,7 +148,7 @@
 
 .cnt-fila--grupo td {
   font-weight: 600;
-  background: #f7f9fc;
+  background: var(--cabecera-tabla);
 }
 
 .cnt-fila--inactiva td {
@@ -210,7 +212,7 @@
 
 .cnt-errores {
   font-size: 0.82rem;
-  color: var(--danger-color, #c0392b);
+  color: var(--error);
 }/* En el alta, el pie va dentro del <form> (para que Enter envíe): se pega abajo. */
 .modal__body > .modal__footer {
   margin: 0 -1.5rem -1.5rem;
@@ -236,21 +238,7 @@
   }
 }
 
-/* ===== Pestañas (mismo aspecto que Facturación) ===== */
-.tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap; }
-.tab {
-  padding: 0.5rem 0.95rem;
-  font: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  cursor: pointer;
-}
-.tab:hover { color: var(--text-main); background: #f1f5fa; }
-.tab--active { color: var(--primary-color); background: rgba(45, 123, 200, 0.1); border-color: var(--accent-color); }
+/* Pestañas: usan .tabs/.tab globales (styles.scss). */
 
 /* 24-oct-2026 · Selección y eliminación de cuentas que no se necesitan. */
 .cnt-marca { width: 2.4rem; text-align: center; }
@@ -262,8 +250,8 @@
   margin-bottom: 0.75rem;
   padding: 0.6rem 0.9rem;
   font-size: 0.9rem;
-  background: #fff8e1;
-  border: 1px solid #f1deaa;
+  background: var(--aviso-fondo);
+  border: 1px solid var(--aviso-borde);
   border-radius: var(--radius-md);
 }
 .cnt-masiva span { margin-right: auto; }

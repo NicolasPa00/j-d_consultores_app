@@ -16,6 +16,7 @@
         class="ord-search__input"
         type="text"
         placeholder="Buscar por empresa, ARL, NIT, cronograma u OS…"
+        title="Buscar por empresa, ARL, NIT, cronograma u OS"
         [ngModel]="query()"
         (ngModelChange)="buscar($event)"
       />
@@ -58,6 +59,9 @@
       }
     </select>
 
+    <!-- Los botones van en su propio grupo: si no caben junto a los filtros,
+         bajan juntos a la línea siguiente (rediseño, sin cambiar el orden). -->
+    <div class="ord-head__botones">
     <!-- 7-oct-2026 · Recordatorio de las visitas programadas que vienen. El número es
          lo que pide atención ya (atrasadas, en curso o de hoy). -->
     <button type="button" class="btn btn--secondary btn--sm prox-btn" (click)="abrirProximas()"
@@ -102,6 +106,7 @@
         Nueva orden manual
       </button>
     }
+    </div>
   </div>
 </section>
 
@@ -129,7 +134,7 @@
         <tr>
           <th>Razón social</th>
           <th>ARL</th>
-          <th>Horas</th>
+          <th class="num">Horas</th>
           <th>Vencimiento</th>
           <th>Estado</th>
           <th class="th--wrap">Estado ARL/<br />Plataforma</th>
@@ -156,7 +161,7 @@
                     </svg>
                     {{ order.assignedProf }}
                     @for (co of order.coasesores ?? []; track co.profesional_id) {
-                      <span [title]="co.horas + ' h de la orden'">· {{ co.nombre }}</span>
+                      <span class="who__co" [title]="co.horas + ' h de la orden'">· {{ co.nombre }}</span>
                     }
                   </span>
                 }
@@ -166,7 +171,7 @@
                  sigue estando en el detalle de la orden, que es donde se revisa;
                  en la bandeja solo hacía ruido sobre el dato que se busca. -->
             <td>{{ order.arl }}</td>
-            <td class="mono">{{ order.fields.horas.value || '—' }}</td>
+            <td class="num">{{ order.fields.horas.value || '—' }}</td>
             <!-- T0-06 · Antes fecha y días en dos líneas; en una sola, con los
                  días en el `title` (se ven al pasar el cursor, sin ocupar ancho). -->
             <td>
@@ -252,7 +257,7 @@
                     <path d="M6 2h12v20l-3-2-3 2-3-2-3 2z" />
                     <path d="M9 7h6M9 11h6M9 15h4" />
                   </svg>
-                  {{ order.cobroAprobadoEn ? 'APROBADO' : 'PENDIENTE' }}
+                  {{ order.cobroAprobadoEn ? 'Aprobado' : 'Pendiente' }}
                 </button>
                 <!-- 1-oct-2026 · N.º de radicado ante Bolívar. Va aquí y no en una
                      columna propia: solo lo usa Bolívar (la columna quedaría vacía
@@ -275,7 +280,7 @@
                       <span class="radicado__check" [class.radicado__check--ok]="order.radicadoAprobado" aria-hidden="true">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 12.5 4 4 8-9" /></svg>
                       </span>
-                      RADICADO {{ order.numeroRadicado }}
+                      RADICADO <span class="radicado__num">{{ order.numeroRadicado }}</span>
                     } @else if (puedeEditarCobro()) {
                       + Radicado
                     }
@@ -404,7 +409,7 @@
 <!-- ============ MODAL: DETALLE / EDICIÓN ============ -->
 @if (detailOrder(); as order) {
   <div class="modal-backdrop" (click)="closeDetail()"></div>
-  <div class="modal modal--xl" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+  <div class="modal modal--xl" [class.modal--lectura]="!editMode()" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="detailTitle">

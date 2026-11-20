@@ -87,7 +87,7 @@
             <tr>
               <td><strong>Total</strong></td>
               <td></td>
-              @for (e of antiguedad()!.edades; track e) { <td class="col-num mono"><strong>{{ pesos(antiguedad()!.total[e]) }}</strong></td> }
+              @for (e of antiguedad()!.edades; track e) { <td class="col-num mono"><strong>{{ +antiguedad()!.total[e] ? pesos(antiguedad()!.total[e]) : '' }}</strong></td> }
               <td class="col-num mono"><strong>{{ pesos(antiguedad()!.total.TOTAL) }}</strong></td>
               <td></td>
             </tr>
@@ -202,19 +202,21 @@
           Modificado {{ r.cambios!.length === 1 ? '' : r.cambios!.length + ' veces · la última' }} el {{ r.cambios![0].fecha }}@if (r.cambios![0].usuario) { por {{ r.cambios![0].usuario }} }@if (r.cambios![0].motivo) { · {{ r.cambios![0].motivo }} }
         </p>
       }
-      <table class="table">
-        <thead><tr><th>Factura</th><th class="col-num">Pagado</th><th>Retenido</th></tr></thead>
-        <tbody>
-          @for (a of r.aplicaciones ?? []; track a.id) {
-            <tr>
-              <td class="mono">{{ a.numero }}</td>
-              <td class="col-num mono">{{ pesos(a.valor_pagado) }}</td>
-              <td>@for (x of a.retenciones; track x.retencion) { <span>{{ x.nombre }}: {{ pesos(x.valor) }}</span> }</td>
-            </tr>
-          }
-        </tbody>
-        <tfoot><tr><td><strong>Consignado</strong></td><td class="col-num mono"><strong>{{ pesos(r.valor_consignado) }}</strong></td><td></td></tr></tfoot>
-      </table>
+      <div class="table-wrap table-wrap--modal">
+        <table class="table">
+          <thead><tr><th>Factura</th><th class="col-num">Pagado</th><th>Retenido</th></tr></thead>
+          <tbody>
+            @for (a of r.aplicaciones ?? []; track a.id) {
+              <tr>
+                <td class="mono">{{ a.numero }}</td>
+                <td class="col-num mono">{{ pesos(a.valor_pagado) }}</td>
+                <td>@for (x of a.retenciones; track x.retencion) { <span>{{ x.nombre }}: {{ pesos(x.valor) }}</span> }</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot><tr><td><strong>Consignado</strong></td><td class="col-num mono"><strong>{{ pesos(r.valor_consignado) }}</strong></td><td></td></tr></tfoot>
+        </table>
+      </div>
       @if (anulando()) {
         <div class="form-field">
           <label class="form-field__label" for="carMotivo">Motivo de la anulación *</label>
@@ -229,7 +231,7 @@
           <button type="button" class="btn btn--close" (click)="anulando.set(false)" [disabled]="trabajando()">Cancelar</button>
           <button type="button" class="btn btn--danger" (click)="confirmarAnular(r)" [disabled]="trabajando()">Anular recibo</button>
         } @else {
-          <button type="button" class="btn btn--danger car-peligro" (click)="motivo = ''; anulando.set(true)">Anular</button>
+          <button type="button" class="btn btn--peligro-contorno car-peligro" (click)="motivo = ''; anulando.set(true)">Anular</button>
           <button type="button" class="btn btn--secondary" (click)="modificarRecibo(r)">Modificar</button>
         }
       }
