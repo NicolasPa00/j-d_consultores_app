@@ -13,9 +13,10 @@
 .pg-fecha {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.85rem;
-  color: var(--text-muted);
+  gap: var(--e-2);
+  font-size: var(--fs-celda);
+  font-weight: 500;
+  color: var(--tinta-2);
 }
 
 .pg-fecha .form-control {
@@ -26,13 +27,11 @@
   flex: 1;
 }
 
-.mono {
-  font-variant-numeric: tabular-nums;
-}
-
+/* Las cifras (col-num) van tabulares; fechas y números de documento, no. */
 .col-num {
   text-align: right;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 /* «Vencida» va en error 600 (DESIGN §7, vencimiento). */
@@ -41,26 +40,29 @@
   font-weight: 600;
 }
 
-.pg-vacio {
-  padding: 1.5rem 1rem;
+.pg-vacio-texto {
+  margin: 0;
+  padding: var(--e-6) var(--e-4);
   text-align: center;
-  color: var(--text-muted);
+  font-size: var(--fs-base);
+  font-weight: 500;
+  color: var(--tinta-2);
 }
 
 .pg-lista {
   max-width: 220px;
   white-space: normal;
-  font-size: 0.82rem;
+  font-size: var(--fs-celda);
 }
 
 .pg-anticipos {
-  margin-top: 1rem;
+  margin-top: var(--e-6);
 }
 
 .pg-sub {
   display: block;
-  font-size: 0.78rem;
-  color: var(--text-muted);
+  font-size: var(--fs-celda);
+  color: var(--tinta-3);
 }
 
 .pg-doc td {
@@ -69,17 +71,17 @@
 
 .pg-mov {
   padding-left: 1.6rem;
-  font-size: 0.86rem;
+  color: var(--tinta-2);
 }
 
 .pg-mov small {
-  color: var(--text-muted);
+  color: var(--tinta-3);
 }
 
 .pg-anulado {
   margin: 0;
   padding: 0.6rem 0.8rem;
-  font-size: 0.88rem;
+  font-size: var(--fs-celda);
   color: var(--error);
   background: var(--error-fondo);
   border-radius: var(--r-alerta);
@@ -104,13 +106,12 @@
 
 .pg-ayuda {
   margin: 0;
-  font-size: 0.86rem;
-  color: var(--text-muted);
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
 }
 
 .pg-editor .form-control {
-  padding: 0.4rem 0.55rem;
-  font-size: 0.86rem;
+  font-size: var(--fs-celda);
 }
 
 .pg-editor td:nth-child(5),
@@ -126,7 +127,7 @@
 .pg-cuadre {
   margin: 0;
   padding: 0.6rem 0.8rem;
-  font-size: 0.9rem;
+  font-size: var(--fs-celda);
   color: var(--info);
   background: var(--info-fondo);
   border-radius: var(--r-alerta);
@@ -149,9 +150,9 @@
 /* 24-oct-2026 · Cuenta del anticipo en la tabla y detalle del anticipo. */
 .pg-cuenta small {
   display: block;
-  color: var(--text-muted);
+  color: var(--tinta-3);
   font-family: inherit;
-  font-size: 0.74rem;
+  font-size: var(--fs-meta);
   max-width: 190px;
   white-space: normal;
 }
@@ -164,9 +165,11 @@
   display: grid;
   grid-template-columns: 180px 1fr;
   gap: 0.6rem;
-  font-size: 0.9rem;
+  font-size: var(--fs-base);
 }
-.pg-dl dt { color: var(--text-muted); }
+.pg-dl dt { color: var(--tinta-3); }
+.pg-dl dd { color: var(--tinta); }
+.pg-cifra { font-weight: 600; font-variant-numeric: tabular-nums; }
 .pg-dl dd { margin: 0; }
 @media (max-width: 560px) {
   .pg-dl > div { grid-template-columns: 1fr; gap: 0.1rem; }
@@ -182,4 +185,138 @@
   background: var(--ambar);
   -webkit-mask: var(--icono-alerta) center / contain no-repeat;
   mask: var(--icono-alerta) center / contain no-repeat;
+}
+
+/* Estado contable (Contabilizado / Anulado): forma de etiqueta con visto, igual
+   que el estado ante la DIAN en Facturación (no es un estado de OS). */
+.pill.doc-estado { border-radius: var(--r-control); font-size: var(--fs-meta); font-weight: 500; letter-spacing: 0; gap: 5px; }
+.doc-estado.pill--success::before { width: 11px; height: 11px; border-radius: 0; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* «Anular» / «Eliminar», primer paso de una destructiva: contorno ROJO y su
+   ícono, a la izquierda del pie. «Cerrar» (rojo tenue relleno, sin ícono) sale
+   sin hacer nada; así las dos no se leen igual de peligrosas. */
+.btn--peligro-contorno {
+  border-color: var(--error-borde);
+  svg { width: 16px; height: 16px; flex-shrink: 0; }
+}
+
+/* En el celular las acciones de «Por pagar» y «Egresos» se parten parejas, desde
+   la izquierda (el separador deja de empujar). */
+@media (max-width: 640px) {
+  .pg-sep { flex-basis: 100%; height: 0; }
+}
+
+/* Estado vacío dentro de una tabla más ancha que la pantalla (celular, ~1093 px):
+   el bloque se queda quieto a la izquierda y mide lo que se ve del marco, así el
+   título no sale cortado a la mitad. Pedido global: llevarlo a `.table__empty`. */
+.table-wrap { container-type: inline-size; }
+.table td.table__empty--estado .estado-vacio {
+  position: sticky;
+  left: 0;
+  box-sizing: border-box;
+  width: min(100%, 100cqw);
+}
+
+/* ───────── Ronda 2 de corrección (20-nov-2026) ───────── */
+
+/* La fila Total también se queda pegada bajo la columna fija del ojo (la regla
+   global solo cubre thead y tbody): su celda vacía lleva fondo sólido, así la cifra
+   del total no se mete debajo del ojo ni se desalinea de las filas. Pedido global:
+   añadir `tfoot` a la regla de `.col-actions` fija en styles.scss. */
+@media (min-width: 821px) {
+  .table-wrap > .table > tfoot > tr > td.col-actions:last-child {
+    position: sticky;
+    right: 0;
+    background-color: var(--cabecera-tabla);
+  }
+  .table-wrap > .table > tfoot > tr > td.col-actions:last-child::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -10px;
+    width: 10px;
+    pointer-events: none;
+    background: linear-gradient(to left, rgb(15 23 42 / 9%), rgb(15 23 42 / 0%));
+    opacity: 0;
+    animation: pg-hay-mas linear both;
+    animation-timeline: scroll(nearest inline);
+  }
+}
+@keyframes pg-hay-mas {
+  0%, 92% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Cliente / proveedor a 11 rem a ~1093 px: deja sitio a las cifras sin que la
+   razón social quede en una palabra por renglón. */
+@media (max-width: 1365px) {
+  /* Ronda 3 · 8 rem de mínimo (la columna crece si hay sitio): con el encabezado
+     «Acciones», Egresos desbordaba 29 px a ~1093 px y la columna fija tapaba «Estado». */
+  .card > .table-wrap > .table tbody td.car-nombre { min-width: 8rem; text-wrap: balance; }
+  /* Los rótulos de las edades («1 a 30 días», «Por vencer») pueden ir en dos
+     renglones: una columna vacía ya no reserva el ancho de su rótulo entero y la
+     tabla de antigüedad cabe a ~1093 px útiles sin meter el Total bajo el ojo. */
+  .card > .table-wrap > .table > thead > tr > th.col-num {
+    white-space: normal;
+    height: auto;
+    line-height: 1.3;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+}
+
+/* Celular: la primera columna (cliente, proveedor, número) se queda fija al
+   deslizar, así cada monto —también el de la fila Total— se lee junto a su nombre. */
+@media (max-width: 820px) {
+  .card > .table-wrap > .table > :is(thead, tbody, tfoot) > tr > :is(th, td):first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    box-shadow: inset -1px 0 0 var(--borde);
+  }
+  .card > .table-wrap > .table > tbody > tr > td:first-child { background-color: inherit; }
+  .card > .table-wrap > .table > thead > tr > th:first-child { z-index: 2; background-color: var(--cabecera-tabla); }
+  .card > .table-wrap > .table > tbody td.car-nombre { min-width: 12rem; max-width: 13rem; text-wrap: balance; }
+  /* La fila vacía (un solo td a todo lo ancho) no se fija. */
+  .card > .table-wrap > .table > tbody > tr > td.table__empty:first-child { position: static; box-shadow: none; max-width: none; }
+}
+
+/* Anticipos: «Por cruzar» en la etiqueta de documento, tono de acción (es lo que
+   queda por hacer, no una alerta); ya no en pastilla ámbar con punto junto a
+   «Contabilizado» (DESIGN §10). */
+.doc-estado.pill--info::before { width: 6px; height: 6px; }
+
+/* ───────── Ronda 3 de corrección (20-nov-2026) ───────── */
+
+/* Encabezado «Acciones» y el ojo al final de su columna, igual en Por pagar, Egresos
+   y Anticipos que en Facturación (la regla global de `thead th` alinea a la izquierda). */
+.table > thead > tr > th.col-actions { text-align: right; }
+.table > tbody > tr > td.col-actions { text-align: right; }
+.card > .table-wrap > .table > thead > tr > th.col-num { text-wrap: balance; }
+
+/* Celular · Tabla que se desliza de lado: un desvanecido de 28 px en el borde derecho
+   avisa de que hay más columnas, como en las pestañas; al llegar al final, una
+   animación ligada al scroll lo quita. Sin desbordamiento la línea de tiempo queda
+   inactiva y no hay desvanecido. Usa la propiedad registrada y la animación GLOBALES de las pestañas
+   (`--tabs-fade` y `tabs-fade`, styles.scss): Angular no renombra de forma fiable
+   una animación local que anima una propiedad personalizada.
+   Pedido global: llevarlo a `.table-wrap`. */
+@media (max-width: 820px) {
+  .card > .table-wrap {
+    -webkit-mask-image: linear-gradient(to left, transparent, #000 var(--tabs-fade));
+    mask-image: linear-gradient(to left, transparent, #000 var(--tabs-fade));
+  }
+  /* Sin línea de tiempo de scroll la animación dura 0 s y el desvanecido queda en 0. */
+  .card > .table-wrap {
+    animation: tabs-fade linear both;
+    animation-timeline: scroll(self inline);
+  }
+}
+/* No es movimiento: con movimiento reducido conserva su línea de tiempo. */
+@media (prefers-reduced-motion: reduce) {
+  .card > .table-wrap { animation-duration: auto !important; }
 }

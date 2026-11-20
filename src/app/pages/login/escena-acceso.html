@@ -1,0 +1,47 @@
+<!-- El cielo: la franja de arriba de la escena, desde el borde hasta la frase.
+     Las órbitas viven solo aquí (se recortan y se desvanecen antes de llegar al
+     texto) y el logo es su centro. -->
+<div class="escena__cielo">
+  <!-- Órbitas de trazo: decorado puro, fuera del árbol de accesibilidad. Sin
+       núcleo ni destello: el centro es el logo. -->
+  <div class="escena__orbitas-caja">
+    <svg class="escena__orbitas" viewBox="0 0 980 980" aria-hidden="true" focusable="false">
+      <g class="escena__giro">
+        <ellipse cx="490" cy="490" rx="470" ry="176" transform="rotate(-24 490 490)" stroke-opacity=".55" stroke-width="1.25" />
+        <ellipse cx="490" cy="490" rx="400" ry="140" transform="rotate(30 490 490)" stroke-opacity=".36" stroke-width="1.25" />
+        <circle class="escena__satelite" cx="862" cy="300" r="5" />
+      </g>
+      <circle cx="490" cy="490" r="300" stroke-opacity=".14" stroke-width="1" />
+      <circle cx="490" cy="490" r="420" stroke-opacity=".08" stroke-width="1" />
+    </svg>
+  </div>
+
+  <!-- El único logo de la pantalla (DESIGN §7 «Login»): 56 px en escritorio,
+       34 px en el celular. -->
+  <img class="escena__logo" src="logo-orbita-horizontal-claro.webp" alt="ORBITA · Gestión Inteligente" width="236" height="56" />
+</div>
+
+<div class="escena__prop">
+  @if (saludo()) {
+    <p class="escena__saludo">{{ saludo() }}</p>
+  }
+  @if (comoTitulo()) {
+    <h1 class="escena__titulo">{{ titulo() }}</h1>
+  } @else {
+    <p class="escena__titulo">{{ titulo() }}</p>
+  }
+  @if (texto()) {
+    <p class="escena__texto" [class.escena__texto--movil]="textoEnMovil()">{{ texto() }}</p>
+  }
+
+  @if (ciclo()) {
+    <!-- El ciclo de la orden: cuatro estaciones sobre una órbita recta. Es una
+         secuencia real, así que va como lista ordenada. -->
+    <ol class="escena__ciclo" aria-label="Ciclo de una orden de servicio">
+      <li><b>Importada</b><span>Excel o PDF</span></li>
+      <li><b>Programada</b><span>Profesional y fecha</span></li>
+      <li><b>Ejecutada</b><span>Soportes verificados</span></li>
+      <li class="escena__ciclo-fin"><b>Cobrada</b><span>Factura ante la DIAN</span></li>
+    </ol>
+  }
+</div>

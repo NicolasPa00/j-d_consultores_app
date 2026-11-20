@@ -3,7 +3,7 @@
   <div class="pg-filtros">
     <label class="pg-fecha">Corte <input type="date" class="form-control" [(ngModel)]="corte" (change)="cargarAntiguedad()" /></label>
     <span class="pg-sep"></span>
-    <button type="button" class="btn btn--ghost btn--sm" (click)="exportarAntiguedad()">Exportar a Excel</button>
+    <button type="button" class="btn btn--ghost" (click)="exportarAntiguedad()">Exportar a Excel</button>
     @if (puedeOperar()) {
       <a routerLink="/documentos-soporte" class="btn btn--ghost">Documento soporte</a>
       <button type="button" class="btn btn--ghost" (click)="nuevoAnticipo()">Registrar anticipo</button>
@@ -16,22 +16,22 @@
         <thead>
           <tr>
             <th>Proveedor</th><th class="col-num">Obligaciones</th>
-            @for (e of antiguedad()?.edades ?? []; track e) { <th class="col-num">{{ etiquetaEdad[e] }}</th> }
+            @for (e of antiguedad()?.edades ?? []; track e) { <th class="col-num">{{ etiquetaEdad[e].replace(' a ', '\u00a0a\u00a0').replace('Más de ', 'Más\u00a0de\u00a0') }}</th> }
             <th class="col-num">Total</th>
-            <th class="col-actions"></th>
+            <th class="col-actions">Acciones</th>
           </tr>
         </thead>
         <tbody>
-          @if (!antiguedad()?.clientes?.length) { <tr><td colspan="9" class="pg-vacio">No se le debe nada a ningún proveedor a esta fecha.</td></tr> }
+          @if (!antiguedad()?.clientes?.length) { <tr><td colspan="9" class="table__empty table__empty--estado"><div class="estado-vacio estado-vacio--ok"><span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg></span><p class="estado-vacio__titulo">No se le debe nada a ningún proveedor a esta fecha</p></div></td></tr> }
           @for (c of antiguedad()?.clientes ?? []; track c.tercero_id) {
             <tr>
-              <td><strong>{{ c.tercero_nombre }}</strong></td>
+              <td class="car-nombre"><strong>{{ c.tercero_nombre }}</strong></td>
               <td class="col-num">{{ c.documentos }}</td>
               @for (e of antiguedad()!.edades; track e) {
                 <td class="col-num mono" [class.pg-vencido]="e !== 'POR_VENCER' && +c[e] > 0">{{ +c[e] ? pesos(c[e]) : '' }}</td>
               }
               <td class="col-num mono"><strong>{{ pesos(c.TOTAL) }}</strong></td>
-              <td class="col-actions"><button type="button" class="icon-action" (click)="abrirEstado(c.tercero_id)" aria-label="Ver el estado de cuenta" title="Ver el estado de cuenta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
+              <td class="col-actions"><button type="button" class="icon-action icon-action--ver" (click)="abrirEstado(c.tercero_id)" aria-label="Ver el estado de cuenta" title="Ver el estado de cuenta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
             </tr>
           }
         </tbody>
@@ -39,7 +39,7 @@
           <tfoot>
             <tr><td><strong>Total</strong></td><td></td>
               @for (e of antiguedad()!.edades; track e) { <td class="col-num mono"><strong>{{ pesos(antiguedad()!.total[e]) }}</strong></td> }
-              <td class="col-num mono"><strong>{{ pesos(antiguedad()!.total.TOTAL) }}</strong></td><td></td></tr>
+              <td class="col-num mono"><strong>{{ pesos(antiguedad()!.total.TOTAL) }}</strong></td><td class="col-actions"></td></tr>
           </tfoot>
         }
       </table>
@@ -60,20 +60,20 @@
     <div class="card__head"><h3 class="card__title">Comprobantes de egreso</h3></div>
     <div class="table-wrap">
       <table class="table">
-        <thead><tr><th>Egreso</th><th>Fecha</th><th>Proveedor</th><th>Obligaciones</th><th class="col-num">Pagado</th><th class="col-num">Anticipo cruzado</th><th class="col-num">Retenido</th><th>Estado</th><th class="col-actions"></th></tr></thead>
+        <thead><tr><th>Egreso</th><th>Fecha</th><th>Proveedor</th><th>Obligaciones</th><th class="col-num">Pagado</th><th class="col-num">Anticipo cruzado</th><th class="col-num">Retenido</th><th>Estado</th><th class="col-actions">Acciones</th></tr></thead>
         <tbody>
-          @if (!egresos().length) { <tr><td colspan="9" class="pg-vacio">Todavía no hay egresos.</td></tr> }
+          @if (!egresos().length) { <tr><td colspan="9" class="table__empty table__empty--estado"><div class="estado-vacio"><span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></svg></span><p class="estado-vacio__titulo">Todavía no hay egresos</p></div></td></tr> }
           @for (e of pagEgresos.visibles(); track e.id) {
             <tr>
-              <td class="mono"><strong>{{ e.numero }}</strong></td>
+              <td class="td-id nowrap">{{ e.numero }}</td>
               <td class="mono">{{ e.fecha }}</td>
-              <td>{{ e.tercero_nombre }}</td>
+              <td class="car-nombre">{{ e.tercero_nombre }}</td>
               <td class="mono pg-lista">{{ e.obligaciones }}</td>
               <td class="col-num mono">{{ pesos(e.valor_pagado) }}</td>
               <td class="col-num mono">{{ +e.valor_anticipos ? pesos(e.valor_anticipos) : '' }}</td>
               <td class="col-num mono">{{ +(e.retenido ?? 0) ? pesos(e.retenido) : '' }}</td>
-              <td><span class="pill" [class]="e.estado === 'ANULADO' ? 'pill--muted' : 'pill--success'">{{ e.estado === 'ANULADO' ? 'Anulado' : 'Contabilizado' }}</span></td>
-              <td class="col-actions"><button type="button" class="icon-action" (click)="abrirEgreso(e)" aria-label="Ver el egreso" title="Ver el egreso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
+              <td><span class="pill doc-estado" [class]="'pill doc-estado ' + (e.estado === 'ANULADO' ? 'pill--muted' : 'pill--success')">{{ e.estado === 'ANULADO' ? 'Anulado' : 'Contabilizado' }}</span></td>
+              <td class="col-actions"><button type="button" class="icon-action icon-action--ver" (click)="abrirEgreso(e)" aria-label="Ver el egreso" title="Ver el egreso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
             </tr>
           }
         </tbody>
@@ -86,20 +86,20 @@
     <div class="card__head"><h3 class="card__title">Anticipos a proveedores</h3></div>
     <div class="table-wrap">
       <table class="table">
-        <thead><tr><th>Anticipo</th><th>Fecha</th><th>Proveedor</th><th>Cuenta</th><th class="col-num">Valor</th><th class="col-num">Por cruzar</th><th>Estado</th><th class="col-actions"></th></tr></thead>
+        <thead><tr><th>Anticipo</th><th>Fecha</th><th>Proveedor</th><th>Cuenta</th><th class="col-num">Valor</th><th class="col-num">Por cruzar</th><th>Estado</th><th class="col-actions">Acciones</th></tr></thead>
         <tbody>
-          @if (!anticipos().length) { <tr><td colspan="8" class="pg-vacio">No hay anticipos.</td></tr> }
+          @if (!anticipos().length) { <tr><td colspan="8" class="table__empty table__empty--estado"><div class="estado-vacio"><span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2" /><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z" /></svg></span><p class="estado-vacio__titulo">No hay anticipos</p></div></td></tr> }
           @for (a of anticipos(); track a.id) {
             <tr>
-              <td class="mono"><strong>{{ a.numero }}</strong></td>
+              <td class="td-id nowrap">{{ a.numero }}</td>
               <td class="mono">{{ a.fecha }}</td>
-              <td>{{ a.tercero_nombre }}</td>
+              <td class="car-nombre">{{ a.tercero_nombre }}</td>
               <td class="mono pg-cuenta">{{ a.cuenta_codigo }}<small>{{ a.cuenta_nombre }}</small></td>
               <td class="col-num mono">{{ pesos(a.valor) }}</td>
               <td class="col-num mono">{{ pesos(a.saldo) }}</td>
-              <td><span class="pill" [class]="a.estado === 'ANULADO' ? 'pill--muted' : +a.saldo ? 'pill--warning' : 'pill--success'">
+              <td><span class="pill doc-estado" [class]="'pill doc-estado ' + (a.estado === 'ANULADO' ? 'pill--muted' : +a.saldo ? 'pill--info' : 'pill--success')">
                 {{ a.estado === 'ANULADO' ? 'Anulado' : +a.saldo ? 'Por cruzar' : 'Cruzado' }}</span></td>
-              <td class="col-actions"><button type="button" class="icon-action" (click)="abrirAnticipo(a)" aria-label="Ver el anticipo" title="Ver el anticipo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
+              <td class="col-actions"><button type="button" class="icon-action icon-action--ver" (click)="abrirAnticipo(a)" aria-label="Ver el anticipo" title="Ver el anticipo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
             </tr>
           }
         </tbody>
@@ -115,10 +115,11 @@
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="pgEcTitle">Estado de cuenta · {{ e.tercero.nombre }}</h3>
-        <small class="pg-sub">{{ e.tercero.numero_documento }} · se le debe {{ pesos(e.saldo) }}</small>
+        <p class="modal__sub">{{ e.tercero.numero_documento }} · se le debe {{ pesos(e.saldo) }}</p>
       </div>
     </header>
     <div class="modal__body">
+      <div class="table-wrap">
       <table class="table">
         <thead><tr><th>Fecha</th><th>Concepto</th><th>Vence</th><th class="col-num">Cargo</th><th class="col-num">Abono</th><th class="col-num">Saldo</th></tr></thead>
         <tbody>
@@ -140,6 +141,7 @@
           }
         </tbody>
       </table>
+      </div>
     </div>
     <footer class="modal__footer">
       <button type="button" class="btn btn--ghost" (click)="exportarEstado(e)">Exportar a Excel</button>
@@ -154,10 +156,11 @@
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pgEgTitle">
     <header class="modal__head">
       <div>
-        <h3 class="modal__title" id="pgEgTitle">Egreso {{ e.numero }}</h3>
-        <small class="pg-sub">{{ e.tercero_nombre }} · {{ e.fecha }}{{ e.cuenta_banco_codigo ? ' · ' + e.cuenta_banco_codigo + ' ' + e.cuenta_banco_nombre : '' }}</small>
+        <h3 class="modal__title" id="pgEgTitle">Egreso {{ e.numero }}
+          <span class="pill doc-estado" [class]="'pill doc-estado ' + (e.estado === 'ANULADO' ? 'pill--muted' : 'pill--success')">{{ e.estado === 'ANULADO' ? 'Anulado' : 'Contabilizado' }}</span>
+        </h3>
+        <p class="modal__sub">{{ e.tercero_nombre }} · {{ e.fecha }}{{ e.cuenta_banco_codigo ? ' · ' + e.cuenta_banco_codigo + ' ' + e.cuenta_banco_nombre : '' }}</p>
       </div>
-      <span class="pill" [class]="e.estado === 'ANULADO' ? 'pill--muted' : 'pill--success'">{{ e.estado === 'ANULADO' ? 'Anulado' : 'Contabilizado' }}</span>
     </header>
     <div class="modal__body">
       @if (e.motivo_anulacion) { <p class="pg-anulado">Anulado: {{ e.motivo_anulacion }}</p> }
@@ -185,7 +188,7 @@
           <button type="button" class="btn btn--close" (click)="anulando.set(false)" [disabled]="trabajando()">Cancelar</button>
           <button type="button" class="btn btn--danger" (click)="confirmarAnular(e)" [disabled]="trabajando()">Anular egreso</button>
         } @else {
-          <button type="button" class="btn btn--peligro-contorno pg-peligro" (click)="motivo = ''; anulando.set(true)">Anular</button>
+          <button type="button" class="btn btn--peligro-contorno pg-peligro" (click)="motivo = ''; anulando.set(true)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m5.7 5.7 12.6 12.6" /></svg> Anular</button>
         }
       }
       <button type="button" class="btn btn--close" (click)="egreso.set(null)" [disabled]="trabajando()">Cerrar</button>
@@ -199,18 +202,19 @@
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pgAnDetTitle">
     <header class="modal__head">
       <div>
-        <h3 class="modal__title" id="pgAnDetTitle">Anticipo {{ a.numero }}</h3>
-        <small class="pg-sub">{{ a.tercero_nombre }} · {{ a.fecha }}</small>
+        <h3 class="modal__title" id="pgAnDetTitle">Anticipo {{ a.numero }}
+          <span class="pill doc-estado" [class]="'pill doc-estado ' + (a.estado === 'ANULADO' ? 'pill--muted' : +a.saldo ? 'pill--info' : 'pill--success')">
+            {{ a.estado === 'ANULADO' ? 'Anulado' : +a.saldo ? 'Por cruzar' : 'Cruzado' }}</span>
+        </h3>
+        <p class="modal__sub">{{ a.tercero_nombre }} · {{ a.fecha }}</p>
       </div>
-      <span class="pill" [class]="a.estado === 'ANULADO' ? 'pill--muted' : +a.saldo ? 'pill--warning' : 'pill--success'">
-        {{ a.estado === 'ANULADO' ? 'Anulado' : +a.saldo ? 'Por cruzar' : 'Cruzado' }}</span>
     </header>
     <div class="modal__body">
       <dl class="pg-dl">
-        <div><dt>Valor</dt><dd class="mono">{{ pesos(a.valor) }}</dd></div>
-        <div><dt>Por cruzar</dt><dd class="mono">{{ pesos(a.saldo) }}</dd></div>
-        <div><dt>Cuenta del anticipo</dt><dd class="mono">{{ a.cuenta_codigo }} · {{ a.cuenta_nombre }}</dd></div>
-        <div><dt>Sale del banco</dt><dd class="mono">{{ a.banco_codigo }} · {{ a.banco_nombre }}</dd></div>
+        <div><dt>Valor</dt><dd class="pg-cifra">{{ pesos(a.valor) }}</dd></div>
+        <div><dt>Por cruzar</dt><dd class="pg-cifra">{{ pesos(a.saldo) }}</dd></div>
+        <div><dt>Cuenta del anticipo</dt><dd>{{ a.cuenta_codigo }} · {{ a.cuenta_nombre }}</dd></div>
+        <div><dt>Sale del banco</dt><dd>{{ a.banco_codigo }} · {{ a.banco_nombre }}</dd></div>
         @if (a.observaciones) { <div><dt>Observaciones</dt><dd>{{ a.observaciones }}</dd></div> }
         @if (a.motivo_anulacion) { <div><dt>Motivo de la anulación</dt><dd>{{ a.motivo_anulacion }}</dd></div> }
       </dl>
@@ -228,7 +232,7 @@
           <button type="button" class="btn btn--close" (click)="eliminandoAnticipo.set(false)" [disabled]="trabajando()">Cancelar</button>
           <button type="button" class="btn btn--danger" (click)="eliminarAnticipo(a)" [disabled]="trabajando()">Eliminar anticipo</button>
         } @else {
-          <button type="button" class="btn btn--peligro-contorno pg-peligro" (click)="motivo = ''; eliminandoAnticipo.set(true)">Eliminar</button>
+          <button type="button" class="btn btn--peligro-contorno pg-peligro" (click)="motivo = ''; eliminandoAnticipo.set(true)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m5.7 5.7 12.6 12.6" /></svg> Eliminar</button>
         }
       }
       <button type="button" class="btn btn--close" (click)="anticipo.set(null)" [disabled]="trabajando()">Cerrar</button>
@@ -309,7 +313,7 @@
       </div>
       @if (eTercero && propuesta(); as p) {
         @if (!filas().length) {
-          <p class="pg-vacio">A este proveedor no se le debe nada.</p>
+          <p class="pg-vacio-texto">A este proveedor no se le debe nada.</p>
         } @else {
           @if (+p.anticipo_disponible) {
             <p class="pg-ayuda">Tiene <strong>{{ pesos(p.anticipo_disponible) }}</strong> en anticipos por cruzar: escriba en «Anticipo» cuánto se aplica a cada obligación.</p>

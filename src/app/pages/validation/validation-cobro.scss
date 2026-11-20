@@ -9,19 +9,20 @@
 
 /* 1-oct-2026 · El estado de Cobro es el botón que abre el modal. Como píldora
    rellena se leía como una etiqueta más y nadie lo pulsaba: ahora es un botón
-   con borde, sin fondo y con el ícono de factura. El color dice el estado. */
+   con el ícono de factura y un chevron. El color dice el estado.
+   Ronda 2 · Pendiente SIN marco en escritorio (DESIGN §7 [A]): diez cajas
+   iguales pesaban más que la columna Estado. El marco aparece con el hover;
+   en táctil (sin hover) o en pantalla estrecha, en reposo (más abajo). */
 .cobro-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   min-height: 26px;
   padding: 0 0.55rem;
-  /* En reposo lleva marco de botón secundario: en táctil no hay hover que
-     avise de que se puede pulsar (juez de flujo, ronda 2). */
-  border: 1px solid var(--borde-control);
+  border: 1px solid transparent;
   border-radius: var(--r-control);
-  background: var(--superficie);
-  /* Sin sombra en reposo (DESIGN §10); el marco basta para leerse pulsable. */
+  background: transparent;
+  /* Sin sombra en reposo (DESIGN §10). */
   box-shadow: none;
   color: var(--tinta-2);
   cursor: pointer;
@@ -82,27 +83,76 @@
   }
 }
 
-/* 1-oct-2026 · N.º de radicado ante Bolívar, bajo el botón de Cobro. */
+@media (hover: none), (max-width: 820px) {
+  .cobro-btn:not(.cobro-btn--ok):not(:disabled) {
+    border-color: var(--borde-control);
+    background: var(--superficie);
+  }
+}
+
+/* Rediseño · Cobro y radicado apilados EN EL FLUJO de la celda: el radicado
+   ya no cuelga en posición absoluta y nunca se monta sobre la fila siguiente. */
+.cobro-cel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.cobro-btn .cobro-btn__chevron {
+  width: 12px;
+  height: 12px;
+  margin: 0 -2px 0 -1px;
+  opacity: 0.7;
+}
+
+/* 1-oct-2026 · N.º de radicado ante Bolívar, bajo el botón de Cobro.
+   Ronda 2 · No ensancha la columna (`width: 0` + `min-width: 100%`, como la
+   segunda línea de la razón social): toma el ancho que ya fija el botón, con
+   tope de 150 px. Si «Radicado 2026-55512366» no cabe, el número baja entero
+   a la línea siguiente; solo uno más largo que la columna se corta con
+   elipsis (el `title` lo trae completo). Así Cobro mide lo mismo en todas las
+   pestañas y las columnas no se corren. */
 .radicado {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.25rem;
-  margin-top: 0.25rem;
+  width: 0;
+  min-width: 100%;
+  max-width: 150px;
   padding: 0;
   border: 0;
   background: none;
   color: var(--accion);
   cursor: pointer;
   font: inherit;
-  font-size: 0.68rem;
-  font-weight: 600;
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  line-height: 1.35;
   text-align: left;
-  flex-wrap: wrap;
-  column-gap: 0.25rem;
 
-  /* El número no se parte en el guion: si no cabe, baja entero. */
+  &__texto {
+    min-width: 0;
+  }
+
   &__num {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    vertical-align: bottom;
+    font-variant-numeric: tabular-nums;
     white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /* Sin aprobar: reloj en tinta-3 (es espera), distinto del círculo vacío de
+     «Plataforma» por marcar. */
+  &__espera {
+    flex: none;
+    width: 0.95rem;
+    height: 0.95rem;
+    margin-top: 0.05rem;
+    color: var(--tinta-3);
   }
 
   &--vacio {
@@ -110,83 +160,9 @@
     font-weight: 500;
   }
 
-  &:hover:not(:disabled) {
-    text-decoration: underline;
-  }
-
-  &:disabled {
-    cursor: default;
-    text-decoration: none;
-  }
-
-  &:focus-visible {
-    outline: var(--anillo);
-    outline-offset: 2px;
-  }
-}
-
-/* Debajo de la píldora: si operación ya dio el visto bueno al cobro. */
-.cobro-aprob {
-  display: block;
-  margin-top: 0.2rem;
-  font-size: 0.68rem;
-  color: var(--text-muted);
-
-  &--ok {
-    color: var(--success);
-    font-weight: 600;
-  }
-}
-
-/* Estado ARL + el ✓ de «Validado plataforma», en la misma celda. */
-.arl-celda {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.validado {
-  display: inline-grid;
-  place-items: center;
-  width: 1.45rem;
-  height: 1.45rem;
-  padding: 0;
-  /* Sin marcar tiene que leerse como una casilla VACÍA, no como un hueco: borde
-     sólido gris medio y el ✓ insinuado en gris claro (antes, borde punteado en
-     el gris de los separadores, que casi no se veía). */
-  border: 2px solid var(--borde-campo);
-  border-radius: 50%;
-  background: var(--superficie);
-  color: var(--borde-control);
-  cursor: pointer;
-  transition:
-    background-color var(--t-media) ease,
-    color var(--t-media) ease,
-    border-color var(--t-media) ease,
-    transform var(--t-rapida) var(--ease-out);
-
-  svg {
-    width: 0.85rem;
-    height: 0.85rem;
-  }
-
-  &:active:not(:disabled) {
-    transform: scale(0.95);
-  }
-
-  &:hover:not(:disabled) {
-    border-color: var(--ok);
-    color: var(--ok);
-  }
-
-  &--ok {
-    border: 2px solid var(--ok);
-    background: var(--ok);
-    color: var(--superficie);
-
+  @media (hover: hover) and (pointer: fine) {
     &:hover:not(:disabled) {
-      color: var(--superficie);
-      filter: brightness(0.92);
+      text-decoration: underline;
     }
   }
 
@@ -194,21 +170,13 @@
     cursor: default;
   }
 
-  /* Sin marcar y bloqueada (la orden aún no se ejecutó): punteada y apagada, para
-     que no se confunda con una casilla que sí se puede marcar. */
-  &:disabled:not(.validado--ok) {
-    border-style: dashed;
-    border-color: var(--borde-control);
-    background: var(--hundida);
-    color: transparent;
-    cursor: not-allowed;
-  }
-
   &:focus-visible {
     outline: var(--anillo);
     outline-offset: 2px;
   }
-}.cobro__cargando {
+}
+
+.cobro__cargando {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -224,7 +192,7 @@
 .cobro__layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 1.25rem;
+  gap: 28px 40px;
   /* 7-oct-2026 · Las dos columnas miden lo mismo: la más corta estira su última
      tarjeta en vez de dejar un hueco en blanco debajo. */
   align-items: stretch;
@@ -246,7 +214,7 @@
   gap: 0.6rem;
 
   .pill {
-    font-size: 0.72rem;
+    font-size: var(--fs-pastilla);
     font-weight: 600;
     letter-spacing: 0.01em;
     text-transform: none;
@@ -256,29 +224,33 @@
 .cobro__col {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 28px;
   min-width: 0;
 }
 
-.cobro__seccion {
-  padding: 1rem 1.1rem;
-  border: 1px solid var(--borde);
-  border-radius: var(--r-tarjeta);
-  background: var(--superficie);
-}
-
+/* Rediseño 20-nov-2026 · Secciones planas, como todas las del modal (DESIGN
+   §7): título 14/600 en tinta seguido de una línea fina, sin caja alrededor.
+   En el celular la caja dentro del modal se comía 40 px de ancho útil. */
 .cobro__titulo {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin: 0 0 0.6rem;
-  font-size: 0.85rem;
+  gap: 8px;
+  margin: 0 0 14px;
+  font-size: var(--fs-base);
   font-weight: 600;
   color: var(--tinta);
 }
 
+.cobro__titulo::after {
+  content: '';
+  order: 9;
+  flex: 1;
+  height: 1px;
+  background: var(--borde);
+}
+
 .cobro__origen {
-  font-size: 0.7rem;
+  font-size: var(--fs-pastilla);
   font-weight: 500;
   color: var(--text-muted);
 }
@@ -351,6 +323,18 @@
   font-size: 0.75rem;
   color: var(--tinta-2);
   font-weight: 600;
+}
+
+/* Ronda 2 · El aviso junto al título de Resumen es solo una nota: sin ícono y
+   en tinta-3. Los avisos con ícono quedan en «Guardar valores» y en la razón
+   de «Aprobar cobro» desactivado (uno por cosa que hacer, no tres por un estado). */
+.cobro__pendiente.cobro__pendiente--suave {
+  color: var(--tinta-3);
+  font-weight: 500;
+}
+
+.cobro__pendiente.cobro__pendiente--suave::before {
+  content: none;
 }
 
 .cobro__falta {
@@ -456,7 +440,7 @@
 }
 
 .unir__archivo {
-  font-size: 0.7rem;
+  font-size: var(--fs-pastilla);
   color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -558,7 +542,7 @@
   padding: 0 0.3rem;
   border-radius: var(--r-completo);
   background: color-mix(in srgb, var(--superficie) 28%, transparent);
-  font-size: 0.72rem;
+  font-size: var(--fs-pastilla);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 
@@ -572,7 +556,6 @@
 
   &::before { content: ''; width: 0.7rem; height: 0.7rem; border-radius: 3px; background: var(--prox); }
 }
-.prox-vacio { margin: 0; padding: 1.5rem 0; text-align: center; color: var(--text-muted); }
 .prox-lista { display: flex; flex-direction: column; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
 .prox {
   display: grid;
@@ -667,48 +650,308 @@
   opacity: 1;
 }
 
-@media (max-width: 680px) {
-  /* Celular: buscador a lo ancho, los dos selects compartiendo fila y los
-     botones en una fila que arranca a la izquierda (sin borde dentado). */
-  .ord-head__actions {
-    width: 100%;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.6rem;
+
+/* ============ Rediseño (ronda 2) · Órdenes: tabla, barra y pie ============ */
+
+/* Barra de 1201 a 1599 px (ronda 3): la búsqueda sola y entera en la primera
+   línea; en la segunda, los selects a la izquierda y los botones
+   (`.toolbar__fin`, margin-left:auto) a la derecha. Así la barra tiene las
+   mismas proporciones en Todas y en Cobradas (donde el select de Cobro no
+   está) y el texto guía nunca se corta. Desde 1600 px todo cabe en una línea
+   con la búsqueda de 320 px como mínimo. El orden del DOM no cambia. */
+@media (min-width: 1201px) and (max-width: 1599px) {
+  .ord-toolbar > .ord-search {
+    flex-basis: 100%;
+  }
+}
+
+@media (min-width: 1600px) {
+  .ord-toolbar > .ord-search {
+    flex: 1 1 320px;
+    min-width: 320px;
+  }
+}
+
+/* Por debajo de 1201 px los selects y los tres botones no caben en una línea
+   (866 px contra 795 a ~1093 útiles): búsqueda y selects arriba y los botones
+   debajo ALINEADOS AL INICIO, sin hueco a su izquierda. */
+@media (min-width: 681px) and (max-width: 1200px) {
+  .ord-toolbar__botones {
+    margin-left: 0;
+  }
+}
+
+/* Celular estrecho: los dos selects a lo ancho, uno debajo del otro, para que
+   «Estado ARL · todos» no se corte. Mismo orden. */
+@media (max-width: 420px) {
+  .ord-toolbar > .form-control {
+    flex-basis: 100%;
+  }
+}
+
+/* Cobro alineado con su cabecera (ronda 3): el ícono del botón cae en la
+   misma x que «Cobro» y que el reloj o el visto del radicado. La sangría es
+   el padding + el borde del botón. */
+.ord-table {
+  --cobro-sangria: calc(0.55rem + 1px);
+}
+
+.ord-table th.ord-cobro-th {
+  text-indent: var(--cobro-sangria);
+}
+
+/* El radicado conserva TODO el ancho de la columna y se corre la sangría
+   hacia el relleno derecho de la celda (12 px; 4 px a ≤1200 con sangría de
+   5): así «2026-55512366» sigue cabiendo entero en su segunda línea. */
+.ord-table .radicado {
+  margin-left: var(--cobro-sangria);
+  margin-right: calc(-1 * var(--cobro-sangria));
+}
+
+/* Escritorio desde 1201 px: la segunda línea de la razón social no se corta.
+   Si NIT · OS · asesor no cabe, el asesor baja entero a su propia línea
+   (sigue sin ensanchar la columna: `width: 0` + `min-width: 100%`). La
+   elipsis queda solo para 1200 px o menos. */
+@media (min-width: 1201px) {
+  .ord-table .who__meta {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 10px;
+    row-gap: 1px;
+    white-space: normal;
   }
 
-  .ord-search,
-  .ord-head__botones {
-    grid-column: 1 / -1;
+  .ord-table .who__dato {
+    white-space: nowrap;
   }
 
-  .ord-search__input {
-    width: 100%;
+  .ord-table .who__dato + .who__dato::before {
+    margin: 0 5px 0 -5px;
   }
 
-  .ord-head__filtro {
-    width: 100%;
+  .ord-table .who__dato + .who__assigned {
+    margin-left: 0;
+  }
+
+  .ord-table .who__assigned {
     min-width: 0;
   }
+}
 
-  /* Sin «Cobro» (pestaña Cobradas) el de Estado ARL ocupa la fila entera. */
-  .ord-search + .ord-head__filtro:nth-last-child(2) {
-    grid-column: 1 / -1;
+/* Densidad de la tabla a ~1093 px útiles (escala 125 %): sin desplazamiento
+   lateral y las columnas con el MISMO aspecto que a 1280 y 1440 (ronda 3):
+   ARL en una línea y Cobro con su ícono. El ancho sale de apretar Estado ARL
+   (unos 90 px), Opciones (íconos de 24) y los rellenos, no de esconder nada. */
+@media (max-width: 1200px) {
+  .ord-table {
+    --cobro-sangria: 5px;
   }
 
-  .ord-head__botones {
-    justify-content: flex-start;
-    margin-left: 0;
-    gap: 0.6rem;
+  .ord-table > :is(thead, tbody) > tr > :is(th, td) {
+    padding-left: 4px;
+    padding-right: 4px;
   }
 
-  .ord-head__botones > .btn--secondary {
-    flex: 1 1 calc(50% - 0.3rem);
+  .ord-table > :is(thead, tbody) > tr > :is(th, td):first-child {
+    padding-left: 12px;
+  }
+
+  .ord-table .nota-parcial {
+    white-space: normal;
+  }
+
+  .ord-table .ord-estado .pill {
+    gap: 5px;
+    padding: 0 7px;
+    letter-spacing: 0;
+  }
+
+  .ord-table .arl-estado {
+    padding: 0 7px;
+  }
+
+  .ord-table .plataforma {
+    gap: 4px;
+    padding-right: 2px;
+  }
+
+  .ord-table .cobro-btn {
+    gap: 3px;
+    padding: 0 4px;
+  }
+
+}
+
+@media (min-width: 821px) and (max-width: 1200px) {
+  .ord-table .row-actions {
+    gap: 0;
+  }
+
+  /* Las siete pestañas caben a ~1093 px útiles (pedían 866 px y había 797):
+     «Deshabilitadas» queda a la vista sin desplazar. */
+  .tabs {
+    gap: 14px;
+  }
+
+  .tabs > .tab {
+    gap: 6px;
+    font-size: var(--fs-celda);
+  }
+
+  /* 24 px: el mínimo de WCAG 2.2 para un blanco con puntero. */
+  .ord-table .row-actions .icon-action {
+    width: 24px;
+  }
+
+  .ord-table .ord-who {
+    min-width: 160px;
+  }
+}
+
+/* Celular: la segunda línea de la razón social se parte en vez de cortarse.
+   En táctil no hay `title`, y el asesor debe leerse entero. */
+@media (max-width: 820px) {
+  .ord-table .who__meta {
+    white-space: normal;
+  }
+}
+
+/* Pie de la tabla en una fila (maqueta parte-4): «1–10 de N órdenes» y, en
+   línea, la leyenda del candado; a la derecha las páginas junto a «Filas».
+   El paginador es compartido: aquí solo se recoloca, con `display: contents`
+   y la rejilla de la tarjeta (nunca `display` en td/th). */
+.ord-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: 16px;
+}
+
+.ord-card > .table-wrap {
+  grid-column: 1 / -1;
+}
+
+.ord-card > app-paginador,
+.ord-card > app-paginador ::ng-deep .pager {
+  display: contents;
+}
+
+.ord-card > app-paginador ::ng-deep .pager__rango,
+.ord-card > app-paginador ::ng-deep .pager__nav,
+.ord-card > app-paginador ::ng-deep .pager__tamano,
+.ord-card > .ord-leyenda {
+  grid-row: 2;
+  margin: 14px 0 0;
+}
+
+.ord-card > app-paginador ::ng-deep .pager__rango {
+  grid-column: 1;
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
+}
+
+.ord-card > .ord-leyenda {
+  grid-column: 2;
+}
+
+.ord-card > app-paginador ::ng-deep .pager__nav {
+  grid-column: 3;
+}
+
+.ord-card > app-paginador ::ng-deep .pager__tamano {
+  grid-column: 4;
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
+}
+
+/* Celular: el orden visual sigue al del DOM y al del tabulador (ronda 3):
+   contador, páginas, «Filas» y la leyenda, cada uno en su línea. */
+@media (max-width: 640px) {
+  .ord-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ord-card > app-paginador ::ng-deep .pager__rango {
+    grid-row: 2;
+  }
+
+  .ord-card > app-paginador ::ng-deep .pager__nav {
+    grid-row: 3;
+    grid-column: 1;
     justify-content: center;
   }
 
-  .ord-head__botones > .btn--primary {
-    flex: 1 1 100%;
-    justify-content: center;
+  .ord-card > app-paginador ::ng-deep .pager__tamano {
+    grid-row: 4;
+    grid-column: 1;
+    justify-self: end;
+  }
+
+  .ord-card > .ord-leyenda {
+    grid-row: 5;
+    grid-column: 1;
+  }
+}
+
+/* ============ Rediseño (ronda 3) · Modales de Órdenes ============ */
+
+/* Cobro · el total es la cifra más importante del modal: siempre en tinta
+   (la clase `.mono` lo apagaba a tinta-3, 4,41:1 sobre acción tenue). Que
+   aún no esté guardado ya lo dice «Cambios sin guardar». Igual las cifras de
+   Horas y Honorarios. */
+.cobro__total strong,
+.cobro__dato {
+  color: var(--tinta);
+}
+
+/* Cobro · campos de dinero: la cifra a la derecha y tabular, como el resumen
+   de al lado, y sin las flechitas del navegador. El formato del dato no
+   cambia. Valor hora no necesita más de 200 px para seis cifras. */
+.cobro__seccion input.form-control[type='number'] {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.cobro__seccion input.form-control[type='number']::-webkit-inner-spin-button,
+.cobro__seccion input.form-control[type='number']::-webkit-outer-spin-button {
+  display: none;
+  margin: 0;
+}
+
+.cobro__seccion input.form-control[type='number']:not(:disabled) {
+  color: var(--tinta);
+}
+
+#cobroValorHora {
+  max-width: 200px;
+}
+
+/* Detalle (lectura) · «2 h × $ 120.000 = $ 240.000 · valor hora del tipo …»
+   en su propia línea a todo lo ancho, bajo la primera fila de la rejilla. La
+   colocación explícita (`grid-row: 2`) hace que los campos que siguen fluyan
+   alrededor: la primera fila queda pareja y no se abre ningún hueco. */
+.ai-form > .card__body > .tipo-orden__calculo {
+  grid-row: 2;
+  grid-column: 1 / -1;
+  margin: -6px 0 0;
+  font-size: var(--fs-meta);
+}
+
+/* Detalle a ≤420 px · «Descargar» baja bajo el nombre del archivo para que
+   «importado 26/10/2026, 8:38:02 p. m.» quepa en una línea. */
+@media (max-width: 420px) {
+  .doc-row {
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+  }
+
+  .doc-row__meta {
+    flex-basis: calc(100% - 40px - 0.85rem);
+  }
+
+  .doc-row__btn {
+    margin-left: calc(40px + 0.85rem);
   }
 }

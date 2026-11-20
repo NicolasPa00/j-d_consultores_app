@@ -175,14 +175,14 @@
       <span class="card__hint">Órdenes repartidas en varias tandas</span>
     </div>
     <div class="card__body">
-      <label class="form-field" style="flex-direction: row; align-items: center; gap: .6rem;">
+      <label class="ajuste-check">
         <input
           type="checkbox"
           [checked]="envioParcial()"
           [disabled]="savingEnvioParcial()"
           (change)="guardarEnvioParcial($any($event.target).checked)"
         />
-        <span class="form-field__label" style="margin: 0;">Permitir enviar los formatos con la programación incompleta</span>
+        <span>Permitir enviar los formatos con la programación incompleta</span>
       </label>
       <p class="form-note">
         Con esto activado, al asignar una orden cuyas franjas todavía no cubren todas sus horas
@@ -218,7 +218,7 @@
             <tr>
               <th>Tipo de orden</th>
               <th>Valor hora</th>
-              <th>Órdenes</th>
+              <th class="num">Órdenes</th>
               <th class="col-actions">Estado</th>
             </tr>
           </thead>
@@ -255,7 +255,7 @@
                     />
                   </span>
                 </td>
-                <td class="mono">{{ t.ordenes ?? 0 }}</td>
+                <td class="num">{{ t.ordenes ?? 0 }}</td>
                 <td class="col-actions">
                   <button
                     type="button"
@@ -318,7 +318,7 @@
             <tr>
               <th>Tipo de viático</th>
               <th>Valor</th>
-              <th>Órdenes</th>
+              <th class="num">Órdenes</th>
               <th class="col-actions">Estado</th>
             </tr>
           </thead>
@@ -355,7 +355,7 @@
                     />
                   </span>
                 </td>
-                <td class="mono">{{ t.ordenes ?? 0 }}</td>
+                <td class="num">{{ t.ordenes ?? 0 }}</td>
                 <td class="col-actions">
                   <button
                     type="button"
@@ -529,7 +529,16 @@
       @if (loadingUsers()) {
         <div class="card__body"><p class="users-empty">Cargando usuarios…</p></div>
       } @else if (!usuarios().length) {
-        <div class="card__body"><p class="users-empty">No hay usuarios registrados.</p></div>
+        <div class="estado-vacio">
+          <span class="estado-vacio__icono" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" />
+            </svg>
+          </span>
+          <h3 class="estado-vacio__titulo">No hay usuarios registrados.</h3>
+        </div>
       } @else {
         <div class="table-wrap">
           <table class="table">
@@ -549,7 +558,7 @@
                   <td>
                     {{ u.nombre }}
                     @if (u.es_maestro) {
-                      <span class="pill pill--info">Maestro</span>
+                      <span class="tag tag--info">Maestro</span>
                     }
                   </td>
                   <td>{{ u.documento_identidad || '—' }}</td>
@@ -803,7 +812,7 @@
       <span class="card__hint">Textos del formulario público</span>
     </div>
     <div class="card__body">
-      <form class="profile-form" (ngSubmit)="savePreguntas()">
+      <form class="profile-form profile-form--una" (ngSubmit)="savePreguntas()">
         <label class="form-field">
           <span class="form-field__label">Título del formulario</span>
           <input class="form-control" type="text" [(ngModel)]="preguntas.titulo" name="qTitulo" />

@@ -1,6 +1,6 @@
 <!-- ============ ASG-08 · PANEL DEL PROFESIONAL ============ -->
 <!-- El profesional no tiene la vista Órdenes, así que este es el único sitio
-     donde ve su trabajo: su agenda, no los KPIs de administración. -->
+     donde ve su trabajo: su agenda, no los conteos de administración. -->
 @if (esProfesional()) {
   <section class="page-head">
     <h2 class="page-head__title">Mi agenda</h2>
@@ -14,24 +14,19 @@
   } @else {
     <section class="kpi-grid">
       @for (kpi of misKpis(); track kpi.label) {
-        <article class="kpi-card" [class]="'kpi-card--' + kpi.accent">
+        <article class="kpi-card">
           <div class="kpi-card__info">
             <span class="kpi-card__label">{{ kpi.label }}</span>
             <strong class="kpi-card__value">{{ kpi.value }}</strong>
           </div>
-          <span class="kpi-card__icon" aria-hidden="true">
-            <ng-container *ngTemplateOutlet="kpiIcon; context: { $implicit: kpi.icon }" />
-          </span>
         </article>
       }
     </section>
 
-    <section class="panel">
-      <div class="panel__head">
-        <h3 class="panel__title">Mis órdenes</h3>
-        <span class="panel__hint">
-          {{ misPendientes().length }} por atender
-        </span>
+    <section class="card">
+      <div class="card__head">
+        <h3 class="card__title">Mis órdenes</h3>
+        <span class="card__hint">{{ misPendientes().length }} por atender</span>
       </div>
 
       @if (misOrdenes().length) {
@@ -43,7 +38,7 @@
                 <th>Fecha de visita</th>
                 <th>Empresa</th>
                 <th>ARL</th>
-                <th>Horas</th>
+                <th class="num">Horas</th>
                 <th>Contacto SST</th>
                 <th>Soportes enviados</th>
                 <th>Estado</th>
@@ -51,10 +46,10 @@
             </thead>
             <tbody>
               <!-- Las pendientes van primero (las ordena el backend) y se
-                   resaltan: es lo que el profesional tiene que hacer. -->
+                   escriben en 500: es lo que el profesional tiene que hacer. -->
               @for (o of pagMias.visibles(); track o.id) {
-                <tr [class.row-pendiente]="o.pendiente">
-                  <td class="cell-code">{{ o.codigo }}</td>
+                <tr [class.fila-pendiente]="o.pendiente">
+                  <td class="mono cod-os">{{ o.codigo }}</td>
                   <td>
                     {{ o.fecha }}
                     <!-- ASG-02 · Si la visita va partida, el día de inicio no
@@ -68,8 +63,9 @@
                     }
                   </td>
                   <td>{{ o.empresa }}</td>
-                  <td><span class="badge badge--arl">{{ o.arl }}</span></td>
-                  <td>{{ o.horas }} h</td>
+                  <td>{{ o.arl }}</td>
+                  <td class="num">{{ o.horas }} <span class="unidad">h</span></td>
+                  <td>{{ o.contacto }}</td>
                   <!-- SUP-07 · Lo que ya envió, para que no tenga que buscar el
                        correo para saber si subió el acta o solo la asistencia. -->
                   <td>
@@ -83,7 +79,7 @@
                       <span class="soportes__vacio">Sin enviar</span>
                     }
                   </td>
-                  <td><span class="badge badge--status">{{ o.estado }}</span></td>
+                  <td><span class="pill" [class]="pillEstado(o.estado)">{{ o.estado }}</span></td>
                 </tr>
               }
             </tbody>
@@ -92,224 +88,387 @@
 
         <app-paginador [pag]="pagMias" etiqueta="órdenes" />
       } @else {
-        <p class="stat-panel__empty">
-          No tiene órdenes asignadas. Cuando le asignen una recibirá el correo con los formatos.
-        </p>
+        <div class="estado-vacio">
+          <span class="estado-vacio__icono" aria-hidden="true">
+            <ng-container *ngTemplateOutlet="icono; context: { $implicit: 'calendar' }" />
+          </span>
+          <h3 class="estado-vacio__titulo">No tiene órdenes asignadas</h3>
+          <p class="estado-vacio__texto">Cuando le asignen una recibirá el correo con los formatos.</p>
+        </div>
       }
     </section>
   }
 }
 
-<!-- ============ PANEL DE ADMINISTRACIÓN ============ -->
-<!-- Todo lo que sigue (hasta el final del archivo) es la vista de quien
-     gestiona: KPIs globales, tabla de órdenes y drawer de asignación. -->
+<!-- ============ INICIO POR ROL ============ -->
+<!-- Primero lo que toca hacer (DESIGN §1.6): un acceso principal, lo pendiente
+     con su conteo y las próximas visitas. Sin tabla de órdenes. -->
 @if (!esProfesional()) {
-<section class="page-head">
-  <h2 class="page-head__title">Panel de control</h2>
-  <p class="page-head__sub">Resumen general de importación y validación de órdenes.</p>
-</section>
+<div class="inicio">
+  <!-- Franja del saludo: el único momento de marca del Inicio. -->
+  <section class="saludo" aria-labelledby="inicio-saludo">
+    <svg class="saludo__orbitas" viewBox="0 0 560 300" aria-hidden="true" focusable="false">
+      <ellipse cx="300" cy="150" rx="250" ry="92" transform="rotate(-14 300 150)" class="orb orb--1" />
+      <ellipse cx="300" cy="150" rx="205" ry="64" transform="rotate(20 300 150)" class="orb orb--2" />
+      <ellipse cx="300" cy="150" rx="300" ry="150" class="orb orb--3" />
+      <circle cx="62" cy="200" r="5" class="orb-punto" />
+      <circle cx="500" cy="60" r="3.5" class="orb-punto orb-punto--accion" />
+    </svg>
+    <div class="saludo__texto">
+      <h2 class="saludo__titulo" id="inicio-saludo">{{ saludo() }}</h2>
+      @if (mensaje(); as m) {
+        <p class="saludo__mensaje">
+          <span class="saludo__linea">
+            <b>{{ m.fuerte }}</b>
+            @if (m.resto) {
+              <span class="saludo__sep" aria-hidden="true">·</span><span>{{ m.resto }}</span>
+            }
+          </span>
+          @if (m.enlace; as e) {
+            <a class="saludo__enlace" routerLink="/ordenes" [queryParams]="{ os: e.os }">{{ e.texto }} <span aria-hidden="true">→</span></a>
+          }
+        </p>
+      } @else if (cargandoResumen()) {
+        <p class="saludo__mensaje saludo__mensaje--cargando" aria-hidden="true"><span class="hueso"></span></p>
+      }
+    </div>
+    <p class="saludo__fecha"><b>{{ fechaLarga }}</b>{{ semana }}</p>
+  </section>
 
-<!-- Fila de KPIs -->
-<section class="kpi-grid">
-  @for (kpi of kpis(); track kpi.label) {
-    <article class="kpi-card" [class]="'kpi-card--' + kpi.accent">
-      <div class="kpi-card__info">
-        <span class="kpi-card__label">{{ kpi.label }}</span>
-        <strong class="kpi-card__value">{{ kpi.value }}</strong>
-      </div>
-      <span class="kpi-card__icon" aria-hidden="true">
-        <ng-container *ngTemplateOutlet="kpiIcon; context: { $implicit: kpi.icon }" />
-      </span>
-    </article>
+  @if (!resumenVacio()) {
+    <div class="tabs inicio__tabs" role="tablist" aria-label="Inicio" (keydown)="teclaPestana($event)">
+      <button type="button" class="tab" role="tab" id="tab-resumen" aria-controls="panel-resumen"
+              [class.tab--active]="pestana() === 'resumen'" [attr.aria-selected]="pestana() === 'resumen'"
+              [attr.tabindex]="pestana() === 'resumen' ? 0 : -1" (click)="elegirPestana('resumen')">Resumen</button>
+      <button type="button" class="tab" role="tab" id="tab-indicadores" aria-controls="panel-indicadores"
+              [class.tab--active]="pestana() === 'indicadores'" [attr.aria-selected]="pestana() === 'indicadores'"
+              [attr.tabindex]="pestana() === 'indicadores' ? 0 : -1" (click)="elegirPestana('indicadores')">Indicadores</button>
+    </div>
   }
-</section>
 
-<!-- ============ ESTADÍSTICAS: ESTADO + AVANCE POR ARL ============ -->
-<div class="stat-panels">
-  <!-- Distribución por estado (consolidada) -->
-  <section class="card stat-panel">
-    <div class="card__head">
-      <span class="card__title">Distribución por estado</span>
-      <span class="card__hint">{{ totalOrdenes() }} órdenes en total</span>
-    </div>
-    <div class="card__body">
-      @if (estadoDist().length && totalOrdenes() > 0) {
-        <ul class="bars">
-          @for (e of estadoDist(); track e.label) {
-            <li class="bar-row">
-              <span class="bar-row__label">{{ e.label }}</span>
-              <span class="bar-row__track">
-                <span class="bar-row__fill" [class]="'tone-' + e.tone" [style.width.%]="e.width"></span>
-              </span>
-              <span class="bar-row__value">{{ e.value }} <span class="bar-row__share">· {{ e.share }}%</span></span>
-            </li>
-          }
-        </ul>
-      } @else {
-        <p class="stat-panel__empty">Aún no hay órdenes registradas.</p>
-      }
-    </div>
-  </section>
-
-  <!-- Avance por ARL -->
-  <section class="card stat-panel">
-    <div class="card__head">
-      <span class="card__title">Avance por ARL</span>
-      <span class="card__hint">Ejecutadas sobre el total</span>
-    </div>
-    <div class="card__body">
-      @if (perArl().length) {
-        <ul class="arls">
-          @for (a of perArl(); track a.nombre) {
-            <li class="arl-row">
-              <div class="arl-row__top">
-                <span class="arl-row__name">{{ a.nombre }}</span>
-                <span class="arl-row__count">{{ a.ejecutadas }} / {{ a.total }}</span>
-              </div>
-              <span class="arl-row__track">
-                <span class="arl-row__fill" [style.width.%]="a.pct"></span>
-              </span>
-              <span class="arl-row__pct">{{ a.pct }}% ejecutadas</span>
-            </li>
-          }
-        </ul>
-      } @else {
-        <p class="stat-panel__empty">Sin datos por ARL.</p>
-      }
-    </div>
-  </section>
-</div>
-
-<!-- Tabla de órdenes recientes -->
-<!-- Mismas columnas que la vista Órdenes: es la misma orden y tenía que leerse
-     igual en los dos sitios. Lo único que no se replica son las acciones: aquí
-     es un resumen de consulta y para operar está "Ver todo". -->
-<section class="panel">
-  <div class="panel__head">
-    <h3 class="panel__title">Órdenes recientes</h3>
-    <div class="panel__head-right">
-      <span class="panel__hint">Las {{ recentOrders().length }} más recientes · solo lectura</span>
-      <a class="btn btn--ghost btn--sm" routerLink="/ordenes">
-        Ver todo
-        <svg class="btn__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M5 12h14" />
-          <path d="m13 6 6 6-6 6" />
-        </svg>
-      </a>
-    </div>
-  </div>
-
-  <div class="table-wrap">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>NIT</th>
-          <th>Razón social</th>
-          <th>ARL</th>
-          <th>Horas</th>
-          <th>Fecha de vencimiento</th>
-          <th>Confianza</th>
-          <th>Estado</th>
-          <th class="col-actions"></th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- El ojo abre esa orden en Órdenes (`/ordenes?os=<id>`); la fila no es clicable (1-oct-2026). -->
-        @for (order of recentOrders(); track order.id; let i = $index) {
-          <tr>
-            <td class="mono">{{ order.nit }}</td>
-            <td>
-              <div class="who__text">
-                <span class="who__name">{{ nombreOrden(order) }}</span>
-                @if (order.assignedProf) {
-                  <span class="who__assigned">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <circle cx="12" cy="8" r="4" />
-                      <path d="M4 21a8 8 0 0 1 16 0" />
-                    </svg>
-                    {{ order.assignedProf }}
+  @if (pestana() === 'resumen') {
+    <div id="panel-resumen" role="tabpanel" aria-labelledby="tab-resumen">
+      <!-- ---------- Accesos directos (filtrados por permisos y rol) ---------- -->
+      @if (hayAccesos()) {
+        <section class="card accesos" aria-labelledby="inicio-accesos">
+          <h3 class="visualmente-oculto" id="inicio-accesos">Accesos directos</h3>
+          @if (principales().length) {
+            <div class="principales" [attr.data-n]="principales().length">
+              @for (p of principales(); track p.id) {
+                <a class="princ" [class.princ--relleno]="p.relleno" [class.princ--cifra]="p.conteo !== undefined"
+                   [routerLink]="p.ruta" [queryParams]="p.queryParams">
+                  <span class="princ__titulo">
+                    <ng-container *ngTemplateOutlet="icono; context: { $implicit: p.icono }" />
+                    {{ p.etiqueta }}
                   </span>
-                }
+                  <!-- El separador va DENTRO del tramo que no se parte: si la fecha baja
+                       de línea, baja con ella y no queda colgando al final de la primera. -->
+                  <span class="princ__pista"><span>{{ p.pista }}</span>@if (p.pistaFija) {<span class="princ__fija"><span class="princ__sep" aria-hidden="true">· </span>{{ p.pistaFija }}</span>}</span>
+                  @if (p.conteo === undefined) {
+                    <svg class="princ__ir" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+                  } @else if (p.conteo !== null) {
+                    <span class="princ__conteo">{{ cifra(p.conteo) }}</span>
+                  } @else if (cargandoResumen()) {
+                    <span class="princ__conteo princ__conteo--cargando" aria-label="Cargando"></span>
+                  } @else {
+                    <span class="princ__conteo princ__conteo--sin" role="img" aria-label="Sin dato">—</span>
+                  }
+                </a>
+              }
+            </div>
+          }
+          @if (grupos().length) {
+            <div class="grupos">
+              @for (g of grupos(); track g.id) {
+                <div class="grupo" role="group" [attr.aria-label]="g.titulo">
+                  <p class="grupo__titulo" aria-hidden="true">{{ g.titulo }}@if (g.enOtro) {<small> · {{ g.enOtro }}</small>}</p>
+                  @for (a of g.accesos; track a.id) {
+                    <a class="grupo__acceso" [routerLink]="a.ruta" [queryParams]="a.queryParams">
+                      <ng-container *ngTemplateOutlet="icono; context: { $implicit: a.icono }" />
+                      <span>{{ a.etiqueta }}</span>
+                      <svg class="grupo__ir" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+                    </a>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </section>
+      }
+
+      @if (veAtencion() || veProximas()) {
+        <div class="rejilla" [class.rejilla--sola]="!(veAtencion() && veProximas())">
+          <!-- ---------- Requiere su atención ---------- -->
+          @if (veAtencion()) {
+            <section class="card atencion" aria-labelledby="inicio-atencion">
+              <div class="card__head">
+                <h3 class="card__title" id="inicio-atencion">Requiere su atención</h3>
               </div>
-            </td>
-            <td>{{ order.arl }}</td>
-            <td class="mono">{{ order.hours }}</td>
-            <td>
-              @if (order.vencimiento; as v) {
-                <div class="venc" [class]="'venc--' + v.tone">
-                  <span class="venc__date mono">{{ v.fecha }}</span>
-                  <span class="venc__left">{{ v.detalle }}</span>
+              @if (cargandoResumen()) {
+                <div class="cargando-lista" aria-label="Cargando lo pendiente">
+                  @for (i of [1, 2, 3]; track i) { <span class="hueso hueso--fila"></span> }
+                </div>
+              } @else if (pendientes().length) {
+                <ul class="pendientes" [style.--cifra-ancho]="anchoCifra()">
+                  @for (p of pendientes(); track p.id) {
+                    <li>
+                      <a class="pend" [routerLink]="p.ruta" [queryParams]="p.queryParams">
+                        <span class="pend__marca">
+                          <span [class]="'pend__punto pend__punto--' + p.tono" aria-hidden="true"></span>
+                          <span class="pend__cifra">{{ cifra(p.cifra) }}</span>
+                        </span>
+                        <span class="pend__que">
+                          <span class="pend__etiqueta">{{ p.etiqueta }}</span>
+                          @if (p.pista.length) {
+                            <span class="pend__pista">
+                              @for (parte of p.pista; track $index; let ultimo = $last) {
+                                <span [class]="parte.clase ? 'pend__' + parte.clase : ''">{{ parte.texto }}</span>@if (!ultimo) {<span class="pend__sep" aria-hidden="true"> · </span>}
+                              }
+                            </span>
+                          }
+                        </span>
+                        <span class="ir-a pend__ir">
+                          {{ p.accion }}
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+                        </span>
+                      </a>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <div class="estado-vacio estado-vacio--ok">
+                  <span class="estado-vacio__icono" aria-hidden="true">
+                    <ng-container *ngTemplateOutlet="icono; context: { $implicit: 'check' }" />
+                  </span>
+                  <h4 class="estado-vacio__titulo">Todo al día</h4>
+                  <p class="estado-vacio__texto">{{ textoAlDia() }}</p>
+                </div>
+              }
+              @if (actualizado(); as hora) {
+                <p class="atencion__pie">Actualizado a las {{ hora }}</p>
+              }
+            </section>
+          }
+
+          <!-- ---------- Próximas a ejecutar (GET /orders/proximas, la lista del botón de Órdenes) ---------- -->
+          @if (veProximas()) {
+            <section class="card agenda" aria-labelledby="inicio-proximas">
+              <div class="card__head">
+                <h3 class="card__title" id="inicio-proximas">Próximas a ejecutar</h3>
+                <span class="card__hint">Próximos 7 días</span>
+              </div>
+              @if (cargandoProximas()) {
+                <div class="cargando-lista" aria-label="Cargando las próximas visitas">
+                  @for (i of [1, 2, 3]; track i) { <span class="hueso hueso--fila"></span> }
+                </div>
+              } @else if (proximasVisibles().length) {
+                <ul class="visitas">
+                  @for (v of proximasVisibles(); track v.orden_id + v.fecha + v.hora_inicio) {
+                    <li class="visita" [class.visita--hoy]="v.hoy">
+                      <span class="visita__dia">
+                        <b>{{ v.dia }}</b>
+                        <span>{{ v.diaSemana }}</span>
+                      </span>
+                      <span class="visita__que">
+                        <span class="visita__empresa" [title]="v.empresa_nombre ?? ''">{{ v.empresa_nombre || v.codigo }}</span>
+                        <span class="visita__detalle" [title]="v.detalle">{{ v.detalle }}</span>
+                      </span>
+                      <span class="visita__hora">
+                        {{ v.hora }} · {{ v.duracion }}
+                        @if (v.atrasada) { <span class="visita__atrasada">Sin soportes</span> }
+                      </span>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <div class="estado-vacio">
+                  <span class="estado-vacio__icono" aria-hidden="true">
+                    <ng-container *ngTemplateOutlet="icono; context: { $implicit: 'calendar' }" />
+                  </span>
+                  <h4 class="estado-vacio__titulo">Sin visitas en los próximos 7 días</h4>
+                  <p class="estado-vacio__texto">Las órdenes que programe aparecerán aquí por fecha.</p>
+                </div>
+              }
+              <div class="agenda__pie">
+                <a class="ir-a" routerLink="/ordenes">
+                  @if (proximasOcultas(); as n) { {{ n }} más en Órdenes } @else { Ir a Órdenes }
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+                </a>
+              </div>
+            </section>
+          }
+        </div>
+      }
+    </div>
+  } @else {
+    <!-- ============ INDICADORES ============ -->
+    <div id="panel-indicadores" [attr.role]="resumenVacio() ? null : 'tabpanel'" [attr.aria-labelledby]="resumenVacio() ? null : 'tab-indicadores'">
+      @if (cargandoIndicadores() && !kpis().length) {
+        <div class="spinner" aria-label="Cargando los indicadores"></div>
+      } @else {
+        <section class="kpi-grid">
+          @for (kpi of kpis(); track kpi.label) {
+            <article class="kpi-card">
+              <div class="kpi-card__info">
+                <span class="kpi-card__label">{{ kpi.label }}</span>
+                <strong class="kpi-card__value">{{ kpi.value }}</strong>
+                @if (kpi.hint) { <span class="kpi-card__hint">{{ kpi.hint }}</span> }
+              </div>
+            </article>
+          }
+        </section>
+
+        <div class="ind">
+          <!-- Horas ejecutadas por mes: RPT-05 (`GET /reports/horas`), la misma fuente que Estadísticas.
+               La tarjeta está desde el primer momento: mientras carga reserva su alto
+               (Distribución y Avance no saltan) y si falla lo dice dentro. -->
+          <section class="card ind__principal" aria-labelledby="inicio-horas" [attr.aria-busy]="estadoHoras() === 'cargando'">
+            <h3 class="ind__etiqueta" id="inicio-horas">Horas ejecutadas en {{ mesNombre }} (mes en curso)</h3>
+            @switch (estadoHoras()) {
+              @case ('cargando') {
+                <div class="ind__cargando" aria-label="Cargando las horas">
+                  <span class="hueso hueso--cifra"></span>
+                  <span class="hueso hueso--pista"></span>
+                  <div class="graf graf--cargando" aria-hidden="true">
+                    <div class="graf__barras">
+                      @for (h of huesosGraf; track $index) {
+                        <div class="graf__col"><div class="graf__barra graf__barra--hueso" [style.height.%]="h"></div></div>
+                      }
+                    </div>
+                    <div class="graf__meses">
+                      @for (m of mesesEje; track $index) { <span>{{ m }}</span> }
+                    </div>
+                  </div>
+                </div>
+              }
+              @case ('error') {
+                <p class="ind__error">No se pudieron cargar las horas.</p>
+              }
+              @default {
+                @if (horasMes(); as hm) {
+                  <p class="ind__grande">{{ hm.horas.toLocaleString('es-CO') }}<span class="unidad">h</span></p>
+                  @if (hm.horas > 0) {
+                    <p class="ind__pista">en {{ hm.ordenes }} {{ hm.ordenes === 1 ? 'orden' : 'órdenes' }}</p>
+                  } @else {
+                    <p class="ind__pista">Aún sin horas ejecutadas este mes</p>
+                  }
+                }
+                <div class="graf" role="img" [attr.aria-label]="resumenGrafica()">
+                  <div class="graf__barras">
+                    @for (b of barras(); track b.mes) {
+                      <div class="graf__col" [class.graf__col--actual]="b.actual">
+                        @if (b.horas > 0) {
+                          <div class="graf__barra" [style.height.%]="b.alto">
+                            <span>{{ b.horas.toLocaleString('es-CO') }}</span>
+                          </div>
+                        } @else {
+                          <!-- Mes en cero: un trazo en la base, sin cifra suelta. -->
+                          <i class="graf__cero"></i>
+                        }
+                      </div>
+                    }
+                  </div>
+                  <div class="graf__meses" aria-hidden="true">
+                    @for (b of barras(); track b.mes) {
+                      <span [class.graf__mes--actual]="b.actual">{{ b.etiqueta }}</span>
+                    }
+                  </div>
+                </div>
+              }
+            }
+          </section>
+
+          <div class="ind__lado">
+            <!-- Distribución por estado: barra apilada + leyenda con su cifra y su porcentaje. -->
+            <section class="card" aria-labelledby="inicio-dist">
+              <div class="card__head">
+                <h3 class="card__title" id="inicio-dist">Distribución por estado</h3>
+                <span class="card__hint">{{ totalOrdenes() }} órdenes en total</span>
+              </div>
+              @if (totalDistribuido() > 0) {
+                <div class="dist">
+                  <div class="dist__apilada" aria-hidden="true">
+                    @for (e of estadoDist(); track e.label) {
+                      @if (e.value) { <i [class]="'tono--' + e.tono" [style.flex-grow]="e.value"></i> }
+                    }
+                  </div>
+                  <ul class="dist__ley">
+                    @for (e of estadoDist(); track e.label) {
+                      <li>
+                        <i [class]="'tono--' + e.tono" aria-hidden="true"></i>
+                        <span>{{ e.label }}</span>
+                        <b>{{ e.value }}</b>
+                        <em>{{ e.pct }}%</em>
+                      </li>
+                    }
+                  </ul>
                 </div>
               } @else {
-                <span class="venc__none">—</span>
+                <div class="estado-vacio">
+                  <span class="estado-vacio__icono" aria-hidden="true">
+                    <ng-container *ngTemplateOutlet="icono; context: { $implicit: 'orders' }" />
+                  </span>
+                  <h4 class="estado-vacio__titulo">Aún no hay órdenes registradas</h4>
+                </div>
               }
-            </td>
-            <td>
-              <span class="pill pill--metric" [class]="pillClass(order.confidence)">{{ order.confidence }}%</span>
-            </td>
-            <td>
-              <span class="pill" [class]="pillEstado(order.status)">{{ order.status }}</span>
-            </td>
-            <td class="col-actions"><button type="button" class="icon-action" (click)="openOrder(order)" aria-label="Ver la orden" title="Ver la orden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
-          </tr>
-        } @empty {
-          <tr>
-            <td colspan="8" class="table__empty">Aún no hay órdenes registradas.</td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  </div>
+            </section>
 
-  @if (ordersOcultas(); as ocultas) {
-    <p class="panel__more">
-      {{ ocultas }} orden(es) más no se muestran aquí.
-      <a routerLink="/ordenes">Verlas en Órdenes</a>
-    </p>
+            <!-- Avance por ARL: carril hundido sin contorno y el valor siempre escrito. -->
+            <section class="card" aria-labelledby="inicio-arl">
+              <div class="card__head">
+                <h3 class="card__title" id="inicio-arl">Avance por ARL</h3>
+                <span class="card__hint">Ejecutadas sobre el total</span>
+              </div>
+              @if (perArl().length) {
+                <ul class="arl">
+                  @for (a of perArl(); track a.nombre) {
+                    <li class="arl__fila">
+                      <span class="arl__nombre" [title]="a.nombre">{{ a.nombre }}</span>
+                      @if (a.total > 0) {
+                        <span class="arl__carril" aria-hidden="true"><i [style.width.%]="a.pct"></i></span>
+                        <span class="arl__valor"><span><b>{{ a.ejecutadas }}</b> / {{ a.total }}</span><small>{{ a.pct }}% ejecutadas</small></span>
+                      } @else {
+                        <span class="arl__sin">Sin órdenes</span>
+                      }
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <div class="estado-vacio">
+                  <span class="estado-vacio__icono" aria-hidden="true">
+                    <ng-container *ngTemplateOutlet="icono; context: { $implicit: 'orders' }" />
+                  </span>
+                  <h4 class="estado-vacio__titulo">Sin datos por ARL</h4>
+                </div>
+              }
+            </section>
+          </div>
+        </div>
+      }
+    </div>
   }
-</section>
-
+</div>
 }
-<!-- fin del panel de administración (@if !esProfesional) -->
 
-<!-- ============ ICONOS DE LOS KPI ============ -->
-<!-- Un solo juego para los dos paneles (administración y profesional). Mismo
-     trazo lineal de 1.8 y misma caja 24×24 que los iconos del sidebar: las
-     tarjetas usaban emoji y desentonaban con el resto de la interfaz. -->
-<ng-template #kpiIcon let-icon>
-  @switch (icon) {
-    @case ('orders') {
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M8 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2" />
-        <rect x="8" y="2" width="8" height="4" rx="1" />
-        <path d="M8.5 11h7M8.5 15.5h4.5" />
-      </svg>
+<!-- ============ ÍCONOS ============ -->
+<!-- Un solo juego, trazo de 1,8 en caja 24×24, como la barra lateral: cada
+     destino lleva el mismo ícono que su ítem del menú. -->
+<ng-template #icono let-n>
+  <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    @switch (n) {
+      @case ('import') { <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" /><path d="M12 11v6" /><path d="m9 14 3 3 3-3" /> }
+      @case ('orders') { <rect x="8" y="2" width="8" height="4" rx="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01" /> }
+      @case ('plus') { <path d="M12 5v14M5 12h14" /> }
+      @case ('receipt') { <path d="M6 2h12v20l-3-2-3 2-3-2-3 2Z" /><path d="M9 7h6M9 11h6M9 15h4" /> }
+      @case ('file') { <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5Z" /><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" /> }
+      @case ('wallet') { <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /> }
+      @case ('cart') { <circle cx="9" cy="20" r="1.5" /><circle cx="18" cy="20" r="1.5" /><path d="M2 3h3l2.6 12.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L21 7H6" /> }
+      @case ('banknote') { <rect x="2.5" y="6" width="19" height="12" rx="2" /><circle cx="12" cy="12" r="2.5" /><path d="M6 10v4M18 10v4" /> }
+      @case ('contacts') { <path d="M7 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" /><circle cx="13" cy="10" r="2.5" /><path d="M9 17a4 4 0 0 1 8 0" /><path d="M4 7h4M4 12h4M4 17h4" /> }
+      @case ('id-card') { <rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="2" /><path d="M15 8h2M15 12h2M7 16h4" /> }
+      @case ('calendar') { <rect x="3" y="4.5" width="18" height="17" rx="2" /><path d="M16 2.5v4M8 2.5v4M3 10h18" /> }
+      @case ('clock') { <circle cx="12" cy="12" r="9" /><path d="M12 7.5V12l3 2" /> }
+      @case ('check') { <circle cx="12" cy="12" r="9" /><path d="m8.5 12.3 2.4 2.4 4.6-4.9" /> }
     }
-    @case ('calendar') {
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="4.5" width="18" height="17" rx="2" />
-        <path d="M16 2.5v4M8 2.5v4M3 10h18" />
-      </svg>
-    }
-    @case ('clock') {
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 7.5V12l3 2" />
-      </svg>
-    }
-    @case ('check') {
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="9" />
-        <path d="m8.5 12.3 2.4 2.4 4.6-4.9" />
-      </svg>
-    }
-    @case ('search') {
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="7" />
-        <path d="m20 20-3.5-3.5" />
-      </svg>
-    }
-  }
+  </svg>
 </ng-template>
-
-<!-- ============ TOAST ============ -->

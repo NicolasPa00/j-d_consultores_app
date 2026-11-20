@@ -13,7 +13,7 @@
 
 <!-- ============ EMISOR (A0-09) ============ -->
 @if (tab() === 'emisor') {
-  <div class="card">
+  <div class="card par-emisor">
     <div class="card__body">
       @if (loadingEmisor()) {
         <p class="ficha-vacio">Cargando…</p>
@@ -141,7 +141,7 @@
     <div class="card__head">
       <h3 class="card__title">Productos</h3>
       @if (puedeEditar()) {
-        <button type="button" class="btn btn--primary btn--sm" (click)="openNuevoProducto()">Nuevo producto</button>
+        <button type="button" class="btn btn--primary" (click)="openNuevoProducto()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg> Nuevo producto</button>
       }
     </div>
     <div class="card__body table-wrap">
@@ -178,7 +178,7 @@
     <div class="card__head">
       <h3 class="card__title">Tarifas de venta por pagador</h3>
       @if (puedeEditar()) {
-        <button type="button" class="btn btn--primary btn--sm" (click)="openNuevaTarifa()">Nueva tarifa</button>
+        <button type="button" class="btn btn--primary" (click)="openNuevaTarifa()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg> Nueva tarifa</button>
       }
     </div>
     <div class="card__body table-wrap">
@@ -230,7 +230,7 @@
     <div class="card__head">
       <h3 class="card__title">Retenciones</h3>
       @if (puedeEditar()) {
-        <button type="button" class="btn btn--primary btn--sm" (click)="openNuevaRetencion()">Nueva retención</button>
+        <button type="button" class="btn btn--primary" (click)="openNuevaRetencion()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg> Nueva retención</button>
       }
     </div>
     <div class="card__body table-wrap">
@@ -241,7 +241,7 @@
             <tr>
               <td class="mono">{{ r.codigo }}</td>
               <td>{{ r.nombre }}</td>
-              <td>{{ r.tipo }}<small class="par-sub">{{ r.factus_tributo_id ? 'Tributo ' + r.factus_tributo_id : 'Al pagar, no va en la factura' }}</small></td>
+              <td><span class="par-tipo">{{ r.tipo }}</span><small class="par-sub">{{ r.factus_tributo_id ? 'Tributo ' + r.factus_tributo_id : 'Al pagar, no va en la factura' }}</small></td>
               <td class="col-num mono">{{ tarifaRetencion(r) }}</td>
               <td class="par-cuentas">
                 <!-- 9-oct-2026 · Las dos cuentas como texto (antes, una lista de ~430 cuentas por fila; con
@@ -304,7 +304,7 @@
     <div class="card__head">
       <h3 class="card__title">Resoluciones de numeración</h3>
       @if (puedeEditar() && proveedorVisible) {
-        <button type="button" class="btn btn--primary btn--sm" [disabled]="sincronizando()" (click)="sincronizarResoluciones()">
+        <button type="button" class="btn btn--primary" [disabled]="sincronizando()" (click)="sincronizarResoluciones()">
           {{ sincronizando() ? 'Sincronizando…' : 'Sincronizar con el proveedor' }}
         </button>
       }
@@ -326,11 +326,14 @@
               <td class="col-num mono">{{ r.porcentaje_restante ?? '—' }}</td>
               <td><span class="pill" [class]="r.activa ? 'pill--success' : 'pill--muted'">{{ r.activa ? 'Activa' : 'Inactiva' }}</span></td>
               <td class="col-actions">
-                @if (puedeEditar() && r.factus_lista !== 'NOMINA') {
-                  <button type="button" class="icon-action" (click)="toggleResolucion(r)" [attr.aria-label]="r.activa ? 'Desactivar' : 'Activar'" [title]="r.activa ? 'Desactivar' : 'Activar'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v9" /><path d="M7.5 6.5a7 7 0 1 0 9 0" /></svg></button>
-                } @else if (puedeEditar()) {
-                  <span class="icon-action icon-action--hueco" aria-hidden="true"></span>
-                }
+                <!-- La ranura se reserva también en las filas de nómina (sin acción): todas las filas miden igual. -->
+                <div class="row-actions">
+                  @if (puedeEditar() && r.factus_lista !== 'NOMINA') {
+                    <button type="button" class="icon-action" (click)="toggleResolucion(r)" [attr.aria-label]="r.activa ? 'Desactivar' : 'Activar'" [title]="r.activa ? 'Desactivar' : 'Activar'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v9" /><path d="M7.5 6.5a7 7 0 1 0 9 0" /></svg></button>
+                  } @else {
+                    <span class="icon-action icon-action--hueco" aria-hidden="true"></span>
+                  }
+                </div>
               </td>
             </tr>
           } @empty {

@@ -20,14 +20,16 @@
       <div class="card__head"><h3 class="card__title">{{ grupo.titulo }}</h3></div>
       <div class="table-wrap">
         <table class="table">
-          <thead><tr><th>Concepto</th><th class="rg-lado">D/C</th><th>Cuenta</th></tr></thead>
+          <thead><tr><th class="rg-concepto">Concepto</th><th class="rg-lado">D/C</th><th class="rg-cuenta">Cuenta</th></tr></thead>
           <tbody>
             @for (c of grupo.lista; track c.concepto) {
               <tr [class.rg-falta]="!cuentaGeneral(c.concepto)">
-                <td>{{ c.nombre }}</td>
+                <td class="rg-concepto">{{ c.nombre }}</td>
                 <td class="rg-lado">{{ c.lado }}</td>
-                <td>
+                <!-- En el celular el concepto se muestra encima del select (data-*), sin tocar el display del td. -->
+                <td class="rg-cuenta" [attr.data-concepto]="c.nombre" [attr.data-lado]="c.lado">
                   <select class="form-control" [ngModel]="cuentaGeneral(c.concepto)" (ngModelChange)="cambiarGeneral(c.concepto, $event)"
+                          [title]="tituloCuenta(c.concepto)"
                           [disabled]="!puedeEditar() || guardando() === c.concepto" [attr.aria-label]="'Cuenta de ' + c.nombre">
                     <option value="">— Sin regla —</option>
                     @for (cu of cuentas(); track cu.id) { <option [value]="cu.id">{{ cu.codigo }} · {{ cu.nombre }}</option> }

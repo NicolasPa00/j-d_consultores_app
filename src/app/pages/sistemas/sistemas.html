@@ -1,38 +1,46 @@
-<main class="brand-screen sistemas">
-  <header class="sistemas__cabecera">
-    <img class="sistemas__logo" src="logo-orbita-horizontal-claro.webp" alt="ORBITA · Gestión Inteligente" />
-    <button type="button" class="btn btn--outline-light sistemas__salir" (click)="logout()">Cerrar sesión</button>
-  </header>
+<div class="acceso sistemas">
+  <!-- Misma escena que el Login: aquí la frase es el título de la página y va
+       al centro de la altura, en el mismo eje que las dos elecciones. -->
+  <app-escena-acceso
+    [saludo]="'Hola' + (usuario()?.nombre ? ', ' + usuario()!.nombre : '')"
+    titulo="¿En qué sistema va a trabajar?"
+    texto="Puede cambiar de sistema cuando quiera desde la barra superior, sin cerrar sesión."
+    [comoTitulo]="true"
+    [centrada]="true"
+    [textoEnMovil]="true"
+    [ciclo]="false"
+  />
 
-  <section class="sistemas__cuerpo">
-    <p class="sistemas__saludo">Hola{{ usuario()?.nombre ? ', ' + usuario()!.nombre : '' }}</p>
-    <h1 class="sistemas__titulo">¿En qué sistema va a trabajar?</h1>
-    <p class="sistemas__sub">Puede cambiar de sistema cuando quiera desde la barra superior, sin cerrar sesión.</p>
+  <!-- Arriba a la derecha de la pantalla, como siempre: sobre la escena en el
+       celular y sobre la hoja en escritorio. -->
+  <button type="button" class="btn sistemas__salir" (click)="logout()">Cerrar sesión</button>
 
-    <div class="sistemas__tarjetas">
+  <main class="acceso__hoja">
+    <div class="acceso__caja sistemas__caja">
       @for (s of opciones(); track s.id) {
-        <button type="button" class="card card--interactive tarjeta" [class.tarjeta--finanzas]="s.id === 'finanzas'"
-                [attr.aria-label]="'Entrar a ' + s.nombre" (click)="elegir(s.id)">
-          <span class="tarjeta__icono" aria-hidden="true">
-            @if (s.id === 'operacion') {
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="4" y="3" width="16" height="18" rx="2" />
-                <path d="M8 8h8M8 12h8M8 16h5" />
-              </svg>
-            } @else {
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
-              </svg>
-            }
+        <button type="button" class="eleccion" [attr.aria-label]="'Entrar a ' + s.nombre" (click)="elegir(s.id)">
+          <span class="eleccion__cabeza">
+            <span class="eleccion__icono" aria-hidden="true">
+              @if (s.id === 'operacion') {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="5" y="4" width="14" height="17" rx="2" />
+                  <path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3" />
+                </svg>
+              } @else {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+                </svg>
+              }
+            </span>
+            <span class="eleccion__nombre">{{ s.nombre }}</span>
           </span>
-          <span class="tarjeta__nombre">{{ s.nombre }}</span>
-          <span class="tarjeta__descripcion">{{ s.descripcion }}</span>
-          <span class="chip-list tarjeta__pantallas">
+          <span class="eleccion__descripcion">{{ s.descripcion }}</span>
+          <span class="chip-list eleccion__pantallas">
             @for (p of s.pantallas; track p) {
               <span class="chip">{{ p }}</span>
             }
           </span>
-          <span class="tarjeta__entrar">
+          <span class="eleccion__entrar">
             Entrar a {{ s.nombre }}
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M5 12h14M13 6l6 6-6 6" />
@@ -41,5 +49,5 @@
         </button>
       }
     </div>
-  </section>
-</main>
+  </main>
+</div>

@@ -1,3 +1,12 @@
+/* ============================================================
+   Shell de ORBITA (rediseño, 20-nov-2026 · DESIGN §7)
+   - Barra lateral en noche de 232 px: es el ancla de la marca.
+   - Barra superior blanca de 60 px, en el flujo (no fija): el contenido
+     hace scroll debajo de ella, en `.content`.
+   - Celular (≤820 px): sin barra lateral; barra inferior con «Más».
+   Todo hover va dentro de @media (hover: hover) and (pointer: fine).
+   ============================================================ */
+
 :host {
   display: block;
 }
@@ -5,175 +14,189 @@
 .layout {
   display: flex;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
-/* =================== SIDEBAR =================== */
+/* =================== BARRA LATERAL =================== */
 .sidebar {
-  width: 260px;
+  width: 232px;
   flex-shrink: 0;
-  background: var(--superficie);
-  border-right: 1px solid var(--borde);
-  color: var(--tinta-2);
   display: flex;
   flex-direction: column;
+  padding: 16px 12px 12px;
+  background: var(--noche);
+  color: var(--texto-noche);
 }
 
 .sidebar__brand {
-  height: 72px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0 1.25rem;
-  background: var(--superficie);
-  border-bottom: 1px solid var(--borde);
+  gap: 10px;
+  height: 40px;
+  padding: 0 10px;
+  margin-bottom: 14px;
 }
 
-.sidebar__logo {
-  width: auto;
-  height: auto;
+.sidebar__isotipo {
+  flex: none;
+  width: 30px;
+  height: 30px;
   object-fit: contain;
   display: block;
 }
 
-/* El lockup horizontal es casi 4:1, así que quien manda es el ancho: a 168 px
-   sale en 43 px de alto y cabe de sobra en los 72 px de la banda. */
-.sidebar__logo--completo {
-  max-width: 168px;
-  max-height: 46px;
+.sidebar__wordmark {
+  /* La palabra ORBITA en su propio archivo (460 × 83, solo las letras): 16 px de
+     alto de mayúscula, el ancho sale de su proporción. */
+  flex: none;
+  display: block;
+  width: auto;
+  height: 16px;
 }
 
-.sidebar__logo--isotipo {
-  display: none;
-  max-width: 40px;
-  max-height: 40px;
+/* La lista hace scroll sola cuando no cabe (Finanzas en un portátil de 768 px).
+   El desvanecido inferior SOLO aparece mientras queda algo por bajar: una
+   animación ligada al scroll de la propia lista lleva `--nav-fade` de 24 px a 0.
+   Sin scroll la animación no corre y no hay máscara (antes el desvanecido estaba
+   siempre y «Configuración» parecía cortada). */
+@property --nav-fade {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
 }
 
 .sidebar__nav {
-  flex: 1;
-  padding: 24px 16px;
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
   overflow-y: auto;
-  /* Cuando la lista no cabe (Finanzas a 900 px de alto) el último ítem no se
-     corta seco contra el pie: se desvanece en los 28 px finales, que sin
-     desplazamiento son solo el relleno inferior. */
-  padding-bottom: 28px;
-  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
-  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 18%) transparent;
 }
 
-/* =================== T0-14 · Sidebar colapsable a voluntad ===================
-   Mismo aspecto que el colapso por ancho (≤820 px, más abajo): icono + isotipo.
-   Se repiten las reglas en vez de compartirlas con la media query porque las
-   dos tienen que poder darse SIN depender la una de la otra: colapsado a mano
-   en un monitor ancho, o el menú móvil abierto encima de un sidebar que la
-   media query ya dejó estrecho. */
-.sidebar--colapsado {
-  width: 76px;
+@supports (animation-timeline: scroll()) {
+  .sidebar__nav {
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - var(--nav-fade)), transparent);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - var(--nav-fade)), transparent);
+    animation: nav-fade linear both;
+    animation-timeline: scroll(self);
+  }
 }
 
-.sidebar--colapsado ~ .main .navbar {
-  width: calc(100% - 76px);
+@keyframes nav-fade {
+  from { --nav-fade: 24px; }
+  92% { --nav-fade: 24px; }
+  to { --nav-fade: 0px; }
 }
 
-.sidebar--colapsado .nav-link__text,
-.sidebar--colapsado .logout-btn__text {
-  display: none;
-}
-
-.sidebar--colapsado .nav-link,
-.sidebar--colapsado .logout-btn {
-  justify-content: center;
-}
-
-.sidebar--colapsado .sidebar__brand {
-  padding: 0 0.5rem;
-}
-
-.sidebar--colapsado .sidebar__logo--completo {
-  display: none;
-}
-
-.sidebar--colapsado .sidebar__logo--isotipo {
-  display: block;
-}
-
-/* Botón de la barra superior que alterna el sidebar. */
-.menu-toggle {
+/* Título de grupo: 12/500 en texto-noche-2 (7,74:1). No es un enlace. */
+.nav-grupo {
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--tinta-2);
-  cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease;
+  margin: 0;
+  padding: 16px 12px 6px;
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--texto-noche-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.menu-toggle:hover {
-  background: var(--hundida);
-  color: var(--tinta);
+/* El primer grupo (Finanzas no tiene Inicio encima) no necesita el aire de arriba. */
+/* El grupo (role=group, para el lector de pantalla) no crea caja: sus ítems
+   siguen siendo hijos flex de la lista, con el mismo espaciado de antes. */
+.nav-seccion {
+  display: contents;
 }
 
-.menu-toggle svg {
-  width: 22px;
-  height: 22px;
+.sidebar__nav > .nav-seccion:first-child > .nav-grupo {
+  padding-top: 4px;
 }
 
-/* Fondo oscuro del menú móvil. Fuera de la media query no hace nada visible: el
-   panel al que acompaña tampoco se despliega ahí (ver .sidebar--movil-abierto). */
-.sidebar-backdrop {
-  display: none;
-}
-
+/* Ítem: 36 px, 14 px, una sola línea. El subtítulo vive en el `title`. */
 .nav-link {
   position: relative;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 0.7rem 0.85rem;
-  border-radius: 10px;
-  color: var(--tinta-3);
+  gap: 12px;
+  width: 100%;
+  height: 36px;
+  padding: 0 10px 0 14px;
+  border: 0;
+  border-radius: var(--r-item);
+  background: transparent;
+  color: var(--texto-noche);
+  font: inherit;
+  font-size: var(--fs-base);
+  font-weight: 400;
+  text-align: left;
   text-decoration: none;
-  transition: background 0.18s ease, color 0.18s ease;
+  cursor: pointer;
+  transition:
+    background-color var(--t-media) ease,
+    color var(--t-media) ease;
 }
 
-.nav-link:hover {
-  background: var(--hundida);
-  color: var(--tinta);
-  text-decoration: none;
+@media (hover: hover) and (pointer: fine) {
+  .nav-link:hover {
+    background: rgb(255 255 255 / 6%);
+    color: #ffffff;
+    text-decoration: none;
+  }
+
+  .nav-link:hover .nav-link__icon {
+    color: #ffffff;
+  }
 }
 
-/* Ítem activo (30-sep-2026, lineamientos de JD&D): sutil en vez del recuadro
-   azul macizo. Fondo azul tenue, texto en azul corporativo a 600 y un indicador
-   vertical de 4 px a la izquierda. El indicador es una sombra interior y no un
-   `border-left`: así el texto no se desplaza 4 px al activarse el ítem. */
+/* Activo: noche-alzada, texto blanco 500 y la marca cian de 3 px DENTRO de la
+   píldora (4,19:1 sobre noche-alzada). No es el único indicio: fondo y peso
+   también cambian, y lleva aria-current="page". */
 .nav-link--active,
 .nav-link--active:hover {
-  background: var(--state-info-bg);
-  color: var(--accion);
-  box-shadow: inset 4px 0 0 var(--accion);
-  border-radius: 4px var(--radius-control) var(--radius-control) 4px;
+  background: var(--noche-alzada);
+  color: #ffffff;
+  font-weight: 500;
 }
 
-.nav-link--active .nav-link__text {
-  font-weight: 600;
+.nav-link--active::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--cian);
+}
+
+.nav-link--active .nav-link__icon {
+  color: #ffffff;
+}
+
+/* Sobre noche el anillo de foco va en cian (DESIGN §6). */
+.nav-link:focus-visible,
+.sidebar__brand:focus-visible {
+  outline: 2px solid var(--cian);
+  outline-offset: -2px;
+  box-shadow: none;
 }
 
 .nav-link__icon {
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--icono-noche);
+  transition: color var(--t-media) ease;
 }
 
 .nav-link__icon svg {
@@ -182,313 +205,373 @@
 }
 
 .nav-link__text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0; /* deja que la pista se recorte con «…» en vez de ensanchar */
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.nav-link__hint {
-  margin-top: 2px;
-  /* Inter es ~8 % más ancha que la Segoe UI de antes: 10,5 px con tracking
-     cerrado devuelve las pistas enteras («Lo que se les debe a los asesores»)
-     mientras la fase del menú no quite los subtítulos. */
-  font-size: 10.5px;
-  letter-spacing: -0.01em;
-  font-weight: 400;
-  line-height: 1.25;
-  color: var(--tinta-3);
-  /* 1-oct-2026 · En Finanzas varias pistas ocupaban dos líneas y el menú no
-     cabía a 768 px de alto («Configuración» quedaba cortada): una sola línea. */
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+/* Pie: divisor tenue sobre noche, Configuración, Cerrar sesión y Contraer. */
+.sidebar__footer {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid rgb(255 255 255 / 9%);
+}
+
+.nav-link--contraer {
+  color: var(--texto-noche-2);
+  font-size: var(--fs-celda);
+}
+
+.nav-link--contraer .nav-link__icon {
+  width: 16px;
+  height: 16px;
+  margin: 0 1px;
+}
+
 /* Pantallas bajas (portátil de 768 px con la barra del navegador): menos aire
-   entre ítems para que los nueve de Finanzas quepan sin scroll. */
-@media (max-height: 820px) {
-  .sidebar__nav {
-    padding: 14px 16px 28px;
-    gap: 2px;
+   entre grupos para que Finanzas quepa entera sin desplazarse. */
+@media (max-height: 760px) {
+  .sidebar__brand {
+    margin-bottom: 8px;
+  }
+
+  .nav-grupo {
+    padding-top: 10px;
+    padding-bottom: 4px;
   }
 
   .nav-link {
-    padding: 0.55rem 0.85rem;
+    height: 34px;
   }
 }
 
-.nav-link--active .nav-link__hint {
-  color: var(--tinta-3);
+/* Portátil con barra del navegador y zoom (~650 px útiles): Finanzas entra
+   completa sin desplazarse (11 ítems, 3 grupos y el pie). */
+@media (max-height: 700px) {
+  .sidebar {
+    padding-top: 10px;
+  }
+
+  .sidebar__brand {
+    margin-bottom: 4px;
+  }
+
+  .nav-grupo {
+    padding-top: 8px;
+    padding-bottom: 3px;
+  }
+
+  .nav-link {
+    height: 32px;
+  }
+
+  .sidebar__footer {
+    margin-top: 4px;
+    padding-top: 6px;
+  }
 }
 
-.sidebar__footer {
-  padding: 12px 16px;
-  border-top: 1px solid var(--borde);
+/* =================== T0-14 · Barra lateral contraída ===================
+   72 px: solo íconos e isotipo. Los títulos de grupo se vuelven un divisor
+   corto para que los tramos se sigan leyendo. El nombre completo de cada ítem
+   va en su `title`. */
+.sidebar--colapsado {
+  width: 72px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
-.logout-btn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 0.7rem 0.85rem;
-  border: none;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--tinta-3);
-  font-family: inherit;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease;
-}
-
-.logout-btn:hover {
-  background: var(--error-fondo);
-  color: var(--error);
-}
-
-.logout-btn__icon {
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  display: inline-flex;
-  align-items: center;
+.sidebar--colapsado .sidebar__brand {
   justify-content: center;
+  padding: 0;
 }
 
-.logout-btn__icon svg {
-  width: 100%;
-  height: 100%;
+.sidebar--colapsado .sidebar__wordmark {
+  display: none;
+}
+
+/* El rótulo sigue en el árbol de accesibilidad (oculto solo a la vista); el
+   nombre accesible lo da además el aria-label del enlace. */
+.sidebar--colapsado .nav-link__text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.sidebar--colapsado .nav-link {
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebar--colapsado .nav-link--active::before {
+  left: 3px;
+}
+
+/* Títulos de grupo → divisor del mismo color que el del pie (blanco al 9 %).
+   El primero no se pinta: justo bajo el isotipo parecía un trazo suelto
+   (Finanzas empieza por un grupo; Operación, por Inicio). */
+.sidebar--colapsado .nav-grupo {
+  height: 1px;
+  margin: 10px 4px;
+  padding: 0;
+  font-size: 0;
+  background: rgb(255 255 255 / 9%);
+}
+
+.sidebar--colapsado .sidebar__nav > .nav-seccion:first-child > .nav-grupo {
+  display: none;
+}
+
+/* Rótulo flotante de la barra contraída (shell.ts, `rotulo`). Noche alzada
+   sobre el contenido claro, 12/500, a 10 px del borde del ítem. Solo entra con
+   un fundido corto; entre ítems seguidos aparece sin animación. */
+.rotulo {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-width: 260px;
+  padding: 6px 10px;
+  border-radius: var(--r-control);
+  background: var(--noche);
+  box-shadow: var(--sombra-2);
+  color: #ffffff;
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  line-height: 1.35;
+  pointer-events: none;
+  transform: translateY(-50%);
+  animation: rotulo-entra var(--t-rapida) var(--ease-out);
+}
+
+.rotulo--inmediato {
+  animation: none;
+}
+
+.rotulo__detalle {
+  font-weight: 400;
+  color: var(--texto-noche-2);
+}
+
+@keyframes rotulo-entra {
+  from { opacity: 0; transform: translate(-4px, -50%); }
+  to { opacity: 1; transform: translate(0, -50%); }
+}
+
+/* «Saltar al contenido»: fuera de la vista hasta que recibe el foco (primer Tab). */
+.saltar {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 70;
+  padding: 10px 14px;
+  border-radius: var(--r-control);
+  background: var(--superficie);
+  color: var(--accion);
+  font-size: var(--fs-base);
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: var(--sombra-2);
+  transform: translateY(-160%);
+}
+
+.saltar:focus,
+.saltar:focus-visible {
+  transform: none;
+}
+
+/* Fondo oscuro del menú móvil. Fuera del celular no se ve. */
+.sidebar-backdrop {
+  display: none;
 }
 
 /* =================== ÁREA PRINCIPAL =================== */
 .main {
-  flex: 1;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
 
-/* ---- Navbar claro ---- */
+/* ---- Barra superior: 60 px, blanca, en el flujo ---- */
 .navbar {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: calc(100% - 260px);
-  height: 72px;
+  flex: none;
+  position: relative;
   z-index: 20;
-  background-color: var(--superficie);
-  border-bottom: 1px solid var(--borde);
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding: 0 40px;
+  gap: 12px;
+  height: 60px;
+  padding: 0 24px 0 32px;
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borde);
 }
 
-.navbar__title {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+/* Segmentado de sistema (solo quien tiene los dos). Usa el `.seg` global. */
+.navbar__sistemas {
+  flex: none;
 }
 
-.navbar__title-main {
+/* Quien tiene un solo sistema: su nombre, sin control. */
+.navbar__sistema {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: var(--fs-base);
   font-weight: 600;
-  line-height: 1.2;
-  color: var(--accion);
+  color: var(--tinta);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: center;
-}
-
-.navbar__title-sub {
-  font-size: 0.76rem;
-  font-weight: 500;
-  color: var(--tinta-3);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: center;
 }
 
 .navbar__actions {
+  margin-left: auto;
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
 }
 
-/* El botón de la campanita y su badge viven en <app-notifications>, que trae
-   sus propios estilos (la encapsulación del shell no llega hasta allí). */
-
-.profile-btn {
-  position: relative;
+/* Ayuda: botón de ícono de 40 px (la campanita trae su propio estilo). */
+.navbar__icono {
+  display: grid;
+  place-items: center;
   width: 40px;
   height: 40px;
-  margin-right: 4px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
+  border-radius: var(--r-control);
+  color: var(--tinta-2);
+  text-decoration: none;
+  transition:
+    background-color var(--t-media) ease,
+    color var(--t-media) ease;
 }
 
-.profile-btn__avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--accion);
-  color: var(--superficie);
+.navbar__icono svg {
+  width: 20px;
+  height: 20px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .navbar__icono:hover {
+    background: var(--hundida);
+    color: var(--tinta);
+    text-decoration: none;
+  }
+}
+
+/* Avatar con nombre y rol, detrás de un divisor. Lleva a Configuración. */
+.perfil {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
+  gap: 10px;
+  min-width: 0;
+  margin-left: 10px;
+  padding: 4px 8px 4px 14px;
+  border-left: 1px solid var(--borde);
+  border-radius: 0 var(--r-control) var(--r-control) 0;
+  color: var(--tinta);
+  text-decoration: none;
+  transition: background-color var(--t-media) ease;
 }
 
-.profile-btn__status {
-  position: absolute;
-  bottom: 1px;
-  right: 1px;
-  width: 10px;
-  height: 10px;
+@media (hover: hover) and (pointer: fine) {
+  .perfil:hover {
+    background: var(--papel);
+    text-decoration: none;
+  }
+}
+
+.perfil__avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: var(--success);
-  border: 2px solid var(--superficie);
+  background: var(--accion-tenue);
+  color: var(--accion);
+  font-size: var(--fs-celda);
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
-/* ---- Contenido con scroll independiente ---- */
+.perfil__quien {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.perfil__nombre {
+  /* 240 px desde 1366 y 220 por debajo (hasta 1100, donde se oculta): sobra barra, así que el nombre corto
+     no se corta; uno muy largo sí, con el completo en el title del enlace. */
+  max-width: 240px;
+  font-size: var(--fs-celda);
+  font-weight: 500;
+  color: var(--tinta);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.perfil__rol {
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
+  white-space: nowrap;
+}
+
+/* ---- Contenido con scroll propio, debajo de la barra ---- */
+/* Recibe el foco de «Saltar al contenido» (tabindex=-1): sin anillo en todo el
+   bloque; el siguiente Tab ya cae en el primer control de la vista. */
+.content:focus {
+  outline: none;
+  box-shadow: none;
+}
+
 .content {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   background: var(--papel);
-  padding: 112px 40px 40px;
+  padding: var(--contenido-arriba) 40px 56px;
 }
 
-/* ---- Responsive ---- */
-@media (max-width: 820px) {
-  .sidebar {
-    width: 76px;
+/* 1280-1366 px y escala 125 % (~1093 px útiles): 32 px a los lados le
+   devuelven 16 px a las tablas anchas (DESIGN §4). */
+@media (max-width: 1365px) {
+  .content {
+    padding-left: 32px;
+    padding-right: 32px;
   }
 
   .navbar {
-    width: calc(100% - 76px);
+    padding-left: 32px;
   }
 
-  .nav-link__text,
-  .logout-btn__text {
-    display: none;
-  }
-
-  .nav-link,
-  .logout-btn {
-    justify-content: center;
-  }
-
-  .navbar {
-    padding: 0 20px;
-    gap: 12px;
-  }
-
-  .navbar__title-main {
-    font-size: 0.95rem;
-  }
-
-  .navbar__title-sub {
-    display: none;
-  }
-
-  .sidebar__brand {
-    padding: 0 0.5rem;
-  }
-
-  /* Sidebar estrecho: igual que los enlaces, la marca se queda solo con su icono. */
-  .sidebar__logo--completo {
-    display: none;
-  }
-
-  .sidebar__logo--isotipo {
-    display: block;
-  }
-
-  /* T0-14 · El botón de la barra no encoge nada aquí (ya está estrecho): abre
-     el menú completo ENCIMA, como un panel flotante, con su fondo oscuro. Se
-     cierra tocando fuera o al elegir una opción (`cerrarMenuMovil()`). */
-  .sidebar-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: var(--velo);
-    z-index: 40;
-  }
-
-  .sidebar--movil-abierto {
-    position: fixed;
-    inset: 0 auto 0 0;
-    width: 260px;
-    z-index: 50;
-    box-shadow: 4px 0 20px rgb(15 42 68 / 25%);
-  }
-
-  .sidebar--movil-abierto .sidebar__brand {
-    padding: 0 1.25rem;
-  }
-
-  .sidebar--movil-abierto .sidebar__logo--completo {
-    display: block;
-  }
-
-  .sidebar--movil-abierto .sidebar__logo--isotipo {
-    display: none;
-  }
-
-  .sidebar--movil-abierto .nav-link__text,
-  .sidebar--movil-abierto .logout-btn__text {
-    display: flex;
-  }
-
-  .sidebar--movil-abierto .nav-link,
-  .sidebar--movil-abierto .logout-btn {
-    justify-content: flex-start;
+  .perfil__nombre {
+    max-width: 220px;
   }
 }
 
-// Subsistemas · botón «Cambiar de sistema» en la barra: dice en qué sistema se
-// está y lleva a la selección.
-.sistema-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border: 1px solid var(--borde);
-  border-radius: 999px;
-  background: var(--papel);
-  color: var(--accion);
-  cursor: pointer;
-  font: inherit;
-  font-size: 0.8rem;
+/* Nombre largo: a anchos medios se queda solo el avatar con su rol en el title. */
+@media (max-width: 1100px) {
+  .perfil {
+    padding-right: 4px;
+  }
 
-  svg { width: 16px; height: 16px; }
-  &:hover { background: var(--accion-tenue); }
-}
-.sistema-btn__nombre { font-weight: 600; }
-.sistema-btn__accion { color: var(--tinta-3); }
-
-@media (max-width: 820px) {
-  .sistema-btn__accion { display: none; }
+  .perfil__quien {
+    display: none;
+  }
 }
 
-/* =================== CELULAR · BARRA INFERIOR (2-oct-2026) ===================
-   Por debajo de 820 px desaparece la barra lateral (riel de iconos) y el menú se
-   lleva abajo, al alcance del pulgar: cuatro módulos fijos + «Más». En escritorio
-   nada de esto se ve. */
+/* =================== CELULAR (≤820 px) =================== */
 .navbar__isotipo,
 .bottom-nav,
 .hoja-mas,
@@ -498,46 +581,61 @@
 
 @media (max-width: 820px) {
   .sidebar,
-  .sidebar-backdrop,
-  .menu-toggle,
-  .navbar__title {
+  .sidebar-backdrop {
     display: none !important;
   }
 
   .navbar {
-    width: 100% !important;
-    padding: 0 12px;
+    height: 56px;
+    gap: 8px;
+    padding: 0 8px 0 14px;
   }
 
   .navbar__isotipo {
     display: block;
-    width: 34px;
-    height: 34px;
+    flex: none;
+    width: 28px;
+    height: 28px;
     object-fit: contain;
   }
 
-  .navbar__actions {
-    margin-left: auto;
+  .navbar__sistemas > button {
+    min-height: 30px;
+    padding: 0 10px;
+  }
+
+  .perfil {
+    margin-left: 2px;
+    padding: 0;
+    border-left: 0;
+  }
+
+  .perfil__avatar {
+    width: 32px;
+    height: 32px;
+    font-size: var(--fs-meta);
   }
 
   .content {
-    padding: 88px 16px calc(80px + env(safe-area-inset-bottom));
+    padding: 20px 16px calc(80px + env(safe-area-inset-bottom));
   }
 
+  /* Barra inferior: cuatro módulos fijos + «Más». El activo va en acción 600
+     con una marca cian-trazo de 3 px arriba (DESIGN §7, Navegación móvil). */
   .bottom-nav {
     position: fixed;
     inset: auto 0 0 0;
     z-index: 30;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     height: calc(64px + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom);
     background: var(--superficie);
     border-top: 1px solid var(--borde);
-    box-shadow: 0 -4px 16px rgb(15 42 68 / 6%);
   }
 
   .bottom-nav__item {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -549,22 +647,26 @@
     background: transparent;
     color: var(--tinta-3);
     font: inherit;
-    font-size: 0.68rem;
-    font-weight: 600;
+    /* 11 px: «Profesionales» cabe entero en un quinto de 390 px. */
+    font-size: 11px;
+    font-weight: 500;
     text-decoration: none;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: color var(--t-media) ease;
   }
 
   .bottom-nav__icono {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 28px;
-    border-radius: 999px;
-    transition: background 0.15s ease;
+    width: 24px;
+    height: 24px;
 
-    svg { width: 22px; height: 22px; }
+    svg {
+      width: 22px;
+      height: 22px;
+    }
   }
 
   .bottom-nav__texto {
@@ -576,8 +678,23 @@
 
   .bottom-nav__item--activo {
     color: var(--accion);
+    font-weight: 600;
+  }
 
-    .bottom-nav__icono { background: var(--accion-tenue); }
+  .bottom-nav__item--activo::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 28px;
+    height: 3px;
+    margin-left: -14px;
+    border-radius: 0 0 3px 3px;
+    background: var(--cian-trazo);
+  }
+
+  .bottom-nav__item:active .bottom-nav__icono {
+    transform: scale(0.94);
   }
 
   /* Hoja «Más»: sube desde abajo, encima de la barra. */
@@ -587,6 +704,7 @@
     inset: 0;
     z-index: 40;
     background: var(--velo);
+    animation: hoja-velo var(--t-media) ease;
   }
 
   .hoja-mas {
@@ -595,64 +713,81 @@
     inset: auto 0 0 0;
     z-index: 50;
     max-height: 80vh;
+    max-height: 80dvh;
     overflow-y: auto;
     padding: 10px 16px calc(16px + env(safe-area-inset-bottom));
     background: var(--superficie);
-    border-radius: 20px 20px 0 0;
-    box-shadow: 0 -10px 30px rgb(15 42 68 / 20%);
-    animation: hoja-sube 0.18s ease-out;
+    border-radius: var(--r-modal) var(--r-modal) 0 0;
+    box-shadow: var(--sombra-modal);
+    animation: hoja-sube 200ms var(--ease-out);
   }
 
   .hoja-mas__asa {
     display: block;
-    width: 40px;
+    width: 36px;
     height: 4px;
-    margin: 0 auto 12px;
-    border-radius: 999px;
+    margin: 0 auto 14px;
+    border-radius: var(--r-completo);
     background: var(--borde-control);
   }
 
   .hoja-mas__titulo {
-    margin: 0 0 10px;
-    font-size: 0.78rem;
+    margin: 0 4px 8px;
+    font-size: var(--fs-meta);
     font-weight: 600;
-    letter-spacing: 0;
     color: var(--tinta-3);
   }
 
+  /* Lista de una columna a 44 px: el nombre completo del módulo, sin truncar. */
   .hoja-mas__grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
   }
 
   .hoja-mas__item {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 12px 6px;
-    border-radius: 14px;
-    background: var(--papel);
+    gap: 12px;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: var(--r-item);
     color: var(--tinta);
-    font-size: 0.78rem;
-    font-weight: 600;
-    text-align: center;
+    font-size: var(--fs-base);
+    font-weight: 500;
     text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .hoja-mas__item:active {
+    background: var(--hundida);
   }
 
   .hoja-mas__item--activo {
     color: var(--accion);
+    font-weight: 600;
     background: var(--accion-tenue);
   }
 
-  .hoja-mas__icono svg { width: 24px; height: 24px; }
+  .hoja-mas__icono {
+    display: inline-flex;
+    color: var(--tinta-3);
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .hoja-mas__item--activo .hoja-mas__icono {
+    color: var(--accion);
+  }
 
   .hoja-mas__pie {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    margin-top: 14px;
+    gap: 2px;
+    margin-top: 10px;
     padding-top: 10px;
     border-top: 1px solid var(--borde);
   }
@@ -660,21 +795,48 @@
   .hoja-mas__accion {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 8px;
+    gap: 12px;
+    min-height: 44px;
+    padding: 0 12px;
     border: 0;
-    border-radius: 10px;
+    border-radius: var(--r-item);
     background: transparent;
     color: var(--tinta);
     font: inherit;
-    font-size: 0.9rem;
+    font-size: var(--fs-base);
     text-align: left;
     cursor: pointer;
 
-    svg { width: 20px; height: 20px; }
+    svg {
+      width: 20px;
+      height: 20px;
+      color: var(--tinta-3);
+    }
   }
 
-  .hoja-mas__accion--salir { color: var(--error); }
+  .hoja-mas__accion:active {
+    background: var(--hundida);
+  }
+
+  .hoja-mas__accion--salir,
+  .hoja-mas__accion--salir svg {
+    color: var(--error);
+  }
+}
+
+/* Celular estrecho: el contador de la campanita (hasta «99+») sobresale de su
+   botón; 10 px de aire antes del avatar para que no lo toque. */
+@media (max-width: 400px) {
+  .perfil {
+    margin-left: 10px;
+  }
+}
+
+/* Celular muy estrecho: el rol y el nombre del sistema único ceden primero. */
+@media (max-width: 360px) {
+  .navbar__sistemas > button {
+    padding: 0 8px;
+  }
 }
 
 @keyframes hoja-sube {
@@ -682,17 +844,21 @@
   to { transform: translateY(0); }
 }
 
-/* 24-oct-2026 · Botón del centro de ayuda (junto a la campanita). */
-.ayuda-btn {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  color: var(--tinta-3);
-  border-radius: 50%;
-  text-decoration: none;
-  transition: background-color 0.15s ease, color 0.15s ease;
+@keyframes hoja-velo {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 
-  svg { width: 22px; height: 22px; }
-  &:hover, &:focus-visible { background: var(--accion-tenue); color: var(--accion); }
+@media (prefers-reduced-motion: reduce) {
+  .hoja-mas {
+    animation: hoja-velo var(--t-media) ease;
+  }
+
+  .sidebar__nav {
+    animation-duration: auto !important;
+  }
+
+  .rotulo {
+    animation: none;
+  }
 }

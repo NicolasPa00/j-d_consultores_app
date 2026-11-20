@@ -64,32 +64,37 @@
   </p>
 }
 
-<div class="cnt-filtros">
-  <div class="cnt-search">
-    <svg class="cnt-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<div class="toolbar cnt-filtros">
+  <label class="buscador toolbar__buscar">
+    <svg class="buscador__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <circle cx="11" cy="11" r="7" />
       <path d="m20 20-3.5-3.5" />
     </svg>
     <input
-      class="cnt-search__input"
+      class="buscador__input"
       type="text"
       placeholder="Buscar por código o nombre…"
       [ngModel]="query()"
       (ngModelChange)="query.set($event)"
       aria-label="Buscar cuenta"
     />
+  </label>
+  <!-- Interruptores y Contraer/Expandir van juntos: si no caben al lado de la
+       búsqueda bajan en grupo, nunca los botones solos. -->
+  <div class="cnt-filtros__resto">
+    <label class="cnt-toggle">
+      <input type="checkbox" [checked]="soloMovimiento()" (change)="soloMovimiento.set(!soloMovimiento())" />
+      Solo las que reciben movimiento
+    </label>
+    <label class="cnt-toggle">
+      <input type="checkbox" [checked]="verInactivas()" (change)="verInactivas.set(!verInactivas())" />
+      Mostrar inactivas
+    </label>
+    <div class="toolbar__fin">
+      <button type="button" class="btn btn--ghost" (click)="plegarTodo()" [disabled]="!!query() || soloMovimiento()">Contraer</button>
+      <button type="button" class="btn btn--ghost" (click)="desplegarTodo()" [disabled]="!!query() || soloMovimiento()">Expandir</button>
+    </div>
   </div>
-  <label class="cnt-toggle">
-    <input type="checkbox" [checked]="soloMovimiento()" (change)="soloMovimiento.set(!soloMovimiento())" />
-    Solo las que reciben movimiento
-  </label>
-  <label class="cnt-toggle">
-    <input type="checkbox" [checked]="verInactivas()" (change)="verInactivas.set(!verInactivas())" />
-    Mostrar inactivas
-  </label>
-  <span class="cnt-filtros__sep"></span>
-  <button type="button" class="btn btn--ghost btn--sm" (click)="plegarTodo()" [disabled]="!!query() || soloMovimiento()">Contraer</button>
-  <button type="button" class="btn btn--ghost btn--sm" (click)="desplegarTodo()" [disabled]="!!query() || soloMovimiento()">Expandir</button>
 </div>
 
 @if (puedeEditar() && seleccion().size) {
@@ -110,8 +115,8 @@
           @if (puedeEditar()) {
             <th class="cnt-marca"><input type="checkbox" [checked]="todasMarcadas()" (change)="alternarTodas($any($event.target).checked)" aria-label="Marcar todas las que se ven" /></th>
           }
-          <th>Código</th>
-          <th>Nombre</th>
+          <th class="cnt-codigo">Código</th>
+          <th class="cnt-col-nombre">Nombre</th>
           <th>Naturaleza</th>
           <th>Uso</th>
           <th>Estado</th>
@@ -120,23 +125,24 @@
       </thead>
       <tbody>
         @if (loading() && !cuentas().length) {
-          <tr><td [attr.colspan]="puedeEditar() ? 7 : 5" class="cnt-vacio">Cargando el plan de cuentas…</td></tr>
+          <tr><td [attr.colspan]="puedeEditar() ? 7 : 5" class="table__empty">Cargando el plan de cuentas…</td></tr>
         } @else if (!cuentas().length) {
           <tr>
-            <td [attr.colspan]="puedeEditar() ? 7 : 5" class="cnt-vacio">
+            <td [attr.colspan]="puedeEditar() ? 7 : 5" class="table__empty">
               Todavía no hay plan de cuentas. Impórtelo desde el Excel que exporta el software contable actual.
             </td>
           </tr>
         } @else if (!filas().length) {
-          <tr><td [attr.colspan]="puedeEditar() ? 7 : 5" class="cnt-vacio">Ninguna cuenta coincide con la búsqueda.</td></tr>
+          <tr><td [attr.colspan]="puedeEditar() ? 7 : 5" class="table__empty">Ninguna cuenta coincide con la búsqueda.</td></tr>
         }
         @for (c of filas(); track c.id) {
-          <tr [class.cnt-fila--grupo]="c.nivel <= 2" [class.cnt-fila--inactiva]="!c.activa">
+          <tr [class.cnt-fila--clase]="c.nivel === 1" [class.cnt-fila--grupo]="c.nivel <= 2" [class.cnt-fila--inactiva]="!c.activa">
             @if (puedeEditar()) {
               <td class="cnt-marca"><input type="checkbox" [checked]="estaMarcada(c)" (change)="alternarMarca(c)" [attr.aria-label]="'Marcar ' + c.codigo" /></td>
             }
             <td class="cnt-codigo">
-              <span class="cnt-codigo__in" [style.padding-left.rem]="sangria(c)">
+              <!-- Sangría de 8 px por nivel (sangria() da 1,1 rem por nivel): el chevron ya marca el árbol. -->
+              <span class="cnt-codigo__in" [style.padding-left.px]="sangria(c) / 1.1 * 8">
                 @if (c.n_hijas && !query() && !soloMovimiento()) {
                   <button type="button" class="cnt-caret" [class.cnt-caret--plegada]="estaPlegada(c)" (click)="alternarPlegado(c)"
                           [attr.aria-label]="(estaPlegada(c) ? 'Expandir ' : 'Contraer ') + c.codigo">
@@ -150,7 +156,7 @@
                 <span class="mono">{{ c.codigo }}</span>
               </span>
             </td>
-            <td>
+            <td class="cnt-col-nombre">
               <span class="cnt-nombre">{{ c.nombre }}</span>
               <small class="cnt-nivel">{{ nombreNivel[c.nivel] }}</small>
               @if (esProvisional(c)) { <span class="pill pill--warning">Por confirmar</span> }

@@ -3,73 +3,144 @@
 }
 
 .rg-ayuda {
-  margin: 0 0 1rem;
-  font-size: 0.88rem;
-  color: var(--text-muted);
+  max-width: 75ch;
+  margin: 0 0 var(--e-4);
+  font-size: var(--fs-celda);
+  line-height: 1.5;
+  color: var(--tinta-2);
 }
 
 .rg-aviso {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--e-4);
   flex-wrap: wrap;
-  margin-bottom: 1rem;
-  padding: 0.7rem 0.9rem;
-  font-size: 0.88rem;
+  margin-bottom: var(--e-4);
+  padding: 10px 14px;
+  font-size: var(--fs-celda);
   color: var(--tinta);
   background: var(--aviso-fondo);
   border-radius: var(--r-alerta);
 }
 
+/* Cuatro tablas de reglas: dos por fila desde ~1100 px, una debajo de otra antes. */
 .rg-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+  gap: var(--e-6);
+  margin-bottom: var(--e-6);
+}
+
+/* Proporción fija: 34 % el concepto, 40 px D/C y el resto la cuenta, para que
+   el select muestre el nombre completo de la cuenta (y el `title` lo dice
+   entero si aun así no cabe). */
+.rg-grid .table {
+  table-layout: fixed;
+}
+
+.rg-grid th.rg-concepto {
+  width: 34%;
 }
 
 .rg-lado {
-  width: 48px;
+  width: 40px;
   text-align: center;
-  color: var(--text-muted);
+  color: var(--tinta-3);
   font-weight: 600;
 }
 
-.rg-falta td {
+.table thead th.rg-lado,
+.table tbody td.rg-lado {
+  padding-left: 0;
+  padding-right: 0;
+  text-align: center;
+}
+
+/* Concepto sin regla: fila en aviso, en la fila (no en la celda) para que la
+   columna fija de acciones, si la hubiera, herede el mismo fondo. */
+.table tbody tr.rg-falta {
   background: var(--aviso-fondo);
 }
 
+/* Selects densos dentro de la tabla. Solo se toca el relleno vertical: el de la
+   derecha es el hueco del chevron (styles.scss) y, si se pisa, el texto largo
+   de la cuenta queda debajo de la flecha. */
 .rg-grid .form-control {
-  padding: 0.45rem 0.6rem;
-  font-size: 0.86rem;
+  min-height: 36px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+/* 13 px solo en escritorio: en el celular el campo conserva los 16 px del
+   global (DESIGN §7, para que iOS no haga zoom). */
+@media (min-width: 821px) {
+  .rg-grid .form-control {
+    font-size: var(--fs-celda);
+  }
 }
 
 .mono {
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: normal;
 }
 
 .rg-vacio {
-  margin: 0 0 1rem;
-  color: var(--text-muted);
-  font-size: 0.88rem;
+  margin: 0 0 var(--e-4);
+  color: var(--tinta-3);
+  font-size: var(--fs-celda);
+}
+
+.rg-especificas .card__body > .table-wrap {
+  margin-bottom: var(--e-4);
 }
 
 .rg-nueva {
   display: grid;
   grid-template-columns: 1.3fr 1fr 1.3fr auto;
-  gap: 0.6rem;
-  margin-top: 0.75rem;
-}
-
-.btn[disabled] {
-  opacity: 0.6;
-  cursor: not-allowed;
+  gap: var(--e-2);
+  align-items: center;
+  margin-top: var(--e-3);
 }
 
 @media (max-width: 720px) {
   .rg-grid,
   .rg-nueva {
     grid-template-columns: 1fr;
+  }
+
+  /* Celular: el select va debajo del concepto, a lo ancho. Las columnas
+     Concepto y D/C se pliegan a 0 (ancho, relleno y letra; nunca `display` en
+     td/th) y la celda de la cuenta las repite encima del campo. */
+  .rg-grid :is(th, td):is(.rg-concepto, .rg-lado) {
+    width: 0;
+    padding: 0;
+    font-size: 0;
+    overflow: hidden;
+  }
+
+  .rg-grid td.rg-cuenta {
+    padding-left: 16px;
+  }
+
+  /* La cabecera decía solo «Cuenta» sobre filas que muestran concepto, D/C y
+     cuenta: se pliega a alto 0 (sin display en th; los lectores de pantalla
+     conservan los tres rótulos). El título de la tarjeta ya dice qué es. */
+  .rg-grid thead th {
+    height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: 0;
+    line-height: 0;
+    border: 0;
+    overflow: hidden;
+  }
+
+  .rg-grid td.rg-cuenta::before {
+    content: attr(data-concepto) '  ·  ' attr(data-lado);
+    display: block;
+    margin-bottom: var(--e-2);
+    font-size: var(--fs-celda);
+    line-height: 1.35;
+    color: var(--tinta);
   }
 }

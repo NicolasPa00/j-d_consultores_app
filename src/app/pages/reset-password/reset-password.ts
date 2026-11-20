@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { EscenaAccesoComponent } from '../login/escena-acceso';
 import { AuthService } from '../../core/auth.service';
 import { mensajeError } from '../../core/errores';
 
 /** AUTH-03 · Establece la nueva contraseña con el token recibido por correo. */
 @Component({
   selector: 'app-reset-password',
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, EscenaAccesoComponent],
   templateUrl: './reset-password.html',
   styleUrl: '../login/login.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

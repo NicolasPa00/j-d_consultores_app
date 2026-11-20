@@ -2,148 +2,114 @@
   display: block;
 }
 
-/* .pill--muted (Deshabilitada): la cubre la global de styles.scss. */
+/* Rediseño 20-nov-2026 (fase B, Órdenes). Lo que ya cubren las globales de
+   styles.scss NO se repite aquí: cabecera, `.toolbar` + `.buscador`, `.tabs`,
+   tabla, `.col-actions`/`.row-actions`/`.icon-action`, pastillas, modal y sus
+   secciones. Esta hoja solo lleva lo propio de Órdenes. */
 
-/* ===== Cabecera ===== */
-.ord-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1.25rem;
-  flex-wrap: wrap;
+/* ===== Barra de herramientas (global `.toolbar`) =====
+   El buscador de Órdenes no tiene tope: llena la primera línea y, cuando los
+   botones no caben, bajan juntos a la derecha. Así los dos bordes de la barra
+   quedan parejos a 1280 y a ~1093 px (defecto 4 de la fase 2). */
+.ord-toolbar > .ord-search {
+  flex-basis: 200px;
+  max-width: none;
 }
 
-.ord-head__actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+@media (max-width: 680px) {
+  /* Celular: buscador a lo ancho, los dos selects compartiendo fila y los
+     botones debajo, el primario a lo ancho. Mismo orden. */
+  .ord-toolbar > .ord-search {
+    flex-basis: 100%;
+  }
+
+  .ord-toolbar > .form-control {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 0;
+  }
+
+  .ord-toolbar__botones {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .ord-toolbar__botones > .btn {
+    flex: 1 1 calc(50% - 4px);
+    justify-content: center;
+  }
+
+  .ord-toolbar__botones > .btn--primary {
+    flex-basis: 100%;
+  }
 }
 
-/* El grupo de botones no es una caja propia: sus botones siguen siendo hijos
-   de la fila de filtros, como antes del rediseño (no se mueven de fila). */
-.ord-head__botones {
-  display: contents;
-}
-
-.ord-search {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.ord-search__icon {
-  position: absolute;
-  left: 0.85rem;
-  width: 18px;
-  height: 18px;
-  color: var(--text-muted);
-  pointer-events: none;
-}
-
-.ord-search__input {
-  width: 300px;
-  max-width: 100%;
-  padding: 0.65rem 0.9rem 0.65rem 2.5rem;
-  font-family: inherit;
-  font-size: 0.9rem;
-  color: var(--text-main);
-  background: var(--superficie);
-  border: 1px solid var(--borde-campo);
-  border-radius: var(--r-control);
-  transition: border-color var(--t-media) ease, box-shadow var(--t-media) ease;
-}
-
-.ord-search__input:focus {
-  outline: none;
-  border-color: var(--accion);
-  box-shadow: inset 0 0 0 1px var(--accion), var(--halo);
-}
-
-/* Pestañas: la global .tabs/.tab de styles.scss (raya cian de 3 px, DESIGN §7). */
-
-/* ===== Tabla ===== */
-/* Tabla: la global de styles.scss (estandarizada el 30-sep-2026); aquí ya no se redefine. */
-
+/* ===== Tabla (global `.table`) ===== */
 .mono {
   font-variant-numeric: tabular-nums;
   color: var(--tinta-3);
 }
 
-/* T0-06 · Con nueve columnas (Estado ARL es nueva) el padding de `.table`
-   compartido no cabía a 1366-1440 px sin scroll horizontal: "Opciones" quedaba
-   tras el borde. Se acota SOLO aquí (no en el `.table` global, que usan todas
-   las tablas de la app) para recuperar el ancho que ocupan los pills largos
-   ("SIN PROGRAMAR", "NO FACTURADA") y los iconos de la última columna. */
-/* 1-oct-2026 · La razón social se partía en 4-5 líneas a 1366 px: las demás
-   columnas no ceden (encabezados sin salto) y ella absorbía todo el recorte. */
-.ord-table td:first-child {
-  /* 20-nov-2026 · 180 px: la razón social sigue siendo la columna flexible
-     (se lleva el resto), pero a 1280 px ya no empuja Opciones fuera del borde. */
-  min-width: 180px;
+/* Celda Razón social en dos niveles (DESIGN §7). Es la columna flexible: se
+   lleva el ancho que sobra y nunca baja de 200 px (a ~1093 px la tabla se
+   desplaza con Opciones fija a la derecha, regla global). */
+.ord-who {
+  min-width: 200px;
 }
 
-.col-num {
-  width: 48px;
-  text-align: center;
-}
-
-/* Sin ancho fijo: mide lo que miden sus íconos (28 px cada uno, DESIGN §7). */
-.col-actions {
-  width: 1%;
-  white-space: nowrap;
-  text-align: right;
-}
-
-/* Celda Razón social */
-.who__text {
-  display: flex;
-  flex-direction: column;
+.ord-who .who__name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
   line-height: 1.35;
 }
 
-.who__name {
-  font-weight: 500;
-  color: var(--tinta);
+/* La segunda línea NO ensancha la columna: `width: 0` + `min-width: 100%`
+   saca su largo del cálculo de la tabla y la elipsis corta lo que no cabe. */
+.who__meta {
+  display: block;
+  width: 0;
+  min-width: 100%;
+  margin-top: 3px;
+  overflow: hidden;
+  font-size: var(--fs-meta);
+  line-height: 1.35;
+  color: var(--tinta-3);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-/* T0-06 · El NIT, que antes tenía su propia columna: se movió aquí para que la
-   tabla quepa sin scroll horizontal a 1366-1440 px (ver .col-actions). */
-.who__nit {
-  font-size: var(--fs-meta);
-  color: var(--tinta-3);
-  font-variant-numeric: normal;
+.who__dato + .who__dato::before {
+  content: '·';
+  margin: 0 5px;
+}
+
+.who__dato + .who__assigned {
+  margin-left: 10px;
 }
 
 .who__assigned {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0 0.3rem;
-  margin-top: 0.15rem;
-  font-size: var(--fs-meta);
-  color: var(--tinta-2);
   font-weight: 500;
+  color: var(--tinta-2);
 }
 
 .who__assigned svg {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
+  margin-right: 4px;
+  vertical-align: -1px;
 }
 
-/* Columna "Vencimiento" (T0-06, compactada): una sola línea con la fecha; los
-   días que faltan (o que ya pasaron) van en el `title`, no ocupan ancho. El
-   color de la fecha es el mismo aviso que antes llevaba el bloque completo. */
+.ord-arl {
+  white-space: nowrap;
+}
+
+/* Vencimiento: la fecha y, si apremia, la palabra con su ícono debajo. */
 .venc {
-  font-size: var(--fs-celda);
-  color: var(--tinta);
+  display: block;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   cursor: help;
-}
-
-.venc--warn {
-  color: var(--tinta-2);
-  font-weight: 500;
 }
 
 .venc--danger {
@@ -152,17 +118,208 @@
 }
 
 .venc__none {
-  color: var(--text-muted);
+  color: var(--tinta-3);
 }
 
-/* Acciones por fila */
-.row-actions {
+.venc__palabra,
+.nota-parcial {
   display: flex;
-  justify-content: flex-end;
-  gap: 0.35rem;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--tinta-2);
+  white-space: nowrap;
 }
 
-/* .icon-action: la global de styles.scss (28 px, sin marco hasta el hover). */
+.venc__palabra--danger {
+  color: var(--error);
+  font-weight: 600;
+}
+
+/* Ícono por máscara, en el color del aviso (DESIGN §10: el ámbar va en el
+   ícono, nunca en el texto fuera de la pastilla SIN PROGRAMAR). */
+.venc__palabra::before,
+.nota-parcial::before,
+.cita-bar__falta::before,
+.suplente__aviso::before,
+.vista-formatos__pendientes::before {
+  content: '';
+  display: inline-block;
+  flex: none;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 0.3em;
+  vertical-align: -0.12em;
+  background: var(--ambar);
+  mask: var(--icono-alerta) center / contain no-repeat;
+}
+
+.venc__palabra::before,
+.nota-parcial::before {
+  width: 12px;
+  height: 12px;
+  margin-right: 0;
+  mask-image: var(--icono-reloj);
+}
+
+.venc__palabra--danger::before {
+  background: var(--error);
+  mask-image: var(--icono-alerta);
+}
+
+/* La nota de parcial cabe en la cabecera de la sección del detalle, en fila. */
+.card__head .nota-parcial {
+  margin-top: 0;
+}
+
+/* Estado ARL y «Plataforma»: dos controles apilados, cada uno con su palabra
+   (DESIGN §7). Pendiente en neutro: el ámbar es solo de SIN PROGRAMAR. */
+.arl-celda {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.arl-estado,
+.plataforma {
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  font: inherit;
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--t-media) ease,
+    color var(--t-media) ease,
+    box-shadow var(--t-media) ease,
+    transform var(--t-rapida) var(--ease-out);
+}
+
+.arl-estado {
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: var(--r-control);
+  background: var(--hundida);
+  color: var(--tinta-2);
+}
+
+.arl-estado--ok {
+  background: var(--ok-fondo);
+  color: var(--ok);
+  font-weight: 600;
+}
+
+.plataforma {
+  gap: 5px;
+  min-height: 20px;
+  margin-left: -3px;
+  padding: 0 5px 0 3px;
+  border-radius: var(--r-control);
+  background: transparent;
+  color: var(--tinta-2);
+}
+
+.plataforma__marca {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--borde-campo);
+  border-radius: 50%;
+  color: transparent;
+  transition:
+    background-color var(--t-media) ease,
+    border-color var(--t-media) ease,
+    color var(--t-media) ease;
+}
+
+.plataforma__marca svg {
+  width: 9px;
+  height: 9px;
+}
+
+.plataforma__candado {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  margin: 0 1px;
+}
+
+.plataforma--ok {
+  color: var(--ok);
+}
+
+.plataforma--ok .plataforma__marca {
+  border-color: var(--ok);
+  background: var(--ok);
+  color: var(--superficie);
+}
+
+.plataforma:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.plataforma:disabled {
+  cursor: not-allowed;
+  color: var(--tinta-3);
+  font-weight: 400;
+}
+
+/* Validada sin permiso para desmarcar: sigue leyéndose validada. */
+.plataforma--ok:disabled {
+  cursor: default;
+  color: var(--ok);
+  font-weight: 500;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .arl-estado:hover {
+    box-shadow: inset 0 0 0 1px var(--borde-campo);
+  }
+
+  .plataforma:hover:not(:disabled) {
+    background: var(--hundida);
+  }
+
+  /* Por marcar: el hover lo dice en acción (el visto aún no es un hecho). */
+  .plataforma:hover:not(:disabled):not(.plataforma--ok) {
+    color: var(--accion);
+  }
+
+  .plataforma:hover:not(:disabled):not(.plataforma--ok) .plataforma__marca {
+    border-color: var(--accion);
+    color: var(--accion);
+  }
+}
+
+@media (max-width: 820px) {
+  .plataforma {
+    min-height: 36px;
+  }
+}
+
+/* La razón del candado, en pantalla, bajo el paginador (DESIGN §7 y §10). */
+.ord-leyenda {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
+}
+
+.ord-leyenda svg {
+  flex: none;
+  width: 12px;
+  height: 12px;
+}
 
 /* ===== Detalle (dentro del modal) ===== */
 /* Documento en fila compacta (arriba del detalle) */
@@ -183,14 +340,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-sm);
-  background: var(--error-fondo);
-  color: var(--error);
-}
-
-.doc-row__icon--excel {
-  background: var(--ok-fondo);
-  color: var(--ok);
+  /* Rediseño · Sin recuadro teñido por tipo de archivo (DESIGN §10): el tipo
+     ya lo dicen el ícono y la línea «Excel/PDF · importado…». */
+  border: 1px solid var(--borde);
+  border-radius: var(--r-control);
+  background: var(--superficie);
+  color: var(--tinta-2);
 }
 
 .doc-row__icon svg {
@@ -208,16 +363,16 @@
 
 .doc-row__name {
   font-weight: 600;
-  font-size: 0.9rem;
-  color: var(--text-main);
+  font-size: var(--fs-base);
+  color: var(--tinta);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .doc-row__sub {
-  font-size: 0.78rem;
-  color: var(--text-muted);
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
 }
 
 .doc-row__btn {
@@ -231,23 +386,49 @@
 
 /* Banner de alerta dentro del modal (usa el primitivo global .alert) */
 .ai-banner {
-  margin-bottom: 1.25rem;
+  grid-column: 1 / -1;
 }
 
-.fields {
+/* Rediseño · Columnas de 230 px como mínimo: tres en el modal de 880, una en
+   el celular. Tres es el tope por el ancho del modal, no por una media query.
+   «Datos de la orden» es UNA sola rejilla (ronda 2): Tipo de orden y Viáticos
+   entran en ella como dos campos cortos más (el `<form>` no genera caja), así
+   que al leer la ficha quedan filas de tres parejas —Tipo · Viáticos · N.º de
+   orden, luego Afiliación · NIT · Horas— y solo los textos largos (empresa,
+   actividad, dirección, descripción) van a lo ancho. Sin rayas intermedias. */
+.fields,
+.ai-form > .card__body {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.05rem;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px 20px;
 }
 
-/* En pantallas grandes el modal crece, así que el formulario aprovecha el ancho
-   con una tercera columna en vez de estirar cada campo hasta hacerlo ilegible.
-   Tres es el tope a propósito: con cuatro, la etiqueta y su valor quedan tan
-   separados de la siguiente que el ojo pierde el hilo. */
-@media (min-width: 1400px) {
-  .fields {
-    grid-template-columns: repeat(3, 1fr);
-  }
+.ai-form > .card__body > .fields {
+  display: contents;
+}
+
+/* Leyendo, Tipo y Viáticos son campos cortos. En edición vuelven a lo ancho:
+   llevan debajo la explicación de cómo se recalcula el valor. */
+.modal--lectura .ai-form .tipo-orden.field--full {
+  grid-column: auto;
+}
+
+/* La confianza promedio va pegada al título de la sección («Datos de la orden
+   98% Confianza») y la raya detrás: así no se confunde con la de la ARL del
+   subtítulo del modal. */
+.modal__body > .ai-form > .card__head > .pill {
+  order: 0;
+}
+
+.modal__sub-conf {
+  color: var(--tinta-3);
+}
+
+/* Un campo vacío con 0 %: el mismo rojo pero sin relleno. El rojo sólido
+   queda para lo que la lectura sí trajo y salió mal. */
+.field__labelrow .conf-badge.pill.conf-badge--vacio {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px currentColor;
 }
 
 .field {
@@ -259,17 +440,17 @@
   grid-column: 1 / -1;
 }
 
+/* La confianza de la IA va pegada a su etiqueta, a 18 px (DESIGN §7). */
 .field__labelrow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.4rem;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
-.conf-badge {
-  font-size: 0.68rem;
-  padding: 0.12rem 0.5rem;
+.field__labelrow .conf-badge.pill {
+  min-width: 38px;
+  min-height: 18px;
 }
 
 .form-control[readonly] {
@@ -289,9 +470,9 @@
 
 .field__alert {
   margin: 0.35rem 0 0;
-  font-size: 0.72rem;
+  font-size: var(--fs-meta);
   font-weight: 600;
-  color: var(--danger);
+  color: var(--error);
 }
 
 /* ===== Asignar profesional ===== */
@@ -349,7 +530,7 @@
   border-radius: var(--radius-md);
   cursor: pointer;
   font-family: inherit;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  transition: border-color var(--t-media) ease, box-shadow var(--t-media) ease, background var(--t-media) ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -423,7 +604,7 @@
   background: var(--surface);
   color: var(--text-muted);
   cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  transition: background var(--t-media) ease, color var(--t-media) ease, border-color var(--t-media) ease, box-shadow var(--t-media) ease;
 
   svg {
     width: 19px;
@@ -445,8 +626,10 @@
   box-shadow: var(--halo);
 }
 
-.prof-guardar--pendiente:hover {
-  background: var(--primary-hover);
+@media (hover: hover) and (pointer: fine) {
+  .prof-guardar--pendiente:hover {
+    background: var(--primary-hover);
+  }
 }
 
 .assign__ayuda {
@@ -483,154 +666,6 @@
 .assign__calendar {
   min-height: 260px;
 }
-
-.assign__placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  gap: 0.75rem;
-  height: 100%;
-  min-height: 220px;
-  padding: 1.5rem;
-  color: var(--text-muted);
-  border: 1px dashed var(--border-soft);
-  border-radius: var(--radius-md);
-}
-
-.assign__placeholder svg {
-  width: 40px;
-  height: 40px;
-  color: var(--tinta-3);
-}
-
-.assign__placeholder p {
-  margin: 0;
-  font-size: 0.85rem;
-  max-width: 240px;
-}
-
-.cal__form {
-  display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr auto;
-  gap: 0.6rem;
-  align-items: end;
-}
-
-.cal__form .form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.cal__add {
-  height: 42px;
-}
-
-.cal__add svg {
-  width: 15px;
-  height: 15px;
-}
-
-.cal__slots {
-  margin-top: 1.25rem;
-}
-
-.cal__slots-title {
-  margin: 0 0 0.6rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-main);
-}
-
-.cal__slots-empty {
-  margin: 0;
-  padding: 0.85rem;
-  font-size: 0.82rem;
-  color: var(--ok);
-  background: var(--ok-fondo);
-  border-radius: var(--radius-sm);
-}
-
-.cal-slot {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.55rem 0.75rem;
-  margin-bottom: 0.5rem;
-  background: var(--aviso-fondo);
-  border: 1px solid var(--aviso-borde);
-  border-radius: var(--radius-sm);
-}
-
-.cal-slot__icon {
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  color: var(--ambar);
-}
-
-.cal-slot__text {
-  flex: 1 1 auto;
-  font-size: 0.85rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-main);
-}
-
-.cal-slot__remove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  color: var(--text-muted);
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.cal-slot__remove:hover {
-  color: var(--error);
-  background: var(--error-fondo);
-}
-
-.cal-slot__remove svg {
-  width: 14px;
-  height: 14px;
-}
-
-/* Franja agregada en el modal y todavía no persistida. Borde punteado y acento
-   azul para distinguirla a simple vista de las ya registradas (ámbar). */
-.cal-slot--pending {
-  background: var(--accion-tenue);
-  border-style: dashed;
-  border-color: var(--borde-campo);
-}
-
-.cal-slot--pending .cal-slot__icon {
-  color: var(--accion);
-}
-
-.cal-slot__badge {
-  flex-shrink: 0;
-}
-
-/* Aviso de cruce con una franja existente (bloquea el botón "Ocupar"). */
-.cal__conflict {
-  margin: 0.6rem 0 0;
-  padding: 0.6rem 0.75rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--error);
-  background: var(--error-fondo);
-  border: 1px solid var(--error-borde);
-  border-radius: var(--radius-sm);
-}
-
-/* Spinner y botón deshabilitado: los globales de styles.scss. */
 
 /* ===== ASG-02 · Agenda del profesional =====
    Variables de la rejilla: tienen que cuadrar con las constantes del
@@ -755,7 +790,7 @@
   border-radius: 50%;
   background: var(--accion-tenue);
   color: var(--accion);
-  font-size: 0.68rem;
+  font-size: var(--fs-pastilla);
   font-weight: 600;
 }
 
@@ -764,7 +799,7 @@
   border-radius: var(--r-completo);
   background: var(--accion-tenue);
   color: var(--accion);
-  font-size: 0.7rem;
+  font-size: var(--fs-pastilla);
   font-weight: 600;
 }
 
@@ -788,9 +823,11 @@
   }
 }
 
-.equipo-chip__quitar:hover {
-  background: var(--error-fondo);
-  color: var(--error);
+@media (hover: hover) and (pointer: fine) {
+  .equipo-chip__quitar:hover {
+    background: var(--error-fondo);
+    color: var(--error);
+  }
 }
 
 /* Las franjas ya programadas: se leen de corrido y cada una se quita sin tener
@@ -835,8 +872,10 @@
   transition: background 0.15s ease;
 }
 
-.franja-chip__quitar:hover {
-  background: var(--peligro);
+@media (hover: hover) and (pointer: fine) {
+  .franja-chip__quitar:hover {
+    background: var(--peligro);
+  }
 }
 
 .franja-chip__quitar svg {
@@ -992,7 +1031,7 @@
   position: absolute;
   right: 0.5rem;
   transform: translateY(-50%);
-  font-size: 0.68rem;
+  font-size: var(--fs-pastilla);
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
 }
@@ -1028,7 +1067,7 @@
   padding: 2px 5px;
   border-radius: 6px;
   border-left: 3px solid transparent;
-  font-size: 0.68rem;
+  font-size: var(--fs-pastilla);
   line-height: 1.2;
 }
 
@@ -1052,17 +1091,6 @@
 
 /* Todavía no está en la BD: se raya en diagonal para que se note que ese hueco
    depende de pulsar "Asignar profesional". */
-.ag-block--ocupado.ag-block--nueva {
-  background:
-    repeating-linear-gradient(
-      45deg,
-      var(--aviso-borde) 0 6px,
-      var(--aviso-fondo) 6px 12px
-    );
-  border: 1px dashed var(--ambar);
-  border-left: 3px solid var(--ambar);
-}
-
 /* Otra OS del profesional: contexto, en gris azulado para no competir con la
    visita que se está programando. */
 .ag-block--otra {
@@ -1139,18 +1167,26 @@
   background: color-mix(in srgb, var(--superficie) 70%, transparent);
   border: none;
   border-radius: 4px;
-  opacity: 0;
   cursor: pointer;
   transition: opacity 0.15s ease, background 0.15s ease;
 }
 
-.ag-block:hover .ag-block__quitar {
-  opacity: 1;
-}
+/* Con ratón la × aparece al pasar por el bloque (o con el foco del teclado);
+   en táctil no hay hover, así que se queda visible. */
+@media (hover: hover) and (pointer: fine) {
+  .ag-block__quitar {
+    opacity: 0;
+  }
 
-.ag-block__quitar:hover {
-  background: var(--peligro);
-  color: var(--superficie);
+  .ag-block:hover .ag-block__quitar,
+  .ag-block__quitar:focus-visible {
+    opacity: 1;
+  }
+
+  .ag-block__quitar:hover {
+    background: var(--peligro);
+    color: var(--superficie);
+  }
 }
 
 .ag-block__quitar svg {
@@ -1169,7 +1205,7 @@
   justify-content: center;
   padding-top: 1px;
   border-radius: 6px;
-  font-size: 0.65rem;
+  font-size: var(--fs-pastilla);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   pointer-events: none;
@@ -1187,7 +1223,7 @@
   margin: 0.6rem 0 0;
   padding: 0;
   list-style: none;
-  font-size: 0.72rem;
+  font-size: var(--fs-meta);
   color: var(--text-muted);
 }
 
@@ -1220,61 +1256,6 @@
 .agenda__punto--ocupado {
   background: var(--aviso-fondo);
   border: 1px solid var(--ambar);
-}
-
-.agenda__punto--nueva {
-  background: repeating-linear-gradient(45deg, var(--aviso-borde) 0 3px, transparent 3px 6px);
-  border: 1px dashed var(--ambar);
-}
-
-.agenda__manual {
-  margin-top: 1rem;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--border-soft);
-}
-
-.agenda__manual-head {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-main);
-  cursor: pointer;
-}
-
-.agenda__manual-head .pill {
-  margin-left: 0.4rem;
-  vertical-align: middle;
-}
-
-.agenda__manual-title {
-  margin: 0 0 0.5rem;
-  font-size: var(--fs-meta);
-  font-weight: 600;
-  color: var(--tinta-3);
-}
-
-.agenda__manual-title--sep {
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-soft);
-}
-
-.agenda__manual-hint {
-  margin: 0 0 0.8rem;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
-.cal__slots-empty--muted {
-  color: var(--tinta-3);
-  background: var(--hundida);
-}
-
-.agenda__manual-hint strong {
-  color: var(--tinta);
-}
-
-.agenda__manual[open] .agenda__manual-head {
-  margin-bottom: 0.9rem;
 }
 
 /* ===== M3 · Cambio de estado y auditoría ===== */
@@ -1384,65 +1365,6 @@
      `align-self: stretch` ocupa el alto que pone el visor y hace scroll dentro. */
   align-self: stretch;
   contain: size;
-}
-
-/* ===== Soportes dentro del detalle ===== */
-.soportes-lista {
-  display: grid;
-  gap: 0.5rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.soporte-fila {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  width: 100%;
-  padding: 0.6rem 0.85rem;
-  text-align: left;
-  font-family: inherit;
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .soporte-fila:hover {
-    border-color: var(--borde-control-hover);
-    background: var(--fila-hover);
-  }
-}
-
-.soporte-fila__texto {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.soporte-fila__nombre {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--text-main);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.soporte-fila__meta {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-}
-
-.soporte-fila__accion {
-  flex-shrink: 0;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--accion);
 }
 
 /* Icono de archivo en el mismo hueco donde el profesional lleva su avatar. */
@@ -1579,7 +1501,7 @@
 }
 
 .reject-cat__meta {
-  font-size: 0.74rem;
+  font-size: var(--fs-meta);
   color: var(--text-muted);
 }
 
@@ -1623,42 +1545,17 @@
   .verify__doc {
     height: 44vh;
   }
-
-  /* Con el modal en una sola columna la agenda se lleva casi todo el alto
-     disponible, así que se recorta para que el pie siga a la vista. */
-  .cita-bar__campos {
-    flex: 1 1 100%;
-  }
 }
 
 @media (max-width: 680px) {
-  .ord-head {
-    align-items: stretch;
-  }
-
-
-  .fields {
-    grid-template-columns: 1fr;
-  }
-
-  .field--full {
-    grid-column: auto;
-  }
-
-  .cal__form {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .cal__add {
-    grid-column: 1 / -1;
-  }
-
   /* En móvil la barra de la agenda se apila: la navegación de semanas y la
      duración no caben en una línea. */
   .agenda__bar {
     align-items: stretch;
   }
 
+  /* Pie de los modales en el celular (restaurado, ronda 3): estado arriba y
+     botones debajo, que se parten en vez de salirse de la pantalla. */
   .modal__footer {
     flex-direction: column;
     align-items: stretch;
@@ -1676,7 +1573,7 @@
 .cita-bar__falta {
   display: block;
   margin-top: 0.15rem;
-  font-size: 0.74rem;
+  font-size: var(--fs-meta);
   font-weight: 600;
   color: var(--tinta-2);
 }
@@ -1716,7 +1613,7 @@
   width: 18px;
   height: 18px;
   color: var(--text-muted);
-  transition: transform 0.18s ease;
+  transition: transform var(--t-media) var(--ease-out);
 }
 
 .acordeon__chevron--abierto {
@@ -1728,12 +1625,8 @@
   padding-top: 0;
 }
 
-/* CFG-04 · Tipo de orden y su valor hora, arriba de los campos extraídos. */
-.tipo-orden {
-  margin-bottom: 1rem;
-  padding-bottom: 0.9rem;
-  border-bottom: 1px solid var(--border-soft);
-}
+/* CFG-04 · Tipo de orden y su valor hora. Ya no lleva raya debajo: va en la
+   misma rejilla que los campos extraídos (ver `.ai-form > .card__body`). */
 
 .tipo-orden__valor {
   font-size: 0.78rem;
@@ -2009,38 +1902,11 @@
   }
 }
 
-/* 7-oct-2026 · Píldora que además es botón (estado ARL): misma identidad, con
-   cursor y un realce al pasar por encima para que se note que se pulsa. */
-.pill--boton {
-  border: 0;
-  font-family: inherit;
-  cursor: pointer;
-  transition: filter 0.15s ease, box-shadow 0.15s ease;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .pill--boton:hover {
-    filter: brightness(0.96);
-    box-shadow: inset 0 0 0 1px var(--borde-campo);
-  }
-}
-
-.pill--boton:focus-visible {
-  outline: var(--anillo);
-  outline-offset: 2px;
-  box-shadow: var(--halo);
-}
-
 /* 7-oct-2026 · Modal de prefactura: la columna del check mide lo que mide el
-   check, y el ancho que sobra se lo quedan las columnas con contenido.
-   OJO: esta tabla reutiliza `.ord-table`, que le pone 210 px de ancho mínimo a
-   la PRIMERA columna (en la bandeja es la razón social). Aquí la primera es el
-   check, así que ese mínimo se anula con un selector más específico: sin esto
-   `width: 1%` no hace nada, que es lo que pasó en el primer intento. */
-.ord-table.pf-tabla th.pf-check,
-.ord-table.pf-tabla td.pf-check {
+   check, y el ancho que sobra se lo quedan las columnas con contenido. */
+.pf-tabla th.pf-check,
+.pf-tabla td.pf-check {
   width: 2.5rem;
-  min-width: 0;
   max-width: 2.5rem;
   padding-left: 0.9rem;
   padding-right: 0.25rem;
@@ -2074,8 +1940,7 @@
 }
 
 /* 7-oct-2026 · De qué asesor es el documento (varios asesores en la orden). */
-.reject-cat__asesor,
-.soporte-asesor {
+.reject-cat__asesor {
   font-weight: 500;
   color: var(--accion);
 }
@@ -2096,142 +1961,4 @@
     pointer-events: none;
   }
   input { width: 100%; padding-left: 2.1rem; }
-}
-
-/* Avisos fuera de pastilla: tinta-2 con ícono ámbar (DESIGN §10). */
-.cita-bar__falta::before {
-  content: '';
-  display: inline-block;
-  width: 0.95em;
-  height: 0.95em;
-  margin-right: 0.3em;
-  vertical-align: -0.12em;
-  background: var(--ambar);
-  -webkit-mask: var(--icono-alerta) center / contain no-repeat;
-  mask: var(--icono-alerta) center / contain no-repeat;
-}
-
-.suplente__aviso::before {
-  content: '';
-  display: inline-block;
-  width: 0.95em;
-  height: 0.95em;
-  margin-right: 0.3em;
-  vertical-align: -0.12em;
-  background: var(--ambar);
-  -webkit-mask: var(--icono-alerta) center / contain no-repeat;
-  mask: var(--icono-alerta) center / contain no-repeat;
-}
-
-.vista-formatos__pendientes::before {
-  content: '';
-  display: inline-block;
-  width: 0.95em;
-  height: 0.95em;
-  margin-right: 0.3em;
-  vertical-align: -0.12em;
-  background: var(--ambar);
-  -webkit-mask: var(--icono-alerta) center / contain no-repeat;
-  mask: var(--icono-alerta) center / contain no-repeat;
-}
-
-/* ===== Ronda 3 del rediseño (20-nov-2026) ===== */
-/* Ámbar solo para SIN PROGRAMAR (DESIGN §1.3 y §10). «Pendiente» de Estado ARL
-   es un estado de espera, no una alerta: neutro hundido con texto tinta-2. */
-.ord-table .pill--boton.pill--warning {
-  background: var(--hundida);
-  color: var(--tinta-2);
-}
-
-.ord-table .pill--boton.pill--warning::before {
-  background: var(--tinta-3);
-}
-
-/* «Parcial · faltan 4 h»: etiqueta neutra (.tag) con el reloj ámbar como único
-   acento; así no grita lo mismo que SIN PROGRAMAR. */
-.ord-table td .pill--warning.pill--sm {
-  gap: 5px;
-  min-height: 22px;
-  padding: 0 8px;
-  border-radius: var(--r-control);
-  font-size: var(--fs-meta);
-  font-weight: 500;
-  letter-spacing: 0;
-  color: var(--tinta-2);
-  background: var(--hundida);
-}
-
-.ord-table td .pill--warning.pill--sm::before {
-  width: 12px;
-  height: 12px;
-  border-radius: 0;
-  background: var(--ambar);
-  -webkit-mask: var(--icono-reloj) center / contain no-repeat;
-  mask: var(--icono-reloj) center / contain no-repeat;
-}
-
-/* ARL y las cabeceras cortas en una sola línea («ARL SURA», «Estado
-   ARL/Plataforma»): el ancho que sobra lo absorbe la razón social. */
-.ord-table td:nth-child(2) {
-  white-space: nowrap;
-}
-
-.ord-table thead th.th--wrap {
-  white-space: nowrap;
-  height: 38px;
-  padding-top: 0;
-  padding-bottom: 0;
-}
-
-.ord-table thead th.th--wrap br {
-  display: none;
-}
-
-/* Cada coasesor con su «·» delante: nunca queda el separador solo al inicio
-   de la línea siguiente. */
-.who__co {
-  white-space: nowrap;
-}
-
-/* A 1280-1366 px: menos aire lateral en las columnas cortas y un botón de
-   Cobro más compacto devuelven unos 70 px a la razón social. */
-@media (max-width: 1365px) {
-  .ord-table thead th,
-  .ord-table tbody td {
-    padding-left: 6px;
-    padding-right: 6px;
-  }
-
-  .ord-table thead th:first-child,
-  .ord-table tbody td:first-child {
-    padding-left: 12px;
-  }
-
-  .ord-table .cobro-btn {
-    gap: 0.25rem;
-    padding: 0 0.5rem;
-  }
-
-  /* El marco ya dice que es un botón: a este ancho el ícono de factura cede
-     sus 18 px a la razón social. */
-  .ord-table .cobro-btn > svg {
-    display: none;
-  }
-
-  .ord-table .col-actions .icon-action {
-    width: 26px;
-  }
-
-  .ord-table td:first-child {
-    min-width: 200px;
-  }
-}
-
-/* La etiqueta «Parcial» va en su propia línea bajo el estado: así la columna
-   Estado mide lo que su pastilla más ancha y no le roba a la razón social el
-   ancho de las dos puestas en fila. */
-.ord-table td .pill + .pill--warning.pill--sm {
-  display: flex;
-  width: max-content;
-  margin-top: 4px;
 }

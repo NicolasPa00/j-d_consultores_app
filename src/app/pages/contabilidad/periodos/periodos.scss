@@ -5,50 +5,99 @@
 .per-head {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 1rem;
+  gap: var(--e-2);
+  margin-bottom: var(--e-4);
   flex-wrap: wrap;
 }
 
 .per-anio {
-  font-size: 1.2rem;
   min-width: 3.5rem;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .per-ayuda {
-  margin: 0 0 0 0.75rem;
-  font-size: 0.86rem;
-  color: var(--text-muted);
+  margin: 0 0 0 var(--e-3);
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
 }
 
+/* Los doce meses en UNA tarjeta dividida (como los KPI, DESIGN §7): no doce
+   cajas sueltas. Los divisores son sombras de 1 px que la tarjeta recorta en
+   sus bordes, así valen igual con 6, 4 o 2 columnas. */
 .per-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 0.9rem;
+  /* 12 meses: 6, 4, 3 o 2 columnas según el ancho, siempre filas completas. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
 }
 
-.per-mes {
+.per-grid > .per-mes {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 1rem;
+  gap: var(--e-2);
+  min-width: 0;
+  padding: var(--e-4);
+  background: var(--superficie);
+  border: 0;
+  border-radius: 0;
+  box-shadow: -1px 0 0 var(--borde), 0 -1px 0 var(--borde);
 }
 
-.per-mes--cerrado {
+.per-grid > .per-mes--cerrado {
   background: var(--hundida);
 }
 
+/* El estado va junto al nombre del mes (no en la otra punta de la tarjeta). */
 .per-mes__top {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  justify-content: flex-start;
+  align-items: baseline;
+  gap: var(--e-2);
 }
 
+.per-mes__top strong {
+  min-width: 0;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.per-mes__top .pill {
+  flex: none;
+  white-space: nowrap;
+}
+
+/* «Abierto» es el estado de casi todos los meses: en texto tinta-3, sin
+   pastilla, para que el ojo vaya a lo que sí cambia (el mes cerrado y el que
+   tiene movimiento). */
+.per-abierto {
+  flex: none;
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
+  white-space: nowrap;
+}
+
+/* Lo que distingue a un mes es su movimiento: con comprobantes, la cifra en
+   tinta; sin ellos, en tinta-3. */
 .per-mes__cifras {
   margin: 0;
-  font-size: 0.85rem;
-  color: var(--text-muted);
+  font-size: var(--fs-celda);
+  color: var(--tinta);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.per-mes__cifras--vacio {
+  color: var(--tinta-3);
+  font-weight: 400;
 }
 
 .per-borr {
@@ -58,8 +107,8 @@
 
 .per-motivo {
   margin: 0;
-  font-size: 0.78rem;
-  color: var(--text-muted);
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -67,33 +116,52 @@
 
 .per-mes .btn {
   align-self: flex-start;
+  margin-top: auto;
 }
 
-.btn[disabled] {
-  opacity: 0.6;
-  cursor: not-allowed;
-}.modal__body .per-ayuda {
+/* «Cerrar mes»: botón de contorno (se lee como botón: la acción no se deshace
+   sola), pero en tinta-2 y a 30 px, para no competir con el dato del mes. Al
+   pasar el ratón o con el foco toma el color de acción. */
+.per-mes .per-cerrar {
+  color: var(--tinta-2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .per-mes .per-cerrar:hover:not(:disabled) {
+    color: var(--accion);
+  }
+}
+
+.per-mes .per-cerrar:focus-visible {
+  color: var(--accion);
+}
+
+.modal__body .per-ayuda {
   margin: 0;
 }
+
 /* ===== B10-01 · Cierre de año ===== */
 .per-cierre {
-  margin-top: 1.25rem;
+  margin-top: var(--e-6);
 }
 
 .per-cierre__head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: var(--e-4);
 }
 
 .per-ayuda--bloque {
+  max-width: 75ch;
   margin: 0;
+  line-height: 1.5;
 }
 
 .per-resultado {
-  margin: 0 0 0.75rem;
-  font-size: 0.95rem;
+  margin: 0 0 var(--e-3);
+  font-size: var(--fs-base);
+  font-variant-numeric: tabular-nums;
 }
 
 .per-ok {
@@ -103,9 +171,9 @@
 }
 
 .per-aviso {
-  margin: 0 0 0.75rem;
-  padding: 0.55rem 0.8rem;
-  font-size: 0.86rem;
+  margin: 0 0 var(--e-3);
+  padding: 10px 14px;
+  font-size: var(--fs-celda);
   color: var(--tinta);
   background: var(--aviso-fondo);
   border-radius: var(--r-alerta);
@@ -114,16 +182,15 @@
 .per-cierre__tabla {
   max-height: 320px;
   overflow-y: auto;
-  margin-bottom: 0.9rem;
+  margin-bottom: var(--e-4);
 }
 
 .per-cierre__cuentas {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 0.9rem;
+  gap: var(--e-4);
+  margin-bottom: var(--e-4);
 }
-
 
 .mono {
   font-variant-numeric: tabular-nums;
@@ -137,6 +204,37 @@
 @media (max-width: 720px) {
   .per-cierre__cuentas {
     grid-template-columns: 1fr;
+  }
+
+  .per-ayuda {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+}
+
+/* Por ancho de ventana (no con container queries: la contención convertiría el
+   :host en el bloque de referencia del modal fijo de «Reabrir»). Con la barra
+   lateral de 232 px: 6 columnas desde 1392 px, 4 desde 1000, 3 desde 472. */
+@media (min-width: 472px) {
+  .per-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1000px) {
+  .per-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1392px) {
+  .per-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+
+@media (max-width: 471px) {
+  .per-grid > .per-mes { padding: var(--e-3); }
+
+  /* En dos columnas angostas, el estado sigue al nombre y solo baja si no cabe
+     («Septiembre»). */
+  .per-mes__top {
+    flex-wrap: wrap;
+    row-gap: 0;
   }
 }
 

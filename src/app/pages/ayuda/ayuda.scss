@@ -3,29 +3,36 @@
 // Video de bienvenida: al lado del texto en escritorio, encima en el celular.
 .ayu-bienvenida {
   display: grid;
-  grid-template-columns: minmax(0, 36rem) 1fr;
-  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1.6fr) minmax(18rem, 1fr);
+  gap: var(--e-6);
   align-items: center;
-  margin-bottom: 1rem;
-  padding: 1rem;
+  margin-bottom: var(--e-6);
+  padding: var(--e-4);
 }
 
 .ayu-bienvenida__video {
   display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
-  border-radius: var(--radius-md);
+  border-radius: var(--r-tarjeta);
   background: var(--noche);
 }
 
-.ayu-bienvenida__texto p { margin: 0.5rem 0 0; color: var(--text-muted); line-height: 1.5; }
+.ayu-bienvenida__texto { padding-right: var(--e-4); }
+.ayu-bienvenida__texto p { max-width: 60ch; margin: var(--e-2) 0 0; font-size: var(--fs-base); color: var(--tinta-2); line-height: 1.55; }
 
-.ayu-bienvenida__titulo { margin: 0.6rem 0 0; font-size: 1.15rem; color: var(--text-main); }
+.ayu-bienvenida__titulo { margin: var(--e-3) 0 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; color: var(--tinta); }
 
-.ayu-bienvenida .ayu-bienvenida__nota { font-size: 0.78rem; }
+.ayu-bienvenida .ayu-bienvenida__nota { color: var(--tinta-3); }
 
-@media (max-width: 860px) {
-  .ayu-bienvenida { grid-template-columns: 1fr; }
+.ayu-bienvenida .ayu-bienvenida__nota { font-size: var(--fs-meta); }
+
+/* Ronda 3: por debajo de ~1180 px el texto quedaba en una columna de 150 px
+   (título en 3 líneas). Se apila: video arriba (hasta 36rem), texto debajo. */
+@media (max-width: 1180px) {
+  .ayu-bienvenida { grid-template-columns: minmax(0, 1fr); }
+  .ayu-bienvenida__video { max-width: 36rem; }
+  .ayu-bienvenida__texto { padding-right: 0; }
 }
 
 .ayu-barra {
@@ -33,101 +40,116 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem 1rem;
-  margin-bottom: 1rem;
+  gap: var(--e-3) var(--e-6);
+  margin-bottom: var(--e-4);
 }
 
+/* Buscador global (`.buscador`): aquí solo su ancho.
+   Ronda 2: el buscador ocupa su fila entera y las pestañas van en la suya,
+   debajo, a todos los anchos (como ya pasaba a 1280). Así el ejemplo del
+   marcador cabe en escritorio y el subrayado de las pestañas arranca en el
+   borde izquierdo. En el celular el ejemplo se corta: tiene `title` y el
+   texto no se acorta sin permiso del dueño. */
 .ayu-buscar {
-  position: relative;
-  flex: 1 1 22rem;
-  max-width: 34rem;
+  flex: 1 1 100%;
+  max-width: none;
+}
 
-  svg {
-    position: absolute;
-    left: 0.75rem;
-    top: 50%;
-    width: 1.05rem;
-    height: 1.05rem;
-    color: var(--text-muted);
-    transform: translateY(-50%);
-    pointer-events: none;
-  }
-  input { width: 100%; padding-left: 2.3rem; }
+.ayu-barra > .tabs {
+  flex: 1 1 100%;
+  margin-bottom: 0;
 }
 
 .ayu-layout {
   display: grid;
-  grid-template-columns: minmax(15rem, 20rem) 1fr;
-  gap: 1rem;
+  grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
+  gap: var(--e-6);
   align-items: start;
 }
 
 .ayu-indice {
   position: sticky;
-  top: 1rem;
+  top: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 2px;
   max-height: calc(100vh - 8rem);
-  padding: 0.75rem;
+  padding: var(--e-3);
   overflow-y: auto;
 }
 
 .ayu-indice__grupo {
   margin: 0.6rem 0.4rem 0.2rem;
-  font-size: 0.72rem;
+  font-size: var(--fs-meta);
   font-weight: 600;
   letter-spacing: 0;
-  color: var(--text-muted);
+  color: var(--tinta-3);
 }
 .ayu-indice__grupo:first-child { margin-top: 0.1rem; }
 
 .ayu-indice__item {
-  padding: 0.5rem 0.65rem;
+  padding: var(--e-2) 10px;
   font: inherit;
-  font-size: 0.88rem;
+  font-size: var(--fs-celda);
+  line-height: 1.4;
   text-align: left;
-  color: var(--text-main);
+  color: var(--tinta);
   background: transparent;
   border: 0;
-  border-radius: var(--radius-sm);
+  border-radius: var(--r-item);
   cursor: pointer;
+  transition: background-color var(--t-rapida) ease;
 }
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   .ayu-indice__item:hover { background: var(--fila-hover); }
 }
-.ayu-indice__item--activo { background: var(--accion-tenue); color: var(--primary-color); font-weight: 600; }
+.ayu-indice__item--activo { background: var(--accion-tenue); color: var(--accion); font-weight: 600; }
 
-.ayu-articulo__titulo { margin: 0.6rem 0 0.35rem; font-size: 1.35rem; color: var(--primary-color); }
-.ayu-articulo__resumen { margin: 0 0 1rem; font-size: 1rem; color: var(--text-muted); }
-.ayu-ir { margin-bottom: 1rem; }
+/* El artículo se lee: título 22/600 en tinta, resumen 16 en tinta-2, 72ch. */
+.ayu-articulo .card__body { padding: var(--e-6) var(--e-8) var(--e-8); }
+.ayu-articulo__titulo { max-width: 40ch; margin: var(--e-3) 0 var(--e-2); font-size: 22px; font-weight: 600; line-height: 1.25; letter-spacing: -0.015em; color: var(--tinta); }
+.ayu-articulo__resumen { max-width: 72ch; margin: 0 0 var(--e-5); font-size: var(--fs-tarjeta); line-height: 1.55; color: var(--tinta-2); }
+.ayu-ir { margin-bottom: var(--e-6); }
 
 .ayu-pasos {
   display: grid;
-  gap: 0.7rem;
-  margin: 0 0 1.25rem;
+  gap: 10px;
+  max-width: 72ch;
+  margin: 0 0 var(--e-6);
   padding-left: 1.4rem;
-  font-size: 0.95rem;
-  line-height: 1.55;
+  font-size: var(--fs-base);
+  line-height: 1.6;
+  color: var(--tinta);
 }
-.ayu-pasos li::marker { font-weight: 600; color: var(--secondary-color); }
+.ayu-pasos li::marker { font-weight: 600; color: var(--accion); }
 
+/* «Tenga en cuenta»: la alerta de aviso del DESIGN (fondo del estado, radio 8,
+   sin borde; título 13/600 en tinta, texto en tinta-2). */
 .ayu-avisos {
-  padding: 0.85rem 1rem;
+  max-width: 72ch;
+  padding: 14px var(--e-4);
   background: var(--aviso-fondo);
-  border: 1px solid var(--aviso-borde);
-  border-radius: var(--radius-md);
-  font-size: 0.9rem;
-  line-height: 1.5;
+  border-radius: var(--r-alerta);
+  font-size: var(--fs-base);
+  line-height: 1.55;
+  color: var(--tinta-2);
 }
 .ayu-avisos__titulo { margin: 0 0 0.35rem; font-weight: 600; color: var(--tinta); }
 .ayu-avisos ul { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.3rem; }
 
-.ayu-vacio { margin: 0.5rem; font-size: 0.9rem; color: var(--text-muted); }
+.ayu-vacio { margin: 0.5rem; font-size: var(--fs-base); color: var(--tinta-3); }
 
+/* Ronda 3: `1fr` tomaba el min-content de los pantallazos (640 px) y a 390
+   el índice y el artículo medían ~706 px. `minmax(0,1fr)` lo encierra. */
 @media (max-width: 860px) {
-  .ayu-layout { grid-template-columns: 1fr; }
+  .ayu-layout { grid-template-columns: minmax(0, 1fr); }
   .ayu-indice { position: static; max-height: 16rem; }
+}
+.ayu-articulo { min-width: 0; }
+.ayu-articulo img { max-width: 100%; }
+@media (max-width: 600px) {
+  .ayu-articulo .card__body { padding: var(--e-4) var(--e-4) var(--e-6); }
+  .ayu-articulo__titulo { overflow-wrap: anywhere; }
 }
 
 /* Pestañas: las globales `.tabs` / `.tab` (DESIGN §7). Los grupos son muchos:
@@ -137,15 +159,17 @@
 }
 
 /* Pantallazos con recuadros guía (marcas en % de la imagen: siguen a su botón a cualquier tamaño). */
-.ayu-figuras { display: grid; gap: 1.5rem; margin: 0 0 1.5rem; }
-.ayu-figura { margin: 0; }
+/* Ronda 3: columna `minmax(0,1fr)`; con la implícita, el pantallazo de 640 px
+   del celular ensanchaba la figura y el pie de foto quedaba cortado. */
+.ayu-figuras { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--e-8); margin: 0 0 var(--e-8); }
+.ayu-figura { margin: 0; min-width: 0; }
 .ayu-figura__marco {
   position: relative;
   overflow: hidden;
   line-height: 0;
   border: 1px solid var(--borde);
-  border-radius: var(--radius-md);
-  box-shadow: var(--sombra-2);
+  border-radius: var(--r-tarjeta);
+  box-shadow: none;
 }
 .ayu-figura__marco img { display: block; width: 100%; height: auto; }
 /* En el celular una pantalla completa a 360 px no se lee: se deja a 640 px y se desliza de lado. */
@@ -168,16 +192,16 @@
   min-width: 1.35rem;
   height: 1.35rem;
   padding: 0 0.3rem;
-  font-size: 0.78rem;
+  font-size: var(--fs-meta);
   line-height: 1;
   color: var(--superficie);
   background: var(--accion);
   border-radius: 999px;
 }
 .ayu-marca b { position: absolute; top: -0.8rem; left: -0.6rem; }
-.ayu-figura figcaption { display: grid; gap: 0.35rem; padding-top: 0.7rem; font-size: 0.92rem; line-height: 1.5; }
-.ayu-figura figcaption strong { color: var(--primary-color); }
-.ayu-leyenda { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin: 0.2rem 0 0; padding: 0; list-style: none; font-size: 0.85rem; color: var(--text-muted); }
+.ayu-figura figcaption { display: grid; gap: 0.35rem; padding-top: 0.7rem; font-size: var(--fs-base); line-height: 1.5; }
+.ayu-figura figcaption strong { color: var(--tinta); font-weight: 600; }
+.ayu-leyenda { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin: 0.2rem 0 0; padding: 0; list-style: none; font-size: var(--fs-celda); color: var(--tinta-3); }
 .ayu-leyenda li { display: inline-flex; align-items: center; gap: 0.35rem; }
 
 .ayu-avisos__titulo::before {
@@ -190,4 +214,17 @@
   background: var(--ambar);
   -webkit-mask: var(--icono-alerta) center / contain no-repeat;
   mask: var(--icono-alerta) center / contain no-repeat;
+}
+
+/* Ronda 2 · Pestañas en el celular: con desplazamiento lateral la última se
+   cortaba sin señal de que había más. Desvanecido en el borde derecho y aire
+   al final para que la última pestaña salga entera al llegar (pedido global:
+   llevarlo a `.tabs` en styles.scss). */
+@media (max-width: 640px) {
+  .tabs {
+    padding-right: var(--e-8);
+    scroll-padding-inline: var(--e-4);
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--e-8)), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--e-8)), transparent);
+  }
 }

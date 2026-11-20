@@ -4,6 +4,7 @@ import { AuthService } from '../../core/auth.service';
 import { SistemaService } from '../../core/sistema.service';
 import { Sistema, SistemaId } from '../../core/sistemas';
 import { Vista } from '../../core/models';
+import { EscenaAccesoComponent } from '../login/escena-acceso';
 
 /** Nombre corto de cada vista, para enumerar lo que trae cada sistema. */
 const ETIQUETA: Record<Vista, string> = {
@@ -33,8 +34,10 @@ const ETIQUETA: Record<Vista, string> = {
  */
 @Component({
   selector: 'app-sistemas',
+  imports: [EscenaAccesoComponent],
   templateUrl: './sistemas.html',
-  styleUrl: './sistemas.scss',
+  // La pieza partida y la hoja son las del Login (misma familia, DESIGN §7).
+  styleUrls: ['../login/login.scss', './sistemas.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SistemasComponent {

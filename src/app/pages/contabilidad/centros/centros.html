@@ -23,7 +23,7 @@
     <table class="table">
       <thead><tr><th>Código</th><th>Nombre</th><th>ARL</th><th class="col-num">Movimientos</th><th>Estado</th>@if (puedeEditar()) { <th class="col-actions">Acciones</th> }</tr></thead>
       <tbody>
-        @if (!centros().length) { <tr><td [attr.colspan]="puedeEditar() ? 6 : 5" class="cc-vacio">Todavía no hay centros de costo.</td></tr> }
+        @if (!centros().length) { <tr><td [attr.colspan]="puedeEditar() ? 6 : 5" class="table__empty">Todavía no hay centros de costo.</td></tr> }
         @for (c of centros(); track c.id) {
           <tr>
             <td class="mono"><strong>{{ c.codigo }}</strong></td>

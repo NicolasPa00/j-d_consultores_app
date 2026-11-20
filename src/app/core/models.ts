@@ -1261,6 +1261,36 @@ export interface DashboardData {
   estados_mes: { mes: string; estado: string; total: string | number }[];
 }
 
+/**
+ * 20-nov-2026 · `GET /reports/inicio`: lo pendiente del Inicio, con las mismas
+ * definiciones que las vistas donde se resuelve. Un bloque en `null` es que el
+ * rol no ve esa vista (no aplica); en 0, que está al día.
+ */
+export interface ResumenInicio {
+  /** Hoy en Colombia (AAAA-MM-DD), el día con el que se contaron los vencimientos. */
+  hoy: string;
+  ordenes: {
+    bandeja: number;
+    sin_programar: number;
+    vencidas: number;
+    vencen_semana: number;
+    /** La vencida más antigua con OS: «Programar la vencida» abre su detalle. */
+    vencida_mas_antigua: { os_id: string; dias: number } | null;
+    por_revisar: number;
+    por_revisar_de: string[];
+    sin_visto_bueno: number;
+    sin_visto_bueno_monto: number;
+  } | null;
+  facturacion: { borradores: number; monto: number; pagadores: string[] } | null;
+  importar: { ultimo_lote_en: string | null } | null;
+  /**
+   * Filas de la pestaña «Por cobrar» de Cuentas de cobro en el mes en curso
+   * (cuentas sin aceptar + profesionales con trabajo por generar). Opcional: un
+   * servidor anterior al 20-nov no lo manda.
+   */
+  precuentas?: { por_cobrar_mes: number } | null;
+}
+
 // ─── Fase A · facturación ───────────────────────────────────────────────────────────────────
 
 /** A0-04 · Fila de un catálogo DIAN (`GET /parametros/catalogos/:nombre`). */

@@ -9,57 +9,82 @@
 /* 20-nov-2026 · Las pestañas son las globales (`.tabs`/`.tab`, raya cian). */
 
 /* ===== Año + meses =====
-   Es el mando de la vista: se entra por aquí y todo lo de abajo obedece. */
+   Es el mando de la vista: se entra por aquí y todo lo de abajo obedece.
+   Rediseño 20-nov-2026: el año va en su columna, arriba a la izquierda, y los
+   meses en una REJILLA de 7 columnas (Todo el año + 6 meses, y los otros 6
+   debajo): dos filas parejas a 1440, 1280 y ~1093 px, sin el 8 + 4 que dejaba
+   un bloque vacío. Con menos ancho, la rejilla pasa a columnas de 84 px. */
 .periodo-nav {
-  display: flex;
-  align-items: flex-end;
-  gap: 1.25rem;
-  flex-wrap: wrap;
-  padding: 1.1rem 1.35rem;
-  margin-bottom: 1.15rem;
+  display: grid;
+  /* Ronda 2: 104 px bastan para el select del año («2026» y su flecha); con
+     128 + 24 de hueco la columna se comía 150 px. */
+  grid-template-columns: 104px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--e-5) var(--e-5);
+  padding: var(--e-5) var(--e-6);
+  margin-bottom: var(--e-4);
+}
+
+.periodo-nav__anio .form-field {
+  margin: 0;
 }
 
 .periodo-nav__anio .form-control {
-  min-width: 120px;
+  width: 100%;
 }
 
 .meses {
-  display: flex;
-  gap: 0.4rem;
-  flex: 1 1 420px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--e-2);
+}
+
+/* Ronda 2: «Todo el año» ocupa dos celdas, así 2 + 12 = 14 = dos filas exactas
+   de 7 y no queda una celda vacía a la derecha de la segunda fila. */
+.meses > .mes:first-child {
+  grid-column: span 2;
 }
 
 .mes {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.1rem;
-  min-width: 84px;
-  padding: 0.5rem 0.7rem;
+  justify-content: flex-start;
+  gap: 2px;
+  min-width: 0;
+  min-height: 64px;
+  padding: var(--e-2) 10px;
   font-family: inherit;
   text-align: left;
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-control);
   cursor: pointer;
-  transition: background var(--t-media) var(--ease-out), border-color var(--t-media) var(--ease-out), box-shadow var(--t-media) var(--ease-out);
+  transition:
+    background-color var(--t-media) ease,
+    border-color var(--t-media) ease,
+    box-shadow var(--t-media) ease,
+    transform var(--t-rapida) var(--ease-out);
+}
+
+.mes:active {
+  transform: scale(0.98);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .mes:hover {
-    background: var(--hundida);
+    background: var(--fila-hover);
+    border-color: var(--borde-control);
   }
 }
 
-.mes--on {
-  border-color: var(--primary-color);
-  box-shadow: inset 0 0 0 1px var(--primary-color);
-}
-
-/* Un mes sin trabajo no se esconde: su hueco es la respuesta a "¿y ese mes?". */
+/* Un mes sin trabajo no se esconde: su hueco es la respuesta a "¿y ese mes?".
+   Se apaga con el color del texto, no con opacidad (DESIGN §7).
+   Ronda 2: sin fondo ni borde. La caja hundida gris hacía pesar más a los doce
+   meses vacíos que al mes con datos, que es el que lleva superficie y borde. */
 .mes--vacio {
-  opacity: 0.55;
+  background: transparent;
+  border-color: transparent;
 }
 
 /* «Tiene pendientes»: borde de aviso, que no se confunde con el mes elegido
@@ -68,66 +93,127 @@
   border-color: var(--aviso-borde);
 }
 
+.mes--on,
 .mes--pendiente.mes--on {
-  border-color: var(--primary-color);
+  background: var(--superficie);
+  border-color: var(--accion);
+  box-shadow: inset 0 0 0 1px var(--accion);
 }
 
 .mes__nombre {
-  font-size: 0.8rem;
+  font-size: var(--fs-celda);
   font-weight: 600;
-  color: var(--text-main);
+  color: var(--tinta);
+}
+
+.mes--vacio .mes__nombre {
+  font-weight: 500;
+  color: var(--tinta-3);
 }
 
 .mes__dato {
-  font-size: 0.76rem;
-  font-weight: 600;
-  color: var(--primary-color);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  color: var(--tinta-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.mes--on .mes__dato {
+  color: var(--tinta);
 }
 
 .mes__dato--vacio {
-  color: var(--text-muted);
+  color: var(--tinta-3);
+}
+
+.mes__pend,
+.mes__ok {
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .mes__pend {
-  font-size: 0.7rem;
-  font-weight: 600;
   color: var(--tinta-2);
 }
 
 .mes__ok {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--success);
+  color: var(--ok);
+}
+
+/* A 1280 y ~1093 px útiles el año sube a su propia fila y los meses usan todo
+   el ancho: siguen siendo dos filas de 7 + 6, con la cifra entera. */
+@media (max-width: 1180px) {
+  .periodo-nav {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--e-4);
+  }
+
+  .periodo-nav__anio .form-control {
+    width: auto;
+    min-width: 140px;
+  }
+}
+
+@media (max-width: 640px) {
+  .periodo-nav {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--e-4);
+  }
+
+  .periodo-nav__anio .form-control {
+    width: auto;
+    min-width: 140px;
+  }
+
+  .meses {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mes {
+    min-height: 0;
+    padding: 6px var(--e-2);
+  }
+
+  /* «Todo el año» ocupa la primera fila entera: es el recorte por omisión. */
+  .meses > .mes:first-child {
+    grid-column: 1 / -1;
+    min-height: 0;
+  }
 }
 
 /* Parte del total que es reembolso de viáticos, no honorarios. Informativo, no
    una alerta: se distingue de `.sin-tarifa` en el color por eso mismo. */
 .detalle-viaticos {
   display: block;
-  margin-top: 0.15rem;
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: var(--text-muted);
+  margin-top: 2px;
+  font-size: var(--fs-meta);
+  font-weight: 400;
+  color: var(--tinta-3);
   cursor: help;
 }
 
 /* PRE-02 · Marca la fila que no se puede cobrar todavía. */
 .sin-tarifa {
   display: inline-block;
-  margin-left: 0.4rem;
-  padding: 0.05rem 0.4rem;
-  font-size: 0.68rem;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: var(--fs-pastilla);
   font-weight: 600;
   color: var(--error);
   background: var(--error-fondo);
-  border-radius: 999px;
+  border-radius: var(--r-control);
   cursor: help;
 }
 
 .acciones-pie {
   display: flex;
   justify-content: flex-end;
-  margin-top: 0.9rem;
+  margin-top: 14px;
 }
 .btn--sm svg {
   width: 15px;
@@ -141,7 +227,18 @@
    misma del Inicio y de Estadísticas. */
 .resumen {
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  margin-bottom: 1rem;
+  margin-bottom: var(--e-4);
+}
+
+/* Ronda 3 · Celular: Cuentas y Horas arriba, Total entero debajo. Los
+   divisores son solo internos (línea entre las dos de arriba y otra sobre
+   Total), pintados hacia dentro: el borde exterior lo pone la tarjeta y su
+   radio ya no queda en escalón. */
+@media (max-width: 600px) {
+  .resumen { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .resumen > .kpi-card { box-shadow: none; }
+  .resumen > .kpi-card:nth-child(1) { box-shadow: inset -1px 0 0 var(--borde); }
+  .resumen > .kpi-card:nth-child(3) { grid-column: 1 / -1; box-shadow: inset 0 1px 0 var(--borde); }
 }
 
 /* ===== Tabla =====
@@ -150,26 +247,20 @@
 
 .totales__label {
   text-align: right;
-  color: var(--text-muted);
+  color: var(--tinta-2);
 }
 
 /* Las cifras de dinero mandan en esta vista: se leen en oscuro y en 600. */
 .money {
   font-weight: 600;
-  color: var(--text-main);
-}
-
-.col-actions {
-  width: 150px;
-  text-align: right;
-  white-space: nowrap;
+  color: var(--tinta);
 }
 
 /* Celda profesional */
 .who {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: 10px;
 }
 
 .who__avatar {
@@ -183,23 +274,23 @@
   background: var(--accion-tenue);
   color: var(--accion);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--fs-celda);
 }
 
 .who__name {
-  font-weight: 600;
-  color: var(--text-main);
+  font-weight: 500;
+  color: var(--tinta);
 }
 
 /* Marca de "valor hora base" en el detalle. */
 .origen {
   margin-left: 4px;
-  padding: 1px 5px;
-  border-radius: 4px;
+  padding: 1px 6px;
+  border-radius: var(--r-control);
   background: var(--hundida);
-  font-size: 0.62rem;
-  font-weight: 600;
-  color: var(--text-muted);
+  font-size: var(--fs-pastilla);
+  font-weight: 500;
+  color: var(--tinta-2);
 }
 
 /* El viático de una orden, bajo su subtotal: no es un distintivo como `.origen`
@@ -207,29 +298,40 @@
 .viatico-linea {
   display: block;
   margin-top: 2px;
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: var(--text-muted);
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  color: var(--tinta-3);
 }
 
 /* ===== Tarifas ===== */
 .tarifas__intro {
-  margin: 0 0 1.1rem;
-  font-size: 0.85rem;
+  max-width: 72ch;
+  margin: 0 0 var(--e-5);
+  font-size: var(--fs-celda);
   line-height: 1.6;
-  color: var(--text-muted);
+  color: var(--tinta-2);
 }
 
+.tarifas__intro strong {
+  color: var(--tinta);
+  font-weight: 600;
+}
+
+/* El alta de tarifa va en un carril hundido: es un formulario sobre la tabla,
+   no otra tarjeta. Botón a 40 px con los campos. */
 .tarifa-form {
   display: flex;
   align-items: flex-end;
-  gap: 0.75rem;
+  gap: var(--e-3);
   flex-wrap: wrap;
-  margin: 1rem 0 1.25rem;
-  padding: 1rem;
-  background: var(--papel);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
+  margin: var(--e-4) 0 var(--e-5);
+  padding: var(--e-4);
+  background: var(--hundida);
+  border-radius: var(--r-tarjeta);
+}
+
+.tarifa-form > .btn {
+  min-height: 40px;
 }
 
 .tarifa-form .form-field {
@@ -242,64 +344,46 @@
    sin tarifa). Se deja visible y con `title` en vez de esconderla. Los iconos
    de fila (normal, hover, deshabilitado) son los globales de `.icon-action`. */
 
-/* Misma disposición que en Órdenes: los iconos alineados a la derecha. */
-.row-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.35rem;
-}
-
 .detalle__head {
   display: flex;
   align-items: center;
-  gap: 0.9rem;
+  gap: var(--e-3);
   flex-wrap: wrap;
-  margin-bottom: 1rem;
 }
 
 .detalle__meta {
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  font-size: var(--fs-celda);
+  color: var(--tinta-3);
 }
 
 .detalle__loading {
-  padding: 2rem 0;
+  padding: var(--e-8) 0;
   text-align: center;
-  color: var(--text-muted);
+  color: var(--tinta-3);
 }
 
 /* ===== Responsive ===== */
-@media (max-width: 760px) {
-  .toolbar__filters,
-  .toolbar__export,
-  .toolbar__control {
-    width: 100%;
-  }
 
-  .col-actions {
-    width: auto;
-  }
-}
 
 /* PRE-01 · Marca de cuenta complementaria: trabajo finalizado después de
    cerrarse la cuenta del mes. */
 .complemento {
   display: inline-block;
-  margin-left: 0.4rem;
-  padding: 0.05rem 0.4rem;
-  font-size: 0.68rem;
-  font-weight: 600;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: var(--fs-pastilla);
+  font-weight: 500;
   color: var(--accion);
   background: var(--accion-tenue);
-  border-radius: 999px;
+  border-radius: var(--r-control);
   cursor: help;
 }
 
 /* La fila que trajo el aviso de la campanita. Se apaga sola a los pocos
    segundos: es una señal de "esto es lo que acaba de cambiar", no un estado. */
 .fila--destacada > td {
-  background: color-mix(in srgb, var(--accion) 10%, transparent);
-  transition: background 400ms ease;
+  background: var(--accion-tenue);
+  transition: background-color var(--t-media) ease;
 }
 .fila--destacada > td:first-child {
   box-shadow: inset 3px 0 0 var(--accion);
@@ -307,42 +391,66 @@
 
 // A4-01 · Estado del documento soporte de una cuenta aceptada (lleva a la pantalla).
 .chip-ds {
-  display: inline-block;
-  margin-left: 0.4rem;
-  padding: 0.05rem 0.45rem;
-  font-size: 0.68rem;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: var(--fs-pastilla);
+  font-weight: 500;
   color: var(--accion);
   background: var(--accion-tenue);
-  border-radius: 999px;
+  border-radius: var(--r-control);
   text-decoration: none;
 
-  &:hover { text-decoration: underline; }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { text-decoration: underline; }
+  }
   &--ok { color: var(--ok); background: var(--ok-fondo); }
-  &--falta { color: var(--aviso); background: var(--aviso-fondo); }
+  /* Falta el documento: tinta-2 con alerta ámbar (el texto ámbar es solo de
+     SIN PROGRAMAR, DESIGN §10). */
+  &--falta {
+    color: var(--tinta-2);
+    background: var(--hundida);
+
+    &::before {
+      content: '';
+      width: 12px;
+      height: 12px;
+      background: var(--ambar);
+      -webkit-mask: var(--icono-alerta) center / contain no-repeat;
+      mask: var(--icono-alerta) center / contain no-repeat;
+    }
+  }
 }
 
 /* 24-oct-2026 · Detalle de la cuenta: texto largo en varias líneas (no se corta) y ajuste de valores. */
 .bl-wrap { min-width: 150px; white-space: normal; }
-.bl-input { max-width: 110px; padding: 0.35rem 0.5rem; text-align: right; }
+.bl-input { max-width: 110px; min-height: 32px; padding: 0 var(--e-2); font-size: var(--fs-celda); text-align: right; }
 
 /* 29-oct-2026 · Referencia de la orden ante la ARL arriba; el código OS, pequeño debajo. */
-.bl-os { display: block; font-size: 0.72rem; color: var(--text-muted); }
+.bl-os { display: block; font-size: var(--fs-meta); color: var(--tinta-3); }
 .bl-input--corto { max-width: 70px; }
 .bl-input--texto { max-width: none; min-width: 140px; text-align: left; }
 
 /* Línea manual y órdenes apartadas del cobro, debajo de la tabla. */
 .bl-manual {
-  margin: 1rem 0 0;
-  padding: 1rem;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
+  margin: 0;
+  padding: var(--e-4) var(--e-5) var(--e-5);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
+  background: var(--papel);
 }
-.bl-manual__titulo { padding: 0 0.4rem; font-weight: 600; color: var(--accion); }
+.bl-manual__titulo { padding: 0 var(--e-2); font-size: var(--fs-base); font-weight: 600; color: var(--tinta); }
 .bl-manual__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 0.75rem;
+  gap: 14px var(--e-4);
+}
+.bl-manual__grid .form-field > span {
+  font-size: var(--fs-celda);
+  font-weight: 500;
+  color: var(--tinta-2);
 }
 .bl-manual__ancho { grid-column: 1 / -1; }
 .bl-manual__pie {
@@ -350,23 +458,28 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  margin-top: 0.9rem;
+  gap: var(--e-3);
+  margin-top: var(--e-4);
 }
-.bl-manual__acciones { display: flex; gap: 0.5rem; }
+.bl-manual__acciones { display: flex; gap: 10px; }
 
 .bl-excluidas {
-  margin-top: 1rem;
-  summary { cursor: pointer; font-weight: 600; color: var(--text-muted); }
-  ul { list-style: none; margin: 0.6rem 0 0; padding: 0; }
+  summary {
+    cursor: pointer;
+    font-size: var(--fs-base);
+    font-weight: 600;
+    color: var(--tinta-2);
+  }
+  ul { list-style: none; margin: 10px 0 0; padding: 0; }
   li {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem;
-    padding: 0.5rem 0;
-    border-top: 1px solid var(--border-soft);
+    gap: var(--e-2);
+    padding: var(--e-2) 0;
+    font-size: var(--fs-celda);
+    border-top: 1px solid var(--borde);
   }
 }
 
@@ -374,9 +487,9 @@
 .mes__pend::before {
   content: '';
   display: inline-block;
-  width: 0.95em;
-  height: 0.95em;
-  margin-right: 0.3em;
+  width: 12px;
+  height: 12px;
+  margin-right: 4px;
   vertical-align: -0.12em;
   background: var(--ambar);
   -webkit-mask: var(--icono-reloj) center / contain no-repeat;
@@ -384,9 +497,60 @@
 }
 
 
-/* Opciones: los huecos van delante, así la acción propia de cada estado
-   (generar o enviar) cae siempre en la última ranura, pegada a la derecha, y
-   ver/documento quedan en las mismas columnas en todas las filas. */
-.row-actions > .icon-action--hueco {
-  order: -1;
+/* Opciones: cada acción tiene SU ranura (Ver · Documento · Generar · Enviar) y
+   los huecos se quedan donde están (DESIGN §7): así «Generar» cae en la misma
+   columna en todas las filas y el ojo nunca cambia de sitio. Antes los huecos
+   se iban delante y la acción de cada fila saltaba a la última ranura. */
+
+/* El encabezado de la columna de acciones cae sobre sus íconos (a la derecha,
+   como la celda): la regla global `th { text-align: left }` le ganaba a
+   `.col-actions` (pedido global anotado). */
+.table th.col-actions {
+  text-align: right;
 }
+
+/* Ronda 2 · Pestañas en el celular: con desplazamiento lateral la última se
+   cortaba sin señal de que había más. Desvanecido en el borde derecho y aire
+   al final para que la última pestaña salga entera al llegar (pedido global:
+   llevarlo a `.tabs` en styles.scss). */
+@media (max-width: 640px) {
+  .tabs {
+    padding-right: var(--e-8);
+    scroll-padding-inline: var(--e-4);
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--e-8)), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--e-8)), transparent);
+  }
+}
+
+/* Ronda 2 · Tabla en el celular: desvanecido a la derecha mientras quedan
+   columnas por ver (Ver, estado y acciones viven al final). Ligado al
+   desplazamiento: sin desbordamiento la línea de tiempo está inactiva y no hay
+   desvanecido; al llegar al final desaparece (pedido global: `.table-wrap`). */
+@property --desv-tabla {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@media (max-width: 640px) {
+  .table-wrap {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--desv-tabla)), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--desv-tabla)), transparent);
+    animation: desv-tabla linear both;
+    animation-timeline: scroll(self inline);
+  }
+}
+
+@keyframes desv-tabla {
+  0%,
+  92% {
+    --desv-tabla: 32px;
+  }
+  100% {
+    --desv-tabla: 0px;
+  }
+}
+
+/* Pestañas en el celular: la activa se trae a la vista al pulsarla (scrollIntoView en
+   la plantilla) y deja 32 px libres del desvanecido del borde. */
+.tabs { scroll-padding-inline: 32px; }

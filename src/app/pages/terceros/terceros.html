@@ -6,20 +6,24 @@
     </p>
   </div>
 
-  <div class="ter-head__actions">
-    <div class="ter-search">
-      <svg class="ter-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <!-- Barra con el patrón global (DESIGN §7 · .toolbar): búsqueda flexible, todo a
+       40 px y los botones al final de la misma fila, en el orden de siempre. -->
+  <div class="toolbar ter-barra">
+    <label class="buscador toolbar__buscar">
+      <svg class="buscador__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="11" cy="11" r="7" />
         <path d="m20 20-3.5-3.5" />
       </svg>
       <input
-        class="ter-search__input"
+        class="buscador__input"
         type="text"
         placeholder="Buscar por nombre o documento…"
+        title="Buscar por nombre o documento"
+        aria-label="Buscar terceros"
         [ngModel]="query()"
         (ngModelChange)="buscar($event)"
       />
-    </div>
+    </label>
 
     <select class="form-control ter-filtro" [ngModel]="filtroRol()" (ngModelChange)="cambiarRol($event)" name="filtroRol" aria-label="Filtrar por rol">
       <option value="todos">Todos los roles</option>
@@ -35,7 +39,7 @@
     </label>
 
     @if (puedeEditar()) {
-      <div class="ter-head__botones">
+      <div class="toolbar__fin ter-barra__botones">
       <button type="button" class="btn btn--ghost" (click)="abrirImport()">Cargar desde Excel</button>
       <button type="button" class="btn btn--ghost" (click)="openElegirProfesional()">Desde un profesional</button>
       <button type="button" class="btn btn--primary" (click)="openNew()">
@@ -76,22 +80,29 @@
               </div>
             </td>
             <td>
-              <div class="ter-roles">
+              <div class="ter-roles ter-roles--fila">
                 @for (r of rolesDe(t); track r) {
                   <span class="pill pill--info">{{ r }}</span>
                 }
               </div>
             </td>
             <td>{{ t.municipio_nombre || '—' }}</td>
-            <td class="ter-cell-wrap">{{ t.correo_facturacion || '—' }}</td>
+            <!-- Escritorio: una línea con «…» y el correo entero en el title. Por debajo de
+                 1180 px se parte antes de la arroba (<wbr>), no a mitad de palabra. -->
             <td>
-              <span class="pill" [class]="t.activo ? 'pill--success' : 'pill--muted'">
-                {{ t.activo ? 'Activo' : 'Inactivo' }}
-              </span>
-              <!-- Le falta algo que la factura exige: se ve desde la lista, no al emitir. -->
-              @if (t.faltantes.length && t.es_cliente) {
-                <span class="pill pill--warning" [title]="'Falta: ' + t.faltantes.join(', ')">Incompleto</span>
-              }
+              <span class="ter-correo" [title]="t.correo_facturacion || ''">@if (t.correo_facturacion; as correo) {{{ correo.split('&#64;')[0] }}<wbr />&#64;{{ correo.split('&#64;').slice(1).join('&#64;') }}} @else {—}</span>
+            </td>
+            <td>
+              <!-- Las dos pastillas apiladas en una columna de ancho fijo. -->
+              <div class="ter-estado">
+                <span class="pill" [class]="t.activo ? 'pill--success' : 'pill--muted'">
+                  {{ t.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+                <!-- Le falta algo que la factura exige: se ve desde la lista, no al emitir. -->
+                @if (t.faltantes.length && t.es_cliente) {
+                  <span class="pill pill--warning" [title]="'Falta: ' + t.faltantes.join(', ')">Incompleto</span>
+                }
+              </div>
             </td>
             <td class="col-actions" (click)="$event.stopPropagation()">
               <div class="row-actions">
@@ -151,22 +162,25 @@
 @if (detalle(); as t) {
   <div class="modal-backdrop" (click)="closeDetalle()"></div>
   <div class="modal modal--lg" role="dialog" aria-modal="true" aria-labelledby="fichaTitle">
+    <!-- Como en Comprobantes: el estado junto al título y el documento en el subtítulo. -->
     <header class="modal__head">
-      <h3 class="modal__title" id="fichaTitle">{{ t.nombre }}</h3>
-      <button type="button" class="icon-action" (click)="closeDetalle()" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 6 6 18M6 6l12 12" />
-        </svg>
-      </button>
-    </header>
-
-    <div class="modal__body">
-      <div class="ficha-top">
+      <div>
+        <h3 class="modal__title" id="fichaTitle">{{ t.nombre }}</h3>
+        <p class="modal__sub mono">{{ documentoVisible(t) }}</p>
+      </div>
+      <div class="modal__head-actions">
         <span class="pill" [class]="t.activo ? 'pill--success' : 'pill--muted'">
           {{ t.activo ? 'Activo' : 'Inactivo' }}
         </span>
-        <span class="mono ficha-nit">{{ documentoVisible(t) }}</span>
+        <button type="button" class="icon-action" (click)="closeDetalle()" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
+    </header>
+
+    <div class="modal__body">
 
       @if (t.faltantes.length && t.es_cliente) {
         <p class="ter-aviso">
@@ -220,7 +234,7 @@
       </dl>
 
       <!-- 24-oct-2026 · Cuentas bancarias: a quien se le paga (profesionales, proveedores) y los asesores que las cambian. -->
-      <h4 class="ficha-sub">Cuentas bancarias</h4>
+      <h4 class="section-head"><span class="section-tag">Cuentas bancarias</span></h4>
       @if (cargandoCuentas()) {
         <p class="ficha-vacio">Cargando…</p>
       } @else {
@@ -290,7 +304,7 @@
       <!-- A0-07 · Condiciones de facturación: solo tiene sentido para un pagador
            (cliente o ARL). El proveedor/empleado no factura, se le paga. -->
       @if (esPagador(t)) {
-        <h4 class="ficha-sub">Condiciones de facturación</h4>
+        <h4 class="section-head"><span class="section-tag">Condiciones de facturación</span></h4>
         @if (loadingCondicion()) {
           <p class="ficha-vacio">Cargando…</p>
         } @else if (!editandoCondicion()) {
@@ -358,14 +372,18 @@
       }
     </div>
 
-    @if (puedeEditar()) {
-      <footer class="modal__footer">
+    <!-- Pie: Activar/Desactivar sigue junto a Editar, a la derecha, como antes del
+         rediseño. «Cerrar» (pedido de la fase 2, DESIGN §7) va primero, así los
+         dos botones de siempre no cambian de sitio ni de orden. -->
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--close" (click)="closeDetalle()">Cerrar</button>
+      @if (puedeEditar()) {
         <button type="button" class="btn btn--ghost" (click)="toggleActivo(t)">
           {{ t.activo ? 'Desactivar' : 'Activar' }}
         </button>
         <button type="button" class="btn btn--primary" (click)="openEdit(t)">Editar</button>
-      </footer>
-    }
+      }
+    </footer>
   </div>
 }
 
@@ -403,6 +421,9 @@
         </ul>
       }
     </div>
+    <footer class="modal__footer">
+      <button type="button" class="btn btn--close" (click)="closeElegirProfesional()">Cerrar</button>
+    </footer>
   </div>
 }
 

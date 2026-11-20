@@ -1,4 +1,4 @@
-<section class="page-head emp-head">
+<section class="page-head page-head--acciones">
   <div>
     <h2 class="page-head__title">Empresas clientes</h2>
     <p class="page-head__sub">
@@ -6,21 +6,22 @@
     </p>
   </div>
 
-  <div class="emp-head__actions">
-    <div class="emp-search">
-      <svg class="emp-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <div class="page-head__acciones">
+    <label class="buscador emp-buscar">
+      <svg class="buscador__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="11" cy="11" r="7" />
         <path d="m20 20-3.5-3.5" />
       </svg>
       <input
-        class="emp-search__input"
-        type="text"
-        placeholder="Buscar por nombre, NIT, actividad o ciudad…"
+        class="buscador__input"
+        type="search"
+        placeholder="Nombre, NIT, actividad o ciudad"
         title="Buscar por nombre, NIT, actividad o ciudad"
+        aria-label="Buscar empresas por nombre, NIT, actividad o ciudad"
         [ngModel]="query()"
         (ngModelChange)="buscar($event)"
       />
-    </div>
+    </label>
 
     <label class="emp-toggle">
       <input type="checkbox" [checked]="soloActivas()" (change)="alternarActivas(!soloActivas())" />
@@ -193,7 +194,7 @@
         }
       </dl>
 
-      <h4 class="ficha-sub">Últimas órdenes de servicio</h4>
+      <h4 class="section-head"><span class="section-tag">Últimas órdenes de servicio</span></h4>
       @if (loadingDetalle()) {
         <p class="ficha-vacio">Cargando órdenes…</p>
       } @else if (!detalleOrdenes().length) {
@@ -207,7 +208,17 @@
                 <span class="ficha-orden__act">{{ o.tipo_actividad || o.arl_nombre || '—' }}</span>
               </div>
               <div class="ficha-orden__meta">
-                <span class="pill pill--info">{{ o.estado }}</span>
+                <!-- El color sale del estado (DESIGN §7): antes todas iban en azul y una
+                     SIN PROGRAMAR se leía como PROGRAMADA. -->
+                <span
+                  class="pill"
+                  [class.pill--warning]="o.estado === 'SIN PROGRAMAR' || o.estado === 'EN VERIFICACIÓN'"
+                  [class.pill--info]="o.estado === 'PROGRAMADA'"
+                  [class.pill--success]="o.estado === 'EJECUTADA'"
+                  [class.pill--finalizada]="o.estado === 'FINALIZADA'"
+                  [class.pill--danger]="o.estado === 'CANCELADA'"
+                  [class.pill--muted]="!['SIN PROGRAMAR', 'PROGRAMADA', 'EJECUTADA', 'FINALIZADA', 'EN VERIFICACIÓN', 'CANCELADA'].includes(o.estado)"
+                >{{ o.estado }}</span>
                 <small>{{ o.fecha_ejecucion || o.fecha_orden || '' }}</small>
               </div>
             </li>
@@ -217,13 +228,15 @@
 
     </div>
 
-    @if (puedeEditar()) {
-      <footer class="modal__footer">
-        <!-- 7-oct-2026 · Aquí solo se edita: desactivar ya está en la fila de la
-             tabla, y eliminar y fusionar se retiraron a pedido del usuario. -->
+    <footer class="modal__footer">
+      <!-- 7-oct-2026 · Aquí solo se edita: desactivar ya está en la fila de la
+           tabla, y eliminar y fusionar se retiraron a pedido del usuario.
+           Pie del DESIGN §7: Cerrar y, a su derecha, el primario. -->
+      <button type="button" class="btn btn--close" (click)="closeDetalle()">Cerrar</button>
+      @if (puedeEditar()) {
         <button type="button" class="btn btn--primary" (click)="openEdit(emp)">Editar</button>
-      </footer>
-    }
+      }
+    </footer>
   </div>
 }
 

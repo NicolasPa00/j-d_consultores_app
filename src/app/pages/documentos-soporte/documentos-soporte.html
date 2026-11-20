@@ -3,32 +3,40 @@
     <h2 class="page-head__title">Pago a profesionales</h2>
     <p class="page-head__sub">Lo que JD&amp;D les paga a los asesores: cuentas de cobro, respaldadas con un documento soporte ante la DIAN, y las facturas electrónicas de quienes facturan</p>
   </div>
-  <app-cupo-documentos tipo="facturacion" class="cupo-cabecera" />
-  @if (puedeOperar()) {
-    <!-- A4-02 · Los DS que no salen de una cuenta de cobro (la contadora, un proveedor que no factura). -->
-    <div class="ds-head-acciones">
-      <button type="button" class="btn btn--secondary" (click)="abrirImport()">Cargar desde Excel</button>
-      <button type="button" class="btn btn--primary" (click)="abrirManual()">Nuevo documento soporte</button>
-    </div>
-  }
+  <!-- 20-nov-2026 · La misma fila que Facturación: el contador a la izquierda y los
+       botones a la derecha. El orden no cambia. -->
+  <div class="fac-head-acciones">
+    <app-cupo-documentos tipo="facturacion" />
+    @if (puedeOperar()) {
+      <!-- A4-02 · Los DS que no salen de una cuenta de cobro (la contadora, un proveedor que no factura). -->
+      <div class="fac-head-botones">
+        <button type="button" class="btn btn--secondary" (click)="abrirImport()">Cargar desde Excel</button>
+        <button type="button" class="btn btn--primary fac-btn-nueva" (click)="abrirManual()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+          Nuevo documento soporte
+        </button>
+      </div>
+    }
+  </div>
 </section>
 
+<div class="fac-barra-marco ds-barra-marco">
 <div class="fac-barra">
   <div class="tabs" role="tablist">
-    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'por-generar'" (click)="cambiarPestana('por-generar')">
+    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'por-generar'" (click)="cambiarPestana('por-generar'); $any($event.currentTarget).scrollIntoView({ block: 'nearest', inline: 'nearest' })">
       Por generar <span class="tab__count">{{ porGenerar().length }}</span>
     </button>
-    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'pendientes'" (click)="cambiarPestana('pendientes')">
+    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'pendientes'" (click)="cambiarPestana('pendientes'); $any($event.currentTarget).scrollIntoView({ block: 'nearest', inline: 'nearest' })">
       Pendientes <span class="tab__count">{{ pendientes().length }}</span>
     </button>
-    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'facturas'" (click)="cambiarPestana('facturas')">
+    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'facturas'" (click)="cambiarPestana('facturas'); $any($event.currentTarget).scrollIntoView({ block: 'nearest', inline: 'nearest' })">
       Facturas electrónicas
     </button>
     @if (emisionDian) {
-      <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'emitidos'" (click)="cambiarPestana('emitidos')">
+      <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'emitidos'" (click)="cambiarPestana('emitidos'); $any($event.currentTarget).scrollIntoView({ block: 'nearest', inline: 'nearest' })">
         Emitidos <span class="tab__count">{{ emitidos().length }}</span>
       </button>
-      <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'notas'" (click)="cambiarPestana('notas')">
+      <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'notas'" (click)="cambiarPestana('notas'); $any($event.currentTarget).scrollIntoView({ block: 'nearest', inline: 'nearest' })">
         Notas de ajuste <span class="tab__count">{{ notas().length }}</span>
       </button>
     }
@@ -42,6 +50,7 @@
       <option value="ANULADO">Anulados</option>
     </select>
   }
+</div>
 </div>
 
 <!-- ======================= POR GENERAR ======================= -->
@@ -62,12 +71,12 @@
               <td class="num">{{ c.total_ordenes }}</td>
               <td class="num">{{ +c.total_horas }}</td>
               <td class="num">{{ +c.total_viaticos ? pesos(c.total_viaticos) : '—' }}</td>
-              <td class="num"><b>{{ pesos(c.total_monto) }}</b></td>
+              <td class="num fac-monto">{{ pesos(c.total_monto) }}</td>
               <td>
                 @if (c.faltantes.length) {
-                  <span class="pill pill--warning" [title]="'Complete en Terceros: ' + c.faltantes.join(', ')">Falta {{ c.faltantes.join(', ') }}</span>
+                  <span class="pill doc-estado pill--warning" [title]="'Complete en Terceros: ' + c.faltantes.join(', ')">Falta {{ c.faltantes.join(', ') }}</span>
                 } @else {
-                  <span class="pill pill--success">Completos</span>
+                  <span class="pill doc-estado pill--success">Completos</span>
                 }
               </td>
               <td class="col-actions">
@@ -83,7 +92,7 @@
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="8" class="table__empty table__empty--estado">
+            <tr><td colspan="8" class="table__empty" [class.table__empty--estado]="!cargando()">
               @if (cargando()) { Cargando… } @else {
                 <div class="estado-vacio estado-vacio--ok">
                   <span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg></span>
@@ -105,7 +114,7 @@
   <div class="card">
     <div class="card__head">
       <h3 class="card__title">Facturas electrónicas de los asesores</h3>
-      <a routerLink="/compras" [queryParams]="{ nueva: 'SERVICIO_PROFESIONAL' }" class="btn btn--secondary btn--sm">Registrar factura de un asesor</a>
+      <a routerLink="/compras" [queryParams]="{ nueva: 'SERVICIO_PROFESIONAL' }" class="btn btn--secondary">Registrar factura de un asesor</a>
     </div>
     <div class="table-wrap">
       <table class="table">
@@ -119,15 +128,19 @@
               <td><span class="who__name">{{ c.tercero_nombre }}</span></td>
               <td class="mono">{{ c.numero_proveedor || '—' }}</td>
               <td class="mono">{{ c.comprobante_numero || '—' }}</td>
-              <td class="num"><b>{{ pesos(c.total_a_pagar) }}</b></td>
+              <td class="num fac-monto">{{ pesos(c.total_a_pagar) }}</td>
               <td class="num">{{ c.cxp_saldo != null ? pesos(c.cxp_saldo) : '—' }}</td>
-              <td><span class="pill" [class]="c.estado === 'ANULADO' ? 'pill--muted' : 'pill--success'">{{ c.estado === 'ANULADO' ? 'Anulada' : 'Contabilizada' }}</span></td>
+              <td><span class="pill doc-estado" [class]="'pill doc-estado ' + (c.estado === 'ANULADO' ? 'pill--muted' : 'pill--success')">{{ c.estado === 'ANULADO' ? 'Anulada' : 'Contabilizada' }}</span></td>
             </tr>
           } @empty {
-            <tr><td colspan="7" class="table__empty">
+            <tr><td colspan="7" class="table__empty" [class.table__empty--estado]="!cargandoFacturas()">
               @if (cargandoFacturas()) { Cargando… } @else {
-                Todavía no hay facturas de asesores. Los que facturan a JD&amp;D en vez de mandar una cuenta de cobro se registran como
-                <b>servicio profesional</b> en <a routerLink="/compras">Compras y gastos</a>; se pagan desde Cartera → Por pagar.
+                <div class="estado-vacio">
+                  <span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></svg></span>
+                  <p class="estado-vacio__titulo">Todavía no hay facturas de asesores</p>
+                  <p class="estado-vacio__texto">Los que facturan a JD&amp;D en vez de mandar una cuenta de cobro se registran como
+                    <b>servicio profesional</b> en <a routerLink="/compras">Compras y gastos</a>; se pagan desde Cartera → Por pagar.</p>
+                </div>
               }
             </td></tr>
           }
@@ -154,13 +167,19 @@
               <td><span class="who__name">{{ d.tercero_nombre }}</span></td>
               <td class="ds-fijo">{{ mes(d.periodo) }}</td>
               <td class="num">{{ d.total_lineas }}</td>
-              <td class="num"><b>{{ pesos(d.total_a_pagar) }}</b></td>
-              <td><span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
+              <td class="num fac-monto">{{ pesos(d.total_a_pagar) }}</td>
+              <td><span class="pill doc-estado" [class]="'pill doc-estado ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
               <td class="col-actions"><button type="button" class="icon-action icon-action--ver" (click)="abrir(d.id)" aria-label="Ver el documento" title="Ver el documento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg></button></td>
             </tr>
           } @empty {
-            <tr><td colspan="8" class="table__empty">
-              @if (cargando()) { Cargando… } @else { No hay documentos soporte en borrador. Se crean desde «Por generar». }
+            <tr><td colspan="8" class="table__empty" [class.table__empty--estado]="!cargando()">
+              @if (cargando()) { Cargando… } @else {
+                <div class="estado-vacio">
+                  <span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2" /><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z" /></svg></span>
+                  <p class="estado-vacio__titulo">No hay documentos soporte en borrador</p>
+                  <p class="estado-vacio__texto">Se crean desde «Por generar».</p>
+                </div>
+              }
             </td></tr>
           }
         </tbody>
@@ -174,22 +193,22 @@
 @if (pestana() === 'emitidos') {
   <div class="card">
     <div class="table-wrap">
-      <table class="table">
+      <table class="table fac-emitidas">
         <thead>
           <tr><th>Número</th><th>Tercero</th><th>Mes</th><th>Emisión</th><th class="num">Total</th><th>Estado</th><th>Pago</th><th class="col-actions">Acciones</th></tr>
         </thead>
         <tbody>
           @for (d of pagEmitidos.visibles(); track d.id) {
             <tr>
-              <td><b>{{ numeroDe(d) }}</b></td>
+              <td class="td-id nowrap">{{ numeroDe(d) }}</td>
               <td><span class="who__name">{{ d.tercero_nombre }}</span></td>
               <td class="ds-fijo">{{ mes(d.periodo) }}</td>
               <td class="ds-fijo">{{ fecha(d.fecha_emision) }}</td>
               <td class="num">{{ pesos(d.total_a_pagar) }}</td>
-              <td><span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
+              <td><span class="pill doc-estado" [class]="'pill doc-estado ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
               <td>
                 @if (pagoDe(d); as p) {
-                  @if (p.pill) { <span class="pill" [class]="'pill ' + p.pill">{{ p.texto }}</span> } @else { {{ p.texto }} }
+                  @if (p.pill) { <span class="pill doc-estado" [class]="'pill doc-estado ' + p.pill">{{ p.texto }}</span> } @else { {{ p.texto }} }
                 }
               </td>
               <td class="col-actions">
@@ -210,8 +229,13 @@
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="8" class="table__empty">
-              @if (cargando()) { Cargando… } @else { Todavía no hay documentos soporte emitidos. }
+            <tr><td colspan="8" class="table__empty" [class.table__empty--estado]="!cargando()">
+              @if (cargando()) { Cargando… } @else {
+                <div class="estado-vacio">
+                  <span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></svg></span>
+                  <p class="estado-vacio__titulo">Todavía no hay documentos soporte emitidos</p>
+                </div>
+              }
             </td></tr>
           }
         </tbody>
@@ -225,19 +249,19 @@
 @if (pestana() === 'notas') {
   <div class="card">
     <div class="table-wrap">
-      <table class="table">
+      <table class="table fac-emitidas fac-notas">
         <thead>
           <tr><th>Número</th><th>Documento soporte</th><th>Tercero</th><th>Motivo</th><th class="num">Valor</th><th>Estado</th><th class="col-actions">Acciones</th></tr>
         </thead>
         <tbody>
           @for (d of pagNotas.visibles(); track d.id) {
             <tr>
-              <td><b>{{ numeroDe(d) }}</b></td>
-              <td>{{ referenciaDe(d) }}</td>
+              <td class="td-id nowrap">{{ numeroDe(d) }}</td>
+              <td class="nowrap">{{ referenciaDe(d) }}</td>
               <td><span class="who__name">{{ d.tercero_nombre }}</span></td>
-              <td><small>{{ nombreCausal(d.causal) }}</small></td>
+              <td>{{ nombreCausal(d.causal) }}</td>
               <td class="num">{{ pesos(d.total_a_pagar) }}</td>
-              <td><span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
+              <td><span class="pill doc-estado" [class]="'pill doc-estado ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
               <td class="col-actions">
                 <span class="fac-acciones">
                   <button type="button" class="icon-action icon-action--ver" (click)="abrir(d.id)" aria-label="Ver el documento" title="Ver el documento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg></button>
@@ -251,8 +275,14 @@
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="7" class="table__empty">
-              @if (cargando()) { Cargando… } @else { No hay notas de ajuste. Se crean desde el detalle de un documento soporte validado. }
+            <tr><td colspan="7" class="table__empty" [class.table__empty--estado]="!cargando()">
+              @if (cargando()) { Cargando… } @else {
+                <div class="estado-vacio">
+                  <span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></svg></span>
+                  <p class="estado-vacio__titulo">No hay notas de ajuste</p>
+                  <p class="estado-vacio__texto">Se crean desde el detalle de un documento soporte validado.</p>
+                </div>
+              }
             </td></tr>
           }
         </tbody>
@@ -279,13 +309,13 @@
           } @else {
             {{ d.estado === 'BORRADOR' ? 'Borrador de documento soporte' : 'Documento soporte ' + numeroDe(d) }}
           }
-          <span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span>
+          <span class="pill doc-estado" [class]="'pill doc-estado ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span>
         </h3>
         <p class="modal__sub">
           {{ d.tercero_nombre }}
           @if (esNota(d)) { · ajusta el documento soporte {{ numeroDe({ numero: d.referencia_numero ?? null, prefijo: d.referencia_prefijo ?? null }) }} · {{ d.causal_nombre }} }
           @if (d.precuenta) { · cuenta de cobro de {{ d.precuenta.periodo_largo }} }
-          · ref. {{ d.reference_code }}
+          · <span class="fac-ref">ref. {{ d.reference_code }}</span>
         </p>
       </div>
       <button type="button" class="icon-action" (click)="cerrar()" aria-label="Cerrar" [disabled]="!!accion()">
@@ -444,7 +474,7 @@
       @if (puedeOperar()) {
         @switch (d.estado) {
           @case ('BORRADOR') {
-            <button type="button" class="btn btn--danger" (click)="eliminar()" [disabled]="!!accion()">Eliminar borrador</button>
+            <button type="button" class="btn btn--peligro-contorno" (click)="eliminar()" [disabled]="!!accion()">Eliminar borrador</button>
             @if (emisionDian) {
               <button type="button" class="btn btn--primary" (click)="emitir()" [disabled]="!!accion()">
                 @if (accion() === 'emitir') { <span class="spinner" aria-hidden="true"></span> Enviando a la DIAN… } @else { Emitir ante la DIAN }
@@ -622,7 +652,7 @@
         }
       </div>
       <div class="ds-pie-lineas">
-        <button type="button" class="btn btn--ghost btn--sm" (click)="agregarLinea()">+ Agregar línea</button>
+        <button type="button" class="btn btn--ghost btn--sm" (click)="agregarLinea()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg> Agregar línea</button>
         <span>Total: <b>{{ pesos(totalManual()) }}</b> · sin IVA, a crédito a 30 días</span>
       </div>
     </div>

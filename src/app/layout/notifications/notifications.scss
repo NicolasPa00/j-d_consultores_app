@@ -1,6 +1,9 @@
-/* Campanita del navbar + bandeja desplegable (NOT-04).
-   El botón replica el .icon-btn del navbar: al vivir en su propio componente,
-   los estilos del shell ya no lo alcanzan. */
+/* Campanita de la barra superior + bandeja desplegable (NOT-04).
+   Rediseño 20-nov-2026 (DESIGN §7): la campanita conserva su conteo de hoy y
+   solo cambia la piel. El contador va en acción con anillo blanco, anclado a la
+   esquina del glifo. La bandeja es un menú desplegable: radio 10 y --sombra-2.
+   Sin íconos en recuadro teñido (DESIGN §10): el tipo de aviso es un ícono de
+   línea, y solo el rechazo lleva color (error). */
 
 .bell {
   position: relative;
@@ -11,21 +14,34 @@
   position: relative;
   width: 40px;
   height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
   border: none;
   border-radius: var(--r-control);
   background: transparent;
   color: var(--tinta-2);
   cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease;
+  transition:
+    background-color var(--t-media) ease,
+    color var(--t-media) ease;
 }
 
-.icon-btn:hover,
 .icon-btn--active {
   background: var(--hundida);
   color: var(--tinta);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .icon-btn:hover {
+    background: var(--hundida);
+    color: var(--tinta);
+  }
+}
+
+.icon-btn__glifo {
+  position: relative;
+  display: grid;
 }
 
 .icon-btn svg {
@@ -33,124 +49,285 @@
   height: 20px;
 }
 
+/* Contador: acción con texto blanco (9,28:1) y anillo blanco de 2 px. Mínimo
+   16 px; con más de 99 dice «99+» (lo corta el servicio). */
 .icon-btn__badge {
   position: absolute;
-  top: 3px;
-  right: 3px;
-  min-width: 16px;
-  height: 16px;
+  top: 0;
+  right: 0;
+  transform: translate(55%, -50%);
+  min-width: 17px;
+  height: 17px;
   padding: 0 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1;
-  color: var(--superficie);
-  background: var(--error);
   border-radius: var(--r-completo);
-  border: 2px solid var(--superficie);
+  background: var(--accion);
+  color: #ffffff;
+  box-shadow: 0 0 0 2px var(--superficie);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 17px;
+  text-align: center;
   font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.icon-btn--active .icon-btn__badge {
+  box-shadow: 0 0 0 2px var(--hundida);
 }
 
 /* ---------------- Bandeja ---------------- */
 
 .tray {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 8px);
   right: 0;
   z-index: 60;
-  width: 380px;
+  display: flex;
+  flex-direction: column;
+  width: 400px;
   max-width: calc(100vw - 32px);
   background: var(--superficie);
   border: 1px solid var(--borde);
   border-radius: var(--r-tarjeta);
   box-shadow: var(--sombra-3);
   overflow: hidden;
-  animation: tray-in 0.16s ease-out;
+  transform-origin: top right;
+  animation: tray-in var(--t-media) var(--ease-out);
+}
+
+/* Lo fijo de la bandeja no se encoge; el que cede alto es la lista. */
+.tray > :not(.tray__body) {
+  flex-shrink: 0;
 }
 
 @keyframes tray-in {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
 }
 
 .tray__head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--borde);
+  padding: 14px 16px 12px;
 }
 
 .tray__title {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-tarjeta);
   font-weight: 600;
+  letter-spacing: -0.005em;
   color: var(--tinta);
 }
 
 .tray__sub {
   margin: 2px 0 0;
-  font-size: 12px;
+  font-size: var(--fs-meta);
   color: var(--tinta-3);
 }
 
+/* «Marcar todas como leídas»: terciario en acción (como `.ir-a`). */
 .tray__mark {
   flex-shrink: 0;
-  padding: 0;
+  min-height: 30px;
+  padding: 0 8px;
   border: none;
+  border-radius: var(--r-control);
   background: transparent;
-  font-size: 12px;
-  font-weight: 600;
+  font: inherit;
+  font-size: var(--fs-celda);
+  font-weight: 500;
   color: var(--accion);
   cursor: pointer;
+  transition: background-color var(--t-rapida) ease;
 }
 
-.tray__mark:hover {
-  text-decoration: underline;
+@media (hover: hover) and (pointer: fine) {
+  .tray__mark:hover {
+    background: var(--accion-tenue);
+  }
+}
+
+/* ===== Recortes de la bandeja: chips pulsables (`.chip--filtro` del sistema) ===== */
+.tray__filtros {
+  display: flex;
+  gap: 6px;
+  padding: 0 16px 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tray__filtros::-webkit-scrollbar {
+  display: none;
+}
+
+.tray__filtro {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  min-height: 28px;
+  padding: 0 6px 0 10px;
+  font-family: inherit;
+  font-size: var(--fs-celda);
+  font-weight: 400;
+  white-space: nowrap;
+  color: var(--tinta-2);
+  background: var(--superficie);
+  border: 1px solid var(--borde-control);
+  border-radius: var(--r-completo);
+  cursor: pointer;
+  transition:
+    background-color var(--t-media) ease,
+    border-color var(--t-media) ease,
+    color var(--t-media) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tray__filtro:not(.tray__filtro--on):hover {
+    background: var(--papel);
+    border-color: var(--borde-control-hover);
+  }
+}
+
+.tray__filtro--on {
+  color: var(--accion);
+  background: var(--accion-tenue);
+  border-color: var(--accion);
+  font-weight: 500;
+}
+
+.tray__filtro-n {
+  min-width: 20px;
+  height: 18px;
+  padding: 0 5px;
+  display: inline-grid;
+  place-items: center;
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  color: var(--tinta-2);
+  background: var(--hundida);
+  border-radius: var(--r-completo);
+  font-variant-numeric: tabular-nums;
+}
+
+.tray__filtro--on .tray__filtro-n {
+  color: #ffffff;
+  background: var(--accion);
+}
+
+/* 13-nov-2026 · Buscador de la bandeja: piel de campo (borde-campo, radio 6). */
+.tray__buscar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 16px 12px;
+  border-bottom: 1px solid var(--borde);
+}
+
+.tray__buscar-icono {
+  position: absolute;
+  left: 28px;
+  width: 16px;
+  height: 16px;
+  color: var(--tinta-3);
+  pointer-events: none;
+}
+
+.tray__buscar-input {
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  padding: 0 34px 0 36px;
+  border: 1px solid var(--borde-campo);
+  border-radius: var(--r-control);
+  font: inherit;
+  font-size: var(--fs-celda);
+  color: var(--tinta);
+  background: var(--superficie);
+  transition:
+    border-color var(--t-media) ease,
+    box-shadow var(--t-media) ease;
+
+  &::placeholder { color: var(--tinta-3); }
+  &:focus { outline: none; border-color: var(--accion); box-shadow: 0 0 0 1px var(--accion), var(--halo); }
+  /* El aspa propia del navegador sobra: hay un botón de borrar. */
+  &::-webkit-search-cancel-button { display: none; }
+}
+
+.tray__buscar-limpiar {
+  position: absolute;
+  right: 22px;
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-control);
+  background: transparent;
+  color: var(--tinta-3);
+  cursor: pointer;
+
+  svg { width: 14px; height: 14px; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tray__buscar-limpiar:hover {
+    background: var(--hundida);
+    color: var(--tinta);
+  }
 }
 
 .tray__body {
   max-height: 420px;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
+/* Cargando, error y vacío: la anatomía de `.estado-vacio` (DESIGN §7). */
 .tray__state {
-  padding: 32px 24px;
+  padding: 32px 24px 28px;
   text-align: center;
   color: var(--tinta-3);
 }
 
 .tray__state p {
   margin: 0;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--tinta);
 }
 
 .tray__state small {
   display: block;
-  margin-top: 6px;
-  font-size: 12px;
+  max-width: 300px;
+  margin: 4px auto 0;
+  font-size: var(--fs-celda);
   line-height: 1.5;
   color: var(--tinta-3);
 }
 
+.tray__state .spinner {
+  margin: 0 0 10px;
+  color: var(--accion);
+}
+
 .tray__state--error p {
   color: var(--error);
+  font-size: var(--fs-celda);
+  font-weight: 500;
 }
 
 .tray__empty-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   width: 44px;
   height: 44px;
-  margin-bottom: 10px;
-  border-radius: 0;
-  background: transparent;
+  margin: 0 auto 12px;
+  border-radius: var(--r-tarjeta);
+  background: var(--hundida);
   color: var(--tinta-3);
 }
 
@@ -160,12 +337,14 @@
 }
 
 .tray__retry {
-  margin-top: 10px;
-  padding: 6px 14px;
+  min-height: 36px;
+  margin-top: 14px;
+  padding: 0 14px;
   border: 1px solid var(--borde-control);
   border-radius: var(--r-control);
   background: var(--superficie);
-  font-size: 12px;
+  font: inherit;
+  font-size: var(--fs-base);
   font-weight: 500;
   color: var(--tinta);
   cursor: pointer;
@@ -181,77 +360,60 @@
   border-top: 1px solid var(--borde);
 }
 
-/* ---------------- Ítem ---------------- */
+/* ---------------- Aviso ---------------- */
+
+/* NOT-04 · La fila entera es el enlace y la papelera va al lado, no dentro:
+   un <button> no puede anidarse en otro. */
+.note-row {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  transition: background-color var(--t-rapida) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .note-row:hover {
+    background: var(--fila-hover);
+  }
+}
 
 .note {
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 12px 16px;
+  gap: 12px;
+  padding: 12px 4px 12px 16px;
   border: none;
   background: transparent;
+  font: inherit;
   text-align: left;
   cursor: default;
-  transition: background 0.15s ease;
 }
 
 .note--link {
   cursor: pointer;
 }
 
-.note:hover {
-  background: var(--fila-hover);
-}
-
-.note--unread {
-  background: var(--accion-tenue);
-}
-
-.note--unread:hover {
-  background: var(--accion-tenue-hover);
-}
-
+/* Sin leer: punto en acción a la izquierda + título 600. Leído: título 500 y
+   mensaje más apagado. El estado nunca depende solo del color. */
 .note__icon {
   flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--r-control);
-  background: var(--hundida);
-  color: var(--tinta-2);
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  color: var(--tinta-3);
 }
 
 .note__icon svg {
-  width: 17px;
-  height: 17px;
-}
-
-.note__icon--asignacion {
-  background: var(--info-fondo);
-  color: var(--info);
+  width: 18px;
+  height: 18px;
 }
 
 .note__icon--rechazo {
-  background: var(--error-fondo);
   color: var(--error);
-}
-
-.note__icon--soporte {
-  background: var(--hundida);
-  color: var(--tinta-2);
-}
-
-.note__icon--encuesta {
-  background: var(--ok-fondo);
-  color: var(--ok);
-}
-
-.note__icon--precuenta {
-  background: var(--accion-tenue);
-  color: var(--accion);
 }
 
 .note__body {
@@ -267,14 +429,19 @@
 }
 
 .note__title {
-  font-size: 13px;
-  font-weight: 600;
+  min-width: 0;
+  font-size: var(--fs-celda);
+  font-weight: 500;
   color: var(--tinta);
+}
+
+.note--unread .note__title {
+  font-weight: 600;
 }
 
 .note__time {
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: var(--fs-meta);
   color: var(--tinta-3);
   white-space: nowrap;
 }
@@ -282,40 +449,45 @@
 .note__msg {
   display: block;
   margin-top: 2px;
-  font-size: 12px;
+  font-size: var(--fs-celda);
   line-height: 1.45;
   color: var(--tinta-3);
-  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
-/* ===== NOT-04 · Fila con acción =====
-   La fila entera es el enlace y la papelera va al lado, no dentro: un <button>
-   no puede anidarse en otro. */
-.note-row {
-  display: flex;
-  align-items: stretch;
+.note--unread .note__msg {
+  color: var(--tinta-2);
 }
 
-.note-row:hover .note__accion {
-  opacity: 1;
+.note__dot {
+  position: absolute;
+  left: 6px;
+  top: 19px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accion);
 }
 
 .note__accion {
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
+  align-self: center;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-right: 8px;
   padding: 0;
   color: var(--tinta-3);
   background: transparent;
   border: none;
-  /* Discreta hasta que el puntero pasa por la fila: la acción principal es
-     abrir el aviso, no borrarlo. En táctil no hay hover, así que nunca baja
-     del 55 % — invisible del todo sería inalcanzable. */
-  opacity: 0.55;
+  border-radius: var(--r-control);
   cursor: pointer;
-  transition: color 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+  transition:
+    color var(--t-media) ease,
+    opacity var(--t-media) ease,
+    background-color var(--t-media) ease,
+    transform var(--t-rapida) var(--ease-out);
 }
 
 .note__accion svg {
@@ -323,131 +495,54 @@
   height: 16px;
 }
 
-.note__accion:hover {
-  background: var(--hundida);
-  color: var(--accion);
+.note__accion:active {
+  transform: scale(0.94);
 }
 
-.note__accion--del:hover {
-  color: var(--error);
-}
+/* Con ratón, la papelera y el restaurar quedan atenuados (0,55, como antes del
+   rediseño) y se encienden al pasar por la fila: la acción principal es abrir el
+   aviso, pero borrar tiene que seguir viéndose sin buscarlo. En táctil, enteros. */
+@media (hover: hover) and (pointer: fine) {
+  .note__accion {
+    opacity: 0.55;
+  }
 
-/* ===== Recortes de la bandeja ===== */
-.tray__filtros {
-  display: flex;
-  gap: 4px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--borde);
-  overflow-x: auto;
-}
+  .note-row:hover .note__accion,
+  .note__accion:focus-visible {
+    opacity: 1;
+  }
 
-.tray__filtro {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 10px;
-  font-family: inherit;
-  font-size: 11.5px;
-  font-weight: 600;
-  white-space: nowrap;
-  color: var(--tinta-3);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
+  .note__accion:hover {
+    background: var(--hundida);
+    color: var(--accion);
+  }
 
-.tray__filtro:hover {
-  background: var(--hundida);
-  color: var(--tinta);
-}
-
-.tray__filtro--on {
-  color: var(--accion);
-  background: var(--accion-tenue);
-  border-color: transparent;
-}
-
-.tray__filtro-n {
-  padding: 0 5px;
-  font-size: 10.5px;
-  font-weight: 600;
-  color: inherit;
-  background: var(--hundida);
-  border-radius: var(--r-completo);
-}
-
-.note__dot {
-  flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-  margin-top: 12px;
-  border-radius: 50%;
-  background: var(--accion);
+  .note__accion--del:hover {
+    background: var(--error-fondo);
+    color: var(--error);
+  }
 }
 
 @media (max-width: 520px) {
   .tray {
-    /* En móvil la bandeja se ancla al borde de la ventana, no al botón. */
+    /* En el celular la bandeja se ancla al borde de la ventana, no al botón. */
     position: fixed;
-    top: 64px;
+    top: 62px;
     right: 12px;
     left: 12px;
     width: auto;
+    max-height: calc(100dvh - 62px - 88px);
+  }
+
+  .tray__body {
+    max-height: none;
+    flex: 1 1 auto;
+    min-height: 0;
   }
 }
 
-/* 13-nov-2026 · Buscador de la bandeja. */
-.tray__buscar {
-  position: relative;
-  display: flex;
-  align-items: center;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--borde);
-}
-
-.tray__buscar-icono {
-  position: absolute;
-  left: 22px;
-  width: 15px;
-  height: 15px;
-  color: var(--tinta-3);
-  pointer-events: none;
-}
-
-.tray__buscar-input {
-  width: 100%;
-  min-width: 0;
-  padding: 7px 30px 7px 32px;
-  border: 1px solid var(--borde-campo);
-  border-radius: var(--r-control);
-  font: inherit;
-  font-size: 13px;
-  color: var(--tinta);
-  background: var(--superficie);
-
-  &::placeholder { color: var(--tinta-3); }
-  &:focus { outline: none; border-color: var(--accion); box-shadow: var(--halo); }
-  /* El aspa propia del navegador sobra: hay un botón de borrar. */
-  &::-webkit-search-cancel-button { display: none; }
-}
-
-.tray__buscar-limpiar {
-  position: absolute;
-  right: 18px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--tinta-3);
-  cursor: pointer;
-
-  svg { width: 13px; height: 13px; }
-  &:hover { background: var(--borde); color: var(--tinta); }
+@media (prefers-reduced-motion: reduce) {
+  .tray {
+    animation: none;
+  }
 }

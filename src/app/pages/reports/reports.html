@@ -158,16 +158,21 @@
          texto libre: el recorte lo resuelve el backend con esos tres criterios.
          Los reportes RPT-03 y RPT-05 traen sus propios controles de rango. -->
     @if (activeTab() === 'ordenes' || activeTab() === 'profesionales') {
-      <div class="toolbar__search">
+      <label class="buscador toolbar__search">
+        <svg class="buscador__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.5-3.5" />
+        </svg>
         <input
-          class="form-control"
-          type="text"
-          [placeholder]="activeTab() === 'ordenes' ? 'Buscar empresa, código o NIT…' : 'Buscar nombre, correo o especialidad…'"
+          class="buscador__input"
+          type="search"
+          [placeholder]="activeTab() === 'ordenes' ? 'Empresa, código o NIT' : 'Nombre, correo o especialidad'"
+          [attr.aria-label]="activeTab() === 'ordenes' ? 'Buscar órdenes por empresa, código o NIT' : 'Buscar profesionales por nombre, correo o especialidad'"
           [ngModel]="query()"
           (ngModelChange)="query.set($event)"
           (keyup.enter)="applyQuery()"
         />
-      </div>
+      </label>
     }
 
     @if (hasFilters()) {
@@ -258,7 +263,7 @@
             <th>Empresa</th>
             <th>ARL</th>
             <th>NIT</th>
-            <th>Horas</th>
+            <th class="num">Horas</th>
             <th>Estado</th>
             <th>Confianza</th>
             <th class="col-actions">Resumen</th>
@@ -271,9 +276,18 @@
               <td>{{ nombreOrden(o) }}</td>
               <td>{{ o.arl_nombre || '—' }}</td>
               <td class="mono">{{ o.nit_nic || '—' }}</td>
-              <td class="mono">{{ o.horas_asignadas ?? '—' }}</td>
+              <td class="num">{{ o.horas_asignadas ?? '—' }}</td>
               <td>
-                <span class="estado-pill" [class]="'tone-' + estadoTone(o.estado)">{{ o.estado }}</span>
+                <span
+                  class="pill"
+                  [class.pill--warning]="o.estado === 'SIN PROGRAMAR' || o.estado === 'EN VERIFICACIÓN'"
+                  [class.pill--info]="o.estado === 'PROGRAMADA'"
+                  [class.pill--success]="o.estado === 'EJECUTADA'"
+                  [class.pill--finalizada]="o.estado === 'FINALIZADA'"
+
+                  [class.pill--danger]="o.estado === 'CANCELADA'"
+                  [class.pill--muted]="!['SIN PROGRAMAR', 'PROGRAMADA', 'EJECUTADA', 'FINALIZADA', 'EN VERIFICACIÓN', 'CANCELADA'].includes(o.estado)"
+                >{{ o.estado }}</span>
               </td>
               <td>
                 <span class="pill pill--metric" [class]="pillClass(confidenceOf(o))">{{ confidenceOf(o) }}%</span>
@@ -356,13 +370,14 @@
       <div class="kpi">
         <span class="kpi__label">Promedio de satisfacción</span>
         <strong class="kpi__value">
-          {{ promedio(st.totales.promedio_satisfaccion) }}<small>/5</small>
+          <!-- Sin respuestas: un «—» simple; la escala solo acompaña a una cifra. -->
+          @if (promedio(st.totales.promedio_satisfaccion) !== '—') {{{ promedio(st.totales.promedio_satisfaccion) }}<small>/ 5</small>} @else {<span class="kpi-vacio">—</span>}
         </strong>
       </div>
       <div class="kpi">
         <span class="kpi__label">¿Nos recomendaría?</span>
         <strong class="kpi__value">
-          {{ promedio(st.totales.promedio_recomendacion) }}<small>/5</small>
+          @if (promedio(st.totales.promedio_recomendacion) !== '—') {{{ promedio(st.totales.promedio_recomendacion) }}<small>/ 5</small>} @else {<span class="kpi-vacio">—</span>}
         </strong>
       </div>
       <div class="kpi">
@@ -372,14 +387,20 @@
       </div>
       <div class="kpi">
         <span class="kpi__label">Distribución de notas</span>
-        <div class="spark" role="img" aria-label="Distribución de calificaciones de 1 a 5">
-          @for (d of distribucionCompleta(); track d.nota) {
-            <span class="spark__col" [title]="d.total + ' respuesta(s) con nota ' + d.nota">
-              <span class="spark__bar" [style.height]="barraAltura(d.total)"></span>
-              <span class="spark__num">{{ d.nota }}</span>
-            </span>
-          }
-        </div>
+        <!-- Ronda 3: sin notas, el «—» de los otros KPI vacíos (cinco puntos y
+             dígitos de 10 px parecían un error de pintado). -->
+        @if (hayNotas()) {
+          <div class="spark" role="img" aria-label="Distribución de calificaciones de 1 a 5">
+            @for (d of distribucionCompleta(); track d.nota) {
+              <span class="spark__col" [title]="d.total + ' respuesta(s) con nota ' + d.nota">
+                <span class="spark__bar" [style.height]="barraAltura(d.total)"></span>
+                <span class="spark__num">{{ d.nota }}</span>
+              </span>
+            }
+          </div>
+        } @else {
+          <strong class="kpi__value"><span class="kpi-vacio">—</span></strong>
+        }
       </div>
     </div>
 
@@ -417,15 +438,15 @@
         <div class="table-wrap">
           <table class="table">
             <thead>
-              <tr><th>Profesional</th><th>Respuestas</th><th>Satisfacción</th><th>Recomendación</th></tr>
+              <tr><th>Profesional</th><th class="num">Respuestas</th><th class="num">Satisfacción</th><th class="num">Recomendación</th></tr>
             </thead>
             <tbody>
               @for (p of pagSatProf.visibles(); track p.profesional_nombre) {
                 <tr>
                   <td>{{ p.profesional_nombre }}</td>
-                  <td class="mono">{{ p.respondidas }}/{{ p.enviadas }}</td>
-                  <td><span class="pill" [class]="notaClass(p.promedio_satisfaccion)">{{ promedio(p.promedio_satisfaccion) }}</span></td>
-                  <td><span class="pill" [class]="notaClass(p.promedio_recomendacion)">{{ promedio(p.promedio_recomendacion) }}</span></td>
+                  <td class="num">{{ p.respondidas }}/{{ p.enviadas }}</td>
+                  <td class="num"><span class="pill pill--metric" [class]="notaClass(p.promedio_satisfaccion)">{{ promedio(p.promedio_satisfaccion) }}</span></td>
+                  <td class="num"><span class="pill pill--metric" [class]="notaClass(p.promedio_recomendacion)">{{ promedio(p.promedio_recomendacion) }}</span></td>
                 </tr>
               } @empty {
                 <tr><td colspan="4" class="table__empty">Sin encuestas todavía.</td></tr>
@@ -444,14 +465,14 @@
         <div class="table-wrap">
           <table class="table">
             <thead>
-              <tr><th>ARL</th><th>Respuestas</th><th>Satisfacción</th></tr>
+              <tr><th>ARL</th><th class="num">Respuestas</th><th class="num">Satisfacción</th></tr>
             </thead>
             <tbody>
               @for (a of st.por_arl; track a.arl_nombre) {
                 <tr>
                   <td>{{ a.arl_nombre }}</td>
-                  <td class="mono">{{ a.respondidas }}/{{ a.enviadas }}</td>
-                  <td><span class="pill" [class]="notaClass(a.promedio_satisfaccion)">{{ promedio(a.promedio_satisfaccion) }}</span></td>
+                  <td class="num">{{ a.respondidas }}/{{ a.enviadas }}</td>
+                  <td class="num"><span class="pill pill--metric" [class]="notaClass(a.promedio_satisfaccion)">{{ promedio(a.promedio_satisfaccion) }}</span></td>
                 </tr>
               } @empty {
                 <tr><td colspan="3" class="table__empty">Sin encuestas todavía.</td></tr>
@@ -463,14 +484,14 @@
         <div class="table-wrap">
           <table class="table">
             <thead>
-              <tr><th>Mes</th><th>Respuestas</th><th>Satisfacción</th></tr>
+              <tr><th>Mes</th><th class="num">Respuestas</th><th class="num">Satisfacción</th></tr>
             </thead>
             <tbody>
               @for (m of pagSatMes.visibles(); track m.mes) {
                 <tr>
                   <td class="mono">{{ m.mes }}</td>
-                  <td class="mono">{{ m.respondidas }}/{{ m.enviadas }}</td>
-                  <td><span class="pill" [class]="notaClass(m.promedio_satisfaccion)">{{ promedio(m.promedio_satisfaccion) }}</span></td>
+                  <td class="num">{{ m.respondidas }}/{{ m.enviadas }}</td>
+                  <td class="num"><span class="pill pill--metric" [class]="notaClass(m.promedio_satisfaccion)">{{ promedio(m.promedio_satisfaccion) }}</span></td>
                 </tr>
               } @empty {
                 <tr><td colspan="3" class="table__empty">Sin encuestas todavía.</td></tr>
@@ -497,8 +518,8 @@
             <th>Empresa</th>
             <th>ARL</th>
             <th>Profesional</th>
-            <th>Satisf.</th>
-            <th>Recom.</th>
+            <th class="num">Satisf.</th>
+            <th class="num">Recom.</th>
             <th>Observaciones</th>
             <th>Estado</th>
           </tr>
@@ -510,19 +531,19 @@
               <td>{{ e.empresa_nombre || '—' }}</td>
               <td>{{ e.arl_nombre || '—' }}</td>
               <td>{{ e.profesional_nombre || '—' }}</td>
-              <td>
+              <td class="num">
                 @if (e.satisfaccion) {
-                  <span class="pill" [class]="notaClass(e.satisfaccion)">{{ e.satisfaccion }}/5</span>
+                  <span class="pill pill--metric" [class]="notaClass(e.satisfaccion)">{{ e.satisfaccion }}/5</span>
                 } @else { — }
               </td>
-              <td>
+              <td class="num">
                 @if (e.recomendacion) {
-                  <span class="pill" [class]="notaClass(e.recomendacion)">{{ e.recomendacion }}/5</span>
+                  <span class="pill pill--metric" [class]="notaClass(e.recomendacion)">{{ e.recomendacion }}/5</span>
                 } @else { — }
               </td>
               <td class="sat-obs">{{ e.comentarios || '—' }}</td>
               <td>
-                <span class="estado-pill" [class]="e.respondida ? 'tone-green' : 'tone-slate'">
+                <span class="pill" [class.pill--success]="e.respondida" [class.pill--muted]="!e.respondida">
                   {{ e.respondida ? 'Respondida' : 'Pendiente' }}
                 </span>
               </td>
@@ -550,7 +571,8 @@
 @if (activeTab() === 'vencidas') {
   @if (vencidas(); as rep) {
     <div class="kpis">
-      <div class="kpi kpi--alerta">
+      <!-- En error solo cuando hay vencidas: un «0» rojo alarmaba sin motivo. -->
+      <div class="kpi" [class.kpi--alerta]="rep.resumen.total > 0">
         <span class="kpi__label">Órdenes vencidas</span>
         <strong class="kpi__value">{{ rep.resumen.total }}</strong>
         <span class="kpi__hint">más de {{ rep.umbral_dias }} días sin ejecutar</span>
@@ -582,7 +604,7 @@
             <th>ARL</th>
             <th>Estado</th>
             <th>Profesional</th>
-            <th>Horas</th>
+            <th class="num">Horas</th>
             <th>Vence</th>
           </tr>
         </thead>
@@ -597,9 +619,18 @@
               <td class="mono">{{ o.codigo }}</td>
               <td>{{ o.empresa_nombre || '—' }}</td>
               <td>{{ o.arl_nombre || '—' }}</td>
-              <td><span class="estado-pill" [class]="'tone-' + estadoTone(o.estado)">{{ o.estado }}</span></td>
+              <td><span
+                  class="pill"
+                  [class.pill--warning]="o.estado === 'SIN PROGRAMAR' || o.estado === 'EN VERIFICACIÓN'"
+                  [class.pill--info]="o.estado === 'PROGRAMADA'"
+                  [class.pill--success]="o.estado === 'EJECUTADA'"
+                  [class.pill--finalizada]="o.estado === 'FINALIZADA'"
+
+                  [class.pill--danger]="o.estado === 'CANCELADA'"
+                  [class.pill--muted]="!['SIN PROGRAMAR', 'PROGRAMADA', 'EJECUTADA', 'FINALIZADA', 'EN VERIFICACIÓN', 'CANCELADA'].includes(o.estado)"
+                >{{ o.estado }}</span></td>
               <td>{{ o.profesional_nombre || 'Sin asignar' }}</td>
-              <td class="mono">{{ num(o.horas_asignadas) }}</td>
+              <td class="num">{{ num(o.horas_asignadas) }}</td>
               <td class="mono">
                 {{ fechaCorta(o.fecha_vencimiento) || '—' }}
                 @if (o.dias_para_vencer !== null && o.dias_para_vencer !== undefined && o.dias_para_vencer < 0) {
@@ -697,13 +728,13 @@
       <div class="card__head"><h3 class="card__title">Detalle por mes</h3></div>
       <div class="table-wrap">
         <table class="table">
-          <thead><tr><th>Mes</th><th>Órdenes</th><th>Horas</th></tr></thead>
+          <thead><tr><th>Mes</th><th class="num">Órdenes</th><th class="num">Horas</th></tr></thead>
           <tbody>
             @for (m of pagHorasMes.visibles(); track m.mes) {
               <tr>
                 <td class="mono">{{ m.mes }}</td>
-                <td class="mono">{{ m.ordenes }}</td>
-                <td class="mono">{{ num(m.horas) }}</td>
+                <td class="num">{{ m.ordenes }}</td>
+                <td class="num">{{ num(m.horas) }}</td>
               </tr>
             } @empty {
               <tr><td colspan="3" class="table__empty">Sin datos en el rango elegido.</td></tr>
@@ -800,7 +831,7 @@
         <span class="card__hint">El estado se cambia en Órdenes, con el icono de facturación de la fila.</span>
       </div>
       <div class="table-wrap">
-        <table class="table">
+        <table class="table tabla-cobro">
           <thead>
             <tr>
               <th>Código</th>
@@ -809,7 +840,7 @@
               <th>ARL</th>
               <th>Empresa</th>
               <th>Profesional</th>
-              <th>Valor ARL</th>
+              <th class="num">Valor ARL</th>
               <th>Ejecutada</th>
             </tr>
           </thead>
@@ -818,11 +849,11 @@
               <tr>
                 <td class="mono td-id">{{ o.codigo || '—' }}</td>
                 <td><span class="pill" [class]="pillCobro(o.estado_cobro)">{{ o.estado_cobro }}</span></td>
-                <td class="mono">{{ o.cobro_numero_factura || '—' }}</td>
+                <td class="mono cobro-nowrap">{{ o.cobro_numero_factura || '—' }}</td>
                 <td>{{ o.arl_nombre || '—' }}</td>
-                <td>{{ o.empresa_nombre || '—' }}</td>
+                <td class="cobro-empresa">{{ o.empresa_nombre || '—' }}</td>
                 <td>{{ o.profesional_nombre || '—' }}</td>
-                <td class="mono">{{ pesos(o.valor_total) }}</td>
+                <td class="num">{{ pesos(o.valor_total) }}</td>
                 <td class="mono">{{ fechaCorta(o.fecha_ejecucion) }}</td>
               </tr>
             } @empty {

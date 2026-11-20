@@ -4,7 +4,7 @@
     <p class="page-head__sub">Lo que deben los clientes y lo que se debe a los proveedores · CXC y CXP · cada factura abre su cuenta sola</p>
   </div>
   @if (puedeOperar() && (pestana() === 'por-cobrar' || pestana() === 'recibos')) {
-    <button type="button" class="btn btn--primary" (click)="nuevoRecibo()">
+    <button type="button" class="btn btn--primary car-head__accion" (click)="nuevoRecibo()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
       Registrar recibo de caja
     </button>
@@ -31,14 +31,14 @@
 }
 
 <div class="tabs" role="tablist">
-  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'por-cobrar'" (click)="pestana.set('por-cobrar')">
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'por-cobrar'" (click)="pestana.set('por-cobrar'); $any($event.currentTarget).scrollIntoView({ block: 'nearest', inline: 'nearest' })">
     Por cobrar <span class="tab__count">{{ antiguedad()?.clientes?.length ?? 0 }}</span>
   </button>
-  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'recibos'" (click)="pestana.set('recibos')">
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'recibos'" (click)="pestana.set('recibos'); $any($event.currentTarget).scrollIntoView({ block: 'nearest', inline: 'nearest' })">
     Recibos de caja <span class="tab__count">{{ recibos().length }}</span>
   </button>
-  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'por-pagar'" (click)="pestana.set('por-pagar')">Por pagar</button>
-  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'egresos'" (click)="pestana.set('egresos')">Egresos y anticipos</button>
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'por-pagar'" (click)="pestana.set('por-pagar'); $any($event.currentTarget).scrollIntoView({ block: 'nearest', inline: 'nearest' })">Por pagar</button>
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'egresos'" (click)="pestana.set('egresos'); $any($event.currentTarget).scrollIntoView({ block: 'nearest', inline: 'nearest' })">Egresos y anticipos</button>
 </div>
 
 <!-- ======================= POR COBRAR ======================= -->
@@ -46,10 +46,10 @@
   <div class="car-filtros">
     <label class="car-fecha">Corte <input type="date" class="form-control" [(ngModel)]="corte" (change)="cargarAntiguedad()" /></label>
     @if (conciliacion(); as c) {
-      @if (c.cuadra) { <span class="pill pill--success" title="El saldo de la cartera es igual al de la cuenta de clientes">Cuadra con la contabilidad</span> }
+      @if (c.cuadra) { <span class="pill doc-estado pill--success" title="El saldo de la cartera es igual al de la cuenta de clientes">Cuadra con la contabilidad</span> }
     }
     <span class="car-sep"></span>
-    <button type="button" class="btn btn--ghost btn--sm" (click)="exportarAntiguedad()">Exportar a Excel</button>
+    <button type="button" class="btn btn--ghost" (click)="exportarAntiguedad()">Exportar a Excel</button>
   </div>
 
   <div class="card">
@@ -59,26 +59,26 @@
           <tr>
             <th>Cliente</th>
             <th class="col-num">Facturas</th>
-            @for (e of antiguedad()?.edades ?? []; track e) { <th class="col-num">{{ etiquetaEdad[e] }}</th> }
+            @for (e of antiguedad()?.edades ?? []; track e) { <th class="col-num">{{ etiquetaEdad[e].replace(' a ', '\u00a0a\u00a0').replace('Más de ', 'Más\u00a0de\u00a0') }}</th> }
             <th class="col-num">Total</th>
-            <th class="col-actions"></th>
+            <th class="col-actions">Acciones</th>
           </tr>
         </thead>
         <tbody>
           @if (cargandoAntiguedad() && !antiguedad()) {
-            <tr><td colspan="9" class="car-vacio">Cargando…</td></tr>
+            <tr><td colspan="9" class="table__empty">Cargando…</td></tr>
           } @else if (!antiguedad()?.clientes?.length) {
-            <tr><td colspan="9" class="car-vacio">Ningún cliente debe nada a esta fecha.</td></tr>
+            <tr><td colspan="9" class="table__empty table__empty--estado"><div class="estado-vacio estado-vacio--ok"><span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg></span><p class="estado-vacio__titulo">Ningún cliente debe nada a esta fecha</p></div></td></tr>
           }
           @for (c of antiguedad()?.clientes ?? []; track c.tercero_id) {
             <tr>
-              <td><strong>{{ c.tercero_nombre }}</strong></td>
+              <td class="car-nombre"><strong>{{ c.tercero_nombre }}</strong></td>
               <td class="col-num">{{ c.documentos }}</td>
               @for (e of antiguedad()!.edades; track e) {
                 <td class="col-num mono" [class.car-vencido]="e !== 'POR_VENCER' && +c[e] > 0">{{ +c[e] ? pesos(c[e]) : '' }}</td>
               }
               <td class="col-num mono"><strong>{{ pesos(c.TOTAL) }}</strong></td>
-              <td class="col-actions"><button type="button" class="icon-action" (click)="abrirEstado(c.tercero_id)" aria-label="Ver el estado de cuenta" title="Ver el estado de cuenta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
+              <td class="col-actions"><button type="button" class="icon-action icon-action--ver" (click)="abrirEstado(c.tercero_id)" aria-label="Ver el estado de cuenta" title="Ver el estado de cuenta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
             </tr>
           }
         </tbody>
@@ -87,9 +87,9 @@
             <tr>
               <td><strong>Total</strong></td>
               <td></td>
-              @for (e of antiguedad()!.edades; track e) { <td class="col-num mono"><strong>{{ +antiguedad()!.total[e] ? pesos(antiguedad()!.total[e]) : '' }}</strong></td> }
+              @for (e of antiguedad()!.edades; track e) { <td class="col-num mono"><strong>{{ pesos(antiguedad()!.total[e]) }}</strong></td> }
               <td class="col-num mono"><strong>{{ pesos(antiguedad()!.total.TOTAL) }}</strong></td>
-              <td></td>
+              <td class="col-actions"></td>
             </tr>
           </tfoot>
         }
@@ -104,20 +104,20 @@
     <div class="table-wrap">
       <table class="table">
         <thead>
-          <tr><th>Recibo</th><th>Fecha</th><th>Cliente</th><th>Facturas</th><th class="col-num">Consignado</th><th class="col-num">Retenido</th><th>Estado</th><th class="col-actions"></th></tr>
+          <tr><th>Recibo</th><th>Fecha</th><th>Cliente</th><th>Facturas</th><th class="col-num">Consignado</th><th class="col-num">Retenido</th><th>Estado</th><th class="col-actions">Acciones</th></tr>
         </thead>
         <tbody>
-          @if (!recibos().length) { <tr><td colspan="8" class="car-vacio">Todavía no hay recibos de caja.</td></tr> }
+          @if (!recibos().length) { <tr><td colspan="8" class="table__empty table__empty--estado"><div class="estado-vacio"><span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></svg></span><p class="estado-vacio__titulo">Todavía no hay recibos de caja</p></div></td></tr> }
           @for (r of pagRecibos.visibles(); track r.id) {
             <tr>
-              <td class="mono"><strong>{{ r.numero }}</strong></td>
+              <td class="td-id nowrap">{{ r.numero }}</td>
               <td class="mono">{{ r.fecha }}</td>
-              <td>{{ r.tercero_nombre }}</td>
+              <td class="car-nombre">{{ r.tercero_nombre }}</td>
               <td class="mono car-facturas">{{ r.facturas }}</td>
               <td class="col-num mono">{{ pesos(r.valor_consignado) }}</td>
               <td class="col-num mono">{{ +(r.retenido ?? 0) ? pesos(r.retenido) : '' }}</td>
-              <td><span class="pill" [class]="r.estado === 'ANULADO' ? 'pill--muted' : 'pill--success'">{{ r.estado === 'ANULADO' ? 'Anulado' : 'Contabilizado' }}</span></td>
-              <td class="col-actions"><button type="button" class="icon-action" (click)="abrirRecibo(r)" aria-label="Ver el recibo" title="Ver el recibo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
+              <td><span class="pill doc-estado" [class]="'pill doc-estado ' + (r.estado === 'ANULADO' ? 'pill--muted' : 'pill--success')">{{ r.estado === 'ANULADO' ? 'Anulado' : 'Contabilizado' }}</span></td>
+              <td class="col-actions"><button type="button" class="icon-action icon-action--ver" (click)="abrirRecibo(r)" aria-label="Ver el recibo" title="Ver el recibo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
             </tr>
           }
         </tbody>
@@ -139,7 +139,7 @@
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="carEcTitle">Estado de cuenta · {{ e.tercero.nombre }}</h3>
-        <small class="car-sub">{{ e.tercero.numero_documento }}{{ e.tercero.dv != null ? '-' + e.tercero.dv : '' }} · saldo {{ pesos(e.saldo) }}</small>
+        <p class="modal__sub">{{ e.tercero.numero_documento }}{{ e.tercero.dv != null ? '-' + e.tercero.dv : '' }} · saldo {{ pesos(e.saldo) }}</p>
       </div>
       <button type="button" class="icon-action" (click)="estado.set(null)" aria-label="Cerrar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
@@ -189,10 +189,11 @@
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="carRcTitle">
     <header class="modal__head">
       <div>
-        <h3 class="modal__title" id="carRcTitle">Recibo {{ r.numero }}</h3>
-        <small class="car-sub">{{ r.tercero_nombre }} · {{ r.fecha }} · {{ r.cuenta_banco_codigo }} {{ r.cuenta_banco_nombre }}</small>
+        <h3 class="modal__title" id="carRcTitle">Recibo {{ r.numero }}
+          <span class="pill doc-estado" [class]="'pill doc-estado ' + (r.estado === 'ANULADO' ? 'pill--muted' : 'pill--success')">{{ r.estado === 'ANULADO' ? 'Anulado' : 'Contabilizado' }}</span>
+        </h3>
+        <p class="modal__sub">{{ r.tercero_nombre }} · {{ r.fecha }} · {{ r.cuenta_banco_codigo }} {{ r.cuenta_banco_nombre }}</p>
       </div>
-      <span class="pill" [class]="r.estado === 'ANULADO' ? 'pill--muted' : 'pill--success'">{{ r.estado === 'ANULADO' ? 'Anulado' : 'Contabilizado' }}</span>
     </header>
     <div class="modal__body">
       @if (r.motivo_anulacion) { <p class="car-anulado">Anulado: {{ r.motivo_anulacion }}</p> }
@@ -231,7 +232,7 @@
           <button type="button" class="btn btn--close" (click)="anulando.set(false)" [disabled]="trabajando()">Cancelar</button>
           <button type="button" class="btn btn--danger" (click)="confirmarAnular(r)" [disabled]="trabajando()">Anular recibo</button>
         } @else {
-          <button type="button" class="btn btn--peligro-contorno car-peligro" (click)="motivo = ''; anulando.set(true)">Anular</button>
+          <button type="button" class="btn btn--peligro-contorno car-peligro" (click)="motivo = ''; anulando.set(true)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m5.7 5.7 12.6 12.6" /></svg> Anular</button>
           <button type="button" class="btn btn--secondary" (click)="modificarRecibo(r)">Modificar</button>
         }
       }
@@ -274,7 +275,7 @@
 
       @if (rCliente && propuesta()) {
         @if (!filas().length) {
-          <p class="car-vacio">Este cliente no tiene facturas pendientes.</p>
+          <p class="car-vacio-texto">Este cliente no tiene facturas pendientes.</p>
         } @else {
           <p class="car-ayuda">
             Marque las facturas que cubre la consignación y elija las retenciones que practicó el cliente

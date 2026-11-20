@@ -122,7 +122,7 @@
     <span class="ic-sub">Filtrado por:</span>
     @for (f of filtrosActivos(); track f.clave) {
       <span class="ic-chip">{{ f.texto }}
-        <button type="button" (click)="quitarFiltro(f.clave)" [attr.aria-label]="'Quitar el filtro ' + f.texto">✕</button>
+        <button type="button" (click)="quitarFiltro(f.clave)" [attr.aria-label]="'Quitar el filtro ' + f.texto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
       </span>
     }
     <button type="button" class="ic-link" (click)="limpiarFiltros()">Quitar todos</button>
@@ -343,7 +343,7 @@
 @if (pestana() === 'auxiliar') {
   @if (auxiliar(); as a) {
     <div class="ic-estado">
-      <span class="pill pill--info">{{ plural(a.cuentas.length, 'cuenta', 'cuentas') }} · {{ plural(a.n_movimientos, 'movimiento', 'movimientos') }}</span>
+      <span class="tag tag--info">{{ plural(a.cuentas.length, 'cuenta', 'cuentas') }} · {{ plural(a.n_movimientos, 'movimiento', 'movimientos') }}</span>
       <small class="ic-nota">El saldo de cada línea es el saldo corrido de la cuenta. Use el ícono del comprobante para ver el asiento completo.</small>
     </div>
     <div class="table-wrap">
@@ -375,7 +375,7 @@
 @if (pestana() === 'terceros') {
   @if (porTercero(); as r) {
     <div class="ic-estado">
-      <span class="pill pill--info">{{ plural(r.terceros.length, 'tercero', 'terceros') }}{{ r.n_movimientos != null ? ' · ' + plural(r.n_movimientos, 'movimiento', 'movimientos') : '' }}</span>
+      <span class="tag tag--info">{{ plural(r.terceros.length, 'tercero', 'terceros') }}{{ r.n_movimientos != null ? ' · ' + plural(r.n_movimientos, 'movimiento', 'movimientos') : '' }}</span>
       <small class="ic-nota">
         @if (r.filtros.modo === 'detallado') { Cada movimiento con su comprobante y el saldo corrido del tercero en esa cuenta. }
         @else { Saldo de cada tercero por cuenta. El ojo abre su detalle. }
@@ -391,7 +391,7 @@
 @if (pestana() === 'libros') {
   @if (libroDatos(); as l) {
     <div class="ic-estado">
-      <span class="pill pill--info">{{ l.libro_nombre }} · {{ plural(l.n_movimientos, 'movimiento', 'movimientos') }}</span>
+      <span class="tag tag--info">{{ l.libro_nombre }} · {{ plural(l.n_movimientos, 'movimiento', 'movimientos') }}</span>
       <small class="ic-nota">
         @if (l.agrupado_por === 'tercero') { La cartera se lee por cliente o proveedor, con el saldo corrido de cada uno. }
         @else { Incluye las cuentas de ese impuesto en el plan de cuentas: las que se pagan a la DIAN y las que le retuvieron a JD&amp;D. }
@@ -512,7 +512,7 @@
 @if (pestana() === 'ventas') {
   @if (ventas(); as v) {
     <div class="ic-estado">
-      <span class="pill pill--info">{{ plural(v.clientes.length, 'cliente', 'clientes') }} · {{ plural(v.totales.facturas, 'factura', 'facturas') }} · {{ plural(v.totales.notas, 'nota crédito', 'notas crédito') }}</span>
+      <span class="tag tag--info">{{ plural(v.clientes.length, 'cliente', 'clientes') }} · {{ plural(v.totales.facturas, 'factura', 'facturas') }} · {{ plural(v.totales.notas, 'nota crédito', 'notas crédito') }}</span>
       <small class="ic-nota">Facturas y notas crédito ante la DIAN por fecha de emisión; las notas restan. Ordenado de mayor a menor venta.</small>
     </div>
     <div class="table-wrap">

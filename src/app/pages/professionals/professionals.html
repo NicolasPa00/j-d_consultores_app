@@ -1,4 +1,4 @@
-<section class="page-head prof-head">
+<section class="page-head page-head--acciones">
   <div>
     <h2 class="page-head__title">Profesionales</h2>
     <p class="page-head__sub">
@@ -6,21 +6,22 @@
     </p>
   </div>
 
-  <div class="prof-head__actions">
-    <div class="prof-search">
-      <svg class="prof-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <div class="page-head__acciones">
+    <label class="buscador prof-buscar">
+      <svg class="buscador__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="11" cy="11" r="7" />
         <path d="m20 20-3.5-3.5" />
       </svg>
       <input
-        class="prof-search__input"
-        type="text"
-        placeholder="Buscar por nombre o especialidad…"
+        class="buscador__input"
+        type="search"
+        placeholder="Nombre o especialidad"
         title="Buscar por nombre o especialidad"
+        aria-label="Buscar profesionales por nombre o especialidad"
         [ngModel]="query()"
         (ngModelChange)="buscar($event)"
       />
-    </div>
+    </label>
     <button type="button" class="btn btn--secondary" (click)="abrirEspecialidades()">Especialidades</button>
     <button type="button" class="btn btn--primary" (click)="openNew()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -41,7 +42,7 @@
           <th>Teléfono</th>
           <th>Especialidad</th>
           <th>Registro ARL</th>
-          <th>Órdenes y calificación</th>
+          <th class="desempeno-th">Órdenes y calificación</th>
           <th>Estado</th>
           <th class="col-actions">Acciones</th>
         </tr>
@@ -61,7 +62,7 @@
                 </div>
               </div>
             </td>
-            <td class="mono">{{ pro.phone }}</td>
+            <td class="mono prof-tel">{{ pro.phone }}</td>
             <td>{{ pro.specialty }}</td>
             <!-- ASG · Ante qué ARL está registrado. Se ve en el listado porque
                  es lo que decide quién puede figurar en los formatos de una
@@ -72,8 +73,8 @@
               <div class="registros">
               @for (reg of pro.registros; track reg.arl_id) {
                 <span
-                  class="pill"
-                  [class]="reg.vencido ? 'pill--warning' : 'pill--info'"
+                  class="tag registro"
+                  [class.registro--vencido]="reg.vencido"
                   [title]="tituloRegistro(reg)"
                 >
                   {{ reg.arl_nombre }}{{ reg.vencido ? ' ⚠' : '' }}
@@ -87,7 +88,10 @@
                  lo califican debajo. Separarlas invitaba a leer un 5,0 de una
                  sola encuesta como si valiera lo mismo que un 4,6 de cuarenta. -->
             <td class="desempeno">
-              <span class="desempeno__ordenes">
+              <span
+                class="desempeno__ordenes"
+                [title]="pro.ordenesEjecutadas + ' ' + (pro.ordenesEjecutadas === 1 ? 'orden ejecutada' : 'órdenes ejecutadas')"
+              >
                 {{ pro.ordenesEjecutadas }}
                 {{ pro.ordenesEjecutadas === 1 ? 'orden ejecutada' : 'órdenes ejecutadas' }}
               </span>
@@ -129,7 +133,7 @@
                 <span class="desempeno__sin">Sin encuestas respondidas</span>
               }
             </td>
-            <td>
+            <td class="prof-estado">
               <span class="pill" [class]="pro.status === 'Activo' ? 'pill--success' : 'pill--muted'">
                 {{ pro.status }}
               </span>
@@ -241,6 +245,9 @@
         }
       </div>
 
+      <!-- Dos columnas para los datos cortos (DESIGN §7 Modal · .form-grid):
+           el formulario cabía en pantalla solo con scroll. Mismo orden. -->
+      <div class="form-grid">
       <div class="form-field">
         <label class="form-field__label" for="pPhone">Teléfono</label>
         <input
@@ -289,6 +296,7 @@
           <option value="Activo">Activo</option>
           <option value="Inactivo">Inactivo</option>
         </select>
+      </div>
       </div>
 
       <!-- 16-oct-2026 · Firma digital. Se aplica al pulsar Guardar, con el resto
@@ -469,7 +477,7 @@
         <p class="ratings__resumen">
           {{ ratingsConComentario() }} de {{ ratings().length }} traen observaciones del cliente.
         </p>
-        <div class="table-wrap">
+        <div class="table-wrap table-wrap--modal">
           <table class="table">
             <thead>
               <tr>
@@ -488,7 +496,7 @@
                   <td class="mono">{{ e.orden_codigo || '—' }}</td>
                   <td>{{ e.empresa_nombre || '—' }}</td>
                   <td>
-                    <span class="pill" [class]="notaClass(e.nota_profesional)">
+                    <span class="pill pill--metric" [class]="notaClass(e.nota_profesional)">
                       {{ e.nota_profesional || '—' }}/5
                     </span>
                     @if (!e.calificacion_profesional) {
@@ -499,7 +507,7 @@
                     }
                   </td>
                   <td>
-                    <span class="pill" [class]="notaClass(e.satisfaccion)">{{ e.satisfaccion || '—' }}/5</span>
+                    <span class="pill pill--metric" [class]="notaClass(e.satisfaccion)">{{ e.satisfaccion || '—' }}/5</span>
                   </td>
                   <td class="ratings__obs">{{ e.comentarios || '—' }}</td>
                 </tr>

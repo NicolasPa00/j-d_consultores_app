@@ -1,122 +1,96 @@
 /*
- * Selector de sistema ("¿En qué sistema va a trabajar?").
+ * Selector de sistema («¿En qué sistema va a trabajar?»).
  *
- * 30-sep-2026 · Identidad corporativa de JD&D: el fondo es `.brand-screen`, el
- * botón de salir `.btn--outline-light`, las tarjetas `.card.card--interactive`,
- * y las funcionalidades `.chip` (todo en styles.scss). Aquí queda la disposición
- * propia de esta pantalla y el aspecto de botón de las tarjetas.
+ * Rediseño 20-nov-2026: misma familia que el Login. La pieza partida, la hoja
+ * y su subida en el celular salen de `../login/login.scss`; la escena es
+ * `app-escena-acceso`. Aquí queda lo propio: «Cerrar sesión» arriba a la
+ * derecha de la pantalla y las dos elecciones.
  */
-:host {
-  display: block;
-}
 
 .sistemas {
-  display: flex;
-  flex-direction: column;
-}
-
-/* ---- Cabecera: logo a la izquierda, salir a la derecha ---- */
-.sistemas__cabecera {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.25rem 2rem;
-}
-
-/* Versión para fondo oscuro: texto blanco y la órbita con sus colores (antes
-   se pasaba todo a blanco con un filtro y la órbita perdía el color). */
-.sistemas__logo {
-  height: 42px;
-  width: auto;
-}
-
-.sistemas__salir {
-  padding: 0.55rem 1rem;
-  font-weight: 500;
-}
-
-/* ---- Cuerpo ---- */
-.sistemas__cuerpo {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem 1rem 3rem;
-  text-align: center;
-}
-
-.sistemas__saludo {
-  margin: 0;
-  color: var(--texto-noche);
-}
-
-.sistemas__titulo {
-  // Explícito: el h1 global es oscuro y sobre la noche no se leería.
-  margin: 0.4rem 0 0.5rem;
-  color: var(--superficie);
-  font-size: 1.9rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.sistemas__sub {
-  margin: 0 0 2rem;
-  color: var(--texto-noche-2);
-  font-size: 0.95rem;
-}
-
-.sistemas__tarjetas {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 360px));
-  gap: 1.5rem;
-  justify-content: center;
-  width: 100%;
-  max-width: 800px;
-}
-
-/* ---- Tarjeta de sistema (sobre `.card.card--interactive`) ----
-   7-oct-2026 · Cada tarjeta es UN botón y tiene que parecerlo: borde que se
-   enciende, franja de color arriba y, abajo, una barra «Entrar a…» con aspecto
-   de botón primario. Antes el "Entrar a… →" era un texto suelto y la tarjeta se
-   leía como una ficha informativa. */
-.tarjeta {
-  --tarjeta-acento: var(--primary-color);
-  --tarjeta-acento-hover: var(--primary-hover);
-  --tarjeta-tenue: var(--accion-tenue);
   position: relative;
+}
+
+/* ── Cerrar sesión: siempre arriba a la derecha ──────────────────────────── */
+
+/* En el celular cae sobre la escena noche: contorno claro con foco cian. */
+.sistemas__salir {
+  position: absolute;
+  z-index: 2;
+  /* Centrado con el logo de 40 px (que arranca a 20 px). */
+  top: 22px;
+  /* El mismo margen que el logo de la escena (24 px). */
+  right: 24px;
+  min-height: 36px;
+  background: transparent;
+  color: #ffffff;
+  border-color: rgb(255 255 255 / 45%);
+
+  &:focus-visible {
+    outline-color: var(--cian);
+    box-shadow: none;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sistemas__salir:hover {
+    background: rgb(255 255 255 / 12%);
+    border-color: rgb(255 255 255 / 70%);
+  }
+}
+
+/* ── Las dos elecciones ──────────────────────────────────────────────────── */
+
+.sistemas__caja {
+  display: grid;
+  gap: 16px;
+}
+
+/* Cada elección es UN botón y tiene que parecerlo (7-oct-2026): contorno que
+   se enciende, fondo que cambia y abajo la barra «Entrar a…» en acción. Sin
+   sombra en reposo ni elevación (DESIGN §4). */
+.eleccion {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.75rem;
-  padding: 2rem 2rem 1.5rem;
-  overflow: hidden;
+  gap: 10px;
+  width: 100%;
+  padding: 20px;
   text-align: left;
-  color: var(--text-main);
   font: inherit;
-  border: 2px solid transparent;
-  box-shadow: 0 12px 32px -8px var(--velo);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  color: var(--tinta);
+  background: var(--superficie);
+  border: 1px solid var(--borde-control);
+  border-radius: var(--r-tarjeta);
+  cursor: pointer;
+  transition:
+    background-color var(--t-media) ease,
+    border-color var(--t-media) ease,
+    transform var(--t-rapida) var(--ease-out);
 }
 
-// Sin franja superior de color (DESIGN §10: nada de rayas en tarjetas) y sin el
-// acento verde que llevaba Finanzas: las dos tarjetas van en acción.
-
-.tarjeta:hover,
-.tarjeta:focus-visible {
-  border-color: var(--tarjeta-acento);
+.eleccion:active {
+  transform: scale(0.99);
 }
 
-.tarjeta:active {
-  transform: translateY(-1px);
+.eleccion__cabeza {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-/* Ícono suelto de 20 px en acción, sin recuadro teñido (DESIGN §10: nada de
-   filas de tarjetas iguales con ícono en caja pastel). La jerarquía la lleva
-   el título. */
-.tarjeta__icono {
+/* Ícono de 20 px en una caja de 40 en acción tenue (juez 8.1, ronda 3): suelto
+   se perdía junto al nombre de 20 px. Son solo dos elecciones distintas, no una
+   fila de KPI iguales (lo que veta DESIGN §10). */
+.eleccion__icono {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-item);
+  background: var(--accion-tenue);
   color: var(--accion);
 
   svg {
@@ -125,79 +99,130 @@
   }
 }
 
-.tarjeta__nombre {
-  font-size: 1.35rem;
+.eleccion__nombre {
+  font-size: 20px;
   font-weight: 600;
-  color: var(--tarjeta-acento);
+  letter-spacing: -0.01em;
+  color: var(--tinta);
 }
 
-.tarjeta__descripcion {
-  font-size: 0.9rem;
+.eleccion__descripcion {
+  font-size: var(--fs-base);
   line-height: 1.5;
-  color: var(--text-muted);
+  color: var(--tinta-2);
 }
 
-.tarjeta__pantallas {
-  margin-bottom: 0.5rem;
+.eleccion__pantallas {
+  margin-bottom: 4px;
 }
 
-/* La barra de acción: es lo que dice "esto se pulsa". */
-.tarjeta__entrar {
-  margin-top: auto;
+.eleccion__entrar {
   align-self: stretch;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
-  padding: 0.8rem 1rem;
-  border-radius: var(--radius-sm);
-  background: var(--tarjeta-acento);
-  color: var(--superficie);
-  font-weight: 600;
-  font-size: 0.95rem;
-  transition: background 0.2s ease;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: auto;
+  padding: 0 16px;
+  border-radius: var(--r-control);
+  /* En reposo, secundario en acción tenue: dos primarios macizos apilados
+     competían. Se rellena en acción al pasar el ratón o con el foco. */
+  background: var(--accion-tenue);
+  color: var(--accion);
+  font-size: 15px;
+  font-weight: 500;
+  transition:
+    background-color var(--t-media) ease,
+    color var(--t-media) ease;
 
   svg {
     width: 18px;
     height: 18px;
-    transition: transform 0.2s ease;
+    transition: transform var(--t-media) var(--ease-out);
   }
 }
 
-.tarjeta:hover .tarjeta__entrar,
-.tarjeta:focus-visible .tarjeta__entrar {
-  background: var(--tarjeta-acento-hover);
+.eleccion:focus-visible {
+  border-color: var(--accion);
+}
 
-  svg {
-    transform: translateX(4px);
+.eleccion:focus-visible .eleccion__entrar {
+  background: var(--accion);
+  color: #ffffff;
+}
+
+/* Toda la tarjeta es el botón: el borde pasa a acción, el fondo se hunde un
+   punto y «Entrar a…» se rellena (≤160 ms). */
+@media (hover: hover) and (pointer: fine) {
+  .eleccion:hover {
+    background: var(--papel);
+    border-color: var(--accion);
+  }
+
+  .eleccion:hover .eleccion__entrar {
+    background: var(--accion);
+    color: #ffffff;
+
+    svg {
+      transform: translateX(2px);
+    }
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tarjeta,
-  .tarjeta__entrar svg {
+  .eleccion,
+  .eleccion__entrar,
+  .eleccion__entrar svg {
     transition: none;
   }
 
-  .tarjeta:active {
+  .eleccion:active {
     transform: none;
   }
 }
 
-@media (max-width: 600px) {
-  .sistemas__cabecera {
-    padding: 1rem;
+/* ── Escritorio ──────────────────────────────────────────────────────────── */
+
+@media (min-width: 900px) {
+  /* Sobre la hoja blanca: botón secundario de siempre, en la misma línea que
+     el logo de la escena (56 px) y con el mismo margen que ella. */
+  .sistemas__salir {
+    top: 66px;
+    /* Su borde derecho es el de la columna de 400 px de las elecciones (un
+       solo eje en la hoja); si la hoja es más estrecha, el margen de la hoja. */
+    right: max(clamp(40px, 5vw, 72px), calc(25% - 200px));
+    background: var(--superficie);
+    color: var(--tinta);
+    border-color: var(--borde-control);
+
+    &:focus-visible {
+      outline-color: var(--accion);
+    }
   }
 
-  .sistemas__logo {
-    height: 34px;
+  @media (hover: hover) and (pointer: fine) {
+    .sistemas__salir:hover {
+      background: var(--papel);
+      border-color: var(--borde-control-hover);
+    }
   }
 
-  .sistemas__titulo {
-    font-size: 1.5rem;
+  /* Aquí la columna va al centro de la altura, en el mismo eje que la frase
+     de la escena (`centrada`), y con el ancho de la del Login. */
+  .sistemas .acceso__hoja {
+    justify-content: center;
+    /* Simétrico: el centro de la columna cae en el centro de la pantalla, como
+       la frase; 120 px dejan libre «Cerrar sesión». */
+    padding-top: 120px;
+    padding-bottom: 120px;
   }
 
-  .tarjeta {
-    padding: 1.5rem 1.5rem 1.25rem;
+  .sistemas__caja {
+    max-width: 400px;
+  }
+
+  .eleccion {
+    padding: 24px;
   }
 }

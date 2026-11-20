@@ -2,39 +2,40 @@
   display: block;
 }
 
-.cmp-filtros {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.6rem 0.8rem;
-  margin-bottom: 1rem;
-}
-
-.cmp-filtros .form-control {
-  width: auto;
+/* ===== Filtros (patrón global `.toolbar`) =====
+   Selects al ancho de su texto, fechas con su rótulo al lado y la búsqueda
+   flexible: es la que llena el hueco y la primera que se encoge. */
+.cmp-filtros > select.form-control {
+  min-width: 150px;
+  max-width: 260px;
 }
 
 .cmp-fecha {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.85rem;
-  color: var(--text-muted);
+  gap: var(--e-2);
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
+  white-space: nowrap;
 }
 
-.cmp-q {
-  min-width: 240px;
+.cmp-fecha .form-control {
+  width: auto;
 }
 
-.cmp-sep {
-  flex: 1;
+/* El marcador «Número, descripción o documento…» cabe entero (DESIGN §7). */
+.cmp-filtros > .cmp-q {
+  flex-basis: 260px;
+  min-width: min(100%, 260px);
 }
 
 .cmp-filtros .btn svg {
-  width: 17px;
-  height: 17px;
+  width: 16px;
+  height: 16px;
 }
 
+/* ===== Tabla ===== */
+/* Cifras de los montos: tabulares (las columnas se suman). */
 .mono {
   font-variant-numeric: tabular-nums;
 }
@@ -46,29 +47,38 @@
 
 .cmp-sub {
   display: block;
-  font-size: 0.75rem;
-  color: var(--text-muted);
+  margin-top: 2px;
+  font-size: var(--fs-meta);
+  font-weight: 400;
+  color: var(--tinta-3);
 }
 
+/* La descripción es la que crece: con un mínimo para no quedar en una columna
+   de una palabra a ~1093 px útiles. */
 .cmp-desc {
-  max-width: 340px;
+  min-width: 220px;
+  max-width: 380px;
   white-space: normal;
 }
 
-.cmp-vacio {
-  padding: 2rem 1rem;
+.cmp-cargando {
+  margin: 0;
+  padding: var(--e-6) 0;
   text-align: center;
-  color: var(--text-muted);
+  font-size: var(--fs-base);
+  color: var(--tinta-3);
 }
 
+/* ===== Detalle ===== */
 .cmp-texto {
   margin: 0;
+  color: var(--tinta);
 }
 
 .cmp-anulado {
   margin: 0;
-  padding: 0.6rem 0.8rem;
-  font-size: 0.88rem;
+  padding: 10px 14px;
+  font-size: var(--fs-celda);
   color: var(--error);
   background: var(--error-fondo);
   border-radius: var(--r-alerta);
@@ -84,26 +94,39 @@
   margin-left: 0.4rem;
 }
 
+/* Lo que destruye (Eliminar, Anular) se aparta a la izquierda del pie. */
 .cmp-peligro {
   margin-right: auto;
 }
-
 
 /* ===== Editor ===== */
 .cmp-cabecera {
   display: grid;
   grid-template-columns: 180px 1fr;
-  gap: 1rem;
+  gap: var(--e-4);
 }
 
 .cmp-editor td {
   vertical-align: middle;
 }
 
+/* Campos de línea un poco más bajos que los de formulario: la tabla es densa.
+   El select conserva su hueco a la derecha para el chevron. */
 .cmp-editor .form-control {
   min-width: 0;
-  padding: 0.45rem 0.6rem;
-  font-size: 0.86rem;
+  min-height: 36px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  font-size: var(--fs-celda);
+}
+
+.cmp-editor input.form-control {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.cmp-editor input.col-num {
+  text-align: right;
 }
 
 .cmp-editor td:nth-child(1) { min-width: 240px; }
@@ -113,14 +136,16 @@
 .cmp-editor td:nth-child(5) { width: 130px; }
 
 .cmp-acc {
+  width: 1%;
   white-space: nowrap;
 }
 
 .cmp-cuadre {
   margin: 0;
-  padding: 0.6rem 0.8rem;
-  font-size: 0.9rem;
+  padding: 10px 14px;
+  font-size: var(--fs-base);
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   color: var(--tinta);
   background: var(--aviso-fondo);
   border-radius: var(--r-alerta);
@@ -129,9 +154,6 @@
 .cmp-cuadre--ok {
   color: var(--ok);
   background: var(--ok-fondo);
-}.btn[disabled] {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 @media (max-width: 720px) {
@@ -146,13 +168,14 @@
   .cmp-filtros {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.6rem;
+    gap: var(--e-2);
   }
 
   .cmp-filtros > select.form-control,
-  .cmp-q {
+  .cmp-filtros > .cmp-q {
     grid-column: 1 / -1;
     width: 100%;
+    max-width: none;
     min-width: 0;
   }
 
@@ -160,7 +183,7 @@
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 0.25rem;
+    gap: var(--e-1);
     min-width: 0;
   }
 
@@ -169,16 +192,11 @@
     min-width: 0;
   }
 
-  .cmp-sep {
-    display: none;
-  }
-
-  .cmp-filtros > .btn {
+  .cmp-filtros > .btn,
+  .cmp-filtros > .toolbar__fin,
+  .cmp-filtros > .toolbar__fin > .btn {
     justify-content: center;
-  }
-
-  .cmp-filtros > .btn--primary {
-    grid-column: auto;
+    margin-left: 0;
   }
 }
 
@@ -187,18 +205,19 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  padding: 0.75rem 0.95rem;
-  font-size: 0.88rem;
+  gap: var(--e-4);
+  margin-bottom: var(--e-4);
+  padding: var(--e-3) var(--e-4);
+  font-size: var(--fs-celda);
   color: var(--tinta);
   background: var(--aviso-fondo);
   border-radius: var(--r-alerta);
 }
 
 .cmp-pendientes ul {
-  margin: 0.35rem 0 0;
+  margin: var(--e-1) 0 0;
   padding-left: 1.1rem;
+  color: var(--tinta-2);
 }
 
 .cmp-pendientes__error {

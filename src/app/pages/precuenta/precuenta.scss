@@ -5,82 +5,151 @@
   display: block;
 }
 
+/* ===== Escena (familia del login) =====
+   Rediseño 20-nov-2026: la cabecera es una franja en NOCHE a todo el ancho, con
+   el logo claro, las órbitas en cian que salen por el borde derecho y el título
+   en blanco; la hoja blanca sube encima de la escena. Es la misma familia que
+   el login (escena noche + credenciales en blanco), copiada en lo mínimo para
+   no depender de él: cada enlace público llega por correo y debe verse ORBITA. */
 .pc {
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--papel);
-  padding: 1.5rem 1rem 2.5rem;
-  display: flex;
-  justify-content: center;
 }
 
-.pc__container {
-  width: 100%;
-  max-width: 620px;
-}
-
-.pc__brand {
-  display: flex;
-  justify-content: center;
-  padding: 1rem 0 1.5rem;
-}
-
-.pc__logo {
-  max-width: 160px;
-  height: auto;
-}
-
-.pc__head {
+.pub-escena {
+  position: relative;
+  overflow: hidden;
+  padding: var(--e-8) var(--e-4) 72px;
   background: var(--noche);
-  border-radius: 16px;
-  padding: 1.5rem;
   color: var(--superficie);
-  text-align: center;
-  box-shadow: none;
 }
 
-.pc__head .pill {
+.pub-escena__orbitas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.pub-escena__orbitas ellipse {
+  fill: none;
+  stroke: var(--cian);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.pub-escena__orbitas ellipse:nth-child(1) { opacity: 0.55; }
+.pub-escena__orbitas ellipse:nth-child(2) { opacity: 0.32; }
+.pub-escena__orbitas ellipse:nth-child(3) { opacity: 0.12; }
+
+.pub-escena__inner {
+  position: relative;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.pub-escena__logo {
+  display: block;
+  height: 40px;
+  width: auto;
+  margin-bottom: var(--e-8);
+}
+
+/* Chip de la orden o del documento: sobre noche, en noche alzada. */
+.pub-escena__chip {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--r-control);
   background: var(--noche-alzada);
-  color: var(--superficie);
+  color: var(--texto-noche);
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .pc__title {
-  margin: 0.75rem 0 0.2rem;
-  font-size: 1.5rem;
+  margin: var(--e-3) 0 var(--e-1);
+  font-size: 28px;
   font-weight: 600;
-  text-transform: capitalize;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
   color: var(--superficie);
+  text-wrap: balance;
+}
+
+/* El periodo llega en minúscula («octubre de 2026»): solo la primera letra
+   sube (antes `capitalize` escribía «Octubre De 2026»). */
+.pc__title::first-letter {
+  text-transform: uppercase;
 }
 
 .pc__prof {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--fs-tarjeta);
+  line-height: 1.45;
   color: var(--texto-noche);
+}
+
+/* La hoja: columna centrada que sube 40 px sobre la escena. */
+.pc__container {
+  position: relative;
+  width: 100%;
+  max-width: calc(640px + 2 * var(--e-4));
+  margin: -40px auto 0;
+  padding: 0 var(--e-4) var(--e-10);
+}
+
+@media (max-width: 640px) {
+  .pub-escena {
+    padding: var(--e-6) var(--e-4) 64px;
+  }
+
+  .pub-escena__logo {
+    height: 32px;
+    margin-bottom: var(--e-6);
+  }
+
+  .pc__title {
+    font-size: 24px;
+  }
+
+  .pc__prof {
+    font-size: var(--fs-base);
+  }
+
+  .pc__container {
+    margin-top: -32px;
+  }
 }
 
 .pc__card {
   margin-top: 1.25rem;
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
-  border-radius: 16px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-modal);
   box-shadow: none;
   padding: 1.5rem;
 }
 
 .pc__state {
   text-align: center;
-  color: var(--text-muted);
+  color: var(--tinta-3);
 }
 
 .pc__state p {
   margin: 0.5rem 0 0;
-  font-size: 0.9rem;
+  font-size: var(--fs-base);
 }
 
 .pc__section {
   margin: 0 0 1rem;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-main);
+  color: var(--tinta);
 }
 
 /* ===== Totales ===== */
@@ -97,19 +166,19 @@
 
 .totales__label {
   display: block;
-  font-size: 0.74rem;
+  font-size: var(--fs-meta);
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--tinta-3);
 }
 
 .totales__value {
   font-size: 1.35rem;
   font-weight: 600;
-  color: var(--text-main);
+  color: var(--tinta);
 }
 
 .totales__item--money .totales__value {
-  color: var(--primary-color);
+  color: var(--tinta);
 }
 
 /* ===== Detalle ===== */
@@ -128,13 +197,13 @@
 }
 
 .item + .item {
-  border-top: 1px solid var(--border-soft);
+  border-top: 1px solid var(--borde);
 }
 
 .item--vacio {
   justify-content: center;
-  color: var(--text-muted);
-  font-size: 0.88rem;
+  color: var(--tinta-3);
+  font-size: var(--fs-celda);
 }
 
 .item__main {
@@ -143,16 +212,16 @@
 
 .item__empresa {
   display: block;
-  font-size: 0.9rem;
+  font-size: var(--fs-base);
   font-weight: 600;
-  color: var(--text-main);
+  color: var(--tinta);
 }
 
 .item__meta {
   display: block;
   margin-top: 2px;
-  font-size: 0.76rem;
-  color: var(--text-muted);
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
 }
 
 .item__cifras {
@@ -162,23 +231,23 @@
 
 .item__horas {
   display: block;
-  font-size: 0.74rem;
-  color: var(--text-muted);
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
 }
 
 .item__monto {
-  font-size: 0.95rem;
+  font-size: var(--fs-base);
   font-weight: 600;
-  color: var(--text-main);
+  color: var(--tinta);
   font-variant-numeric: tabular-nums;
 }
 
 /* ===== Decisión ===== */
 .decision__intro {
   margin: 0 0 1.1rem;
-  font-size: 0.88rem;
+  font-size: var(--fs-celda);
   line-height: 1.6;
-  color: var(--text-muted);
+  color: var(--tinta-3);
 }
 
 .decision__acciones {
@@ -190,28 +259,24 @@
 .decision__hint {
   margin: 0.7rem 0 0;
   text-align: center;
-  font-size: 0.75rem;
-  color: var(--text-muted);
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
 }
 
-.btn[disabled] {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
 
 /* ===== Resultado ===== */
 .final {
   margin-top: 1.25rem;
-  background: var(--surface);
+  background: var(--superficie);
   border: 1px solid var(--ok-borde);
-  border-radius: 16px;
+  border-radius: var(--r-modal);
   box-shadow: none;
   padding: 2.25rem 1.5rem;
   text-align: center;
 }
 
 .final--rechazo {
-  border-color: var(--aviso-borde);
+  border-color: var(--error-borde);
   box-shadow: none;
 }
 
@@ -224,12 +289,12 @@
   justify-content: center;
   border-radius: 50%;
   background: var(--ok-fondo);
-  color: var(--success);
+  color: var(--ok);
 }
 
 .final--rechazo .final__icon {
-  background: var(--aviso-fondo);
-  color: var(--warning);
+  background: var(--error-fondo);
+  color: var(--error);
 }
 
 .final__icon svg {
@@ -240,31 +305,36 @@
 .final__title {
   font-size: 1.2rem;
   font-weight: 600;
-  color: var(--text-main);
+  color: var(--tinta);
 }
 
 .final__text {
   margin: 0.4rem 0 0;
-  font-size: 0.9rem;
+  font-size: var(--fs-base);
   line-height: 1.55;
-  color: var(--text-muted);
+  color: var(--tinta-3);
 }
 
 .final__obs {
   margin: 1rem 0 0;
   padding: 0.8rem 1rem;
   background: var(--papel);
-  border-left: 3px solid var(--border-soft);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  font-size: 0.85rem;
+  border-left: 3px solid var(--borde);
+  border-radius: 0 var(--r-control) var(--r-control) 0;
+  font-size: var(--fs-celda);
   font-style: italic;
   text-align: left;
-  color: var(--text-muted);
+  color: var(--tinta-3);
 }
 
 .pc__footer {
   margin: 1.75rem 0 0;
   text-align: center;
-  font-size: 0.72rem;
-  color: var(--text-muted);
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
+}
+
+/* La primera tarjeta es la que sube sobre la escena: sin margen propio. */
+.pc__container > :first-child {
+  margin-top: 0;
 }

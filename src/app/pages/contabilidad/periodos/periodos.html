@@ -14,9 +14,10 @@
     <div class="card per-mes" [class.per-mes--cerrado]="p.estado === 'CERRADO'">
       <div class="per-mes__top">
         <strong>{{ nombresMes[p.mes - 1] }}</strong>
-        <span class="pill" [class]="p.estado === 'CERRADO' ? 'pill--muted' : 'pill--success'">{{ p.estado === 'CERRADO' ? 'Cerrado' : 'Abierto' }}</span>
+        <!-- Abierto es lo normal: texto discreto. Solo «Cerrado» va en pastilla. -->
+        <span [class]="p.estado === 'CERRADO' ? 'pill pill--muted' : 'per-abierto'">{{ p.estado === 'CERRADO' ? 'Cerrado' : 'Abierto' }}</span>
       </div>
-      <p class="per-mes__cifras">
+      <p class="per-mes__cifras" [class.per-mes__cifras--vacio]="!p.contabilizados && !p.borradores">
         {{ p.contabilizados }} {{ p.contabilizados === 1 ? 'contabilizado' : 'contabilizados' }}
         @if (p.borradores) { · <span class="per-borr">{{ p.borradores }} en borrador</span> }
       </p>
@@ -24,7 +25,7 @@
         <p class="per-motivo" [title]="p.motivo_reapertura">Reabierto: {{ p.motivo_reapertura }}</p>
       }
       @if (p.estado === 'ABIERTO' && puedeEditar()) {
-        <button type="button" class="btn btn--ghost btn--sm" (click)="cerrar(p)" [disabled]="trabajando() === p.mes || !!p.borradores"
+        <button type="button" class="btn btn--ghost btn--sm per-cerrar" (click)="cerrar(p)" [disabled]="trabajando() === p.mes || !!p.borradores"
                 [title]="p.borradores ? 'Contabilice o elimine sus borradores antes de cerrar' : ''">Cerrar mes</button>
       } @else if (p.estado === 'CERRADO' && esAdmin()) {
         <button type="button" class="btn btn--ghost btn--sm" (click)="empezarReabrir(p)" [disabled]="trabajando() === p.mes">Reabrir</button>

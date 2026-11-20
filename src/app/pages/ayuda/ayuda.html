@@ -19,7 +19,7 @@
     aria-label="Video de bienvenida a ORBITA"
   ></video>
   <div class="ayu-bienvenida__texto">
-    <span class="pill pill--info">Bienvenida · 1 minuto</span>
+    <span class="tag tag--info">Bienvenida · 1 minuto</span>
     <h3 class="ayu-bienvenida__titulo">La vida de una orden en ORBITA</h3>
     <p>
       Desde que la orden llega de la ARL hasta la factura y la cuenta de cobro: cómo la lee ORBITA,
@@ -30,19 +30,20 @@
 </section>
 
 <div class="ayu-barra">
-  <div class="ayu-buscar">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <label class="buscador ayu-buscar">
+    <svg class="buscador__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
     </svg>
     <input
       type="search"
-      class="form-control"
+      class="buscador__input"
       placeholder="¿Qué necesita hacer? Por ejemplo: recibo de caja, importar Sura, eliminar cuenta…"
       [ngModel]="busqueda()"
       (ngModelChange)="buscar($event)"
       aria-label="Buscar en el centro de ayuda"
+      title="¿Qué necesita hacer? Por ejemplo: recibo de caja, importar Sura, eliminar cuenta…"
     />
-  </div>
+  </label>
   <div class="tabs ayu-grupos" role="tablist">
     <button type="button" class="tab" role="tab" [class.tab--active]="grupoActivo() === 'todos'" (click)="elegirGrupo('todos')">Todo</button>
     @for (g of grupos; track g.id) {
@@ -73,7 +74,7 @@
   <article class="card ayu-articulo">
     @if (tema(); as t) {
       <div class="card__body">
-        <span class="pill pill--info">{{ tituloGrupo(t.grupo) }}</span>
+        <span class="tag tag--info">{{ tituloGrupo(t.grupo) }}</span>
         <h3 class="ayu-articulo__titulo">{{ t.titulo }}</h3>
         <p class="ayu-articulo__resumen">{{ t.resumen }}</p>
 

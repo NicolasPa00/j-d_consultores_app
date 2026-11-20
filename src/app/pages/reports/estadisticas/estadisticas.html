@@ -88,7 +88,15 @@
     <article class="kpi-card kpi-card--neutral">
       <div class="kpi-card__info">
         <span class="kpi-card__label">Satisfacción del cliente</span>
-        <span class="kpi-card__value">{{ d.kpis.satisfaccion.promedio != null ? n(d.kpis.satisfaccion.promedio) : '—' }}<small>/ 5</small></span>
+        <!-- Sin encuestas: un «—» simple; la escala «/ 5» solo acompaña a una cifra
+             (antes salía «— / 5», que se leía como un tachón). -->
+        <span class="kpi-card__value">
+          @if (d.kpis.satisfaccion.promedio != null) {
+            {{ n(d.kpis.satisfaccion.promedio) }}<small>/ 5</small>
+          } @else {
+            <span class="kpi-vacio">—</span>
+          }
+        </span>
         <span class="est-kpi__nota">
           {{ d.kpis.satisfaccion.respuestas ? n(d.kpis.satisfaccion.respuestas) + ' encuesta' + (d.kpis.satisfaccion.respuestas === 1 ? '' : 's') : 'Sin encuestas respondidas' }}
         </span>
@@ -102,7 +110,13 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M3 9h18M8 2v4M16 2v4" /></svg>
       </span>
       <h3 class="estado-vacio__titulo">No entraron órdenes en este periodo</h3>
-      <p class="estado-vacio__texto">Pruebe con un periodo más amplio: «Este mes» o un rango de fechas.</p>
+      <p class="estado-vacio__texto">
+        @if (periodo() === 'mes') {
+          Pruebe con un rango de fechas más amplio.
+        } @else {
+          Pruebe con un periodo más amplio: «Este mes» o un rango de fechas.
+        }
+      </p>
     </div>
   } @else {
     <div class="est-rejilla">
@@ -135,8 +149,10 @@
               <line class="est-linea__rejilla" [attr.x1]="G.izq" [attr.x2]="G.ancho - G.der" [attr.y1]="m.y" [attr.y2]="m.y" />
               <text class="est-linea__eje" [attr.x]="G.izq - 8" [attr.y]="m.y + 4" text-anchor="end">{{ n(m.valor) }}</text>
             }
-            @for (p of tendencia().marcasX; track p.i) {
-              <text class="est-linea__eje" [attr.x]="p.x" [attr.y]="G.alto - 8" text-anchor="middle">{{ rotuloPunto(p.inicio) }}</text>
+            <!-- El primer y el último rótulo se anclan hacia dentro: centrado, el de
+                 diciembre se salía por el borde derecho («dic 202»). -->
+            @for (p of tendencia().marcasX; track p.i; let primero = $first, ultimo = $last) {
+              <text class="est-linea__eje" [attr.x]="p.x" [attr.y]="G.alto - 8" [attr.text-anchor]="ultimo && !primero ? 'end' : primero && tendencia().marcasX.length > 1 ? 'start' : 'middle'">{{ rotuloPunto(p.inicio) }}</text>
             }
 
             @if (tendencia().area) {
@@ -307,7 +323,7 @@
                   @for (f of d.por_profesional; track f.profesional) {
                     <tr><td>{{ f.profesional }}</td><td class="est-num">{{ n(f.ordenes) }}</td><td class="est-num">{{ n(f.horas) }}</td><td class="est-num">{{ n(f.finalizadas) }}</td></tr>
                   } @empty {
-                    <tr><td colspan="4">Sin profesionales asignados en el periodo.</td></tr>
+                    <tr><td colspan="4" class="table__empty">Sin profesionales asignados en el periodo.</td></tr>
                   }
                 </tbody>
               </table>

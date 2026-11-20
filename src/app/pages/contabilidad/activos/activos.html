@@ -1,5 +1,5 @@
 <!-- ============ RESUMEN Y ACCIONES ============ -->
-<div class="af-resumen">
+<div class="kpi-grid af-resumen">
   <div class="kpi-card kpi-card--primary"><div class="kpi-card__info"><span class="kpi-card__label">Costo de los activos</span><strong class="kpi-card__value">{{ pesos(totales().costo) }}</strong></div></div>
   <div class="kpi-card kpi-card--warning"><div class="kpi-card__info"><span class="kpi-card__label">Depreciación acumulada</span><strong class="kpi-card__value">{{ pesos(totales().acumulada) }}</strong></div></div>
   <div class="kpi-card kpi-card--success"><div class="kpi-card__info"><span class="kpi-card__label">Valor en libros</span><strong class="kpi-card__value">{{ pesos(totales().libros) }}</strong></div></div>
@@ -110,13 +110,20 @@
         </tr>
       } @empty {
         <tr>
-          <td class="table__empty" colspan="8">
+          <!-- Estado vacío con la anatomía global (DESIGN §7): un solo recuadro con
+               ícono, título, una línea y una acción secundaria (el primario de la
+               vista es «Nuevo activo», en la cabecera). -->
+          <td class="table__empty" [class.table__empty--estado]="!cargando()" colspan="8">
             @if (cargando()) { Cargando… } @else {
-              <div class="af-vacio">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></svg>
-                <p>Aún no hay activos fijos registrados.</p>
-                <p class="af-sub">Registre computadores, muebles o vehículos para llevar su depreciación mes a mes.</p>
-                @if (puedeEditar()) { <button type="button" class="btn btn--primary btn--sm" (click)="nuevo()">Registrar el primer activo</button> }
+              <div class="estado-vacio">
+                <span class="estado-vacio__icono" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></svg>
+                </span>
+                <h3 class="estado-vacio__titulo">Aún no hay activos fijos registrados.</h3>
+                <p class="estado-vacio__texto">Registre computadores, muebles o vehículos para llevar su depreciación mes a mes.</p>
+                @if (puedeEditar()) {
+                  <div class="estado-vacio__accion"><button type="button" class="btn btn--secondary" (click)="nuevo()">Registrar el primer activo</button></div>
+                }
               </div>
             }
           </td>
@@ -143,7 +150,7 @@
     <div class="modal__body">
       <div class="af-ficha">
         <section class="card">
-          <span class="section-tag">Datos</span>
+          <h4 class="section-head"><span class="section-tag">Datos</span></h4>
           <dl class="af-datos">
             <dt>Costo</dt><dd class="mono">{{ pesos(a.valor_compra) }}</dd>
             <dt>Valor residual</dt><dd class="mono">{{ pesos(a.valor_residual) }}</dd>
@@ -161,7 +168,7 @@
           </dl>
         </section>
         <section class="card af-qr">
-          <span class="section-tag">Etiqueta</span>
+          <h4 class="section-head"><span class="section-tag">Etiqueta</span></h4>
           @if (qrUrl(); as q) { <img [src]="q" [alt]="'Código QR de ' + a.codigo" width="180" height="180" /> }
           <p class="mono af-qr__cod">{{ a.codigo }}</p>
           <p class="af-sub">El QR abre esta ficha en ORBITA (pide iniciar sesión).</p>
@@ -170,7 +177,7 @@
       </div>
 
       <section class="card">
-        <span class="section-tag">Tabla de depreciación</span>
+        <h4 class="section-head"><span class="section-tag">Tabla de depreciación</span></h4>
         <div class="table-wrap">
           <table class="table">
             <thead><tr><th>Cuota</th><th>Mes</th><th class="col-num">Valor</th><th class="col-num">Acumulada</th><th class="col-num">Valor en libros</th><th>Estado</th></tr></thead>
@@ -191,10 +198,13 @@
       </section>
     </div>
     <footer class="modal__footer">
+      <!-- Eliminar conserva su lugar (entre Cerrar y Editar); solo cambia la piel a
+           contorno rojo: el relleno de peligro queda para la confirmación. Moverlo a
+           la izquierda (DESIGN, pie de modal) queda pendiente del visto del dueño. -->
       <button type="button" class="btn btn--close" (click)="cerrarFicha()">Cerrar</button>
       @if (puedeEditar()) {
         @if (!a.cuotas_registradas) {
-          <button type="button" class="btn btn--danger" (click)="eliminar(a)">Eliminar</button>
+          <button type="button" class="btn btn--peligro-contorno" (click)="eliminar(a)">Eliminar</button>
         }
         <button type="button" class="btn btn--primary" (click)="editar(a)">Editar</button>
       }

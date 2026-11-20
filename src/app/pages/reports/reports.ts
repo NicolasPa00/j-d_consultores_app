@@ -401,6 +401,9 @@ export class ReportsComponent implements OnInit {
     return `${Math.max(6, Math.round((total / max) * 100))}%`;
   }
 
+  /** Hay al menos una nota en la distribución (si no, el KPI va vacío). */
+  protected readonly hayNotas = computed(() => this.distribucionCompleta().some((d) => Number(d.total) > 0));
+
   /** Notas 1..5 siempre presentes: un 5 sin votos también informa. */
   protected readonly distribucionCompleta = computed(() => {
     const datos = this.surveyStats()?.distribucion ?? [];
@@ -473,18 +476,6 @@ export class ReportsComponent implements OnInit {
     if (confidence >= 80) return 'pill--success';
     if (confidence >= 70) return 'pill--warning';
     return 'pill--danger';
-  }
-
-  protected estadoTone(estado: string): string {
-    switch (estado) {
-      case 'SIN PROGRAMAR': return 'amber'; // 30-sep-2026: ámbar, como en las demás tablas
-      case 'PROGRAMADA': return 'blue';
-      case 'EN VERIFICACIÓN': return 'amber';
-      case 'EJECUTADA': return 'green'; // 30-sep-2026: verde, como en las demás tablas
-      case 'FINALIZADA': return 'green';
-      case 'CANCELADA': return 'red';
-      default: return 'slate';
-    }
   }
 
   // ================= Resumen (IA) =================

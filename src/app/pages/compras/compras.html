@@ -14,7 +14,7 @@
   }
 </section>
 
-<div class="cp-filtros">
+<div class="toolbar cp-filtros">
   <select class="form-control" [(ngModel)]="fTipo" (ngModelChange)="cargar()" aria-label="Tipo">
     <option value="">Todos los tipos</option>
     @for (t of tipos; track t) { <option [value]="t">{{ etiquetaTipo[t] }}</option> }
@@ -27,13 +27,13 @@
   <div class="table-wrap">
     <table class="table">
       <thead>
-        <tr><th>Comprobante</th><th>Fecha</th><th>Proveedor</th><th>Tipo</th><th>Factura</th><th class="col-num">Total</th><th class="col-num">Por pagar</th><th>Estado</th><th class="col-actions"></th></tr>
+        <tr><th>Comprobante</th><th>Fecha</th><th>Proveedor</th><th>Tipo</th><th>Factura</th><th class="col-num">Total</th><th class="col-num">Por pagar</th><th>Estado</th><th class="col-actions" aria-label="Acciones"></th></tr>
       </thead>
       <tbody>
         @if (loading() && !compras().length) {
-          <tr><td colspan="9" class="cp-vacio">Cargando…</td></tr>
+          <tr><td colspan="9" class="table__empty">Cargando…</td></tr>
         } @else if (!compras().length) {
-          <tr><td colspan="9" class="cp-vacio">Todavía no hay compras registradas.</td></tr>
+          <tr><td colspan="9" class="table__empty">Todavía no hay compras registradas.</td></tr>
         }
         @for (c of pag.visibles(); track c.id) {
           <tr>
@@ -78,7 +78,7 @@
         <tbody>
           @for (i of c.items ?? []; track i.id) {
             <tr><td><span class="mono">{{ i.cuenta_codigo }}</span> <small class="cp-sub cp-inline">{{ i.cuenta_nombre }}</small></td><td>{{ i.descripcion }}</td>
-              <td class="col-num mono">{{ pesos(i.valor) }}</td><td class="col-num mono">{{ +i.iva_valor ? pesos(i.iva_valor) : '' }}</td></tr>
+              <td class="col-num mono">{{ pesos(i.valor) }}</td><td class="col-num mono">@if (+i.iva_valor) {{{ pesos(i.iva_valor) }}} @else {<span class="cmp-vacio">—</span>}</td></tr>
           }
         </tbody>
       </table>

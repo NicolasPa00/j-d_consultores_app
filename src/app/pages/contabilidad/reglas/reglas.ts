@@ -78,6 +78,12 @@ export class ReglasComponent implements OnInit {
     return this.generales().get(concepto)?.cuenta_id ?? '';
   }
 
+  /** Texto de la cuenta elegida, para el `title` del select (el nombre largo se corta con «…»). */
+  protected tituloCuenta(concepto: string): string {
+    const r = this.generales().get(concepto);
+    return r ? `${r.cuenta_codigo} · ${r.cuenta_nombre}` : 'Sin regla';
+  }
+
   protected concepto(c: string): string {
     return this.nombreConcepto().get(c) ?? c;
   }

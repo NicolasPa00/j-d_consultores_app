@@ -8,59 +8,82 @@
 /* Pestañas: usan .tabs/.tab globales (styles.scss). */
 
 .card {
-  margin-bottom: 1.25rem;
+  margin-bottom: var(--e-6);
+}
+
+/* Empresa emisora: un formulario de dos columnas no necesita los 1100 px de la
+   vista; a todo el ancho los campos de una línea medían un metro. */
+.par-emisor {
+  max-width: 960px;
+}
+
+.par-aviso,
+.par-ok {
+  margin: 0 0 var(--e-4);
+  padding: 10px 14px;
+  border-radius: var(--r-alerta);
+  color: var(--tinta);
+  font-size: var(--fs-celda);
 }
 
 .par-aviso {
-  margin: 0 0 1rem;
-  padding: 0.6rem 0.8rem;
-  border-radius: var(--r-alerta);
-  color: var(--tinta);
   background: var(--aviso-fondo);
-  font-size: 0.85rem;
 }
 
 .par-ok {
-  margin: 0 0 1rem;
-  padding: 0.6rem 0.8rem;
-  border-radius: var(--r-alerta);
-  color: var(--tinta);
   background: var(--ok-fondo);
-  font-size: 0.85rem;
+}
+
+/* Estado del proveedor con su visto, como las alertas (el estado no depende
+   solo del color, DESIGN §1.8). */
+.par-ok::before {
+  content: '';
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.4em;
+  vertical-align: -0.15em;
+  background: var(--ok);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
 .par-dv {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  margin: -0.5rem 0 0.75rem;
+  margin: calc(-1 * var(--e-1)) 0 0;
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
 }
 
 .par-dv strong {
-  color: var(--primary-color);
-  font-size: 1rem;
+  color: var(--tinta);
+  font-size: var(--fs-base);
+  font-weight: 600;
 }
 
 .par-form {
   display: grid;
-  gap: 0.9rem;
+  gap: var(--e-4);
 }
 
 .par-form__footer {
-  margin-top: 1rem;
+  margin-top: var(--e-2);
+  padding-top: var(--e-4);
   display: flex;
   justify-content: flex-end;
+  border-top: 1px solid var(--borde);
 }
 
 .par-uvt {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-bottom: 0.75rem;
+  gap: var(--e-2);
+  margin-bottom: var(--e-4);
 }
 
+/* Año y valor de la UVT con su botón en la misma línea base. */
 .par-uvt-form {
   max-width: 20rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--e-3);
 }
 
 .par-vence {
@@ -68,16 +91,24 @@
   font-weight: 600;
 }
 
+/* «(1156 d)»: los días que faltan, en 12 tinta-3 (antes salían diminutos). */
+td small {
+  font-size: var(--fs-meta);
+  font-weight: 400;
+  color: var(--tinta-3);
+  font-variant-numeric: tabular-nums;
+}
+
 .par-cat-controls {
   display: flex;
-  gap: 0.6rem;
+  gap: var(--e-2);
   flex-wrap: wrap;
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: var(--e-4);
 }
 
 @media (max-width: 720px) {
@@ -87,14 +118,14 @@
 }
 
 /* B3-01 · La cuenta de la retención se elige en la misma fila. */
-.par-cuenta { min-width: 220px; padding: 0.35rem 0.5rem; font-size: 0.84rem; }
+.par-cuenta { min-width: 220px; min-height: 36px; padding-top: 6px; padding-bottom: 6px; font-size: var(--fs-celda); }
 /* 9-oct-2026 · Las dos cuentas de una retención, una debajo de la otra. */
-.par-cuentas { min-width: 190px; font-size: 0.82rem; }
-.par-acciones { display: flex; gap: 0.3rem; justify-content: flex-end; }
-.par-sub { display: block; color: var(--text-muted); font-size: 0.72rem; }
+.par-cuentas { min-width: 200px; font-size: var(--fs-celda); }
+.par-acciones { display: flex; gap: var(--e-1); justify-content: flex-end; }
+.par-sub { display: block; margin-top: 2px; color: var(--tinta-3); font-size: var(--fs-meta); }
 .par-cuentas__fila { display: block; line-height: 1.35; }
-.par-cuentas__fila + .par-cuentas__fila { margin-top: 0.2rem; }
-.par-cuentas__fila small { display: block; color: var(--text-muted); font-size: 0.72rem; }
+.par-cuentas__fila + .par-cuentas__fila { margin-top: var(--e-1); }
+.par-cuentas__fila small { display: block; color: var(--tinta-3); font-size: var(--fs-meta); }
 
 .par-vence::before {
   content: '';
@@ -119,4 +150,75 @@
   margin: 0;
   padding: 10px 16px;
   border-top: 1px solid var(--borde);
+}
+
+/* Primarios de la cabecera de tarjeta a 40 px con su «+», como «Nueva cuenta»
+   y «Nuevo activo»: una sola talla de primario en Finanzas. */
+.card__head .btn {
+  min-height: 40px;
+}
+
+.card__head .btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Pestañas en el celular: desvanecido IZQUIERDO al desplazar (local mientras
+   el pedido global de .tabs siga abierto; mismo bloque que contabilidad.scss). */
+@property --tabs-fade-izq {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@media (max-width: 820px) {
+  .tabs {
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--tabs-fade-izq), #000 calc(100% - var(--tabs-fade)), transparent);
+    mask-image: linear-gradient(to right, transparent 0, #000 var(--tabs-fade-izq), #000 calc(100% - var(--tabs-fade)), transparent);
+  }
+
+  @supports (animation-timeline: scroll()) {
+    .tabs {
+      animation: tabs-fade linear both, tabs-fade-izq linear both;
+      animation-timeline: scroll(self inline);
+    }
+  }
+}
+
+@keyframes tabs-fade {
+  from { --tabs-fade: 28px; }
+  90% { --tabs-fade: 28px; }
+  to { --tabs-fade: 0px; }
+}
+
+@keyframes tabs-fade-izq {
+  from { --tabs-fade-izq: 0px; }
+  10% { --tabs-fade-izq: 28px; }
+  to { --tabs-fade-izq: 28px; }
+}
+/* La cabecera «Acciones» se alinea con sus íconos, que van a la derecha
+   (pedido global abierto: th.col-actions { text-align: right }). */
+.table th.col-actions {
+  text-align: right;
+}
+
+/* Tipo de retención (RETEFUENTE, RETEICA…): es un dato, no un enlace. Tinta-2
+   en 500; el azul queda para lo que se puede pulsar. */
+.par-tipo {
+  font-weight: 500;
+  color: var(--tinta-2);
+}
+
+/* UVT: sin años cargados, la lista de pastillas no deja su margen como un
+   hueco entre la cabecera y los campos. */
+.par-uvt:empty {
+  display: none;
+}
+
+/* «Guardar UVT» a 40 px, como el resto de botones de la vista; sigue debajo
+   de los campos, donde estaba (no se mueve, §11.1). */
+.par-uvt-form + .btn {
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: var(--fs-base);
 }

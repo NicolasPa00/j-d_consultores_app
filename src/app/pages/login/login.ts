@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { EscenaAccesoComponent } from './escena-acceso';
 import { AuthService } from '../../core/auth.service';
 import { SistemaService } from '../../core/sistema.service';
 import { mensajeError } from '../../core/errores';
 
 @Component({
   selector: 'app-login',
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, EscenaAccesoComponent],
   templateUrl: './login.html',
   styleUrl: './login.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -21,6 +22,9 @@ export class LoginComponent {
   protected password = '';
   protected readonly loading = signal(false);
   protected readonly error = signal<string | null>(null);
+  /** Se pulsó Ingresar con algún campo vacío: esos campos se marcan en error
+   *  hasta que se llenen (solo piel; el mensaje y el flujo son los de siempre). */
+  protected readonly intentoVacio = signal(false);
   /** Alterna entre type="password" y type="text" (icono de ojo). */
   protected readonly showPassword = signal(false);
 
@@ -32,6 +36,7 @@ export class LoginComponent {
     if (this.loading()) return;
     this.error.set(null);
     if (!this.documento.trim() || !this.password) {
+      this.intentoVacio.set(true);
       this.error.set('Ingrese documento de identidad y contraseña.');
       return;
     }

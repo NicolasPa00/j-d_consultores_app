@@ -3,8 +3,11 @@
     <h2 class="page-head__title">Facturación</h2>
     <p class="page-head__sub">Facturas electrónicas ante la DIAN · por pagador y a partir de las órdenes finalizadas</p>
   </div>
+  <!-- 20-nov-2026 · Debajo del título, una fila: el contador a la izquierda y los
+       botones a la derecha (maqueta, parte 5). El orden no cambia. -->
   <div class="fac-head-acciones">
   <app-cupo-documentos tipo="facturacion" />
+  <div class="fac-head-botones">
   @if (puedeOperar() && emisionDian) {
     <!-- 7-oct-2026 · Botón con cuerpo (antes era un texto sin borde y no se veía). -->
     <button type="button" class="btn btn--secondary fac-btn-eventos" (click)="actualizarEventos()" [disabled]="actualizandoEventos()"
@@ -21,27 +24,32 @@
   }
   @if (puedeOperar()) {
     <!-- 8-oct-2026 · Facturar sin una orden del sistema de operación. -->
-    <button type="button" class="btn btn--primary" (click)="abrirManual()">Nueva factura manual</button>
+    <button type="button" class="btn btn--primary fac-btn-nueva" (click)="abrirManual()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+      Nueva factura manual
+    </button>
   }
+  </div>
   </div>
 </section>
 
 <!-- 7-oct-2026 · Las pestañas y el filtro de estado comparten fila: el filtro iba
      en una fila propia y abría un hueco entre las pestañas y la tabla. -->
+<div class="fac-barra-marco">
 <div class="fac-barra">
 <div class="tabs" role="tablist">
-  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'por-facturar'" (click)="cambiarPestana('por-facturar')">
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'por-facturar'" (click)="cambiarPestana('por-facturar'); $any($event.currentTarget).scrollIntoView({ block: 'nearest', inline: 'nearest' })">
     Por facturar <span class="tab__count">{{ totalFacturables() }}</span>
   </button>
-  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'borradores'" (click)="cambiarPestana('borradores')">
+  <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'borradores'" (click)="cambiarPestana('borradores'); $any($event.currentTarget).scrollIntoView({ block: 'nearest', inline: 'nearest' })">
     Pendientes <span class="tab__count">{{ borradores().length }}</span>
   </button>
   <!-- Emitidas y notas crédito existen cuando se envía a la DIAN (`emisionDian`). -->
   @if (emisionDian) {
-    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'emitidas'" (click)="cambiarPestana('emitidas')">
+    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'emitidas'" (click)="cambiarPestana('emitidas'); $any($event.currentTarget).scrollIntoView({ block: 'nearest', inline: 'nearest' })">
       Emitidas <span class="tab__count">{{ emitidas().length }}</span>
     </button>
-    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'notas'" (click)="cambiarPestana('notas')">
+    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'notas'" (click)="cambiarPestana('notas'); $any($event.currentTarget).scrollIntoView({ block: 'nearest', inline: 'nearest' })">
       Notas crédito <span class="tab__count">{{ notas().length }}</span>
     </button>
   }
@@ -56,15 +64,19 @@
   </select>
 }
 </div>
+</div>
 
 <!-- ======================= POR FACTURAR ======================= -->
 @if (pestana() === 'por-facturar') {
   @if (cargandoRelacion()) {
     <div class="card fac-vacio"><span class="spinner" aria-hidden="true"></span> Cargando lo pendiente por facturar…</div>
   } @else if (!pagadoresConLineas().length) {
-    <div class="card fac-vacio">
-      No hay órdenes pendientes por facturar. Aparecen aquí las órdenes <b>finalizadas</b> y
-      <b>aprobadas por la ARL</b> que todavía no tienen factura.
+    <div class="card">
+      <div class="estado-vacio estado-vacio--ok">
+        <span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg></span>
+        <p class="estado-vacio__titulo">No hay órdenes pendientes por facturar</p>
+        <p class="estado-vacio__texto">Aparecen aquí las órdenes <b>finalizadas</b> y <b>aprobadas por la ARL</b> que todavía no tienen factura.</p>
+      </div>
     </div>
   } @else {
     @for (p of pagadoresConLineas(); track p.clave) {
@@ -79,11 +91,11 @@
               <path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M16 9h2a2 2 0 0 1 2 2v10M3 21h18M8 7h4M8 11h4M8 15h4" />
             </svg>
             {{ p.arl_nombre ?? p.tercero_nombre }}
-            @if (p.particular) { <span class="pill pill--muted">Particular</span> }
+            @if (p.particular) { <span class="pill doc-estado pill--muted">Particular</span> }
           </h3>
           <span class="fac-pagador__resumen">{{ facturablesDe(p) }} lista(s) para facturar · {{ p.grupos.length }} {{ p.grupos.length === 1 ? 'grupo' : 'grupos' }}</span>
           @if (!p.tercero_id) {
-            <a class="btn btn--secondary btn--sm" routerLink="/terceros">Enlazar tercero</a>
+            <a class="btn btn--secondary fac-pagador__enlazar" routerLink="/terceros">Enlazar tercero</a>
           }
         </header>
 
@@ -142,11 +154,13 @@
               <table class="table fac-tabla">
                 <thead>
                   <tr>
-                    <th class="col-check">
-                      @if (puedeOperar() && g.n_facturables) {
+                    <!-- 20-nov-2026 · La columna de la casilla solo existe si en el grupo hay algo que
+                         marcar: vacía, sangraba «Orden» respecto al título de la tarjeta. -->
+                    @if (puedeOperar() && g.n_facturables) {
+                      <th class="col-check">
                         <input type="checkbox" [checked]="todasMarcadas(g)" (change)="alternarTodas(g)" aria-label="Marcar todas" />
-                      }
-                    </th>
+                      </th>
+                    }
                     <th>{{ g.prefactura ? 'Cronograma-secuencia' : 'Orden' }}</th>
                     <th>Empresa</th>
                     <th>Actividad</th>
@@ -158,25 +172,27 @@
                 <tbody>
                   @for (l of g.lineas; track l.clave) {
                     <tr [class.fac-fila--bloqueada]="!l.facturable">
-                      <td class="col-check">
-                        @if (puedeOperar() && l.facturable) {
-                          <input type="checkbox" [checked]="estaMarcada(g, l)" (change)="alternarLinea(g, l)" [attr.aria-label]="'Marcar ' + (l.codigo || l.clave)" />
-                        }
-                      </td>
+                      @if (puedeOperar() && g.n_facturables) {
+                        <td class="col-check">
+                          @if (l.facturable) {
+                            <input type="checkbox" [checked]="estaMarcada(g, l)" (change)="alternarLinea(g, l)" [attr.aria-label]="'Marcar ' + (l.codigo || l.clave)" />
+                          }
+                        </td>
+                      }
                       <td class="td-id nowrap">
                         @if (g.prefactura) { {{ l.codigo_cronograma }}-{{ l.secuencia }} } @else { {{ l.numero_orden || '—' }} }
                         @if (l.codigo) { <small class="fac-sub">{{ l.codigo }}</small> }
                       </td>
-                      <td>{{ l.empresa_nombre || '—' }}</td>
+                      <td class="fac-empresa">{{ l.empresa_nombre || '—' }}</td>
                       <td>{{ l.tema_actividad || l.tipo_actividad || '—' }}</td>
                       <td class="num">{{ l.horas ?? '—' }}</td>
                       <td class="num">
                         @if (l.valor_referencia != null) { {{ pesos(l.valor_referencia) }} }
-                        @else { <span class="pill pill--warning" title="Sin tarifa de venta del pagador ni valor de la ARL">Sin valor</span> }
+                        @else { <span class="fac-sin-valor" title="Sin tarifa de venta del pagador ni valor de la ARL">Sin valor</span> }
                       </td>
                       <td>
-                        @if (l.facturable) { <span class="pill pill--success">Lista</span> }
-                        @else { <span class="pill pill--warning fac-motivo">{{ l.motivo }}</span> }
+                        @if (l.facturable) { <span class="pill doc-estado pill--success">Lista</span> }
+                        @else { <span class="pill doc-estado pill--warning fac-motivo">{{ l.motivo }}</span> }
                       </td>
                     </tr>
                   }
@@ -188,7 +204,7 @@
               <div class="fac-grupo__acciones">
                 <span class="fac-grupo__total">
                   {{ lineasMarcadas(g).length }} marcada(s) · {{ pesos(totalMarcado(g)) }}
-                  @if (sinValor(g)) { <span class="pill pill--warning">{{ sinValor(g) }} sin valor</span> }
+                  @if (sinValor(g)) { <span class="pill doc-estado pill--warning">{{ sinValor(g) }} sin valor</span> }
                 </span>
                 <button type="button" class="btn btn--ghost btn--sm" (click)="descargarRelacion(p, g)" [disabled]="descargando() === g.clave">
                   @if (descargando() === g.clave) { <span class="spinner" aria-hidden="true"></span> } Relación en Excel
@@ -214,20 +230,20 @@
     <div class="table-wrap">
       <table class="table">
         <thead>
-          <tr><th>Cliente</th><th>Referencia</th><th>Prefactura</th><th>Creado</th><th class="num">Total a pagar</th><th class="col-actions"></th></tr>
+          <tr><th class="fac-col-cliente">Cliente</th><th>Referencia</th><th>Prefactura</th><th>Creado</th><th class="num">Total a pagar</th><th class="col-actions">Acciones</th></tr>
         </thead>
         <tbody>
           @for (d of pagBorradores.visibles(); track d.id) {
             <tr>
-              <td>{{ d.tercero_nombre }}</td>
-              <td><small>{{ d.reference_code }}</small></td>
+              <td><span class="who__name">{{ d.tercero_nombre }}</span></td>
+              <td class="mono"><small>{{ d.reference_code }}</small></td>
               <td>{{ d.numero_prefactura || '—' }}</td>
               <td>{{ fechaHora(d.creado_en) }}</td>
               <td class="num">{{ pesos(d.total_a_pagar) }}</td>
-              <td class="col-actions"><button type="button" class="btn btn--ghost btn--sm" (click)="abrir(d.id)">Revisar</button></td>
+              <td class="col-actions"><button type="button" class="icon-action icon-action--ver" (click)="abrir(d.id)" aria-label="Revisar el borrador" title="Revisar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg></button></td>
             </tr>
           } @empty {
-            <tr><td colspan="6" class="table__empty table__empty--estado">
+            <tr><td colspan="6" class="table__empty" [class.table__empty--estado]="!cargandoListas()">
               @if (cargandoListas()) { Cargando… } @else {
                 <div class="estado-vacio estado-vacio--ok">
                   <span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg></span>
@@ -248,19 +264,19 @@
 @if (pestana() === 'emitidas') {
   <div class="card">
     <div class="table-wrap">
-      <table class="table">
+      <table class="table fac-emitidas">
         <thead>
           <tr><th>Número</th><th class="fac-col-cliente">Cliente</th><th>Emisión</th><th>Vence</th><th class="num">Total a pagar</th><th>Estado</th><th class="col-actions">Acciones</th></tr>
         </thead>
         <tbody>
           @for (d of pagEmitidas.visibles(); track d.id) {
             <tr>
-              <td class="nowrap"><b>{{ numeroDe(d) }}</b></td>
-              <td>{{ d.tercero_nombre }}</td>
+              <td class="nowrap td-id">{{ numeroDe(d) }}</td>
+              <td><span class="who__name">{{ d.tercero_nombre }}</span></td>
               <td class="nowrap">{{ fecha(d.fecha_emision) }}</td>
               <td class="nowrap">{{ fecha(d.fecha_vencimiento) }}</td>
               <td class="num">{{ pesos(d.total_a_pagar) }}</td>
-              <td><span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
+              <td><span class="pill doc-estado" [class]="'pill doc-estado ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
               <td class="col-actions">
                 <!-- 7-oct-2026 · Cada cosa en su propia ventana: «Ver» queda para el
                      documento; el PDF, el envío, la contabilización y el historial se
@@ -283,8 +299,13 @@
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="7" class="table__empty">
-              @if (cargandoListas()) { Cargando… } @else { Todavía no hay facturas emitidas. }
+            <tr><td colspan="7" class="table__empty" [class.table__empty--estado]="!cargandoListas()">
+              @if (cargandoListas()) { Cargando… } @else {
+                <div class="estado-vacio">
+                  <span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></svg></span>
+                  <p class="estado-vacio__titulo">Todavía no hay facturas emitidas</p>
+                </div>
+              }
             </td></tr>
           }
         </tbody>
@@ -298,19 +319,19 @@
 @if (pestana() === 'notas') {
   <div class="card">
     <div class="table-wrap">
-      <table class="table">
+      <table class="table fac-emitidas fac-notas">
         <thead>
           <tr><th>Número</th><th>Factura</th><th class="fac-col-cliente">Cliente</th><th>Causal</th><th class="num">Valor</th><th>Estado</th><th class="col-actions">Acciones</th></tr>
         </thead>
         <tbody>
           @for (d of pagNotas.visibles(); track d.id) {
             <tr>
-              <td class="nowrap"><b>{{ d.numero ? numeroDe(d) : d.reference_code }}</b></td>
+              <td class="nowrap td-id">{{ d.numero ? numeroDe(d) : d.reference_code }}</td>
               <td class="nowrap">{{ referenciaDe(d) }}</td>
-              <td>{{ d.tercero_nombre }}</td>
-              <td><small>{{ nombreCausal(d.causal) }}</small></td>
+              <td><span class="who__name">{{ d.tercero_nombre }}</span></td>
+              <td>{{ nombreCausal(d.causal) }}</td>
               <td class="num">{{ pesos(d.total_a_pagar) }}</td>
-              <td><span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
+              <td><span class="pill doc-estado" [class]="'pill doc-estado ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
               <td class="col-actions">
                 <!-- 7-oct-2026 · Cada cosa en su propia ventana: «Ver» queda para el
                      documento; el PDF, el envío, la contabilización y el historial se
@@ -328,8 +349,14 @@
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="7" class="table__empty">
-              @if (cargandoListas()) { Cargando… } @else { No hay notas crédito. Se crean desde el detalle de una factura validada. }
+            <tr><td colspan="7" class="table__empty" [class.table__empty--estado]="!cargandoListas()">
+              @if (cargandoListas()) { Cargando… } @else {
+                <div class="estado-vacio">
+                  <span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></svg></span>
+                  <p class="estado-vacio__titulo">No hay notas crédito</p>
+                  <p class="estado-vacio__texto">Se crean desde el detalle de una factura validada.</p>
+                </div>
+              }
             </td></tr>
           }
         </tbody>
@@ -414,8 +441,8 @@
         }
       </div>
       <div class="fac-man-acciones">
-        <button type="button" class="btn btn--ghost btn--sm fac-man-agregar" (click)="agregarLineaManual()">+ Agregar línea</button>
-        <button type="button" class="btn btn--ghost btn--sm fac-man-agregar" (click)="abrirNuevoProducto()">+ Crear producto nuevo</button>
+        <button type="button" class="btn btn--ghost btn--sm fac-man-agregar" (click)="agregarLineaManual()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg> Agregar línea</button>
+        <button type="button" class="btn btn--ghost btn--sm fac-man-agregar" (click)="abrirNuevoProducto()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg> Crear producto nuevo</button>
       </div>
       @if (!productos().length) {
         <p class="fac-aviso fac-aviso--warning">No hay productos activos. <button type="button" class="link-btn" (click)="abrirNuevoProducto()">Cree el primero aquí</button> para poder facturar.</p>
@@ -484,13 +511,13 @@
           } @else {
             {{ d.estado === 'BORRADOR' ? 'Borrador de factura' : 'Factura ' + numeroDe(d) }}
           }
-          <span class="pill" [class]="'pill ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span>
+          <span class="pill doc-estado" [class]="'pill doc-estado ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span>
         </h3>
         <p class="modal__sub">
           {{ d.tercero_nombre }}
           @if (esNota(d)) { · corrige la factura {{ referenciaDe(d) }} · {{ nombreCausal(d.causal) }} }
           @if (d.numero_prefactura) { · prefactura {{ d.numero_prefactura }} }
-          · ref. {{ d.reference_code }}
+          · <span class="fac-ref">ref. {{ d.reference_code }}</span>
         </p>
       </div>
       <button type="button" class="icon-action" (click)="cerrar()" aria-label="Cerrar" [disabled]="!!accion()">
@@ -683,6 +710,7 @@
             </p>
           } @else if (causalNota()) {
             <p class="vista-ayuda">Indique cuánto acreditar de cada ítem (el valor se calcula con los mismos impuestos y retenciones de la factura).</p>
+            <div class="table-wrap fac-nota__tabla">
             <table class="table fac-items">
               <thead><tr><th>Ítem</th><th class="num">Facturado</th><th class="num">A acreditar</th></tr></thead>
               <tbody>
@@ -698,6 +726,7 @@
                 }
               </tbody>
             </table>
+            </div>
           }
           <label class="form-field">
             <span class="form-label">Observaciones (opcional)</span>
@@ -714,7 +743,7 @@
 
     </div>
 
-    <footer class="modal__footer fac-pie">
+    <footer class="modal__footer fac-pie" [class.fac-pie--nota]="formNota()">
       @if (d.estado === 'VALIDADO' || d.estado === 'ANULADO') {
         <button type="button" class="btn btn--secondary" (click)="verPdf()" [disabled]="!!accion() || !d.pdf_path">
           @if (accion() === 'ver') { <span class="spinner" aria-hidden="true"></span> } Ver {{ esNota(d) ? 'nota' : 'factura' }}
@@ -739,12 +768,12 @@
       }
       <span class="fac-pie__espacio"></span>
       @if (puedeOperar() && !emisionDian && d.estado === 'BORRADOR') {
-        <button type="button" class="btn btn--danger" (click)="eliminar()" [disabled]="!!accion()">Eliminar borrador</button>
+        <button type="button" class="btn btn--peligro-contorno" (click)="eliminar()" [disabled]="!!accion()">Eliminar borrador</button>
       }
       @if (puedeOperar() && emisionDian) {
         @switch (d.estado) {
           @case ('BORRADOR') {
-            <button type="button" class="btn btn--danger" (click)="eliminar()" [disabled]="!!accion()">Eliminar borrador</button>
+            <button type="button" class="btn btn--peligro-contorno" (click)="eliminar()" [disabled]="!!accion()">Eliminar borrador</button>
             <button type="button" class="btn btn--primary" (click)="emitir()" [disabled]="!!accion()">
               @if (accion() === 'emitir') { <span class="spinner" aria-hidden="true"></span> Enviando a la DIAN… } @else { Emitir ante la DIAN }
             </button>
@@ -868,14 +897,14 @@
                     </td>
                     <td class="num">{{ pesos(o.valor) }}</td>
                     <td>
-                      <span class="pill" [class.pill--success]="o.soportes > 0" [class.pill--warning]="o.soportes === 0">
+                      <span class="pill doc-estado" [class.pill--success]="o.soportes > 0" [class.pill--warning]="o.soportes === 0">
                         {{ o.soportes === 0 ? 'Sin soportes' : o.soportes === 1 ? '1 soporte' : o.soportes + ' soportes' }}
                       </span>
-                      @if (p.formato === 'PDF' && !o.tiene_original) { <span class="pill pill--warning">Sin orden original</span> }
+                      @if (p.formato === 'PDF' && !o.tiene_original) { <span class="pill doc-estado pill--warning">Sin orden original</span> }
                     </td>
                   </tr>
                 } @empty {
-                  <tr><td colspan="5" class="fac-vacio">Esta factura no tiene órdenes de servicio asociadas.</td></tr>
+                  <tr><td colspan="5" class="table__empty">Esta factura no tiene órdenes de servicio asociadas.</td></tr>
                 }
               </tbody>
             </table>

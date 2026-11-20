@@ -5,22 +5,28 @@
       Revisa, edita, valida y administra el estado de las órdenes
     </p>
   </div>
+</section>
 
-  <div class="ord-head__actions">
-    <div class="ord-search">
-      <svg class="ord-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="11" cy="11" r="7" />
-        <path d="m20 20-3.5-3.5" />
-      </svg>
-      <input
-        class="ord-search__input"
-        type="text"
-        placeholder="Buscar por empresa, ARL, NIT, cronograma u OS…"
-        title="Buscar por empresa, ARL, NIT, cronograma u OS"
-        [ngModel]="query()"
-        (ngModelChange)="buscar($event)"
-      />
-    </div>
+<!-- Rediseño 20-nov-2026 · Barra de herramientas con el patrón global `.toolbar`
+     (DESIGN §7): alineada al inicio, la búsqueda flexible y los botones en su
+     grupo al final. Mismo orden de siempre: búsqueda, Cobro, Estado ARL,
+     Próximas, Cargar prefactura y Nueva orden manual. -->
+<div class="toolbar ord-toolbar">
+  <label class="buscador toolbar__buscar ord-search">
+    <svg class="buscador__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </svg>
+    <input
+      class="buscador__input"
+      type="search"
+      placeholder="Buscar por empresa, ARL, NIT, cronograma u OS…"
+      title="Buscar por empresa, ARL, NIT, cronograma u OS"
+      aria-label="Buscar órdenes"
+      [ngModel]="query()"
+      (ngModelChange)="buscar($event)"
+    />
+  </label>
 
     <!-- Eje de facturación · Es un eje INDEPENDIENTE del ciclo de vida (una OS
          FINALIZADA puede estar sin facturar o facturada), así que se combina
@@ -37,6 +43,7 @@
         (ngModelChange)="filtrarCobro($event)"
         name="filtroCobro"
         aria-label="Filtrar por estado de cobro"
+        [title]="filtroCobro() === 'APROBADO' ? 'Cobro aprobado' : filtroCobro() === 'PENDIENTE' ? 'Cobro pendiente' : 'Cobro · todos'"
       >
         <option value="">Cobro · todos</option>
         <option value="APROBADO">Cobro aprobado</option>
@@ -52,6 +59,7 @@
       (ngModelChange)="filtrarArl($event)"
       name="filtroArl"
       aria-label="Filtrar por estado ARL"
+      [title]="filtroArl() === 'PENDIENTE' ? 'Pendiente' : filtroArl() === 'APROBADO' ? 'Aprobado' : 'Estado ARL · todos'"
     >
       <option value="">Estado ARL · todos</option>
       @for (e of estadosArl; track e) {
@@ -59,9 +67,10 @@
       }
     </select>
 
-    <!-- Los botones van en su propio grupo: si no caben junto a los filtros,
-         bajan juntos a la línea siguiente (rediseño, sin cambiar el orden). -->
-    <div class="ord-head__botones">
+    <!-- Los botones van en su propio grupo al final de la fila (`.toolbar__fin`):
+         si no caben junto a los filtros, bajan juntos a la línea siguiente, sin
+         cambiar el orden. -->
+    <div class="toolbar__fin ord-toolbar__botones">
     <!-- 7-oct-2026 · Recordatorio de las visitas programadas que vienen. El número es
          lo que pide atención ya (atrasadas, en curso o de hoy). -->
     <button type="button" class="btn btn--secondary btn--sm prox-btn" (click)="abrirProximas()"
@@ -107,8 +116,7 @@
       </button>
     }
     </div>
-  </div>
-</section>
+</div>
 
 <!-- ============ PESTAÑAS: FILTRO POR ESTADO ============ -->
 <div class="tabs" role="tablist">
@@ -127,7 +135,10 @@
 </div>
 
 <!-- ============ TABLA ============ -->
-<div class="card">
+<!-- Ronda 2 · `ord-card`: el pie (contador, leyenda del candado, páginas y
+     «Filas») va en UNA fila, como en la maqueta. Solo CSS (validation-cobro.scss);
+     el paginador compartido no cambia. -->
+<div class="card ord-card">
   <div class="table-wrap">
     <table class="table ord-table">
       <thead>
@@ -137,57 +148,67 @@
           <th class="num">Horas</th>
           <th>Vencimiento</th>
           <th>Estado</th>
-          <th class="th--wrap">Estado ARL/<br />Plataforma</th>
-          <th>Cobro</th>
+          <!-- Rediseño · «Plataforma» ya lleva su rótulo dentro de la celda, así
+               que la cabecera solo nombra la columna (antes «Estado ARL/Plataforma»). -->
+          <th>Estado ARL</th>
+          <th class="ord-cobro-th">Cobro</th>
           <th class="col-actions">Opciones</th>
         </tr>
       </thead>
       <tbody>
         @for (order of pag.visibles(); track order.id; let i = $index) {
           <tr>
-            <!-- T0-06 · El NIT bajaba en su propia columna; a 1366-1440 px no
-                 dejaba sitio para Opciones sin scroll. Va como subtítulo de la
-                 razón social: se sigue viendo entero, solo que en una línea
-                 propia y más pequeño. -->
-            <td>
-              <div class="who__text">
-                <span class="who__name">{{ nombreOrden(order) }}</span>
-                <span class="who__nit mono">{{ order.fields.nit.value || '—' }}</span>
+            <!-- Rediseño 20-nov-2026 · Celda en dos niveles (DESIGN §7, Tabla):
+                 la razón social (13/500, dos líneas como mucho) y debajo, en UNA
+                 línea de 12 px, NIT · referencia ARL · asesor. Lo que se corta
+                 lleva el texto completo en el `title`. La referencia es la misma
+                 que antes iba entre paréntesis junto al nombre. -->
+            <td class="ord-who">
+              <span class="who__name" [title]="nombreOrden(order)">{{ nombreFila(order) }}</span>
+              <span class="who__meta" [title]="metaFila(order)">
+                @if (order.fields.nit.value) {
+                  <span class="who__dato">{{ order.fields.nit.value }}</span>
+                }
+                @if (refFila(order); as ref) {
+                  <span class="who__dato">{{ ref }}</span>
+                }
                 @if (order.assignedProf) {
                   <span class="who__assigned">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                       <circle cx="12" cy="8" r="4" />
                       <path d="M4 21a8 8 0 0 1 16 0" />
-                    </svg>
-                    {{ order.assignedProf }}
-                    @for (co of order.coasesores ?? []; track co.profesional_id) {
-                      <span class="who__co" [title]="co.horas + ' h de la orden'">· {{ co.nombre }}</span>
-                    }
+                    </svg>{{ order.assignedProf }}@for (co of order.coasesores ?? []; track co.profesional_id) {<span class="who__co" [title]="co.nombre + ' · ' + co.horas + ' h de la orden'"> · {{ co.nombre }}</span>}
                   </span>
                 }
-              </div>
+              </span>
             </td>
             <!-- Solo el nombre. El porcentaje de confianza de la clasificación
                  sigue estando en el detalle de la orden, que es donde se revisa;
                  en la bandeja solo hacía ruido sobre el dato que se busca. -->
-            <td>{{ order.arl }}</td>
+            <td class="ord-arl">{{ order.arl }}</td>
             <td class="num">{{ order.fields.horas.value || '—' }}</td>
-            <!-- T0-06 · Antes fecha y días en dos líneas; en una sola, con los
-                 días en el `title` (se ven al pasar el cursor, sin ocupar ancho). -->
-            <td>
+            <!-- La fecha y, cuando apremia, debajo la palabra con su ícono
+                 (DESIGN §7): «Vencida» en error con alerta; «Vence hoy» o
+                 «Faltan N días» en tinta-2 con reloj ámbar. Es el mismo texto que
+                 antes solo salía en el `title`. -->
+            <td class="ord-venc">
               @if (vencimiento(order); as v) {
-                <span class="venc mono" [class]="'venc--' + v.tone" [title]="v.detalle">{{ v.fecha }}</span>
+                <span class="venc" [class]="'venc--' + v.tone" [title]="v.detalle">{{ v.fecha }}</span>
+                @if (v.tone !== 'normal') {
+                  <span class="venc__palabra" [class]="'venc__palabra--' + v.tone">{{ v.detalle }}</span>
+                }
               } @else {
                 <span class="venc__none">—</span>
               }
             </td>
-            <td>
+            <td class="ord-estado">
               <span class="pill" [class]="estadoClass(order)">{{ estadoLabel(order) }}</span>
               <!-- P3 · Programación parcial: la orden se envió a medias y sigue
-                   necesitando las horas que faltan. Se marca aquí para que no se
-                   confunda con una PROGRAMADA completa. -->
+                   necesitando las horas que faltan. Nota de 12/500 bajo la
+                   pastilla (DESIGN §7), con el reloj ámbar como único acento:
+                   el texto ámbar es solo de SIN PROGRAMAR. -->
               @if (esProgramacionParcial(order)) {
-                <span class="pill pill--warning pill--sm" [title]="'Se enviaron los formatos de parte de las horas; faltan ' + faltanParcialTexto(order) + ' por programar y enviar.'">
+                <span class="nota-parcial" [title]="'Se enviaron los formatos de parte de las horas; faltan ' + faltanParcialTexto(order) + ' por programar y enviar.'">
                   Parcial · faltan {{ faltanParcialTexto(order) }}
                 </span>
               }
@@ -199,35 +220,50 @@
                 <!-- A3-01 · Cliente particular: no hay ARL que apruebe. -->
                 <span class="venc__none" title="Orden de un cliente particular">No aplica</span>
               } @else if (order.osId) {
-                <span class="arl-celda">
-                  <!-- 7-oct-2026 · El estado es un botón (misma píldora): al pulsarlo
-                       explica cómo cambia, porque nadie lo cambia desde aquí. -->
+                <!-- Rediseño · Dos controles apilados, cada uno con su palabra
+                     (DESIGN §7, Estado ARL y «Plataforma»): arriba el estado ARL
+                     y debajo el ✓ de «Validado plataforma», ahora con rótulo. -->
+                <div class="arl-celda">
+                  <!-- 7-oct-2026 · El estado es un botón: al pulsarlo explica cómo
+                       cambia, porque nadie lo cambia desde aquí. Pendiente va en
+                       neutro (es espera, no alerta); Aprobado, en ok. -->
                   <button
                     type="button"
-                    class="pill pill--boton"
-                    [class]="pillArl(order.estadoArl)"
+                    class="arl-estado"
+                    [class.arl-estado--ok]="order.estadoArl === 'APROBADO'"
                     [attr.title]="order.numeroPrefactura ? 'Prefactura ' + order.numeroPrefactura : '¿Cómo cambia este estado?'"
                     (click)="$event.stopPropagation(); explicarEstadoArl(order)"
                   >
                     {{ order.estadoArl === 'APROBADO' ? 'Aprobado' : 'Pendiente' }}
                   </button>
                   <!-- 30-sep-2026 · «Validado plataforma»: check a mano, distinto
-                       del estado ARL (ese lo pone la prefactura). No bloquea nada. -->
+                       del estado ARL (ese lo pone la prefactura). No bloquea nada.
+                       Bloqueada (aún no ejecutada) lleva candado y la razón se lee
+                       en la leyenda bajo la tabla, no solo en el `title`. -->
                   <button
                     type="button"
-                    class="validado"
-                    [class.validado--ok]="order.validadoPlataformaEn"
+                    class="plataforma"
+                    [class.plataforma--ok]="order.validadoPlataformaEn"
+                    [class.plataforma--bloqueada]="!order.validadoPlataformaEn && !puedeMarcarValidado(order)"
                     [disabled]="!puedeMarcarValidado(order) || validandoPlataforma() === order.osId"
                     (click)="toggleValidadoPlataforma(order)"
                     [attr.aria-pressed]="!!order.validadoPlataformaEn"
                     [attr.aria-label]="tituloValidado(order)"
+                    [attr.aria-describedby]="plataformaEnEspera(order) ? 'leyendaPlataforma' : null"
                     [title]="tituloValidado(order)"
                   >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="m6 12.5 4 4 8-9" />
-                    </svg>
+                    @if (!order.validadoPlataformaEn && !puedeMarcarValidado(order)) {
+                      <svg class="plataforma__candado" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />
+                      </svg>
+                    } @else {
+                      <span class="plataforma__marca" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 12.5 4 4 8-9" /></svg>
+                      </span>
+                    }
+                    Plataforma
                   </button>
-                </span>
+                </div>
               } @else {
                 <span class="venc__none">—</span>
               }
@@ -238,54 +274,70 @@
               @if (order.osId) {
                 <!-- 30-sep-2026 · La píldora es el botón: abre el modal de cobro
                      (valores, prefactura, visto bueno de operación y, si no hay
-                     factura electrónica, el marcado manual). Debajo, en las
-                     finalizadas sin facturar, si operación ya aprobó el cobro:
-                     sin ese visto bueno la orden no pasa a Facturación. -->
+                     factura electrónica, el marcado manual). -->
                 <!-- 1-oct-2026 · La columna habla solo del COBRO (visto bueno de
                      operación): Aprobado / Pendiente. Si está facturada se ve en
                      el modal y en Facturación, no aquí. -->
-                <button
-                  type="button"
-                  class="cobro-btn"
-                  [class.cobro-btn--ok]="order.cobroAprobadoEn"
-                  [disabled]="order.disabled"
-                  (click)="openCobro(order)"
-                  [title]="'Abrir el cobro de la orden · ' + (order.cobroAprobadoEn ? 'aprobado' : 'pendiente de aprobación')"
-                >
-                  <!-- Ícono de factura: dice que es un botón que abre el cobro. -->
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M6 2h12v20l-3-2-3 2-3-2-3 2z" />
-                    <path d="M9 7h6M9 11h6M9 15h4" />
-                  </svg>
-                  {{ order.cobroAprobadoEn ? 'Aprobado' : 'Pendiente' }}
-                </button>
-                <!-- 1-oct-2026 · N.º de radicado ante Bolívar. Va aquí y no en una
-                     columna propia: solo lo usa Bolívar (la columna quedaría vacía
-                     en AXA y Colmena) y la tabla ya no cabe sin scroll a 1366 px. -->
-                @if (esBolivarArl(order)) {
-                  <!-- 7-oct-2026 · El último radicado y su visto bueno: el ✓ va relleno
-                       cuando está aprobado y solo con borde cuando no. Al pulsar se
-                       abre la ventana con la fecha, el visto bueno y el historial. -->
+                <!-- Rediseño · Botón pequeño con marco en reposo (en táctil no
+                     hay hover que avise de que se pulsa) y el radicado de Bolívar
+                     DEBAJO, en el flujo de la celda: nada en posición absoluta que
+                     se monte sobre la fila siguiente. -->
+                <div class="cobro-cel">
                   <button
                     type="button"
-                    class="radicado"
-                    [class.radicado--vacio]="!order.numeroRadicado"
-                    [disabled]="!order.numeroRadicado && !puedeEditarCobro()"
-                    (click)="abrirRadicado(order)"
-                    [title]="order.numeroRadicado
-                      ? 'Radicado ante Bolívar' + (order.radicadoFecha ? ' del ' + fechaRadicado(order.radicadoFecha) : '') + (order.radicadoAprobado ? ' · aprobado' : ' · sin aprobar') + ' · pulse para ver o cambiar'
-                      : 'Agregar el radicado ante Bolívar'"
+                    class="cobro-btn"
+                    [class.cobro-btn--ok]="order.cobroAprobadoEn"
+                    [disabled]="order.disabled"
+                    (click)="openCobro(order)"
+                    [title]="'Abrir el cobro de la orden · ' + (order.cobroAprobadoEn ? 'aprobado' : 'pendiente de aprobación')"
                   >
-                    @if (order.numeroRadicado) {
-                      <span class="radicado__check" [class.radicado__check--ok]="order.radicadoAprobado" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 12.5 4 4 8-9" /></svg>
-                      </span>
-                      RADICADO <span class="radicado__num">{{ order.numeroRadicado }}</span>
-                    } @else if (puedeEditarCobro()) {
-                      + Radicado
+                    @if (order.cobroAprobadoEn) {
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 12.5 4 4 8-9" /></svg>
+                    } @else {
+                      <!-- Ícono de factura: dice que es un botón que abre el cobro. -->
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M6 2h12v20l-3-2-3 2-3-2-3 2z" />
+                        <path d="M9 7h6M9 11h6M9 15h4" />
+                      </svg>
                     }
+                    {{ order.cobroAprobadoEn ? 'Aprobado' : 'Pendiente' }}
+                    <svg class="cobro-btn__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
                   </button>
-                }
+                  <!-- 1-oct-2026 · N.º de radicado ante Bolívar. Va aquí y no en una
+                       columna propia: solo lo usa Bolívar (la columna quedaría vacía
+                       en AXA y Colmena). -->
+                  @if (esBolivarArl(order)) {
+                    <!-- 7-oct-2026 · El último radicado y su visto bueno: el ✓ va relleno
+                         cuando está aprobado y solo con borde cuando no. Al pulsar se
+                         abre la ventana con la fecha, el visto bueno y el historial. -->
+                    <button
+                      type="button"
+                      class="radicado"
+                      [class.radicado--vacio]="!order.numeroRadicado"
+                      [disabled]="!order.numeroRadicado && !puedeEditarCobro()"
+                      (click)="abrirRadicado(order)"
+                      [title]="order.numeroRadicado
+                        ? 'Radicado ante Bolívar' + (order.radicadoFecha ? ' del ' + fechaRadicado(order.radicadoFecha) : '') + (order.radicadoAprobado ? ' · radicado aprobado' : ' · radicado sin aprobar') + ' · pulse para ver o cambiar'
+                        : 'Agregar el radicado ante Bolívar'"
+                    >
+                      @if (order.numeroRadicado) {
+                        <!-- Ronda 2 · Aprobado: el visto relleno en ok. Sin aprobar:
+                             un reloj en tinta-3 (es espera), no el círculo vacío, que
+                             junto a «Plataforma» se leía como casilla por marcar. -->
+                        @if (order.radicadoAprobado) {
+                          <span class="radicado__check radicado__check--ok" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 12.5 4 4 8-9" /></svg>
+                          </span>
+                        } @else {
+                          <svg class="radicado__espera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                        }
+                        <span class="radicado__texto">Radicado <span class="radicado__num">{{ order.numeroRadicado }}</span></span>
+                      } @else if (puedeEditarCobro()) {
+                        + Radicado
+                      }
+                    </button>
+                  }
+                </div>
               } @else {
                 <span class="venc__none">—</span>
               }
@@ -311,7 +363,7 @@
                     </svg>
                   </button>
                 } @else {
-                  <button type="button" class="icon-action" (click)="openDetail(order.id)" aria-label="Ver detalle" title="Ver detalle">
+                  <button type="button" class="icon-action icon-action--ver" (click)="openDetail(order.id)" aria-label="Ver detalle" title="Ver detalle">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                       <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
                       <circle cx="12" cy="12" r="3" />
@@ -325,6 +377,11 @@
                       <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
                     </svg>
                   </button>
+                  <!-- Tercera ranura: soportes (EJECUTADA/FINALIZADA) o asignar
+                       (SIN PROGRAMAR/PROGRAMADA). Nunca coinciden, así que
+                       comparten hueco; si ninguna aplica se reserva vacío
+                       (`.icon-action--hueco`) para que Deshabilitar no cambie de
+                       columna (DESIGN §7 y §10). -->
                   <!-- VER-01 · Soportes firmados. Mientras la OS esté EN
                        VERIFICACIÓN se decide aquí; una vez ejecutada queda como
                        consulta del expediente. -->
@@ -340,10 +397,9 @@
                         <path d="M21.4 11.05 12.25 20.2a5.5 5.5 0 0 1-7.78-7.78l9.2-9.19a3.5 3.5 0 1 1 4.95 4.95l-9.2 9.19a1.5 1.5 0 0 1-2.12-2.12l8.49-8.48" />
                       </svg>
                     </button>
-                  }
-                  <!-- ASG-01/02/07 · Asignar o reprogramar. No se ofrece cuando
-                       la orden ya salió a campo: el backend lo rechazaría. -->
-                  @if (puedeAsignar(order)) {
+                  } @else if (puedeAsignar(order)) {
+                    <!-- ASG-01/02/07 · Asignar o reprogramar. No se ofrece cuando
+                         la orden ya salió a campo: el backend lo rechazaría. -->
                     <button
                       type="button"
                       class="icon-action"
@@ -365,6 +421,8 @@
                         </svg>
                       }
                     </button>
+                  } @else {
+                    <span class="icon-action icon-action--hueco" aria-hidden="true"></span>
                   }
                   <button type="button" class="icon-action icon-action--danger" (click)="disableOrder(order)" aria-label="Deshabilitar" title="Deshabilitar">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -404,12 +462,26 @@
   </div>
 
   <app-paginador [pag]="pag" etiqueta="órdenes" />
+  <!-- Rediseño · La razón del candado de «Plataforma» se lee EN PANTALLA (en
+       táctil no hay `title`). Solo aparece si alguna fila de la página lo lleva;
+       los botones bloqueados la enlazan con `aria-describedby`. -->
+  @if (hayPlataformaEnEspera()) {
+    <p class="ord-leyenda" id="leyendaPlataforma">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />
+      </svg>
+      «Plataforma» se habilita cuando la orden está ejecutada.
+    </p>
+  }
 </div>
 
 <!-- ============ MODAL: DETALLE / EDICIÓN ============ -->
 @if (detailOrder(); as order) {
   <div class="modal-backdrop" (click)="closeDetail()"></div>
-  <div class="modal modal--xl" [class.modal--lectura]="!editMode()" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+  <!-- Rediseño 20-nov-2026 · 880 px (`modal--lg`): a 1200 los campos quedaban
+       estirados y la etiqueta lejos de su confianza. La rejilla pone tres
+       columnas si caben y una en el celular. -->
+  <div class="modal modal--lg" [class.modal--lectura]="!editMode()" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="detailTitle">
@@ -454,7 +526,7 @@
           }
         </span>
         <div class="doc-row__meta">
-          <span class="doc-row__name">{{ order.fileName }}</span>
+          <span class="doc-row__name" [title]="order.fileName">{{ order.fileName }}</span>
           <span class="doc-row__sub">
             {{ order.fileType === 'excel' ? 'Excel' : 'PDF' }} · importado {{ order.importedAt }}
           </span>
@@ -480,7 +552,7 @@
             <span class="pill" [class]="pillEstado(order.osEstado)">{{ order.osEstado }}</span>
             <!-- P3 · Programación parcial: faltan horas por programar y enviar. -->
             @if (esProgramacionParcial(order)) {
-              <span class="pill pill--warning pill--sm">Programación parcial · faltan {{ faltanParcialTexto(order) }}</span>
+              <span class="nota-parcial">Programación parcial · faltan {{ faltanParcialTexto(order) }}</span>
             }
           </div>
 
@@ -541,7 +613,7 @@
       <div class="card ai-form">
         <div class="card__head">
           <span class="card__title">Datos de la orden</span>
-          <span class="pill" [class]="pillClass(order.confidence)">
+          <span class="pill pill--metric" [class]="pillClass(order.confidence)">
             {{ order.confidence }}% Confianza
           </span>
         </div>
@@ -615,14 +687,19 @@
               }
             } @else {
               <input class="form-control" type="text" [value]="order.tipoOrden || 'Sin tipo'" readonly />
-              @if (order.valorHoraCobro && order.fields.horas.value) {
-                <p class="field__hint">
-                  {{ order.fields.horas.value }} h × {{ pesos(order.valorHoraCobro) }} =
-                  <strong>{{ pesos(totalOrden(order)) }}</strong> · {{ origenValorHora(order) }}
-                </p>
-              }
             }
           </div>
+
+          <!-- Ronda 3 · El cálculo del valor (solo lectura) va en una línea que
+               ocupa toda la fila, justo debajo de la primera fila de la rejilla
+               (`grid-row: 2`, validation-cobro.scss). Dentro de la columna de
+               Tipo de orden se partía y la dejaba más alta que sus vecinas. -->
+          @if (!editMode() && order.valorHoraCobro && order.fields.horas.value) {
+            <p class="field__hint tipo-orden__calculo">
+              {{ order.fields.horas.value }} h × {{ pesos(order.valorHoraCobro) }} =
+              <strong>{{ pesos(totalOrden(order)) }}</strong> · {{ origenValorHora(order) }}
+            </p>
+          }
 
           <!-- Viáticos (ago-2026) · La cifra NO se escribe: se elige la
                categoría y el importe sale de ella. Escribiéndola a mano, dos
@@ -669,7 +746,7 @@
                 <div class="field__labelrow">
                   <label class="form-field__label">{{ item.label }}</label>
                   @if (!item.manual) {
-                    <span class="conf-badge pill" [class]="pillClass(confianzaDe(item))">
+                    <span class="conf-badge pill" [class]="pillClass(confianzaDe(item))" [class.conf-badge--vacio]="!('' + item.field.value).trim()">
                       {{ confianzaDe(item) }}%
                     </span>
                   }
@@ -2271,7 +2348,7 @@
           <section class="cobro__seccion">
             <h4 class="cobro__titulo">
               Resumen del cobro
-              @if (cobroSinGuardar()) { <span class="cobro__pendiente">sin guardar</span> }
+              @if (cobroSinGuardar()) { <span class="cobro__pendiente cobro__pendiente--suave">sin guardar</span> }
             </h4>
             <div class="table-wrap">
               <table class="table">
@@ -2626,7 +2703,7 @@
         </div>
       }
 
-      <p class="assign__section-title">Quién paga y qué se hace</p>
+      <h4 class="section-head"><span class="section-tag">Quién paga y qué se hace</span></h4>
       <div class="manual-grid">
         <div class="form-field manual-grid__ancho">
           <label class="form-field__label" for="manualCliente">Cliente *</label>
@@ -2687,7 +2764,7 @@
         </div>
       </div>
 
-      <p class="assign__section-title">Dónde se ejecuta</p>
+      <h4 class="section-head"><span class="section-tag">Dónde se ejecuta</span></h4>
       <p class="form-field__hint">
         @if (clienteManual(); as c) {
           Si deja la empresa vacía, es el mismo cliente: {{ c.nombre }}{{ c.municipio_nombre ? ', ' + c.municipio_nombre : '' }}{{ c.direccion ? ', ' + c.direccion : '' }}.
@@ -2855,7 +2932,13 @@
       @if (proximasCargando() && !proximas().length) {
         <p class="modal__sub"><span class="spinner spinner--oscuro" aria-hidden="true"></span> Cargando…</p>
       } @else if (!proximas().length) {
-        <p class="prox-vacio">No hay visitas programadas en los próximos 7 días.</p>
+        <!-- Rediseño · Estado vacío con la anatomía global (DESIGN §7). -->
+        <div class="estado-vacio">
+          <span class="estado-vacio__icono" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="2" /><path d="M16 2.5v4M8 2.5v4M3 10h18" /></svg>
+          </span>
+          <p class="estado-vacio__titulo">No hay visitas programadas en los próximos 7 días.</p>
+        </div>
       } @else {
         <ul class="prox-lista">
           @for (v of proximas(); track v.orden_id + v.fecha + v.hora_inicio) {

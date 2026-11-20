@@ -6,65 +6,62 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 1.25rem;
+  gap: var(--e-3) var(--e-6);
   flex-wrap: wrap;
 }
 
 .cp-head .btn svg {
-  width: 17px;
-  height: 17px;
+  width: 16px;
+  height: 16px;
 }
 
-.cp-filtros {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-
-.cp-filtros .form-control {
-  width: auto;
+/* Filtros con el patrón global .toolbar: selects al ancho de su texto y las
+   fechas con su rótulo al lado. */
+.cp-filtros > select.form-control {
+  min-width: 170px;
 }
 
 .cp-fecha {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.85rem;
-  color: var(--text-muted);
+  gap: var(--e-2);
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
+  white-space: nowrap;
 }
 
+.cp-fecha .form-control {
+  width: auto;
+}
+
+/* Montos tabulares; el número de factura del proveedor y el comprobante, no. */
 .mono {
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: normal;
 }
 
 .col-num {
   text-align: right;
   white-space: nowrap;
-}
-
-.cp-vacio {
-  padding: 1.5rem 1rem;
-  text-align: center;
-  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .cp-sub {
   display: block;
-  font-size: 0.78rem;
-  color: var(--text-muted);
+  margin-top: 2px;
+  font-size: var(--fs-celda);
+  color: var(--tinta-3);
 }
 
 .cp-inline {
   display: inline;
   margin-left: 0.35rem;
+  font-size: var(--fs-meta);
 }
 
 .cp-anulado {
   margin: 0;
-  padding: 0.6rem 0.8rem;
-  font-size: 0.88rem;
+  padding: 10px 14px;
+  font-size: var(--fs-celda);
   color: var(--error);
   background: var(--error-fondo);
   border-radius: var(--r-alerta);
@@ -78,17 +75,20 @@
 /* ===== Formulario ===== */
 .cp-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.9rem 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px var(--e-4);
 }
 
 .cp-grid__ancho {
   grid-column: span 2;
 }
 
+/* Campos de línea densos; el select conserva el hueco del chevron. */
 .cp-items .form-control {
-  padding: 0.4rem 0.55rem;
-  font-size: 0.86rem;
+  min-height: 36px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  font-size: var(--fs-celda);
 }
 
 /* `min-width` y no `width`: en una tabla automática `width` es solo una
@@ -97,42 +97,52 @@
 .cp-items td:nth-child(1) { min-width: 260px; }
 .cp-items td:nth-child(3) { min-width: 150px; }
 .cp-items td:nth-child(4) { min-width: 120px; }
+/* El IVA (penúltima, antes de quitar la línea): «Sin IVA» y «19 %» enteros. */
+.cp-items td:nth-last-child(2) { min-width: 120px; }
 
 .cp-acciones {
   display: flex;
-  gap: 0.6rem;
+  gap: var(--e-2);
   flex-wrap: wrap;
 }
 
 .cp-ret {
   display: grid;
   grid-template-columns: 1fr 200px auto;
-  gap: 0.6rem;
+  gap: var(--e-2);
   align-items: center;
 }
 
+/* Totales del documento: columna a la derecha, montos tabulares alineados a la
+   derecha y el total a pagar separado por una línea. */
 .cp-totales {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: var(--e-1);
   align-self: flex-end;
   min-width: 300px;
-  font-size: 0.9rem;
+  font-size: var(--fs-base);
+  color: var(--tinta-2);
 }
 
 .cp-totales > div {
   display: flex;
   justify-content: space-between;
-  gap: 1.5rem;
+  gap: var(--e-6);
+}
+
+.cp-totales b {
+  font-weight: 600;
+  color: var(--tinta);
+  font-variant-numeric: tabular-nums;
 }
 
 .cp-totales__final {
-  padding-top: 0.4rem;
-  font-size: 1rem;
-  border-top: 1px solid var(--border-soft);
-}.btn[disabled] {
-  opacity: 0.6;
-  cursor: not-allowed;
+  margin-top: var(--e-1);
+  padding-top: var(--e-2);
+  font-size: var(--fs-tarjeta);
+  color: var(--tinta);
+  border-top: 1px solid var(--borde-control);
 }
 
 @media (max-width: 820px) {
@@ -155,18 +165,39 @@
 /* ===== Carga masiva ===== */
 .cp-head__acciones {
   display: flex;
-  gap: 0.75rem;
+  gap: var(--e-2);
   flex-wrap: wrap;
 }
 
+@media (min-width: 641px) {
+  .cp-head__acciones {
+    margin-left: auto;
+    justify-content: flex-end;
+  }
+}
+
+/* Celular: los dos botones a lo ancho (1 + 1 si caben; si no, uno debajo del
+   otro, en el orden de siempre), como en Terceros, Informes y Contabilidad. */
+@media (max-width: 640px) {
+  .cp-head__acciones {
+    width: 100%;
+  }
+
+  .cp-head__acciones .btn {
+    flex: 1 1 9rem;
+  }
+}
+
 .cp-texto {
-  font-size: 0.86rem;
+  margin: 0;
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
 }
 
 .cp-resumen {
   margin: 0;
-  padding: 0.6rem 0.8rem;
-  font-size: 0.9rem;
+  padding: 10px 14px;
+  font-size: var(--fs-celda);
   color: var(--tinta);
   background: var(--info-fondo);
   border-radius: var(--r-alerta);
@@ -201,6 +232,11 @@
 /* 24-oct-2026 · Centro de costo por ítem, con enlace para crearlo sin salir. */
 .cp-nuevo-centro {
   display: inline-block;
-  margin-top: 0.3rem;
-  font-size: 0.78rem;
+  margin-top: var(--e-1);
+  font-size: var(--fs-meta);
+}
+
+/* Celda vacía: «—» en tinta-3, como en Terceros y Numeración. */
+.cmp-vacio {
+  color: var(--tinta-3);
 }

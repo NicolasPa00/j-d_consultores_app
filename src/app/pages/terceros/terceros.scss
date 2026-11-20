@@ -2,76 +2,54 @@
   display: block;
 }
 
-/* ===== Cabecera ===== */
+/* ===== Cabecera =====
+   Título arriba y, debajo, la barra con el patrón global `.toolbar` (styles.scss):
+   alineada al inicio, búsqueda flexible y todo a 40 px. A 1280 px cabe en una sola
+   fila; por debajo, los tres botones bajan JUNTOS a su propia fila (nunca uno solo). */
 .ter-head {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1.25rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: var(--e-4);
 }
 
-.ter-head__actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+.ter-barra {
+  margin-bottom: 0;
+  column-gap: var(--e-2);
 }
 
-/* El grupo de botones no es caja propia: los botones siguen en la fila de los
-   filtros, como antes del rediseño. */
-.ter-head__botones {
-  display: contents;
+/* Ronda 3: la búsqueda no se recorta para que quepan los botones. Con 280 px de
+   base, si la fila no da, el grupo de los tres botones baja ENTERO a su propia
+   fila (como Contraer/Expandir en el Plan de cuentas) y la búsqueda llena el
+   hueco; el marcador se lee completo a 1280. */
+.ter-barra > .toolbar__buscar {
+  flex: 1 1 280px;
+  min-width: 0;
 }
 
-.ter-head__actions .btn svg {
-  width: 17px;
-  height: 17px;
+.ter-barra__botones {
+  flex-wrap: nowrap;
 }
 
-.ter-search {
-  position: relative;
-  display: flex;
-  align-items: center;
+.ter-barra > .ter-filtro {
+  width: auto;
+  min-width: 150px;
 }
 
-.ter-search__icon {
-  position: absolute;
-  left: 0.85rem;
-  width: 18px;
-  height: 18px;
-  color: var(--text-muted);
-  pointer-events: none;
-}
-
-.ter-search__input {
-  width: 300px;
-  max-width: 100%;
-  padding: 0.65rem 0.9rem 0.65rem 2.5rem;
-  font-family: inherit;
-  font-size: 0.9rem;
-  color: var(--text-main);
-  background: var(--superficie);
-  border: 1px solid var(--borde-campo);
-  border-radius: var(--r-control);
-  transition: border-color var(--t-media) ease, box-shadow var(--t-media) ease;
-}
-
-.ter-search__input:focus {
-  outline: none;
-  border-color: var(--accion);
-  box-shadow: inset 0 0 0 1px var(--accion), var(--halo);
+.ter-barra .btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .ter-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  font-size: 0.85rem;
-  color: var(--text-muted);
+  gap: var(--e-2);
+  min-height: 40px;
+  font-size: var(--fs-base);
+  color: var(--tinta-2);
   cursor: pointer;
   user-select: none;
+  white-space: nowrap;
 }
 
 /* ===== Tabla =====
@@ -84,85 +62,101 @@
   letter-spacing: 0;
 }
 
-/* Lista principal: el nombre del tercero se queda con la mayor parte del ancho y el
-   municipio no se parte en dos líneas a 1280 px (el correo cede primero). */
-.card > .table-wrap > .table > thead th:nth-child(1) { width: 30%; }
-.card > .table-wrap > .table > thead th:nth-child(3) { width: 8.5rem; }
-
-/* Toda la fila abre la ficha, así que el puntero lo anuncia. */
-.col-num {
-  width: 92px;
-  text-align: right;
+/* Lista principal (ancho automático, DESIGN §7): el municipio no se parte; el
+   correo, los roles y las pastillas de estado sí, para que el nombre del
+   tercero conserve 220 px. */
+/* Roles: en escritorio, en fila (dos pastillas caben) con 4 px entre ellas.
+   Solo por debajo de 1180 px se apilan, para que el nombre conserve 220 px. */
+.ter-roles.ter-roles--fila {
+  flex-wrap: wrap;
+  gap: var(--e-1);
 }
 
-.ter-num-hint {
+@media (max-width: 1180px) {
+  .ter-roles.ter-roles--fila {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.card > .table-wrap > .table > tbody td:nth-child(3) {
+  white-space: nowrap;
+}
+
+/* Correo: en escritorio, una sola línea; si uno es muy largo, «…» y el title lo
+   da entero. Por debajo de 1180 px se parte (antes de la arroba) en vez de
+   empujar la tabla: así a ~1093 px la columna fija no tapa «Incompleto». */
+.ter-correo {
   display: block;
-  font-size: 0.72rem;
-  color: var(--text-muted);
+  max-width: 280px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-/* La actividad económica de las ARL viene con textos largos (incluye el CIIU):
-   se deja partir en varias líneas en vez de estirar la tabla. */
-.ter-cell-wrap {
-  max-width: 260px;
-  white-space: normal;
+@media (max-width: 1180px) {
+  .ter-correo {
+    max-width: 170px;
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* La cabecera «Acciones» se alinea con sus íconos, que van a la derecha
+   (pedido global abierto: th.col-actions { text-align: right }). */
+.table th.col-actions {
+  text-align: right;
 }
 
 .who {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: var(--e-3);
+  min-width: 220px;
 }
 
 .who__avatar {
   flex-shrink: 0;
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: var(--r-completo);
   background: var(--accion-tenue);
   color: var(--accion);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: var(--fs-celda);
 }
 
 .who__text {
   display: flex;
   flex-direction: column;
+  gap: 2px;
+  min-width: 0;
   line-height: 1.35;
 }
 
 .who__name {
-  font-weight: 600;
-  color: var(--text-main);
+  font-weight: 500;
+  color: var(--tinta);
 }
 
 .who__nit {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}/* Baja definitiva: se distingue del resto de acciones del pie. */
-.btn--danger {
-  color: var(--danger);
-  border-color: var(--error-borde);
-  margin-right: auto;
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
 }
 
-.btn--danger:hover {
-  background: var(--error-fondo);
-}
-
-/* ===== Ficha ===== */
-.ficha-top {
+/* Estado + «Incompleto»: apiladas en una columna de ancho fijo (el flex va en
+   el div interior, nunca en el td). */
+.ter-estado {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.ficha-nit {
-  font-size: 0.85rem;
-  color: var(--text-muted);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--e-1);
+  width: 94px;
 }
 
 /* En el diálogo centrado hay ancho de sobra: los datos van en dos columnas para
@@ -170,137 +164,96 @@
 .ficha-datos {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.9rem 1.5rem;
+  gap: 14px var(--e-6);
   margin: 0;
 }
 
 .ficha-datos dt {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin-bottom: 0.15rem;
+  margin-bottom: 2px;
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  color: var(--tinta-3);
 }
 
 .ficha-datos dd {
   margin: 0;
-  font-size: 0.92rem;
-  color: var(--text-main);
+  font-size: var(--fs-base);
+  color: var(--tinta);
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
-.ficha-sub {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--primary-color);
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--border-soft);
+.ficha-datos dd small {
+  font-size: var(--fs-celda);
+  color: var(--tinta-3);
 }
 
 .ficha-hint,
 .ficha-vacio {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  line-height: 1.5;
-}
-
-.ficha-ordenes {
-  list-style: none;
   margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.ficha-orden {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.6rem 0.8rem;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-sm);
-}
-
-.ficha-orden__main,
-.ficha-orden__meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  font-size: 0.85rem;
-}
-
-.ficha-orden__meta {
-  align-items: flex-end;
-  color: var(--text-muted);
-}
-
-.ficha-orden__act {
-  color: var(--text-muted);
-}
-
-.ficha-fusion {
-  display: flex;
-  gap: 0.6rem;
-  align-items: center;
-}
-
-.ficha-fusion .form-control {
-  flex: 1 1 auto;
-  min-width: 0;
+  font-size: var(--fs-celda);
+  color: var(--tinta-3);
+  line-height: 1.5;
 }
 
 /* ===== Formulario ===== */
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: var(--e-4);
 }
 
-/* Condiciones de facturación, dentro de la ficha del tercero. */
+.form-row:has(> :nth-child(3)) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Condiciones de facturación y cuenta bancaria, dentro de la ficha del tercero. */
 .par-form {
   display: grid;
-  gap: 0.9rem;
-  margin-top: 0.75rem;
+  gap: 14px;
+  padding: var(--e-4);
+  background: var(--pie-modal);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
 }
 
 .par-form__footer {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
+  gap: var(--e-2);
 }
 
-
 /* ===== Responsive ===== */
+/* Celular: búsqueda y filtro a lo ancho; la casilla y los botones, debajo y
+   desde la izquierda (el orden de siempre). */
 @media (max-width: 720px) {
-  .ter-head {
-    align-items: stretch;
-  }
-
-  .ter-head__actions {
-    width: 100%;
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .ter-search {
-    flex: none;
-  }
-
-  .ter-filtro {
+  .ter-barra > .toolbar__buscar,
+  .ter-barra > .ter-filtro {
+    flex: 1 1 100%;
+    max-width: none;
     width: 100%;
   }
 
-  .ter-head__botones {
-    justify-content: flex-start;
+  /* Rejilla 2 + 1: los dos secundarios a medias y el primario, último como
+     siempre, a lo ancho (nunca solo en una tercera fila a la izquierda). */
+  .ter-barra__botones {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    flex: 1 1 100%;
     margin-left: 0;
   }
 
-  .ter-search__input {
-    width: 100%;
+  .ter-barra__botones > .btn {
+    padding-left: var(--e-2);
+    padding-right: var(--e-2);
+  }
+
+  .ter-barra__botones > .btn--primary {
+    grid-column: 1 / -1;
   }
 
   .form-row,
+  .form-row:has(> :nth-child(3)),
   .ficha-datos {
     grid-template-columns: 1fr;
   }
@@ -310,50 +263,48 @@
 .ter-roles {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.3rem;
-}
-
-/* `.form-control` trae `width: 100%`: sin esto el selector se quedaba con una
-   fila entera para él y la cabecera se partía en tres renglones. */
-.ter-filtro {
-  width: auto;
-  min-width: 11rem;
+  gap: var(--e-1);
 }
 
 .ter-aviso {
-  margin: 0 0 1rem;
-  padding: 0.6rem 0.8rem;
-  border-radius: var(--radius-sm);
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--r-alerta);
   background: var(--aviso-fondo);
-  font-size: 0.85rem;
+  color: var(--tinta);
+  font-size: var(--fs-celda);
 }
 
 .ter-checks {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem 1.1rem;
+  gap: var(--e-1) var(--e-5);
 }
 
 .ter-check {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.88rem;
+  gap: var(--e-2);
+  min-height: 32px;
+  font-size: var(--fs-base);
+  color: var(--tinta);
   cursor: pointer;
 }
 
 .ter-dv {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  margin-top: 0.3rem;
+  gap: var(--e-2);
+  margin: 0;
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
 }
 
 .ter-dv strong {
-  color: var(--primary-color);
-  font-size: 1rem;
+  color: var(--tinta);
+  font-size: var(--fs-base);
+  font-weight: 600;
 }
 
 .ter-lista-prof {
@@ -361,66 +312,159 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.4rem;
+  gap: var(--e-2);
   max-height: 20rem;
   overflow: auto;
 }
 
+/* Lista de profesionales: filas planas de 44 px como los accesos de lista. */
 .ter-lista-prof button {
   width: 100%;
+  min-height: 44px;
   text-align: left;
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
-  padding: 0.55rem 0.75rem;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-sm);
-  background: transparent;
+  justify-content: center;
+  gap: 2px;
+  padding: var(--e-2) var(--e-3);
+  font: inherit;
+  color: var(--tinta);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-item);
+  background: var(--superficie);
   cursor: pointer;
+  transition:
+    background-color var(--t-rapida) ease,
+    border-color var(--t-media) ease;
 }
 
-.ter-lista-prof button:hover {
-  background: var(--accion-tenue);
+.ter-lista-prof strong {
+  font-weight: 500;
+}
+
+.ter-lista-prof small {
+  font-size: var(--fs-celda);
+  color: var(--tinta-3);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ter-lista-prof button:hover {
+    background: var(--accion-tenue);
+    border-color: var(--accion-tenue-hover);
+  }
 }
 
 /* 7-oct-2026 · Cargue de terceros por Excel. */
-.ter-imp__texto { color: var(--text-muted); margin: 0; }
+.ter-imp__texto {
+  margin: 0;
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
+}
+
 .ter-imp__barra {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) minmax(220px, 300px);
-  gap: 0.75rem;
+  gap: var(--e-3);
   align-items: end;
 }
-.ter-imp__rol { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.78rem; color: var(--text-muted); }
-.ter-imp__resumen { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
-.ter-imp__mal td { color: var(--danger); }
-.ter-imp__aviso { display: block; color: var(--tinta-2); font-weight: 600; }
+
+.ter-imp__barra > .btn {
+  min-height: 40px;
+}
+
+.ter-imp__rol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--fs-celda);
+  font-weight: 500;
+  color: var(--tinta-2);
+}
+
+.ter-imp__resumen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2);
+}
+
+.ter-imp__resumen .ter-toggle {
+  margin-left: auto;
+}
+
+.ter-imp__mal td {
+  color: var(--error);
+}
+
+.ter-imp__aviso {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  color: var(--tinta-2);
+}
+
 @media (max-width: 760px) {
-  .ter-imp__barra { grid-template-columns: 1fr; }
+  .ter-imp__barra {
+    grid-template-columns: 1fr;
+  }
+
+  .ter-imp__resumen .ter-toggle {
+    margin-left: 0;
+  }
 }
 
 /* 24-oct-2026 · Cuentas bancarias dentro de la ficha. */
 .ter-cuentas {
   display: grid;
-  gap: 0.6rem;
-  margin: 0 0 0.75rem;
+  gap: var(--e-2);
+  margin: 0;
   padding: 0;
   list-style: none;
 }
+
 .ter-cuenta {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  gap: 0.6rem;
-  padding: 0.7rem 0.85rem;
-  font-size: 0.9rem;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
+  align-items: center;
+  gap: var(--e-3);
+  padding: var(--e-3) 14px;
+  font-size: var(--fs-base);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
   background: var(--superficie);
 }
-.ter-cuenta small { color: var(--text-muted); }
-.ter-cuenta__acciones { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
-.ter-cuenta-form__otro { margin-top: 0.5rem; }
+
+.ter-cuenta strong {
+  font-weight: 600;
+}
+
+.ter-cuenta .pill {
+  margin-left: var(--e-2);
+}
+
+.ter-cuenta .mono {
+  margin-top: 2px;
+  color: var(--tinta-2);
+}
+
+.ter-cuenta small {
+  display: block;
+  font-size: var(--fs-celda);
+  color: var(--tinta-3);
+}
+
+.ter-cuenta__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-2);
+  align-items: center;
+}
+
+.ter-cuenta-form__otro {
+  margin-top: var(--e-2);
+}
 
 .ter-imp__aviso::before {
   content: '';
@@ -469,5 +513,4 @@
   align-self: flex-start;
   justify-self: start;
   width: auto;
-  margin-top: var(--e-2);
 }

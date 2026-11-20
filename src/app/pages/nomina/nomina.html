@@ -3,25 +3,30 @@
     <h2 class="page-head__title">Nómina</h2>
     <p class="page-head__sub">Nómina electrónica ante la DIAN · una liquidación por empleado y mes</p>
   </div>
-  <app-cupo-documentos tipo="nomina" class="cupo-cabecera" />
-  @if (puedeOperar()) {
-    <div class="nom-head__acciones">
-      <button type="button" class="btn btn--secondary" (click)="abrirEmpleado()">Nuevo empleado</button>
-      <button type="button" class="btn btn--primary" (click)="abrirLiquidar()" [disabled]="!opcionesEmpleado().length"
-              [title]="opcionesEmpleado().length ? '' : 'Primero cree la ficha de un empleado'">Liquidar nómina</button>
-    </div>
-  }
+  <!-- 20-nov-2026 · La misma fila que Facturación: el contador a la izquierda y los
+       botones a la derecha. El orden no cambia. -->
+  <div class="nom-head-fila">
+    <app-cupo-documentos tipo="nomina" />
+    @if (puedeOperar()) {
+      <div class="nom-head__acciones">
+        <button type="button" class="btn btn--secondary" (click)="abrirEmpleado()">Nuevo empleado</button>
+        <button type="button" class="btn btn--primary" (click)="abrirLiquidar()" [disabled]="!opcionesEmpleado().length"
+                [title]="opcionesEmpleado().length ? '' : 'Primero cree la ficha de un empleado'">Liquidar nómina</button>
+      </div>
+    }
+  </div>
 </section>
 
+<div class="nom-barra-marco">
 <div class="nom-barra">
   <div class="tabs" role="tablist">
-    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'liquidaciones'" (click)="cambiarPestana('liquidaciones')">
+    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'liquidaciones'" (click)="cambiarPestana('liquidaciones'); $any($event.currentTarget).scrollIntoView({ block: 'nearest', inline: 'nearest' })">
       Liquidaciones <span class="tab__count">{{ liquidaciones().length }}</span>
     </button>
-    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'empleados'" (click)="cambiarPestana('empleados')">
+    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'empleados'" (click)="cambiarPestana('empleados'); $any($event.currentTarget).scrollIntoView({ block: 'nearest', inline: 'nearest' })">
       Empleados <span class="tab__count">{{ empleados().length }}</span>
     </button>
-    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'parametros'" (click)="cambiarPestana('parametros')">Parámetros</button>
+    <button type="button" class="tab" role="tab" [class.tab--active]="pestana() === 'parametros'" (click)="cambiarPestana('parametros'); $any($event.currentTarget).scrollIntoView({ block: 'nearest', inline: 'nearest' })">Parámetros</button>
   </div>
   @if (pestana() === 'liquidaciones') {
     <div class="nom-periodo">
@@ -34,6 +39,7 @@
       </select>
     </div>
   }
+</div>
 </div>
 
 <!-- ======================= LIQUIDACIONES ======================= -->
@@ -55,15 +61,15 @@
               <td class="num">{{ +l.dias_trabajados }}</td>
               <td class="num">{{ pesos(l.total_devengado) }}</td>
               <td class="num">{{ pesos(l.total_deducido) }}</td>
-              <td class="num"><b>{{ pesos(l.neto) }}</b></td>
+              <td class="num nom-monto">{{ pesos(l.neto) }}</td>
               <td>
-                <span class="pill" [class]="pillEstado(l.estado)">{{ etiquetaEstado(l.estado) }}</span>
+                <span class="pill doc-estado" [class]="'pill doc-estado ' + pillEstado(l.estado)">{{ etiquetaEstado(l.estado) }}</span>
                 @if (l.numero) { <small class="nom-sub">{{ l.numero }}</small> }
               </td>
               <td class="col-actions"><button type="button" class="icon-action icon-action--ver" (click)="abrir(l)" aria-label="Ver la liquidación" title="Ver la liquidación"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg></button></td>
             </tr>
           } @empty {
-            <tr><td colspan="8" class="table__empty table__empty--estado">
+            <tr><td colspan="8" class="table__empty" [class.table__empty--estado]="!cargando()">
               @if (cargando()) { Cargando… }
               @else if (!empleados().length) {
                 <div class="estado-vacio">
@@ -105,7 +111,7 @@
               <td>
                 <span class="who__name">{{ e.nombre }}</span><small class="nom-sub">{{ e.numero_documento }}</small>
                 @if (e.faltantes.length) {
-                  <span class="pill pill--warning" [title]="'Complete en Terceros: ' + e.faltantes.join(', ')">Falta {{ e.faltantes.join(', ') }}</span>
+                  <span class="pill doc-estado pill--warning nom-falta" [title]="'Complete en Terceros: ' + e.faltantes.join(', ')">Falta {{ e.faltantes.join(', ') }}</span>
                 }
               </td>
               <td>{{ e.cargo || '—' }}</td>
@@ -113,7 +119,7 @@
               <td class="num">{{ pesos(e.salario) }}@if (e.salario_integral) { <small class="nom-sub">integral</small> }</td>
               <td class="nom-fijo">{{ fecha(e.fecha_ingreso) }}@if (e.fecha_retiro) { <small class="nom-sub">retiro {{ fecha(e.fecha_retiro) }}</small> }</td>
               <td>{{ nombreDe(catalogos()?.metodos_pago, e.metodo_pago) }}@if (e.banco) { <small class="nom-sub">{{ e.banco }}</small> }</td>
-              <td><span class="pill" [class]="e.activo ? 'pill--success' : 'pill--muted'">{{ e.activo ? 'Activo' : 'Inactivo' }}</span></td>
+              <td><span class="pill doc-estado" [class]="'pill doc-estado ' + (e.activo ? 'pill--success' : 'pill--muted')">{{ e.activo ? 'Activo' : 'Inactivo' }}</span></td>
               <td class="col-actions">
                 @if (puedeOperar()) {
                   <span class="nom-acciones">
@@ -124,9 +130,13 @@
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="8" class="table__empty">
-              Todavía no hay empleados. La persona se crea primero en <a routerLink="/terceros">Terceros</a> (persona natural) y
-              aquí se le agrega el contrato, el salario y cómo se le paga.
+            <tr><td colspan="8" class="table__empty table__empty--estado">
+              <div class="estado-vacio">
+                <span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6" /></svg></span>
+                <p class="estado-vacio__titulo">Todavía no hay empleados</p>
+                <p class="estado-vacio__texto">La persona se crea primero en <a routerLink="/terceros">Terceros</a> (persona natural) y
+                  aquí se le agrega el contrato, el salario y cómo se le paga.</p>
+              </div>
             </td></tr>
           }
         </tbody>
@@ -141,7 +151,7 @@
   <div class="card">
     <div class="nom-param__texto">
       <p>El salario mínimo y el auxilio de transporte con los que se liquida cada año. Cuando salga el decreto de diciembre, agregue aquí el año nuevo: no hace falta nada más.</p>
-      @if (puedeOperar() && paramAnio() === null) { <button type="button" class="btn btn--primary btn--sm" (click)="editarParametro(null)">Agregar año</button> }
+      @if (puedeOperar() && paramAnio() === null) { <button type="button" class="btn btn--secondary" (click)="editarParametro(null)">Agregar año</button> }
     </div>
     @if (paramAnio() !== null) {
       <form class="nom-param__form" (ngSubmit)="guardarParametro()">
@@ -171,14 +181,20 @@
         <tbody>
           @for (p of catalogos()?.parametros ?? []; track p.anio) {
             <tr>
-              <td><b>{{ p.anio }}</b></td>
+              <td class="td-id">{{ p.anio }}</td>
               <td class="num">{{ pesos(p.smmlv) }}</td>
               <td class="num">{{ pesos(p.auxilio_transporte) }}</td>
               <td class="num">{{ pesos(p.smmlv * 2) }}</td>
               <td class="col-actions">@if (puedeOperar()) { <button type="button" class="btn btn--ghost btn--sm" (click)="editarParametro(p)">Editar</button> }</td>
             </tr>
           } @empty {
-            <tr><td colspan="5" class="table__empty">No hay cifras cargadas: sin ellas no se puede liquidar.</td></tr>
+            <tr><td colspan="5" class="table__empty table__empty--estado">
+              <div class="estado-vacio">
+                <span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2" /><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z" /></svg></span>
+                <p class="estado-vacio__titulo">No hay cifras cargadas</p>
+                <p class="estado-vacio__texto">Sin ellas no se puede liquidar.</p>
+              </div>
+            </td></tr>
           }
         </tbody>
       </table>
@@ -217,7 +233,8 @@
         </div>
         <div class="form-field">
           <label class="form-field__label" for="nomEmpCorreo">Correo</label>
-          <input id="nomEmpCorreo" class="form-control" type="email" maxlength="120" [(ngModel)]="empleadoForm.correo" name="correo" placeholder="Para enviarle el desprendible" />
+          <input id="nomEmpCorreo" class="form-control" type="email" maxlength="120" [(ngModel)]="empleadoForm.correo" name="correo" aria-describedby="nomEmpCorreoPista" />
+          <p class="form-field__hint" id="nomEmpCorreoPista">Para enviarle el desprendible</p>
         </div>
         <div class="form-field">
           <label class="form-field__label" for="nomEmpSalario">Salario mensual *</label>
@@ -384,7 +401,7 @@
 
         <!-- Horas extra y recargos -->
         <section class="nom-nov">
-          <header><h4>Horas extra y recargos</h4><button type="button" class="btn btn--ghost btn--sm" (click)="agregar('horas')">+ Agregar</button></header>
+          <header><h4>Horas extra y recargos</h4><button type="button" class="btn btn--ghost btn--sm" (click)="agregar('horas')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg> Agregar</button></header>
           @for (h of nov().horas; track $index; let i = $index) {
             <div class="nom-fila nom-fila--horas">
               <select class="form-control" [ngModel]="h.tipo" (ngModelChange)="cambiarFila('horas', i, 'tipo', $event)" [attr.aria-label]="'Tipo de la fila ' + (i + 1)">
@@ -402,7 +419,7 @@
 
         <!-- Vacaciones -->
         <section class="nom-nov">
-          <header><h4>Vacaciones</h4><button type="button" class="btn btn--ghost btn--sm" (click)="agregar('vacaciones')">+ Agregar</button></header>
+          <header><h4>Vacaciones</h4><button type="button" class="btn btn--ghost btn--sm" (click)="agregar('vacaciones')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg> Agregar</button></header>
           @for (v of nov().vacaciones; track $index; let i = $index) {
             <div class="nom-fila nom-fila--dias">
               <label class="nom-fila__check"><input type="checkbox" [ngModel]="v.compensadas" (ngModelChange)="cambiarFila('vacaciones', i, 'compensadas', $event)" /> Compensadas en dinero</label>
@@ -418,7 +435,7 @@
 
         <!-- Licencias -->
         <section class="nom-nov">
-          <header><h4>Licencias</h4><button type="button" class="btn btn--ghost btn--sm" (click)="agregar('licencias')">+ Agregar</button></header>
+          <header><h4>Licencias</h4><button type="button" class="btn btn--ghost btn--sm" (click)="agregar('licencias')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg> Agregar</button></header>
           @for (l of nov().licencias; track $index; let i = $index) {
             <div class="nom-fila nom-fila--dias">
               <select class="form-control" [ngModel]="l.tipo" (ngModelChange)="cambiarFila('licencias', i, 'tipo', $event)" aria-label="Tipo de licencia">
@@ -436,7 +453,7 @@
 
         <!-- Incapacidades -->
         <section class="nom-nov">
-          <header><h4>Incapacidad por enfermedad común</h4><button type="button" class="btn btn--ghost btn--sm" (click)="agregar('incapacidades')">+ Agregar</button></header>
+          <header><h4>Incapacidad por enfermedad común</h4><button type="button" class="btn btn--ghost btn--sm" (click)="agregar('incapacidades')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg> Agregar</button></header>
           @for (x of nov().incapacidades; track $index; let i = $index) {
             <div class="nom-fila nom-fila--dias">
               <span class="nom-fila__texto">Se paga al 66,67 %</span>
@@ -475,7 +492,7 @@
 
         <!-- Otros pagos: auxilios, viáticos, bonificación no salarial… -->
         <section class="nom-nov">
-          <header><h4>Otros pagos</h4><button type="button" class="btn btn--ghost btn--sm" (click)="agregar('otrosDevengados')">+ Agregar</button></header>
+          <header><h4>Otros pagos</h4><button type="button" class="btn btn--ghost btn--sm" (click)="agregar('otrosDevengados')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg> Agregar</button></header>
           @for (o of nov().otrosDevengados; track $index; let i = $index) {
             <div class="nom-fila nom-fila--otros">
               <select class="form-control" [ngModel]="o.tipo" (ngModelChange)="cambiarFila('otrosDevengados', i, 'tipo', $event)" aria-label="Tipo">
@@ -493,7 +510,7 @@
 
         <!-- Otras deducciones: libranza, embargo, retención… -->
         <section class="nom-nov">
-          <header><h4>Otras deducciones</h4><button type="button" class="btn btn--ghost btn--sm" (click)="agregar('otrasDeducciones')">+ Agregar</button></header>
+          <header><h4>Otras deducciones</h4><button type="button" class="btn btn--ghost btn--sm" (click)="agregar('otrasDeducciones')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg> Agregar</button></header>
           @for (o of nov().otrasDeducciones; track $index; let i = $index) {
             <div class="nom-fila nom-fila--otros">
               <select class="form-control" [ngModel]="o.tipo" (ngModelChange)="cambiarFila('otrasDeducciones', i, 'tipo', $event)" aria-label="Tipo">
@@ -543,7 +560,7 @@
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="nomDetTitulo">
-          Nómina de {{ periodo(d) }} <span class="pill" [class]="pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span>
+          Nómina de {{ periodo(d) }} <span class="pill doc-estado" [class]="'pill doc-estado ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span>
         </h3>
         <p class="modal__sub">{{ d.empleado_nombre }} · {{ d.empleado_documento }}@if (d.numero) { · {{ d.numero }} }</p>
       </div>
@@ -596,7 +613,7 @@
       </button>
       @if (puedeOperar()) {
         @if (d.estado === 'BORRADOR' || d.estado === 'RECHAZADO') {
-          <button type="button" class="btn btn--danger" (click)="eliminar()" [disabled]="!!accion()">Eliminar</button>
+          <button type="button" class="btn btn--peligro-contorno" (click)="eliminar()" [disabled]="!!accion()">Eliminar</button>
           <button type="button" class="btn btn--secondary" (click)="abrirLiquidar(d)" [disabled]="!!accion()">Cambiar novedades</button>
         }
         @if (d.estado === 'BORRADOR' || d.estado === 'ENVIANDO') {
@@ -607,7 +624,7 @@
         }
         @if (d.estado === 'VALIDADO') {
           <button type="button" class="btn btn--secondary" (click)="abrirEnviar()" [disabled]="!!accion()">Enviar al empleado</button>
-          <button type="button" class="btn btn--danger" (click)="anular()" [disabled]="!!accion()">
+          <button type="button" class="btn btn--peligro-contorno" (click)="anular()" [disabled]="!!accion()">
             @if (accion() === 'anular') { <span class="spinner" aria-hidden="true"></span> Anulando… } @else { Anular nómina }
           </button>
         }

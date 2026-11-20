@@ -1046,9 +1046,13 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.pag.reiniciar();
   }
 
-  /** Color de la pastilla del estado ARL: verde aprobado, naranja pendiente. */
+  /**
+   * Color de la pastilla del estado ARL: verde aprobado y neutro pendiente.
+   * Rediseño 20-nov-2026 · Pendiente deja el ámbar: ese color es solo de SIN
+   * PROGRAMAR (DESIGN §1, §7 «Estado ARL» y §10). Pendiente es espera, no alerta.
+   */
   protected pillArl(estado?: EstadoArl | null): string {
-    return estado === 'APROBADO' ? 'pill--success' : 'pill--warning';
+    return estado === 'APROBADO' ? 'pill--success' : 'pill--muted';
   }
 
   /** El n.º de prefactura son solo dígitos (los de Bolívar tienen 6). */
@@ -1085,6 +1089,49 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected nombreOrden(o: ServiceOrder): string {
     return etiquetaEmpresa(o.company, o.arl, o.fields.codigoCronograma.value, o.fields.secuencia.value, o.fields.numeroOrden?.value);
   }
+
+  /**
+   * Rediseño 20-nov-2026 · La celda de la bandeja va en dos niveles: arriba la
+   * razón social sola y debajo NIT · referencia · asesor (DESIGN §7). La
+   * referencia es exactamente lo que `nombreOrden` pone entre paréntesis
+   * (cronograma-secuencia en Bolívar, n.º de orden en AXA y Sura); sin ella, el
+   * código OS. No cambia ningún dato: solo dónde se pinta.
+   */
+  protected nombreFila(o: ServiceOrder): string {
+    return String(o.company ?? '').trim() || '—';
+  }
+
+  protected refFila(o: ServiceOrder): string {
+    const nombre = this.nombreFila(o);
+    const completo = this.nombreOrden(o);
+    const ref = completo.startsWith(nombre + ' (') && completo.endsWith(')')
+      ? completo.slice(nombre.length + 2, -1)
+      : '';
+    return ref || o.osCode || '';
+  }
+
+  /** El texto completo de la segunda línea, para el `title` (se corta con elipsis). */
+  protected metaFila(o: ServiceOrder): string {
+    // Los coasesores llevan sus horas de la orden (antes iban en el `title` de
+    // cada nombre; la ronda 2 del rediseño las devuelve también aquí).
+    const asesores = [o.assignedProf, ...(o.coasesores ?? []).map((c) => `${c.nombre} (${c.horas} h de la orden)`)]
+      .filter(Boolean).join(', ');
+    return [o.fields.nit.value, this.refFila(o), asesores].filter(Boolean).join(' · ');
+  }
+
+  /**
+   * «Plataforma» bloqueada porque la orden aún no está ejecutada (no por falta
+   * de permiso): es la razón que explica la leyenda bajo la tabla.
+   */
+  protected plataformaEnEspera(o: ServiceOrder): boolean {
+    return !!o.osId && !o.particular && !o.validadoPlataformaEn
+      && this.puedeValidarPlataforma() && !this.puedeMarcarValidado(o);
+  }
+
+  /** La leyenda solo se pinta si alguna fila de la página la necesita. */
+  protected readonly hayPlataformaEnEspera = computed(() =>
+    this.pag.visibles().some((o) => this.plataformaEnEspera(o)),
+  );
 
   /** El n.º de prefactura (código SIPAB) solo existe en Bolívar. */
   /** 1-oct-2026 · AXA no envía prefactura: el modal de cobro lo explica. */
@@ -1872,7 +1919,9 @@ export class ValidationComponent implements OnInit, OnDestroy {
       // SIN revisar, pide una acción del administrador—; si se quiere volver a
       // distinguir, basta con devolverla a 'pill--warning'.
       case 'EJECUTADA': return 'pill--success';
-      case 'FINALIZADA': return 'pill--success';
+      // Rediseño 20-nov-2026 · FINALIZADA lleva visto en vez de punto (DESIGN §7):
+      // por color sola no se distinguía de EJECUTADA.
+      case 'FINALIZADA': return 'pill--finalizada';
       // 30-sep-2026 · SIN PROGRAMAR en ámbar: es lo pendiente (lineamientos de JD&D).
       default: return 'pill--warning'; // SIN PROGRAMAR
     }

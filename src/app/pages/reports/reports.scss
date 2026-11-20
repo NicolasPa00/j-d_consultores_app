@@ -1,227 +1,209 @@
+/* Informes · tablas de detalle (debajo de Estadísticas).
+   Rediseño 20-nov-2026: tabla, acciones de fila, pastillas, buscador y KPI son
+   los GLOBALES (styles.scss, DESIGN §7). Aquí solo queda lo propio de la vista:
+   la barra de filtros con su exportación, los chips de ARL/estado, los
+   controles de rango, las barras horizontales y el resumen. */
+
 :host {
   display: block;
 }
 
-/* Pill neutro (Inactivo) + tonos de estado */
-.tone-slate { --tone: var(--tinta-3); }
-.tone-blue { --tone: var(--info); }
-.tone-amber { --tone: var(--ambar); }
-.tone-green { --tone: var(--success); }
-.tone-red { --tone: var(--danger); }
-
-/* ===== Pestañas: las globales `.tabs` / `.tab` (styles.scss, DESIGN §7) ===== */
-
-/* ===== Toolbar ===== */
-.toolbar {
-  display: flex;
+/* Días transcurridos (Vencidas): es una MÉTRICA, no un estado de OS. Mismo
+   cuerpo que la confianza (radio 6, 12/600 tabular, sin punto): pasado el
+   umbral en naranja y pasado el doble en error. */
+.estado-pill {
+  display: inline-flex;
   align-items: center;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: var(--r-control);
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--tinta-2);
+  background: var(--hundida);
+}
+
+.estado-pill.tone-amber { color: var(--naranja); background: var(--naranja-fondo); }
+.estado-pill.tone-red   { color: var(--error);   background: var(--error-fondo); }
+
+/* ===== Barra de filtros y exportación =====
+   Filtros al inicio (búsqueda flexible), exportar al final: la misma anatomía
+   que la `.toolbar` global, con sus dos grupos de siempre. */
+.toolbar {
   justify-content: space-between;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
+  gap: var(--e-3);
 }
 
 .toolbar__filters,
 .toolbar__export {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: var(--e-2) var(--e-3);
   flex-wrap: wrap;
+}
+
+/* Ronda 3: con base de 520 px los filtros se quedaban la fila entera y la
+   exportación bajaba sola, aunque había sitio junto al desplegable. Ahora cada
+   grupo mide lo que su contenido; si parten, la exportación no se estira. */
+.toolbar__filters {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.toolbar__export {
+  flex: 0 1 auto;
+  margin-left: auto;
 }
 
 .toolbar__control {
   width: auto;
   min-width: 170px;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-  font-size: 0.85rem;
 }
 
-.toolbar__search input {
-  width: 260px;
-  max-width: 100%;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-  font-size: 0.85rem;
+.toolbar__search {
+  flex: 1 1 260px;
+  min-width: min(100%, 220px);
+  max-width: 360px;
 }
+
+.toolbar .btn {
+  min-height: 40px;
+}
+
 /* ===== Filtros por ARL / estado (multiselección) =====
-   Botones de dos estados en vez de un <select>: se ve de un vistazo qué está
-   marcado y se pueden combinar varios sin abrir ningún desplegable. */
+   Chips pulsables globales (`.chip.chip--filtro` / `.chip--on`): se ve de un
+   vistazo qué está marcado y se combinan sin abrir ningún desplegable. */
 .filters {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: var(--e-2);
+  margin-bottom: var(--e-4);
 }
 
 .filters__group {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .filters__label {
-  min-width: 58px;
-  font-size: 0.76rem;
-  font-weight: 600;
-  letter-spacing: 0;
-  color: var(--text-muted);
+  min-width: 56px;
+  font-size: var(--fs-celda);
+  font-weight: 500;
+  color: var(--tinta-2);
 }
 
 .filters__empty {
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  font-size: var(--fs-celda);
+  color: var(--tinta-3);
 }
-
-/* Los filtros son `.chip.chip--filtro` / `.chip--on` globales (DESIGN §7). */
 
 .btn--sm svg {
   width: 15px;
   height: 15px;
 }
 
-/* ===== Tabla ===== */
-.table-wrap {
-  width: 100%;
-  overflow-x: auto;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-/* Tabla: la global de styles.scss (estandarizada el 30-sep-2026); aquí ya no se redefine. */
-
-.table__empty {
-  padding: 2rem 1rem !important;
-  text-align: center;
-  color: var(--text-muted);
-}
-
+/* ===== Tabla (la global) ===== */
 .mono {
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
+  color: var(--tinta-2);
 }
 
-.col-actions {
-  width: 96px;
-  text-align: center;
+/* Ronda 3 · Cobro → Detalle por orden: a ~1093 px desbordaba 5 px y la
+   empresa se partía en 4-5 líneas. Factura y código en una línea y la empresa
+   con ancho mínimo. Medido a 1093 px (795 px útiles): con 160 px de empresa y
+   --e-2 de aire el mínimo de las ocho columnas es ~870 px (desborda 70). Por
+   eso, por debajo de 1280 px, empresa a 140 px (dos líneas como mucho) y aire
+   lateral --e-1 entre columnas, --e-2 en los bordes: 0 px de desborde. */
+.tabla-cobro td.cobro-empresa { min-width: 160px; }
+.tabla-cobro td.cobro-nowrap,
+.tabla-cobro td.td-id { white-space: nowrap; }
+@media (max-width: 1279px) {
+  .tabla-cobro td.cobro-empresa { min-width: 140px; }
+  .tabla-cobro > :is(thead, tbody) > tr > :is(th, td) {
+    padding-left: var(--e-1);
+    padding-right: var(--e-1);
+  }
+  .tabla-cobro > :is(thead, tbody) > tr > :is(th, td):first-child { padding-left: var(--e-2); }
+  .tabla-cobro > :is(thead, tbody) > tr > :is(th, td):last-child { padding-right: var(--e-2); }
 }
 
-.col-actions .icon-action { margin: 0 auto; }
+/* El encabezado de la acción cae sobre su ícono, a la derecha. */
+.table th.col-actions {
+  text-align: right;
+}
 
 /* Celda profesional */
 .who {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: 10px;
 }
 
 .who__avatar {
   flex-shrink: 0;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: var(--primary-color);
-  color: var(--superficie);
+  background: var(--accion-tenue);
+  color: var(--accion);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--fs-celda);
 }
 
 .who__name {
-  font-weight: 600;
-  color: var(--text-main);
+  font-weight: 500;
+  color: var(--tinta);
 }
 
-/* Pill de estado: misma forma y paleta que la `.pill` global (30-sep-2026); aquí
-   solo se traducen los tonos que usan las plantillas de Informes. */
-.estado-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.65rem;
-  border: 1px solid var(--badge-neutral-border);
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  line-height: 1.4;
-  white-space: nowrap;
-  color: var(--badge-neutral-text);
-  background: var(--badge-neutral-bg);
-}
-
-.estado-pill.tone-green { color: var(--badge-success-text); background: var(--badge-success-bg); border-color: var(--badge-success-border); }
-.estado-pill.tone-blue  { color: var(--badge-info-text);    background: var(--badge-info-bg);    border-color: var(--badge-info-border); }
-.estado-pill.tone-amber { color: var(--badge-warning-text); background: var(--badge-warning-bg); border-color: var(--badge-warning-border); }
-.estado-pill.tone-red   { color: var(--badge-danger-text);  background: var(--badge-danger-bg);  border-color: var(--badge-danger-border); }
-
-/* Botón de icono en fila */
-.icon-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  color: var(--text-muted);
-  background: transparent;
-  border: 1px solid var(--border-soft);
-  border-radius: 9px;
-  cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
-}
-
-.icon-action svg { width: 17px; height: 17px; }
-
-.icon-action:hover {
-  background: var(--accion-tenue);
-  color: var(--secondary-color);
-  border-color: var(--accent-color);
-}.summary__p {
-  margin: 0 0 0.9rem;
-  font-size: 0.92rem;
+/* ===== Resumen ejecutivo (modal) ===== */
+.summary__p {
+  margin: 0;
+  font-size: var(--fs-base);
   line-height: 1.6;
-  color: var(--text-main);
+  color: var(--tinta);
 }
 
-.summary__p:last-child { margin-bottom: 0; }
-
-/* Skeleton */
+/* Mientras la IA escribe: líneas hundidas que laten suave (sin degradado). */
 .skeleton {
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
+  gap: var(--e-3);
 }
 
 .skeleton__line {
   height: 12px;
-  border-radius: 6px;
-  background: linear-gradient(90deg, var(--hundida) 25%, var(--borde) 37%, var(--hundida) 63%);
-  background-size: 400% 100%;
-  animation: shimmer 1.3s ease infinite;
+  border-radius: var(--r-control);
+  background: var(--hundida);
+  animation: latido 1.2s ease-in-out infinite alternate;
 }
 
-.btn[disabled] { opacity: 0.6; cursor: not-allowed; }
+@keyframes latido {
+  from { opacity: 1; }
+  to { opacity: 0.45; }
+}
 
-@keyframes shimmer {
-  from { background-position: 100% 0; }
-  to { background-position: 0 0; }
+/* Ronda 3 · Las cuatro bandas de cifras de Informes (Horas, Satisfacción,
+   Vencidas, Cobro) tienen 4 KPI: auto-fit las partía 3+1 a ~1093 px. Salto
+   decidido: 4 en fila desde 901 px y 2×2 por debajo. */
+.kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 900px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* ===== Satisfacción (M8 · ENC-05) ===== */
-/* `.kpis > .kpi` y sus partes son globales (styles.scss, DESIGN §7 KPI). */
-
-/* Mini-histograma de notas 1-5 */
+/* Mini-histograma de notas 1-5: barras lisas en acción, sin degradado. */
 .spark {
   display: flex;
   align-items: flex-end;
   gap: 6px;
   height: 46px;
-  margin-top: 2px;
+  margin-top: 6px;
 }
 
 .spark__col {
@@ -238,41 +220,41 @@
   width: 100%;
   min-height: 3px;
   border-radius: 3px 3px 0 0;
-  background: linear-gradient(180deg, var(--secondary-color), var(--primary-color));
+  background: var(--accion);
 }
 
 .spark__num {
-  font-size: 0.62rem;
-  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1;
+  color: var(--tinta-3);
 }
 
 .sat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-}
-
-.sat-grid .table + .table {
-  border-top: 1px solid var(--border-soft);
+  gap: var(--e-6);
+  margin-bottom: var(--e-6);
 }
 
 /* Las observaciones pueden ser largas: se acotan para no romper la tabla. */
 .sat-obs {
-  max-width: 280px;
-  color: var(--text-muted);
+  min-width: 200px;
+  max-width: 320px;
+  white-space: normal;
+  color: var(--tinta-2);
 }
 
-/* ===== Reportes RPT-03/04/05/06 ===== */
+/* ===== Reportes RPT-03/04/05 ===== */
 
-/* Controles de rango en la toolbar (días, fechas). */
+/* Controles de rango en la barra (días, fechas). */
 .rango {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  flex-wrap: wrap;
+  gap: var(--e-2);
   margin: 0;
-  font-size: 0.85rem;
-  color: var(--text-muted);
+  font-size: var(--fs-base);
+  color: var(--tinta-2);
 }
 
 .rango__label {
@@ -280,55 +262,60 @@
 }
 
 .rango__dias {
-  width: 80px;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-  font-size: 0.85rem;
+  width: 88px;
 }
 
 .rango__fecha {
   width: auto;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-  font-size: 0.85rem;
 }
 
 /* KPI que encabeza un reporte de alerta (vencidas). */
 .kpi--alerta .kpi__value {
-  color: var(--danger);
+  color: var(--error);
 }
 
-.kpi__value--money {
-  font-size: 1.35rem;
-}
-
-/* Gráfico de barras horizontales (RPT-04 y RPT-05). Se hace con divs y no con
-   una librería: son series cortas y así el informe imprime igual que en pantalla. */
+/* Barras horizontales (RPT-04 y RPT-05). Con divs y no con una librería: son
+   series cortas y así el informe imprime igual que en pantalla. Barra lisa,
+   sin contorno, con el valor siempre escrito al lado (DESIGN §7 Gráficas). */
+/* Ronda 2: las columnas viven en el cuerpo de la tarjeta y cada fila las hereda
+   con `subgrid`. Antes cada fila era su propia rejilla y la etiqueta y la cifra
+   marcaban el ancho: los carriles arrancaban en una x distinta por fila
+   (NO FACTURADA en 426, FACTURADA en 414) y no se comparaban a ojo. */
 .barras .card__body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
+  display: grid;
+  grid-template-columns: fit-content(180px) minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
 }
 
 .barra {
   display: grid;
-  grid-template-columns: minmax(90px, 1.2fr) 3fr auto auto;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   align-items: center;
-  gap: 0.6rem;
-  font-size: 0.82rem;
+  font-size: var(--fs-celda);
+}
+
+.barras .card__body > .vacio {
+  grid-column: 1 / -1;
+}
+
+.barra__valor,
+.barra__extra {
+  text-align: right;
 }
 
 .barra__label {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--text-main);
-  font-weight: 600;
+  color: var(--tinta);
+  font-weight: 500;
 }
 
 .barra__track {
-  height: 12px;
-  border-radius: 999px;
+  height: 10px;
+  border-radius: var(--r-completo);
   background: var(--hundida);
   overflow: hidden;
 }
@@ -336,71 +323,134 @@
 .barra__fill {
   display: block;
   height: 100%;
-  border-radius: 999px;
-  background: var(--secondary-color);
-  transition: width 0.35s ease;
+  border-radius: var(--r-completo);
+  background: var(--accion);
 }
 
-/* Reutiliza el semáforo de las pills de nota para colorear la barra. */
-.barra__fill.pill--success { background: var(--success); }
-.barra__fill.pill--warning { background: var(--warning); }
-.barra__fill.pill--danger { background: var(--danger); }
-.barra__fill.pill--muted { background: var(--borde-control); }
+/* Notas de encuesta: el semáforo de la confianza (≥4 ok, 3 naranja, <3 error). */
+.barra__fill.pill--success { background: var(--ok); }
+.barra__fill.pill--warning { background: var(--naranja); }
+.barra__fill.pill--danger { background: var(--error); }
+.barra__fill.pill--muted { background: var(--contexto); }
 .barra__fill--azul { background: var(--accion); }
 
 .barra__valor {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
-  color: var(--text-main);
+  color: var(--tinta);
   white-space: nowrap;
 }
 
 .barra__extra {
-  font-size: 0.72rem;
-  color: var(--text-muted);
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
   white-space: nowrap;
 }
 
 .vacio {
-  padding: 1.5rem 0;
+  margin: 0;
+  padding: var(--e-6) var(--e-4);
   text-align: center;
-  font-size: 0.86rem;
-  color: var(--text-muted);
+  font-size: var(--fs-celda);
+  color: var(--tinta-3);
 }
 
-/* Marca "vencida" junto a la fecha límite. */
+/* Marca "vencida" junto a la fecha límite: error 600, como en Órdenes. */
 .venc {
   display: block;
-  font-size: 0.66rem;
+  font-size: var(--fs-meta);
   font-weight: 600;
-  color: var(--danger);
+  color: var(--error);
 }
 
-/* ===== Responsive ===== */
+/* ===== Celular ===== */
 @media (max-width: 720px) {
-  .toolbar {
-    align-items: stretch;
-  }
-
   .toolbar__filters,
-  .toolbar__export,
   .toolbar__search,
   .toolbar__control {
-    width: 100%;
+    flex: 1 1 100%;
+    max-width: none;
   }
 
-  .toolbar__search input { width: 100%; }
-  .toolbar__export { justify-content: flex-end; }
+  .toolbar__export {
+    margin-left: 0;
+  }
+
+  .barras .card__body {
+    grid-template-columns: fit-content(120px) minmax(0, 1fr) auto;
+  }
+
+  .barra__extra {
+    display: none;
+  }
 }
 
 /* 7-oct-2026 · Las tablas de detalle van DEBAJO de las estadísticas: su cabecera
-   es un título de sección, no el de la página. */
+   es un título de sección (20/600), no el de la página. */
 .informes-detalle {
-  margin-top: 2.25rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border-soft);
+  margin-top: var(--e-10);
+  padding-top: var(--e-8);
+  border-top: 1px solid var(--borde);
 }
 
 .informes-detalle__titulo {
-  font-size: 1.15rem;
+  font-size: 20px;
+}
+
+/* Nota sin respuestas («—»): sin caja gris, que se leía como un control apagado. */
+.pill--metric.pill--muted {
+  padding: 0;
+  background: transparent;
+  color: var(--tinta-3);
+}
+
+/* Ronda 2: cifra vacía («—») a 24 px en tinta-3, sobre la línea base de las
+   demás cifras: a 32 px en tinta se leía como un tachón. */
+.kpi-vacio {
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--tinta-3);
+}
+
+/* Ronda 2 · Pestañas en el celular: con desplazamiento lateral la última se
+   cortaba sin señal de que había más. Desvanecido en el borde derecho y aire
+   al final para que la última pestaña salga entera al llegar (pedido global:
+   llevarlo a `.tabs` en styles.scss). */
+@media (max-width: 640px) {
+  .tabs {
+    padding-right: var(--e-8);
+    scroll-padding-inline: var(--e-4);
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--e-8)), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--e-8)), transparent);
+  }
+}
+
+/* Ronda 2 · Tabla en el celular: desvanecido a la derecha mientras quedan
+   columnas por ver (Ver, estado y acciones viven al final). Ligado al
+   desplazamiento: sin desbordamiento la línea de tiempo está inactiva y no hay
+   desvanecido; al llegar al final desaparece (pedido global: `.table-wrap`). */
+@property --desv-tabla {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@media (max-width: 640px) {
+  .table-wrap {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--desv-tabla)), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--desv-tabla)), transparent);
+    animation: desv-tabla linear both;
+    animation-timeline: scroll(self inline);
+  }
+}
+
+@keyframes desv-tabla {
+  0%,
+  92% {
+    --desv-tabla: 32px;
+  }
+  100% {
+    --desv-tabla: 0px;
+  }
 }

@@ -2,70 +2,49 @@
   display: block;
 }
 
-/* ===== Cabecera ===== */
-.emp-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1.25rem;
-  flex-wrap: wrap;
+/* ===== Cabecera =====
+   Anatomía global `.page-head--acciones` + `.buscador`; aquí solo el ancho del
+   buscador y la casilla «Solo activas» a la altura de los controles. */
+/* En escritorio el grupo va en UNA línea y lo que cede es el buscador: así el
+   primario no baja solo a otra fila (defecto de la fase 2). */
+/* Ronda 2: el grupo de acciones toma el hueco libre de la cabecera (había
+   300 px vacíos a la izquierda) y el buscador crece hasta que su marcador
+   «Nombre, NIT, actividad o ciudad» cabe entero (≈ 390 px con el ícono). */
+.emp-buscar {
+  flex: 1 1 320px;
+  min-width: min(100%, 200px);
 }
 
-.emp-head__actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
+@media (min-width: 1000px) {
+  .page-head__acciones:has(> .emp-buscar) {
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+  }
 
-.emp-head__actions .btn svg {
-  width: 17px;
-  height: 17px;
-}
-
-.emp-search {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.emp-search__icon {
-  position: absolute;
-  left: 0.85rem;
-  width: 18px;
-  height: 18px;
-  color: var(--text-muted);
-  pointer-events: none;
-}
-
-.emp-search__input {
-  width: 360px; /* «…actividad o ciudad…» entero con Inter si hay sitio; si no, «…» y title */
-  text-overflow: ellipsis;
-  max-width: 100%;
-  padding: 0.65rem 0.9rem 0.65rem 2.5rem;
-  font-family: inherit;
-  font-size: 0.9rem;
-  color: var(--text-main);
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
-  border-radius: 10px;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
-}
-
-.emp-search__input:focus {
-  outline: none;
-  border-color: var(--secondary-color);
-  box-shadow: var(--halo);
+  .emp-buscar {
+    flex: 0 1 360px;
+    min-width: 320px;
+  }
 }
 
 .emp-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  font-size: 0.85rem;
-  color: var(--text-muted);
+  gap: var(--e-2);
+  flex: none;
+  min-height: 40px;
+  font-size: var(--fs-base);
+  white-space: nowrap;
+  color: var(--tinta-2);
   cursor: pointer;
   user-select: none;
+
+  input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--accion);
+  }
 }
 
 /* ===== Tabla =====
@@ -86,8 +65,8 @@
 
 .emp-num-hint {
   display: block;
-  font-size: 0.72rem;
-  color: var(--text-muted);
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
 }
 
 /* La actividad económica de las ARL viene con textos largos (incluye el CIIU):
@@ -105,16 +84,16 @@
 
 .who__avatar {
   flex-shrink: 0;
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: var(--r-item);
   background: var(--accion-tenue);
   color: var(--accion);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: var(--fs-celda);
 }
 
 .who__text {
@@ -124,34 +103,25 @@
 }
 
 .who__name {
-  font-weight: 600;
-  color: var(--text-main);
+  font-weight: 500;
+  color: var(--tinta);
 }
 
 .who__nit {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}/* Baja definitiva: se distingue del resto de acciones del pie. */
-.btn--danger {
-  color: var(--danger);
-  border-color: var(--error-borde);
-  margin-right: auto;
-}
-
-.btn--danger:hover {
-  background: var(--error-fondo);
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
 }
 
 /* ===== Ficha ===== */
 .ficha-top {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--e-3);
 }
 
 .ficha-nit {
-  font-size: 0.85rem;
-  color: var(--text-muted);
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
 }
 
 /* En el diálogo centrado hay ancho de sobra: los datos van en dos columnas para
@@ -159,107 +129,144 @@
 .ficha-datos {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.9rem 1.5rem;
+  gap: var(--e-4) var(--e-6);
   margin: 0;
 }
 
 .ficha-datos dt {
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  color: var(--text-muted);
-  margin-bottom: 0.15rem;
+  margin-bottom: 2px;
+  font-size: var(--fs-celda);
+  font-weight: 500;
+  color: var(--tinta-2);
 }
 
 .ficha-datos dd {
   margin: 0;
-  font-size: 0.92rem;
-  color: var(--text-main);
+  font-size: var(--fs-base);
+  color: var(--tinta);
   line-height: 1.5;
 }
 
-.ficha-sub {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--primary-color);
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--border-soft);
+.ficha-datos dd small {
+  color: var(--tinta-3);
 }
 
 .ficha-hint,
 .ficha-vacio {
-  font-size: 0.85rem;
-  color: var(--text-muted);
+  margin: 0;
+  font-size: var(--fs-celda);
+  color: var(--tinta-3);
   line-height: 1.5;
 }
 
+/* Lista plana con divisores: sin una caja por orden (DESIGN §4). */
 .ficha-ordenes {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
 }
 
 .ficha-orden {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.6rem 0.8rem;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-sm);
+  gap: var(--e-3);
+  padding: 10px var(--e-4);
+}
+
+.ficha-orden + .ficha-orden {
+  border-top: 1px solid var(--borde);
 }
 
 .ficha-orden__main,
 .ficha-orden__meta {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  font-size: 0.85rem;
+  gap: 2px;
+  min-width: 0;
+  font-size: var(--fs-celda);
+}
+
+.ficha-orden__main .mono {
+  font-weight: 600;
+  color: var(--tinta);
 }
 
 .ficha-orden__meta {
+  flex: none;
   align-items: flex-end;
-  color: var(--text-muted);
+  color: var(--tinta-3);
+}
+
+.ficha-orden__meta small {
+  font-size: var(--fs-meta);
 }
 
 .ficha-orden__act {
-  color: var(--text-muted);
+  color: var(--tinta-2);
 }
-
 
 /* ===== Formulario ===== */
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.btn[disabled] {
-  opacity: 0.6;
-  cursor: not-allowed;
+  gap: 14px var(--e-6);
 }
 
 /* ===== Responsive ===== */
 @media (max-width: 720px) {
-  .emp-head {
-    align-items: stretch;
-  }
-
-  .emp-head__actions {
-    width: 100%;
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .emp-search__input {
-    width: 100%;
+  .emp-buscar {
+    flex: 1 1 100%;
   }
 
   .form-row,
   .ficha-datos {
     grid-template-columns: 1fr;
+  }
+}
+
+/* El encabezado de la columna de acciones cae sobre sus íconos (a la derecha,
+   como la celda): la regla global `th { text-align: left }` le ganaba a
+   `.col-actions` (pedido global anotado). */
+.table th.col-actions {
+  text-align: right;
+}
+
+/* Ronda 2 · Tabla en el celular: desvanecido a la derecha mientras quedan
+   columnas por ver (Ver, estado y acciones viven al final). Ligado al
+   desplazamiento: sin desbordamiento la línea de tiempo está inactiva y no hay
+   desvanecido; al llegar al final desaparece (pedido global: `.table-wrap`). */
+@property --desv-tabla {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@media (max-width: 640px) {
+  .table-wrap {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--desv-tabla)), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--desv-tabla)), transparent);
+    animation: desv-tabla linear both;
+    animation-timeline: scroll(self inline);
+  }
+}
+
+@keyframes desv-tabla {
+  0%,
+  92% {
+    --desv-tabla: 32px;
+  }
+  100% {
+    --desv-tabla: 0px;
+  }
+}
+
+/* Ronda 2 · En el celular la razón social se partía en tres líneas: la
+   primera columna conserva 180 px. */
+@media (max-width: 640px) {
+  .table td:first-child .who {
+    min-width: 180px;
   }
 }

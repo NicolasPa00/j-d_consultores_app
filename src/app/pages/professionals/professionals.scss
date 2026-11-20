@@ -2,77 +2,28 @@
   display: block;
 }
 
-/* Pill neutro para estado Inactivo (extiende .pill del DS global) */
-.pill--muted {
-  background: var(--hundida);
-  color: var(--text-muted);
+/* ===== Cabecera =====
+   Anatomía global `.page-head--acciones`: título a la izquierda y, a la
+   derecha, buscador + Especialidades + Nuevo profesional (mismo orden de antes).
+   El buscador es el global `.buscador`; aquí solo se le da su ancho. */
+/* En escritorio el grupo va en UNA línea y lo que cede es el buscador: así el
+   primario no baja solo a otra fila (defecto de la fase 2). */
+@media (min-width: 1000px) {
+  .page-head__acciones:has(> .prof-buscar) {
+    flex-wrap: nowrap;
+  }
 }
 
-.pill {
-  transition: background 0.2s ease, color 0.2s ease;
-}
-
-/* ===== Cabecera ===== */
-.prof-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1.25rem;
-  flex-wrap: wrap;
-}
-
-.prof-head__actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.prof-head__actions .btn svg {
-  width: 17px;
-  height: 17px;
-}
-
-.prof-search {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.prof-search__icon {
-  position: absolute;
-  left: 0.85rem;
-  width: 18px;
-  height: 18px;
-  color: var(--text-muted);
-  pointer-events: none;
-}
-
-.prof-search__input {
-  width: 310px; /* Inter es más ancha: el placeholder entra entero */
-  text-overflow: ellipsis;
-  max-width: 100%;
-  padding: 0.65rem 0.9rem 0.65rem 2.5rem;
-  font-family: inherit;
-  font-size: 0.9rem;
-  color: var(--text-main);
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
-  border-radius: 10px;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
-}
-
-.prof-search__input:focus {
-  outline: none;
-  border-color: var(--secondary-color);
-  box-shadow: var(--halo);
+.prof-buscar {
+  flex: 0 1 300px;
+  min-width: min(100%, 200px);
 }
 
 /* ===== Tabla =====
    La estructura (`.table-wrap`, `.table`, celdas, estado vacío) y la columna de
    acciones vienen del design system global (`styles.scss`). */
 .mono {
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
+  color: var(--tinta-2);
 }
 
 /* Celda Profesional (nombre + correo) */
@@ -84,8 +35,8 @@
 
 .who__avatar {
   flex-shrink: 0;
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -93,7 +44,7 @@
   background: var(--accion-tenue);
   color: var(--accion);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: var(--fs-celda);
 }
 
 .who__text {
@@ -103,19 +54,19 @@
 }
 
 .who__name {
-  font-weight: 600;
-  color: var(--text-main);
+  font-weight: 500;
+  color: var(--tinta);
 }
 
 .who__email {
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
 }
 
 .who__firma {
-  font-size: 0.75rem;
-  color: var(--success);
-  font-weight: 600;
+  font-size: var(--fs-meta);
+  color: var(--ok);
+  font-weight: 500;
 }
 
 /* ===== Firma digital (16-oct-2026) ===== */
@@ -133,8 +84,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px dashed var(--border-soft);
-  border-radius: var(--radius-sm);
+  border: 1px dashed var(--borde-control);
+  border-radius: var(--r-control);
   background: var(--superficie);
   padding: 0.5rem;
 }
@@ -146,8 +97,8 @@
 }
 
 .firma__vacia {
-  font-size: 0.85rem;
-  color: var(--text-muted);
+  font-size: var(--fs-celda);
+  color: var(--tinta-3);
 }
 
 .firma__acciones {
@@ -155,73 +106,75 @@
   flex-direction: column;
   gap: 0.5rem;
 }
-/* ===== Spinner (patrón compartido) ===== */
-.spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid color-mix(in srgb, var(--superficie) 45%, transparent);
-  border-top-color: var(--superficie);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-
-.btn[disabled] {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* ===== Animaciones ===== */
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes toast-in {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ===== Responsive ===== */
-@media (max-width: 720px) {
-  .prof-head {
-    align-items: stretch;
-  }
-
-  .prof-head__actions {
-    width: 100%;
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .prof-search__input {
-    width: 100%;
-  }
-
-  }
-
 /* ===== ENC-05 · Órdenes ejecutadas y calificación =====
    Van en la misma celda: el número de arriba le da tamaño a la nota de abajo. */
+/* Se deja partir (mín. 150 px): a ~1093 px útiles empujaba Estado debajo de la
+   columna de acciones fija. */
 .desempeno {
+  min-width: 130px;
+}
+
+/* A ~1093 px útiles la inicial decorativa cede su sitio: así Estado no queda
+   debajo de la columna de acciones fija. El nombre y el correo siguen.
+   Ronda 2 (medido a 1093 px: la tabla desbordaba 59 px y la sombra de la
+   columna fija caía sobre «Activo»): las celdas interiores bajan a var(--e-2)
+   de aire lateral (los bordes de la tarjeta conservan var(--e-3)) y el
+   teléfono con espacios («+57 301 222 3344») puede partirse en dos líneas.
+   Así la tabla cabe entera (0 px de desborde), la columna fija no tiene nada
+   debajo y su sombra no aparece. La columna sigue fija por si un dato real
+   más largo vuelve a desbordar: que la acción de la fila siempre se vea. */
+@media (min-width: 821px) and (max-width: 1199px) {
+  .table .who__avatar {
+    display: none;
+  }
+
+  .table-wrap > .table > :is(thead, tbody) > tr > :is(th, td) {
+    padding-left: var(--e-2);
+    padding-right: var(--e-2);
+  }
+
+  .table-wrap > .table > :is(thead, tbody) > tr > :is(th, td):first-child {
+    padding-left: var(--e-3);
+  }
+
+  .table-wrap > .table > :is(thead, tbody) > tr > :is(th, td):last-child {
+    padding-right: var(--e-3);
+  }
+
+  .table td.prof-tel {
+    white-space: normal;
+    padding-left: var(--e-1);
+    padding-right: var(--e-1);
+  }
+}
+
+/* Estado en una línea y la pastilla con ancho propio: no se parte ni se aprieta. */
+.prof-estado {
   white-space: nowrap;
+
+  .pill {
+    min-width: 64px;
+    justify-content: center;
+  }
+}
+
+/* «Órdenes y calificación» en dos líneas como mucho (antes se partía en cuatro). */
+.desempeno-th {
+  min-width: 120px;
 }
 
 .desempeno__ordenes {
   display: block;
-  font-size: 0.86rem;
-  font-weight: 600;
-  color: var(--text-main);
+  /* Ronda 3: en una línea (con title); partida subía la fila a ~90 px. */
+  white-space: nowrap;
+  font-size: var(--fs-celda);
+  font-weight: 500;
+  color: var(--tinta);
 }
 
 .desempeno__sin {
-  font-size: 0.76rem;
-  color: var(--text-muted);
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
 }
 
 /* Las estrellas son un botón: llevan al detalle de las encuestas. */
@@ -234,11 +187,15 @@
   font-family: inherit;
   background: none;
   border: none;
+  border-radius: var(--r-control);
   cursor: pointer;
 }
 
-.rating:hover .rating__valor {
-  text-decoration: underline;
+@media (hover: hover) and (pointer: fine) {
+  .rating:hover .rating__valor {
+    color: var(--accion);
+    text-decoration: underline;
+  }
 }
 
 .rating__stars {
@@ -257,24 +214,28 @@
 }
 
 .rating__valor {
-  font-size: 0.8rem;
+  font-size: var(--fs-meta);
   font-weight: 600;
-  color: var(--text-main);
+  color: var(--tinta);
+  font-variant-numeric: tabular-nums;
+  transition: color var(--t-media) ease;
 }
 
 .rating__n {
-  font-size: 0.74rem;
-  color: var(--text-muted);
-}.ratings__estado {
-  padding: 2rem 0;
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
+}
+
+.ratings__estado {
+  padding: var(--e-8) 0;
   text-align: center;
-  color: var(--text-muted);
+  color: var(--tinta-3);
 }
 
 .ratings__resumen {
-  margin: 0 0 0.9rem;
-  font-size: 0.84rem;
-  color: var(--text-muted);
+  margin: 0;
+  font-size: var(--fs-celda);
+  color: var(--tinta-3);
 }
 
 /* La observación es lo que se viene a leer: se deja respirar y se corta el ancho. */
@@ -282,16 +243,15 @@
   min-width: 240px;
   max-width: 420px;
   white-space: normal;
-  font-size: 0.84rem;
   line-height: 1.5;
 }
 
 /* Nota heredada de la satisfacción general, no respondida sobre el profesional. */
 .ratings__aprox {
-  margin-left: 0.3rem;
-  font-size: 0.66rem;
-  font-weight: 600;
-  color: var(--text-muted);
+  margin-left: var(--e-1);
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  color: var(--tinta-3);
   cursor: help;
 }
 
@@ -301,32 +261,47 @@
 .registros {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.3rem;
+  gap: var(--e-1);
   max-width: 200px;
 }
 
+/* Cada ARL es una etiqueta neutra (no una pastilla con punto: se confundía
+   con PROGRAMADA). Vigencia vencida = naranja con ⚠, como antes. */
+.registro {
+  background: var(--hundida);
+  color: var(--tinta-2);
+}
+
+.registro--vencido {
+  background: var(--naranja-fondo);
+  color: var(--naranja);
+}
+
 .registros__sin {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-}/* Campos dentro de la tabla del registro: la fila tiene cinco columnas y con el
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
+}
+
+/* Campos dentro de la tabla del registro: la fila tiene cinco columnas y con el
    alto normal del formulario el modal se iría de pantalla. */
 .form-control--sm {
-  padding: 0.35rem 0.5rem;
-  font-size: 0.82rem;
+  min-height: 32px;
+  padding: 0 var(--e-2);
+  font-size: var(--fs-celda);
   min-width: 120px;
 }
 
 .check {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  font-size: 0.85rem;
+  gap: var(--e-2);
+  font-size: var(--fs-celda);
   cursor: pointer;
 
   input {
     width: 16px;
     height: 16px;
-    accent-color: var(--primary-color);
+    accent-color: var(--accion);
     cursor: pointer;
   }
 }
@@ -335,11 +310,52 @@
 .esp-nueva {
   display: flex;
   align-items: flex-end;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  gap: var(--e-3);
 }
 
 .esp-nueva .form-field {
   flex: 1;
   margin: 0;
+}
+
+/* El encabezado de la columna de acciones cae sobre sus íconos (a la derecha,
+   como la celda): la regla global `th { text-align: left }` le ganaba a
+   `.col-actions` (pedido global anotado). */
+.table th.col-actions {
+  text-align: right;
+}
+
+@media (max-width: 640px) {
+  .prof-buscar {
+    flex: 1 1 100%;
+  }
+}
+
+/* Ronda 2 · Tabla en el celular: desvanecido a la derecha mientras quedan
+   columnas por ver (Ver, estado y acciones viven al final). Ligado al
+   desplazamiento: sin desbordamiento la línea de tiempo está inactiva y no hay
+   desvanecido; al llegar al final desaparece (pedido global: `.table-wrap`). */
+@property --desv-tabla {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@media (max-width: 640px) {
+  .table-wrap {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--desv-tabla)), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--desv-tabla)), transparent);
+    animation: desv-tabla linear both;
+    animation-timeline: scroll(self inline);
+  }
+}
+
+@keyframes desv-tabla {
+  0%,
+  92% {
+    --desv-tabla: 32px;
+  }
+  100% {
+    --desv-tabla: 0px;
+  }
 }

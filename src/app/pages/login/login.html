@@ -1,49 +1,64 @@
-<div class="login">
-  <!-- ===== Izquierda: panel de marca ===== -->
-  <aside class="login__brand">
-    <div class="login__brand-inner">
-      <div class="brand-logo">
-        <img
-          src="logo-orbita-claro.webp"
-          alt="ORBITA · Gestión Inteligente"
-        />
-      </div>
-      <p class="brand-text">Consultores en Sistemas de Gestión</p>
-    </div>
-  </aside>
+<div class="acceso">
+  <!-- Escena noche compartida con Recuperar y Restablecer (DESIGN §7 «Login»). -->
+  <app-escena-acceso
+    titulo="Órdenes de servicio SST, de la ARL al cobro."
+    texto="Importe las órdenes de Bolívar, SURA, AXA Colpatria y Colmena, prográmelas con su equipo y cierre el ciclo con la factura."
+  />
 
-  <!-- ===== Derecha: formulario ===== -->
-  <main class="login__form-side">
-    <div class="login-card">
-      <header class="login-card__head">
-        <h2 class="login-card__title">Bienvenido de nuevo</h2>
-        <p class="login-card__subtitle">Ingrese sus credenciales para continuar</p>
-      </header>
+  <!-- Credenciales: la hoja blanca -->
+  <main class="acceso__hoja">
+    <div class="acceso__caja">
+      <h1 class="acceso__titulo">Ingrese a ORBITA</h1>
+      <p class="acceso__bajada">Use su documento de identidad y la contraseña que le asignó JD&amp;D&nbsp;Consultores.</p>
 
       <!-- Formulario con autenticación real (JWT) -->
-      <form class="login-form" (ngSubmit)="submit()">
-        <label class="form-field">
-          <span class="form-field__label">Documento de identidad</span>
-          <input
-            class="form-control"
-            type="text"
-            name="documento"
-            inputmode="numeric"
-            placeholder="Ej. 1234567890"
-            autocomplete="username"
-            [(ngModel)]="documento"
-          />
-        </label>
-
-        <label class="form-field">
-          <span class="form-field__label">Contraseña</span>
+      <form class="acceso__form" (ngSubmit)="submit()">
+        <div class="form-field">
+          <label class="form-field__label" for="acceso-documento">Documento de identidad</label>
           <span class="field-wrap">
+            <span class="acceso__icono" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="5" width="18" height="14" rx="2" />
+                <circle cx="9" cy="11" r="2" />
+                <path d="M6 16c.6-1.4 1.7-2 3-2s2.4.6 3 2M15 10h3M15 13h3" />
+              </svg>
+            </span>
             <input
-              class="form-control form-control--with-action"
+              id="acceso-documento"
+              class="form-control form-control--con-icono"
+              type="text"
+              name="documento"
+              inputmode="numeric"
+              placeholder="Ej. 1234567890"
+              autocomplete="username"
+              [class.form-control--error]="intentoVacio() && !documento.trim()"
+              [attr.aria-invalid]="intentoVacio() && !documento.trim() ? 'true' : null"
+              [(ngModel)]="documento"
+            />
+          </span>
+        </div>
+
+        <!-- «¿Olvidó su contraseña?» va en el DOM DESPUÉS del campo (y del ojo),
+             como antes del rediseño: Tab desde Documento salta directo a la
+             contraseña. Solo se pinta en la línea de la etiqueta. -->
+        <div class="form-field acceso__campo-clave">
+          <label class="form-field__label" for="acceso-clave">Contraseña</label>
+          <span class="field-wrap">
+            <span class="acceso__icono" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4.5" y="10.5" width="15" height="10" rx="2" />
+                <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
+              </svg>
+            </span>
+            <input
+              id="acceso-clave"
+              class="form-control form-control--con-icono form-control--with-action"
               [type]="showPassword() ? 'text' : 'password'"
               name="password"
               placeholder="••••••••"
               autocomplete="current-password"
+              [class.form-control--error]="intentoVacio() && !password"
+              [attr.aria-invalid]="intentoVacio() && !password ? 'true' : null"
               [(ngModel)]="password"
             />
             <button
@@ -68,7 +83,8 @@
               }
             </button>
           </span>
-        </label>
+          <a class="acceso__enlace acceso__olvido" routerLink="/recuperar">¿Olvidó su contraseña?</a>
+        </div>
 
         @if (error(); as msg) {
           <div class="alert alert--error" role="alert">
@@ -84,16 +100,14 @@
           </div>
         }
 
-        <a class="login-card__forgot" routerLink="/recuperar">¿Olvidó su contraseña?</a>
-
         <button class="btn btn--primary btn--block btn--lg" type="submit" [disabled]="loading()">
           {{ loading() ? 'Ingresando…' : 'Ingresar' }}
         </button>
       </form>
 
-      <p class="login-card__footer">
-        © 2026 JD&amp;D Consultores · Gestión de Órdenes de Servicio
-      </p>
+      <p class="acceso__legal">¿No tiene usuario? Pídalo a la administración de JD&amp;D&nbsp;Consultores.</p>
     </div>
+
+    <p class="acceso__pie">© 2026 JD&amp;D Consultores · Gestión de Órdenes de Servicio</p>
   </main>
 </div>

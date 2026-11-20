@@ -73,7 +73,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     resumen: 'ORBITA tiene dos sistemas: Operación (las órdenes que mandan las ARL) y Finanzas (facturar, cobrar, pagar y contabilizar).',
     ilustraciones: ILU_QUE_ES_ORBITA,
     pasos: [
-      'Al iniciar sesión, si su rol tiene los dos sistemas, elige a cuál entrar. Para cambiar después use el botón «Cambiar de sistema» de la barra superior.',
+      'Al iniciar sesión, si su rol tiene los dos sistemas, elige a cuál entrar. Para cambiar después use el selector «Operación / Finanzas» de la barra superior (en el celular: «Más» → «Cambiar de sistema»).',
       'El menú de la izquierda cambia según el sistema. Si una opción no aparece, su rol no tiene permiso para esa pantalla (lo define el administrador en Configuración → Roles y permisos).',
       'La campanita de la barra superior avisa de lo que requiere atención: soportes cargados, cuentas de cobro respondidas y documentos por vencer.',
       'En la campanita, el buscador encuentra un aviso por número de orden, cronograma, empresa o asesor, dentro de la pestaña que esté abierta (No leídas, Leídas o Eliminadas).',
@@ -81,6 +81,29 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     ],
     avisos: ['En el celular el menú pasa a una barra inferior con los cuatro módulos más usados y un botón «Más».'],
     sinonimos: ['menu', 'sistema', 'navegar', 'inicio', 'campanita'],
+  },
+  {
+    // 20-nov-2026 · Rediseño: el Inicio se partió en Resumen e Indicadores y los
+    // KPI dejaron de estar arriba. Tema solo de texto (sin pantallazos todavía).
+    id: 'inicio-resumen-indicadores',
+    grupo: 'inicio',
+    titulo: 'Inicio: Resumen e Indicadores',
+    resumen: 'El Inicio muestra primero lo que toca hacer hoy; las cifras generales están en la pestaña Indicadores.',
+    ruta: '/dashboard',
+    rutaTexto: 'Inicio',
+    pasos: [
+      'Arriba, el saludo dice cuántas órdenes hay sin programar y, si alguna ya venció, el enlace «Programar la vencida» abre esa orden.',
+      'En la pestaña Resumen están los accesos de su rol: el principal (por ejemplo «Importar órdenes» o «Crear factura») y otros con su conteo, como «Ver órdenes» o «Cuentas de cobro».',
+      '«Requiere su atención» lista lo pendiente con su cifra: órdenes sin programar, soportes por revisar, finalizadas sin visto bueno de cobro y borradores de factura. Las filas en cero no aparecen; sin pendientes se ve «Todo al día».',
+      '«Próximas a ejecutar» muestra las visitas programadas de los próximos 7 días; el resto está en Órdenes.',
+      'La pestaña Indicadores reúne el total de órdenes, las programadas, las sin programar, las ejecutadas del mes, las horas ejecutadas por mes, la distribución por estado y el avance por ARL.',
+    ],
+    avisos: [
+      'Lo que ve depende de su rol: quien no ve Órdenes no recibe sus conteos, y quien no factura no ve los borradores de factura.',
+      'Una cifra con «—» es un dato que el servidor no envió; vuelva a cargar la página.',
+      'Las órdenes recientes ya no se listan en el Inicio: se consultan en Órdenes.',
+    ],
+    sinonimos: ['panel de control', 'dashboard', 'indicadores', 'kpi', 'resumen', 'pendientes'],
   },
   {
     id: 'roles',

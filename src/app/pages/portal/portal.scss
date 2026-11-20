@@ -2,73 +2,135 @@
   display: block;
 }
 
+/* ===== Escena (familia del login) =====
+   Rediseño 20-nov-2026: la cabecera es una franja en NOCHE a todo el ancho, con
+   el logo claro, las órbitas en cian que salen por el borde derecho y el título
+   en blanco; la hoja blanca sube encima de la escena. Es la misma familia que
+   el login (escena noche + credenciales en blanco), copiada en lo mínimo para
+   no depender de él: cada enlace público llega por correo y debe verse ORBITA. */
 .portal {
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--papel);
-  padding: 1.5rem 1rem 2.5rem;
-  display: flex;
-  justify-content: center;
 }
 
-.portal__container {
-  width: 100%;
-  max-width: 480px;
-}
-
-/* Marca */
-.portal__brand {
-  display: flex;
-  justify-content: center;
-  padding: 1rem 0 1.5rem;
-}
-
-.portal__logo {
-  max-width: 160px;
-  height: auto;
-}
-
-/* Encabezado de orden */
-.portal__head {
+.pub-escena {
+  position: relative;
+  overflow: hidden;
+  padding: var(--e-8) var(--e-4) 72px;
   background: var(--noche);
-  border-radius: 16px;
-  padding: 1.5rem;
   color: var(--superficie);
-  text-align: center;
-  box-shadow: none;
 }
 
-.portal__head .pill {
+.pub-escena__orbitas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.pub-escena__orbitas ellipse {
+  fill: none;
+  stroke: var(--cian);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.pub-escena__orbitas ellipse:nth-child(1) { opacity: 0.55; }
+.pub-escena__orbitas ellipse:nth-child(2) { opacity: 0.32; }
+.pub-escena__orbitas ellipse:nth-child(3) { opacity: 0.12; }
+
+.pub-escena__inner {
+  position: relative;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.pub-escena__logo {
+  display: block;
+  height: 40px;
+  width: auto;
+  margin-bottom: var(--e-8);
+}
+
+/* Chip de la orden o del documento: sobre noche, en noche alzada. */
+.pub-escena__chip {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--r-control);
   background: var(--noche-alzada);
-  color: var(--superficie);
+  color: var(--texto-noche);
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .portal__title {
-  margin: 0.75rem 0 0.2rem;
-  font-size: 1.5rem;
+  margin: var(--e-3) 0 var(--e-1);
+  font-size: 28px;
   font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
   color: var(--superficie);
+  text-wrap: balance;
 }
 
 .portal__company {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--fs-tarjeta);
+  line-height: 1.45;
   color: var(--texto-noche);
+}
+
+/* La hoja: columna centrada que sube 40 px sobre la escena. */
+.portal__container {
+  position: relative;
+  width: 100%;
+  max-width: calc(560px + 2 * var(--e-4));
+  margin: -40px auto 0;
+  padding: 0 var(--e-4) var(--e-10);
+}
+
+@media (max-width: 640px) {
+  .pub-escena {
+    padding: var(--e-6) var(--e-4) 64px;
+  }
+
+  .pub-escena__logo {
+    height: 32px;
+    margin-bottom: var(--e-6);
+  }
+
+  .portal__title {
+    font-size: 24px;
+  }
+
+  .portal__company {
+    font-size: var(--fs-base);
+  }
+
+  .portal__container {
+    margin-top: -32px;
+  }
 }
 
 /* Mientras se resuelve el token: sobre el fondo azul del portal, en claro. */
 .portal__loading {
   margin: 1.5rem 0;
   text-align: center;
-  font-size: 0.9rem;
-  color: var(--texto-noche);
+  font-size: var(--fs-base);
+  color: var(--tinta-3);
 }
 
 /* Tarjeta de carga */
 .upload-card {
   margin-top: 1.25rem;
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
-  border-radius: 16px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-modal);
   box-shadow: none;
   padding: 1.5rem;
 }
@@ -76,13 +138,13 @@
 .upload-card__title {
   font-size: 1.1rem;
   font-weight: 600;
-  color: var(--text-main);
+  color: var(--tinta);
 }
 
 .upload-card__desc {
   margin: 0.35rem 0 1.25rem;
-  font-size: 0.88rem;
-  color: var(--text-muted);
+  font-size: var(--fs-celda);
+  color: var(--tinta-3);
 }
 
 /* Slot de carga */
@@ -94,15 +156,17 @@
   gap: 0.75rem;
   padding: 0.85rem 1rem;
   margin-bottom: 0.75rem;
-  border: 1px solid var(--border-soft);
+  border: 1px solid var(--borde);
   border-radius: 12px;
   cursor: pointer;
-  transition: border-color 0.18s ease, background 0.18s ease;
+  transition: border-color var(--t-media) ease, background var(--t-media) ease;
 }
 
-.slot:hover {
-  border-color: var(--secondary-color);
-  background: color-mix(in srgb, var(--accion) 4%, var(--superficie));
+@media (hover: hover) and (pointer: fine) {
+  .slot:hover {
+    border-color: var(--accion);
+    background: color-mix(in srgb, var(--accion) 4%, var(--superficie));
+  }
 }
 
 .slot__info {
@@ -121,7 +185,7 @@
   justify-content: center;
   border-radius: 10px;
   background: var(--accion-tenue);
-  color: var(--secondary-color);
+  color: var(--accion);
 }
 
 .slot__icon svg {
@@ -136,14 +200,14 @@
 }
 
 .slot__label {
-  font-size: 0.9rem;
+  font-size: var(--fs-base);
   font-weight: 600;
-  color: var(--text-main);
+  color: var(--tinta);
 }
 
 .slot__file {
-  font-size: 0.78rem;
-  color: var(--success);
+  font-size: var(--fs-meta);
+  color: var(--ok);
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -151,19 +215,19 @@
 }
 
 .slot__placeholder {
-  font-size: 0.78rem;
-  color: var(--text-muted);
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
 }
 
 .slot__action {
   flex-shrink: 0;
-  font-size: 0.8rem;
+  font-size: var(--fs-celda);
   font-weight: 600;
-  color: var(--secondary-color);
+  color: var(--accion);
 }
 
 .slot__action--done {
-  color: var(--success);
+  color: var(--ok);
 }
 
 .slot__input {
@@ -177,17 +241,13 @@
   margin-top: 0.75rem;
 }
 
-.btn[disabled] {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
 
 /* Banner de éxito */
 .success {
   margin-top: 1.25rem;
-  background: var(--surface);
+  background: var(--superficie);
   border: 1px solid var(--ok-borde);
-  border-radius: 16px;
+  border-radius: var(--r-modal);
   box-shadow: none;
   padding: 2.25rem 1.5rem;
   text-align: center;
@@ -202,7 +262,7 @@
   justify-content: center;
   border-radius: 50%;
   background: var(--ok-fondo);
-  color: var(--success);
+  color: var(--ok);
 }
 
 .success__icon svg {
@@ -213,21 +273,21 @@
 .success__title {
   font-size: 1.2rem;
   font-weight: 600;
-  color: var(--text-main);
+  color: var(--tinta);
 }
 
 .success__text {
   margin: 0.4rem 0 1rem;
-  font-size: 0.9rem;
-  color: var(--text-muted);
+  font-size: var(--fs-base);
+  color: var(--tinta-3);
 }
 
 /* Footer */
 .portal__footer {
   margin: 1.75rem 0 0;
   text-align: center;
-  font-size: 0.72rem;
-  color: var(--text-muted);
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
 }
 
 /* ===== VER-04 · Casilla bloqueada y archivos ya enviados =====
@@ -249,22 +309,24 @@
   border-style: dashed;
 }
 
-.slot--locked:hover {
-  border-color: var(--border-soft);
-  background: var(--papel);
+@media (hover: hover) and (pointer: fine) {
+  .slot--locked:hover {
+    border-color: var(--borde);
+    background: var(--papel);
+  }
 }
 
 .slot--locked .slot__icon {
   background: var(--hundida);
-  color: var(--text-muted);
+  color: var(--tinta-3);
 }
 
 .slot--locked .slot__label {
-  color: var(--text-muted);
+  color: var(--tinta-3);
 }
 
 .slot__action--locked {
-  color: var(--text-muted);
+  color: var(--tinta-3);
   font-weight: 600;
 }
 
@@ -273,18 +335,18 @@
   display: inline-block;
   margin-left: 0.4rem;
   padding: 0.05rem 0.4rem;
-  font-size: 0.66rem;
+  font-size: var(--fs-pastilla);
   font-weight: 600;
   letter-spacing: 0;
-  color: var(--warning);
-  background: var(--aviso-fondo);
+  color: var(--error);
+  background: var(--error-fondo);
   border-radius: 999px;
   vertical-align: middle;
 }
 
 /* Opcional no es un aviso: va en gris para no competir con lo que sí falta. */
 .slot__tag--opcional {
-  color: var(--text-muted);
+  color: var(--tinta-3);
   background: var(--hundida);
 }
 
@@ -293,7 +355,7 @@
   list-style: none;
   margin: 0.35rem 0 0;
   padding: 0 0 0 0.6rem;
-  border-left: 2px solid var(--border-soft);
+  border-left: 2px solid var(--borde);
 }
 
 .previos__item {
@@ -308,15 +370,17 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.8rem;
+  font-size: var(--fs-celda);
   font-weight: 600;
-  color: var(--secondary-color);
+  color: var(--accion);
   text-decoration: none;
   overflow-wrap: anywhere;
 }
 
-.previos__link:hover {
-  text-decoration: underline;
+@media (hover: hover) and (pointer: fine) {
+  .previos__link:hover {
+    text-decoration: underline;
+  }
 }
 
 .previos__link svg {
@@ -326,14 +390,14 @@
 }
 
 .previos__meta {
-  font-size: 0.72rem;
-  color: var(--text-muted);
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
 }
 
 /* Lo que falta por adjuntar antes de poder enviar la corrección. */
 .portal__falta {
   margin: 0 0 0.6rem;
-  font-size: 0.82rem;
+  font-size: var(--fs-celda);
   font-weight: 600;
   color: var(--tinta-2);
 }
@@ -351,7 +415,7 @@
   align-items: baseline;
   gap: 0.5rem;
   padding: 0.6rem 0;
-  border-bottom: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--borde);
 }
 
 .entregados__item:last-child {
@@ -360,9 +424,9 @@
 
 .entregados__casilla {
   flex: 1 1 100%;
-  font-size: 0.8rem;
+  font-size: var(--fs-celda);
   font-weight: 600;
-  color: var(--text-main);
+  color: var(--tinta);
 }
 
 .portal__falta::before {
@@ -375,4 +439,9 @@
   background: var(--ambar);
   -webkit-mask: var(--icono-alerta) center / contain no-repeat;
   mask: var(--icono-alerta) center / contain no-repeat;
+}
+
+/* La primera tarjeta es la que sube sobre la escena: sin margen propio. */
+.portal__container > :first-child {
+  margin-top: 0;
 }

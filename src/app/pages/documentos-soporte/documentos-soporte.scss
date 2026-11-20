@@ -4,11 +4,6 @@
 }
 
 // A4-02 · Manual y carga masiva.
-.ds-head-acciones {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
 .ds-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -24,7 +19,7 @@
   margin: 0.75rem 0;
 }
 .ds-texto {
-  color: var(--text-muted);
+  color: var(--tinta-2);
   margin: 0 0 0.75rem;
 }
 .ds-resumen {
@@ -81,21 +76,27 @@
     > :nth-child(2) { grid-column: 1 / -1; }
   }
   .ds-linea__rotulo {
+    /* Como la etiqueta de campo del resto del formulario (13/500, tinta-2). */
     display: block;
-    margin-bottom: 0.2rem;
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: var(--text-muted);
+    margin-bottom: 6px;
+    font-size: var(--fs-celda);
+    font-weight: 500;
+    color: var(--tinta-2);
   }
 }
 
 /* Mes, fecha: no se parten en tres renglones cuando la tabla va justa de ancho. */
 .ds-fijo { white-space: nowrap; }
 
-/* 20-nov-2026 · La misma disposición que Facturación: título y subtítulo a lo
-   ancho y, debajo, el contador de documentos con los botones, a la izquierda y
-   alineados en una sola fila. */
-.fac-head > div:first-child { flex: 1 1 100%; min-width: 0; }
-.cupo-cabecera { margin-left: 0; }
-.ds-head-acciones { align-self: center; align-items: center; }
-.fac-head { display: flex; align-items: flex-start; justify-content: flex-start; gap: 0.75rem 0.6rem; flex-wrap: wrap; }
+/* 20-nov-2026 · La cabecera usa la de Facturación (`.fac-head`, `.fac-head-acciones`,
+   `.fac-head-botones`): contador a la izquierda, botones a la derecha. */
+
+/* Ronda 2 · Pestañas + filtro: aquí las cinco pestañas necesitan ~730 px y el filtro
+   ~190, así que el filtro baja a la línea siguiente bajo ~940 px de contenedor
+   (≈1093 px útiles con la barra lateral abierta). Nunca se encima sobre «Notas de
+   ajuste» ni la corta. Mismo mecanismo que Facturación, con su propio umbral. */
+.fac-barra-marco.ds-barra-marco { container-name: dsbarra; }
+@container dsbarra (max-width: 940px) {
+  .fac-barra-marco > .fac-barra { border-bottom: 0; }
+  .fac-barra-marco > .fac-barra > .tabs { flex-basis: 100%; border-bottom: 1px solid var(--borde); }
+}

@@ -1,15 +1,21 @@
 <div class="survey">
-  <div class="survey__container">
-    <header class="survey__brand">
-      <img src="logo-orbita.webp" alt="ORBITA · Gestión Inteligente" class="survey__logo" />
-    </header>
-
-    <div class="survey__head">
-      <span class="pill pill--info">{{ info()?.orden_codigo || 'Orden de Servicio' }}</span>
+  <header class="survey__head pub-escena">
+    <!-- Escena de la familia del login: órbitas en cian que salen por los bordes
+         (DESIGN §7 Login). Decorativa. -->
+    <svg class="pub-escena__orbitas" viewBox="0 0 1440 300" preserveAspectRatio="xMaxYMid slice" aria-hidden="true" focusable="false">
+      <ellipse cx="1180" cy="150" rx="520" ry="150" transform="rotate(-14 1180 150)" />
+      <ellipse cx="1220" cy="120" rx="380" ry="210" transform="rotate(22 1220 120)" />
+      <ellipse cx="1240" cy="160" rx="250" ry="250" />
+    </svg>
+    <div class="pub-escena__inner">
+      <img class="pub-escena__logo" src="logo-orbita-horizontal-claro.webp" alt="ORBITA · Gestión Inteligente" />
+      <span class="pub-escena__chip">{{ info()?.orden_codigo || 'Orden de Servicio' }}</span>
       <h1 class="survey__title">{{ info()?.preguntas?.titulo || 'Encuesta de satisfacción' }}</h1>
       <p class="survey__company">{{ info()?.empresa_nombre || '' }}</p>
     </div>
+  </header>
 
+  <div class="survey__container">
     @if (loading()) {
       <div class="survey__card survey__state">
         <span class="spinner" aria-hidden="true"></span>

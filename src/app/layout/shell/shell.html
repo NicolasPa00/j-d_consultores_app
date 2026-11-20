@@ -16,37 +16,27 @@
         <path d="m9 14 3 3 3-3" />
       </svg>
     }
-    @case ('ai') {
+    <!-- Órdenes: portapapeles con lista (antes un chip de procesador). -->
+    @case ('orders') {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="6" y="6" width="12" height="12" rx="2" />
-        <path d="M9.5 10.5h5v3h-5z" />
-        <path d="M9 3v2M15 3v2M9 19v2M15 19v2M3 9h2M3 15h2M19 9h2M19 15h2" />
+        <rect x="8" y="2" width="8" height="4" rx="1" />
+        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+        <path d="M12 11h4M12 16h4M8 11h.01M8 16h.01" />
       </svg>
     }
-    @case ('reports') {
+    @case ('people') {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
-        <path d="M14 3v5h5" />
-        <path d="M9 13h6M9 17h6" />
+        <path d="M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1" />
+        <circle cx="9.5" cy="8" r="3" />
+        <path d="M21 19v-1a4 4 0 0 0-3-3.85" />
+        <path d="M16 5.15A3 3 0 0 1 16 11" />
       </svg>
     }
-    @case ('invoice') {
+    <!-- Cuentas de cobro: recibo. -->
+    @case ('receipt') {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M6 2h12v20l-3-2-3 2-3-2-3 2Z" />
         <path d="M9 7h6M9 11h6M9 15h4" />
-      </svg>
-    }
-    @case ('ledger') {
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3Z" />
-        <path d="M4 17a3 3 0 0 1 3-3h11M8 8h6M8 11h4" />
-      </svg>
-    }
-    @case ('money') {
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="2.5" y="6" width="19" height="12" rx="2" />
-        <circle cx="12" cy="12" r="2.5" />
-        <path d="M6 10v4M18 10v4" />
       </svg>
     }
     @case ('building') {
@@ -57,12 +47,79 @@
         <path d="M7.5 7h3M7.5 11h3M7.5 15h3M17 13v.01M17 17v.01" />
       </svg>
     }
-    @case ('people') {
+    <!-- Estadísticas: barras. -->
+    @case ('chart') {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1" />
-        <circle cx="9.5" cy="8" r="3" />
-        <path d="M21 19v-1a4 4 0 0 0-3-3.85" />
-        <path d="M16 5.15A3 3 0 0 1 16 11" />
+        <path d="M3 3v18h18" />
+        <path d="M18 17V9M13 17V5M8 17v-3" />
+      </svg>
+    }
+    <!-- Facturación: documento con renglones. -->
+    @case ('file') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5Z" />
+        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
+      </svg>
+    }
+    <!-- Pago a profesionales: billete. -->
+    @case ('banknote') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2.5" y="6" width="19" height="12" rx="2" />
+        <circle cx="12" cy="12" r="2.5" />
+        <path d="M6 10v4M18 10v4" />
+      </svg>
+    }
+    <!-- Nómina: tarjeta de identificación. -->
+    @case ('id-card') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <circle cx="9" cy="10" r="2" />
+        <path d="M15 8h2M15 12h2M7 16h4" />
+      </svg>
+    }
+    <!-- Cartera: billetera. -->
+    @case ('wallet') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+        <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
+        <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
+      </svg>
+    }
+    <!-- Compras y gastos: carrito. -->
+    @case ('cart') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9" cy="20" r="1.5" />
+        <circle cx="18" cy="20" r="1.5" />
+        <path d="M2 3h3l2.6 12.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L21 7H6" />
+      </svg>
+    }
+    <!-- Contabilidad: libro mayor (cerrado, con lomo). -->
+    @case ('ledger') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3Z" />
+        <path d="M4 17a3 3 0 0 1 3-3h11M8 8h6M8 11h4" />
+      </svg>
+    }
+    <!-- Informes contables: libro abierto. -->
+    @case ('book') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2Z" />
+        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7Z" />
+      </svg>
+    }
+    <!-- Terceros: agenda de contactos. -->
+    @case ('contacts') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
+        <circle cx="13" cy="10" r="2.5" />
+        <path d="M9 17a4 4 0 0 1 8 0" />
+        <path d="M4 7h4M4 12h4M4 17h4" />
+      </svg>
+    }
+    <!-- Parametrización: deslizadores (Configuración conserva el engranaje). -->
+    @case ('sliders') {
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" />
       </svg>
     }
     @case ('settings') {
@@ -74,138 +131,199 @@
   }
 </ng-template>
 
+<!-- Un ítem del menú (barra lateral y pie). -->
+<ng-template #enlaceMenu let-item>
+<a
+  class="nav-link"
+  [routerLink]="item.route"
+  routerLinkActive="nav-link--active"
+  ariaCurrentWhenActive="page"
+  [routerLinkActiveOptions]="{ exact: true }"
+  [attr.aria-label]="item.label"
+  [attr.title]="colapsado() ? null : item.hint"
+  (click)="cerrarMenuMovil()"
+  (mouseenter)="entrarRotulo($event, item.label, item.hint)"
+  (mouseleave)="salirRotulo()"
+  (focus)="enfocarRotulo($event, item.label, item.hint)"
+  (blur)="salirRotulo()"
+>
+  <span class="nav-link__icon" aria-hidden="true">
+    <ng-container [ngTemplateOutlet]="icono" [ngTemplateOutletContext]="{ $implicit: item.icon }" />
+  </span>
+  <span class="nav-link__text">{{ item.label }}</span>
+</a>
+</ng-template>
+
 <div class="layout">
+  <!-- Primer enfocable de la página: sin él, con Tab hay que recorrer los 11 a 15
+       ítems del menú antes de llegar al contenido. Invisible hasta recibir foco. -->
+  <a class="saltar" href="#contenido" (click)="saltarAlContenido($event)">Saltar al contenido</a>
+
   <!-- T0-14 · Fondo oscuro del menú móvil: solo existe mientras el panel está
        abierto, y cerrarlo (tocar fuera) es la forma obvia de descartarlo. -->
   @if (menuMovilAbierto()) {
     <div class="sidebar-backdrop" (click)="cerrarMenuMovil()"></div>
   }
 
-  <!-- ============ SIDEBAR ============ -->
+  <!-- ============ BARRA LATERAL (rediseño 20-nov-2026, DESIGN §7) ============
+       Noche, ítems de una línea agrupados SIN reordenar (GRUPOS_MENU en
+       sistemas.ts); el subtítulo de cada ítem pasó a su `title`. Al pie, con
+       divisor: Configuración, Cerrar sesión y «Contraer menú», que es el mismo
+       alternarSidebar() de la hamburguesa de antes, ahora con su nombre escrito. -->
   <aside class="sidebar" [class.sidebar--colapsado]="colapsado()" [class.sidebar--movil-abierto]="menuMovilAbierto()">
-    <!-- El sidebar se estrecha a 76 px en pantallas pequeñas (o cuando se
-         colapsa a mano) y ahí el lockup horizontal quedaría en 13 px de alto (el
-         descriptor, ilegible). Por eso hay dos piezas: ancho → marca completa,
-         estrecho → isotipo solo. -->
-    <div class="sidebar__brand">
-      <img
-        class="sidebar__logo sidebar__logo--completo"
-        src="logo-orbita-horizontal.webp"
-        alt="ORBITA · Gestión Inteligente"
-      />
-      <img
-        class="sidebar__logo sidebar__logo--isotipo"
-        src="logo-orbita-isotipo.webp"
-        alt="ORBITA"
-      />
+    <!-- Marca: isotipo + la palabra ORBITA (sin el lema, que a este tamaño no se
+         lee). La palabra es su propio archivo (`logo-orbita-palabra-claro.webp`,
+         sacado del lockup claro), no texto en Inter, para que conserve el dibujo
+         del logo. Colapsada, queda solo el isotipo. -->
+    <div class="sidebar__brand" role="img" aria-label="ORBITA">
+      <img class="sidebar__isotipo" src="logo-orbita-isotipo.webp" alt="" />
+      <img class="sidebar__wordmark" src="logo-orbita-palabra-claro.webp" alt="" width="460" height="83" />
     </div>
 
-    <nav class="sidebar__nav">
-      @for (item of navItems(); track item.label) {
-        <a
-          class="nav-link"
-          [routerLink]="item.route"
-          routerLinkActive="nav-link--active"
-          [routerLinkActiveOptions]="{ exact: true }"
-          (click)="cerrarMenuMovil()"
-        >
-          <span class="nav-link__icon" aria-hidden="true">
-            <ng-container [ngTemplateOutlet]="icono" [ngTemplateOutletContext]="{ $implicit: item.icon }" />
-          </span>
-          <span class="nav-link__text">
-            {{ item.label }}
-            <small class="nav-link__hint" [title]="item.hint">{{ item.hint }}</small>
-          </span>
-        </a>
+    <nav class="sidebar__nav" aria-label="Menú principal" (scroll)="salirRotulo()">
+      @for (seccion of seccionesMenu(); track $index) {
+        @if (seccion.titulo) {
+          <!-- Cada grupo es un role=group con su nombre: contraída, el título se
+               vuelve un divisor y el lector de pantalla no debe leer un párrafo
+               suelto. El título visible va oculto al árbol (el grupo ya lo dice). -->
+          <div class="nav-seccion" role="group" [attr.aria-label]="seccion.titulo">
+            <p class="nav-grupo" aria-hidden="true">{{ seccion.titulo }}</p>
+            @for (item of seccion.items; track item.vista) {
+              <ng-container [ngTemplateOutlet]="enlaceMenu" [ngTemplateOutletContext]="{ $implicit: item }" />
+            }
+          </div>
+        } @else {
+          @for (item of seccion.items; track item.vista) {
+            <ng-container [ngTemplateOutlet]="enlaceMenu" [ngTemplateOutletContext]="{ $implicit: item }" />
+          }
+        }
       }
     </nav>
 
     <div class="sidebar__footer">
-      <button type="button" class="logout-btn" (click)="logout()" title="Cerrar sesión">
-        <span class="logout-btn__icon" aria-hidden="true">
+      @for (item of pieMenu(); track item.vista) {
+        <ng-container [ngTemplateOutlet]="enlaceMenu" [ngTemplateOutletContext]="{ $implicit: item }" />
+      }
+      <button
+        type="button"
+        class="nav-link nav-link--salir"
+        (click)="logout()"
+        (mouseenter)="entrarRotulo($event, 'Cerrar sesión')"
+        (mouseleave)="salirRotulo()"
+        (focus)="enfocarRotulo($event, 'Cerrar sesión')"
+        (blur)="salirRotulo()"
+      >
+        <span class="nav-link__icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
             <path d="m16 17 5-5-5-5" />
             <path d="M21 12H9" />
           </svg>
         </span>
-        <span class="logout-btn__text">Cerrar sesión</span>
+        <span class="nav-link__text">Cerrar sesión</span>
+      </button>
+      <!-- T0-14 · Alterna el sidebar ancho ↔ colapsado (preferencia en localStorage). -->
+      <button
+        type="button"
+        class="nav-link nav-link--contraer"
+        (click)="alternarSidebar()"
+        [attr.aria-expanded]="!colapsado()"
+        (mouseenter)="entrarRotulo($event, 'Expandir menú')"
+        (mouseleave)="salirRotulo()"
+        (focus)="enfocarRotulo($event, 'Expandir menú')"
+        (blur)="salirRotulo()"
+      >
+        <span class="nav-link__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <path d="M9 4v16" />
+            @if (colapsado()) {
+              <path d="m13 10 2 2-2 2" />
+            } @else {
+              <path d="m16 10-2 2 2 2" />
+            }
+          </svg>
+        </span>
+        <span class="nav-link__text">{{ colapsado() ? 'Expandir menú' : 'Contraer menú' }}</span>
       </button>
     </div>
   </aside>
 
+  <!-- Rótulo de la barra contraída: decorativo para el lector de pantalla, que ya
+       recibe el nombre por el aria-label de cada enlace. -->
+  @if (rotulo(); as r) {
+    <div class="rotulo" [class.rotulo--inmediato]="r.inmediato" [style.top.px]="r.top" [style.left.px]="r.left" aria-hidden="true">
+      <span class="rotulo__texto">{{ r.texto }}</span>
+      @if (r.detalle) {
+        <span class="rotulo__detalle">{{ r.detalle }}</span>
+      }
+    </div>
+  }
+
   <!-- ============ ÁREA PRINCIPAL ============ -->
   <div class="main">
-    <!-- ---- NAVBAR ---- -->
+    <!-- ---- BARRA SUPERIOR (60 px, blanca) ---- -->
     <header class="navbar">
       <!-- Celular: el isotipo hace de marca, porque la barra lateral no se ve. -->
       <img class="navbar__isotipo" src="logo-orbita-isotipo.webp" alt="ORBITA" />
-      <!-- T0-14 · Alterna el sidebar ancho ↔ colapsado en escritorio; en móvil
-           (≤820 px, donde el sidebar ya está estrecho) abre el menú completo
-           encima, como un panel. -->
-      <button
-        type="button"
-        class="menu-toggle"
-        (click)="alternarSidebar()"
-        [attr.aria-label]="menuMovilAbierto() ? 'Cerrar menú' : (colapsado() ? 'Expandir menú' : 'Colapsar menú')"
-        [attr.aria-expanded]="menuMovilAbierto()"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
 
-      <div class="navbar__title">
-        <!-- El título dice en qué sistema se está (aprobado el 2-oct-2026): antes decía
-             «Sistema de Gestión de Seguridad y Salud en el Trabajo» también en Finanzas. -->
-        <h1 class="navbar__title-main">ORBITA · {{ sistemas.activo().nombre }}</h1>
-        <span class="navbar__title-sub">
-          JD&amp;D Consultores ·
-          {{ sistemas.activo().id === 'finanzas' ? 'Facturación y contabilidad' : 'Gestión de órdenes de servicio SST' }}
-        </span>
-      </div>
+      <!-- Quien tiene los dos sistemas cambia con el segmentado (antes: título
+           centrado + botón «Cambiar de sistema»). A los demás se les dice en qué
+           sistema están, sin control. -->
+      @if (sistemas.variosSistemas()) {
+        <h1 class="visualmente-oculto">ORBITA · {{ sistemas.activo().nombre }}</h1>
+        <div class="seg navbar__sistemas" role="group" aria-label="Sistema">
+          @for (s of sistemas.accesibles(); track s.id) {
+            <button
+              type="button"
+              [class.seg--on]="segmentoActivo(s.id)"
+              [attr.aria-pressed]="segmentoActivo(s.id)"
+              [title]="segmentoActivo(s.id) ? 'Está en ' + s.nombre : 'Ir a ' + s.nombre"
+              (click)="irASistema(s.id)"
+            >
+              {{ s.nombre }}
+            </button>
+          }
+        </div>
+      } @else {
+        <h1 class="navbar__sistema">{{ sistemas.activo().nombre }}</h1>
+      }
 
       <div class="navbar__actions">
-        <!-- Subsistemas (29-sep): solo quien tiene los dos ve el cambio. -->
-        @if (sistemas.variosSistemas()) {
-          <button type="button" class="sistema-btn" (click)="cambiarSistema()" title="Cambiar de sistema">
-            <span class="sistema-btn__nombre">{{ sistemas.activo().nombre }}</span>
-            <span class="sistema-btn__accion">Cambiar de sistema</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M7 7h11l-3-3M17 17H6l3 3" />
-            </svg>
-          </button>
-        }
         <!-- 24-oct-2026 · Centro de ayuda: el manual de la plataforma, a un clic desde cualquier pantalla. -->
-        <a class="ayuda-btn" routerLink="/ayuda" title="Centro de ayuda" aria-label="Centro de ayuda">
+        <a class="navbar__icono" routerLink="/ayuda" title="Centro de ayuda" aria-label="Centro de ayuda">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="9" />
             <path d="M9.6 9.3a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.2.9-1.2 1.7" />
             <path d="M12 16.8v.01" />
           </svg>
         </a>
-        <!-- NOT-04 · Bandeja interna de notificaciones (badge + panel). -->
+        <!-- NOT-04 · Bandeja interna de notificaciones (contador + panel). -->
         <app-notifications />
 
-        <button type="button" class="profile-btn" routerLink="/configuracion" [attr.aria-label]="usuario()?.nombre || 'Perfil de usuario'" [title]="usuario()?.nombre || ''">
-          <span class="profile-btn__avatar">{{ initials() }}</span>
-          <span class="profile-btn__status" aria-hidden="true"></span>
-        </button>
+        <!-- Avatar con nombre y rol detrás de un divisor; lleva a Configuración, como antes. -->
+        <a class="perfil" routerLink="/configuracion" [title]="(usuario()?.nombre || 'Perfil') + ' · Configuración'" [attr.aria-label]="(usuario()?.nombre || 'Perfil de usuario') + ', ' + rolEtiqueta()">
+          <span class="perfil__avatar" aria-hidden="true">{{ initials() }}</span>
+          <span class="perfil__quien" aria-hidden="true">
+            <span class="perfil__nombre">{{ usuario()?.nombre }}</span>
+            <span class="perfil__rol">{{ rolEtiqueta() }}</span>
+          </span>
+        </a>
       </div>
     </header>
 
     <!-- ---- CONTENIDO (cada vista hija se renderiza aquí) ---- -->
-    <main class="content">
+    <main class="content" id="contenido" tabindex="-1" #contenido>
       <router-outlet />
     </main>
   </div>
 
   <!-- ============ CELULAR · BARRA INFERIOR (2-oct-2026, aprobada por el usuario) ============
        Cuatro módulos fijos del sistema activo + «Más» con el resto. Reemplaza al riel
-       lateral de iconos, que se comía ~80 px del ancho y cortaba el título de la barra. -->
+       lateral de iconos, que se comía ~80 px del ancho. -->
   <nav class="bottom-nav" aria-label="Módulos">
     @for (item of fijosMovil(); track item.vista) {
-      <a class="bottom-nav__item" [routerLink]="item.route" routerLinkActive="bottom-nav__item--activo" (click)="cerrarMas()">
+      <a class="bottom-nav__item" [routerLink]="item.route" routerLinkActive="bottom-nav__item--activo" ariaCurrentWhenActive="page" (click)="cerrarMas()">
         <span class="bottom-nav__icono" aria-hidden="true"><ng-container [ngTemplateOutlet]="icono" [ngTemplateOutletContext]="{ $implicit: item.icon }" /></span>
         <span class="bottom-nav__texto">{{ item.corto }}</span>
       </a>
@@ -225,7 +343,7 @@
       <p class="hoja-mas__titulo">{{ sistemas.activo().nombre }}</p>
       <div class="hoja-mas__grid">
         @for (item of restoMovil(); track item.vista) {
-          <a class="hoja-mas__item" [routerLink]="item.route" routerLinkActive="hoja-mas__item--activo" (click)="cerrarMas()">
+          <a class="hoja-mas__item" [routerLink]="item.route" routerLinkActive="hoja-mas__item--activo" ariaCurrentWhenActive="page" (click)="cerrarMas()">
             <span class="hoja-mas__icono" aria-hidden="true"><ng-container [ngTemplateOutlet]="icono" [ngTemplateOutletContext]="{ $implicit: item.icon }" /></span>
             <span>{{ item.label }}</span>
           </a>

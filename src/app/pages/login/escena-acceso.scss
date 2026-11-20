@@ -1,0 +1,317 @@
+/*
+ * Escena noche de las pantallas de acceso (DESIGN §7 «Login»).
+ *
+ * Dos zonas: el «cielo» (del borde de arriba hasta la frase, con el logo y las
+ * órbitas) y la frase con el ciclo. Las órbitas solo existen dentro del cielo:
+ * se recortan en su borde y se desvanecen en sus últimos 96 px, así que nunca
+ * cruzan el texto, sea cual sea la altura de la ventana.
+ *
+ * Celular primero: una franja de 300 px con el logo arriba y la frase abajo;
+ * la hoja blanca de la pantalla sube 24 px sobre ella (`margin-top: -24px` en
+ * la hoja), así que la frase deja ese hueco libre al pie.
+ * Desde 900 px es la mitad izquierda de la pieza partida, a pantalla completa:
+ * el centro de las órbitas queda arriba a la izquierda, junto al logo, y el
+ * dibujo escala con el ancho de la escena para no llegar nunca a la costura.
+ */
+:host {
+  --escena-px: 24px;
+  --escena-pt: 20px;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+  padding: var(--escena-pt) var(--escena-px) 48px;
+  overflow: hidden;
+  background: var(--noche);
+  color: #ffffff;
+  isolation: isolate;
+}
+
+/* ── Cielo: logo y órbitas ───────────────────────────────────────────────── */
+
+/* Ocupa todo el ancho de la escena y llega a su borde de arriba (márgenes
+   negativos iguales al relleno), y crece hasta donde empieza la frase. */
+.escena__cielo {
+  position: relative;
+  z-index: 0;
+  flex: 1 0 auto;
+  margin: calc(-1 * var(--escena-pt)) calc(-1 * var(--escena-px)) 0;
+  padding: var(--escena-pt) var(--escena-px) 0;
+  container-type: inline-size;
+}
+
+/* Las órbitas se recortan al cielo y se apagan en sus últimos 96 px: no hay
+   una línea de corte. El logo queda fuera de esta caja (no se apaga nunca). */
+.escena__orbitas-caja {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 96px), transparent);
+}
+
+.escena__orbitas {
+  position: absolute;
+  right: -170px;
+  top: -150px;
+  width: 440px;
+  height: 440px;
+  pointer-events: none;
+  overflow: visible;
+
+  ellipse,
+  circle:not(.escena__satelite) {
+    fill: none;
+    stroke: var(--cian);
+    /* El dibujo se escala de 980 px a lo que mida: sin esto el trazo se quedaría en medio píxel. */
+    vector-effect: non-scaling-stroke;
+  }
+}
+
+/* En el celular el satélite quedaba pegado al borde derecho, sin relación con
+   nada: solo aparece en escritorio, donde gira alrededor del logo. */
+.escena__satelite {
+  display: none;
+  fill: var(--cian);
+}
+
+/* Lo único que se mueve en la pantalla: las dos órbitas giran una vuelta cada
+   seis minutos, tan despacio que se nota como presencia y no como animación.
+   Sin entrada, y quieto del todo con movimiento reducido. */
+.escena__giro {
+  transform-box: view-box;
+  transform-origin: 490px 490px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .escena__giro {
+    animation: escena-giro 360s linear infinite;
+  }
+}
+
+@keyframes escena-giro {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.escena__logo {
+  position: relative;
+  display: block;
+  width: auto;
+  /* 40 px: a 34 la bajada «Gestión Inteligente» quedaba en ~7 px. */
+  height: 40px;
+}
+
+/* ── Frase y ciclo ───────────────────────────────────────────────────────── */
+
+.escena__prop {
+  position: relative;
+  padding-top: 24px;
+}
+
+.escena__saludo {
+  margin: 0 0 6px;
+  font-size: var(--fs-base);
+  color: var(--texto-noche);
+}
+
+.escena__titulo {
+  margin: 0;
+  max-width: 540px;
+  font-size: 27px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: #ffffff;
+  text-wrap: balance;
+}
+
+.escena__texto {
+  display: none;
+  margin: 18px 0 0;
+  max-width: 470px;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--texto-noche);
+  text-wrap: pretty;
+}
+
+.escena__texto--movil {
+  display: block;
+  margin-top: 10px;
+  font-size: var(--fs-base);
+}
+
+/* El ciclo solo cabe con presencia en escritorio. */
+.escena__ciclo {
+  display: none;
+}
+
+/* ── Escritorio: mitad izquierda de la pieza partida ─────────────────────── */
+
+@media (min-width: 900px) {
+  :host {
+    --escena-px: clamp(40px, 5vw, 72px);
+    --escena-pt: 56px;
+
+    min-height: 100dvh;
+    /* El mismo pie que la hoja (56 px): el ciclo y «© 2026…» cierran juntos. */
+    padding-bottom: 56px;
+  }
+
+  /* El centro de las órbitas cae junto al logo (arriba a la izquierda) y el
+     dibujo mide 1,36 veces el ancho de la escena, como en la maqueta a 1440
+     (980 px sobre 720). Así su borde derecho queda en el 83 % del ancho y el
+     satélite no pasa del 80 %: nunca tocan la costura, ni a 960 px. */
+  .escena__orbitas {
+    left: -46cqw;
+    right: auto;
+    top: -60cqw;
+    width: 136cqw;
+    height: 136cqw;
+  }
+
+  .escena__satelite {
+    display: inline;
+  }
+
+  .escena__logo {
+    height: 56px;
+  }
+
+  /* La frase arranca a la MISMA altura en Ingresar, Recuperar y Restablecer:
+     el bloque reserva el alto del Login (frase de dos líneas, apoyo y ciclo)
+     y el ciclo se ancla a su pie. Así, sin ciclo, la frase no baja ni deja un
+     cielo vacío. El selector (`centrada`) va aparte. */
+  :host(:not(.escena--centrada)) .escena__prop {
+    display: flex;
+    flex-direction: column;
+    min-block-size: var(--prop-alto);
+  }
+
+  .escena__prop {
+    --prop-alto: 360px;
+
+    padding-top: 40px;
+  }
+
+  .escena__saludo {
+    margin-bottom: 10px;
+    font-size: var(--fs-tarjeta);
+  }
+
+  .escena__titulo {
+    font-size: clamp(34px, 3.1vw, 44px);
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+  }
+
+  .escena__texto {
+    display: block;
+    margin-top: 18px;
+    font-size: 16px;
+  }
+
+  /* Cuatro estaciones sobre una órbita recta: cada tramo une un punto con el
+     siguiente y el último va relleno en cian (Cobrada: el ciclo cerrado).
+     Ninguna columna baja de lo que mide su nombre (sin cortes ni roces) y por
+     debajo de 1360 px el ciclo va solo con los nombres: ahí las columnas no
+     dan para «Soportes verificados» en una línea. */
+  .escena__ciclo {
+    --ciclo-gap: 16px;
+
+    display: grid;
+    grid-template-columns: repeat(4, minmax(max-content, 1fr));
+    column-gap: var(--ciclo-gap);
+    margin: auto 0 0;
+    padding: 40px 0 0;
+    list-style: none;
+
+    li {
+      position: relative;
+      padding-top: 24px;
+
+      /* El punto. */
+      &::before {
+        content: '';
+        position: absolute;
+        z-index: 1;
+        top: 0;
+        left: 0;
+        box-sizing: border-box;
+        width: 13px;
+        height: 13px;
+        border: 2px solid var(--cian);
+        border-radius: 50%;
+        background: var(--noche);
+      }
+
+      /* El tramo hasta el punto siguiente (que empieza tras el espacio entre
+         columnas). */
+      &:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        top: 6px;
+        left: 6px;
+        width: calc(100% + var(--ciclo-gap));
+        height: 1.5px;
+        background: rgb(31 159 203 / 50%);
+      }
+    }
+
+    b {
+      display: block;
+      font-size: 15px;
+      font-weight: 600;
+      color: #ffffff;
+      white-space: nowrap;
+    }
+
+    span {
+      display: none;
+      margin-top: 2px;
+      font-size: 12.5px;
+      line-height: 1.4;
+      color: var(--texto-noche-2);
+      white-space: nowrap;
+    }
+  }
+
+  .escena__ciclo .escena__ciclo-fin::before {
+    background: var(--cian);
+    box-shadow: 0 0 0 5px rgb(31 159 203 / 22%);
+  }
+
+  /* El selector de sistema: la frase al centro de la altura, en el mismo eje
+     que las dos elecciones de la hoja. El cielo y un hueco igual debajo se
+     reparten la altura que sobra. */
+  :host(.escena--centrada) .escena__cielo {
+    flex: 1 1 0;
+  }
+
+  :host(.escena--centrada)::after {
+    content: '';
+    flex: 1 1 0;
+  }
+}
+
+/* Entre 900 y 1199 px las columnas del ciclo son estrechas: los nombres
+   bajan a 14 px para que «Programada» no roce a «Ejecutada». */
+@media (min-width: 900px) and (max-width: 1199.98px) {
+  .escena__ciclo b {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 1360px) {
+  .escena__ciclo {
+    max-width: 560px;
+
+    span {
+      display: block;
+    }
+  }
+}

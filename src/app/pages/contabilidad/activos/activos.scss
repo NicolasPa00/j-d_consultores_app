@@ -1,19 +1,12 @@
 /* C7-01 · Activos fijos. */
 
+/* Los tres totales van en una sola tarjeta dividida (`.kpi-grid`, DESIGN §7);
+   la cifra se ajusta sola al ancho de su celda. */
 .af-resumen {
-  display: flex;
-  align-items: stretch;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-
-  .kpi-card { flex: 1 1 14rem; padding: 1rem 1.25rem; }
-  .kpi-card__value { font-size: 1.35rem; }
-  > .btn { align-self: center; }
+  margin-bottom: var(--e-4);
 }
 
-
-.af-dep { padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.af-dep { padding: var(--e-5) var(--e-6); margin-bottom: var(--e-4); }
 .af-dep__fila {
   display: flex;
   justify-content: space-between;
@@ -21,40 +14,37 @@
   gap: 1rem;
   flex-wrap: wrap;
 }
+/* Mes y «Ver qué se deprecia» van DEBAJO de la descripción, a la izquierda,
+   como antes del rediseño: el bloque de texto ocupa toda la fila (el 75ch del
+   párrafo es solo para leerlo, no para dejarle sitio al control a su lado). */
+.af-dep__fila > :first-child { flex: 1 1 100%; }
 .af-dep__accion { display: flex; align-items: flex-end; gap: 0.6rem; flex-wrap: wrap; }
-.af-titulo { margin: 0 0 0.2rem; font-size: 1rem; color: var(--primary-color); }
-.af-sub { margin: 0; color: var(--text-muted); font-size: 0.82rem; }
+/* Título de tarjeta 16/600 en tinta (el azul queda para la acción, DESIGN §1). */
+.af-titulo { margin: 0 0 var(--e-1); font-size: var(--fs-tarjeta); font-weight: 600; color: var(--tinta); }
+.af-sub { max-width: 75ch; margin: 0; color: var(--tinta-3); font-size: var(--fs-celda); line-height: 1.5; }
 .af-campo {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-muted);
+  gap: 6px;
+  font-size: var(--fs-celda);
+  font-weight: 500;
+  color: var(--tinta-2);
 }
-.af-previa { margin-top: 1rem; }
-.af-previa__pie { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; }
-.af-corridas { margin-top: 1rem; }
+.af-dep__accion > .btn { min-height: 40px; }
+.af-previa { margin-top: var(--e-4); }
+.af-previa__pie { display: flex; justify-content: flex-end; gap: var(--e-2); margin-top: var(--e-3); flex-wrap: wrap; }
+.af-corridas { margin-top: var(--e-4); }
+.mono { font-variant-numeric: tabular-nums; }
+td.td-id.mono { font-variant-numeric: normal; }
 .col-num, .table th.col-num { text-align: right; white-space: nowrap; }
-.af-vacio {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 1rem 0;
 
-  svg { width: 2.25rem; height: 2.25rem; color: var(--tinta-3); }
-  p { margin: 0; }
-}
-
-.af-desc { display: flex; flex-direction: column; gap: 0.1rem; }
+.af-desc { display: flex; flex-direction: column; gap: 2px; min-width: 200px; }
 
 /* Ficha: datos a la izquierda, etiqueta con el QR a la derecha. */
 .af-ficha {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 15rem;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: var(--e-6);
 }
 @media (max-width: 820px) {
   .af-ficha { grid-template-columns: 1fr; }
@@ -62,11 +52,11 @@
 .af-datos {
   display: grid;
   grid-template-columns: 11rem minmax(0, 1fr);
-  gap: 0.4rem 0.75rem;
+  gap: var(--e-2) var(--e-3);
   margin: 0;
-  font-size: 0.88rem;
+  font-size: var(--fs-celda);
 
-  dt { color: var(--text-muted); }
+  dt { color: var(--tinta-3); }
   dd { margin: 0; }
 }
 .af-qr {
@@ -76,15 +66,35 @@
   gap: 0.5rem;
   text-align: center;
 
-  img { border: 1px solid var(--border-soft); border-radius: 8px; }
+  img { border: 1px solid var(--borde); border-radius: var(--r-alerta); }
 }
-.af-qr__cod { margin: 0; font-size: 1.1rem; font-weight: 600; color: var(--primary-color); }
-.af-proyectada td { color: var(--text-muted); }
+.af-qr__cod { margin: 0; font-size: var(--fs-tarjeta); font-weight: 600; color: var(--tinta); }
+.af-proyectada td { color: var(--tinta-3); }
+
+/* Secciones de la ficha: Datos y Etiqueta lado a lado, sin caja propia (el modal
+   ya es la caja); la etiqueta se separa con una línea. */
+.af-ficha > .card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+.af-ficha > .af-qr {
+  padding-left: var(--e-6);
+  border-left: 1px solid var(--borde);
+}
+@media (max-width: 820px) {
+  .af-ficha > .af-qr { padding: var(--e-4) 0 0; border-left: 0; border-top: 1px solid var(--borde); }
+}
+.af-ficha .section-head { margin: 0; width: 100%; }
 
 .af-aviso {
-  margin: 0 0 0.75rem;
-  padding: 0.6rem 0.8rem;
-  font-size: 0.85rem;
+  margin: 0;
+  padding: 10px 14px;
+  font-size: var(--fs-celda);
   color: var(--tinta);
   background: var(--aviso-fondo);
   border-radius: var(--r-alerta);
@@ -92,10 +102,10 @@
 .af-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem 1rem;
+  gap: 14px var(--e-6);
 }
 .af-grid__ancho { grid-column: 1 / -1; }
 @media (max-width: 640px) {
   .af-grid { grid-template-columns: 1fr; }
 }
-.af-link { border: 0; padding: 0; background: transparent; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
+.af-link { border: 0; padding: 0; background: transparent; color: var(--accion); font: inherit; font-weight: 500; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }

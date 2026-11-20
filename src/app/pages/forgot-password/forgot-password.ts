@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { EscenaAccesoComponent } from '../login/escena-acceso';
 import { AuthService } from '../../core/auth.service';
 import { mensajeError } from '../../core/errores';
 
 /** AUTH-03 · "Olvidé mi contraseña": solicita el correo de recuperación. */
 @Component({
   selector: 'app-forgot-password',
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, EscenaAccesoComponent],
   templateUrl: './forgot-password.html',
   styleUrl: '../login/login.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

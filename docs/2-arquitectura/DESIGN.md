@@ -3,6 +3,8 @@
 Este documento es la fuente de verdad visual para `src/styles.scss` y `src/styles/_tokens.scss` (Angular 21, sin librería de UI). La maqueta de referencia (`index.html`, con sus fotos `parte-N.png`) se trabajó fuera del repo; `diseno-orbita-lamina.png`, junto a este archivo, es su foto completa.
 
 > **20-nov-2026 · fase A construida** en la rama `rediseno-visual`: tokens, alias, Inter autoalojada y primitivas globales. Las decisiones del dueño sobre el §11 ya están aplicadas en este documento y **prevalecen** sobre la maqueta donde difieren (ver §11).
+>
+> **20-nov-2026 · shell construido** (barra lateral, barra superior, navegación móvil y campanita) y arreglos globales de la fase 2: barra de herramientas, buscador, fila vacía de tabla, confianza única, FINALIZADA con visto, KPI 2×2 y pestañas con desvanecido en el celular. Las clases globales nuevas están en el §7 con su anatomía: **las vistas las usan en lugar de inventar las suyas.**
 
 Las mediciones se hicieron así:
 
@@ -211,11 +213,14 @@ Hay un `:focus-visible` global: `outline: 2px solid var(--accion)` (9,28:1), `ou
 - En la barra lateral y en el acceso principal (fondo de acción), el anillo va en `--cian`.
 - En los campos, el foco es el borde en acción, más un anillo interior de 1 px y el halo.
 
+**Texto solo para lectores de pantalla:** `.visualmente-oculto` (el `h1` de la barra superior cuando el sistema se muestra como segmentado).
+
 ## 7. Componentes
 
 ### Botón `.btn` [A]
 
 - **Medidas.** 36 px de alto (30 en `--sm`), radio 6, texto 14/500 e ícono de 16. Hay un solo primario por vista.
+- **40 px en barras y cabeceras.** Todo `.btn` de una `.page-head` (con campos o sin ellos) o de una `.toolbar` mide 40, aunque lleve `--sm`: así Órdenes y Facturación tienen los botones de arriba a la misma altura y al cambiar de vista con el segmentado no saltan. La regla va al final de `styles.scss`.
 - **Variantes:**
   - `--primary`: acción.
   - `--secondary`: blanco, con `--borde-control` y `--sombra-1`.
@@ -259,6 +264,12 @@ Mide 30 px, con texto 13/500 en acción y un chevron. Hover en `--accion-tenue`.
 - **[B, Facturación y Cartera, ½ día por vista] Montos y número.**
   - Montos a la derecha y tabulares, con `<small>$</small>` en `--tinta-3`. Hace falta el `span`.
   - El número del documento en 600.
+- **[A] Fila vacía `td.table__empty`.** Aunque la plantilla solo traiga una frase, la fila se pinta con la anatomía del estado vacío: recuadro de 44 px en `--hundida` con el ícono de bandeja (`--icono-vacio`, un `::before` del td; el td no cambia de display) y la frase en 14/500 `--tinta-2`. Un `<small>` o `<p>` dentro baja a 13 `--tinta-3` en su propia línea. Si la vista quiere título, texto y acción, pone un `.estado-vacio` dentro y marca el td con `table__empty--estado` (así no sale el recuadro dos veces):
+
+  ```html
+  <tr><td class="table__empty" colspan="8">No hay órdenes deshabilitadas.<small>Las que deshabilite aparecerán aquí.</small></td></tr>
+  <tr><td class="table__empty table__empty--estado" colspan="8"><div class="estado-vacio">…</div></td></tr>
+  ```
 - **Columnas de Órdenes a 1440 px:**
 
   | Columna | Ancho |
@@ -271,6 +282,64 @@ Mide 30 px, con texto 13/500 en acción y un chevron. Hover en `--accion-tenue`.
   | Estado ARL | 118 |
   | Cobro | 120 |
   | Opciones | 140 |
+
+**Columna de acciones fija (ronda 3, global en `styles.scss`):** desde 821 px, si la última columna es `.col-actions` y la tabla no cabe, se queda pegada a la derecha del `.table-wrap` (`position: sticky`) con una sombra de 10 px a su izquierda que solo aparece mientras queda tabla por desplazar (animación ligada al scroll). En el celular no: ahí se comería media pantalla.
+
+**Pestañas con filtro al lado** (Facturación › Emitidas): si un contenedor tiene `.tabs` seguido de un `select.form-control`, la línea inferior va en el contenedor entero (desde 821 px).
+
+### Cabecera de página con acciones [A]
+
+Título y subtítulo a la izquierda; los botones de la vista a la derecha. **Cuando el subtítulo es largo y los botones bajan a la línea siguiente, siguen a la derecha.** La regla (`margin-left: auto; justify-content: flex-end`, desde 641 px) va **solo sobre el contenedor con nombre** `.page-head__acciones` / `__actions`. Las cabeceras locales (`fac-head`, `car-head`, `cp-head`…) conservan la colocación que les da su hoja: en la ronda 1 del shell una regla sobre «el último hijo de `.page-head`» movió el contador y los botones de Facturación y de Pago a profesionales, y se retiró. Una vista que quiera el comportamiento nuevo adopta la anatomía; en el celular las acciones bajan bajo el título alineadas a la izquierda. Anatomía para vistas nuevas:
+
+```html
+<section class="page-head page-head--acciones">
+  <div>
+    <h2 class="page-head__title">Compras y gastos</h2>
+    <p class="page-head__sub">…</p>
+  </div>
+  <div class="page-head__acciones">
+    <button type="button" class="btn btn--secondary">Importar desde Excel</button>
+    <button type="button" class="btn btn--primary">Registrar compra</button>
+  </div>
+</section>
+```
+
+`.page-head__actions` es alias de `.page-head__acciones`.
+
+### Barra de herramientas `.toolbar` [A]
+
+Filtros, búsqueda y botones encima de una tabla. **Va alineada al inicio, con `flex-wrap`, la búsqueda flexible y todos los controles a 40 px, botones incluidos.** Así, a 1280 y a ~1093 px útiles, la barra se parte pareja y nunca deja un primario solo en la esquina con un hueco a su izquierda (defecto de Órdenes y Terceros en la fase 2).
+
+```html
+<div class="toolbar">
+  <label class="buscador toolbar__buscar">
+    <svg class="buscador__icono" viewBox="0 0 24 24" aria-hidden="true">…lupa…</svg>
+    <input type="search" class="buscador__input" placeholder="Empresa, NIT u OS" aria-label="Buscar órdenes" />
+  </label>
+  <select class="form-control" aria-label="Cobro">…</select>
+  <button type="button" class="btn btn--secondary">Próximas a ejecutar</button>
+  <div class="toolbar__fin">                <!-- opcional: lo que cierra la fila -->
+    <button type="button" class="btn btn--primary">Nueva orden manual</button>
+  </div>
+</div>
+```
+
+- **Búsqueda:** `flex: 1 1 280px`, mínimo `min(100%, 220px)` y máximo 480. Es lo primero que se encoge y lo que llena el hueco.
+- **Selects:** ancho de su contenido, mínimo 150.
+- **`.toolbar__fin`:** `margin-left: auto`. Úselo solo si el orden de hoy ya pone ese grupo al final; no sirve para mover botones.
+- **Botones a 40 px.** Dentro de `.toolbar`, de una `.page-head` que tenga campos o de cualquier contenedor con un `.form-control`/`.buscador` como hijo directo, un `.btn` mide 40 aunque lleve `--sm`. La regla va al final de `styles.scss` y con `:where`, así que la hoja de una vista puede decidir otra cosa.
+- **El marcador del buscador cabe entero a 1280:** «Empresa, NIT u OS» y no «Buscar por empresa, ARL, NIT, cron…».
+
+### Buscador `.buscador` [A]
+
+Campo con lupa, con la piel de cualquier campo: 40 px, `--borde-campo` (3,03:1), `--r-control` y el foco del §6. Lupa de 16 px en `--tinta-3` a 12 px del borde; el texto empieza a 36 px. En el celular la letra sube a 16 px para que no haga zoom. **Ninguna vista vuelve a dibujar su propio buscador** (los de Empresas, Profesionales, Terceros y Contabilidad usaban radio 10 y `--borde`): pasan a esta clase.
+
+```html
+<label class="buscador">
+  <svg class="buscador__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+  <input type="search" class="buscador__input" placeholder="Nombre o NIT" aria-label="Buscar empresas" />
+</label>
+```
 
 ### Acciones de fila [A + B]
 
@@ -285,17 +354,20 @@ Mide 30 px, con texto 13/500 en acción y un chevron. Hover en `--accion-tenue`.
 Son dos controles apilados, y los dos llevan su palabra.
 
 - **Arriba, el botón de hoy.** Pendiente en hundida con `--tinta-2`; Aprobado en ok. Mide 22 px y lleva radio 6.
+  - **Propuesto por el grupo Órdenes (20-nov-2026), PENDIENTE DE CONFIRMAR por el dueño: «Pendiente» va en neutro, no en ámbar.** Es espera de la ARL, no una alerta, y el ámbar es solo de SIN PROGRAMAR (§1, §10). La palabra y su lugar no cambian. `pillArl()` devuelve `pill--muted` también en el detalle y en el historial. En la tabla es `.arl-estado` / `.arl-estado--ok` (`validation.scss`).
 - **Debajo, «Plataforma».** Es el ✓ de «Validado plataforma», ahora con rótulo visible. Mide 20 px (36 en el celular). Tres estados:
   - **Por marcar:** círculo de 14 px con `--borde-campo` (3,03) y el texto en tinta-2.
   - **Validada:** círculo relleno en ok con visto, y texto en ok.
-  - **Bloqueada:** candado de 12 px y texto en `--tinta-3` (5,17), con `disabled` y `aria-describedby`. La razón se lee **en pantalla** al pie de la tabla: «🔒 "Plataforma" se habilita cuando la orden está ejecutada». Así no depende de un `title`, que en una pantalla táctil no existe.
+  - **Bloqueada:** candado de 12 px y texto en `--tinta-3` (5,17) **con peso 400** (por marcar va en 500 y su hover pinta círculo y texto en `--accion`), con `disabled` y `aria-describedby`. La razón se lee **en pantalla** al pie de la tabla: «🔒 "Plataforma" se habilita cuando la orden está ejecutada». Así no depende de un `title`, que en una pantalla táctil no existe.
 
 ### Cobro [A + B]
 
 - **[A]** Sigue siendo un botón que abre el modal de cobro.
   - **Pendiente:** texto 12/500 en `--tinta-2`, con el ícono de recibo y un chevron, **sin marco**. El marco (`--borde-campo`) aparece en el hover. Ya no pesa más que el estado.
   - **Aprobado:** pastilla en ok con borde `#8cc3a4`, visto y 600.
-- **[B, ½ h] Radicado (solo Bolívar).** «+ Radicado» o «✓ Radicado 88213» cuelga **en posición absoluta** debajo del botón (`.cobro-cel { position: relative }`). El botón queda en el eje de la fila; medido: desviación de 0 px en las 10 filas.
+- **[B, ½ h] Radicado (solo Bolívar).** «+ Radicado» o «✓ Radicado 88213» va debajo del botón **en el flujo de la celda** (`.cobro-cel`, columna con 4 px de separación). **Construido el 20-nov-2026 así y no en posición absoluta**: colgado, el radicado se montaba sobre la fila siguiente cuando la fila de Bolívar era la más baja.
+- **Construido (20-nov-2026, ronda 2 de Órdenes):** Pendiente **sin marco en escritorio** (el marco `--borde-campo` solo en el hover); el marco en reposo queda solo en `@media (hover: none), (max-width: 820px)`, donde no hay hover que avise de que se pulsa. Lleva el ícono de recibo (o el visto si está aprobado) y un chevron; entre 821 y 1200 px el recibo se oculta para que la tabla quepa a ~1093 px.
+- **Radicado sin aprobar:** reloj en `--tinta-3` (no el círculo vacío, que junto a «Plataforma» se leía como casilla por marcar); el visto relleno en ok es solo para el aprobado. El número va en 12 tabular, no ensancha la columna y, si no cabe, baja a la segunda línea (elipsis y `title` si aun así no cabe).
 
 ### Pestañas [A + A2]
 
@@ -311,6 +383,7 @@ Hay dos estilos y ninguno más:
   </div>
   ```
 - **`.seg`** cuando se filtra lo mismo o se cambia de sistema (`.seg > button`, activo con `.seg--on` o `aria-pressed="true"`).
+- **En el celular (≤820 px)** las `.tabs` que no caben se desplazan de lado con un **desvanecido de 28 px en el borde derecho** que avisa de que hay más; al llegar al final, una animación ligada al scroll (`animation-timeline: scroll(self inline)`) lo quita. Es la única máscara degradada permitida (§10). No hace falta tocar plantillas.
 
 **[A2]** Las pestañas en pastilla de Órdenes, Facturación, Nómina, Contabilidad e Informes pasan a `.tabs`. Son clases locales: se borran sus estilos y la plantilla usa `.tabs`/`.tab`. Media hora por vista.
 
@@ -326,7 +399,9 @@ Mide 22 px, con radio completo, texto 11,5/600 en MAYÚSCULAS y un punto de 6 px
 | FINALIZADA | Ok, con visto (`.pill--visto`) |
 | COBRADA | Hundida (`.pill--muted`, sin punto) |
 
-En el código son `.pill` + `--warning` (SIN PROGRAMAR), `--info`, `--success`, `--danger` y `--muted`. Las mayúsculas **no se fuerzan con CSS**: los estados de OS ya llegan así.
+En el código son `.pill` + `--warning` (SIN PROGRAMAR), `--info`, `--success` (EJECUTADA), **`--finalizada`** (FINALIZADA: verde con visto; equivale a `--success --visto`), `--danger` y `--muted`. Las mayúsculas **no se fuerzan con CSS**: los estados de OS ya llegan así.
+
+> **Pendiente en las vistas:** `pillClass()` de `dashboard.ts` devuelve `pill--success` para FINALIZADA; debe devolver `pill--finalizada`. Por CSS no se puede distinguir de EJECUTADA. (`validation.ts` ya lo hace desde el 20-nov-2026.)
 
 Debajo puede ir una nota de 12/500 («Parcial · faltan 4 h»).
 
@@ -338,7 +413,7 @@ Mide 22 px (18 junto a una etiqueta), con radio 6 y 12/600 tabular.
 - 70–79: naranja rojizo (4,66).
 - < 70: error (5,75).
 
-En el código: `.pill.pill--metric.pill--{success|warning|danger}` o `.conf.conf--{alta|media|baja}`. Las plantillas que pintan la confianza con `.pill--warning` sin `--metric` salen en ámbar hasta la fase B.
+En el código: `.pill.pill--metric.pill--{success|warning|danger}` o `.conf.conf--{alta|media|baja}`. **Las tres escrituras comparten una sola piel**: también la vieja `.conf-badge.pill.pill--…` del modal Detalle de la orden, que antes salía redonda y con punto. Una plantilla que pinte la confianza con `.pill--warning` sin `--metric` ni `conf-badge` sale en ámbar: hay que añadirle `pill--metric`.
 
 ### Etiqueta, chip y tarjeta [A]
 
@@ -363,11 +438,12 @@ En el código: `.pill.pill--metric.pill--{success|warning|danger}` o `.conf.conf
   </section>
   ```
 - Etiqueta 13 `--tinta-2`, cifra 32/500 con la unidad según el §3, y una pista de 13.
+- **En el celular (≤600 px) la rejilla es 2×2**, con relleno 14 × 16, etiqueta y pista en 12 y sin ícono. Antes, cuatro tarjetas apiladas gastaban ~400 px antes de llegar a los datos.
 - **[B, 2 h, una sola vez] Cifras largas: un componente `<orb-kpi-valor [valor] [unidad]>`.** No se repite la lógica en cada vista.
   - Calcula `n`: los caracteres del valor ya formateado, contando «$ ».
   - Aplica `font-size: min(32px, calc(100cqi / (n × .52)))`.
   - A partir de 13 dígitos abrevia en millones («$ 123.457 MM», **nunca «M»**) y deja el valor entero en el `title`.
-  - Un pipe `cifraCorta` comparte la abreviatura con «Requiere su atención»: a partir de 10.000 escribe «12 mil».
+  - Los conteos (no los montos) **no se abrevian**: «Requiere su atención» y los accesos del Inicio escriben la cifra entera con punto de miles («12.450», «1.284»), igual que el resto de la app. Abreviar solo ahí era cambiar el formato de un dato (ronda 3, 20-nov-2026).
 - Medido en Chrome:
   - «$ 18.640.000» queda en 32 px.
   - «$ 1.234.567.890» queda en 20,8 px y no se sale.
@@ -412,30 +488,41 @@ Va fuera de la tabla, 14 px por debajo.
 - Las flechas deshabilitadas van en `#8a96a6` (3,00:1) con `not-allowed`: se leen inactivas, no rotas.
 - Arranca en 10 filas.
 
-### Barra lateral [A + B]
+### Barra lateral [construida el 20-nov-2026 · `layout/shell`]
 
-- **[A] Fondo y logo.** 232 px de ancho, en noche, con el logo claro de 30 px.
-- **[A] Ítems.** 36 px de alto, texto 14.
-  - El activo va en `--noche-alzada` con **marca cian de 3 px** dentro de la píldora, y `aria-current="page"`.
-  - El contador va en `--contador`.
-- **[B, ½ día] Una línea por ítem y grupos sin reordenar.** Se quitan los subtítulos, se agrupa y **se conserva el orden de `sistemas.ts`**:
+- **Fondo y marca.** 232 px de ancho, en noche, relleno 16 × 12. La marca es el **isotipo de 30 px + la palabra ORBITA de 16 px de alto, sin el lema** (a ese tamaño no se lee; la maqueta lo llevaba). La palabra es **su propio archivo**, `public/logo-orbita-palabra-claro.webp` (460 × 83, solo las letras blancas, sacadas del lockup claro), no texto en Inter ni un recorte por CSS del lockup: si el lockup cambia, la marca no se descuadra.
+- **«Saltar al contenido».** Primer enfocable de toda vista privada: invisible hasta el primer Tab, lleva el foco a `main.content` (`tabindex=-1`, sin anillo) sin recorrer el menú.
+- **Ítems.** 36 px de alto (34 si la pantalla mide ≤760 px de alto, 32 si ≤700), radio 7, texto 14 en `--texto-noche`, ícono de 18 en `--icono-noche`. Hover con ratón: blanco al 6 % y texto blanco.
+  - El activo va en `--noche-alzada`, texto blanco 500 y **marca cian de 3 px** dentro de la píldora, con `aria-current="page"`. Foco en `--cian`.
+  - **Una sola línea:** el subtítulo de antes (`hint` en `shell.ts`) vive ahora en el `title` del enlace.
+  - **Contador ámbar (`--contador`) solo donde ya había conteo.** Hoy ningún ítem del menú tiene conteo, así que no se pinta ninguno (no se agregan funciones).
+- **Un ícono distinto por destino** (ronda 3, 20-nov-2026): contraída, el ícono es la única señal. Inicio casa · Importar carpeta con flecha · Órdenes portapapeles con lista · Profesionales personas · Cuentas de cobro recibo · Empresas edificio · Estadísticas barras · Facturación documento · Pago a profesionales billete · Nómina tarjeta de identificación · Cartera billetera · Compras y gastos carrito · Contabilidad libro mayor cerrado · Informes contables libro abierto · Terceros agenda · Parametrización deslizadores · Configuración engranaje. No se repite ninguno.
+- **Lector de pantalla:** cada grupo con título es un `role="group"` con `aria-label` (envoltura `.nav-seccion` con `display: contents`, así que no cambia la caja); el título visible va con `aria-hidden`.
+- **Grupos sin reordenar** (`GRUPOS_MENU` y `PIE_MENU` en `core/sistemas.ts`). Cada grupo es un tramo seguido de `menu`, así que el orden no cambia. Título 12/500 en `--texto-noche-2`:
   - **Operación:** Inicio · *Operación* (Importar archivos, Órdenes, Profesionales) · *Cobro y clientes* (Cuentas de cobro, Empresas, Estadísticas) · pie: Configuración.
   - **Finanzas:** *Documentos* (Facturación, Pago a profesionales, Nómina, Cartera, Compras y gastos) · *Contabilidad* (Contabilidad, Informes contables, Terceros, Parametrización) · *Compartido con Operación* (Cuentas de cobro, Estadísticas) · pie: Configuración.
-  - Al pie, con divisor: Configuración, Cerrar sesión y **«Contraer menú»**, que es el control de colapsar de hoy (`menu-toggle`), ahora con su nombre escrito.
+- **Pie**, con divisor blanco al 9 %: Configuración, Cerrar sesión y **«Contraer menú»** (13 en `--texto-noche-2`), que es el `alternarSidebar()` de la hamburguesa de antes con su nombre escrito. Contraída dice «Expandir menú».
+- **Contraída: 72 px**, solo íconos e isotipo. Los títulos de grupo se vuelven un divisor blanco al 9 % (el color del divisor del pie); el primero no se pinta, porque bajo el isotipo parecía un trazo suelto. El rótulo del ítem queda **oculto solo a la vista** (`visualmente-oculto`) y el enlace lleva `aria-label` con el nombre solo. Con ratón, cada ítem muestra un **rótulo propio a la derecha** (noche, 12/500, el subtítulo debajo en `--texto-noche-2`): 300 ms de espera para el primero y ninguno entre ítems seguidos; con teclado sale al enfocar. Contraída no hay `title` nativo (saldría doble). La preferencia sigue en `localStorage` (`sst_sidebar_colapsado`).
+- **Si la lista no cabe** (Finanzas en un portátil bajo), hace scroll sola y muestra un desvanecido inferior de 24 px **solo mientras queda algo por bajar** (animación ligada al scroll de la lista). Sin scroll no hay máscara.
 
-### Barra superior [B, 2 h]
+### Barra superior [construida el 20-nov-2026 · `layout/shell`]
 
-Mide 60 px, en blanco.
+Mide 60 px (56 en el celular), en blanco, **en el flujo** (ya no es `position: fixed`): el contenido hace scroll debajo, en `.content`, con 28 px arriba (`--contenido-arriba`) y 40 a los lados (32 por debajo de 1366 px; 16 en el celular). Una cabecera de tabla `sticky` dentro de `.content` se pega bajo la barra con `top: calc(-1 * var(--contenido-arriba))`.
 
-- **A la izquierda:** el selector de sistema como segmentado. **En escritorio ya no hay hamburguesa**: contraer vive al pie del menú. En el celular, la barra inferior hace ese papel.
+- **A la izquierda:**
+  - **Quien tiene los dos sistemas** ve el segmentado `.seg` Operación / Finanzas (con `aria-pressed`). Pulsar el otro lleva a la pantalla de inicio de ese sistema (`SistemaService.elegir`), la misma a la que entraría desde `/sistemas`. Reemplaza al título centrado y al botón «Cambiar de sistema»; el `h1` «ORBITA · {sistema}» queda para lectores de pantalla (`.visualmente-oculto`).
+  - **Quien tiene uno solo** ve el nombre del sistema (14/600 tinta), sin control.
+  - **En escritorio ya no hay hamburguesa**: contraer vive al pie del menú. En el celular, la barra inferior hace ese papel.
 - **A la derecha:**
   - la ayuda;
   - la campanita;
-  - el avatar con nombre y rol detrás de un divisor.
+  - el avatar con nombre y rol detrás de un divisor: círculo de 34 px en `--accion-tenue` con las iniciales en acción, nombre 13/500 (con elipsis solo pasado 240 px desde 1366 px y 220 por debajo; el nombre completo va en el `title`) y rol 12 `--tinta-3` («Administrador», «Administrativo», «Contador», «Auditor»; «Administrador maestro» para la cuenta maestra). Lleva a Configuración, como antes. Por debajo de 1100 px queda solo el círculo.
 - **La campanita conserva su conteo actual** (decisión del dueño): cambia solo la piel.
   - El contador va en acción con texto blanco (9,28) y anillo blanco de 2 px.
   - Se ancla a la esquina superior derecha del glifo con `transform: translate(55%, -50%)`, así que tapa como mucho la punta de la campana.
-  - Mide 16 px de mínimo. Con más de 99 dice «99+».
+  - Mide 17 px (16 de mínimo), con la cifra en 11/600 tabular. Con más de 99 dice «99+».
+  - Por debajo de 400 px el avatar se separa 10 px de la campanita, para que «99+» no lo toque.
+- **Bandeja de la campanita** (`layout/notifications`): menú desplegable de 400 px, radio 10, `--sombra-3`, entra en 160 ms desde `scale(.98)` con origen arriba a la derecha. Cabecera con título 16/600 y «Marcar todas como leídas» como terciario en acción; los recortes No leídas · Leídas · Eliminadas son chips pulsables (28 px, el activo en `--accion-tenue` con borde acción y su conteo en acción); el buscador lleva la piel del campo. Cada aviso: ícono de línea de 18 en `--tinta-3` **sin recuadro teñido** (solo el rechazo va en error), título 13 (600 si no está leído) y mensaje 13; el no leído lleva además un punto de 6 px en acción a la izquierda. La papelera y el restaurar van atenuados al 55 % y se encienden al pasar el ratón por la fila (en táctil, enteros): la acción se ve sin buscarla, como antes del rediseño. Vacío y error con la anatomía de `.estado-vacio`. En el celular la bandeja se ancla a la ventana (12 px a los lados) y solo la lista hace scroll.
 
 **Regla de contadores:**
 
@@ -445,11 +532,13 @@ Mide 60 px, en blanco.
 | Campanita (su conteo de hoy) | `--accion` |
 | Vencidas y errores | Solo como texto en error, nunca como burbuja |
 
-### Navegación móvil [A]
+### Navegación móvil [construida el 20-nov-2026]
 
-- Es la barra inferior de hoy: Inicio, Órdenes, Importar, Profesionales y Más.
-- El activo va en acción 600 con una marca `--cian-trazo` de 3 px arriba.
-- El contador va en `--contador`.
+- Es la barra inferior de hoy (≤820 px): los cuatro módulos fijos del sistema (`FIJOS_MOVIL`) y Más. Rótulo de 11/500 en `--tinta-3`, ícono de 22.
+- El activo va en acción 600 con una marca `--cian-trazo` de 3 px arriba (sin fondo en el ícono).
+- El contador iría en `--contador`; hoy no hay ninguno.
+- **«Más»** abre una hoja desde abajo (radio 12 arriba, `--sombra-modal`, 200 ms): el nombre del sistema en 12/600, el resto de módulos como **lista de una columna a 44 px** (nombre completo, sin truncar) y al pie «Cambiar de sistema» y «Cerrar sesión» (en error).
+- La barra superior del celular lleva el isotipo de 28, el segmentado (si hay dos sistemas), la ayuda, la campanita y el círculo del avatar.
 
 ### Franja del saludo [B, Inicio]
 
@@ -457,7 +546,7 @@ Mide 60 px, en blanco.
 - **Saludo.** «Buenos días, {nombre}» en **30/600**: es lo que domina la pantalla.
 - **Mensaje.** Una sola línea, sin razón social: «**13 órdenes sin programar** · 1 venció hace 2 días», seguida de **«Programar la vencida →»**. Ese enlace abre el modal de **esa** orden. La cola filtrada queda para «Requiere su atención», así que el saludo y la lista no repiten la misma acción.
 - **Fecha.** A la derecha, la fecha en 16/600 y la semana.
-- **Órbitas.** Un sistema grande de 560 × 300 px entra por el borde derecho y queda recortado arriba, abajo y a la derecha. Cruza **por detrás** de la fecha (`z-index: -1`), sin punto central sobre el texto: dos elipses de 1,5 px en `--cian-trazo` al 50 % y al 30 %, más un anillo al 12 %.
+- **Órbitas.** Un sistema grande de 560 × 300 px entra por el borde derecho y queda recortado arriba, abajo y a la derecha. Cruza **por detrás** de la fecha (`z-index: -1`), sin punto central sobre el texto: dos elipses de 1,5 px en `--cian-trazo` al 50 % y al 30 %, más un anillo al 12 %. **Nunca pasa del 38 % derecho del saludo** (`left: max(100% − 440px, 62%)`) y su borde izquierdo se desvanece con una máscara de 90 px: a ~1093 px y con nombres largos no cruza el mensaje (ronda 3).
 
 ### Accesos directos [B, Inicio]
 
@@ -469,6 +558,9 @@ No hay rejilla de tarjetas iguales.
 - **Debajo, cuatro listas compactas por grupo.**
   - Título de grupo en 12/600 `--tinta-3`. Si el grupo vive en el otro sistema, lo dice el título («· en Finanzas»), no cada acceso.
   - Cada acceso es una fila plana de 38 px: ícono de línea de 18 px **sin recuadro** en `--tinta-3` (en el hover pasa a acción), etiqueta 14/500 **completa** y un hover en `--hundida`.
+- **Las listas no repiten el menú** (ronda 3): Profesionales, Empresas y Estadísticas salieron porque repetían la barra lateral palabra por palabra. Quedan las tareas («Crear factura», «Registrar compra o gasto», «Cuentas de cobro del mes») y los destinos del otro sistema. Los accesos a tareas de la maqueta («Programar visitas», «Verificar soportes», «Próximas a ejecutar», «Cargar prefactura») esperan a que Órdenes lea un filtro por URL (pedido al grupo Órdenes).
+- **Un acceso con conteo que no recibe la cifra** escribe «—» en el sitio de la cifra (`aria-label` «Sin dato»); el chevron queda solo para los accesos que no cuentan nada y va en la fila de la pista.
+- **Foco en la franja de principales:** anillo de 2 px por dentro (`inset: 3px`, radio 7, concéntrico con la tarjeta), sin halo exterior; cian sobre el relleno.
 - **Los accesos se filtran por permisos** (`vista` de la matriz de Roles).
   - «Liquidar nómina» solo aparece si el rol ve `nomina`.
   - La contadora tendría como principal «Crear factura».
@@ -482,8 +574,9 @@ No hay rejilla de tarjetas iguales.
 Es una lista en una tarjeta de 7/12.
 
 - **Cada fila lleva:**
-  - un punto de 8 px;
-  - la cifra en 24/600, en una columna `minmax(36px, max-content)`, así que 1.284 o 12.000 no invaden la etiqueta (desde 10.000 se escribe «12 mil»);
+  - un punto de 8 px **pegado a la cifra** (misma celda, alineada a la derecha, 10 px de separación): viaja con el número y no queda huérfano en el borde;
+  - la cifra en 24/600, entera («12.450», nunca «12 mil»). Todas las filas reservan el ancho de la cifra más larga (`--cifra-ancho`, en `ch`), así las etiquetas arrancan en la misma x;
+  - en el celular (<640 px) la cifra va **encima** del título, en 20 px, con el mismo borde izquierdo en todas las filas;
   - la etiqueta 14/500;
   - una pista de 13 («**1 vencida** · 🕑 2 vencen esta semana»);
   - un `.ir-a` a la cola filtrada.
@@ -509,7 +602,11 @@ Es una tarjeta de 5/12 que reemplaza a «Visitas de esta semana». Ver el §8.
 - **Altura.** La gráfica de horas toma el alto que deja la columna derecha (`flex: 1`). **Las dos columnas de Indicadores terminan a la misma altura**: medido, 3141 = 3141.
 - **Métricas al pie.** Enlaces a su vista, todas con fuente en órdenes y programación: vencidas sin ejecutar, horas por orden y profesionales con visitas. Se quitan Satisfacción y «Visitas realizadas», que no tenían endpoint.
 - **Avance por ARL.** Carril `--hundida` **sin contorno**, con el valor siempre escrito al lado.
-- **Porcentajes.** Se calculan por el método del resto mayor.
+- **Porcentajes.** Se calculan y se escriben **como antes del rediseño**: `Math.round` sobre el total y sin espacio («45%»). El resto mayor y el «45 %» de la ronda 2 se revirtieron: era un cambio de formato de dato (ronda 3).
+- **Avance por ARL.** Conserva sus dos datos de siempre: «4 / 19» y «21% ejecutadas» (el porcentaje en 12 `--tinta-3` bajo la cifra), ordenado por total como en `main`.
+- **Cifras de Indicadores con contexto.** Cada KPI lleva una pista de 13 con datos de la misma respuesta: «10 finalizadas», «de 29», «de 29 · 1 vencida», «en noviembre». No se inventan metas ni comparaciones con el mes anterior.
+- **Gráfica escasa.** Con uno o dos meses con datos, la barra más alta llega al 60 % del lienzo: una sola barra no ocupa toda la tarjeta.
+- **Esqueleto de la gráfica.** Seis barras `--hundida` de alturas distintas sobre la línea base, con el eje de meses ya escrito; sin animar (§5).
 
 ### Login [B, 1 día con forgot y reset]
 
@@ -599,6 +696,7 @@ Todo mide 36 px y ninguna acción se esconde.
 | `--kpi-accent` / `--kpi-icon-bg` | `var(--accion)` / `transparent` |
 | `--al-accent` / `--al-bg` / `--al-border` | Color del estado / su `-fondo` / `transparent` |
 | (nuevo) `--contador`, `--contexto`, `--cian`, `--cian-trazo`, `--noche*` | Se agregan sin alias |
+| (nuevo, shell) `--shell-barra` (60 px), `--contenido-arriba` (28 px), `--icono-vacio` | Alto de la barra superior, relleno superior de `.content` y el ícono de la fila vacía |
 | (nuevo, fase A) `--cabecera-tabla`, `--fila-hover`, `--pie-modal`, `--tinta-inactiva`, `--carril`, `--accion-tenue-hover`, `--borde-control-hover`, `--texto-sobre-accion`, `--{ok,info,aviso,error}-borde`, `--ok-fondo-hover`, `--peligro-hover`, `--{ok,error,aviso,info}-noche`, `--seleccion`, `--anillo`, escala `--e-1…--e-14`, radios `--r-item`/`--r-alerta`/`--r-hoja`/`--r-completo`, tamaños `--fs-*` | Tokens semánticos con su contraste anotado en `_tokens.scss` |
 
 ## 10. No hacer
@@ -642,9 +740,19 @@ Estas decisiones **prevalecen** sobre la maqueta y sobre cualquier punto anterio
 
 ### Pendientes del dueño
 
+- **Inicio por rol: cambios de estructura PENDIENTES DE CONFIRMAR** (los ampara la excepción «Inicio por rol» y el §1.6/§10: no hay tabla de órdenes en el Inicio):
+  - se retiró «Órdenes recientes» con su ojo «Ver la orden» y su «Ver todo»;
+  - los KPI, la Distribución por estado y el Avance por ARL pasaron a una pestaña nueva, «Indicadores»; el Resumen lleva accesos, «Requiere su atención» y «Próximas a ejecutar»;
+  - el título «Panel de control» se sustituyó por el saludo; «Total Órdenes» pasó a «Total órdenes»;
+  - las filas de «Requiere su atención» y «Ir a Órdenes» llevan a `/ordenes` **sin filtro** hasta que Órdenes lea uno por URL (pedido al grupo Órdenes).
+
+- **Órdenes · Estado ARL «Pendiente» en neutro** (antes ámbar), también en el detalle y en el historial (§7, Estado ARL y «Plataforma»). Lo propuso el grupo Órdenes; falta el visto bueno.
+- **Órdenes en el celular:** con Opciones sin fijar (§11.3), Ver y Cobro quedan fuera de vista en todas las filas hasta desplazar la tabla (~480 px).
+
 - **Barrido de tú / usted** en `src/app/**/*.html` y `ayuda.contenido.ts` (§12), con las capturas del centro de ayuda.
+- **Subtítulo de la barra superior** («JD&D Consultores · Facturación y contabilidad» / «Gestión de órdenes de servicio SST»): se quitó con el rediseño del shell. PENDIENTE DE CONFIRMAR por el dueño; si lo quiere, vuelve como línea 12 `--tinta-3` junto al segmentado.
 - **Lo que quedó fuera** y podría volver como función aparte: filtros de ARL y fechas en Órdenes, segmentado Semana/Mes/Año del Inicio, campanita que cuente solo notificaciones nuevas, Órdenes apiladas en el celular, «Recordar mi documento» en el login.
-- **Cambios de posición del shell** que proponía la maqueta y que esperan la fase de plantillas: título centrado de la barra superior → segmentado de sistema; hamburguesa → «Contraer menú» al pie del menú; Configuración al pie; ayuda a «Más» en el celular; marcador del buscador de Órdenes «Empresa, NIT u OS»; pestaña del Inicio «Resumen» y «Próximas a ejecutar» en lugar de «Visitas de esta semana».
+- **Cambios de posición del shell** que proponía la maqueta y pedía el §7. **Construidos el 20-nov-2026, PENDIENTES DE CONFIRMAR por el dueño:** título centrado de la barra superior → segmentado de sistema (solo con dos sistemas); hamburguesa → «Contraer menú» al pie del menú; Configuración al pie (era el último ítem del menú: el orden no cambia). Ojo al confirmar: (a) el segmentado lleva directo al inicio del otro sistema y se salta `/sistemas`, a la que en escritorio ya no lleva ningún botón (solo queda «Cambiar de sistema» en «Más» del celular); (b) en las pantallas compartidas (`/configuracion`, `/ayuda`) el segmentado no marca ningún sistema (ronda 3); la barra lateral sigue con el menú del último elegido y pulsar cualquiera de los dos lleva a su inicio. **No hechos:** la ayuda sigue en la barra superior del celular (la maqueta la llevaba a «Más»); marcador del buscador de Órdenes «Empresa, NIT u OS»; pestaña del Inicio «Resumen» y «Próximas a ejecutar» en lugar de «Visitas de esta semana».
 
 ## 12. Trato de usted: textos que cambian (pendiente del dueño, ver §11)
 

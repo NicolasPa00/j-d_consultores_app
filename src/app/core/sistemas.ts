@@ -48,6 +48,35 @@ export const SISTEMAS: Sistema[] = [
   },
 ];
 
+/**
+ * Rediseño (20-nov-2026, DESIGN §7 «Barra lateral»): el menú se AGRUPA sin
+ * reordenar. Cada grupo es un tramo seguido de `menu`, así que el orden de
+ * arriba se conserva tal cual; solo se le pone un título encima. `null` es un
+ * tramo sin título (Inicio). Una vista que no esté en ningún grupo cae en un
+ * tramo sin título en su sitio, para que agregar una vista al menú nunca la
+ * esconda.
+ */
+export interface GrupoMenu {
+  titulo: string | null;
+  vistas: Vista[];
+}
+
+export const GRUPOS_MENU: Record<SistemaId, GrupoMenu[]> = {
+  operacion: [
+    { titulo: null, vistas: ['dashboard'] },
+    { titulo: 'Operación', vistas: ['importar', 'ordenes', 'profesionales'] },
+    { titulo: 'Cobro y clientes', vistas: ['precuentas', 'empresas', 'informes'] },
+  ],
+  finanzas: [
+    { titulo: 'Documentos', vistas: ['facturacion', 'documentos_soporte', 'nomina', 'cartera', 'compras'] },
+    { titulo: 'Contabilidad', vistas: ['contabilidad', 'informes_contables', 'terceros', 'parametrizacion'] },
+    { titulo: 'Compartido con Operación', vistas: ['precuentas', 'informes'] },
+  ],
+};
+
+/** Vistas que van al pie de la barra lateral (junto a Cerrar sesión). Son las últimas de `menu`. */
+export const PIE_MENU: Vista[] = ['configuracion'];
+
 /** Ruta de cada vista (la misma que usa el menú). */
 export const RUTA_DE_VISTA: Record<Vista, string> = {
   dashboard: '/dashboard',

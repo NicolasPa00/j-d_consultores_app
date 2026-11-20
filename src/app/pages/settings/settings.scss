@@ -4,11 +4,14 @@
 
 /* ===== Pestañas: son las globales `.tabs` / `.tab` (styles.scss, DESIGN §7) ===== */
 
-/* ===== Pestaña Perfil ===== */
+/* ===== Pestaña Perfil =====
+   El avatar mide 64 px (como el círculo de la barra superior, en grande) y su
+   borde superior cae a la altura del primer campo, no de su etiqueta. */
 .profile-grid {
   display: grid;
-  grid-template-columns: 200px 1fr;
-  gap: 2rem;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: var(--e-6) var(--e-8);
+  align-items: start;
 }
 
 .avatar-col {
@@ -16,39 +19,54 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
+  padding-top: 26px; /* alto de la etiqueta del primer campo (13/1.5 + 6 de separación) */
 }
 
 .avatar-lg {
-  width: 120px;
-  height: 120px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.4rem;
+  font-size: 22px;
   font-weight: 600;
-  letter-spacing: 0.03em;
+  letter-spacing: 0;
   color: var(--accion);
   background: var(--accion-tenue);
   box-shadow: none;
 }
 
+/* Ronda 2: UN solo ancho por formulario, el mismo para los campos, el texto de
+   ayuda y la fila del botón (antes cada uno terminaba en una x distinta).
+   880 px cuando hay filas de dos campos; 720 px en los de una sola columna. */
 .profile-form {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
+  gap: var(--e-4);
+  width: 100%;
+  max-width: 880px;
+}
+
+.profile-form--una {
+  max-width: 720px;
+}
+
+.profile-form > .form-note {
+  max-width: none;
 }
 
 .profile-form__row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.1rem;
+  gap: var(--e-4) var(--e-6);
 }
 
 .profile-form__actions {
-  margin-top: 0.4rem;
+  margin-top: var(--e-1);
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
 }
 
 /* ===== Pestaña Sistema ===== */
@@ -66,9 +84,9 @@
 }
 
 .rate-row__label {
-  font-size: 0.92rem;
+  font-size: var(--fs-base);
   font-weight: 600;
-  color: var(--text-main);
+  color: var(--tinta);
 }
 
 .rate-row__input {
@@ -81,8 +99,8 @@
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 0.9rem;
-  color: var(--text-muted);
+  font-size: var(--fs-base);
+  color: var(--tinta-3);
   pointer-events: none;
 }
 
@@ -107,15 +125,15 @@
 }
 
 .toggle-row__label {
-  font-size: 0.92rem;
+  font-size: var(--fs-base);
   font-weight: 600;
-  color: var(--text-main);
+  color: var(--tinta);
 }
 
 .toggle-row__hint {
-  margin-top: 0.2rem;
-  font-size: 0.78rem;
-  color: var(--text-muted);
+  margin-top: 2px;
+  font-size: var(--fs-celda);
+  color: var(--tinta-3);
 }
 
 /* Switch / toggle */
@@ -129,11 +147,11 @@
   background: var(--borde-campo);
   cursor: pointer;
   position: relative;
-  transition: background 0.2s ease;
+  transition: background-color var(--t-media) ease;
 }
 
 .switch--on {
-  background: var(--success);
+  background: var(--ok);
 }
 
 .switch__knob {
@@ -145,7 +163,7 @@
   border-radius: 50%;
   background: var(--superficie);
   box-shadow: var(--sombra-2);
-  transition: transform 0.2s ease;
+  transition: transform var(--t-media) var(--ease-out);
 }
 
 .switch--on .switch__knob {
@@ -160,6 +178,11 @@
 
 /* ===== Responsive ===== */
 @media (max-width: 720px) {
+  .avatar-col {
+    align-items: flex-start;
+    padding-top: 0;
+  }
+
   .profile-grid {
     grid-template-columns: 1fr;
   }
@@ -178,28 +201,29 @@
    system global (`styles.scss`): aquí solo van los detalles propios de la vista. */
 
 /* Distintivo "Maestro" junto al nombre. */
-.table td .pill {
-  margin-left: 0.4rem;
+.table td .tag {
+  margin-left: 6px;
 }
 
-/* Tres acciones por fila (editar · activar · eliminar). */
-.col-actions {
-  width: 140px;
+/* El encabezado de Acciones cae sobre sus íconos (a la derecha, como la celda):
+   la regla global `th { text-align: left }` le ganaba a `.col-actions`. */
+.table th.col-actions {
+  text-align: right;
 }
 
 .users-empty {
   margin: 0;
-  padding: 1.5rem 0;
+  padding: var(--e-6) 0;
   text-align: center;
-  color: var(--text-muted);
+  color: var(--tinta-3);
 }
 
 /* ===== Formatos y encuesta (CFG-03 / ENC-03) ===== */
 /* Descripción interna del formato, bajo su nombre en la tabla. */
 .tpl-desc {
   display: block;
-  font-size: 0.78rem;
-  color: var(--text-muted);
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
   line-height: 1.35;
 }
 
@@ -215,15 +239,16 @@
 .role-picker {
   flex-wrap: wrap;
   max-width: 100%;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--e-5);
 }
 
-/* Dos vistas por fila en pantallas amplias; una sola cuando no hay espacio.
-   El quiebre considera los 260px que ocupa el sidebar del layout. */
+/* Ronda 2: una lista con divisores dentro de la tarjeta, no 16 cajas con borde
+   (se leía como una plantilla). Dos columnas en pantallas amplias, una cuando
+   no hay espacio; filas de 56 px con la casilla a la derecha. */
 .permisos-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.9rem;
+  column-gap: var(--e-8);
 }
 
 @media (max-width: 1020px) {
@@ -233,10 +258,9 @@
 }
 
 .permiso-row {
-  padding: 0.85rem 1rem;
-  background: var(--superficie);
-  border: 1px solid var(--borde);
-  border-radius: var(--r-tarjeta);
+  min-height: 56px;
+  padding: var(--e-2) var(--e-2);
+  border-bottom: 1px solid var(--borde);
   cursor: pointer;
   transition: background-color var(--t-rapida) ease;
 }
@@ -257,35 +281,39 @@
 
 .permiso-row__checkbox:disabled {
   cursor: not-allowed;
-  opacity: 0.55;
 }
 
 .permisos-actions {
-  margin-top: 1.5rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--border-soft);
+  margin-top: var(--e-6);
+  padding-top: var(--e-5);
+  border-top: 1px solid var(--borde);
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.6rem;
+  gap: 10px;
 }
 
 .permisos-actions__dirty {
   margin-right: auto;
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: var(--fs-celda);
+  font-weight: 500;
   color: var(--tinta-2);
 }
 
+/* Nota explicativa: texto 13 en tinta-2, sin caja. Antes era un recuadro azul
+   que pesaba más que el propio ajuste y descuadraba la altura de las tarjetas
+   de Preferencias. La alerta (`.alert`) queda para lo que de verdad avisa. */
 .form-note {
+  max-width: 76ch;
   margin: 0;
-  padding: 0.85rem 1rem;
-  background: var(--info-fondo);
-  border: 1px solid var(--info-borde);
-  border-radius: var(--radius-md);
-  color: var(--text-main);
-  font-size: 0.85rem;
-  line-height: 1.5;
+  color: var(--tinta-2);
+  font-size: var(--fs-celda);
+  line-height: 1.6;
+}
+
+.form-note strong {
+  color: var(--tinta);
+  font-weight: 600;
 }
 
 /* ===== Dos ajustes de una línea, uno al lado del otro =====
@@ -297,7 +325,7 @@
 .sistema-ajustes {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--e-6);
 }
 
 .sistema-ajustes > .card {
@@ -307,7 +335,7 @@
 .sistema-ajustes .card__body {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
+  gap: var(--e-4);
 }
 
 .sistema-ajustes .card__body > * {
@@ -316,14 +344,21 @@
 }
 
 .sistema-ajustes .profile-form__row {
-  gap: 1rem;
+  gap: var(--e-3);
 }
 
+/* Campo + botón en la misma fila: el botón mide lo que el campo (40 px), así
+   los bordes superiores coinciden (antes 36 junto a 40). */
+.sistema-ajustes .profile-form__row > .btn {
+  min-height: 40px;
+}
+
+/* Las tarjetas del par terminan a la misma altura (stretch). */
 .ajustes-par {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  gap: 1.25rem;
-  align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--e-6);
+  align-items: stretch;
 }
 
 .ajustes-par > .card {
@@ -336,8 +371,8 @@
 }
 
 .tipos__nombre {
-  font-weight: 600;
-  color: var(--text-main);
+  font-weight: 500;
+  color: var(--tinta);
 }
 
 /* El nombre se edita en la propia fila; conserva el peso del texto para que la
@@ -345,14 +380,14 @@
 .tipos__nombre-edit {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--e-2);
 }
 
 .tipos__nombre-input {
-  font-weight: 600;
-  color: var(--text-main);
+  flex: 1 1 auto;
+  font-weight: 500;
+  color: var(--tinta);
   min-width: 0;
-  max-width: 240px;
 }
 
 /* Un tipo desactivado sigue a la vista: sus órdenes viejas lo usan. */
@@ -360,33 +395,87 @@
   opacity: 0.6;
 }
 
+/* Ronda 3: el contenedor era un span en línea y su ancho no aplicaba: el
+   campo de valor llenaba la celda (~408 px para 6 cifras). Ahora mide 12rem y
+   la columna del nombre se queda con el resto. */
 .tipos .rate-row__input {
-  max-width: 190px;
+  display: block;
+  width: 12rem;
+  max-width: 100%;
 }
 
+.tipos th:first-child { width: 100%; }
+.tipos :is(th, td):nth-child(2) { white-space: nowrap; }
+
+/* Alta al pie de la tabla: carril hundido, como el alta de tarifas en
+   Cuentas de cobro; el botón a la altura de los campos. */
 .tipo-nuevo {
   display: flex;
   align-items: flex-end;
-  gap: 0.75rem;
+  gap: var(--e-3);
   flex-wrap: wrap;
-  margin-top: 1.1rem;
-  padding-top: 1.1rem;
-  border-top: 1px solid var(--border-soft);
+  padding: var(--e-4);
+  background: var(--hundida);
+  border-radius: var(--r-tarjeta);
+}
+
+.tipo-nuevo > .btn {
+  min-height: 40px;
 }
 
 .tipo-nuevo .form-field {
   margin: 0;
-  flex: 1 1 180px;
+  flex: 1 1 240px;
+  max-width: 28rem;
+}
+
+/* El valor del alta, al ancho de su par en la tabla. */
+.tipo-nuevo .form-field:nth-of-type(2) {
+  flex: 0 1 12rem;
 }
 
 .permisos-actions__dirty::before {
   content: '';
   display: inline-block;
-  width: 0.95em;
-  height: 0.95em;
-  margin-right: 0.3em;
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
   vertical-align: -0.12em;
   background: var(--ambar);
   -webkit-mask: var(--icono-alerta) center / contain no-repeat;
   mask: var(--icono-alerta) center / contain no-repeat;
+}
+
+/* Casilla de un ajuste (Programación de órdenes a medias): casilla y rótulo en
+   la misma línea, el rótulo como etiqueta de campo. */
+.ajuste-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: var(--fs-base);
+  font-weight: 500;
+  color: var(--tinta);
+  cursor: pointer;
+
+  input {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin: 2px 0 0;
+    accent-color: var(--accion);
+    cursor: pointer;
+  }
+}
+
+/* Ronda 2 · Pestañas en el celular: con desplazamiento lateral la última se
+   cortaba sin señal de que había más. Desvanecido en el borde derecho y aire
+   al final para que la última pestaña salga entera al llegar (pedido global:
+   llevarlo a `.tabs` en styles.scss). */
+@media (max-width: 640px) {
+  .tabs {
+    padding-right: var(--e-8);
+    scroll-padding-inline: var(--e-4);
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--e-8)), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--e-8)), transparent);
+  }
 }
