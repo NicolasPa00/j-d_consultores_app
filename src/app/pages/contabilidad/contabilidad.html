@@ -178,42 +178,17 @@
               <td class="col-actions">
                 <div class="row-actions">
                   @if (c.nivel < 10 && c.activa) {
-                    <button type="button" class="icon-action" (click)="openNueva(c)" [attr.aria-label]="'Nueva subcuenta de ' + c.codigo" title="Nueva subcuenta">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M12 5v14M5 12h14" />
-                      </svg>
-                    </button>
+                    <button type="button" appAccion="subcuenta" (click)="openNueva(c)" [etiqueta]="'Nueva subcuenta de ' + c.codigo"></button>
                   } @else {
                     <span class="icon-action icon-action--hueco" aria-hidden="true"></span>
                   }
-                  <button type="button" class="icon-action" (click)="openEditar(c)" [attr.aria-label]="'Editar ' + c.codigo" title="Editar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M12 20h9" />
-                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                    </svg>
-                  </button>
+                  <button type="button" appAccion="editar" (click)="openEditar(c)" [etiqueta]="'Editar ' + c.codigo"></button>
                   @if (!c.n_hijas) {
-                    <button type="button" class="icon-action" (click)="eliminarUna(c)" [attr.aria-label]="'Eliminar ' + c.codigo" title="Eliminar del plan">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6" />
-                      </svg>
-                    </button>
+                    <button type="button" appAccion="eliminar" (click)="eliminarUna(c)" [etiqueta]="'Eliminar ' + c.codigo"></button>
                   } @else {
                     <span class="icon-action icon-action--hueco" aria-hidden="true"></span>
                   }
-                  <button type="button" class="icon-action" (click)="alternarActiva(c)"
-                          [attr.aria-label]="(c.activa ? 'Inactivar ' : 'Activar ') + c.codigo" [title]="c.activa ? 'Inactivar' : 'Activar'">
-                    @if (c.activa) {
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="12" cy="12" r="9" />
-                        <path d="m5.6 5.6 12.8 12.8" />
-                      </svg>
-                    } @else {
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M20 6 9 17l-5-5" />
-                      </svg>
-                    }
-                  </button>
+                  <button type="button" [appAccion]="c.activa ? 'desactivar' : 'activar'" (click)="alternarActiva(c)" [etiqueta]="(c.activa ? 'Inactivar ' : 'Activar ') + c.codigo"></button>
                 </div>
               </td>
             }

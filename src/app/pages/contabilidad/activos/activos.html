@@ -103,9 +103,7 @@
             @else { <span class="mono">{{ a.cuotas_registradas }} / {{ a.vida_util_meses }}</span> }
           </td>
           <td class="col-actions">
-            <button type="button" class="icon-action" (click)="abrir(a.id)" [attr.aria-label]="'Ver ' + a.codigo" title="Ver la ficha">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg>
-            </button>
+            <button type="button" appAccion="ver" (click)="abrir(a.id)" [etiqueta]="'Ver ' + a.codigo"></button>
           </td>
         </tr>
       } @empty {

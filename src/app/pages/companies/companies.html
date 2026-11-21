@@ -93,34 +93,12 @@
             </td>
             <td class="col-actions" (click)="$event.stopPropagation()">
               <div class="row-actions">
-                <button type="button" class="icon-action" (click)="openDetalle(emp)" aria-label="Ver ficha" title="Ver ficha">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
-                    <circle cx="12" cy="12" r="2.5" />
-                  </svg>
-                </button>
+                <button type="button" appAccion="ver" etiqueta="Ver ficha" (click)="openDetalle(emp)"></button>
 
                 @if (puedeEditar()) {
-                  <button type="button" class="icon-action" (click)="openEdit(emp)" aria-label="Editar" title="Editar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M12 20h9" />
-                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                    </svg>
-                  </button>
+                  <button type="button" appAccion="editar" etiqueta="Editar" (click)="openEdit(emp)"></button>
 
-                  <button
-                    type="button"
-                    class="icon-action"
-                    [class.icon-action--on]="emp.activo"
-                    (click)="toggleActivo(emp)"
-                    [attr.aria-label]="emp.activo ? 'Desactivar' : 'Activar'"
-                    [title]="emp.activo ? 'Desactivar' : 'Activar'"
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M12 3v9" />
-                      <path d="M7.5 6.5a7 7 0 1 0 9 0" />
-                    </svg>
-                  </button>
+                  <button type="button" [appAccion]="emp.activo ? 'desactivar' : 'activar'" [etiqueta]="emp.activo ? 'Desactivar' : 'Activar'" (click)="toggleActivo(emp)"></button>
                 }
               </div>
             </td>

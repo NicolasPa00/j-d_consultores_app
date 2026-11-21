@@ -14,6 +14,7 @@ import { ApiService } from '../../core/api.service';
 import { Arl, PermisoRol, Plantilla, PreguntasEncuesta, Rol, TipoOrden, TipoViatico, Usuario, Vista } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
+import { AccionComponent } from '../../shared/icono/accion';
 
 type Tab = 'profile' | 'system' | 'users' | 'roles' | 'formatos';
 
@@ -58,7 +59,7 @@ function claveDocumento(v: string): string {
 
 @Component({
   selector: 'app-settings',
-  imports: [FormsModule, PaginadorComponent],
+  imports: [FormsModule, PaginadorComponent, AccionComponent],
   templateUrl: './settings.html',
   styleUrl: './settings.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -346,36 +346,26 @@
                 <div class="row-actions">
                   <button
                     type="button"
-                    class="icon-action"
+                    appAccion="editar"
                     (click)="openDetail(row)"
-                    aria-label="Revisar campos extraídos"
-                    title="Revisar campos extraídos"
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M12 20h9" />
-                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                    </svg>
-                  </button>
+                    etiqueta="Revisar campos extraídos"
+                  ></button>
                   <!-- IMP-04 · Guardar SOLO esta orden. Permite ir cerrando de a
                        una en un lote largo en vez de revisarlo entero de una
                        sentada para poder pulsar "Guardar todo". -->
-                  <button
-                    type="button"
-                    class="icon-action icon-action--save"
-                    [disabled]="row.guardando || confirming()"
-                    (click)="saveRow(row)"
-                    aria-label="Guardar esta orden en Órdenes"
-                    title="Guardar esta orden en Órdenes"
-                  >
-                    @if (row.guardando) {
-                      <span class="spinner spinner--xs" aria-hidden="true"></span>
-                    } @else {
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
-                        <path d="M17 21v-8H7v8M7 3v5h8" />
-                      </svg>
-                    }
-                  </button>
+                  <!-- Mientras guarda, el disco cede su ranura al spinner (el componente
+                       de acción no admite contenido propio). -->
+                  @if (row.guardando) {
+                    <span class="accion-cargando" role="status" aria-label="Guardando esta orden"><span class="spinner spinner--xs" aria-hidden="true"></span></span>
+                  } @else {
+                    <button
+                      type="button"
+                      appAccion="guardar"
+                      [disabled]="confirming()"
+                      (click)="saveRow(row)"
+                      etiqueta="Guardar esta orden en Órdenes"
+                    ></button>
+                  }
                 </div>
               </td>
             </tr>

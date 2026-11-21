@@ -14,6 +14,7 @@ import {
 import { OpcionCampo, esAxa, esBolivar, esSura, etiquetaTipoActividadArl, pistaTipoActividadArl } from '../../core/bolivar';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
+import { AccionComponent } from '../../shared/icono/accion';
 
 /** Un campo extraído editable (etiqueta + valor + confianza). */
 interface PreviewField {
@@ -147,7 +148,7 @@ type DocKind = 'pdf' | 'sheet' | 'none';
 
 @Component({
   selector: 'app-import',
-  imports: [FormsModule, RouterLink, PaginadorComponent],
+  imports: [FormsModule, RouterLink, PaginadorComponent, AccionComponent],
   templateUrl: './import.html',
   styleUrl: './import.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

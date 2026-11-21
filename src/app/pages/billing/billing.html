@@ -162,53 +162,29 @@
               <td class="col-actions">
                 <div class="row-actions">
                   @if (f.precuenta_id) {
-                    <button type="button" class="icon-action icon-action--ver" (click)="abrirDetalle(f)" aria-label="Ver detalle" title="Ver detalle">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    </button>
-                    <button type="button" class="icon-action" (click)="verPdf(f)" aria-label="Ver documento" title="Ver documento">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
-                        <path d="M14 3v5h5" />
-                        <path d="M9 13h6M9 17h4" />
-                      </svg>
-                    </button>
+                    <button type="button" appAccion="ver" etiqueta="Ver detalle" (click)="abrirDetalle(f)"></button>
+                    <button type="button" appAccion="documento" etiqueta="Ver documento" (click)="verPdf(f)"></button>
                   } @else {
                     <span class="icon-action icon-action--hueco" aria-hidden="true"></span><span class="icon-action icon-action--hueco" aria-hidden="true"></span>
                   }
                   @if (puedeGestionar()) {
                     @if (!f.precuenta_id || f.estado === 'rechazada') {
                       <button
-                        type="button" class="icon-action"
+                        type="button" appAccion="generar"
                         [disabled]="ocupada() === clave(f) || !!f.ordenes_sin_tarifa"
                         (click)="generar(f)"
-                        [attr.aria-label]="rotuloGenerar(f)"
-                        [title]="rotuloGenerar(f)"
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
-                          <path d="M14 3v5h5" />
-                          <path d="M12 12v5M9.5 14.5h5" />
-                        </svg>
-                      </button>
+                        [etiqueta]="rotuloGenerar(f)"
+                      ></button>
                     } @else {
                       <span class="icon-action icon-action--hueco" aria-hidden="true"></span>
                     }
                     @if (puedeEnviar(f)) {
                       <button
-                        type="button" class="icon-action"
+                        type="button" appAccion="enviar"
                         [disabled]="ocupada() === clave(f)"
                         (click)="enviar(f)"
-                        [attr.aria-label]="f.estado === 'enviada' ? 'Reenviar al profesional' : 'Enviar al profesional'"
-                        [title]="f.estado === 'enviada' ? 'Reenviar al profesional' : 'Enviar al profesional'"
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                          <path d="m22 2-7 20-4-9-9-4Z" />
-                          <path d="M22 2 11 13" />
-                        </svg>
-                      </button>
+                        [etiqueta]="f.estado === 'enviada' ? 'Reenviar al profesional' : 'Enviar al profesional'"
+                      ></button>
                     } @else {
                       <span class="icon-action icon-action--hueco" aria-hidden="true"></span>
                     }
@@ -338,12 +314,7 @@
                   <td class="mono">{{ fecha(t.vigente_desde) }}</td>
                   @if (puedeGestionar()) {
                     <td class="col-actions">
-                      <button type="button" class="icon-action" (click)="eliminarTarifa(t)" aria-label="Eliminar tarifa" title="Eliminar tarifa">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                          <path d="M4 7h16M10 11v6M14 11v6" />
-                          <path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M9 7V4h6v3" />
-                        </svg>
-                      </button>
+                      <button type="button" appAccion="eliminar" etiqueta="Eliminar tarifa" (click)="eliminarTarifa(t)"></button>
                     </td>
                   }
                 </tr>
@@ -487,12 +458,8 @@
                   <td class="mono money">{{ editandoValores() ? pesos(montoAjustado(i)) : pesos(i.monto) }}</td>
                   @if (puedeAjustar(pc) && !editandoValores()) {
                     <td>
-                      <button type="button" class="icon-action icon-action--danger" (click)="quitarLinea(pc, i)" [disabled]="guardandoAjustes()"
-                              [attr.aria-label]="'Quitar de la cuenta ' + (i.orden_referencia || i.orden_codigo || i.actividad)" title="Quitar de la cuenta">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
-                        </svg>
-                      </button>
+                      <button type="button" appAccion="quitar" (click)="quitarLinea(pc, i)" [disabled]="guardandoAjustes()"
+                              [etiqueta]="'Quitar de la cuenta ' + (i.orden_referencia || i.orden_codigo || i.actividad)"></button>
                     </td>
                   }
                 </tr>

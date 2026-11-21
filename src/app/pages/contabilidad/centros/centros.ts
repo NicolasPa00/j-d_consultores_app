@@ -4,6 +4,7 @@ import { ApiService } from '../../../core/api.service';
 import { mensajeError } from '../../../core/errores';
 import { AlertService } from '../../../core/alert.service';
 import { Arl, CentroCosto } from '../../../core/models';
+import { AccionComponent } from '../../../shared/icono/accion';
 
 /**
  * B8-01 (CNT-09) · Centros de costo, para ver los gastos por actividad. Van en
@@ -12,7 +13,7 @@ import { Arl, CentroCosto } from '../../../core/models';
  */
 @Component({
   selector: 'app-centros',
-  imports: [FormsModule],
+  imports: [FormsModule, AccionComponent],
   templateUrl: './centros.html',
   styleUrl: './centros.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

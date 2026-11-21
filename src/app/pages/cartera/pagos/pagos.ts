@@ -15,6 +15,7 @@ import { FechaDmyPipe } from '../../../shared/fecha-dmy.pipe';
 import { OpcionBusqueda, SelectorBusquedaComponent } from '../../../shared/selector-busqueda/selector-busqueda';
 import { TerceroRapidoComponent } from '../../../shared/alta-rapida/tercero-rapido';
 import { aCentavos } from '../../contabilidad/comprobantes/comprobantes';
+import { AccionComponent } from '../../../shared/icono/accion';
 
 const ETIQUETA_EDAD: Record<EdadCartera, string> = {
   POR_VENCER: 'Por vencer', D1_30: '1 a 30 días', D31_60: '31 a 60', D61_90: '61 a 90', MAS_90: 'Más de 90',
@@ -47,7 +48,7 @@ interface FilaEgreso {
  */
 @Component({
   selector: 'app-pagos',
-  imports: [FormsModule, RouterLink, PaginadorComponent, SelectorBusquedaComponent, TerceroRapidoComponent, FechaDmyPipe],
+  imports: [FormsModule, RouterLink, PaginadorComponent, SelectorBusquedaComponent, TerceroRapidoComponent, FechaDmyPipe, AccionComponent],
   templateUrl: './pagos.html',
   styleUrl: './pagos.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

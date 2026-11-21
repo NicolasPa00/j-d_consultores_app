@@ -169,7 +169,7 @@
               <td class="num">{{ d.total_lineas }}</td>
               <td class="num fac-monto">{{ pesos(d.total_a_pagar) }}</td>
               <td><span class="pill doc-estado" [class]="'pill doc-estado ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
-              <td class="col-actions"><button type="button" class="icon-action icon-action--ver" (click)="abrir(d.id)" aria-label="Ver el documento" title="Ver el documento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg></button></td>
+              <td class="col-actions"><button type="button" appAccion="ver" etiqueta="Ver el documento" (click)="abrir(d.id)"></button></td>
             </tr>
           } @empty {
             <tr><td colspan="8" class="table__empty" [class.table__empty--estado]="!cargando()">
@@ -213,18 +213,18 @@
               </td>
               <td class="col-actions">
                 <span class="fac-acciones">
-                  <button type="button" class="icon-action icon-action--ver" (click)="abrir(d.id)" aria-label="Ver el documento" title="Ver el documento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg></button>
+                  <button type="button" appAccion="ver" etiqueta="Ver el documento" (click)="abrir(d.id)"></button>
                   @if (d.tiene_pdf) {
-                    <button type="button" class="icon-action" (click)="abrir(d.id, 'pdf')" aria-label="Ver el PDF del documento soporte" title="Documento soporte (PDF)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></svg></button>
+                    <button type="button" appAccion="documento" etiqueta="Ver el PDF del documento soporte" (click)="abrir(d.id, 'pdf')"></button>
                   } @else {
                     <span class="icon-action icon-action--hueco" aria-hidden="true"></span>
                   }
                   @if (d.contabilizado) {
-                    <button type="button" class="icon-action" (click)="abrir(d.id, 'contab')" aria-label="Ver la contabilización" title="Contabilización"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z" /><path d="M4 9h16M10 9v11" /></svg></button>
+                    <button type="button" appAccion="contabilizacion" etiqueta="Ver la contabilización" (click)="abrir(d.id, 'contab')"></button>
                   } @else {
                     <span class="icon-action icon-action--hueco" aria-hidden="true"></span>
                   }
-                  <button type="button" class="icon-action" (click)="abrir(d.id, 'historial')" aria-label="Ver el historial" title="Historial"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg></button>
+                  <button type="button" appAccion="historial" etiqueta="Ver el historial" (click)="abrir(d.id, 'historial')"></button>
                 </span>
               </td>
             </tr>
@@ -264,13 +264,13 @@
               <td><span class="pill doc-estado" [class]="'pill doc-estado ' + pillEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</span></td>
               <td class="col-actions">
                 <span class="fac-acciones">
-                  <button type="button" class="icon-action icon-action--ver" (click)="abrir(d.id)" aria-label="Ver el documento" title="Ver el documento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg></button>
+                  <button type="button" appAccion="ver" etiqueta="Ver el documento" (click)="abrir(d.id)"></button>
                   @if (d.tiene_pdf) {
-                    <button type="button" class="icon-action" (click)="abrir(d.id, 'pdf')" aria-label="Ver el PDF de la nota" title="Nota (PDF)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></svg></button>
+                    <button type="button" appAccion="documento" etiqueta="Ver el PDF de la nota" (click)="abrir(d.id, 'pdf')"></button>
                   } @else {
                     <span class="icon-action icon-action--hueco" aria-hidden="true"></span>
                   }
-                  <button type="button" class="icon-action" (click)="abrir(d.id, 'historial')" aria-label="Ver el historial" title="Historial"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg></button>
+                  <button type="button" appAccion="historial" etiqueta="Ver el historial" (click)="abrir(d.id, 'historial')"></button>
                 </span>
               </td>
             </tr>
@@ -645,9 +645,7 @@
               <span class="ds-linea__rotulo">Valor unitario</span>
               <input type="text" inputmode="decimal" class="form-control mono num" [ngModel]="l.valor_unitario" (ngModelChange)="cambiarLinea(i, 'valor_unitario', $event)" [attr.aria-label]="'Valor de la línea ' + (i + 1)" />
             </div>
-            <button type="button" class="icon-action ds-linea__quitar" (click)="quitarLinea(i)" [disabled]="manualLineas().length <= 1" [attr.aria-label]="'Quitar la línea ' + (i + 1)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-            </button>
+            <button type="button" appAccion="quitar" [etiqueta]="'Quitar la línea ' + (i + 1)" (click)="quitarLinea(i)" [disabled]="manualLineas().length <= 1"></button>
           </div>
         }
       </div>

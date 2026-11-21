@@ -587,21 +587,25 @@
   gap: 0.35rem;
 }
 
-/* El guardado de una sola orden es la acción positiva de la fila, así que se
-   distingue del lápiz de revisar sin llegar a ser un botón primario. */
-.icon-action--save {
-  color: var(--ok);
-  border-color: var(--ok-borde);
+/* Ranura del disco de «Guardar» (`button[appAccion]`, 28 px) mientras esa orden
+   se guarda: el spinner ocupa el mismo sitio para que la fila no salte. */
+.accion-cargando {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .icon-action--save:hover:not([disabled]) {
-    background: var(--ok-fondo);
+@media (hover: none) {
+  .row-actions .accion-cargando {
+    width: 36px;
+    height: 36px;
   }
 }
 
-
-/* Spinner dentro de un botón de icono: hereda el color, no va sobre relleno. */
+/* Spinner en la ranura de un botón de icono: no va sobre relleno. */
 .spinner--xs {
   width: 13px;
   height: 13px;

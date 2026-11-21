@@ -12,6 +12,7 @@ import {
 import { paginar } from '../../../shared/paginacion';
 import { OpcionBusqueda, SelectorBusquedaComponent } from '../../../shared/selector-busqueda/selector-busqueda';
 import { PaginadorComponent } from '../../../shared/paginador/paginador';
+import { AccionComponent } from '../../../shared/icono/accion';
 
 const FORM_VACIO: ActivoFijoForm = {
   descripcion: '', serial: '', ubicacion: '', responsable: '', proveedor_id: '', fecha_compra: '', valor_compra: '',
@@ -61,7 +62,7 @@ const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', '
  */
 @Component({
   selector: 'app-activos',
-  imports: [FormsModule, PaginadorComponent, SelectorBusquedaComponent],
+  imports: [FormsModule, PaginadorComponent, SelectorBusquedaComponent, AccionComponent],
   templateUrl: './activos.html',
   styleUrl: './activos.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

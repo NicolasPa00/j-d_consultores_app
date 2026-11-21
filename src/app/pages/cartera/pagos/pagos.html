@@ -31,7 +31,7 @@
                 <td class="col-num mono" [class.pg-vencido]="e !== 'POR_VENCER' && +c[e] > 0">{{ +c[e] ? pesos(c[e]) : '' }}</td>
               }
               <td class="col-num mono"><strong>{{ pesos(c.TOTAL) }}</strong></td>
-              <td class="col-actions"><button type="button" class="icon-action icon-action--ver" (click)="abrirEstado(c.tercero_id)" aria-label="Ver el estado de cuenta" title="Ver el estado de cuenta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
+              <td class="col-actions"><button type="button" appAccion="ver" etiqueta="Ver el estado de cuenta" (click)="abrirEstado(c.tercero_id)"></button></td>
             </tr>
           }
         </tbody>
@@ -73,7 +73,7 @@
               <td class="col-num mono">{{ +e.valor_anticipos ? pesos(e.valor_anticipos) : '' }}</td>
               <td class="col-num mono">{{ +(e.retenido ?? 0) ? pesos(e.retenido) : '' }}</td>
               <td><span class="pill doc-estado" [class]="'pill doc-estado ' + (e.estado === 'ANULADO' ? 'pill--muted' : 'pill--success')">{{ e.estado === 'ANULADO' ? 'Anulado' : 'Contabilizado' }}</span></td>
-              <td class="col-actions"><button type="button" class="icon-action icon-action--ver" (click)="abrirEgreso(e)" aria-label="Ver el egreso" title="Ver el egreso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
+              <td class="col-actions"><button type="button" appAccion="ver" etiqueta="Ver el egreso" (click)="abrirEgreso(e)"></button></td>
             </tr>
           }
         </tbody>
@@ -99,7 +99,7 @@
               <td class="col-num mono">{{ pesos(a.saldo) }}</td>
               <td><span class="pill doc-estado" [class]="'pill doc-estado ' + (a.estado === 'ANULADO' ? 'pill--muted' : +a.saldo ? 'pill--info' : 'pill--success')">
                 {{ a.estado === 'ANULADO' ? 'Anulado' : +a.saldo ? 'Por cruzar' : 'Cruzado' }}</span></td>
-              <td class="col-actions"><button type="button" class="icon-action icon-action--ver" (click)="abrirAnticipo(a)" aria-label="Ver el anticipo" title="Ver el anticipo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
+              <td class="col-actions"><button type="button" appAccion="ver" etiqueta="Ver el anticipo" (click)="abrirAnticipo(a)"></button></td>
             </tr>
           }
         </tbody>

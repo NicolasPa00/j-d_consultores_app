@@ -614,42 +614,17 @@
 }
 
 .prof-guardar {
-  flex: none;
-  width: 42px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
-  background: var(--surface);
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: background var(--t-media) ease, color var(--t-media) ease, border-color var(--t-media) ease, box-shadow var(--t-media) ease;
-
-  svg {
-    width: 19px;
-    height: 19px;
-  }
+  /* Es un `button[appAccion]` (disco de 28 px): se centra en la fila en vez de
+     estirarse a la altura de la tarjeta del profesional. El reposo y el
+     deshabilitado («nada que guardar») los pone `.accion`. */
+  align-self: center;
 }
 
-.prof-guardar:disabled {
-  cursor: not-allowed;
-  background: var(--hundida);
-  color: var(--tinta-inactiva);
-}
-
-/* Hay horas marcadas sin guardar: el botón se enciende para pedir el clic. */
+/* Hay horas marcadas sin guardar: anillo cian alrededor del disco y halo, para
+   pedir el clic sin romper el lenguaje de las acciones de fila. */
 .prof-guardar--pendiente {
-  border-color: var(--accion);
-  background: var(--accion);
-  color: var(--superficie);
-  box-shadow: var(--halo);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .prof-guardar--pendiente:hover {
-    background: var(--primary-hover);
-  }
+  --disco-propio: var(--disco-hover);
+  box-shadow: 0 0 0 2px var(--accion), var(--halo);
 }
 
 .assign__ayuda {

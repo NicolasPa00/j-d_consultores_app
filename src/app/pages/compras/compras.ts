@@ -14,6 +14,7 @@ import { aCentavos } from '../contabilidad/comprobantes/comprobantes';
 import { OpcionBusqueda, SelectorBusquedaComponent } from '../../shared/selector-busqueda/selector-busqueda';
 import { TerceroRapidoComponent } from '../../shared/alta-rapida/tercero-rapido';
 import { FechaDmyPipe } from '../../shared/fecha-dmy.pipe';
+import { AccionComponent } from '../../shared/icono/accion';
 
 
 export const ETIQUETA_TIPO_COMPRA: Record<TipoCompra, string> = {
@@ -37,7 +38,7 @@ const ITEM_VACIO = () => ({ cuenta_id: '', descripcion: '', valor: '', iva_pct: 
  */
 @Component({
   selector: 'app-compras',
-  imports: [FormsModule, PaginadorComponent, SelectorBusquedaComponent, TerceroRapidoComponent, FechaDmyPipe],
+  imports: [FormsModule, PaginadorComponent, SelectorBusquedaComponent, TerceroRapidoComponent, FechaDmyPipe, AccionComponent],
   templateUrl: './compras.html',
   styleUrl: './compras.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -8,6 +8,7 @@ import { AuthService } from '../../core/auth.service';
 import { Empresa, OrdenDeEmpresa } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
+import { AccionComponent } from '../../shared/icono/accion';
 
 /** Campos del formulario. Coinciden 1:1 con los editables del backend. */
 interface EmpresaDraft {
@@ -51,7 +52,7 @@ function claveNit(nit: string): string {
  */
 @Component({
   selector: 'app-companies',
-  imports: [FormsModule, PaginadorComponent],
+  imports: [FormsModule, PaginadorComponent, AccionComponent],
   templateUrl: './companies.html',
   styleUrl: './companies.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

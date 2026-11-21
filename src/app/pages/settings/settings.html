@@ -257,14 +257,15 @@
                 </td>
                 <td class="num">{{ t.ordenes ?? 0 }}</td>
                 <td class="col-actions">
-                  <button
-                    type="button"
-                    class="btn btn--ghost btn--sm"
-                    [disabled]="guardandoTipo() === t.id"
-                    (click)="alternarTipo(t)"
-                  >
-                    {{ t.activo ? 'Desactivar' : 'Reactivar' }}
-                  </button>
+                  <div class="row-actions">
+                    <button
+                      type="button"
+                      [appAccion]="t.activo ? 'desactivar' : 'activar'"
+                      [disabled]="guardandoTipo() === t.id"
+                      (click)="alternarTipo(t)"
+                      [etiqueta]="t.activo ? 'Desactivar' : 'Reactivar'"
+                    ></button>
+                  </div>
                 </td>
               </tr>
             } @empty {
@@ -357,14 +358,15 @@
                 </td>
                 <td class="num">{{ t.ordenes ?? 0 }}</td>
                 <td class="col-actions">
-                  <button
-                    type="button"
-                    class="btn btn--ghost btn--sm"
-                    [disabled]="guardandoViatico() === t.id"
-                    (click)="alternarViatico(t)"
-                  >
-                    {{ t.activo ? 'Desactivar' : 'Reactivar' }}
-                  </button>
+                  <div class="row-actions">
+                    <button
+                      type="button"
+                      [appAccion]="t.activo ? 'desactivar' : 'activar'"
+                      [disabled]="guardandoViatico() === t.id"
+                      (click)="alternarViatico(t)"
+                      [etiqueta]="t.activo ? 'Desactivar' : 'Reactivar'"
+                    ></button>
+                  </div>
                 </td>
               </tr>
             } @empty {
@@ -571,44 +573,24 @@
                   </td>
                   <td class="col-actions">
                     <div class="row-actions">
-                      <button type="button" class="icon-action" (click)="openEdit(u)" aria-label="Editar" title="Editar">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                          <path d="M12 20h9" />
-                          <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                        </svg>
-                      </button>
+                      <button type="button" appAccion="editar" etiqueta="Editar" (click)="openEdit(u)"></button>
 
                       <!-- El Administrador Maestro no se puede desactivar ni eliminar. -->
                       @if (!u.es_maestro) {
                         <button
                           type="button"
-                          class="icon-action"
-                          [class.icon-action--on]="u.activo"
+                          [appAccion]="u.activo ? 'desactivar' : 'activar'"
                           (click)="toggleActivo(u)"
-                          [attr.aria-label]="u.activo ? 'Desactivar' : 'Activar'"
-                          [title]="u.activo ? 'Desactivar' : 'Activar'"
-                        >
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M12 3v9" />
-                            <path d="M7.5 6.5a7 7 0 1 0 9 0" />
-                          </svg>
-                        </button>
+                          [etiqueta]="u.activo ? 'Desactivar' : 'Activar'"
+                        ></button>
 
                         <button
                           type="button"
-                          class="icon-action icon-action--danger"
+                          appAccion="eliminar"
                           [disabled]="deletingUser() === u.id"
                           (click)="deleteUser(u)"
-                          aria-label="Eliminar"
-                          title="Eliminar usuario"
-                        >
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M3 6h18" />
-                            <path d="M8 6V4h8v2" />
-                            <path d="M19 6l-1 14H6L5 6" />
-                            <path d="M10 11v6M14 11v6" />
-                          </svg>
-                        </button>
+                          etiqueta="Eliminar"
+                        ></button>
                       } @else {
                         <span class="icon-action icon-action--hueco" aria-hidden="true"></span><span class="icon-action icon-action--hueco" aria-hidden="true"></span>
                       }
@@ -759,36 +741,17 @@
                     </td>
                     <td class="col-actions">
                       <div class="row-actions">
-                        <button type="button" class="icon-action" (click)="openPlantillaEdit(p)" aria-label="Editar" title="Editar">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M12 20h9" />
-                            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                          </svg>
-                        </button>
+                        <button type="button" appAccion="editar" etiqueta="Editar" (click)="openPlantillaEdit(p)"></button>
                         <button
                           type="button"
-                          class="icon-action"
-                          [class.icon-action--on]="p.activo"
+                          [appAccion]="p.activo ? 'desactivar' : 'activar'"
                           (click)="togglePlantilla(p)"
-                          [attr.aria-label]="p.activo ? 'Desactivar' : 'Activar'"
-                          [title]="p.activo ? 'Desactivar' : 'Activar'"
-                        >
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M12 3v9" />
-                            <path d="M7.5 6.5a7 7 0 1 0 9 0" />
-                          </svg>
-                        </button>
+                          [etiqueta]="p.activo ? 'Desactivar' : 'Activar'"
+                        ></button>
                         <!-- Con documentos ya emitidos el backend rechaza la baja;
                              el botón solo se ofrece cuando no los hay. -->
                         @if (!p.documentos_generados) {
-                          <button type="button" class="icon-action icon-action--danger" (click)="deletePlantilla(p)" aria-label="Eliminar" title="Eliminar">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                              <path d="M3 6h18" />
-                              <path d="M8 6V4h8v2" />
-                              <path d="M19 6l-1 14H6L5 6" />
-                              <path d="M10 11v6M14 11v6" />
-                            </svg>
-                          </button>
+                          <button type="button" appAccion="eliminar" etiqueta="Eliminar" (click)="deletePlantilla(p)"></button>
                         }
                       </div>
                     </td>

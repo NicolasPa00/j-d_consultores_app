@@ -151,9 +151,7 @@
           <td>
             <div class="ic-cmp">
               <span class="mono">{{ m.comprobante }}</span>
-              <button type="button" class="icon-action" (click)="abrirComprobante(m.comprobante_id)" [attr.aria-label]="'Ver el comprobante ' + m.comprobante" title="Ver el comprobante">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg>
-              </button>
+              <button type="button" appAccion="ver" (click)="abrirComprobante(m.comprobante_id)" [etiqueta]="'Ver el comprobante ' + m.comprobante"></button>
             </div>
           </td>
           @if (conTercero) { <td>{{ m.tercero_nombre || '—' }}</td> }
@@ -222,9 +220,7 @@
                 @if (t.documento) { <span class="mono ic-tercero__doc">{{ t.documento }}</span> }
                 <span class="ic-sep"></span>
                 @if (!detallado && t.tercero_id) {
-                  <button type="button" class="icon-action ic-tercero__ver" (click)="verTercero(t)" [attr.aria-label]="'Ver el detalle de ' + t.nombre" title="Ver el detalle del tercero">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg>
-                  </button>
+                  <button type="button" appAccion="ver" class="ic-tercero__ver" (click)="verTercero(t)" [etiqueta]="'Ver el detalle de ' + t.nombre"></button>
                 }
               </div>
             </td>
@@ -310,9 +306,7 @@
               <td class="col-num mono">{{ pesosOVacio(f.credito) }}</td>
               <td class="col-num mono" [class.ic-neg]="negativo(f.saldo_final)">{{ pesos(f.saldo_final) }}</td>
               <td class="col-actions">
-                <button type="button" class="icon-action" (click)="verAuxiliar(f.codigo)" [attr.aria-label]="'Ver el movimiento de ' + f.codigo" title="Ver el movimiento de la cuenta">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg>
-                </button>
+                <button type="button" appAccion="ver" (click)="verAuxiliar(f.codigo)" [etiqueta]="'Ver el movimiento de ' + f.codigo"></button>
               </td>
             </tr>
           } @empty {

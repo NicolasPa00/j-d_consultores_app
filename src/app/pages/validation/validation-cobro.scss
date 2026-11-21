@@ -778,8 +778,9 @@
 }
 
 @media (min-width: 821px) and (max-width: 1200px) {
+  /* 2 px entre discos para que no se toquen: 4 × 28 + 3 × 2 = 118 px en una columna de 140. */
   .ord-table .row-actions {
-    gap: 0;
+    gap: 2px;
   }
 
   /* Las siete pestañas caben a ~1093 px útiles (pedían 866 px y había 797):
@@ -793,10 +794,9 @@
     font-size: var(--fs-celda);
   }
 
-  /* 24 px: el mínimo de WCAG 2.2 para un blanco con puntero. */
-  .ord-table .row-actions .icon-action {
-    width: 24px;
-  }
+  /* Las acciones de fila conservan sus 28 px también aquí (rediseño 21-nov): cuatro discos
+     son 4 × 28 + 3 × 4 = 124 px y la columna Opciones mide 140. Antes bajaban a 24 px, pero
+     con el ícono de 20 el disco quedaba sin aire. */
 
   .ord-table .ord-who {
     min-width: 160px;

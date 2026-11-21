@@ -140,40 +140,12 @@
             </td>
             <td class="col-actions">
               <div class="row-actions">
-                <button type="button" class="icon-action" (click)="openEdit(pro)" aria-label="Editar" title="Editar">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                  </svg>
-                </button>
+                <button type="button" appAccion="editar" etiqueta="Editar" (click)="openEdit(pro)"></button>
                 <!-- ASG · El registro ante las ARL abre modal propio: solo existe
                      para un profesional ya creado y se guarda contra otro
                      endpoint, así que no cabe dentro del formulario de la ficha. -->
-                <button
-                  type="button"
-                  class="icon-action"
-                  (click)="openRegistros(pro)"
-                  aria-label="Registro ante las ARL"
-                  title="Registro ante las ARL"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M12 3 4 6v6c0 4.4 3.4 8.2 8 9 4.6-.8 8-4.6 8-9V6Z" />
-                    <path d="m9 12 2 2 4-4" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  class="icon-action"
-                  [class.icon-action--on]="pro.status === 'Activo'"
-                  (click)="toggleStatus(pro)"
-                  [attr.aria-label]="pro.status === 'Activo' ? 'Desactivar' : 'Activar'"
-                  [title]="pro.status === 'Activo' ? 'Desactivar' : 'Activar'"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M12 3v9" />
-                    <path d="M7.5 6.5a7 7 0 1 0 9 0" />
-                  </svg>
-                </button>
+                <button type="button" appAccion="registro-arl" etiqueta="Registro ante las ARL" (click)="openRegistros(pro)"></button>
+                <button type="button" [appAccion]="pro.status === 'Activo' ? 'desactivar' : 'activar'" [etiqueta]="pro.status === 'Activo' ? 'Desactivar' : 'Activar'" (click)="toggleStatus(pro)"></button>
               </div>
             </td>
           </tr>
@@ -417,18 +389,7 @@
                 </td>
                 <td class="mono">{{ e.profesionales ?? 0 }}</td>
                 <td class="col-actions">
-                  <button
-                    type="button"
-                    class="icon-action"
-                    [disabled]="guardandoEspecialidad() === e.id"
-                    (click)="eliminarEspecialidad(e)"
-                    [attr.aria-label]="'Eliminar ' + e.nombre"
-                    title="Eliminar"
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6" />
-                    </svg>
-                  </button>
+                  <button type="button" appAccion="eliminar" [disabled]="guardandoEspecialidad() === e.id" (click)="eliminarEspecialidad(e)" [etiqueta]="'Eliminar ' + e.nombre"></button>
                 </td>
               </tr>
             } @empty {

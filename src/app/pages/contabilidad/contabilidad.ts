@@ -12,6 +12,7 @@ import { PeriodosComponent } from './periodos/periodos';
 import { ReglasComponent } from './reglas/reglas';
 import { CentrosComponent } from './centros/centros';
 import { ActivosComponent } from './activos/activos';
+import { AccionComponent } from '../../shared/icono/accion';
 
 type Pestana = 'plan' | 'comprobantes' | 'reglas' | 'centros' | 'activos' | 'periodos';
 
@@ -50,7 +51,7 @@ const FORM_VACIO: CuentaForm = {
  */
 @Component({
   selector: 'app-contabilidad',
-  imports: [FormsModule, ComprobantesComponent, PeriodosComponent, ReglasComponent, CentrosComponent, ActivosComponent],
+  imports: [FormsModule, ComprobantesComponent, PeriodosComponent, ReglasComponent, CentrosComponent, ActivosComponent, AccionComponent],
   templateUrl: './contabilidad.html',
   styleUrl: './contabilidad.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

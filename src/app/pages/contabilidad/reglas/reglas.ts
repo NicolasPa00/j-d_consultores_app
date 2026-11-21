@@ -4,6 +4,7 @@ import { ApiService } from '../../../core/api.service';
 import { mensajeError } from '../../../core/errores';
 import { AlertService } from '../../../core/alert.service';
 import { ConceptoContable, CuentaContable, ReglaContable, Tercero } from '../../../core/models';
+import { AccionComponent } from '../../../shared/icono/accion';
 
 /**
  * B2-01 (CNT-13) · Reglas de contabilización: qué cuenta usa cada concepto al
@@ -15,7 +16,7 @@ import { ConceptoContable, CuentaContable, ReglaContable, Tercero } from '../../
  */
 @Component({
   selector: 'app-reglas',
-  imports: [FormsModule],
+  imports: [FormsModule, AccionComponent],
   templateUrl: './reglas.html',
   styleUrl: './reglas.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

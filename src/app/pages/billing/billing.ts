@@ -9,6 +9,7 @@ import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
 import { CuentaDelMes, EstadoPrecuenta, OrdenExcluidaCobro, Precuenta, PrecuentaItem, Profesional, Tarifa, TipoOrden } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
+import { AccionComponent } from '../../shared/icono/accion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
 /**
@@ -36,7 +37,7 @@ const MESES = [
  */
 @Component({
   selector: 'app-billing',
-  imports: [FormsModule, PaginadorComponent, RouterLink],
+  imports: [FormsModule, PaginadorComponent, RouterLink, AccionComponent],
   templateUrl: './billing.html',
   styleUrl: './billing.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

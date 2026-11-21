@@ -1417,44 +1417,14 @@ textarea.form-control {
   transform: scale(0.94);
 }
 
-/* «Ver»: el ojo es la acción protagonista de la fila. Se reconoce por su
-   trazo (mientras las plantillas no lleven `.icon-action--ver`). */
-.icon-action--ver,
-.icon-action:has(> svg path[d^='M2 12s']) {
-  background: var(--accion-tenue);
-  color: var(--accion);
-}
-
-/* Estado «encendido» (registro activo): sin marco ni color propio en reposo,
-   como los demás íconos (DESIGN §7: solo «Ver» lleva fondo). El estado ya lo
-   dice la pastilla Activo de la fila. */
-.icon-action--on {
-  color: var(--tinta-2);
-  background: transparent;
-}
+/* `.icon-action` queda para los UTILITARIOS (Cerrar de los modales, chevrones, copiar) y los
+   huecos. Las acciones de fila son `button[appAccion]` (`.accion`, más abajo): «Ver», el
+   interruptor y el peligro ya no se pintan con modificadores de esta clase. */
 
 @media (hover: hover) and (pointer: fine) {
   .icon-action:hover:not(:disabled) {
     background: var(--hundida);
     color: var(--tinta);
-  }
-
-  .icon-action--ver:hover:not(:disabled),
-  .icon-action:has(> svg path[d^='M2 12s']):hover:not(:disabled) {
-    background: var(--accion-tenue-hover);
-    color: var(--accion-hover);
-  }
-
-  /* Al pasar sobre «encendido» avisa de que el clic lo va a desactivar:
-     se tiñe de rojo, como Deshabilitar (DESIGN §7). */
-  .icon-action--on:hover:not(:disabled) {
-    color: var(--error);
-    background: var(--error-fondo);
-  }
-
-  .icon-action--danger:hover:not(:disabled) {
-    color: var(--error);
-    background: var(--error-fondo);
   }
 }
 
@@ -1470,6 +1440,251 @@ textarea.form-control {
 .icon-action--hueco {
   visibility: hidden;
   pointer-events: none;
+}
+
+/* ============================================================
+   ACCIONES DE FILA · `button[appAccion]` (shared/icono/accion.ts)
+   Rediseño 21-nov-2026, opción F: disco --cielo de 28 px, ícono de 20 px
+   bicolor (el ADN del Inicio) y sombra plana SIEMPRE visible.
+   Todo el estado viaja por variables, no por especificidad:
+     --disco-fila   lo pone la FILA (hover / destacada) → blanco
+     --disco-propio lo pone el TONO del botón (Ver, sin disco)
+     --disco-estado lo pone el ESTADO del botón (hover, pulsado, deshabilitado)
+   Así «fila en hover + botón en hover» no depende de qué selector pese más.
+   El TONO lo pone el componente desde el catálogo; ninguna plantilla lo escribe.
+   ============================================================ */
+.accion {
+  --ico-acento: var(--cian-trazo-fuerte);
+  --ico-relleno: var(--superficie);
+  /* Unidades de la retícula de 18: 1,8 × 20/18 = 2 px exactos (sin fleco a 1×). */
+  --sombra-x: 1.8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--disco-estado, var(--disco-propio, var(--disco-fila, var(--cielo))));
+  color: var(--accion);
+  cursor: pointer;
+  transition:
+    background-color var(--t-media) ease,
+    color var(--t-media) ease,
+    transform var(--t-rapida) var(--ease-out);
+}
+
+/* El tamaño viaja por variable: las hojas de las vistas están encapsuladas y no alcanzan el
+   <svg>, que vive dentro de la plantilla del componente; ponen `--ico-tam` en el botón. */
+.ico {
+  width: var(--ico-tam, 20px);
+  height: var(--ico-tam, 20px);
+  flex: none;
+  overflow: visible;
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ico__sombra {
+  fill: var(--ico-tinte);
+  stroke: none;
+  translate: var(--sombra-x) var(--sombra-x);
+  transition: translate var(--t-media) var(--ease-out), fill var(--t-media) ease;
+}
+
+.ico__forma {
+  fill: var(--ico-relleno);
+  stroke: currentColor;
+}
+
+.ico__trazo {
+  stroke: currentColor;
+}
+
+/* Trazo ancho del color del cuerpo bajo el acento: deja que una flecha o un clip
+   «rompa» la silueta (reprogramar, soportes). */
+.ico__halo {
+  stroke: var(--ico-relleno);
+  stroke-width: 4.5;
+}
+
+.ico__acento {
+  stroke: var(--ico-acento);
+  transition: stroke var(--t-media) ease, fill var(--t-media) ease;
+}
+
+.ico__acento--relleno {
+  fill: var(--ico-acento);
+}
+
+.ico__acento--apagado {
+  stroke: var(--tinta-inactiva);
+  fill: var(--tinta-inactiva);
+}
+
+.ico--util .ico__trazo {
+  stroke-width: 1.6;
+}
+
+/* La fila en hover o destacada blanquea el disco: sobre --fila-hover o
+   --accion-tenue el --cielo desaparecería. */
+.table tbody tr.fila--destacada {
+  --disco-fila: var(--superficie);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .table tbody tr:hover {
+    --disco-fila: var(--superficie);
+  }
+}
+
+/* Tonos en reposo */
+.accion--ver {
+  --disco-propio: var(--disco-ver);
+}
+
+/* Peligro y reversible: grises en reposo, sin cian; el color llega con el hover. */
+.accion--peligro,
+.accion--reversible {
+  color: var(--tinta-2);
+  --ico-acento: currentColor;
+  --ico-tinte: var(--ico-tinte-neutro);
+}
+
+/* La perilla del interruptor encendido es un ESTADO: conserva su cian en reposo. */
+.accion--reversible .ico__acento--estado {
+  stroke: var(--cian-trazo-fuerte);
+  fill: var(--cian-trazo-fuerte);
+}
+
+.accion--sin-disco {
+  --disco-propio: transparent;
+}
+
+.accion--sin-disco.accion--peligro {
+  --ico-tinte: transparent;
+}
+
+/* Hover y foco: disco más oscuro y la sombra se corre a 3 px (entero). */
+.accion:focus-visible {
+  --disco-estado: var(--disco-hover);
+  --sombra-x: 2.7px;
+  outline: var(--anillo);
+  outline-offset: 2px;
+  box-shadow: var(--halo);
+}
+
+.accion--ver:focus-visible {
+  --disco-estado: var(--disco-ver-hover);
+  color: var(--accion-hover);
+}
+
+.accion--peligro:focus-visible {
+  --disco-estado: var(--error-fondo);
+  color: var(--error);
+  --ico-acento: var(--error);
+  --ico-tinte: var(--error-borde);
+}
+
+.accion--reversible:focus-visible {
+  --disco-estado: var(--aviso-fondo);
+  color: var(--aviso);
+  --ico-acento: var(--aviso);
+  --ico-tinte: var(--aviso-borde);
+}
+
+.accion--ok:focus-visible {
+  --disco-estado: var(--ok-fondo);
+  color: var(--ok);
+  --ico-acento: var(--ok);
+  --ico-tinte: var(--ok-borde);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .accion:hover:not(:disabled) {
+    --disco-estado: var(--disco-hover);
+    --sombra-x: 2.7px;
+  }
+
+  .accion--ver:hover:not(:disabled) {
+    --disco-estado: var(--disco-ver-hover);
+    color: var(--accion-hover);
+  }
+
+  /* Irreversible (eliminar, quitar): rojo. */
+  .accion--peligro:hover:not(:disabled) {
+    --disco-estado: var(--error-fondo);
+    color: var(--error);
+    --ico-acento: var(--error);
+    --ico-tinte: var(--error-borde);
+  }
+
+  /* Reversible (archivar, desactivar): ámbar, avisa sin alarmar. */
+  .accion--reversible:hover:not(:disabled) {
+    --disco-estado: var(--aviso-fondo);
+    color: var(--aviso);
+    --ico-acento: var(--aviso);
+    --ico-tinte: var(--aviso-borde);
+  }
+
+  .accion--ok:hover:not(:disabled) {
+    --disco-estado: var(--ok-fondo);
+    color: var(--ok);
+    --ico-acento: var(--ok);
+    --ico-tinte: var(--ok-borde);
+  }
+}
+
+.accion--reversible:focus-visible .ico__acento--estado {
+  stroke: var(--aviso);
+  fill: var(--aviso);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .accion--reversible:hover:not(:disabled) .ico__acento--estado {
+    stroke: var(--aviso);
+    fill: var(--aviso);
+  }
+}
+
+/* Pulsado: .97 y la sombra casi pegada (0,5 px): el ícono «baja» sobre su sombra. */
+.accion:active:not(:disabled) {
+  transform: scale(0.97);
+  --sombra-x: 0.45px;
+  --disco-estado: var(--disco-hover);
+}
+
+.accion--ver:active:not(:disabled) {
+  --disco-estado: var(--disco-ver-hover);
+}
+
+/* Deshabilitado: queda el hueco del disco (anillo tenue), sin relleno, cian ni sombra. */
+.accion:disabled {
+  --disco-estado: transparent;
+  --ico-acento: currentColor;
+  --ico-relleno: transparent;
+  --ico-tinte: transparent;
+  box-shadow: inset 0 0 0 1px var(--borde);
+  color: var(--tinta-inactiva);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.accion:disabled .ico__acento--estado {
+  stroke: currentColor;
+  fill: currentColor;
+}
+
+/* Táctil: 36 px SOLO en las columnas de acciones (no los Cerrar ni el paginador). */
+@media (hover: none) {
+  :is(.col-actions, .row-actions, .fac-acciones, .par-acciones) :is(.accion, .icon-action--hueco) {
+    width: 36px;
+    height: 36px;
+  }
 }
 
 /* ============================================================
@@ -2381,7 +2596,8 @@ textarea.form-control {
   }
 
   .btn:active,
-  .icon-action:active {
+  .icon-action:active,
+  .accion:active {
     transform: none;
   }
 

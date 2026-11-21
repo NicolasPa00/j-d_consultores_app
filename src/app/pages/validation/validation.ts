@@ -19,6 +19,7 @@ import {
 import { OpcionCampo, esAxa, esBolivar, etiquetaEmpresa, etiquetaTipoActividadArl, pistaTipoActividadArl } from '../../core/bolivar';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
+import { AccionComponent } from '../../shared/icono/accion';
 
 interface FormFieldDescriptor {
   label: string;
@@ -212,7 +213,7 @@ interface BloqueAgenda {
 
 @Component({
   selector: 'app-validation',
-  imports: [FormsModule, PaginadorComponent],
+  imports: [FormsModule, PaginadorComponent, AccionComponent],
   templateUrl: './validation.html',
   styleUrls: ['./validation.scss', './validation-cobro.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

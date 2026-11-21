@@ -85,6 +85,15 @@
   --cian-trazo: #1890bb;       /* sobre claro: raya de pestaña, marca de hoy · 3,65 blanco · 3,43 papel */
   --seleccion: rgb(31 159 203 / 22%);
 
+  /* Íconos de las acciones de fila (rediseño 21-nov-2026, lámina docs/3-planes/rediseno-21-nov/iconos-tabla).
+     Contrastes medidos en la lámina, sección «Contrastes medidos». */
+  --cian-trazo-fuerte: #157fa6; /* acento con significado · ≥3,30:1 en todos los fondos de la fila (cian-trazo bajaba a 2,71) */
+  --ico-tinte: color-mix(in srgb, var(--cian) 58%, var(--superficie)); /* sombra plana del Inicio y de las filas */
+  --ico-tinte-neutro: #d3dbe4;  /* sombra de peligro y reversible en reposo, sin cian */
+  --disco-hover: #cfe0ee;       /* disco de una acción con el puntero encima */
+  --disco-ver: #ceeaf4;         /* «Ver»: cian 22 %; destaca por el tono, sin anillo · acento 3,62 */
+  --disco-ver-hover: #bce2ef;   /* «Ver» con hover o pulsado: cian 30 % · acento 3,30 */
+
   /* Noche: barra lateral, escena del login, toast */
   --noche: #0b1f33;            /* blanco encima 16,69 */
   --noche-alzada: #163450;     /* ítem activo · blanco 12,80 · texto-noche 8,31 */

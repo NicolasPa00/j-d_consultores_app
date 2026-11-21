@@ -45,7 +45,7 @@
             <td class="col-num mono">{{ pesos(c.total_a_pagar) }}</td>
             <td class="col-num mono">{{ c.forma_pago === 'CONTADO' ? 'De contado' : pesos(c.cxp_saldo) }}</td>
             <td><span class="pill" [class]="c.estado === 'ANULADO' ? 'pill--muted' : 'pill--success'">{{ c.estado === 'ANULADO' ? 'Anulada' : 'Contabilizada' }}</span></td>
-            <td class="col-actions"><button type="button" class="icon-action" (click)="abrir(c)" aria-label="Ver la compra" title="Ver la compra"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
+            <td class="col-actions"><button type="button" appAccion="ver" etiqueta="Ver la compra" (click)="abrir(c)"></button></td>
           </tr>
         }
       </tbody>
@@ -207,9 +207,7 @@
                   </select>
                 </td>
                 <td>
-                  <button type="button" class="icon-action" (click)="quitarItem(i)" [disabled]="items().length <= 1" [attr.aria-label]="'Quitar el ítem ' + (i + 1)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-                  </button>
+                  <button type="button" appAccion="quitar" (click)="quitarItem(i)" [disabled]="items().length <= 1" [etiqueta]="'Quitar el ítem ' + (i + 1)"></button>
                 </td>
               </tr>
             }
@@ -230,9 +228,7 @@
           </select>
           <input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="r.valor" (ngModelChange)="cambiarRetencion(i, 'valor', $event)"
                  [placeholder]="'Calculada: ' + pesosC(totales().detalleRet[i])" aria-label="Valor retenido" />
-          <button type="button" class="icon-action" (click)="quitarRetencion(i)" aria-label="Quitar la retención">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-          </button>
+          <button type="button" appAccion="quitar" etiqueta="Quitar la retención" (click)="quitarRetencion(i)"></button>
         </div>
       }
 

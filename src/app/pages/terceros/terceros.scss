@@ -494,19 +494,6 @@
   content: none;
 }
 
-/* Activar/desactivar: en un tercero activo el ícono va en ok, como antes del
-   rediseño; al pasar el ratón sigue tiñéndose de rojo (lo va a desactivar). */
-.icon-action.icon-action--on {
-  color: var(--ok);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .icon-action.icon-action--on:hover:not(:disabled) {
-    color: var(--error);
-    background: var(--error-fondo);
-  }
-}
-
 /* Acciones de la ficha («Agregar cuenta bancaria», «Editar condiciones»):
    secundario normal, ancho de su texto y alineado a la izquierda. */
 .ter-ficha-btn {

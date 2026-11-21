@@ -40,7 +40,6 @@
 .nom-sub { display: block; color: var(--tinta-3); font-size: var(--fs-meta); font-weight: 400; }
 .table td.nom-monto { font-weight: 600; color: var(--tinta); }
 .nom-fijo { white-space: nowrap; }
-.nom-acciones { display: inline-flex; justify-content: flex-end; gap: var(--e-1); }
 .nom-total {
   margin: 0; padding: var(--e-3) var(--e-4); text-align: right; font-size: var(--fs-celda); color: var(--tinta-2);
   border-top: 1px solid var(--borde);
@@ -216,7 +215,6 @@
 .table > thead > tr > th.num,
 .table > thead > tr > th.col-actions { text-align: right; }
 .table > tbody > tr > td.col-actions { text-align: right; }
-.nom-acciones { display: flex; }
 
 /* Pestañas en el celular: la activa se trae a la vista al pulsarla y deja 32 px
    libres del desvanecido del borde. */

@@ -10,6 +10,7 @@ import { CuentaContable,
   Retencion, ResolucionNumeracion, TarifaVenta, Tercero, TipoRetencion, TratamientoIva, UnidadTarifa,
 } from '../../core/models';
 import { separarNit } from '../../core/nit';
+import { AccionComponent } from '../../shared/icono/accion';
 
 type TabKey = 'emisor' | 'productos' | 'tarifas' | 'impuestos' | 'numeracion' | 'catalogos';
 
@@ -52,7 +53,7 @@ const PROVEEDOR_VISIBLE: boolean = true;
 
 @Component({
   selector: 'app-parametrizacion',
-  imports: [FormsModule],
+  imports: [FormsModule, AccionComponent],
   templateUrl: './parametrizacion.html',
   styleUrl: './parametrizacion.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -72,7 +72,7 @@
                 <span class="pill doc-estado" [class]="'pill doc-estado ' + pillEstado(l.estado)">{{ etiquetaEstado(l.estado) }}</span>
                 @if (l.numero) { <small class="nom-sub">{{ l.numero }}</small> }
               </td>
-              <td class="col-actions"><button type="button" class="icon-action icon-action--ver" (click)="abrir(l)" aria-label="Ver la liquidación" title="Ver la liquidación"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg></button></td>
+              <td class="col-actions"><button type="button" appAccion="ver" etiqueta="Ver la liquidación" (click)="abrir(l)"></button></td>
             </tr>
           } @empty {
             <tr><td colspan="8" class="table__empty" [class.table__empty--estado]="!cargando()">
@@ -128,10 +128,10 @@
               <td><span class="pill doc-estado" [class]="'pill doc-estado ' + (e.activo ? 'pill--success' : 'pill--muted')">{{ e.activo ? 'Activo' : 'Inactivo' }}</span></td>
               <td class="col-actions">
                 @if (puedeOperar()) {
-                  <span class="nom-acciones">
-                    <button type="button" class="btn btn--ghost btn--sm" (click)="abrirEmpleado(e)">Editar</button>
-                    <button type="button" class="btn btn--ghost btn--sm" (click)="alternarEmpleado(e)">{{ e.activo ? 'Desactivar' : 'Activar' }}</button>
-                  </span>
+                  <div class="row-actions">
+                    <button type="button" appAccion="editar" etiqueta="Editar" (click)="abrirEmpleado(e)"></button>
+                    <button type="button" [appAccion]="e.activo ? 'desactivar' : 'activar'" [etiqueta]="e.activo ? 'Desactivar' : 'Activar'" (click)="alternarEmpleado(e)"></button>
+                  </div>
                 }
               </td>
             </tr>
@@ -191,7 +191,7 @@
               <td class="num">{{ pesos(p.smmlv) }}</td>
               <td class="num">{{ pesos(p.auxilio_transporte) }}</td>
               <td class="num">{{ pesos(p.smmlv * 2) }}</td>
-              <td class="col-actions">@if (puedeOperar()) { <button type="button" class="btn btn--ghost btn--sm" (click)="editarParametro(p)">Editar</button> }</td>
+              <td class="col-actions">@if (puedeOperar()) { <div class="row-actions"><button type="button" appAccion="editar" etiqueta="Editar" (click)="editarParametro(p)"></button></div> }</td>
             </tr>
           } @empty {
             <tr><td colspan="5" class="table__empty table__empty--estado">
@@ -416,9 +416,7 @@
               <input type="number" min="1" step="1" class="form-control num" placeholder="Horas" [ngModel]="h.cantidad" (ngModelChange)="cambiarFila('horas', i, 'cantidad', $event)" [attr.aria-label]="'Horas de la fila ' + (i + 1)" />
               <input type="datetime-local" class="form-control" [ngModel]="h.inicio" (ngModelChange)="cambiarFila('horas', i, 'inicio', $event)" [attr.aria-label]="'Inicio de la fila ' + (i + 1)" />
               <input type="datetime-local" class="form-control" [ngModel]="h.fin" (ngModelChange)="cambiarFila('horas', i, 'fin', $event)" [attr.aria-label]="'Fin de la fila ' + (i + 1)" />
-              <button type="button" class="icon-action" (click)="quitar('horas', i)" [attr.aria-label]="'Quitar la fila ' + (i + 1)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-              </button>
+              <button type="button" appAccion="quitar" (click)="quitar('horas', i)" [etiqueta]="'Quitar la fila ' + (i + 1)"></button>
             </div>
           }
         </section>
@@ -432,9 +430,7 @@
               <input type="number" min="1" max="30" step="1" class="form-control num" placeholder="Días" [ngModel]="v.dias" (ngModelChange)="cambiarFila('vacaciones', i, 'dias', $event)" [attr.aria-label]="'Días de vacaciones, fila ' + (i + 1)" />
               <input type="date" class="form-control" [ngModel]="v.inicio" (ngModelChange)="cambiarFila('vacaciones', i, 'inicio', $event)" aria-label="Desde" />
               <input type="date" class="form-control" [ngModel]="v.fin" (ngModelChange)="cambiarFila('vacaciones', i, 'fin', $event)" aria-label="Hasta" />
-              <button type="button" class="icon-action" (click)="quitar('vacaciones', i)" aria-label="Quitar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-              </button>
+              <button type="button" appAccion="quitar" (click)="quitar('vacaciones', i)" etiqueta="Quitar"></button>
             </div>
           }
         </section>
@@ -450,9 +446,7 @@
               <input type="number" min="1" max="30" step="1" class="form-control num" placeholder="Días" [ngModel]="l.dias" (ngModelChange)="cambiarFila('licencias', i, 'dias', $event)" aria-label="Días de licencia" />
               <input type="date" class="form-control" [ngModel]="l.inicio" (ngModelChange)="cambiarFila('licencias', i, 'inicio', $event)" aria-label="Desde" />
               <input type="date" class="form-control" [ngModel]="l.fin" (ngModelChange)="cambiarFila('licencias', i, 'fin', $event)" aria-label="Hasta" />
-              <button type="button" class="icon-action" (click)="quitar('licencias', i)" aria-label="Quitar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-              </button>
+              <button type="button" appAccion="quitar" (click)="quitar('licencias', i)" etiqueta="Quitar"></button>
             </div>
           }
         </section>
@@ -466,9 +460,7 @@
               <input type="number" min="1" max="30" step="1" class="form-control num" placeholder="Días" [ngModel]="x.dias" (ngModelChange)="cambiarFila('incapacidades', i, 'dias', $event)" aria-label="Días de incapacidad" />
               <input type="date" class="form-control" [ngModel]="x.inicio" (ngModelChange)="cambiarFila('incapacidades', i, 'inicio', $event)" aria-label="Desde" />
               <input type="date" class="form-control" [ngModel]="x.fin" (ngModelChange)="cambiarFila('incapacidades', i, 'fin', $event)" aria-label="Hasta" />
-              <button type="button" class="icon-action" (click)="quitar('incapacidades', i)" aria-label="Quitar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-              </button>
+              <button type="button" appAccion="quitar" (click)="quitar('incapacidades', i)" etiqueta="Quitar"></button>
             </div>
           }
         </section>
@@ -507,9 +499,7 @@
               <input type="text" class="form-control" maxlength="200" [placeholder]="pideDescripcion('otros_devengados', o.tipo) ? 'Descripción *' : 'Descripción (opcional)'"
                      [ngModel]="o.descripcion" (ngModelChange)="cambiarFila('otrosDevengados', i, 'descripcion', $event)" aria-label="Descripción" />
               <input type="text" inputmode="decimal" class="form-control num" placeholder="Valor" [ngModel]="o.valor" (ngModelChange)="cambiarFila('otrosDevengados', i, 'valor', $event)" aria-label="Valor del pago" />
-              <button type="button" class="icon-action" (click)="quitar('otrosDevengados', i)" aria-label="Quitar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-              </button>
+              <button type="button" appAccion="quitar" (click)="quitar('otrosDevengados', i)" etiqueta="Quitar"></button>
             </div>
           }
         </section>
@@ -525,9 +515,7 @@
               <input type="text" class="form-control" maxlength="200" [placeholder]="pideDescripcion('otras_deducciones', o.tipo) ? 'Descripción *' : 'Descripción (opcional)'"
                      [ngModel]="o.descripcion" (ngModelChange)="cambiarFila('otrasDeducciones', i, 'descripcion', $event)" aria-label="Descripción" />
               <input type="text" inputmode="decimal" class="form-control num" placeholder="Valor" [ngModel]="o.valor" (ngModelChange)="cambiarFila('otrasDeducciones', i, 'valor', $event)" aria-label="Valor de la deducción" />
-              <button type="button" class="icon-action" (click)="quitar('otrasDeducciones', i)" aria-label="Quitar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-              </button>
+              <button type="button" appAccion="quitar" (click)="quitar('otrasDeducciones', i)" etiqueta="Quitar"></button>
             </div>
           }
         </section>

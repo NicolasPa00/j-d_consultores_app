@@ -12,6 +12,7 @@ import {
   InformePorTercero, LibroAuxiliar, LibroAuxiliarClave, MovimientoAuxiliarConBase, Tercero, TerceroInforme,
   TotalesInformeContable, VentasPorCliente, EstadoSituacionFinanciera, EstadoResultados, SeccionEstado,
 } from '../../core/models';
+import { AccionComponent } from '../../shared/icono/accion';
 
 type Pestana = 'balance' | 'auxiliar' | 'terceros' | 'libros' | 'ventas' | 'estados';
 
@@ -69,7 +70,7 @@ const iso = (d: Date) => `${d.getFullYear()}-${dosDigitos(d.getMonth() + 1)}-${d
  */
 @Component({
   selector: 'app-informes-contables',
-  imports: [FormsModule, NgTemplateOutlet, SelectorBusquedaComponent],
+  imports: [FormsModule, NgTemplateOutlet, SelectorBusquedaComponent, AccionComponent],
   templateUrl: './informes-contables.html',
   styleUrl: './informes-contables.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

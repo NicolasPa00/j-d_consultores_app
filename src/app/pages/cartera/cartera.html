@@ -78,7 +78,7 @@
                 <td class="col-num mono" [class.car-vencido]="e !== 'POR_VENCER' && +c[e] > 0">{{ +c[e] ? pesos(c[e]) : '' }}</td>
               }
               <td class="col-num mono"><strong>{{ pesos(c.TOTAL) }}</strong></td>
-              <td class="col-actions"><button type="button" class="icon-action icon-action--ver" (click)="abrirEstado(c.tercero_id)" aria-label="Ver el estado de cuenta" title="Ver el estado de cuenta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
+              <td class="col-actions"><button type="button" appAccion="ver" etiqueta="Ver el estado de cuenta" (click)="abrirEstado(c.tercero_id)"></button></td>
             </tr>
           }
         </tbody>
@@ -117,7 +117,7 @@
               <td class="col-num mono">{{ pesos(r.valor_consignado) }}</td>
               <td class="col-num mono">{{ +(r.retenido ?? 0) ? pesos(r.retenido) : '' }}</td>
               <td><span class="pill doc-estado" [class]="'pill doc-estado ' + (r.estado === 'ANULADO' ? 'pill--muted' : 'pill--success')">{{ r.estado === 'ANULADO' ? 'Anulado' : 'Contabilizado' }}</span></td>
-              <td class="col-actions"><button type="button" class="icon-action icon-action--ver" (click)="abrirRecibo(r)" aria-label="Ver el recibo" title="Ver el recibo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></td>
+              <td class="col-actions"><button type="button" appAccion="ver" etiqueta="Ver el recibo" (click)="abrirRecibo(r)"></button></td>
             </tr>
           }
         </tbody>

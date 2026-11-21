@@ -12,6 +12,7 @@ import {
 } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
+import { AccionComponent } from '../../shared/icono/accion';
 import { OpcionBusqueda, SelectorBusquedaComponent } from '../../shared/selector-busqueda/selector-busqueda';
 import { CupoDocumentosComponent } from '../../shared/cupo-documentos/cupo-documentos';
 
@@ -64,7 +65,7 @@ type ListaNovedad = 'horas' | 'vacaciones' | 'licencias' | 'incapacidades' | 'ot
  */
 @Component({
   selector: 'app-nomina',
-  imports: [FormsModule, RouterLink, NgTemplateOutlet, PaginadorComponent, SelectorBusquedaComponent, CupoDocumentosComponent],
+  imports: [FormsModule, RouterLink, NgTemplateOutlet, PaginadorComponent, SelectorBusquedaComponent, CupoDocumentosComponent, AccionComponent],
   templateUrl: './nomina.html',
   styleUrl: './nomina.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

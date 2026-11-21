@@ -194,7 +194,7 @@ Se retira `--sombra-alza`: los accesos ya no se elevan.
 - **Curva y duraciones.** Una sola curva, `--ease-out: cubic-bezier(.23,1,.32,1)`. `--t-rapida: 120ms` para el pulsado y los fondos de lista; `--t-media: 160ms` para color y borde.
 - **Al pulsar:**
   - botón: `.98`;
-  - ícono de fila: `.94`;
+  - acción de fila (`button[appAccion]`): `.97`, y su sombra plana se pega al ícono (0,5 px);
   - Cobro: `.97`;
   - «Plataforma»: `.95`.
 
@@ -345,7 +345,15 @@ Campo con lupa, con la piel de cualquier campo: 40 px, `--borde-campo` (3,03:1),
 
 ### Acciones de fila [A + B]
 
-- **[A]** El ojo «Ver» mide 28 px y lleva fondo `--accion-tenue`. Mientras las plantillas no lleven `.icon-action--ver`, se reconoce por su trazo (`:has(> svg path[d^="M2 12s"])`). Los demás íconos van sin marco hasta el hover; Deshabilitar se tiñe de rojo al pasar el ratón.
+- **Desde el 21-nov-2026 (lámina `docs/3-planes/rediseno-21-nov/iconos-tabla/lamina.html`, opción F):** cada acción es un acceso del Inicio en miniatura y se escribe **solo** con `<button appAccion="…" etiqueta="…">` (`shared/icono/accion.ts`); el catálogo es `shared/icono/iconos-accion.ts` (33 significados) y `npm run verificar:acciones` falla si una plantilla vuelve a dibujar el svg o a elegir el tono a mano.
+  - **Disco** de 28 px en `--cielo`; blanco cuando la fila está en hover o destacada. **Ícono** de 20 px sobre retícula 18, trazo 1,5.
+  - **Capas** (las del Inicio): sombra plana = la silueta corrida 2 px en `--ico-tinte`, **siempre visible** (3 px con hover, 0,5 al pulsar); cuerpo blanco con trazo `--accion`; el **acento** —lo que hace la acción— en `--cian-trazo-fuerte` (≥3,30:1 en todos los fondos de la fila).
+  - **Ver:** sin anillo; destaca por el tono de su disco, `--disco-ver` (cian 22 %; con hover `--disco-ver-hover`), distinto del gris azulado `--disco-hover` de los demás.
+  - **Peligro** (eliminar, quitar): gris en reposo, rojo con hover. **Reversible** (archivar, desactivar): gris en reposo, **ámbar** con hover. Deshabilitar una orden es `archivar` (caja), no una papelera; `restaurar` es la misma caja con una flecha hacia arriba.
+  - **Activar/desactivar** es un interruptor que muestra el ESTADO: perilla cian a la derecha = activo (el botón ofrece desactivar), perilla gris a la izquierda = inactivo.
+  - **Quitar** una línea de un formulario: X en círculo, sin disco en reposo. Cerrar de los modales, chevrones y copiar siguen siendo `.icon-action` sin disco.
+  - **Facturación angosta:** dentro de `@container (max-width: 1000px)` la fila de cinco ranuras pasa a disco de 26 e ícono de 18.
+  - **Táctil:** 36 px solo en las columnas de acciones (`:is(.col-actions,.row-actions,.fac-acciones,.par-acciones)`).
 - **[B, Facturación, 1 h] Facturación y cualquier lista con acciones condicionales:**
   - Hoy el «Ver» de Facturación es un botón de texto; pasa a ojo.
   - **Siempre se reservan todas las ranuras.** Cuando una acción no aplica (el correo en una factura Anulada), va `<span class="icon-action icon-action--hueco" aria-hidden="true">`, con `visibility: hidden`.
@@ -705,9 +713,9 @@ Todo mide 36 px y ninguna acción se esconde.
 
 - Usar `#000b4f`, `#2d7bc8` como relleno, el gris violeta de «Liquidar nómina» o el verde de Finanzas en el selector.
 - Degradados (salvo la máscara de las pestañas desplazables en el celular), vidrio, `backdrop-filter`, manchas, neón o violetas.
-- **Filas de tarjetas iguales con ícono en recuadro teñido** (lo de la ronda 2), o íconos en círculo pastel (lo de Siigo).
+- **Filas de tarjetas iguales con ícono en recuadro teñido** (lo de la ronda 2). Íconos en círculo **solo** en los accesos del Inicio y en las acciones de fila (el dueño anuló la prohibición de los círculos al aprobar el Inicio).
 - Un hover congelado en la maqueta o en reposo.
-- Rayas de color en tarjetas o grupos; sombras negras, o sombras en reposo.
+- Rayas de color en tarjetas o grupos; sombras negras, o sombras difusas en reposo (la sombra plana teñida de los íconos del Inicio y de las acciones de fila es parte del dibujo, no una elevación).
 - Cebra, línea de 2 px bajo la cabecera, o una fila que abra algo o muestre cursor de mano.
 - Paneles laterales, o más de un primario por vista. En el Inicio, el primario es el acceso relleno.
 - **Cian en texto**, o cian para algo que no sea «ahora». La meta va en tinta-3.

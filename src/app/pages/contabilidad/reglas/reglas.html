@@ -61,9 +61,7 @@
                 <td><span class="mono">{{ r.cuenta_codigo }}</span> · {{ r.cuenta_nombre }}</td>
                 @if (puedeEditar()) {
                   <td class="col-actions">
-                    <button type="button" class="icon-action" (click)="quitar(r)" aria-label="Quitar regla" title="Quitar">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-                    </button>
+                    <button type="button" appAccion="quitar" etiqueta="Quitar regla" (click)="quitar(r)"></button>
                   </td>
                 }
               </tr>

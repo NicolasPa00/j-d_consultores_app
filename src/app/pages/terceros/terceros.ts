@@ -10,6 +10,7 @@ import { separarNit } from '../../core/nit';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 import { SelectorBusquedaComponent } from '../../shared/selector-busqueda/selector-busqueda';
+import { AccionComponent } from '../../shared/icono/accion';
 
 type FiltroRol = 'todos' | 'cliente' | 'proveedor' | 'empleado' | 'acreedor';
 
@@ -60,7 +61,7 @@ const CONDICION_VACIA = {
  */
 @Component({
   selector: 'app-terceros',
-  imports: [FormsModule, PaginadorComponent, SelectorBusquedaComponent],
+  imports: [FormsModule, PaginadorComponent, SelectorBusquedaComponent, AccionComponent],
   templateUrl: './terceros.html',
   styleUrl: './terceros.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

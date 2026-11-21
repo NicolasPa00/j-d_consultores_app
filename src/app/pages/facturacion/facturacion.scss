@@ -129,7 +129,6 @@
 
 /* Acciones de una fila emitida. */
 .fac-acciones { display: inline-flex; align-items: center; justify-content: flex-end; gap: var(--e-1); }
-.fac-acciones .icon-action svg { width: 1.05rem; height: 1.05rem; }
 
 /* Cliente: la razón social larga («COMPAÑIA DE SEGUROS BOLIVAR S A») no deja
    una letra huérfana a 1280 px; número y fechas no se parten. */
@@ -714,17 +713,37 @@
    el número que manda y no puede quedar bajo la columna fija de Acciones. Cliente
    baja de 16 a 10 rem y se parte en dos renglones parejos (sin la «A» huérfana de
    «…BOLIVAR S A»); las celdas y los huecos entre íconos se estrechan. La consulta es
-   sobre el `.table-wrap` (contenedor más cercano), no sobre la pantalla: también
-   vale con la barra lateral abierta o contraída. */
+   sobre el `.table-wrap.fac-cont` de Emitidas y Notas (contenedor con nombre: mide lo
+   que mide la tabla y no se encoge al contenido porque es un bloque al 100 %), no sobre
+   la pantalla: también vale con la barra lateral abierta o contraída. */
+.fac-cont { container: faccont / inline-size; }
 .fac-emitidas td:nth-child(2),
 .fac-notas td:nth-child(3) { min-width: 10rem; text-wrap: balance; }
-@container (max-width: 1000px) {
+@container faccont (max-width: 1000px) {
   .table.fac-emitidas th.fac-col-cliente { min-width: 10rem; }
   .table.fac-emitidas > :is(thead, tbody) > tr > :is(th, td) { padding-inline: 6px; }
   .table.fac-emitidas > :is(thead, tbody) > tr > :is(th, td):first-child { padding-left: 12px; }
-  .fac-emitidas .fac-acciones { gap: 0; }
-  /* Ranura de 26 px (el ojo sigue con su fondo tenue); el ícono no cambia de tamaño. */
-  .fac-emitidas .fac-acciones > .icon-action { width: 26px; }
+  /* Acciones de fila a 26 × 26 px con ícono de 18 px (ronda 3, 21-nov-2026). A 1093 px
+     útiles (1366 px al 125 %) cinco botones de 28 px con su separación miden 148 px y
+     desbordan la columna; a 26 px con 2 px entre ellos son 138 px y caben. Los huecos
+     también bajan a 26 px para que el ojo no cambie de sitio entre filas. En táctil
+     (hover: none) se quedan los 36 px globales: ahí manda el tamaño del dedo.
+     A 18 px la unidad de la retícula vale 1 px, así que la sombra va en píxeles
+     enteros: 2 px en reposo, 3 px en hover/foco y 0,5 px al pulsar. */
+  @media not (hover: none) {
+    .fac-emitidas .fac-acciones { gap: 2px; }
+    .fac-emitidas .fac-acciones :is(.accion, .icon-action--hueco) { width: 26px; height: 26px; }
+    /* --ico-tam y no `.accion .ico`: esta hoja está encapsulada y no alcanza el <svg> del componente. */
+    .fac-emitidas .fac-acciones .accion { --sombra-x: 2px; --ico-tam: 18px; }
+    .fac-emitidas .fac-acciones .accion:focus-visible { --sombra-x: 3px; }
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .fac-emitidas .fac-acciones .accion:hover:not(:disabled) { --sombra-x: 3px; }
+  }
+  @media not (hover: none) {
+    /* Después del hover: al pulsar gana el 0,5 px aunque el puntero siga encima. */
+    .fac-emitidas .fac-acciones .accion:active:not(:disabled) { --sombra-x: 0.5px; }
+  }
 }
 
 /* Causal en el cuerpo de celda, como el resto de la fila (antes iba en <small>). */

@@ -7,6 +7,7 @@ import { CentroCosto, Comprobante, CuentaContable, DocumentoPendienteContabiliza
 import { paginar } from '../../../shared/paginacion';
 import { PaginadorComponent } from '../../../shared/paginador/paginador';
 import { FechaDmyPipe } from '../../../shared/fecha-dmy.pipe';
+import { AccionComponent } from '../../../shared/icono/accion';
 
 const PESOS = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -38,7 +39,7 @@ export function aCentavos(texto: string): number | null {
  */
 @Component({
   selector: 'app-comprobantes',
-  imports: [FormsModule, PaginadorComponent, FechaDmyPipe],
+  imports: [FormsModule, PaginadorComponent, FechaDmyPipe, AccionComponent],
   templateUrl: './comprobantes.html',
   styleUrl: './comprobantes.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

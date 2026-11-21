@@ -341,38 +341,16 @@
             <td class="col-actions">
               <div class="row-actions">
                 @if (order.disabled) {
-                  <button type="button" class="icon-action icon-action--on" (click)="restoreOrder(order)" aria-label="Restaurar" title="Restaurar orden">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
-                      <path d="M3 3v5h5" />
-                    </svg>
-                  </button>
+                  <button type="button" appAccion="restaurar" etiqueta="Restaurar" (click)="restoreOrder(order)"></button>
                   <!-- Distinto del soft-delete de arriba: borra el borrador (y la
                        OS, si llegó a existir) para que reimportar el mismo
                        archivo deje de chocar con "esta orden ya existe". -->
-                  <button type="button" class="icon-action icon-action--danger" (click)="deleteOrderPermanently(order)" aria-label="Eliminar definitivamente" title="Eliminar definitivamente">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M3 6h18" />
-                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                      <path d="M10 11v6M14 11v6" />
-                    </svg>
-                  </button>
+                  <button type="button" appAccion="eliminar" etiqueta="Eliminar definitivamente" (click)="deleteOrderPermanently(order)"></button>
                 } @else {
-                  <button type="button" class="icon-action icon-action--ver" (click)="openDetail(order.id)" aria-label="Ver detalle" title="Ver detalle">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  </button>
+                  <button type="button" appAccion="ver" etiqueta="Ver detalle" (click)="openDetail(order.id)"></button>
                   <!-- Editable en CUALQUIER estado: un dato mal leído por el OCR
                        se descubre casi siempre después de crear la OS. -->
-                  <button type="button" class="icon-action" (click)="openEdit(order.id)" aria-label="Editar" title="Editar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M12 20h9" />
-                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                    </svg>
-                  </button>
+                  <button type="button" appAccion="editar" etiqueta="Editar" (click)="openEdit(order.id)"></button>
                   <!-- Tercera ranura: soportes (EJECUTADA/FINALIZADA) o asignar
                        (SIN PROGRAMAR/PROGRAMADA). Nunca coinciden, así que
                        comparten hueco; si ninguna aplica se reserva vacío
@@ -384,50 +362,23 @@
                   @if (tieneSoportes(order)) {
                     <button
                       type="button"
-                      class="icon-action"
+                      appAccion="soportes"
                       (click)="openVerify(order)"
-                      [attr.aria-label]="puedeVerificar(order) ? 'Verificar soportes' : 'Ver soportes'"
-                      [title]="puedeVerificar(order) ? 'Verificar soportes' : 'Ver soportes'"
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M21.4 11.05 12.25 20.2a5.5 5.5 0 0 1-7.78-7.78l9.2-9.19a3.5 3.5 0 1 1 4.95 4.95l-9.2 9.19a1.5 1.5 0 0 1-2.12-2.12l8.49-8.48" />
-                      </svg>
-                    </button>
+                      [etiqueta]="puedeVerificar(order) ? 'Verificar soportes' : 'Ver soportes'"
+                    ></button>
                   } @else if (puedeAsignar(order)) {
                     <!-- ASG-01/02/07 · Asignar o reprogramar. No se ofrece cuando
                          la orden ya salió a campo: el backend lo rechazaría. -->
                     <button
                       type="button"
-                      class="icon-action"
+                      [appAccion]="esReprogramacion(order) ? 'reprogramar' : 'asignar'"
                       (click)="openAssign(order.id)"
-                      [attr.aria-label]="esReprogramacion(order) ? 'Reprogramar orden' : 'Asignar profesional'"
-                      [title]="esReprogramacion(order) ? 'Reprogramar orden' : 'Asignar profesional'"
-                    >
-                      @if (esReprogramacion(order)) {
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                          <rect x="3" y="4.5" width="18" height="17" rx="2" />
-                          <path d="M16 2.5v4M8 2.5v4M3 10h18" />
-                          <path d="M12 13.5v3l2 1.5" />
-                        </svg>
-                      } @else {
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                          <circle cx="10" cy="8" r="4" />
-                          <path d="M3 21a7 7 0 0 1 11.5-5.4" />
-                          <path d="M18 14v6M15 17h6" />
-                        </svg>
-                      }
-                    </button>
+                      [etiqueta]="esReprogramacion(order) ? 'Reprogramar orden' : 'Asignar profesional'"
+                    ></button>
                   } @else {
                     <span class="icon-action icon-action--hueco" aria-hidden="true"></span>
                   }
-                  <button type="button" class="icon-action icon-action--danger" (click)="disableOrder(order)" aria-label="Deshabilitar" title="Deshabilitar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M3 6h18" />
-                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                      <path d="M10 11v6M14 11v6" />
-                    </svg>
-                  </button>
+                  <button type="button" appAccion="archivar" etiqueta="Deshabilitar" (click)="disableOrder(order)"></button>
                 }
               </div>
             </td>
@@ -1274,18 +1225,14 @@
             @if (prof.id === selectedProfId() && order.osId) {
               <button
                 type="button"
+                appAccion="guardar"
                 class="prof-guardar"
                 [class.prof-guardar--pendiente]="pendienteDeGuardar()"
                 [disabled]="!pendienteDeGuardar()"
                 (click)="guardarProgreso()"
-                [attr.aria-label]="'Guardar las horas de ' + prof.nombre"
-                [title]="ayudaGuardar()"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                  <path d="M17 21v-8H7v8M7 3v5h8" />
-                </svg>
-              </button>
+                [etiqueta]="'Guardar las horas de ' + prof.nombre"
+                [ayuda]="ayudaGuardar()"
+              ></button>
             }
           </div>
         } @empty {
@@ -2872,10 +2819,8 @@
                   {{ r.fecha ? fechaRadicado(r.fecha) : 'sin fecha' }}@if (r.vigente) { · <b>vigente</b> }@if (r.creado_por_nombre) { · {{ r.creado_por_nombre }} }
                 </span>
                 @if (puedeEditarCobro()) {
-                  <button type="button" class="icon-action" (click)="eliminarRadicado(r)" [disabled]="radicadoGuardando()"
-                          [attr.aria-label]="'Eliminar el radicado ' + r.numero" title="Eliminar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
-                  </button>
+                  <button type="button" appAccion="eliminar" (click)="eliminarRadicado(r)" [disabled]="radicadoGuardando()"
+                          [etiqueta]="'Eliminar el radicado ' + r.numero"></button>
                 }
               </li>
             }
