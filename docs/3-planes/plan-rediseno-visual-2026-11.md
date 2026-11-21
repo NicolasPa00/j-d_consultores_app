@@ -17,7 +17,22 @@ cd sst_ws && npm run dev          # :4000
 cd jdd_consultores_app && npm start   # :4001
 ```
 
-Sin migraciones: el backend solo agrega un endpoint de lectura.
+Sin migraciones: el backend solo agrega un endpoint de lectura. Para no mandar correos reales mientras se revisa:
+`EMAIL_DRIVER=console SMTP_HOST="" npm run dev` (el `.env` apunta a un Gmail real).
+
+### Estado al cerrar la sesión del 20-nov-2026 (siguiente paso)
+
+- Todo commiteado y subido: front `origin/rediseno-visual` (último commit de código `c57fb98`), back `origin/rediseno-visual` (`e041f48`).
+  `main`/`master` NO tienen nada del rediseño. Nada desplegado.
+- El rediseño está **completo**; lo que sigue NO es construir más, sino:
+  1. Que el dueño lo recorra en local (§3) y responda las decisiones del §5.
+  2. Aplicar lo que decida: revertir posiciones si no las quiere, barrido tú → usted (DESIGN §12), o atacar los defectos
+     abiertos de `rediseno-visual-defectos-abiertos.md` (ninguno es bloqueante).
+  3. Enseñárselo a la clienta (sugerencia: comparación antes/después con capturas).
+  4. Con la aprobación: fusionar `rediseno-visual` en `main`/`master`, desplegar back y front juntos (runbook en
+     `docs/4-despliegue/`) y rehacer las capturas del centro de ayuda.
+- Al abrir una sesión nueva con Claude, basta con decir «continuemos con el rediseño visual»: este archivo + DESIGN §11 +
+  la lista de defectos abiertos tienen todo el contexto.
 
 ## 1. Por qué
 
