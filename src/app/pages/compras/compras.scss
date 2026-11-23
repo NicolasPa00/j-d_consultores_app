@@ -105,21 +105,64 @@
 }
 
 /* Campos de línea densos; el select conserva el hueco del chevron. */
-.cp-items .form-control {
+.cp-linea .form-control {
   min-height: 36px;
   padding-top: 6px;
   padding-bottom: 6px;
   font-size: var(--fs-celda);
 }
 
-/* `min-width` y no `width`: en una tabla automática `width` es solo una
-   sugerencia, y el Detalle se quedaba el sobrante — el valor quedaba en ~70 px
-   y el IVA cortado («Sin IV»). */
-.cp-items td:nth-child(1) { min-width: 260px; }
-.cp-items td:nth-child(3) { min-width: 150px; }
-.cp-items td:nth-child(4) { min-width: 120px; }
-/* El IVA (penúltima, antes de quitar la línea): «Sin IVA» y «19 %» enteros. */
-.cp-items td:nth-last-child(2) { min-width: 120px; }
+/* ===== Ítems de la compra (22-nov-2026) =====
+   Rejilla con el patrón de la factura manual (`fac-man-linea`, facturacion.scss).
+   Mínimos de la tabla anterior: la cuenta no baja de 15 rem, el valor y el IVA
+   caben enteros («Sin IVA», «19 %»). */
+.cp-lineas {
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
+  background: var(--superficie);
+}
+.cp-linea {
+  display: grid;
+  grid-template-columns: minmax(15rem, 1.5fr) minmax(0, 1.2fr) minmax(0, 1fr) 8.5rem 7.5rem 2.25rem;
+  gap: 0.6rem;
+  align-items: start;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--borde);
+
+  &:last-child { border-bottom: 0; }
+  .col-num { text-align: right; }
+}
+.cp-linea--cab {
+  padding: 0.7rem 0.75rem;
+  background: var(--cabecera-tabla);
+  color: var(--tinta-2);
+  border-radius: var(--r-tarjeta) var(--r-tarjeta) 0 0;
+  font-size: var(--fs-meta);
+  font-weight: 600;
+}
+.cp-linea__rotulo { display: none; }
+.cp-linea__campo { min-width: 0; }
+.cp-linea > .accion { margin-top: 4px; }
+.cp-acciones .btn svg { width: 16px; height: 16px; }
+
+@media (max-width: 760px) {
+  .cp-linea--cab { display: none; }
+  .cp-linea {
+    grid-template-columns: 1fr 1fr auto;
+    align-items: end;
+    gap: 0.6rem 0.75rem;
+  }
+  .cp-linea__ancho { grid-column: 1 / -1; }
+  .cp-linea > .accion { margin-top: 0; }
+  .cp-linea__rotulo {
+    /* Como la etiqueta de campo del resto del formulario (13/500, tinta-2). */
+    display: block;
+    margin-bottom: 6px;
+    font-size: var(--fs-celda);
+    font-weight: 500;
+    color: var(--tinta-2);
+  }
+}
 
 .cp-acciones {
   display: flex;
@@ -230,21 +273,8 @@
   background: var(--error-fondo);
 }
 
-/* 7-oct-2026 · La lista del selector de cuenta se abre POR FUERA de la tabla: con
-   el desbordamiento recortado quedaba cortada dentro del contenedor. */
-.cp-items-wrap {
-  overflow: visible;
-}
-
-.cp-items td:first-child {
-  min-width: 260px;
-}
-
-@media (max-width: 760px) {
-  .cp-items-wrap {
-    overflow-x: auto;
-  }
-}
+/* 7-oct-2026 · La lista del selector de cuenta se abre por fuera de las líneas: la
+   rejilla de ítems (22-nov-2026) no recorta su desbordamiento. */
 
 /* 24-oct-2026 · Centro de costo por ítem, con enlace para crearlo sin salir. */
 .cp-nuevo-centro {

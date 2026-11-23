@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, OnInit, output, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { CeroVacioDirective } from '../../../shared/cero-vacio';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../../core/api.service';
-import { PESOS } from '../../../core/dinero';
+import { PESOS, cifraEditable } from '../../../core/dinero';
 import { mensajeError } from '../../../core/errores';
 import { AlertService } from '../../../core/alert.service';
 import {
@@ -16,6 +17,7 @@ import { OpcionBusqueda, SelectorBusquedaComponent } from '../../../shared/selec
 import { TerceroRapidoComponent } from '../../../shared/alta-rapida/tercero-rapido';
 import { aCentavos } from '../../contabilidad/comprobantes/comprobantes';
 import { AccionComponent } from '../../../shared/icono/accion';
+import { IconoComponent } from '../../../shared/icono/icono';
 
 const ETIQUETA_EDAD: Record<EdadCartera, string> = {
   POR_VENCER: 'Por vencer', D1_30: '1 a 30 días', D31_60: '31 a 60', D61_90: '61 a 90', MAS_90: 'Más de 90',
@@ -48,7 +50,7 @@ interface FilaEgreso {
  */
 @Component({
   selector: 'app-pagos',
-  imports: [FormsModule, RouterLink, PaginadorComponent, SelectorBusquedaComponent, TerceroRapidoComponent, FechaDmyPipe, AccionComponent],
+  imports: [FormsModule, CeroVacioDirective, RouterLink, PaginadorComponent, SelectorBusquedaComponent, TerceroRapidoComponent, FechaDmyPipe, AccionComponent, IconoComponent],
   templateUrl: './pagos.html',
   styleUrl: './pagos.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -331,7 +333,7 @@ export class PagosComponent implements OnInit {
         this.propuesta.set(r.data);
         this.filas.set(r.data.obligaciones.map((o) => ({
           id: o.id, numero: o.numero, vencimiento: o.vencimiento, saldo: o.saldo, marcada: false,
-          pagado: o.saldo, anticipo: '', retencion_id: '', retenido: '',
+          pagado: cifraEditable(o.saldo), anticipo: '', retencion_id: '', retenido: '',
         })));
       },
       error: (err) => this.alerts.error('No se pudieron traer sus obligaciones', mensajeError(err, 'Intente de nuevo.')),

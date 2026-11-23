@@ -9,6 +9,7 @@ import { Empresa, OrdenDeEmpresa } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 import { AccionComponent } from '../../shared/icono/accion';
+import { IconoComponent } from '../../shared/icono/icono';
 
 /** Campos del formulario. Coinciden 1:1 con los editables del backend. */
 interface EmpresaDraft {
@@ -52,7 +53,7 @@ function claveNit(nit: string): string {
  */
 @Component({
   selector: 'app-companies',
-  imports: [FormsModule, PaginadorComponent, AccionComponent],
+  imports: [FormsModule, PaginadorComponent, AccionComponent, IconoComponent],
   templateUrl: './companies.html',
   styleUrl: './companies.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

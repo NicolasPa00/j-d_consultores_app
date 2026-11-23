@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { CeroVacioDirective } from '../../shared/cero-vacio';
 import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
@@ -11,6 +12,7 @@ import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 import { SelectorBusquedaComponent } from '../../shared/selector-busqueda/selector-busqueda';
 import { AccionComponent } from '../../shared/icono/accion';
+import { IconoComponent } from '../../shared/icono/icono';
 
 type FiltroRol = 'todos' | 'cliente' | 'proveedor' | 'empleado' | 'acreedor';
 
@@ -61,7 +63,7 @@ const CONDICION_VACIA = {
  */
 @Component({
   selector: 'app-terceros',
-  imports: [FormsModule, PaginadorComponent, SelectorBusquedaComponent, AccionComponent],
+  imports: [FormsModule, CeroVacioDirective, PaginadorComponent, SelectorBusquedaComponent, AccionComponent, IconoComponent],
   templateUrl: './terceros.html',
   styleUrl: './terceros.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

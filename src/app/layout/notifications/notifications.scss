@@ -1,9 +1,15 @@
 /* Campanita de la barra superior + bandeja desplegable (NOT-04).
    Rediseño 20-nov-2026 (DESIGN §7): la campanita conserva su conteo de hoy y
    solo cambia la piel. El contador va en acción con anillo blanco, anclado a la
-   esquina del glifo. La bandeja es un menú desplegable: radio 10 y --sombra-2.
-   Sin íconos en recuadro teñido (DESIGN §10): el tipo de aviso es un ícono de
-   línea, y solo el rechazo lleva color (error). */
+   esquina del glifo. La bandeja es un menú desplegable: radio 10 y --sombra-3.
+   22-nov-2026 · Pasada de color pedida por el dueño («se ve muy gris»), con la
+   regla de pocos colores y con significado (DESIGN §7, Bandeja):
+   - cabecera en la franja cielo con el disco blanco de los modales;
+   - cada aviso lleva un disco de 32 px: el dibujo dice de qué va y el tono qué
+     pide. Solo «ok» y «error» llevan fondo de color; «vence» es la convención
+     de «vence pronto» (disco neutro con reloj ámbar) y lo demás, acción tenue;
+   - ronda 2 (juez): un acento por fila. El no leído se distingue por el punto
+     en acción y el título 600, sin fondo propio; la hora siempre en tinta-3. */
 
 .bell {
   position: relative;
@@ -109,9 +115,46 @@
 .tray__head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
-  padding: 14px 16px 12px;
+  padding: 14px 12px 14px 16px;
+  /* La franja de la cabecera de los modales: cielo y línea en acción tenue
+     (--borde casi no se ve contra cielo). */
+  background: var(--cielo);
+  border-bottom: 1px solid var(--accion-tenue-hover);
+}
+
+.tray__titulos {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Disco de la bandeja: blanco con la sombra plana cian, como el de los modales
+   (aquí a 36 px: la bandeja es un menú, no un modal). */
+.tray__disco {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--superficie);
+  box-shadow: 2px 2px 0 var(--ico-tinte);
+}
+
+.tray__disco svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.8;
+}
+
+.tray__disco-forma {
+  stroke: var(--accion);
+}
+
+/* El badajo, en el cian de los íconos del Inicio (trazo, nunca letra). */
+.tray__disco-acento {
+  stroke: var(--cian-trazo);
+  stroke-width: 2.2;
 }
 
 .tray__title {
@@ -125,7 +168,7 @@
 .tray__sub {
   margin: 2px 0 0;
   font-size: var(--fs-meta);
-  color: var(--tinta-3);
+  color: var(--tinta-2); /* 6,51 sobre cielo (tinta-3 se quedaba en 4,53) */
 }
 
 /* «Marcar todas como leídas»: terciario en acción (como `.ir-a`). */
@@ -146,7 +189,7 @@
 
 @media (hover: hover) and (pointer: fine) {
   .tray__mark:hover {
-    background: var(--accion-tenue);
+    background: var(--accion-tenue-hover); /* sobre cielo, --accion-tenue no se ve */
   }
 }
 
@@ -154,7 +197,7 @@
 .tray__filtros {
   display: flex;
   gap: 6px;
-  padding: 0 16px 10px;
+  padding: 12px 16px 10px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -321,15 +364,22 @@
   font-weight: 500;
 }
 
+/* Vacío: el disco de la marca (cielo con la campana en acción), no el
+   recuadro gris; «No hay avisos sin leer» va en ok, como «Todo al día». */
 .tray__empty-icon {
   display: grid;
   place-items: center;
   width: 44px;
   height: 44px;
   margin: 0 auto 12px;
-  border-radius: var(--r-tarjeta);
-  background: var(--hundida);
-  color: var(--tinta-3);
+  border-radius: 50%;
+  background: var(--cielo);
+  color: var(--accion);
+}
+
+.tray__state--ok .tray__empty-icon {
+  background: var(--ok-fondo);
+  color: var(--ok);
 }
 
 .tray__empty-icon svg {
@@ -372,6 +422,7 @@
   transition: background-color var(--t-rapida) ease;
 }
 
+/* Un solo hover, el de las tablas (DESIGN §11.6). */
 @media (hover: hover) and (pointer: fine) {
   .note-row:hover {
     background: var(--fila-hover);
@@ -396,16 +447,31 @@
   cursor: pointer;
 }
 
-/* Sin leer: punto en acción a la izquierda + título 600. Leído: título 500 y
-   mensaje más apagado. El estado nunca depende solo del color. */
+/* El anillo va por dentro: con el offset global (+2 px) lo recortaba el
+   overflow de .tray__body por los lados. */
+.note:focus-visible {
+  outline-offset: -2px;
+}
+
+/* Disco del aviso (32 px). El fondo de color queda para lo que de verdad pide
+   algo distinto: ok (llegó bien) y error (devuelto o ya vencido). «Vence» sigue
+   la convención de «vence pronto» (§10: nada de ámbar fuera de SIN PROGRAMAR
+   salvo el reloj): disco hundido y reloj --ambar (3,02:1 sobre hundida, 3,40
+   sobre blanco en hover). Así una racha de vencimientos queda tranquila y las
+   vencidas resaltan en rojo. Con la fila en hover el disco se blanquea, como
+   en las tablas: sobre --fila-hover el fondo del disco desaparecería. */
 .note__icon {
+  --disco: var(--accion-tenue);
   flex-shrink: 0;
   display: inline-grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
-  margin-top: 1px;
-  color: var(--tinta-3);
+  width: 32px;
+  height: 32px;
+  margin-top: -2px;
+  border-radius: 50%;
+  background: var(--disco);
+  color: var(--accion);
+  transition: background-color var(--t-rapida) ease;
 }
 
 .note__icon svg {
@@ -413,8 +479,32 @@
   height: 18px;
 }
 
-.note__icon--rechazo {
+.note__icon[data-tono='ok'] {
+  --disco: var(--ok-fondo);
+  color: var(--ok);
+}
+
+.note__icon[data-tono='vence'] {
+  --disco: var(--hundida);
+  color: var(--ambar);
+}
+
+.note__icon[data-tono='error'] {
+  --disco: var(--error-fondo);
   color: var(--error);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .note-row:hover .note__icon {
+    background: var(--superficie);
+  }
+}
+
+/* En la papelera los avisos ya no piden nada: disco neutro. La clase la pone
+   la plantilla según `eliminado_en`, no el botón que lleve la fila. */
+.note-row--papelera .note__icon {
+  --disco: var(--hundida);
+  color: var(--tinta-3);
 }
 
 .note__body {
@@ -460,12 +550,15 @@
   color: var(--tinta-2);
 }
 
+/* Punto del no leído en acción (el cian es solo «aquí está usted», §1.3):
+   9,28:1 sobre blanco y 8,10 sobre --fila-hover. Va a la altura del centro
+   del disco. */
 .note__dot {
   position: absolute;
-  left: 6px;
-  top: 19px;
-  width: 6px;
-  height: 6px;
+  left: 5px;
+  top: 23px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--accion);
 }
@@ -533,6 +626,12 @@
     left: 12px;
     width: auto;
     max-height: calc(100dvh - 62px - 88px);
+  }
+
+  /* Sin disco en el celular, como en los modales: a 390 px empujaba el título
+     contra «Marcar todas como leídas». */
+  .tray__disco {
+    display: none;
   }
 
   .tray__body {

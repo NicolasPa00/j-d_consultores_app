@@ -218,7 +218,7 @@
         <p class="modal__sub">El contrato y cómo se le paga. El documento, la dirección y el municipio se mantienen en Terceros.</p>
       </div>
       <button type="button" class="icon-action" (click)="empleadoOpen.set(false)" aria-label="Cerrar" [disabled]="guardandoEmpleado()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
     <form class="modal__body" (ngSubmit)="guardarEmpleado()">
@@ -328,7 +328,7 @@
         <p class="modal__sub">Escriba las novedades del mes; el sistema liquida a la derecha. Se guarda como borrador: no sale a la DIAN hasta que se emita.</p>
       </div>
       <button type="button" class="icon-action" (click)="liquidarOpen.set(false)" aria-label="Cerrar" [disabled]="guardando()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
     <div class="modal__body nom-liq">
@@ -559,7 +559,7 @@
         <p class="modal__sub">{{ d.empleado_nombre }} · {{ d.empleado_documento }}@if (d.numero) { · {{ d.numero }} }</p>
       </div>
       <button type="button" class="icon-action" (click)="cerrar()" aria-label="Cerrar" [disabled]="!!accion()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
     <div class="modal__body">
@@ -631,7 +631,7 @@
 <!-- ======================= ENVIAR EL DESPRENDIBLE ======================= -->
 @if (enviarOpen() && detalle(); as d) {
   <div class="modal-backdrop nom-encima" (click)="accion() ? null : enviarOpen.set(false)"></div>
-  <div class="modal modal--sm nom-encima" role="dialog" aria-modal="true" aria-labelledby="nomEnvTitulo">
+  <div class="modal modal--sm modal--sobre nom-encima" role="dialog" aria-modal="true" aria-labelledby="nomEnvTitulo">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="nomEnvTitulo">Enviar el desprendible</h3>

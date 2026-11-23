@@ -6,6 +6,7 @@ import { mensajeError } from '../../core/errores';
 import { ItemCatalogo, Tercero, TerceroForm } from '../../core/models';
 import { separarNit } from '../../core/nit';
 import { OpcionBusqueda, SelectorBusquedaComponent } from '../selector-busqueda/selector-busqueda';
+import { IconoComponent } from '../icono/icono';
 
 /**
  * Alta RÁPIDA de un tercero (24-oct-2026), para crearlo sin salir del modal en el
@@ -18,7 +19,7 @@ import { OpcionBusqueda, SelectorBusquedaComponent } from '../selector-busqueda/
  */
 @Component({
   selector: 'app-tercero-rapido',
-  imports: [FormsModule, SelectorBusquedaComponent],
+  imports: [FormsModule, SelectorBusquedaComponent, IconoComponent],
   templateUrl: './tercero-rapido.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -11,7 +11,13 @@
 //   2. la clase `accion` escrita a mano (la pone el componente);
 //   3. un `button[appAccion]` sin `etiqueta` (es el aria-label y el title: dice QUÉ se elimina);
 //   4. un ojo de «Ver» dibujado a mano (`M2 12s…`) o un botón `.icon-action` dentro de `.row-actions`
-//      (los de las tablas ya son `appAccion`; quedan los huecos, que no son botones).
+//      (los de las tablas ya son `appAccion`; quedan los huecos, que no son botones);
+//   5. (paso 7 del plan) una ✕ o un chevron dibujados a mano: un `<svg>` sin `appIcono` cuyo único
+//      trazo es la ✕ o el chevron viejos de la retícula 24, o cualquier `<svg>` a mano dentro de un
+//      botón `aria-label="Cerrar"`. Use `<svg appIcono="cerrar|anterior|siguiente|subir|bajar">`, que
+//      dibuja el glifo de la familia (retícula 18, trazo 1,6, extremos redondos) al tamaño que ya le
+//      da el CSS de cada vista. Las vistas que otros frentes tienen abiertas van en PENDIENTES: se
+//      listan como aviso y no hacen fallar hasta que se conviertan.
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -25,7 +31,20 @@ const archivos = [];
   }
 })(RAIZ);
 
+// La ✕ y los chevrones viejos (retícula 24). Si una plantilla los vuelve a pegar, falla.
+const GLIFOS_VIEJOS = new Map([
+  ['M18 6 6 18M6 6l12 12', 'cerrar'], ['M6 6l12 12M18 6 6 18', 'cerrar'], ['M6 18 18 6M6 6l12 12', 'cerrar'],
+  ['m15 18-6-6 6-6', 'anterior'], ['m15 6-6 6 6 6', 'anterior'],
+  ['m9 18 6-6-6-6', 'siguiente'], ['m9 6 6 6-6 6', 'siguiente'],
+  ['m6 15 6-6 6 6', 'subir'], ['m18 15-6-6-6 6', 'subir'],
+  ['m6 9 6 6 6-6', 'bajar'], ['m18 9-6 6-6-6', 'bajar'],
+]);
+// Vistas con otro frente abierto (21/22-nov): sus chevrones se convierten cuando ese frente cierre.
+const PENDIENTES = new Set([
+]);
+
 const fallos = [];
+const avisos = [];
 const linea = (texto, i) => texto.slice(0, i).split('\n').length;
 for (const archivo of archivos) {
   const t = fs.readFileSync(archivo, 'utf8');
@@ -53,8 +72,23 @@ for (const archivo of archivos) {
       anotar(m.index + b.index, 'acción de fila con .icon-action: use <button appAccion="…">');
     }
   }
+  // 5. ✕ y chevrones dibujados a mano (paso 7).
+  const glifo = (i, msg) => (PENDIENTES.has(rel) ? avisos : fallos).push(`${rel}:${linea(t, i)}  ${msg}`);
+  for (const m of t.matchAll(/<svg\b(?![^>]*\bappIcono\b)[^>]*>([\s\S]*?)<\/svg>/g)) {
+    const trazos = [...m[1].matchAll(/<path\b[^>]*\bd="([^"]+)"/g)].map((p) => p[1].trim());
+    const otros = m[1].replace(/<path\b[^>]*\/>/g, '').trim();
+    if (trazos.length === 1 && !otros && GLIFOS_VIEJOS.has(trazos[0])) {
+      glifo(m.index, `glifo dibujado a mano: use <svg appIcono="${GLIFOS_VIEJOS.get(trazos[0])}">`);
+    }
+  }
+  for (const m of t.matchAll(/<button\b[^>]*\baria-label="Cerrar"[^>]*>[\s\S]*?<\/button>/g)) {
+    if (/<svg\b(?![^>]*\bappIcono\b)/.test(m[0])) glifo(m.index, 'la ✕ de «Cerrar» va dibujada a mano: use <svg appIcono="cerrar">');
+  }
 }
 
+if (avisos.length) {
+  console.warn(`! ${avisos.length} glifo(s) a mano en vistas pendientes (no hacen fallar todavía):\n  ` + avisos.join('\n  '));
+}
 if (fallos.length) {
   console.error(`✗ ${fallos.length} problema(s) en las acciones de fila:\n  ` + fallos.join('\n  '));
   process.exit(1);

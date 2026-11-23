@@ -619,31 +619,6 @@ export interface FiltroEncuestas {
 // M10 · Reportes avanzados (RPT-03/05/06)
 // ---------------------------------------------------------------------------
 
-/** RPT-03 · OS que lleva demasiado tiempo sin ejecutarse. */
-export interface OrdenVencida {
-  id: string;
-  codigo: string;
-  estado: EstadoOrden;
-  empresa_nombre?: string | null;
-  nit_nic?: string | null;
-  arl_id?: string | null;
-  arl_nombre?: string | null;
-  profesional_id?: string | null;
-  profesional_nombre?: string | null;
-  horas_asignadas?: string | number | null;
-  fecha_orden?: string | null;
-  fecha_vencimiento?: string | null;
-  fecha_referencia?: string | null;
-  dias_transcurridos: number;
-  dias_para_vencer?: number | null;
-}
-
-export interface ReporteVencidas {
-  umbral_dias: number;
-  resumen: { total: number; criticas: number; horas: string | number; max_dias: number | null };
-  ordenes: OrdenVencida[];
-}
-
 /** RPT-05 · Horas ejecutadas en un rango, agrupadas. */
 export interface ReporteHoras {
   desde: string;
@@ -653,6 +628,44 @@ export interface ReporteHoras {
   por_profesional: { profesional_id?: string | null; profesional_nombre: string; ordenes: number; horas: string | number; viaticos?: string | number }[];
   por_arl: { arl_nombre: string; ordenes: number; horas: string | number; viaticos?: string | number }[];
   por_mes: { mes: string; ordenes: number; horas: string | number }[];
+  /**
+   * 20-nov-2026 · Serie para Estadísticas → Horas, con la regla de grano de
+   * `/estadisticas` (por día hasta 62 días, por mes después). Opcional: un
+   * servidor anterior no la manda.
+   */
+  grano?: 'day' | 'month';
+  serie?: { inicio: string; horas: number; ordenes: number }[];
+}
+
+/** Etapa de lo finalizado en Estadísticas → Cobro (excluyentes, en este orden). */
+export type EtapaCobroOperacion = 'sin_visto_bueno' | 'por_facturar' | 'facturada';
+
+/**
+ * 20-nov-2026 · Estadísticas → Cobro (`GET /reports/cobro-operacion`). Base y
+ * monto son los de «Finalizadas sin visto bueno» del Inicio: OS FINALIZADA en la
+ * bandeja, y el TOTAL del modal de Cobro (honorarios + gastos). Es el estado de
+ * hoy: no depende del periodo.
+ */
+export interface ReporteCobroOperacion {
+  hoy: string;
+  /** Siempre las tres, en este orden, en 0 si no hay. */
+  etapas: { etapa: EtapaCobroOperacion; ordenes: number; monto: number }[];
+  /** Lo por facturar (sin visto bueno + con visto bueno sin facturar), por ARL. */
+  por_arl: { arl: string; ordenes: number; monto: number }[];
+  /** Solo con `?detalle=1` (el Excel de la pestaña). */
+  detalle?: {
+    codigo: string | null;
+    etapa: EtapaCobroOperacion;
+    cobro_numero_factura: string | null;
+    arl: string;
+    empresa_nombre: string | null;
+    nit_nic: string | null;
+    profesional_nombre: string | null;
+    horas_asignadas: number | null;
+    total: number;
+    fecha_ejecucion: string | null;
+    cobro_aprobado_en: string | null;
+  }[];
 }
 
 /**
@@ -2788,6 +2801,9 @@ export interface EstadoResultados {
  * 7-oct-2026 · Estadísticas del periodo (`GET /reports/estadisticas`): lo que
  * pintan las gráficas de la pantalla «Estadísticas». El periodo se mide sobre la
  * fecha en que la orden entró al sistema; el estado es el de hoy.
+ *
+ * 20-nov-2026 · Sin `kpis.vencidas` (la vencida es la del Inicio, `ResumenInicio`)
+ * ni `por_profesional` (las horas por persona son las EJECUTADAS de `/horas`).
  */
 export interface EstadisticasPeriodo {
   desde: string;
@@ -2796,14 +2812,13 @@ export interface EstadisticasPeriodo {
   grano: 'day' | 'month';
   kpis: {
     ordenes: number; horas: number; finalizadas: number; ejecutadas: number;
-    programadas: number; sin_programar: number; vencidas: number;
+    programadas: number; sin_programar: number;
     empresas: number; profesionales: number; valor: number;
     satisfaccion: { respuestas: number; promedio: number | null };
   };
   serie: { inicio: string; ordenes: number; horas: number; finalizadas: number }[];
   por_arl: { arl: string; ordenes: number; horas: number; finalizadas: number }[];
   por_estado: { estado: string; ordenes: number; horas: number }[];
-  por_profesional: { profesional: string; ordenes: number; horas: number; finalizadas: number }[];
   por_tipo: { tipo: string; ordenes: number; horas: number }[];
   por_ciudad: { ciudad: string; ordenes: number; horas: number }[];
 }

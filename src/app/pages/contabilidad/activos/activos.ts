@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, OnDestroy, OnInit, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { CeroVacioDirective } from '../../../shared/cero-vacio';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../../core/api.service';
 import { AlertService } from '../../../core/alert.service';
@@ -13,6 +14,7 @@ import { paginar } from '../../../shared/paginacion';
 import { OpcionBusqueda, SelectorBusquedaComponent } from '../../../shared/selector-busqueda/selector-busqueda';
 import { PaginadorComponent } from '../../../shared/paginador/paginador';
 import { AccionComponent } from '../../../shared/icono/accion';
+import { IconoComponent } from '../../../shared/icono/icono';
 
 const FORM_VACIO: ActivoFijoForm = {
   descripcion: '', serial: '', ubicacion: '', responsable: '', proveedor_id: '', fecha_compra: '', valor_compra: '',
@@ -62,7 +64,7 @@ const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', '
  */
 @Component({
   selector: 'app-activos',
-  imports: [FormsModule, PaginadorComponent, SelectorBusquedaComponent, AccionComponent],
+  imports: [FormsModule, CeroVacioDirective, PaginadorComponent, SelectorBusquedaComponent, AccionComponent, IconoComponent],
   templateUrl: './activos.html',
   styleUrl: './activos.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

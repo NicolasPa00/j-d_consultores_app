@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { isPlatformBrowser, NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { CeroVacioDirective } from '../../shared/cero-vacio';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { PESOS } from '../../core/dinero';
@@ -13,6 +14,7 @@ import {
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 import { AccionComponent } from '../../shared/icono/accion';
+import { IconoComponent } from '../../shared/icono/icono';
 import { OpcionBusqueda, SelectorBusquedaComponent } from '../../shared/selector-busqueda/selector-busqueda';
 import { CupoDocumentosComponent } from '../../shared/cupo-documentos/cupo-documentos';
 
@@ -65,7 +67,7 @@ type ListaNovedad = 'horas' | 'vacaciones' | 'licencias' | 'incapacidades' | 'ot
  */
 @Component({
   selector: 'app-nomina',
-  imports: [FormsModule, RouterLink, NgTemplateOutlet, PaginadorComponent, SelectorBusquedaComponent, CupoDocumentosComponent, AccionComponent],
+  imports: [FormsModule, CeroVacioDirective, RouterLink, NgTemplateOutlet, PaginadorComponent, SelectorBusquedaComponent, CupoDocumentosComponent, AccionComponent, IconoComponent],
   templateUrl: './nomina.html',
   styleUrl: './nomina.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

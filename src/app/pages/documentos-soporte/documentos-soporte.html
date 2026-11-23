@@ -319,7 +319,7 @@
         </p>
       </div>
       <button type="button" class="icon-action" (click)="cerrar()" aria-label="Cerrar" [disabled]="!!accion()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
 
@@ -512,7 +512,7 @@
         <p class="modal__sub">{{ d.estado === 'BORRADOR' ? 'Borrador' : numeroDe(d) }} · {{ d.tercero_nombre }}</p>
       </div>
       <button type="button" class="icon-action" (click)="cerrarPanel()" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
     <div class="modal__body">
@@ -567,7 +567,7 @@
         <p class="modal__sub">{{ numeroDe(d) }} · {{ d.tercero_nombre }}</p>
       </div>
       <button type="button" class="icon-action" (click)="cerrar()" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
     <div class="modal__body">
@@ -605,7 +605,7 @@
         <p class="modal__sub">Para lo que se le compra a quien no factura y no viene de una cuenta de cobro (p. ej. la contadora).</p>
       </div>
       <button type="button" class="icon-action" (click)="manualOpen.set(false)" aria-label="Cerrar" [disabled]="guardandoManual()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
     <div class="modal__body">
@@ -670,7 +670,7 @@
     <header class="modal__head">
       <h3 class="modal__title" id="dsImpTitulo">Cargar documentos soporte desde Excel</h3>
       <button type="button" class="icon-action" (click)="importOpen.set(false)" aria-label="Cerrar" [disabled]="importando()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
     <div class="modal__body">
@@ -719,14 +719,14 @@
 
 @if (pdfVisto(); as url) {
   <div class="modal-backdrop fac-visor-fondo" (click)="cerrarPdf()"></div>
-  <div class="modal modal--full fac-visor" role="dialog" aria-modal="true" aria-labelledby="dsVisorTitulo">
+  <div class="modal modal--full modal--sobre fac-visor" role="dialog" aria-modal="true" aria-labelledby="dsVisorTitulo">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="dsVisorTitulo">{{ pdfTitulo() }}</h3>
         <p class="modal__sub">Vista previa · el archivo no se descarga</p>
       </div>
       <button type="button" class="icon-action" (click)="cerrarPdf()" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
     <div class="modal__body fac-visor__cuerpo">

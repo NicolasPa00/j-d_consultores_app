@@ -67,7 +67,7 @@
       <div class="modal__head-actions">
         <span class="pill" [class]="c.estado === 'ANULADO' ? 'pill--muted' : 'pill--success'">{{ c.estado === 'ANULADO' ? 'Anulada' : 'Contabilizada' }}</span>
         <button type="button" class="icon-action" (click)="detalle.set(null)" [disabled]="trabajando()" aria-label="Cerrar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          <svg appIcono="cerrar"></svg>
         </button>
       </div>
     </header>
@@ -118,7 +118,7 @@
     <header class="modal__head">
       <h3 class="modal__title" id="cpFormTitle">Registrar compra o gasto</h3>
       <button type="button" class="icon-action" (click)="cerrarForm()" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
     <div class="modal__body">
@@ -171,53 +171,61 @@
         }
       </div>
 
-      <div class="table-wrap cp-items-wrap">
-        <table class="table cp-items">
-          <thead><tr><th>Cuenta de gasto o costo</th><th>Centro de costo</th><th>Detalle</th><th class="col-num">Valor (sin IVA)</th><th>IVA</th><th></th></tr></thead>
-          <tbody>
-            @for (it of items(); track $index; let i = $index) {
-              <tr>
-                <td>
-                  <!-- 7-oct-2026 · Selector con búsqueda: el plan tiene cientos de cuentas
-                       y en un desplegable normal había que recorrerlas todas. Se
-                       escribe el código o el nombre y la lista se filtra. -->
-                  <app-selector-busqueda
-                    [opciones]="opcionesCuenta()"
-                    [valor]="it.cuenta_id"
-                    (valorChange)="cambiarItem(i, 'cuenta_id', $event)"
-                    placeholder="Código o nombre de la cuenta…"
-                  />
-                </td>
-                <td>
-                  <!-- 24-oct-2026 · Aparte de la cuenta: el centro de costo (p. ej. la ARL a la que se carga el gasto). -->
-                  <app-selector-busqueda
-                    [opciones]="opcionesCentro()"
-                    [valor]="it.centro_costo_id"
-                    (valorChange)="cambiarItem(i, 'centro_costo_id', $event)"
-                    textoVacio="Sin centro de costo"
-                    placeholder="Código o nombre…"
-                  />
-                  <button type="button" class="link-btn cp-nuevo-centro" (click)="abrirNuevoCentro(i)">+ Crear centro de costo</button>
-                </td>
-                <td><input type="text" class="form-control" [ngModel]="it.descripcion" (ngModelChange)="cambiarItem(i, 'descripcion', $event)" [attr.aria-label]="'Detalle del ítem ' + (i + 1)" /></td>
-                <td><input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="it.valor" (ngModelChange)="cambiarItem(i, 'valor', $event)" [attr.aria-label]="'Valor del ítem ' + (i + 1)" /></td>
-                <td>
-                  <select class="form-control" [ngModel]="it.iva_pct" (ngModelChange)="cambiarItem(i, 'iva_pct', $event)" [attr.aria-label]="'IVA del ítem ' + (i + 1)">
-                    <option value="0">Sin IVA</option><option value="5">5 %</option><option value="19">19 %</option>
-                  </select>
-                </td>
-                <td>
-                  <button type="button" appAccion="quitar" (click)="quitarItem(i)" [disabled]="items().length <= 1" [etiqueta]="'Quitar el ítem ' + (i + 1)"></button>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+      <!-- 22-nov-2026 · Ítems en rejilla, con el patrón de la factura manual (`fac-man-linea`):
+           en escritorio, cabecera y una fila por ítem; en el celular cada ítem se apila
+           como tarjeta con su rótulo y el quitar a la vista. -->
+      <div class="cp-lineas">
+        <div class="cp-linea cp-linea--cab" aria-hidden="true">
+          <span>Cuenta de gasto o costo</span><span>Centro de costo</span><span>Detalle</span><span class="col-num">Valor (sin IVA)</span><span>IVA</span><span></span>
+        </div>
+        @for (it of items(); track $index; let i = $index) {
+          <div class="cp-linea">
+            <div class="cp-linea__campo cp-linea__ancho">
+              <span class="cp-linea__rotulo">Cuenta de gasto o costo</span>
+              <!-- 7-oct-2026 · Selector con búsqueda: el plan tiene cientos de cuentas
+                   y en un desplegable normal había que recorrerlas todas. Se
+                   escribe el código o el nombre y la lista se filtra. -->
+              <app-selector-busqueda
+                [opciones]="opcionesCuenta()"
+                [valor]="it.cuenta_id"
+                (valorChange)="cambiarItem(i, 'cuenta_id', $event)"
+                placeholder="Código o nombre…"
+              />
+            </div>
+            <div class="cp-linea__campo cp-linea__ancho">
+              <span class="cp-linea__rotulo">Centro de costo</span>
+              <!-- 24-oct-2026 · Aparte de la cuenta: el centro de costo (p. ej. la ARL a la que se carga el gasto). -->
+              <app-selector-busqueda
+                [opciones]="opcionesCentro()"
+                [valor]="it.centro_costo_id"
+                (valorChange)="cambiarItem(i, 'centro_costo_id', $event)"
+                textoVacio="Sin centro de costo"
+                placeholder="Código o nombre…"
+              />
+              <button type="button" class="link-btn cp-nuevo-centro" (click)="abrirNuevoCentro(i)">+ Crear centro de costo</button>
+            </div>
+            <div class="cp-linea__campo cp-linea__ancho">
+              <span class="cp-linea__rotulo">Detalle</span>
+              <input type="text" class="form-control" [ngModel]="it.descripcion" (ngModelChange)="cambiarItem(i, 'descripcion', $event)" [attr.aria-label]="'Detalle del ítem ' + (i + 1)" />
+            </div>
+            <div class="cp-linea__campo">
+              <span class="cp-linea__rotulo">Valor (sin IVA)</span>
+              <input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="it.valor" (ngModelChange)="cambiarItem(i, 'valor', $event)" [attr.aria-label]="'Valor del ítem ' + (i + 1)" />
+            </div>
+            <div class="cp-linea__campo">
+              <span class="cp-linea__rotulo">IVA</span>
+              <select class="form-control" [ngModel]="it.iva_pct" (ngModelChange)="cambiarItem(i, 'iva_pct', $event)" [attr.aria-label]="'IVA del ítem ' + (i + 1)">
+                <option value="0">Sin IVA</option><option value="5">5 %</option><option value="19">19 %</option>
+              </select>
+            </div>
+            <button type="button" appAccion="quitar" (click)="quitarItem(i)" [disabled]="items().length <= 1" [etiqueta]="'Quitar el ítem ' + (i + 1)"></button>
+          </div>
+        }
       </div>
       <div class="cp-acciones">
-        <button type="button" class="btn btn--ghost btn--sm" (click)="agregarItem()">+ Agregar ítem</button>
+        <button type="button" class="btn btn--ghost btn--sm" (click)="agregarItem()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg> Agregar ítem</button>
         <button type="button" class="btn btn--ghost btn--sm" (click)="agregarRetencion()" [disabled]="!retencionesCompra().length"
-                [title]="retencionesCompra().length ? '' : 'No hay retenciones de compra en Parametrización'">+ Retención que JD&amp;D le practica</button>
+                [title]="retencionesCompra().length ? '' : 'No hay retenciones de compra en Parametrización'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg> Retención que JD&amp;D le practica</button>
       </div>
 
       @for (r of retenciones(); track $index; let i = $index) {
@@ -252,7 +260,12 @@
   @if (nuevoCentroOpen()) {
     <div class="modal-backdrop modal-backdrop--sobre" (click)="creandoCentro() ? null : nuevoCentroOpen.set(false)"></div>
     <div class="modal modal--sobre" role="dialog" aria-modal="true" aria-labelledby="cpCcTitle">
-      <header class="modal__head"><h3 class="modal__title" id="cpCcTitle">Nuevo centro de costo</h3></header>
+      <header class="modal__head">
+        <h3 class="modal__title" id="cpCcTitle">Nuevo centro de costo</h3>
+        <button type="button" class="icon-action" (click)="nuevoCentroOpen.set(false)" [disabled]="creandoCentro()" aria-label="Cerrar">
+          <svg appIcono="cerrar"></svg>
+        </button>
+      </header>
       <div class="modal__body">
         <div class="form-field">
           <label class="form-field__label" for="cpCcCodigo">Código *</label>
@@ -276,7 +289,12 @@
 @if (importOpen()) {
   <div class="modal-backdrop" (click)="importando() ? null : importOpen.set(false)"></div>
   <div class="modal modal--xl" role="dialog" aria-modal="true" aria-labelledby="cpImpTitle">
-    <header class="modal__head"><h3 class="modal__title" id="cpImpTitle">Importar compras desde Excel</h3></header>
+    <header class="modal__head">
+      <h3 class="modal__title" id="cpImpTitle">Importar compras desde Excel</h3>
+      <button type="button" class="icon-action" (click)="importOpen.set(false)" [disabled]="importando()" aria-label="Cerrar">
+        <svg appIcono="cerrar"></svg>
+      </button>
+    </header>
     <div class="modal__body">
       <p class="cp-sub cp-texto">
         Una fila por ítem; las filas con el mismo proveedor y el mismo número de factura forman una sola compra. Primero se

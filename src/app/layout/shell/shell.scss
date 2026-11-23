@@ -29,14 +29,56 @@
   color: var(--texto-noche);
 }
 
+/* Cabeza: marca a la izquierda y el botón de contraer a la derecha (22-nov-2026).
+   Contraída (72 px) no caben juntos: el botón baja bajo el isotipo. */
+.sidebar__cabeza {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
 .sidebar__brand {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 10px;
   height: 40px;
-  padding: 0 10px;
-  margin-bottom: 14px;
+  padding: 0 0 0 10px;
+}
+
+.sidebar__contraer {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--icono-noche);
+  cursor: pointer;
+  transition: background-color var(--t-media) ease, color var(--t-media) ease;
+}
+
+.sidebar__contraer svg {
+  width: 18px;
+  height: 18px;
+}
+
+.sidebar__contraer:focus-visible {
+  outline: 2px solid var(--cian);
+  outline-offset: -2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sidebar__contraer:hover {
+    background: rgb(255 255 255 / 8%);
+    color: #ffffff;
+  }
 }
 
 .sidebar__isotipo {
@@ -211,7 +253,7 @@
   text-overflow: ellipsis;
 }
 
-/* Pie: divisor tenue sobre noche, Configuración, Cerrar sesión y Contraer. */
+/* Pie: divisor tenue sobre noche, solo Configuración y Cerrar sesión. */
 .sidebar__footer {
   flex-shrink: 0;
   display: flex;
@@ -222,21 +264,12 @@
   border-top: 1px solid rgb(255 255 255 / 9%);
 }
 
-.nav-link--contraer {
-  color: var(--texto-noche-2);
-  font-size: var(--fs-celda);
-}
-
-.nav-link--contraer .nav-link__icon {
-  width: 16px;
-  height: 16px;
-  margin: 0 1px;
-}
-
-/* Pantallas bajas (portátil de 768 px con la barra del navegador): menos aire
-   entre grupos para que Finanzas quepa entera sin desplazarse. */
-@media (max-height: 760px) {
-  .sidebar__brand {
+/* Pantallas bajas: menos aire entre grupos y ítems de 34 px, para que Finanzas
+   (con su Inicio desde el 20-nov) quepa entera sin desplazarse. El corte era
+   760 px y dejaba fuera la ventana de 1366 × 768: ahí «Estadísticas» quedaba
+   bajo el desvanecido, medio cortada sobre el pie. */
+@media (max-height: 800px) {
+  .sidebar__cabeza {
     margin-bottom: 8px;
   }
 
@@ -257,7 +290,7 @@
     padding-top: 10px;
   }
 
-  .sidebar__brand {
+  .sidebar__cabeza {
     margin-bottom: 4px;
   }
 
@@ -289,6 +322,16 @@
 .sidebar--colapsado .sidebar__brand {
   justify-content: center;
   padding: 0;
+}
+
+.sidebar--colapsado .sidebar__cabeza {
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar--colapsado .sidebar__contraer {
+  width: 36px;
+  height: 36px;
 }
 
 .sidebar--colapsado .sidebar__wordmark {
@@ -617,17 +660,30 @@
   }
 
   .content {
-    padding: 20px 16px calc(80px + env(safe-area-inset-bottom));
+    /* 23-nov-2026 · El relleno de arriba es el token, también aquí: lo que se pega al
+       borde de .content (cabecera de pagador en Facturación) lo resta con `top` negativo
+       y con 28 fijo quedaba 8 px cortado entre 641 y 820 px. */
+    --contenido-arriba: 20px;
+    padding: var(--contenido-arriba) 16px calc(80px + env(safe-area-inset-bottom));
   }
 
-  /* Barra inferior: cuatro módulos fijos + «Más». El activo va en acción 600
-     con una marca cian-trazo de 3 px arriba (DESIGN §7, Navegación móvil). */
+  /* Barra inferior: hasta cuatro módulos fijos + «Más». El activo va en acción 600
+     con una marca cian-trazo de 3 px arriba (DESIGN §7, Navegación móvil).
+     z-index 55: queda POR ENCIMA del velo (40) de la hoja «Más», así que con la
+     hoja abierta la barra se ve y «Más» la vuelve a cerrar (antes la hoja tapaba la
+     barra y en el sitio de «Más» quedaba «Cerrar sesión»). SOLO con la hoja
+     abierta (`--hoja`): en reposo va en 30, DEBAJO de los modales (50/51), o
+     taparía su pie con Guardar/Cancelar (veto del juez, ronda 2). */
   .bottom-nav {
     position: fixed;
     inset: auto 0 0 0;
     z-index: 30;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    /* Tantas columnas como módulos (`--fijos`, desde la plantilla) + «Más», que va
+       siempre en la última: un rol con dos módulos no deja un hueco a la derecha.
+       «Más» lleva un rótulo de 3 letras y cede ancho (0,8) para que
+       «Profesionales» y «Facturación» quepan enteros a 360 px. */
+    grid-template-columns: repeat(var(--fijos, 4), minmax(0, 1fr)) minmax(0, 0.8fr);
     height: calc(64px + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom);
     background: var(--superficie);
@@ -642,12 +698,12 @@
     justify-content: center;
     gap: 3px;
     min-width: 0;
-    padding: 6px 2px;
+    padding: 6px 0;
     border: 0;
     background: transparent;
     color: var(--tinta-3);
     font: inherit;
-    /* 11 px: «Profesionales» cabe entero en un quinto de 390 px. */
+    /* 11 px: «Profesionales» cabe entero, también en 600 (activo), desde 360 px. */
     font-size: 11px;
     font-weight: 500;
     text-decoration: none;
@@ -693,6 +749,16 @@
     background: var(--cian-trazo);
   }
 
+  /* Con la hoja abierta, la marca cian es solo de «Más»: el módulo de la pantalla
+     de debajo conserva su color, pero no compite con dos marcas a la vez. */
+  .bottom-nav--hoja {
+    z-index: 55;
+  }
+
+  .bottom-nav--hoja .bottom-nav__item--activo:not(.bottom-nav__item--mas)::before {
+    content: none;
+  }
+
   .bottom-nav__item:active .bottom-nav__icono {
     transform: scale(0.94);
   }
@@ -707,42 +773,83 @@
     animation: hoja-velo var(--t-media) ease;
   }
 
+  /* La hoja se apoya sobre la barra inferior (64 px + safe-area), no la tapa, y
+     sube por debajo de ella (z 50 < 55). Llega hasta 4 px bajo la barra superior
+     (56 px); si no cabe (Finanzas completo a menos de ~700 px de alto), se
+     desplaza solo la hoja. */
   .hoja-mas {
     display: block;
     position: fixed;
-    inset: auto 0 0 0;
+    inset: auto 0 calc(64px + env(safe-area-inset-bottom)) 0;
     z-index: 50;
-    max-height: 80vh;
-    max-height: 80dvh;
+    max-height: calc(100vh - 124px - env(safe-area-inset-bottom));
+    max-height: calc(100dvh - 124px - env(safe-area-inset-bottom));
+    overscroll-behavior: contain;
     overflow-y: auto;
-    padding: 10px 16px calc(16px + env(safe-area-inset-bottom));
+    padding: 6px 16px 10px;
     background: var(--superficie);
     border-radius: var(--r-modal) var(--r-modal) 0 0;
     box-shadow: var(--sombra-modal);
     animation: hoja-sube 200ms var(--ease-out);
   }
 
-  .hoja-mas__asa {
-    display: block;
-    width: 36px;
-    height: 4px;
-    margin: 0 auto 14px;
+  /* Cabeza: el sistema (16/600 tinta) y un ✕ de 44 px, la forma visible de cerrar.
+     Sin asa: invitaba a arrastrar y no hacía nada. Los grupos van debajo en 12/500
+     tinta-3, como en la barra lateral: dos niveles que no se confunden. */
+  .hoja-mas__cabeza {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-right: -8px;
+  }
+
+  .hoja-mas__cerrar {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
     border-radius: var(--r-completo);
-    background: var(--borde-control);
+    background: transparent;
+    color: var(--tinta-2);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .hoja-mas__cerrar:active {
+    background: var(--hundida);
   }
 
   .hoja-mas__titulo {
-    margin: 0 4px 8px;
-    font-size: var(--fs-meta);
+    margin: 0 12px;
+    font-size: var(--fs-tarjeta);
     font-weight: 600;
-    color: var(--tinta-3);
+    line-height: 1.3;
+    color: var(--tinta);
   }
 
   /* Lista de una columna a 44 px: el nombre completo del módulo, sin truncar. */
-  .hoja-mas__grid {
+  .hoja-mas__seccion {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 2px;
+  }
+
+  .hoja-mas__grupo {
+    margin: 0;
+    padding: 10px 12px 4px;
+    font-size: var(--fs-meta);
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--tinta-3);
   }
 
   .hoja-mas__item {
@@ -783,34 +890,60 @@
     color: var(--accion);
   }
 
+  /* Pie en UNA fila (Cerrar sesión · Cambiar de sistema · Configuración), ícono
+     arriba y rótulo abajo: ocupa una altura de toque en vez de tres, y así la hoja
+     de Finanzas completa cabe a 360×740 apoyada sobre la barra. */
   .hoja-mas__pie {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-top: 10px;
-    padding-top: 10px;
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 4px;
+    margin-top: 8px;
+    padding-top: 8px;
     border-top: 1px solid var(--borde);
+  }
+
+  /* Un rol con todos sus módulos en la barra no tiene cuerpo: el pie va sin raya. */
+  .hoja-mas__cabeza + .hoja-mas__pie {
+    margin-top: 4px;
+    border-top: 0;
   }
 
   .hoja-mas__accion {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 12px;
-    min-height: 44px;
-    padding: 0 12px;
+    justify-content: center;
+    gap: 4px;
+    min-height: 56px;
+    padding: 6px 4px;
     border: 0;
     border-radius: var(--r-item);
     background: transparent;
     color: var(--tinta);
     font: inherit;
-    font-size: var(--fs-base);
-    text-align: left;
+    font-size: var(--fs-meta);
+    font-weight: 500;
+    line-height: 1.25;
+    text-align: center;
+    text-decoration: none;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
 
     svg {
       width: 20px;
       height: 20px;
       color: var(--tinta-3);
+    }
+  }
+
+  .hoja-mas__accion--activo {
+    color: var(--accion);
+    font-weight: 600;
+    background: var(--accion-tenue);
+
+    .hoja-mas__icono {
+      color: var(--accion);
     }
   }
 
@@ -836,6 +969,14 @@
 @media (max-width: 360px) {
   .navbar__sistemas > button {
     padding: 0 8px;
+  }
+}
+
+/* 320 px (iPhone SE de 1.ª generación): a 11 px «Profesionales» mide 73 px en una
+   columna de 67 y se cortaba. A 10 px cabe, también en 600. */
+@media (max-width: 340px) {
+  .bottom-nav__item {
+    font-size: 10px;
   }
 }
 

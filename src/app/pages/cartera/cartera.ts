@@ -2,9 +2,10 @@ import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnIni
 import { isPlatformBrowser } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { CeroVacioDirective } from '../../shared/cero-vacio';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../core/api.service';
-import { PESOS } from '../../core/dinero';
+import { PESOS, cifraEditable } from '../../core/dinero';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
@@ -18,6 +19,7 @@ import { aCentavos } from '../contabilidad/comprobantes/comprobantes';
 import { PagosComponent } from './pagos/pagos';
 import { FechaDmyPipe } from '../../shared/fecha-dmy.pipe';
 import { AccionComponent } from '../../shared/icono/accion';
+import { IconoComponent } from '../../shared/icono/icono';
 
 /** B4-01 añade lo que JD&D debe a sus proveedores (por pagar) y cómo les paga. */
 type Pestana = 'por-cobrar' | 'recibos' | 'por-pagar' | 'egresos';
@@ -63,7 +65,7 @@ function hoyLocal(): string {
  */
 @Component({
   selector: 'app-cartera',
-  imports: [FormsModule, PaginadorComponent, PagosComponent, FechaDmyPipe, AccionComponent],
+  imports: [FormsModule, CeroVacioDirective, PaginadorComponent, PagosComponent, FechaDmyPipe, AccionComponent, IconoComponent],
   templateUrl: './cartera.html',
   styleUrl: './cartera.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -342,12 +344,12 @@ export class CarteraComponent implements OnInit {
             id: f.id, numero: f.numero, vencimiento: f.vencimiento, saldo: f.saldo, marcada: false,
             pagado: '', retencion_ids: f.reteica_id ? [f.reteica_id] : [], base, iva: Math.max(saldo - base, 0),
           };
-          fila.pagado = ((saldo - this.retenidoDe(fila)) / 100).toFixed(2);
+          fila.pagado = cifraEditable((saldo - this.retenidoDe(fila)) / 100);
           const a = actual.get(f.id);
           if (a) {
             fila.marcada = true;
             fila.retencion_ids = [...a.retencion_ids];
-            fila.pagado = Number(a.valor_pagado).toFixed(2);
+            fila.pagado = cifraEditable(a.valor_pagado);
           }
           return fila;
         }));
@@ -370,7 +372,7 @@ export class CarteraComponent implements OnInit {
       if (j !== i) return f;
       const ids = f.retencion_ids.includes(id) ? f.retencion_ids.filter((x) => x !== id) : [...f.retencion_ids, id];
       const nueva = { ...f, retencion_ids: ids };
-      nueva.pagado = (((aCentavos(f.saldo) ?? 0) - this.retenidoDe(nueva)) / 100).toFixed(2);
+      nueva.pagado = cifraEditable(((aCentavos(f.saldo) ?? 0) - this.retenidoDe(nueva)) / 100);
       return nueva;
     }));
   }

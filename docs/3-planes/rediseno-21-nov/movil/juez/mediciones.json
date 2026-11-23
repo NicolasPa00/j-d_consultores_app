@@ -1,0 +1,900 @@
+{
+ "operacion-admin-390": {
+  "url": "http://localhost:4001/dashboard",
+  "sistema": "Operación Finanzas",
+  "barra": [
+   "Inicio [0..81 w81 h63] txt29/29 ACTIVO",
+   "Importar [81..163 w81 h63] txt45/45",
+   "Órdenes [163..244 w81 h63] txt45/45",
+   "Profesionales [244..325 w81 h63] txt71/71",
+   "Más [325..390 w65 h63] txt22/22"
+  ],
+  "contenidoPadBottom": "80px",
+  "hoja": {
+   "top": 461,
+   "alto": 383,
+   "scroll": false,
+   "navbarBottom": 56,
+   "foco": "Cuentas de cobro",
+   "items": [
+    "## Cobro y clientes",
+    "Cuentas de cobro h44",
+    "Empresas h44",
+    "Estadísticas h44",
+    "Configuración h44",
+    "Cambiar de sistema h44",
+    "Cerrar sesión h44"
+   ]
+  },
+  "scrollDetras": [
+   "HTML. sh844/ch844 ovvisible",
+   "DIV.main sh844/ch844 ovvisible",
+   "MAIN.content sh1749/ch788 ovauto"
+  ],
+  "tab": [
+   "IN:Empresas",
+   "IN:Estadísticas",
+   "IN:Configuración",
+   "IN:Cambiar de sistema",
+   "IN:Cerrar sesión",
+   "OUT:(()=>{function p(t,n,r,o,e,i",
+   "OUT:Saltar al contenido",
+   "OUT:Operación",
+   "OUT:Finanzas",
+   "OUT:Centro de ayuda",
+   "OUT:43 notificaciones sin leer",
+   "OUT:Administrador Maestro JD&D, ",
+   "OUT:Programar la más antigua →",
+   "OUT:Accesos directos"
+  ],
+  "trasEscape": {
+   "abierta": false,
+   "foco": "Más módulos y opciones"
+  },
+  "trasNavegarDesdeMas": {
+   "url": "/precuentas",
+   "abierta": false,
+   "masActivo": true,
+   "foco": "BODY."
+  },
+  "trasAtrasConHoja": {
+   "url": "/dashboard",
+   "abierta": true
+  }
+ },
+ "operacion-admin-360": {
+  "url": "http://localhost:4001/dashboard",
+  "sistema": "Operación Finanzas",
+  "barra": [
+   "Inicio [0..75 w75 h63] txt29/29 ACTIVO",
+   "Importar [75..150 w75 h63] txt45/45",
+   "Órdenes [150..225 w75 h63] txt45/45",
+   "Profesionales [225..300 w75 h63] txt71/71",
+   "Más [300..360 w60 h63] txt22/22"
+  ],
+  "contenidoPadBottom": "80px",
+  "hoja": {
+   "top": 357,
+   "alto": 383,
+   "scroll": false,
+   "navbarBottom": 56,
+   "foco": "Cuentas de cobro",
+   "items": [
+    "## Cobro y clientes",
+    "Cuentas de cobro h44",
+    "Empresas h44",
+    "Estadísticas h44",
+    "Configuración h44",
+    "Cambiar de sistema h44",
+    "Cerrar sesión h44"
+   ]
+  },
+  "scrollDetras": [
+   "HTML. sh740/ch740 ovvisible",
+   "DIV.main sh740/ch740 ovvisible",
+   "MAIN.content sh1793/ch684 ovauto"
+  ],
+  "tab": [
+   "IN:Empresas",
+   "IN:Estadísticas",
+   "IN:Configuración",
+   "IN:Cambiar de sistema",
+   "IN:Cerrar sesión",
+   "OUT:(()=>{function p(t,n,r,o,e,i",
+   "OUT:Saltar al contenido",
+   "OUT:Operación",
+   "OUT:Finanzas",
+   "OUT:Centro de ayuda",
+   "OUT:43 notificaciones sin leer",
+   "OUT:Administrador Maestro JD&D, ",
+   "OUT:Programar la más antigua →",
+   "OUT:Accesos directos"
+  ],
+  "trasEscape": {
+   "abierta": false,
+   "foco": "Más módulos y opciones"
+  },
+  "trasNavegarDesdeMas": {
+   "url": "/precuentas",
+   "abierta": false,
+   "masActivo": true,
+   "foco": "BODY."
+  },
+  "trasAtrasConHoja": {
+   "url": "/dashboard",
+   "abierta": true
+  }
+ },
+ "finanzas-admin-390": {
+  "url": "http://localhost:4001/dashboard",
+  "sistema": "Operación Finanzas",
+  "barra": [
+   "Inicio [0..81 w81 h63] txt29/29 ACTIVO",
+   "Facturación [81..163 w81 h63] txt62/62",
+   "Cartera [163..244 w81 h63] txt39/39",
+   "Compras [244..325 w81 h63] txt48/48",
+   "Más [325..390 w65 h63] txt22/22"
+  ],
+  "contenidoPadBottom": "80px",
+  "hoja": {
+   "top": 171,
+   "alto": 673,
+   "scroll": false,
+   "navbarBottom": 56,
+   "foco": "Pago a profesionales",
+   "items": [
+    "## Documentos",
+    "Pago a profesionales h44",
+    "Nómina h44",
+    "## Contabilidad",
+    "Contabilidad h44",
+    "Informes contables h44",
+    "Terceros h44",
+    "Parametrización h44",
+    "## Compartido con Operación",
+    "Cuentas de cobro h44",
+    "Estadísticas h44",
+    "Configuración h44",
+    "Cambiar de sistema h44",
+    "Cerrar sesión h44"
+   ]
+  },
+  "scrollDetras": [
+   "HTML. sh844/ch844 ovvisible",
+   "DIV.main sh844/ch844 ovvisible",
+   "MAIN.content sh1345/ch788 ovauto"
+  ],
+  "tab": [
+   "IN:Nómina",
+   "IN:Contabilidad",
+   "IN:Informes contables",
+   "IN:Terceros",
+   "IN:Parametrización",
+   "IN:Cuentas de cobro",
+   "IN:Estadísticas",
+   "IN:Configuración",
+   "IN:Cambiar de sistema",
+   "IN:Cerrar sesión",
+   "OUT:(()=>{function p(t,n,r,o,e,i",
+   "OUT:Saltar al contenido",
+   "OUT:Operación",
+   "OUT:Finanzas"
+  ],
+  "trasEscape": {
+   "abierta": false,
+   "foco": "Más módulos y opciones"
+  },
+  "trasNavegarDesdeMas": {
+   "url": "/documentos-soporte",
+   "abierta": false,
+   "masActivo": true,
+   "foco": "BODY."
+  },
+  "trasAtrasConHoja": {
+   "url": "/dashboard",
+   "abierta": true
+  }
+ },
+ "finanzas-admin-360": {
+  "url": "http://localhost:4001/dashboard",
+  "sistema": "Operación Finanzas",
+  "barra": [
+   "Inicio [0..75 w75 h63] txt29/29 ACTIVO",
+   "Facturación [75..150 w75 h63] txt62/62",
+   "Cartera [150..225 w75 h63] txt39/39",
+   "Compras [225..300 w75 h63] txt48/48",
+   "Más [300..360 w60 h63] txt22/22"
+  ],
+  "contenidoPadBottom": "80px",
+  "hoja": {
+   "top": 67,
+   "alto": 673,
+   "scroll": false,
+   "navbarBottom": 56,
+   "foco": "Pago a profesionales",
+   "items": [
+    "## Documentos",
+    "Pago a profesionales h44",
+    "Nómina h44",
+    "## Contabilidad",
+    "Contabilidad h44",
+    "Informes contables h44",
+    "Terceros h44",
+    "Parametrización h44",
+    "## Compartido con Operación",
+    "Cuentas de cobro h44",
+    "Estadísticas h44",
+    "Configuración h44",
+    "Cambiar de sistema h44",
+    "Cerrar sesión h44"
+   ]
+  },
+  "scrollDetras": [
+   "HTML. sh740/ch740 ovvisible",
+   "DIV.main sh740/ch740 ovvisible",
+   "MAIN.content sh1405/ch684 ovauto"
+  ],
+  "tab": [
+   "IN:Nómina",
+   "IN:Contabilidad",
+   "IN:Informes contables",
+   "IN:Terceros",
+   "IN:Parametrización",
+   "IN:Cuentas de cobro",
+   "IN:Estadísticas",
+   "IN:Configuración",
+   "IN:Cambiar de sistema",
+   "IN:Cerrar sesión",
+   "OUT:(()=>{function p(t,n,r,o,e,i",
+   "OUT:Saltar al contenido",
+   "OUT:Operación",
+   "OUT:Finanzas"
+  ],
+  "trasEscape": {
+   "abierta": false,
+   "foco": "Más módulos y opciones"
+  },
+  "trasNavegarDesdeMas": {
+   "url": "/documentos-soporte",
+   "abierta": false,
+   "masActivo": true,
+   "foco": "BODY."
+  },
+  "trasAtrasConHoja": {
+   "url": "/dashboard",
+   "abierta": true
+  }
+ },
+ "operacion-coordinadora-390": {
+  "url": "http://localhost:4001/dashboard",
+  "barra": [
+   "Inicio [0..81 w81 h63] txt29/29 ACTIVO",
+   "Importar [81..163 w81 h63] txt45/45",
+   "Órdenes [163..244 w81 h63] txt45/45",
+   "Profesionales [244..325 w81 h63] txt71/71",
+   "Más [325..390 w65 h63] txt22/22"
+  ],
+  "contenidoPadBottom": "80px",
+  "hoja": {
+   "top": 507,
+   "alto": 337,
+   "scroll": false,
+   "navbarBottom": 56,
+   "foco": "Cuentas de cobro",
+   "items": [
+    "## Cobro y clientes",
+    "Cuentas de cobro h44",
+    "Empresas h44",
+    "Estadísticas h44",
+    "Configuración h44",
+    "Cerrar sesión h44"
+   ]
+  },
+  "scrollDetras": [
+   "HTML. sh844/ch844 ovvisible",
+   "DIV.main sh844/ch844 ovvisible",
+   "MAIN.content sh1682/ch788 ovauto"
+  ],
+  "tab": [
+   "IN:Empresas",
+   "IN:Estadísticas",
+   "IN:Configuración",
+   "IN:Cerrar sesión",
+   "OUT:(()=>{function p(t,n,r,o,e,i",
+   "OUT:Saltar al contenido",
+   "OUT:Centro de ayuda",
+   "OUT:43 notificaciones sin leer",
+   "OUT:Administrador Maestro JD&D, ",
+   "OUT:Programar la más antigua →",
+   "OUT:Accesos directos",
+   "OUT:42Programar y revisar órdene",
+   "OUT:Profesionales",
+   "OUT:Cuentas de cobro"
+  ],
+  "trasEscape": {
+   "abierta": false,
+   "foco": "Más módulos y opciones"
+  },
+  "trasNavegarDesdeMas": {
+   "url": "/precuentas",
+   "abierta": false,
+   "masActivo": true,
+   "foco": "BODY."
+  },
+  "trasAtrasConHoja": {
+   "url": "/dashboard",
+   "abierta": true
+  }
+ },
+ "operacion-coordinadora-360": {
+  "url": "http://localhost:4001/dashboard",
+  "barra": [
+   "Inicio [0..75 w75 h63] txt29/29 ACTIVO",
+   "Importar [75..150 w75 h63] txt45/45",
+   "Órdenes [150..225 w75 h63] txt45/45",
+   "Profesionales [225..300 w75 h63] txt71/71",
+   "Más [300..360 w60 h63] txt22/22"
+  ],
+  "contenidoPadBottom": "80px",
+  "hoja": {
+   "top": 403,
+   "alto": 337,
+   "scroll": false,
+   "navbarBottom": 56,
+   "foco": "Cuentas de cobro",
+   "items": [
+    "## Cobro y clientes",
+    "Cuentas de cobro h44",
+    "Empresas h44",
+    "Estadísticas h44",
+    "Configuración h44",
+    "Cerrar sesión h44"
+   ]
+  },
+  "scrollDetras": [
+   "HTML. sh740/ch740 ovvisible",
+   "DIV.main sh740/ch740 ovvisible",
+   "MAIN.content sh1727/ch684 ovauto"
+  ],
+  "tab": [
+   "IN:Empresas",
+   "IN:Estadísticas",
+   "IN:Configuración",
+   "IN:Cerrar sesión",
+   "OUT:(()=>{function p(t,n,r,o,e,i",
+   "OUT:Saltar al contenido",
+   "OUT:Centro de ayuda",
+   "OUT:43 notificaciones sin leer",
+   "OUT:Administrador Maestro JD&D, ",
+   "OUT:Programar la más antigua →",
+   "OUT:Accesos directos",
+   "OUT:42Programar y revisar órdene",
+   "OUT:Profesionales",
+   "OUT:Cuentas de cobro"
+  ],
+  "trasEscape": {
+   "abierta": false,
+   "foco": "Más módulos y opciones"
+  },
+  "trasNavegarDesdeMas": {
+   "url": "/precuentas",
+   "abierta": false,
+   "masActivo": true,
+   "foco": "BODY."
+  },
+  "trasAtrasConHoja": {
+   "url": "/dashboard",
+   "abierta": true
+  }
+ },
+ "finanzas-contador-390": {
+  "url": "http://localhost:4001/dashboard",
+  "barra": [
+   "Inicio [0..81 w81 h63] txt29/29 ACTIVO",
+   "Facturación [81..163 w81 h63] txt62/62",
+   "Cartera [163..244 w81 h63] txt39/39",
+   "Compras [244..325 w81 h63] txt48/48",
+   "Más [325..390 w65 h63] txt22/22"
+  ],
+  "contenidoPadBottom": "80px",
+  "hoja": {
+   "top": 217,
+   "alto": 627,
+   "scroll": false,
+   "navbarBottom": 56,
+   "foco": "Pago a profesionales",
+   "items": [
+    "## Documentos",
+    "Pago a profesionales h44",
+    "Nómina h44",
+    "## Contabilidad",
+    "Contabilidad h44",
+    "Informes contables h44",
+    "Terceros h44",
+    "Parametrización h44",
+    "## Compartido con Operación",
+    "Cuentas de cobro h44",
+    "Estadísticas h44",
+    "Configuración h44",
+    "Cerrar sesión h44"
+   ]
+  },
+  "scrollDetras": [
+   "HTML. sh844/ch844 ovvisible",
+   "DIV.main sh844/ch844 ovvisible",
+   "MAIN.content sh1401/ch788 ovauto"
+  ],
+  "tab": [
+   "IN:Nómina",
+   "IN:Contabilidad",
+   "IN:Informes contables",
+   "IN:Terceros",
+   "IN:Parametrización",
+   "IN:Cuentas de cobro",
+   "IN:Estadísticas",
+   "IN:Configuración",
+   "IN:Cerrar sesión",
+   "OUT:(()=>{function p(t,n,r,o,e,i",
+   "OUT:Saltar al contenido",
+   "OUT:Centro de ayuda",
+   "OUT:43 notificaciones sin leer",
+   "OUT:Administrador Maestro JD&D, "
+  ],
+  "trasEscape": {
+   "abierta": false,
+   "foco": "Más módulos y opciones"
+  },
+  "trasNavegarDesdeMas": {
+   "url": "/documentos-soporte",
+   "abierta": false,
+   "masActivo": true,
+   "foco": "BODY."
+  },
+  "trasAtrasConHoja": {
+   "url": "/dashboard",
+   "abierta": true
+  }
+ },
+ "finanzas-contador-360": {
+  "url": "http://localhost:4001/dashboard",
+  "barra": [
+   "Inicio [0..75 w75 h63] txt29/29 ACTIVO",
+   "Facturación [75..150 w75 h63] txt62/62",
+   "Cartera [150..225 w75 h63] txt39/39",
+   "Compras [225..300 w75 h63] txt48/48",
+   "Más [300..360 w60 h63] txt22/22"
+  ],
+  "contenidoPadBottom": "80px",
+  "hoja": {
+   "top": 113,
+   "alto": 627,
+   "scroll": false,
+   "navbarBottom": 56,
+   "foco": "Pago a profesionales",
+   "items": [
+    "## Documentos",
+    "Pago a profesionales h44",
+    "Nómina h44",
+    "## Contabilidad",
+    "Contabilidad h44",
+    "Informes contables h44",
+    "Terceros h44",
+    "Parametrización h44",
+    "## Compartido con Operación",
+    "Cuentas de cobro h44",
+    "Estadísticas h44",
+    "Configuración h44",
+    "Cerrar sesión h44"
+   ]
+  },
+  "scrollDetras": [
+   "HTML. sh740/ch740 ovvisible",
+   "DIV.main sh740/ch740 ovvisible",
+   "MAIN.content sh1461/ch684 ovauto"
+  ],
+  "tab": [
+   "IN:Nómina",
+   "IN:Contabilidad",
+   "IN:Informes contables",
+   "IN:Terceros",
+   "IN:Parametrización",
+   "IN:Cuentas de cobro",
+   "IN:Estadísticas",
+   "IN:Configuración",
+   "IN:Cerrar sesión",
+   "OUT:(()=>{function p(t,n,r,o,e,i",
+   "OUT:Saltar al contenido",
+   "OUT:Centro de ayuda",
+   "OUT:43 notificaciones sin leer",
+   "OUT:Administrador Maestro JD&D, "
+  ],
+  "trasEscape": {
+   "abierta": false,
+   "foco": "Más módulos y opciones"
+  },
+  "trasNavegarDesdeMas": {
+   "url": "/documentos-soporte",
+   "abierta": false,
+   "masActivo": true,
+   "foco": "BODY."
+  },
+  "trasAtrasConHoja": {
+   "url": "/dashboard",
+   "abierta": true
+  }
+ },
+ "operacion-administrativo-390": {
+  "url": "http://localhost:4001/dashboard",
+  "barra": [
+   "Inicio [0..81 w81 h63] txt29/29 ACTIVO",
+   "Cobros [81..163 w81 h63] txt38/38",
+   "Estadísticas [163..244 w81 h63] txt63/63",
+   "Más [244..325 w81 h63] txt22/22"
+  ],
+  "contenidoPadBottom": "80px",
+  "hoja": {
+   "top": 681,
+   "alto": 163,
+   "scroll": false,
+   "navbarBottom": 56,
+   "foco": "Configuración",
+   "items": [
+    "Configuración h44",
+    "Cerrar sesión h44"
+   ]
+  },
+  "scrollDetras": [
+   "HTML. sh844/ch844 ovvisible",
+   "DIV.main sh844/ch844 ovvisible",
+   "MAIN.content sh788/ch788 ovauto"
+  ],
+  "tab": [
+   "IN:Cerrar sesión",
+   "OUT:(()=>{function p(t,n,r,o,e,i",
+   "OUT:Saltar al contenido",
+   "OUT:Centro de ayuda",
+   "OUT:43 notificaciones sin leer",
+   "OUT:Administrador Maestro JD&D, ",
+   "OUT:Accesos directos",
+   "OUT:Cuentas de cobro",
+   "OUT:Estadísticas",
+   "OUT:Centro de ayuda",
+   "OUT:Inicio",
+   "OUT:Cobros",
+   "OUT:Estadísticas",
+   "OUT:Más módulos y opciones"
+  ],
+  "trasEscape": {
+   "abierta": false,
+   "foco": "Más módulos y opciones"
+  },
+  "trasNavegarDesdeMas": {
+   "url": "/configuracion",
+   "abierta": false,
+   "masActivo": true,
+   "foco": "BODY."
+  },
+  "trasAtrasConHoja": {
+   "url": "/dashboard",
+   "abierta": true
+  }
+ },
+ "operacion-administrativo-360": {
+  "url": "http://localhost:4001/dashboard",
+  "barra": [
+   "Inicio [0..75 w75 h63] txt29/29 ACTIVO",
+   "Cobros [75..150 w75 h63] txt38/38",
+   "Estadísticas [150..225 w75 h63] txt63/63",
+   "Más [225..300 w75 h63] txt22/22"
+  ],
+  "contenidoPadBottom": "80px",
+  "hoja": {
+   "top": 577,
+   "alto": 163,
+   "scroll": false,
+   "navbarBottom": 56,
+   "foco": "Configuración",
+   "items": [
+    "Configuración h44",
+    "Cerrar sesión h44"
+   ]
+  },
+  "scrollDetras": [
+   "HTML. sh740/ch740 ovvisible",
+   "DIV.main sh740/ch740 ovvisible",
+   "MAIN.content sh684/ch684 ovauto"
+  ],
+  "tab": [
+   "IN:Cerrar sesión",
+   "OUT:(()=>{function p(t,n,r,o,e,i",
+   "OUT:Saltar al contenido",
+   "OUT:Centro de ayuda",
+   "OUT:43 notificaciones sin leer",
+   "OUT:Administrador Maestro JD&D, ",
+   "OUT:Accesos directos",
+   "OUT:Cuentas de cobro",
+   "OUT:Estadísticas",
+   "OUT:Centro de ayuda",
+   "OUT:Inicio",
+   "OUT:Cobros",
+   "OUT:Estadísticas",
+   "OUT:Más módulos y opciones"
+  ],
+  "trasEscape": {
+   "abierta": false,
+   "foco": "Más módulos y opciones"
+  },
+  "trasNavegarDesdeMas": {
+   "url": "/configuracion",
+   "abierta": false,
+   "masActivo": true,
+   "foco": "BODY."
+  },
+  "trasAtrasConHoja": {
+   "url": "/dashboard",
+   "abierta": true
+  }
+ },
+ "operacion-auditor-390": {
+  "url": "http://localhost:4001/dashboard",
+  "sistema": "Operación Finanzas",
+  "barra": [
+   "Inicio [0..81 w81 h63] txt29/29 ACTIVO",
+   "Órdenes [81..163 w81 h63] txt45/45",
+   "Cobros [163..244 w81 h63] txt38/38",
+   "Empresas [244..325 w81 h63] txt52/52",
+   "Más [325..390 w65 h63] txt22/22"
+  ],
+  "contenidoPadBottom": "80px",
+  "hoja": {
+   "top": 553,
+   "alto": 291,
+   "scroll": false,
+   "navbarBottom": 56,
+   "foco": "Estadísticas",
+   "items": [
+    "## Cobro y clientes",
+    "Estadísticas h44",
+    "Configuración h44",
+    "Cambiar de sistema h44",
+    "Cerrar sesión h44"
+   ]
+  },
+  "scrollDetras": [
+   "HTML. sh844/ch844 ovvisible",
+   "DIV.main sh844/ch844 ovvisible",
+   "MAIN.content sh1682/ch788 ovauto"
+  ],
+  "tab": [
+   "IN:Configuración",
+   "IN:Cambiar de sistema",
+   "IN:Cerrar sesión",
+   "OUT:(()=>{function p(t,n,r,o,e,i",
+   "OUT:Saltar al contenido",
+   "OUT:Operación",
+   "OUT:Finanzas",
+   "OUT:Centro de ayuda",
+   "OUT:43 notificaciones sin leer",
+   "OUT:Administrador Maestro JD&D, ",
+   "OUT:Programar la más antigua →",
+   "OUT:Accesos directos",
+   "OUT:42Programar y revisar órdene",
+   "OUT:Cuentas de cobro"
+  ],
+  "trasEscape": {
+   "abierta": false,
+   "foco": "Más módulos y opciones"
+  },
+  "trasNavegarDesdeMas": {
+   "url": "/informes",
+   "abierta": false,
+   "masActivo": true,
+   "foco": "BODY."
+  },
+  "trasAtrasConHoja": {
+   "url": "/dashboard",
+   "abierta": true
+  }
+ },
+ "operacion-auditor-360": {
+  "url": "http://localhost:4001/dashboard",
+  "sistema": "Operación Finanzas",
+  "barra": [
+   "Inicio [0..75 w75 h63] txt29/29 ACTIVO",
+   "Órdenes [75..150 w75 h63] txt45/45",
+   "Cobros [150..225 w75 h63] txt38/38",
+   "Empresas [225..300 w75 h63] txt52/52",
+   "Más [300..360 w60 h63] txt22/22"
+  ],
+  "contenidoPadBottom": "80px",
+  "hoja": {
+   "top": 449,
+   "alto": 291,
+   "scroll": false,
+   "navbarBottom": 56,
+   "foco": "Estadísticas",
+   "items": [
+    "## Cobro y clientes",
+    "Estadísticas h44",
+    "Configuración h44",
+    "Cambiar de sistema h44",
+    "Cerrar sesión h44"
+   ]
+  },
+  "scrollDetras": [
+   "HTML. sh740/ch740 ovvisible",
+   "DIV.main sh740/ch740 ovvisible",
+   "MAIN.content sh1727/ch684 ovauto"
+  ],
+  "tab": [
+   "IN:Configuración",
+   "IN:Cambiar de sistema",
+   "IN:Cerrar sesión",
+   "OUT:(()=>{function p(t,n,r,o,e,i",
+   "OUT:Saltar al contenido",
+   "OUT:Operación",
+   "OUT:Finanzas",
+   "OUT:Centro de ayuda",
+   "OUT:43 notificaciones sin leer",
+   "OUT:Administrador Maestro JD&D, ",
+   "OUT:Programar la más antigua →",
+   "OUT:Accesos directos",
+   "OUT:42Programar y revisar órdene",
+   "OUT:Cuentas de cobro"
+  ],
+  "trasEscape": {
+   "abierta": false,
+   "foco": "Más módulos y opciones"
+  },
+  "trasNavegarDesdeMas": {
+   "url": "/informes",
+   "abierta": false,
+   "masActivo": true,
+   "foco": "BODY."
+  },
+  "trasAtrasConHoja": {
+   "url": "/dashboard",
+   "abierta": true
+  }
+ },
+ "finanzas-auditor-390": {
+  "url": "http://localhost:4001/dashboard",
+  "sistema": "Operación Finanzas",
+  "barra": [
+   "Inicio [0..81 w81 h63] txt29/29 ACTIVO",
+   "Facturación [81..163 w81 h63] txt62/62",
+   "Cartera [163..244 w81 h63] txt39/39",
+   "Compras [244..325 w81 h63] txt48/48",
+   "Más [325..390 w65 h63] txt22/22"
+  ],
+  "contenidoPadBottom": "80px",
+  "hoja": {
+   "top": 171,
+   "alto": 673,
+   "scroll": false,
+   "navbarBottom": 56,
+   "foco": "Pago a profesionales",
+   "items": [
+    "## Documentos",
+    "Pago a profesionales h44",
+    "Nómina h44",
+    "## Contabilidad",
+    "Contabilidad h44",
+    "Informes contables h44",
+    "Terceros h44",
+    "Parametrización h44",
+    "## Compartido con Operación",
+    "Cuentas de cobro h44",
+    "Estadísticas h44",
+    "Configuración h44",
+    "Cambiar de sistema h44",
+    "Cerrar sesión h44"
+   ]
+  },
+  "scrollDetras": [
+   "HTML. sh844/ch844 ovvisible",
+   "DIV.main sh844/ch844 ovvisible",
+   "MAIN.content sh1345/ch788 ovauto"
+  ],
+  "tab": [
+   "IN:Nómina",
+   "IN:Contabilidad",
+   "IN:Informes contables",
+   "IN:Terceros",
+   "IN:Parametrización",
+   "IN:Cuentas de cobro",
+   "IN:Estadísticas",
+   "IN:Configuración",
+   "IN:Cambiar de sistema",
+   "IN:Cerrar sesión",
+   "OUT:(()=>{function p(t,n,r,o,e,i",
+   "OUT:Saltar al contenido",
+   "OUT:Operación",
+   "OUT:Finanzas"
+  ],
+  "trasEscape": {
+   "abierta": false,
+   "foco": "Más módulos y opciones"
+  },
+  "trasNavegarDesdeMas": {
+   "url": "/documentos-soporte",
+   "abierta": false,
+   "masActivo": true,
+   "foco": "BODY."
+  },
+  "trasAtrasConHoja": {
+   "url": "/dashboard",
+   "abierta": true
+  }
+ },
+ "finanzas-auditor-360": {
+  "url": "http://localhost:4001/dashboard",
+  "sistema": "Operación Finanzas",
+  "barra": [
+   "Inicio [0..75 w75 h63] txt29/29 ACTIVO",
+   "Facturación [75..150 w75 h63] txt62/62",
+   "Cartera [150..225 w75 h63] txt39/39",
+   "Compras [225..300 w75 h63] txt48/48",
+   "Más [300..360 w60 h63] txt22/22"
+  ],
+  "contenidoPadBottom": "80px",
+  "hoja": {
+   "top": 67,
+   "alto": 673,
+   "scroll": false,
+   "navbarBottom": 56,
+   "foco": "Pago a profesionales",
+   "items": [
+    "## Documentos",
+    "Pago a profesionales h44",
+    "Nómina h44",
+    "## Contabilidad",
+    "Contabilidad h44",
+    "Informes contables h44",
+    "Terceros h44",
+    "Parametrización h44",
+    "## Compartido con Operación",
+    "Cuentas de cobro h44",
+    "Estadísticas h44",
+    "Configuración h44",
+    "Cambiar de sistema h44",
+    "Cerrar sesión h44"
+   ]
+  },
+  "scrollDetras": [
+   "HTML. sh740/ch740 ovvisible",
+   "DIV.main sh740/ch740 ovvisible",
+   "MAIN.content sh1398/ch684 ovauto"
+  ],
+  "tab": [
+   "IN:Nómina",
+   "IN:Contabilidad",
+   "IN:Informes contables",
+   "IN:Terceros",
+   "IN:Parametrización",
+   "IN:Cuentas de cobro",
+   "IN:Estadísticas",
+   "IN:Configuración",
+   "IN:Cambiar de sistema",
+   "IN:Cerrar sesión",
+   "OUT:(()=>{function p(t,n,r,o,e,i",
+   "OUT:Saltar al contenido",
+   "OUT:Operación",
+   "OUT:Finanzas"
+  ],
+  "trasEscape": {
+   "abierta": false,
+   "foco": "Más módulos y opciones"
+  },
+  "trasNavegarDesdeMas": {
+   "url": "/documentos-soporte",
+   "abierta": false,
+   "masActivo": true,
+   "foco": "BODY."
+  },
+  "trasAtrasConHoja": {
+   "url": "/dashboard",
+   "abierta": true
+  }
+ }
+}

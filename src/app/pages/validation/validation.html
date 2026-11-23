@@ -2,7 +2,7 @@
   <div>
     <h2 class="page-head__title">Órdenes</h2>
     <p class="page-head__sub">
-      Revisa, edita, valida y administra el estado de las órdenes
+      Revise, edite, valide y administre el estado de las órdenes
     </p>
   </div>
 </section>
@@ -297,7 +297,7 @@
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
                     }
                     {{ order.cobroAprobadoEn ? 'Aprobado' : 'Pendiente' }}
-                    <svg class="cobro-btn__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+                    <svg appIcono="siguiente" class="cobro-btn__chevron"></svg>
                   </button>
                   <!-- 1-oct-2026 · N.º de radicado ante Bolívar. Va aquí y no en una
                        columna propia: solo lo usa Bolívar (la columna quedaría vacía
@@ -447,9 +447,7 @@
           </button>
         }
         <button type="button" class="icon-action" (click)="closeDetail()" aria-label="Cerrar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M18 6 6 18M6 6l12 12" />
-          </svg>
+          <svg appIcono="cerrar"></svg>
         </button>
       </div>
     </header>
@@ -575,7 +573,7 @@
                 </svg>
               </span>
               <div class="alert__body">
-                <p class="alert__title">Baja confianza general. Revisa con especial cuidado los campos resaltados antes de validar.</p>
+                <p class="alert__title">Baja confianza general. Revise con especial cuidado los campos resaltados antes de validar.</p>
               </div>
             </div>
           }
@@ -755,7 +753,7 @@
                 @if (editMode() && problema(item); as motivo) {
                   <p class="field__alert">{{ motivo }}</p>
                 } @else if (editMode() && marcado(item)) {
-                  <p class="field__alert">⚠ Baja confianza — verifica contra el documento original.</p>
+                  <p class="field__alert">⚠ Baja confianza — verifique contra el documento original.</p>
                 }
                 <!-- Contexto del campo. Solo en edición: leyendo la ficha no
                      aporta, y en el detalle se ven veinte campos de una vez. -->
@@ -942,14 +940,7 @@
               <span class="card__title">Historial de estados</span>
               <span class="card__hint">Registro de auditoría</span>
             </span>
-            <svg
-              class="acordeon__chevron"
-              [class.acordeon__chevron--abierto]="historialAbierto()"
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
-            >
-              <path d="m6 9 6 6 6-6" />
-            </svg>
+            <svg appIcono="bajar" class="acordeon__chevron" [class.acordeon__chevron--abierto]="historialAbierto()"></svg>
           </button>
 
           @if (historialAbierto()) {
@@ -1040,9 +1031,7 @@
         </p>
       </div>
       <button type="button" class="icon-action" (click)="closeAssign()" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 6 6 18M6 6l12 12" />
-        </svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
 
@@ -1324,8 +1313,9 @@
            días) sobre la misma rejilla donde se ven las ocupaciones del
            profesional y sus otras órdenes, para que el choque se vea antes de
            enviar nada. La agenda se muestra SIEMPRE, con o sin profesional
-           elegido: las franjas son de la orden, no del asesor, y así el modal
-           no cambia de tamaño a mitad de camino. -->
+           elegido, para que el modal no cambie de tamaño a mitad de camino;
+           22-nov-2026 · pero sin profesional queda BLOQUEADA: primero se elige
+           quién va y después el horario (las horas son de un asesor). -->
       <div class="assign__calendar">
           <!-- Resumen de lo programado. Cada franja se puede quitar desde aquí
                o desde su bloque en la rejilla. -->
@@ -1379,9 +1369,7 @@
                       [attr.aria-label]="'Quitar a ' + m.nombre + ' de esta orden'"
                       title="Quitar de esta orden"
                     >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M18 6 6 18M6 6l12 12" />
-                      </svg>
+                      <svg appIcono="cerrar"></svg>
                     </button>
                   </li>
                 }
@@ -1401,9 +1389,7 @@
                       [attr.aria-label]="'Quitar la franja ' + rotuloFranja(f)"
                       title="Quitar franja"
                     >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M18 6 6 18M6 6l12 12" />
-                      </svg>
+                      <svg appIcono="cerrar"></svg>
                     </button>
                   </li>
                 }
@@ -1429,7 +1415,7 @@
             <div class="alert alert--warning alert--sm cita__aviso" role="alert">
               <div class="alert__body">
                 <p class="alert__title">
-                  El profesional ya está ocupado el {{ cruce.fecha }} de {{ cruce.hora_inicio }} a {{ cruce.hora_fin }}.
+                  El profesional ya está ocupado el {{ rotuloFranja(cruce) }}.
                 </p>
                 <p class="alert__detail">Puede continuar si la agenda cambió, pero revise antes de enviar el correo.</p>
               </div>
@@ -1449,39 +1435,32 @@
           <div class="agenda__bar">
             <div class="agenda__nav">
               <button type="button" class="icon-action" (click)="agendaSemana(-1)" aria-label="Semana anterior" title="Semana anterior">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="m15 18-6-6 6-6" />
-                </svg>
+                <svg appIcono="anterior"></svg>
               </button>
               <button type="button" class="icon-action" (click)="agendaSemana(1)" aria-label="Semana siguiente" title="Semana siguiente">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="m9 18 6-6-6-6" />
-                </svg>
+                <svg appIcono="siguiente"></svg>
               </button>
               <button type="button" class="btn btn--ghost btn--sm" (click)="agendaHoy()">Hoy</button>
               <p class="agenda__rango">{{ rotuloSemana() }}</p>
             </div>
 
-            @if (selectedProfId()) {
-              <span class="agenda__duracion">
-                Horas de la orden: <strong>{{ duracionTexto(duracionVisita()) }}</strong>
-              </span>
-            } @else {
-              <span class="agenda__duracion agenda__duracion--aviso">
-                Elija un profesional para ver su disponibilidad
-              </span>
-            }
+            <span class="agenda__duracion">
+              Horas de la orden: <strong>{{ duracionTexto(duracionVisita()) }}</strong>
+            </span>
           </div>
 
           <p class="agenda__hint">
-            <strong>Arrastre</strong> sobre la rejilla para marcar las horas de la visita; puede
-            partirla en varias franjas (mañana y tarde, o en días distintos). Un clic simple crea
-            una franja con las horas que falten por repartir.
+            @if (selectedProfId()) {
+              <strong>Arrastre</strong> sobre la rejilla para marcar las horas de la visita; puede partirla en varias franjas (mañana y tarde, o en días distintos). Un clic simple crea una franja con las horas que falten por repartir.
+            } @else {
+              Primero elija el profesional; después marque el horario de la visita.
+            }
           </p>
 
           <!-- Rejilla semanal. Cabecera y días comparten el mismo contenedor con
                scroll para que no se desalineen al desplazar en horizontal. -->
-          <div class="agenda__scroll" (pointerleave)="agendaSalir()">
+          <div class="agenda__marco">
+          <div class="agenda__scroll" #agendaScroll [class.agenda__scroll--bloqueada]="!selectedProfId()" (pointerleave)="agendaSalir()">
             <div class="agenda__inner">
               <div class="agenda__head">
                 <span class="agenda__gutter-head" aria-hidden="true"></span>
@@ -1549,9 +1528,7 @@
                             aria-label="Quitar franja ocupada"
                             title="Quitar franja"
                           >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                              <path d="M18 6 6 18M6 6l12 12" />
-                            </svg>
+                            <svg appIcono="cerrar"></svg>
                           </button>
                         } @else if (b.franjaId; as franjaId) {
                           <button
@@ -1562,9 +1539,7 @@
                             aria-label="Quitar esta franja de la visita"
                             title="Quitar franja"
                           >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                              <path d="M18 6 6 18M6 6l12 12" />
-                            </svg>
+                            <svg appIcono="cerrar"></svg>
                           </button>
                         }
                       </div>
@@ -1579,6 +1554,18 @@
                 }
               </div>
             </div>
+          </div>
+
+          @if (!selectedProfId()) {
+            <div class="agenda__bloqueo" role="status">
+              <svg appIcono="asignar"></svg>
+              <p class="agenda__bloqueo-titulo">Primero elija el profesional</p>
+              <p class="agenda__bloqueo-texto">
+                Seleccione en la lista de la izquierda quién ejecuta la visita. Así verá su
+                disponibilidad y podrá marcar el horario.
+              </p>
+            </div>
+          }
           </div>
 
           <ul class="agenda__leyenda">
@@ -1716,9 +1703,7 @@
         </p>
       </div>
       <button type="button" class="icon-action" (click)="closeVerify()" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 6 6 18M6 6l12 12" />
-        </svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
 
@@ -1794,10 +1779,10 @@
                       </label>
                       <span class="unir__mover">
                         <button type="button" class="icon-action" [disabled]="primero" (click)="moverUnir(i, -1)" aria-label="Subir">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6" /></svg>
+                          <svg appIcono="subir"></svg>
                         </button>
                         <button type="button" class="icon-action" [disabled]="ultimo" (click)="moverUnir(i, 1)" aria-label="Bajar">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                          <svg appIcono="bajar"></svg>
                         </button>
                       </span>
                     </li>
@@ -2093,9 +2078,7 @@
         </p>
       </div>
       <button type="button" class="icon-action" (click)="closeCobro()" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 6 6 18M6 6l12 12" />
-        </svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
 
@@ -2506,9 +2489,7 @@
         </p>
       </div>
       <button type="button" class="icon-action" (click)="cerrarPrefactura()" aria-label="Cerrar" [disabled]="prefacturaAplicando()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 6 6 18M6 6l12 12" />
-        </svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
 
@@ -2628,9 +2609,7 @@
         <p class="modal__sub">Cliente particular, sin ARL: se factura directamente al cliente.</p>
       </div>
       <button type="button" class="icon-action" (click)="cerrarManual()" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 6 6 18M6 6l12 12" />
-        </svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
 
@@ -2775,9 +2754,7 @@
         <p class="modal__sub">{{ ro.osCode }} · {{ nombreOrden(ro) }}</p>
       </div>
       <button type="button" class="icon-action" (click)="cerrarRadicado()" aria-label="Cerrar" [disabled]="radicadoGuardando()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-          <path d="M6 6l12 12M18 6 6 18" />
-        </svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
     <div class="modal__body">
@@ -2859,7 +2836,7 @@
         <p class="modal__sub">Visitas programadas de los próximos 7 días, y las que ya pasaron y siguen sin soportes.</p>
       </div>
       <button type="button" class="icon-action" (click)="proximasOpen.set(false)" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
     <div class="modal__body">

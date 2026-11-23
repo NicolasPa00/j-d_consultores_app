@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { CeroVacioDirective } from '../../../shared/cero-vacio';
 import { ApiService } from '../../../core/api.service';
 import { mensajeError } from '../../../core/errores';
 import { AlertService } from '../../../core/alert.service';
@@ -8,6 +9,7 @@ import { paginar } from '../../../shared/paginacion';
 import { PaginadorComponent } from '../../../shared/paginador/paginador';
 import { FechaDmyPipe } from '../../../shared/fecha-dmy.pipe';
 import { AccionComponent } from '../../../shared/icono/accion';
+import { IconoComponent } from '../../../shared/icono/icono';
 
 const PESOS = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -39,7 +41,7 @@ export function aCentavos(texto: string): number | null {
  */
 @Component({
   selector: 'app-comprobantes',
-  imports: [FormsModule, PaginadorComponent, FechaDmyPipe, AccionComponent],
+  imports: [FormsModule, CeroVacioDirective, PaginadorComponent, FechaDmyPipe, AccionComponent, IconoComponent],
   templateUrl: './comprobantes.html',
   styleUrl: './comprobantes.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

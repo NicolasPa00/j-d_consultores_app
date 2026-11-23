@@ -1,0 +1,457 @@
+<!-- 20-nov-2026 · Estadísticas de Finanzas (veredicto fin-veredicto.md). Un selector de
+     periodo, cuatro pestañas y un lienzo de 560 px que no cambia de alto. -->
+
+@if (!acceso) {
+  <div class="card estado-vacio">
+    <span class="estado-vacio__icono" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+    </span>
+    <h3 class="estado-vacio__titulo">Su rol no tiene acceso a las cifras contables</h3>
+    <p class="estado-vacio__texto">Las estadísticas de Finanzas las ven el administrador, la contadora y el auditor.</p>
+  </div>
+} @else {
+
+<!-- ===== Periodo: uno solo, vale para las cuatro pestañas ===== -->
+<div class="fin-periodo">
+  <div class="seg" role="group" aria-label="Tipo de periodo">
+    @for (t of tipos; track t.id) {
+      <button type="button" [class.seg--on]="tipo() === t.id" [attr.aria-pressed]="tipo() === t.id" (click)="elegirTipo(t.id)">{{ t.nombre }}</button>
+    }
+  </div>
+  <div class="fin-periodo__nav">
+    <button type="button" class="fin-flecha" aria-label="Periodo anterior" [disabled]="!puedeIrAtras()" (click)="mover(-1)">
+      <svg appIcono="anterior"></svg>
+    </button>
+    <span class="fin-periodo__etiqueta" [attr.data-tipo]="tipo()" [title]="tituloEtiqueta()" aria-live="polite">{{ etiquetaCorta() }}</span>
+    <button type="button" class="fin-flecha" aria-label="Periodo siguiente" [disabled]="!puedeIrAdelante()" (click)="mover(1)">
+      <svg appIcono="siguiente"></svg>
+    </button>
+  </div>
+  <p class="fin-periodo__comparacion" aria-live="polite">{{ lineaComparacion() }}</p>
+</div>
+
+<!-- ===== Pestañas ===== -->
+<div class="tabs" role="tablist" aria-label="Estadísticas de Finanzas" (keydown)="teclaPestana($event)">
+  @for (p of pestanas; track p.id) {
+    <button type="button" class="tab" role="tab" [id]="'tab-fin-' + p.id" [class.tab--active]="pestana() === p.id"
+            [attr.aria-selected]="pestana() === p.id" aria-controls="panel-fin" [attr.tabindex]="pestana() === p.id ? 0 : -1"
+            (click)="elegirPestana(p.id)">{{ p.nombre }}</button>
+  }
+</div>
+
+<!-- ===== Lienzo de alto fijo ===== -->
+<section id="panel-fin" class="fin-lienzo" role="tabpanel" [attr.aria-labelledby]="'tab-fin-' + pestana()"
+         [attr.aria-busy]="cargando()" [class.fin-lienzo--recargando]="recargando()" [attr.data-pestana]="pestana()">
+  @switch (vista()) {
+
+    <!-- ---------- Esqueleto: la forma de la pestaña, sin animar ---------- -->
+    @case ('esqueleto') {
+      @if (pestana() === 'resumen') {
+        <div class="fin-resumen" aria-hidden="true">
+          <div class="kpi-grid fin-kpis">
+            @for (e of etiquetasKpi; track e) {
+              <article class="kpi-card fin-kpi">
+                <div class="kpi-card__info">
+                  <span class="kpi-card__label">{{ e }}</span>
+                  <span class="fin-hueso fin-hueso--cifra"></span>
+                  <span class="fin-hueso fin-hueso--pista"></span>
+                </div>
+              </article>
+            }
+          </div>
+          <div class="fin-franja fin-franja--neutro"><span class="fin-hueso fin-hueso--linea"></span></div>
+        </div>
+      } @else {
+        <div class="fin-rejilla" aria-hidden="true">
+          <section class="card fin-tarjeta fin-tarjeta--principal">
+            <header class="fin-tarjeta__cabeza"><div><span class="fin-hueso fin-hueso--titulo"></span><span class="fin-hueso fin-hueso--pista"></span></div></header>
+            <div class="fin-tarjeta__cuerpo fin-esq-cols">
+              @for (m of esqueletoMeses(); track m.texto) {
+                <div class="fin-esq-cols__col"><span class="fin-esq-cols__barra" [style.height.%]="m.alto"></span><span class="fin-esq-cols__mes">{{ m.texto }}</span></div>
+              }
+            </div>
+          </section>
+          @for (k of [1, 2]; track k) {
+            <section class="card fin-tarjeta">
+              <header class="fin-tarjeta__cabeza"><div><span class="fin-hueso fin-hueso--titulo"></span></div></header>
+              <div class="fin-tarjeta__cuerpo fin-esq-barras">
+                @for (w of [82, 58, 40, 24]; track w) { <span class="fin-esq-barras__fila"><span class="fin-hueso fin-hueso--nombre"></span><span class="fin-esq-barras__barra" [style.width.%]="w"></span></span> }
+              </div>
+            </section>
+          }
+        </div>
+      }
+    }
+
+    <!-- ---------- Error: global (un solo endpoint), dentro del lienzo ---------- -->
+    @case ('error') {
+      <!-- Una tarjeta del alto del lienzo, centrada: el error no deja la pantalla sin marco. -->
+      <div class="card estado-vacio fin-lienzo__unico fin-error" role="alert">
+        <span class="estado-vacio__icono" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" /></svg>
+        </span>
+        <h3 class="estado-vacio__titulo">No se pudieron cargar las estadísticas</h3>
+        <p class="estado-vacio__texto">{{ error() }}</p>
+        <div class="estado-vacio__accion"><button type="button" class="btn btn--secondary" (click)="reintentar()">Reintentar</button></div>
+      </div>
+    }
+
+    <!-- ---------- Datos ---------- -->
+    @default {
+      @switch (pestana()) {
+
+        <!-- ===== 1 · Resumen: ¿cómo va el periodo? ===== -->
+        @case ('resumen') {
+          <div class="fin-resumen">
+            <div class="kpi-grid fin-kpis">
+              @for (k of kpis(); track k.id) {
+                <button type="button" class="kpi-card fin-kpi" (click)="elegirPestana(k.abre)"
+                        [attr.aria-label]="k.etiqueta + ': ' + (k.valor?.title ?? 'sin datos') + '. ' + k.pista + (k.variacion ? '. ' + k.variacion.aria : '') + '. Abre la pestaña ' + nombrePestana(k.abre)">
+                  <span class="kpi-card__info">
+                    <span class="kpi-card__label">{{ k.etiqueta }}</span>
+                    @if (k.valor; as v) {
+                      <strong class="kpi-card__value fin-kpi__cifra" [title]="v.title" [style.--n]="v.texto.length">{{ v.texto }}</strong>
+                    } @else {
+                      <strong class="kpi-card__value fin-kpi__cifra fin-kpi__cifra--vacia" title="Sin datos">—</strong>
+                    }
+                    <span class="kpi-card__hint fin-kpi__pista">
+                      {{ k.pista }}
+                      @if (k.provisional) { <span class="pill pill--muted pill--sm">Provisional</span> }
+                    </span>
+                    <!-- La variación va pegada a la cifra que compara; solo la fuente baja al pie. -->
+                    @if (k.variacion; as va) {
+                      <span class="fin-variacion" [class.fin-variacion--ok]="va.tono === 'ok'" [class.fin-variacion--error]="va.tono === 'error'">{{ va.texto }}</span>
+                    }
+                    <span class="fin-kpi__fuente">{{ k.fuente }}</span>
+                  </span>
+                </button>
+              }
+            </div>
+            <!-- Cobertura contable: toma el alto que los KPI ya no estiran (antes, ~80 px de aire por tarjeta). -->
+            @if (cobertura()) {
+              <section class="fin-cobertura" aria-labelledby="fin-t-cobertura">
+                <h3 class="visualmente-oculto" id="fin-t-cobertura">Cobertura contable del periodo</h3>
+                <ng-container *ngTemplateOutlet="franjaCobertura; context: { $implicit: true }" />
+                <div class="fin-cobertura__cuerpo">
+                  @for (m of medidoresCobertura(); track m.etiqueta) {
+                    <div class="fin-medidor" role="img" [attr.aria-label]="m.etiqueta + ': ' + m.texto">
+                      <span class="fin-medidor__etiqueta">{{ m.etiqueta }}</span>
+                      <span class="fin-medidor__carril"><span class="fin-medidor__relleno" [class.fin-medidor__relleno--completo]="m.completo" [style.width.%]="m.pct"></span></span>
+                      <span class="fin-medidor__valor">{{ m.texto }}</span>
+                    </div>
+                  }
+                  <p class="fin-nota fin-cobertura__pie">{{ pieCobertura() }}</p>
+                </div>
+              </section>
+            }
+          </div>
+        }
+
+        <!-- ===== 2 · Ingresos: ¿cuánto y a quién facturamos? ===== -->
+        @case ('ingresos') {
+          <div class="fin-rejilla">
+            <section class="card fin-tarjeta fin-tarjeta--principal" aria-labelledby="fin-t-facturacion">
+              <header class="fin-tarjeta__cabeza">
+                <div>
+                  <h3 class="fin-tarjeta__titulo" id="fin-t-facturacion">Facturación neta por mes</h3>
+                  <p class="fin-tarjeta__sub">{{ fuenteDocs }} · {{ totalPeriodo() }} en {{ etiqueta() }}</p>
+                </div>
+                <ng-container *ngTemplateOutlet="botonDatos; context: { $implicit: 'facturacion' }" />
+              </header>
+              <div class="fin-tarjeta__cuerpo">
+                @if (conTabla().has('facturacion')) {
+                  <ng-container *ngTemplateOutlet="tabla; context: { $implicit: tablas()['facturacion'] }" />
+                } @else if (puntosFacturacion().length) {
+                  <orb-fin-columnas modo="simple" [puntos]="puntosFacturacion()" [series]="SERIE_NETA" [resumen]="ariaFacturacion()" />
+                } @else {
+                  <ng-container *ngTemplateOutlet="vacioTarjeta; context: { $implicit: 'Aún no hay facturas ante la DIAN' }" />
+                }
+              </div>
+            </section>
+
+            <section class="card fin-tarjeta" aria-labelledby="fin-t-clientes">
+              <header class="fin-tarjeta__cabeza">
+                <div>
+                  <h3 class="fin-tarjeta__titulo" id="fin-t-clientes">A quién facturamos</h3>
+                  <p class="fin-tarjeta__sub">{{ concentracion() || fuenteDocs }}</p>
+                </div>
+                <ng-container *ngTemplateOutlet="botonDatos; context: { $implicit: 'clientes' }" />
+              </header>
+              <div class="fin-tarjeta__cuerpo">
+                @if (conTabla().has('clientes')) {
+                  <ng-container *ngTemplateOutlet="tabla; context: { $implicit: tablas()['clientes'] }" />
+                } @else if (filasClientes().length) {
+                  <orb-fin-barras-h [filas]="filasClientes()" [resumen]="ariaClientes()" etiquetaResto="Otros clientes" />
+                } @else {
+                  <ng-container *ngTemplateOutlet="vacioTarjeta; context: { $implicit: 'Sin facturas en el periodo' }" />
+                }
+              </div>
+              <footer class="fin-tarjeta__pie">
+                <a class="ir-a" routerLink="/informes-contables" [queryParams]="enlaceVentas()">Ver ventas por cliente
+                  <svg appIcono="siguiente"></svg>
+                </a>
+              </footer>
+            </section>
+
+            <section class="card fin-tarjeta" aria-labelledby="fin-t-notas">
+              <header class="fin-tarjeta__cabeza">
+                <div>
+                  <h3 class="fin-tarjeta__titulo" id="fin-t-notas">Notas crédito del periodo</h3>
+                  @if (notas(); as n) {
+                    <p class="fin-tarjeta__sub">
+                      @if (n.valor > 0) { <strong class="fin-cifra">{{ n.cifra }}</strong> · {{ n.parte }} de lo facturado } @else { {{ fuenteDocs }} }
+                    </p>
+                  }
+                </div>
+                @if ((notas()?.filas?.length ?? 0) > 0) { <ng-container *ngTemplateOutlet="botonDatos; context: { $implicit: 'notas' }" /> }
+              </header>
+              <div class="fin-tarjeta__cuerpo">
+                @if (notas(); as n) {
+                  @if (!n.filas.length) {
+                    <div class="estado-vacio estado-vacio--ok fin-vacio">
+                      <span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg></span>
+                      <h4 class="estado-vacio__titulo">Sin notas crédito en el periodo</h4>
+                    </div>
+                  } @else if (conTabla().has('notas')) {
+                    <ng-container *ngTemplateOutlet="tabla; context: { $implicit: tablas()['notas'] }" />
+                  } @else {
+                    <orb-fin-barras-h [filas]="n.filas" [resumen]="ariaNotas()" [carril]="true" [porcentaje]="false" [base]="n.valor" />
+                  }
+                }
+              </div>
+            </section>
+          </div>
+        }
+
+        <!-- ===== 3 · Cartera y pagos: ¿cuánto nos deben y cuánto debemos? ===== -->
+        @case ('cartera') {
+          <div class="fin-rejilla" [class.fin-rejilla--con-alerta]="(cobertura()?.tono ?? '') === 'aviso'">
+            @if (cobertura()?.tono === 'aviso') { <ng-container *ngTemplateOutlet="franjaCobertura; context: { $implicit: true }" /> }
+            <section class="card fin-tarjeta fin-tarjeta--principal" aria-labelledby="fin-t-edades">
+              <header class="fin-tarjeta__cabeza">
+                <div>
+                  <h3 class="fin-tarjeta__titulo" id="fin-t-edades">{{ totalCxcTexto() }} por cobrar</h3>
+                  <p class="fin-tarjeta__sub">Por edades al {{ corteTexto() }} · {{ fuenteCartera }}</p>
+                </div>
+                <ng-container *ngTemplateOutlet="botonDatos; context: { $implicit: 'edades' }" />
+              </header>
+              <div class="fin-tarjeta__cuerpo">
+                @if (conTabla().has('edades')) {
+                  <ng-container *ngTemplateOutlet="tabla; context: { $implicit: tablas()['edades'] }" />
+                } @else {
+                  <orb-fin-barras-h class="fin-edades" [filas]="filasEdades()" [resumen]="ariaEdades()" />
+                }
+              </div>
+              <footer class="fin-tarjeta__pie">
+                @if (saldosReconstruidos()) { <p class="fin-nota">Saldos reconstruidos al {{ corteTexto() }} con los pagos registrados hasta esa fecha.</p> }
+                <a class="ir-a" routerLink="/cartera" [queryParams]="{ vista: 'por-cobrar' }">Ver antigüedad por cliente
+                  <svg appIcono="siguiente"></svg>
+                </a>
+              </footer>
+            </section>
+
+            <section class="card fin-tarjeta" aria-labelledby="fin-t-fac-rec">
+              <header class="fin-tarjeta__cabeza">
+                <div>
+                  <h3 class="fin-tarjeta__titulo" id="fin-t-fac-rec">Facturado vs recaudado por mes</h3>
+                  <!-- La leyenda va en la línea del subtítulo: sobre la gráfica le quitaba 26 px de alto. -->
+                  <!-- Leyenda en UNA línea; la aclaración del total va en el rótulo de cada mes y en «Ver datos». -->
+                  <p class="fin-tarjeta__sub fin-leyenda-sub" title="Total a cobrar facturado: con IVA y menos las retenciones de la factura">
+                    <span class="fin-leyenda-sub__item"><span class="fin-leyenda-sub__muestra" style="background: var(--fin-serie-a)" aria-hidden="true"></span>Total a cobrar facturado</span>
+                    <span class="fin-leyenda-sub__sep" aria-hidden="true">·</span>
+                    <span class="fin-leyenda-sub__item"><span class="fin-leyenda-sub__muestra" style="background: var(--fin-serie-b)" aria-hidden="true"></span>Recaudado</span>
+                  </p>
+                </div>
+                <ng-container *ngTemplateOutlet="botonDatos; context: { $implicit: 'facturadoRecaudo' }" />
+              </header>
+              <div class="fin-tarjeta__cuerpo">
+                @if (conTabla().has('facturadoRecaudo')) {
+                  <ng-container *ngTemplateOutlet="tabla; context: { $implicit: tablas()['facturadoRecaudo'] }" />
+                } @else if (puntosFacturadoRecaudo().length) {
+                  <orb-fin-columnas modo="pareadas" [leyenda]="false" [puntos]="puntosFacturadoRecaudo()" [series]="series" [resumen]="ariaFacturadoRecaudo()" />
+                } @else {
+                  <ng-container *ngTemplateOutlet="vacioTarjeta; context: { $implicit: 'Aún no hay facturas ni recibos' }" />
+                }
+              </div>
+            </section>
+
+            <section class="card fin-tarjeta" aria-labelledby="fin-t-pagar">
+              <header class="fin-tarjeta__cabeza">
+                <div>
+                  <h3 class="fin-tarjeta__titulo" id="fin-t-pagar">Por pagar</h3>
+                  <p class="fin-tarjeta__sub">Al {{ corteTexto() }} · {{ fuenteCartera }}</p>
+                </div>
+                @if (!porPagar()?.sinSaldo) { <ng-container *ngTemplateOutlet="botonDatos; context: { $implicit: 'porPagar' }" /> }
+              </header>
+              <div class="fin-tarjeta__cuerpo">
+                @if (porPagar(); as p) {
+                  @if (p.sinSaldo) {
+                    <div class="estado-vacio estado-vacio--ok fin-vacio">
+                      <span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg></span>
+                      <h4 class="estado-vacio__titulo">No hay cuentas por pagar</h4>
+                      @if (p.pagado > 0) { <p class="estado-vacio__texto">Pagado en el periodo: {{ pesos(p.pagado) }}</p> }
+                    </div>
+                  } @else if (conTabla().has('porPagar')) {
+                    <ng-container *ngTemplateOutlet="tabla; context: { $implicit: tablas()['porPagar'] }" />
+                  } @else {
+                    <orb-fin-barras-h [filas]="p.filas" [resumen]="ariaPorPagar()" [carril]="true" [porcentaje]="false" />
+                  }
+                }
+              </div>
+            </section>
+          </div>
+        }
+
+        <!-- ===== 4 · Resultado: ¿ganamos y en qué se fue? ===== -->
+        @case ('resultado') {
+          @if (sinLibro()) {
+            <div class="card estado-vacio fin-lienzo__unico">
+              <span class="estado-vacio__icono" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12l4 4v12H4z" /><path d="M8 12h8M8 16h5" /></svg>
+              </span>
+              <h3 class="estado-vacio__titulo">Aún no hay comprobantes contabilizados en {{ periodoEnFrase() }}</h3>
+              <p class="estado-vacio__texto">El resultado sale del libro contable. Revise los documentos pendientes de contabilizar.</p>
+              <div class="estado-vacio__accion"><a class="btn btn--secondary" routerLink="/contabilidad">Ir a Contabilidad</a></div>
+            </div>
+          } @else {
+            <div class="fin-rejilla fin-rejilla--resultado" [class.fin-rejilla--con-alerta]="cobertura()?.tono === 'aviso'">
+              <div class="fin-cabeza-panel">
+                @if (datos()?.periodo?.provisional) {
+                  <span class="pill pill--muted">Provisional</span>
+                  <p class="fin-nota">{{ notaProvisional() }}</p>
+                } @else {
+                  <p class="fin-nota">Periodo cerrado en Contabilidad · {{ fuenteLibro }}, sin el comprobante de cierre</p>
+                }
+              </div>
+              @if (cobertura()?.tono === 'aviso') { <ng-container *ngTemplateOutlet="franjaCobertura; context: { $implicit: true }" /> }
+
+              <section class="card fin-tarjeta fin-tarjeta--principal" aria-labelledby="fin-t-cascada">
+                <header class="fin-tarjeta__cabeza">
+                  <div>
+                    <h3 class="fin-tarjeta__titulo" id="fin-t-cascada">Del ingreso a la utilidad</h3>
+                    <p class="fin-tarjeta__sub">{{ fuenteLibro }} · {{ etiqueta() }}</p>
+                  </div>
+                  <ng-container *ngTemplateOutlet="botonDatos; context: { $implicit: 'cascada' }" />
+                </header>
+                <div class="fin-tarjeta__cuerpo">
+                  @if (conTabla().has('cascada')) {
+                    <ng-container *ngTemplateOutlet="tabla; context: { $implicit: tablas()['cascada'] }" />
+                  } @else {
+                    <orb-fin-cascada [pasos]="pasosCascada()" [resumen]="ariaCascada()" />
+                  }
+                </div>
+                <footer class="fin-tarjeta__pie">
+                  <a class="ir-a" routerLink="/informes-contables" [queryParams]="enlaceEstados()">Ver estado de resultados
+                    <svg appIcono="siguiente"></svg>
+                  </a>
+                </footer>
+              </section>
+
+              <section class="card fin-tarjeta" aria-labelledby="fin-t-utilidad">
+                <header class="fin-tarjeta__cabeza">
+                  <div>
+                    <h3 class="fin-tarjeta__titulo" id="fin-t-utilidad">Utilidad por mes</h3>
+                    <p class="fin-tarjeta__sub">{{ fuenteLibro }} · en cursiva, meses abiertos</p>
+                  </div>
+                  <ng-container *ngTemplateOutlet="botonDatos; context: { $implicit: 'utilidad' }" />
+                </header>
+                <div class="fin-tarjeta__cuerpo">
+                  @if (conTabla().has('utilidad')) {
+                    <ng-container *ngTemplateOutlet="tabla; context: { $implicit: tablas()['utilidad'] }" />
+                  } @else {
+                    <!-- Sin leyenda «Utilidad · Pérdida»: la polaridad ya la dicen la dirección (arriba / abajo
+                         del cero) y el signo escrito, y sus 26 px eran un cuarto del alto de la gráfica. -->
+                    <orb-fin-columnas modo="signo" [leyenda]="false" [puntos]="puntosUtilidad()" [series]="SERIE_UTILIDAD" [resumen]="ariaUtilidad()" />
+                  }
+                </div>
+              </section>
+
+              <section class="card fin-tarjeta" aria-labelledby="fin-t-cuentas">
+                <header class="fin-tarjeta__cabeza">
+                  <div>
+                    <h3 class="fin-tarjeta__titulo" id="fin-t-cuentas">Mayores costos y gastos</h3>
+                    <p class="fin-tarjeta__sub">{{ fuenteLibro }} · por cuenta de 4 dígitos</p>
+                  </div>
+                  @if (filasCuentas().length) { <ng-container *ngTemplateOutlet="botonDatos; context: { $implicit: 'cuentas' }" /> }
+                </header>
+                <div class="fin-tarjeta__cuerpo">
+                  @if (conTabla().has('cuentas')) {
+                    <ng-container *ngTemplateOutlet="tabla; context: { $implicit: tablas()['cuentas'] }" />
+                  } @else if (filasCuentas().length) {
+                    <orb-fin-barras-h [filas]="filasCuentas()" [resumen]="ariaCuentas()" />
+                  } @else {
+                    <ng-container *ngTemplateOutlet="vacioTarjeta; context: { $implicit: 'Sin costos ni gastos en el periodo' }" />
+                  }
+                </div>
+                <footer class="fin-tarjeta__pie"><p class="fin-nota">{{ notaNomina() }}</p></footer>
+              </section>
+            </div>
+          }
+        }
+      }
+    }
+  }
+</section>
+
+}
+
+<!-- ===== Piezas reutilizables ===== -->
+
+<!-- Franja de cobertura (56 px al pie de Resumen) o alerta de una línea arriba de Cartera y Resultado. -->
+<ng-template #franjaCobertura let-compacta>
+  @if (cobertura(); as c) {
+    <div class="fin-franja" [class.fin-franja--compacta]="compacta" [class.fin-franja--aviso]="c.tono === 'aviso'" [class.fin-franja--ok]="c.tono === 'ok'"
+         [class.fin-franja--neutro]="c.tono === 'neutro'" [attr.role]="c.tono === 'aviso' ? 'status' : null">
+      <span class="fin-franja__icono" aria-hidden="true">
+        @if (c.tono === 'ok') {
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+        } @else if (c.tono === 'aviso') {
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" /></svg>
+        } @else {
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12l4 4v12H4z" /><path d="M8 12h8M8 16h5" /></svg>
+        }
+      </span>
+      <span class="fin-franja__texto">
+        {{ c.texto }}
+        @if (c.detalle && !compacta) { <span class="fin-franja__detalle"> · {{ c.detalle }}</span> }
+      </span>
+      @if (c.tono === 'aviso') {
+        <a class="ir-a" routerLink="/contabilidad">Ir a Contabilidad
+          <svg appIcono="siguiente"></svg>
+        </a>
+      }
+    </div>
+  }
+</ng-template>
+
+<!-- «Ver datos»: botón terciario que cambia la gráfica por su tabla. -->
+<ng-template #botonDatos let-id>
+  <button type="button" class="btn btn--texto btn--sm fin-ver-datos" [attr.aria-pressed]="conTabla().has(id)" (click)="alternarTabla(id)">
+    {{ conTabla().has(id) ? 'Ver gráfica' : 'Ver datos' }}
+  </button>
+</ng-template>
+
+<!-- La tabla accesible, en el mismo alto de la tarjeta (≤ 12 filas, desplazamiento interno). -->
+<ng-template #tabla let-t>
+  <div class="fin-tabla">
+    <table>
+      <thead><tr>@for (c of t.columnas; track $index) { <th scope="col" [class.fin-num]="t.numericas.includes($index)">{{ c }}</th> }</tr></thead>
+      <tbody>
+        @for (f of t.filas; track $index) {
+          <tr>@for (v of f; track $index) {
+            @if ($index === 0) { <th scope="row">{{ v }}</th> } @else { <td [class.fin-num]="t.numericas.includes($index)">{{ v }}</td> }
+          }</tr>
+        } @empty {
+          <tr><td [attr.colspan]="t.columnas.length" class="fin-tabla__vacia">Sin datos en el periodo</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</ng-template>
+
+<ng-template #vacioTarjeta let-texto>
+  <div class="estado-vacio fin-vacio">
+    <span class="estado-vacio__icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg></span>
+    <h4 class="estado-vacio__titulo">{{ texto }}</h4>
+  </div>
+</ng-template>

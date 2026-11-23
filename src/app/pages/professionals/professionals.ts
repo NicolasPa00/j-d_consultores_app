@@ -15,6 +15,7 @@ import { Encuesta, Especialidad, Profesional, RegistroArl } from '../../core/mod
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 import { AccionComponent } from '../../shared/icono/accion';
+import { IconoComponent } from '../../shared/icono/icono';
 
 type ProfessionalStatus = 'Activo' | 'Inactivo';
 
@@ -53,7 +54,7 @@ interface ProfessionalDraft {
 
 @Component({
   selector: 'app-professionals',
-  imports: [FormsModule, PaginadorComponent, AccionComponent],
+  imports: [FormsModule, PaginadorComponent, AccionComponent, IconoComponent],
   templateUrl: './professionals.html',
   styleUrl: './professionals.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

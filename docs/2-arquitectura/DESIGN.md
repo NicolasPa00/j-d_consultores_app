@@ -35,7 +35,7 @@ El orden de trabajo es A → A2 → B. **La fase A no se da por terminada hasta 
    - la marca de la visita de hoy;
    - el foco sobre noche.
 
-   Fuera de eso, el cian solo vive en las órbitas del login y del saludo. Siempre va como trazo o relleno y nunca como letra. Con esta regla ORBITA se reconoce aunque no se vea el logo.
+   Fuera de eso, el cian solo vive en las órbitas del login y en el acento de los íconos del Inicio (el saludo ya no lleva órbitas, 21-nov-2026). Siempre va como trazo o relleno y nunca como letra. Con esta regla ORBITA se reconoce aunque no se vea el logo.
 4. **Una cosa domina cada pantalla.**
    - En el Inicio domina el saludo (30/600).
    - En Indicadores, la cifra principal (40/500).
@@ -57,7 +57,7 @@ El orden de trabajo es A → A2 → B. **La fase A no se da por terminada hasta 
 | `--papel` | `#f6f8fa` | Fondo de la app | — |
 | `--superficie` | `#ffffff` | Tarjetas, tablas, modales y la mitad de credenciales del login | — |
 | `--hundida` | `#eef2f6` | Cabecera de tabla, carriles, deshabilitado, contador de documentos y botón Estado ARL | `--tinta-3` encima: 4,60 |
-| `--cielo` | `#e9f1f8` | Franja del saludo | Tinta 12,82 · acción 8,14 · tinta-2 6,51 |
+| `--cielo` | `#e9f1f8` | Círculo de los accesos del Inicio y cabecera de modal (21-nov-2026) | Tinta 12,82 · acción 8,14 · tinta-2 6,51 |
 | `--borde` | `#e1e7ee` | Divisores y tarjetas | Decorativo (1,27) |
 | `--borde-control` | `#c3ceda` | Botón secundario y chips | Decorativo: el control ya lleva texto y sombra |
 | `--borde-campo` | `#8496aa` | Input, select, círculo de «Plataforma», página activa del paginador y eje de las gráficas | 3,03 (1.4.11) |
@@ -69,21 +69,21 @@ El orden de trabajo es A → A2 → B. **La fase A no se da por terminada hasta 
 | `--accion-tenue` | `#e6eef6` | Fondo de «Ver», del chip activo, del avatar y del hover de «Ir a» | Acción encima 7,93 |
 | (texto sobre acción) | `#c9dcee` | Línea secundaria del acceso principal | 6,57 sobre acción |
 | `--cian` | `#1f9fcb` | Cian **sobre noche** o sobre acción: marca del menú, tapa del mes en curso, foco y órbitas del login | 4,19 sobre noche-alzada · 5,47 sobre noche |
-| `--cian-trazo` | `#1890bb` | Cian **sobre claro**: raya de pestaña, marca de hoy, marca de la barra inferior y órbitas del saludo | 3,65 blanco · 3,43 papel · **nunca texto** |
+| `--cian-trazo` | `#1890bb` | Cian **sobre claro**: raya de pestaña, marca de hoy, marca de la barra inferior y acento de los íconos del Inicio | 3,65 blanco · 3,43 papel · **nunca texto** |
 | `--noche` | `#0b1f33` | Barra lateral, escena del login y toast | Blanco 16,69 |
 | `--noche-alzada` | `#163450` | Ítem activo del menú | Blanco 12,80 · texto-noche 8,31 |
 | `--texto-noche` | `#c3d2e2` | Texto del menú y de la escena | 10,84 |
-| `--texto-noche-2` | `#9fb3c6` | Grupos del menú, «Contraer menú» y subtítulos del ciclo | 7,74 |
+| `--texto-noche-2` | `#9fb3c6` | Grupos del menú y subtítulos del ciclo | 7,74 |
 | `--icono-noche` | `#8fa6bd` | Íconos del menú | 6,64 |
 | `--cian-niebla` | `#8fd3ea` | Enlaces sobre noche (toast) | 10,07 |
 | `--contador` / `--contador-tinta` | `#f2b13c` / `#0b1f33` | **El único contador de pendientes**: menú y barra inferior | Noche encima 8,85 |
 | `--aviso` / `--aviso-fondo` | `#7a5200` / `#fdf3d2` | SIN PROGRAMAR: un ámbar que tira al amarillo (40°) | 6,24 · 6,92 blanco |
-| `--ambar` | `#c27c0e` | **Relleno** de SIN PROGRAMAR (punto, barra de distribución) y reloj de «vence pronto» | 3,40 blanco · **3,19 papel**: ya no depende del fondo |
+| `--ambar` | `#c27c0e` | **Relleno** de SIN PROGRAMAR (punto, barra de distribución) y reloj de «vence pronto» | 3,40 blanco · **3,19 papel** · **3,02 sobre `--hundida`** (reloj de «vence» en la campanita, 22-nov: al límite, no oscurecer `--hundida` ni aclarar `--ambar`) |
 | `--naranja` / `-fondo` | `#b54708` / `#ffeadb` | Confianza de 70 a 79: un naranja rojizo (24°) | 4,66 · 5,43 blanco |
 | `--info` / `--info-fondo` | `#1f5fc4` / `#e7effd` | PROGRAMADA y alertas informativas | 5,20 · 6,01 blanco. Matiz 218°, separado del acero 208° |
 | `--ok` / `--ok-fondo` | `#13683f` / `#e4f3eb` | EJECUTADA, FINALIZADA, Aprobado, «Plataforma» validada y confianza ≥ 80 | 5,95 · 6,82 blanco |
 | `--error` / `--error-fondo` | `#b42318` / `#fdecea` | Errores, «vencida» y confianza < 70 | 5,75 · 6,57 blanco |
-| `--cerrar-fondo` | `#fdf1f0` | `.btn--close` | Error encima 5,95 |
+| `--cerrar-fondo` | `#fdf1f0` | Ya no lo usa `.btn--close` (contorno neutro desde el 21-nov-2026); queda como alias `--btn-close-bg` | Error encima 5,95 |
 | `--peligro` | `#b91c1c` | Destructivo sólido | Blanco 6,47 |
 | `--contexto` | `#cfdae5` | Barras de periodos anteriores: relleno liso, **sin contorno** | 1,42. Cumple 1.4.11 porque cada barra lleva su valor escrito |
 
@@ -141,7 +141,7 @@ En el segundo par, el texto y la cifra hacen la diferencia: nunca aparecen sin e
 | Título de login | 28 / 600 | −0,02em |
 | Cifra de «Requiere su atención» | 24 / 600 / 1 | −0,02em |
 | Título de página | 24 / 600 / 1,25 | −0,015em |
-| Título de modal | 17 / 600 | −0,01em |
+| Título de modal | 20 / 600 (18 en el celular) | −0,015em |
 | Título de tarjeta y de acceso principal | 16 / 600 | — |
 | Base, botones, pestañas y accesos de lista | 14 / 400–500 (pestaña activa 600) / 1,5 | — |
 | Celdas de tabla y pistas | 13 / 400 (razón social 500) / 1,35 | — |
@@ -153,7 +153,7 @@ En el segundo par, el texto y la cifra hacen la diferencia: nunca aparecen sin e
 **Espaciado.** Escala de 4: 4, 8, 12, 16, 20, 24, 32, 40, 48 y 56.
 
 - Contenido: 28 px arriba y 40 a los lados; 32 en las vistas con tabla ancha.
-- El Inicio llega a un máximo de 1128 px.
+- El Inicio llega a un máximo de **1480 px**, centrado en lo que deja la barra lateral (`.inicio { max-width: 1480px; margin-inline: auto }`, 21-nov-2026). A 1366 y 1440 llena el área útil; a 1900 deja una franja pareja a cada lado.
 - Entre tarjetas van 24 px.
 
 **Radios.**
@@ -163,7 +163,7 @@ En el segundo par, el texto y la cifra hacen la diferencia: nunca aparecen sin e
 | 6 px | Controles |
 | 7 px | Ítems del menú y accesos de lista |
 | 10 px | Tarjetas y tablas |
-| 12 px | Modales y franja del saludo |
+| 12 px | Modales |
 | 24 px | Hoja del login en el celular |
 | Completo | Pastillas, chips y «Plataforma» |
 
@@ -175,7 +175,7 @@ El login de escritorio no lleva radio: va a pantalla completa.
 - Sin cebra.
 - Sin línea de 2 px bajo la cabecera.
 - Sin raya de color en los KPI.
-- Sin borde en cada acceso directo.
+- Sin borde en cada acceso directo: el acceso es un círculo en `--cielo` sin borde en reposo; el borde en acción solo aparece en hover y foco.
 
 **Sombras.** Van teñidas de tinta, `rgb(15 42 68 / x)`, y nunca son negras. Nada lleva sombra en reposo, salvo el botón secundario (`--sombra-1`).
 
@@ -187,7 +187,7 @@ El login de escritorio no lleva radio: va a pantalla completa.
 | `--sombra-modal` | `0 24px 56px -20px / 38%`, más `0 2px 6px / 8%` | Modal |
 | `--velo` | `rgb(11 31 51 / 50%)` | Fondo del modal |
 
-Se retira `--sombra-alza`: los accesos ya no se elevan.
+Se retira `--sombra-alza`: los accesos no llevan sombra. En hover el círculo sube 2 px (`translateY(-2px)`) sin sombra; es movimiento, no elevación.
 
 ## 5. Movimiento
 
@@ -226,7 +226,7 @@ Hay un `:focus-visible` global: `outline: 2px solid var(--accion)` (9,28:1), `ou
   - `--secondary`: blanco, con `--borde-control` y `--sombra-1`.
   - `--ghost`: **en el código es el botón de contorno** (113 usos), así que se pinta igual que `--secondary`. El viejo `--secondary` relleno en `#2d7bc8` se retira y también pasa a secundario.
   - `--texto`: solo texto en acción (el «ghost» de la maqueta).
-  - `--close`: fondo `--cerrar-fondo` y texto error.
+  - `--close` (Cerrar / Cancelar): **contorno neutro**, igual que el secundario (`--borde-control`, tinta); hover `--papel` con `--borde-control-hover`. Era rojo tenue y en el pie del modal se llevaba la vista (21-nov-2026).
   - `--danger`: relleno de peligro, solo dentro de una confirmación.
   - `--icon`: 36 × 36.
 - **Deshabilitado, sin opacidad.** Fondo `--hundida`, texto `--tinta-3` (4,60) y `cursor: not-allowed`. La razón va al lado o en el `title`.
@@ -285,7 +285,7 @@ Mide 30 px, con texto 13/500 en acción y un chevron. Hover en `--accion-tenue`.
   | Cobro | 120 |
   | Opciones | 140 |
 
-**Columna de acciones fija (ronda 3, global en `styles.scss`):** desde 821 px, si la última columna es `.col-actions` y la tabla no cabe, se queda pegada a la derecha del `.table-wrap` (`position: sticky`) con una sombra de 10 px a su izquierda que solo aparece mientras queda tabla por desplazar (animación ligada al scroll). En el celular no: ahí se comería media pantalla.
+**Columna de acciones fija (ronda 3, global en `styles.scss`):** desde 821 px, si la última columna es `.col-actions` y la tabla no cabe, se queda pegada a la derecha del `.table-wrap` (`position: sticky`) con una sombra de 10 px a su izquierda que solo aparece mientras queda tabla por desplazar (animación ligada al scroll). **En el celular (≤820 px, 22-nov-2026)** también se fija, pero solo si la columna tiene **hasta tres ranuras** (el ojo de Cartera, las acciones de Parametrización…): así el ojo siempre se ve y la sombra avisa de que la tabla se desliza; donde aplica, el desvanecido local de la tabla se apaga. Con cuatro ranuras o más (Órdenes, Cuentas de cobro) no: se comería media pantalla y la tabla se desplaza entera (§11.3).
 
 **Pestañas con filtro al lado** (Facturación › Emitidas): si un contenedor tiene `.tabs` seguido de un `select.form-control`, la línea inferior va en el contenedor entero (desde 821 px).
 
@@ -352,6 +352,7 @@ Campo con lupa, con la piel de cualquier campo: 40 px, `--borde-campo` (3,03:1),
   - **Peligro** (eliminar, quitar): gris en reposo, rojo con hover. **Reversible** (archivar, desactivar): gris en reposo, **ámbar** con hover. Deshabilitar una orden es `archivar` (caja), no una papelera; `restaurar` es la misma caja con una flecha hacia arriba.
   - **Activar/desactivar** es un interruptor que muestra el ESTADO: perilla cian a la derecha = activo (el botón ofrece desactivar), perilla gris a la izquierda = inactivo.
   - **Quitar** una línea de un formulario: X en círculo, sin disco en reposo. Cerrar de los modales, chevrones y copiar siguen siendo `.icon-action` sin disco.
+  - **Glifos utilitarios (22-nov-2026, paso 7):** la ✕ de Cerrar (modales, toasts, avisos, borrar búsqueda), la X de los chips y todos los chevrones (paginador, plegar/desplegar, selector con búsqueda, acordeón, semana/año anterior y siguiente, subir/bajar) se escriben **solo** con `<svg appIcono="cerrar|anterior|siguiente|subir|bajar">` (`shared/icono/icono.ts`, nivel `utilitario`): monocromo en `currentColor`, retícula 18, trazo 1,6 con extremos redondos, sin disco ni sombra. El botón conserva su clase, su tamaño de clic y su `aria-label`; el tamaño del glifo lo sigue poniendo el CSS de cada vista (`.icon-action svg` 16, cabecera de modal 20, chips 10–12). Para plegar se usa `bajar` y se gira con CSS. `npm run verificar:acciones` falla si vuelve una ✕ o un chevron dibujado a mano.
   - **Facturación angosta:** dentro de `@container (max-width: 1000px)` la fila de cinco ranuras pasa a disco de 26 e ícono de 18.
   - **Táctil:** 36 px solo en las columnas de acciones (`:is(.col-actions,.row-actions,.fac-acciones,.par-acciones)`).
 - **[B, Facturación, 1 h] Facturación y cualquier lista con acciones condicionales:**
@@ -415,6 +416,8 @@ En el código son `.pill` + `--warning` (SIN PROGRAMAR), `--info`, `--success` (
 
 Debajo puede ir una nota de 12/500 («Parcial · faltan 4 h»).
 
+**En la franja de la cabecera de un modal** (`--cielo`), toda pastilla —de OS o `.doc-estado`— va sobre **blanco** con un anillo de 1 px de su tono al 28 %: sus fondos tenues casi son cielo y perdía la forma. FINALIZADA conserva su relleno sólido (21-nov-2026).
+
 ### Confianza [A]
 
 Mide 22 px (18 junto a una etiqueta), con radio 6 y 12/600 tabular.
@@ -466,9 +469,11 @@ En el código: `.pill.pill--metric.pill--{success|warning|danger}` o `.conf.conf
 ### Modal [A]
 
 - **Forma.** Siempre centrado. Anchos de 480, 640, 880, 1200 y 1600, con radio 12.
-- **Cabecera.** Blanca, con el título 17/600, la pastilla de estado y «✎ Editando».
+- **Cabecera (rediseño 21-nov-2026, opción D de `docs/3-planes/rediseno-21-nov/modales/`).** Franja en `--cielo` con línea inferior `--accion-tenue-hover`; título 20/600 (`--fs-modal`, 18 en el celular), subtítulo 13 en **tinta-2** (también los subtítulos con clase propia de las hojas), la pastilla de estado y «✎ Editando».
+  - **Disco del módulo** a la izquierda del título: 44 px, **blanco** con la sombra plana cian (`--ico-tinte`, 2 px) y el ícono del acceso del Inicio a 30 px (`--ico-modal-*`). Lo pone el componente que abre el modal (mapa en `styles.scss`; `npm run verificar:iconos-modal`). **Sin disco** en `modal--sm`, en `modal--sobre` (alta rápida, visor de PDF, lo que se abre encima de otro modal) y en el celular.
+  - **✕** de 36 px con ícono de 20 en tinta-2; hover `--accion-tenue-hover` con tinta (ya no rojo).
 - **Cuerpo.** Tiene scroll propio.
-- **Pie.** Va en `#fbfcfd`. A la izquierda, lo que falta corregir; a la derecha, Cerrar (`--close`) y el primario.
+- **Pie.** Va en `#fbfcfd`. A la izquierda, lo que falta corregir; a la derecha, Cerrar (`--close`, contorno neutro) y el primario. El primario deshabilitado sigue como en §7 Botón.
 - **En esta tanda no se reescriben modales.**
   - Las secciones con título e ícono y la rejilla de dos columnas quedan como clases globales **opcionales**: `.form-grid` (2 columnas, gap 14 × 24) y `.form-grid__full`.
   - Cada modal las adopta cuando se toque por otro motivo (fase B, sin estimación propia).
@@ -511,8 +516,10 @@ Va fuera de la tabla, 14 px por debajo.
 - **Grupos sin reordenar** (`GRUPOS_MENU` y `PIE_MENU` en `core/sistemas.ts`). Cada grupo es un tramo seguido de `menu`, así que el orden no cambia. Título 12/500 en `--texto-noche-2`:
   - **Operación:** Inicio · *Operación* (Importar archivos, Órdenes, Profesionales) · *Cobro y clientes* (Cuentas de cobro, Empresas, Estadísticas) · pie: Configuración.
   - **Finanzas:** *Documentos* (Facturación, Pago a profesionales, Nómina, Cartera, Compras y gastos) · *Contabilidad* (Contabilidad, Informes contables, Terceros, Parametrización) · *Compartido con Operación* (Cuentas de cobro, Estadísticas) · pie: Configuración.
-- **Pie**, con divisor blanco al 9 %: Configuración, Cerrar sesión y **«Contraer menú»** (13 en `--texto-noche-2`), que es el `alternarSidebar()` de la hamburguesa de antes con su nombre escrito. Contraída dice «Expandir menú».
-- **Contraída: 72 px**, solo íconos e isotipo. Los títulos de grupo se vuelven un divisor blanco al 9 % (el color del divisor del pie); el primero no se pinta, porque bajo el isotipo parecía un trazo suelto. El rótulo del ítem queda **oculto solo a la vista** (`visualmente-oculto`) y el enlace lleva `aria-label` con el nombre solo. Con ratón, cada ítem muestra un **rótulo propio a la derecha** (noche, 12/500, el subtítulo debajo en `--texto-noche-2`): 300 ms de espera para el primero y ninguno entre ítems seguidos; con teclado sale al enfocar. Contraída no hay `title` nativo (saldría doble). La preferencia sigue en `localStorage` (`sst_sidebar_colapsado`).
+- **Pie**, con divisor blanco al 9 %: **solo Configuración y Cerrar sesión**.
+- **Contraer/expandir va junto al logo** (decisión del dueño, 22-nov-2026): botón de 32 px a la derecha de la marca (`.sidebar__contraer`, ícono de panel en `--icono-noche`, hover blanco al 8 %), con `aria-label` «Contraer menú» / «Expandir menú» y `aria-expanded`. Contraída, baja bajo el isotipo (36 px) y muestra el rótulo flotante «Expandir menú».
+- **Regla de ancho (decisión del dueño, 22-nov-2026; `ajustarAnchoPorRuta` en `shell.ts`):** la barra lateral **arranca contraída** cada vez que se entra a un sistema (después del login, al elegirlo en `/sistemas` o al cambiar con el segmentado) y **siempre que se vuelve al Inicio**. Al ir a cualquier otra opción del menú **se abre sola**. El botón la alterna a mano, y eso dura hasta la siguiente navegación que cambie de pantalla (cambiar solo la query, p. ej. `?os=`, no la toca). **No hay preferencia guardada**: la clave vieja `sst_sidebar_colapsado` se borra al entrar.
+- **Contraída: 72 px**, solo íconos e isotipo. Los títulos de grupo se vuelven un divisor blanco al 9 % (el color del divisor del pie); el primero no se pinta, porque bajo el isotipo parecía un trazo suelto. El rótulo del ítem queda **oculto solo a la vista** (`visualmente-oculto`) y el enlace lleva `aria-label` con el nombre solo. Con ratón, cada ítem muestra un **rótulo propio a la derecha** (noche, 12/500, el subtítulo debajo en `--texto-noche-2`): 300 ms de espera para el primero y ninguno entre ítems seguidos; con teclado sale al enfocar. Contraída no hay `title` nativo (saldría doble).
 - **Si la lista no cabe** (Finanzas en un portátil bajo), hace scroll sola y muestra un desvanecido inferior de 24 px **solo mientras queda algo por bajar** (animación ligada al scroll de la lista). Sin scroll no hay máscara.
 
 ### Barra superior [construida el 20-nov-2026 · `layout/shell`]
@@ -522,7 +529,7 @@ Mide 60 px (56 en el celular), en blanco, **en el flujo** (ya no es `position: f
 - **A la izquierda:**
   - **Quien tiene los dos sistemas** ve el segmentado `.seg` Operación / Finanzas (con `aria-pressed`). Pulsar el otro lleva a la pantalla de inicio de ese sistema (`SistemaService.elegir`), la misma a la que entraría desde `/sistemas`. Reemplaza al título centrado y al botón «Cambiar de sistema»; el `h1` «ORBITA · {sistema}» queda para lectores de pantalla (`.visualmente-oculto`).
   - **Quien tiene uno solo** ve el nombre del sistema (14/600 tinta), sin control.
-  - **En escritorio ya no hay hamburguesa**: contraer vive al pie del menú. En el celular, la barra inferior hace ese papel.
+  - **En escritorio ya no hay hamburguesa**: contraer vive junto al logo (22-nov-2026). En el celular, la barra inferior hace ese papel.
 - **A la derecha:**
   - la ayuda;
   - la campanita;
@@ -532,7 +539,7 @@ Mide 60 px (56 en el celular), en blanco, **en el flujo** (ya no es `position: f
   - Se ancla a la esquina superior derecha del glifo con `transform: translate(55%, -50%)`, así que tapa como mucho la punta de la campana.
   - Mide 17 px (16 de mínimo), con la cifra en 11/600 tabular. Con más de 99 dice «99+».
   - Por debajo de 400 px el avatar se separa 10 px de la campanita, para que «99+» no lo toque.
-- **Bandeja de la campanita** (`layout/notifications`): menú desplegable de 400 px, radio 10, `--sombra-3`, entra en 160 ms desde `scale(.98)` con origen arriba a la derecha. Cabecera con título 16/600 y «Marcar todas como leídas» como terciario en acción; los recortes No leídas · Leídas · Eliminadas son chips pulsables (28 px, el activo en `--accion-tenue` con borde acción y su conteo en acción); el buscador lleva la piel del campo. Cada aviso: ícono de línea de 18 en `--tinta-3` **sin recuadro teñido** (solo el rechazo va en error), título 13 (600 si no está leído) y mensaje 13; el no leído lleva además un punto de 6 px en acción a la izquierda. La papelera y el restaurar van atenuados al 55 % y se encienden al pasar el ratón por la fila (en táctil, enteros): la acción se ve sin buscarla, como antes del rediseño. Vacío y error con la anatomía de `.estado-vacio`. En el celular la bandeja se ancla a la ventana (12 px a los lados) y solo la lista hace scroll.
+- **Bandeja de la campanita** (`layout/notifications`): menú desplegable de 400 px, radio 10, `--sombra-3`, entra en 160 ms desde `scale(.98)` con origen arriba a la derecha. Cabecera con título 16/600 y «Marcar todas como leídas» como terciario en acción; los recortes No leídas · Leídas · Eliminadas son chips pulsables (28 px, el activo en `--accion-tenue` con borde acción y su conteo en acción); el buscador lleva la piel del campo. **Pasada de color del 22-nov-2026 (pedida por el dueño, PENDIENTE DE SU VISTO BUENO; `docs/3-planes/rediseno-21-nov/pasada-22-nov/notificaciones/propuesta.md`):** la cabecera va en la franja `--cielo` de los modales, con un disco blanco de 36 px y sombra plana cian (sin disco en el celular). Cada aviso lleva un **disco de 32 px**: el dibujo dice de qué va y el tono, qué pide. Solo **ok** (`--ok-fondo`/ok) y **error** (`--error-fondo`/error) llevan fondo de color. Error abarca el rechazo, la cuenta rechazada, los `*_VENCE` con umbral 0 y la cartera con vencidas. **Vence** sigue la convención de «vence pronto»: disco `--hundida` y reloj `--ambar` (3,02:1, y 3,40 en hover), sin el ámbar de SIN PROGRAMAR. El resto va en **marca** (`--accion-tenue`/acción). En la papelera (`.note-row--papelera`) el disco es neutro, y en el hover de la fila se vuelve blanco. Título 13, en 600 si no está leído, y mensaje 13. El no leído **no lleva fondo propio**: lleva un punto de 7 px en acción, el título en 600 y el mensaje en tinta-2. La hora va siempre en tinta-3. Hay un solo hover, `--fila-hover`, y el foco de la fila va por dentro (`outline-offset: -2px`) para que no lo recorte el scroll. La papelera y el restaurar van atenuados al 55 % y se encienden al pasar el ratón por la fila (en táctil, enteros): la acción se ve sin buscarla, como antes del rediseño. Vacío y error con la anatomía de `.estado-vacio`. En el celular la bandeja se ancla a la ventana (12 px a los lados) y solo la lista hace scroll.
 
 **Regla de contadores:**
 
@@ -544,63 +551,63 @@ Mide 60 px (56 en el celular), en blanco, **en el flujo** (ya no es `position: f
 
 ### Navegación móvil [construida el 20-nov-2026]
 
-- Es la barra inferior de hoy (≤820 px): los cuatro módulos fijos del sistema (`FIJOS_MOVIL`) y Más. Rótulo de 11/500 en `--tinta-3`, ícono de 22.
+- Es la barra inferior de hoy (≤820 px): hasta cuatro módulos fijos del sistema (`FIJOS_MOVIL`) y Más. Rótulo de 11/500 en `--tinta-3` (10 a ≤340 px), ícono de 22. Una columna por módulo (`--fijos`) + «Más» a 0,8, **siempre la última**: sin huecos con roles cortos. Sin relleno lateral: «Profesionales» cabe entero, también activo.
+- **Qué va fijo (22-nov-2026, `docs/3-planes/rediseno-21-nov/movil/propuesta.md`):** cambio mínimo frente a producción. Operación = Inicio · Órdenes · Importar · Profesionales (como en producción); Finanzas = Inicio · Facturación · Cartera · Contabilidad, con Informes contables de quinto en la prioridad (sin Inicio se ve la barra de producción). Si el rol no llega a cuatro, el relleno entra detrás, en el orden del menú, nunca Configuración. Compras y el orden del menú: propuesta pendiente del dueño.
 - El activo va en acción 600 con una marca `--cian-trazo` de 3 px arriba (sin fondo en el ícono).
 - El contador iría en `--contador`; hoy no hay ninguno.
-- **«Más»** abre una hoja desde abajo (radio 12 arriba, `--sombra-modal`, 200 ms): el nombre del sistema en 12/600, el resto de módulos como **lista de una columna a 44 px** (nombre completo, sin truncar) y al pie «Cambiar de sistema» y «Cerrar sesión» (en error).
+- **«Más»** abre una hoja que sube **apoyada sobre la barra** (radio 12 arriba, `--sombra-modal`, 200 ms); la barra queda por encima del velo y «Más» la vuelve a cerrar. Cabeza: el nombre del sistema en 16/600 tinta y un ✕ de 44 px (sin asa). Debajo, el resto de módulos bajo **los mismos títulos de grupo de la barra lateral** (12/500 `--tinta-3`) como **lista de una columna a 44 px** (nombre completo, sin truncar). Pie en una fila de botones con ícono arriba: «Cerrar sesión» (en error, a la izquierda, **con confirmación**), «Cambiar de sistema» y Configuración. Es un diálogo modal: foco dentro y atrapado, el resto `inert`, Escape y Atrás la cierran y devuelven el foco a «Más»; al navegar desde ella el foco va al contenido.
 - La barra superior del celular lleva el isotipo de 28, el segmentado (si hay dos sistemas), la ayuda, la campanita y el círculo del avatar.
 
-### Franja del saludo [B, Inicio]
+### Inicio [construido el 20/21-nov-2026 · `pages/dashboard/*`]
 
-- **Fondo.** `--cielo`, con un alto mínimo de 132 px y radio 12.
-- **Saludo.** «Buenos días, {nombre}» en **30/600**: es lo que domina la pantalla.
-- **Mensaje.** Una sola línea, sin razón social: «**13 órdenes sin programar** · 1 venció hace 2 días», seguida de **«Programar la vencida →»**. Ese enlace abre el modal de **esa** orden. La cola filtrada queda para «Requiere su atención», así que el saludo y la lista no repiten la misma acción.
-- **Fecha.** A la derecha, la fecha en 16/600 y la semana.
-- **Órbitas.** Un sistema grande de 560 × 300 px entra por el borde derecho y queda recortado arriba, abajo y a la derecha. Cruza **por detrás** de la fecha (`z-index: -1`), sin punto central sobre el texto: dos elipses de 1,5 px en `--cian-trazo` al 50 % y al 30 %, más un anillo al 12 %. **Nunca pasa del 38 % derecho del saludo** (`left: max(100% − 440px, 62%)`) y su borde izquierdo se desvanece con una máscara de 90 px: a ~1093 px y con nombres largos no cruza el mensaje (ronda 3).
+Pedido del dueño: el inicio «¿Qué desea hacer?» de Siigo (cuadrícula de accesos con ícono en círculo) con la identidad de ORBITA, en **los dos sistemas** (Finanzas también tiene Inicio). Reemplaza a la franja del saludo con órbitas y a la franja de tres principales con un acceso relleno de las rondas anteriores. Esta sección describe lo que hace el código; el detalle de la tanda está en `docs/3-planes/rediseno-21-nov/LEEME.md`.
 
-### Accesos directos [B, Inicio]
+**Estructura.** Contenedor `.inicio` de hasta 1480 px (§4). Arriba, una tarjeta blanca de bienvenida; con la pestaña Accesos abierta, la cuadrícula va en la misma tarjeta (cabecera y cuerpo se leen como una sola). Debajo, en Operación: la tira de KPI y la rejilla «Requiere su atención» 7/12 · «Próximas a ejecutar» 5/12. En Finanzas: «Requiere su atención» y «Cartera por cobrar».
 
-No hay rejilla de tarjetas iguales.
+#### Saludo
+- **Tarjeta blanca** (`.card`, radio 10), sin fondo `--cielo` y **sin órbitas**.
+- **Título.** «Buenos días, {nombre}. ¿Qué desea hacer?» en `--fs-pagina` (24)/600, `letter-spacing: -0.02em`; 20 px en el celular.
+- **Mensaje.** Una sola línea en 14 `--tinta-2`, con la parte fuerte en tinta 600. Siempre existe o reserva su alto (`min-height: 21px`, hueso mientras carga), así las pestañas no saltan al cambiar de sistema con el segmentado.
+  - Operación: «**13 órdenes sin programar** · 1 venció hace 2 días» y el enlace «Programar la vencida →» (o «Programar la más antigua →»), que abre `/ordenes?os=…` con **esa** orden. Sin vencidas, «N vencen esta semana».
+  - Finanzas: «**N borradores de factura sin emitir** · $ …»; sin borradores, lo por cobrar de la cartera y lo vencido.
+- **Fecha.** A la derecha, la fecha en 600 y la semana, en 13 `--tinta-2`.
+- **Pestañas.** «Accesos directos» e «Indicadores» (`.tabs`, `role="tablist"`, flechas del teclado). Solo se pintan si el sistema activo tiene las dos; un rol sin nada en Accesos (p. ej. solo Estadísticas) abre Indicadores sin pestañas, y en Finanzas la pestaña Indicadores solo existe para quien lee facturación o cartera.
 
-- **Franja de principales: tres accesos en una fila, separados por divisores.**
-  - **Uno solo relleno en acción**, «Importar órdenes»: es el trabajo de cada mañana. Lleva el título 16/600, una línea con el último archivo y una flecha.
-  - **Dos con su conteo** («Ver órdenes 29», «Cuentas de cobro 3»): el conteo va en 28/600 a la derecha y el hover cambia el tono del fondo.
-- **Debajo, cuatro listas compactas por grupo.**
-  - Título de grupo en 12/600 `--tinta-3`. Si el grupo vive en el otro sistema, lo dice el título («· en Finanzas»), no cada acceso.
-  - Cada acceso es una fila plana de 38 px: ícono de línea de 18 px **sin recuadro** en `--tinta-3` (en el hover pasa a acción), etiqueta 14/500 **completa** y un hover en `--hundida`.
-- **Las listas no repiten el menú** (ronda 3): Profesionales, Empresas y Estadísticas salieron porque repetían la barra lateral palabra por palabra. Quedan las tareas («Crear factura», «Registrar compra o gasto», «Cuentas de cobro del mes») y los destinos del otro sistema. Los accesos a tareas de la maqueta («Programar visitas», «Verificar soportes», «Próximas a ejecutar», «Cargar prefactura») esperan a que Órdenes lea un filtro por URL (pedido al grupo Órdenes).
-- **Un acceso con conteo que no recibe la cifra** escribe «—» en el sitio de la cifra (`aria-label` «Sin dato»); el chevron queda solo para los accesos que no cuentan nada y va en la fila de la pista.
-- **Foco en la franja de principales:** anillo de 2 px por dentro (`inset: 3px`, radio 7, concéntrico con la tarjeta), sin halo exterior; cian sobre el relleno.
-- **Los accesos se filtran por permisos** (`vista` de la matriz de Roles).
-  - «Liquidar nómina» solo aparece si el rol ve `nomina`.
-  - La contadora tendría como principal «Crear factura».
-- **En el celular:**
-  - los dos principales van en franja, con el ícono arriba y la etiqueta en hasta dos líneas;
-  - el resto, lista de una columna a 44 px con chevron;
-  - medido: ningún acceso se trunca.
+#### Accesos directos
+- **Cuadrícula de celdas iguales**, centrada: `repeat(--cols, minmax(0, 200px))`. `--cols` reparte en filas parejas con tope 5 (8 accesos → 4 + 4; 10 → 5 + 5); desde 1600 px el tope es 8 (`--cols-ancho`). No queda una última fila corta bajo una llena.
+- **Cada acceso** es un enlace entero (~170 × 150 px): un **círculo de 76 px** en `--cielo`, sin borde en reposo, con el ícono propio de 44 px (forma en blanco con trazo de acción de 1,8 px, un acento en `--cian-trazo` y la sombra plana `--ico-tinte`, cian al 58 % corrida 3,5 px, que es parte del dibujo), y la etiqueta debajo en 14/500, hasta 19 ch y con `text-wrap: balance`.
+- **Hover** (solo `@media (hover: hover) and (pointer: fine)`): el círculo toma borde en acción y fondo `--accion-tenue`, sube 2 px, y la etiqueta pasa a acción. **El acceso nunca se rellena** de acción, ni en hover ni como activo: no hay un acceso «primario» relleno (ver §10). Al pulsar, `scale(.96)`.
+- **Foco:** el anillo rodea el círculo (`outline: var(--anillo)`, `offset 3px`), no la celda; la etiqueta pasa a acción.
+- **Insignia** en `--contador` (el ámbar de los pendientes del menú), arriba a la derecha del círculo, con borde de 2 px en superficie y cifra tabular. Solo la llevan «Programar y revisar órdenes» (sin programar), «Cuentas de cobro del mes» (por cobrar del mes, si el rol opera) y «Crear factura electrónica» (borradores). Son las mismas cifras de «Requiere su atención» y de la vista de destino; el lector de pantalla oye «, 13 órdenes sin programar».
+- **Catálogo** (`catalogoAccesos()` en `dashboard.ts`):
+  - Operación (8): Importar órdenes de la ARL · Programar y revisar órdenes · Profesionales · Cuentas de cobro del mes · Empresas clientes · Estadísticas · Configuración · Centro de ayuda.
+  - Finanzas (10): Crear factura electrónica · Registrar compra o gasto · Cartera y recibos de caja · Cuentas por pagar · Pago a profesionales · Clientes y proveedores · Liquidar nómina · Plan de cuentas y comprobantes · Informes contables · Centro de ayuda. Parametrización no va (se usa al montar el sistema y está en el menú).
+  - A diferencia de la ronda 3, **la cuadrícula sí repite destinos del menú** (Profesionales, Empresas, Estadísticas): es lo que pide el estilo Siigo.
+- **Filtrados por permisos.** Un acceso sale solo si pertenece al sistema activo y el rol ve su `vista` en la matriz de Roles (`auth.puedeVer`). Los que solo operan ciertos roles (`opera`) se muestran a los demás con su etiqueta de consulta («Facturas electrónicas», «Compras y gastos», «Nómina», «Cuentas de cobro») o no se muestran (Importar y Configuración: solo admin). El Centro de ayuda lo ven todos.
+- **En el celular** (≤ 640 px): siempre lista de **dos columnas**, en los dos sistemas: círculo de 44 px a la izquierda (ícono de 28) y la etiqueta al lado en 13. La tarjeta no cambia de forma al pulsar el segmentado.
 
-### «Requiere su atención» [B, Inicio]
+#### «Requiere su atención»
+Tarjeta de 7/12 junto a «Próximas a ejecutar»; sola (Finanzas, o un rol sin Órdenes) va a todo el ancho y, desde 1101 px, sus filas se reparten en columnas de 360 px.
+- **Filas** (la fila entera es el enlace): punto de 8 px pegado a la cifra, cifra 24/600 entera con el ancho reservado de la más larga (`--cifra-ancho`, en `ch`), etiqueta 14/500, pista de 13 y un `.ir-a` con chevron.
+  - Operación: «Órdenes sin programar» (pista «1 vencida · 2 vencen esta semana»), «Soportes por revisar» («De …»), «Finalizadas sin visto bueno de cobro» («Aprobar» para admin y administrativo, «Ver» para los demás) y «Borradores de factura sin emitir» («en Finanzas»).
+  - Finanzas: solo «Finalizadas sin visto bueno de cobro» y «Borradores de factura sin emitir».
+  - La tarjeta solo existe si el rol ve `ordenes` o `facturacion`, y cada fila sale del bloque que el rol ve.
+- **Filas en cero** se ocultan; sin filas, «Todo al día» con un texto que solo nombra lo que el rol ve. Al pie, «Actualizado a las HH:MM».
+- En el celular la cifra va **encima** del título, en 20 px, con el mismo borde izquierdo en todas las filas.
 
-Es una lista en una tarjeta de 7/12.
+#### «Próximas a ejecutar» (Operación) y «Cartera por cobrar» (Finanzas)
+- **Próximas:** tarjeta de 5/12 con las órdenes programadas de los próximos 7 días (`GET /orders/proximas`), hasta 5; al pie «N más en Órdenes» o «Ir a Órdenes». Vacía: «Sin visitas en los próximos 7 días». Solo para quien ve `ordenes`.
+- **Cartera por cobrar:** los clientes que más deben (hasta 5), con documentos y lo vencido; al pie «Ir a Cartera». Solo para quien ve `cartera` y lee Finanzas.
 
-- **Cada fila lleva:**
-  - un punto de 8 px **pegado a la cifra** (misma celda, alineada a la derecha, 10 px de separación): viaja con el número y no queda huérfano en el borde;
-  - la cifra en 24/600, entera («12.450», nunca «12 mil»). Todas las filas reservan el ancho de la cifra más larga (`--cifra-ancho`, en `ch`), así las etiquetas arrancan en la misma x;
-  - en el celular (<640 px) la cifra va **encima** del título, en 20 px, con el mismo borde izquierdo en todas las filas;
-  - la etiqueta 14/500;
-  - una pista de 13 («**1 vencida** · 🕑 2 vencen esta semana»);
-  - un `.ir-a` a la cola filtrada.
-- **Filas en cero.** Se ocultan; sin filas, se ve «Todo al día».
-- **En el celular.** La fila entera se puede pulsar.
+#### Tira de KPI (Operación, pestaña Accesos)
+Los cuatro KPI de órdenes en una tarjeta partida por divisores, cifra 22/600 tabular con su pista de 13 (dos por fila bajo 1100 px). La ve quien ve Órdenes y quien no tiene nada más debajo de los accesos (el administrativo). Es la misma petición que Indicadores (`GET /reports/dashboard`), pedida una sola vez.
 
-### «Próximas a ejecutar» [B, Inicio]
+#### Pestaña Indicadores
+- **Operación:** KPI, gráfica de horas ejecutadas del mes en curso (seis meses), Distribución por estado y Avance por ARL (ver «Gráficas»).
+- **Finanzas:** KPI propios, lo facturado en el mes (neto de notas crédito, antes de IVA, con los cinco meses anteriores en gris), antigüedad de la cartera y «Documentos electrónicos» (cupos de facturación y nómina, cada uno solo si el rol ve su vista). Usan endpoints que ya existían (`/informes-contables/ventas`, `/cartera/antiguedad`, `/facturacion/cupos`).
+- Los datos de cada pestaña se piden al abrirla.
 
-Es una tarjeta de 5/12 que reemplaza a «Visitas de esta semana». Ver el §8.
-
-- Lista de las órdenes programadas, con el día en 20/600, la empresa, el profesional y la ARL, y la hora y las horas.
-- **Hoy** lleva la marca cian de 3 px y el día en acción.
-- Al pie, «Abrir Próximas a ejecutar».
-- Medido: las dos tarjetas terminan a la misma altura (2213 = 2213).
+**Donde el LEEME no coincide con el código (manda el código):** el LEEME resume «accesos en círculo, sin acceso relleno»; el código además hace subir el círculo 2 px en hover (sin sombra) y conserva Profesionales, Empresas y Estadísticas en la cuadrícula, que la ronda 3 había quitado por repetir el menú. La pestaña que el §11 llamaba «Resumen» se llama en el código «Accesos directos».
 
 ### Gráficas [B, Indicadores]
 
@@ -665,7 +672,7 @@ Todo mide 36 px y ninguna acción se esconde.
 | KPI, distribución y avance por ARL | — | Sí: `GET /reports/dashboard` y `GET /reports/horas` |
 | Vencidas sin ejecutar, horas por orden y profesionales con visitas | — | Sí: se calculan de órdenes y programación |
 
-**Recomendación:** un solo `GET /reports/inicio`, que devuelva los conteos ya filtrados por permisos.
+**Hecho:** `GET /reports/inicio` (`api.resumenInicio()`) devuelve los conteos de órdenes, facturación y cuentas de cobro; el frontend descarta los bloques que el rol no ve (`puedeVer`). Finanzas suma `/cartera/antiguedad`, `/informes-contables/ventas` y `/facturacion/cupos`.
 
 ## 9. Mapa de tokens viejos → nuevos (alias en `:root`, fase A)
 
@@ -713,11 +720,13 @@ Todo mide 36 px y ninguna acción se esconde.
 
 - Usar `#000b4f`, `#2d7bc8` como relleno, el gris violeta de «Liquidar nómina» o el verde de Finanzas en el selector.
 - Degradados (salvo la máscara de las pestañas desplazables en el celular), vidrio, `backdrop-filter`, manchas, neón o violetas.
-- **Filas de tarjetas iguales con ícono en recuadro teñido** (lo de la ronda 2). Íconos en círculo **solo** en los accesos del Inicio y en las acciones de fila (el dueño anuló la prohibición de los círculos al aprobar el Inicio).
+- **Filas de tarjetas iguales con ícono en recuadro teñido** (lo de la ronda 2). La cuadrícula del Inicio sí tiene celdas iguales, pero sin tarjeta ni recuadro: círculo y etiqueta sobre la misma tarjeta blanca. Íconos en círculo **solo** en los accesos del Inicio, en las acciones de fila **y en la cabecera de los modales medianos y grandes** (el dueño anuló la prohibición de los círculos al aprobar el Inicio, y aprobó el disco del modal el 21-nov-2026). Propuesto el 22-nov, pendiente del dueño: el disco de tono de los avisos de la campanita.
 - Un hover congelado en la maqueta o en reposo.
 - Rayas de color en tarjetas o grupos; sombras negras, o sombras difusas en reposo (la sombra plana teñida de los íconos del Inicio y de las acciones de fila es parte del dibujo, no una elevación).
 - Cebra, línea de 2 px bajo la cabecera, o una fila que abra algo o muestre cursor de mano.
-- Paneles laterales, o más de un primario por vista. En el Inicio, el primario es el acceso relleno.
+- Paneles laterales, o más de un primario por vista.
+- **Rellenar un acceso del Inicio** de acción, ni como «activo» ni en hover: el hover solo da borde en acción y fondo `--accion-tenue` al círculo. El Inicio no tiene primario relleno (el acceso relleno «Importar órdenes» de la ronda 3 se retiró).
+- Un acceso del Inicio que el rol no puede abrir: la cuadrícula se filtra por la `vista` de la matriz de Roles.
 - **Cian en texto**, o cian para algo que no sea «ahora». La meta va en tinta-3.
 - **Texto en ámbar fuera de la pastilla SIN PROGRAMAR.** «Vence pronto» va en tinta-2 con reloj ámbar.
 - **El mismo conteo dos veces y en dos colores.**
@@ -741,30 +750,35 @@ Estas decisiones **prevalecen** sobre la maqueta y sobre cualquier punto anterio
    - el cambio de significado de la campanita: **conserva su conteo actual**.
 2. **Menú:** se agrupa sin reordenar y pierde los subtítulos. Va en la fase posterior (plantillas). **La barra lateral en noche está aprobada.**
 3. **Órdenes en el celular** sigue con su tabla y desplazamiento horizontal: no se hace la plantilla apilada.
-4. **Tú / usted:** no se barre la app ahora. Solo los textos **nuevos** del Inicio y del login van de usted. El barrido del §12 queda pendiente del dueño.
+4. **Tú / usted:** el dueño pidió el barrido completo el 22-nov-2026: toda la app (frontend, centro de ayuda y mensajes del servidor que llegan a pantalla) va de usted. Lista de cambios en `docs/3-planes/rediseno-21-nov/barrido-usted.md`.
 5. **Tablas a 1280, 1366 y ~1093 px útiles (escala 125 %):** columnas de texto flexibles con `min-width` razonable, nunca anchos fijos que dejen la razón social en 0; barras de herramientas con `flex-wrap`.
 6. **Hover de fila visible:** al menos ~1,12:1 contra blanco. Se usa `--fila-hover` (`#ebf0f5`, 1,15:1), no `#f8fafc`.
 7. **Millones como «MM»**, nunca «M».
 8. **No se nombra al proveedor tecnológico** de facturación en textos visibles: «proveedor tecnológico» o «la DIAN».
 9. **Se mantienen como estaban** (venían de la maqueta): sin columna «Confianza» en Órdenes; Eliminar sigue en la fila con su confirmación, no en el modal; Opciones sin menú «⋯»; sin «Recordar mi documento» en el login.
+10. **Inicio estilo «¿Qué desea hacer?» (Siigo), 20/21-nov-2026:** cuadrícula de accesos con ícono en círculo en los dos sistemas, ancho hasta 1480 px, sin acceso relleno, accesos filtrados por permisos, «Requiere su atención» y pestaña Indicadores (§7, Inicio). Prevalece sobre la franja de principales y las listas compactas de la ronda 3.
+11. **Facturación › Por facturar, 22/23-nov-2026 (pedido del dueño):**
+    - **Línea de sección.** Cada sección de pagador lleva una línea bajo su cabecera. Va en `--cian-trazo` (2 px, un escalón bajo la raya de 3 px de la pestaña) **solo en la sección en la que está quien lee**: la de la cabecera pegada, o la primera si no se ha bajado. Las demás la llevan gris. Es la excepción a «sin rayas de color en grupos» del §10 y cabe en el §1.3 porque marca dónde se está.
+    - **Cabecera fija.** Desde 641 px la cabecera es sticky dentro de su tarjeta.
+    - **Filtro por pagador.** Pastillas `.chip--filtro`, fijas y siempre en su sitio: «Todos» **sin número**, una por ARL y «Otros» para los clientes particulares. En Por facturar cuentan las listas para facturar, la misma unidad que la pestaña y la cabecera; en las demás pestañas, documentos. Las que están en 0 van atenuadas. Es un solo filtro para las cuatro pestañas y se conserva al cambiar de pestaña. Es una función agregada a pedido del dueño. Detalle en `docs/3-planes/rediseno-21-nov/pasada-22-nov/facturacion/propuesta.md`.
 
 ### Pendientes del dueño
 
 - **Inicio por rol: cambios de estructura PENDIENTES DE CONFIRMAR** (los ampara la excepción «Inicio por rol» y el §1.6/§10: no hay tabla de órdenes en el Inicio):
   - se retiró «Órdenes recientes» con su ojo «Ver la orden» y su «Ver todo»;
-  - los KPI, la Distribución por estado y el Avance por ARL pasaron a una pestaña nueva, «Indicadores»; el Resumen lleva accesos, «Requiere su atención» y «Próximas a ejecutar»;
+  - los KPI, la Distribución por estado y el Avance por ARL pasaron a una pestaña nueva, «Indicadores»; la pestaña «Accesos directos» lleva la cuadrícula, «Requiere su atención» y «Próximas a ejecutar» (o «Cartera por cobrar» en Finanzas);
   - el título «Panel de control» se sustituyó por el saludo; «Total Órdenes» pasó a «Total órdenes»;
   - las filas de «Requiere su atención» y «Ir a Órdenes» llevan a `/ordenes` **sin filtro** hasta que Órdenes lea uno por URL (pedido al grupo Órdenes).
 
 - **Órdenes · Estado ARL «Pendiente» en neutro** (antes ámbar), también en el detalle y en el historial (§7, Estado ARL y «Plataforma»). Lo propuso el grupo Órdenes; falta el visto bueno.
 - **Órdenes en el celular:** con Opciones sin fijar (§11.3), Ver y Cobro quedan fuera de vista en todas las filas hasta desplazar la tabla (~480 px).
 
-- **Barrido de tú / usted** en `src/app/**/*.html` y `ayuda.contenido.ts` (§12), con las capturas del centro de ayuda.
+- **Barrido de tú / usted:** hecho el 22-nov-2026 (§12); faltan las capturas del centro de ayuda que muestren textos cambiados.
 - **Subtítulo de la barra superior** («JD&D Consultores · Facturación y contabilidad» / «Gestión de órdenes de servicio SST»): se quitó con el rediseño del shell. PENDIENTE DE CONFIRMAR por el dueño; si lo quiere, vuelve como línea 12 `--tinta-3` junto al segmentado.
 - **Lo que quedó fuera** y podría volver como función aparte: filtros de ARL y fechas en Órdenes, segmentado Semana/Mes/Año del Inicio, campanita que cuente solo notificaciones nuevas, Órdenes apiladas en el celular, «Recordar mi documento» en el login.
-- **Cambios de posición del shell** que proponía la maqueta y pedía el §7. **Construidos el 20-nov-2026, PENDIENTES DE CONFIRMAR por el dueño:** título centrado de la barra superior → segmentado de sistema (solo con dos sistemas); hamburguesa → «Contraer menú» al pie del menú; Configuración al pie (era el último ítem del menú: el orden no cambia). Ojo al confirmar: (a) el segmentado lleva directo al inicio del otro sistema y se salta `/sistemas`, a la que en escritorio ya no lleva ningún botón (solo queda «Cambiar de sistema» en «Más» del celular); (b) en las pantallas compartidas (`/configuracion`, `/ayuda`) el segmentado no marca ningún sistema (ronda 3); la barra lateral sigue con el menú del último elegido y pulsar cualquiera de los dos lleva a su inicio. **No hechos:** la ayuda sigue en la barra superior del celular (la maqueta la llevaba a «Más»); marcador del buscador de Órdenes «Empresa, NIT u OS»; pestaña del Inicio «Resumen» y «Próximas a ejecutar» en lugar de «Visitas de esta semana».
+- **Cambios de posición del shell** que proponía la maqueta y pedía el §7. **Construidos el 20-nov-2026, PENDIENTES DE CONFIRMAR por el dueño:** título centrado de la barra superior → segmentado de sistema (solo con dos sistemas); hamburguesa → botón de contraer junto al logo (CONFIRMADO y movido ahí por el dueño el 22-nov, con la regla de ancho de §7); Configuración al pie (era el último ítem del menú: el orden no cambia). Ojo al confirmar: (a) el segmentado lleva directo al inicio del otro sistema y se salta `/sistemas`, a la que en escritorio ya no lleva ningún botón (solo queda «Cambiar de sistema» en «Más» del celular); (b) en las pantallas compartidas (`/configuracion`, `/ayuda`) el segmentado no marca ningún sistema (ronda 3); la barra lateral sigue con el menú del último elegido y pulsar cualquiera de los dos lleva a su inicio. **No hechos:** la ayuda sigue en la barra superior del celular (la maqueta la llevaba a «Más»); marcador del buscador de Órdenes «Empresa, NIT u OS»; pestaña del Inicio «Resumen» y «Próximas a ejecutar» en lugar de «Visitas de esta semana».
 
-## 12. Trato de usted: textos que cambian (pendiente del dueño, ver §11)
+## 12. Trato de usted: textos que cambian (barrido hecho el 22-nov-2026, ver §11.4)
 
 | Hoy | Pasa a |
 |---|---|

@@ -25,7 +25,15 @@
   @if (open()) {
     <div class="tray" role="dialog" aria-label="Bandeja de notificaciones">
       <header class="tray__head">
-        <div>
+        <!-- 22-nov-2026 · Disco de la bandeja: el de la cabecera de los modales (blanco
+             con la sombra plana cian) sobre la misma franja cielo. -->
+        <span class="tray__disco" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path class="tray__disco-forma" d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path class="tray__disco-acento" d="M13.7 21a2 2 0 0 1-3.4 0" />
+          </svg>
+        </span>
+        <div class="tray__titulos">
           <p class="tray__title">Notificaciones</p>
           <p class="tray__sub">
             @if (store.unread() > 0) {
@@ -77,7 +85,7 @@
         />
         @if (textoBusqueda()) {
           <button type="button" class="tray__buscar-limpiar" (click)="limpiarBusqueda()" aria-label="Borrar la búsqueda" title="Borrar la búsqueda">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            <svg appIcono="cerrar"></svg>
           </button>
         }
       </div>
@@ -94,7 +102,9 @@
             <button type="button" class="tray__retry" (click)="store.load()">Reintentar</button>
           </div>
         } @else if (!store.items().length) {
-          <div class="tray__state">
+          <!-- «No hay avisos sin leer» es la buena noticia: lleva la variante ok de
+               `.estado-vacio` («Todo al día»). Los demás vacíos, el disco de la marca. -->
+          <div class="tray__state" [class.tray__state--ok]="!store.busqueda() && store.filtro() === 'no-leidas'">
             <span class="tray__empty-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -128,7 +138,7 @@
         } @else {
           <ul class="tray__list">
             @for (n of store.items(); track n.id) {
-              <li class="note-row">
+              <li class="note-row" [class.note-row--papelera]="!!n.eliminado_en">
                 <button
                   type="button"
                   class="note"
@@ -136,7 +146,7 @@
                   [class.note--link]="esNavegable(n)"
                   (click)="abrir(n)"
                 >
-                  <span class="note__icon" [class]="'note__icon--' + icono(n.tipo)" aria-hidden="true">
+                  <span class="note__icon" [class]="'note__icon--' + icono(n.tipo)" [attr.data-tono]="tono(n)" aria-hidden="true">
                     @switch (icono(n.tipo)) {
                       @case ('asignacion') {
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -169,6 +179,25 @@
                           <rect x="2.5" y="6" width="19" height="12" rx="2" />
                           <circle cx="12" cy="12" r="2.5" />
                           <path d="M6 10v4M18 10v4" />
+                        </svg>
+                      }
+                      @case ('vence') {
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="13" r="8" />
+                          <path d="M12 9v4l2.5 1.5M9.5 2.5h5" />
+                        </svg>
+                      }
+                      @case ('cartera') {
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M4 7a2 2 0 0 1 2-2h12a1.5 1.5 0 0 1 1.5 1.5V9" />
+                          <path d="M4 7v11a2 2 0 0 0 2 2h13a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1H6a2 2 0 0 1-2-2" />
+                          <path d="M16.5 14.5h.01" />
+                        </svg>
+                      }
+                      @case ('factura') {
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M6 3h12v18l-2.5-1.5L13 21l-2.5-1.5L8 21l-2-1.5Z" />
+                          <path d="M9 8h6M9 12h6M9 16h3" />
                         </svg>
                       }
                       @default {

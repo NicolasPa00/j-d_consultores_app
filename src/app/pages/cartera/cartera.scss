@@ -148,6 +148,12 @@
   white-space: nowrap;
 }
 
+/* 22-nov-2026 · Mientras la factura no está marcada no hay nada que mostrar: un
+   «—» en tinta-3, sin el fondo hundido (se leía como un campo roto). */
+.car-sin-valor {
+  color: var(--tinta-3);
+}
+
 /* Desplegable con las retenciones de la factura (varias a la vez). */
 .car-ret {
   position: relative;
@@ -286,8 +292,10 @@
 }
 
 /* Cliente / proveedor a 11 rem a ~1093 px: deja sitio a las cifras sin que la
-   razón social quede en una palabra por renglón. */
-@media (max-width: 1365px) {
+   razón social quede en una palabra por renglón.
+   22-nov-2026 · Hasta 1400 px (antes 1365): a 1366 justos la tabla de edades se
+   desbordaba 10 px y la columna fija del ojo tapaba el borde del Total. */
+@media (max-width: 1400px) {
   .card > .table-wrap > .table tbody td.car-nombre { min-width: 10rem; text-wrap: balance; }
   /* Los rótulos de las edades («1 a 30 días», «Por vencer») pueden ir en dos
      renglones: una columna vacía ya no reserva el ancho de su rótulo entero y la

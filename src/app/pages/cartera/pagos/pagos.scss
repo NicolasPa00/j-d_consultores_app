@@ -120,6 +120,24 @@
   width: 130px;
 }
 
+/* 22-nov-2026 · La retención es un select con el nombre entero («Retención en la
+   fuente 11 %»): sin mínimo se quedaba en ~56 px y solo se leía «N». Pagado mide
+   lo que pide su cifra formateada; Anticipo y Retenido ceden el sobrante. */
+.pg-editor td:nth-child(7) .form-control {
+  min-width: 9.5rem;
+}
+.pg-editor td:nth-child(5) .form-control {
+  min-width: 7.5rem;
+}
+.pg-editor td:nth-child(6),
+.pg-editor td:nth-child(8) {
+  width: 88px;
+}
+.pg-editor :is(th, td) {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
 .pg-marcada td {
   background: var(--accion-tenue);
 }
@@ -319,4 +337,19 @@
 /* No es movimiento: con movimiento reducido conserva su línea de tiempo. */
 @media (prefers-reduced-motion: reduce) {
   .card > .table-wrap { animation-duration: auto !important; }
+}
+
+/* 22-nov-2026 · Botones con «+» (§7: crear lleva +) y, en el celular, la misma regla
+   de cabecera que el resto de la app (styles.scss, «Botones de la cabecera en el
+   celular»): el secundario a todo el ancho arriba y el primario a todo el ancho
+   debajo, sin reordenar nada. */
+.pg-filtros .btn svg { width: 16px; height: 16px; }
+@media (max-width: 640px) {
+  .pg-filtros--acciones > .pg-sep { display: none; }
+  .pg-filtros--acciones > .btn {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+  }
+  .pg-filtros--acciones > .btn--primary { flex: 1 0 100%; }
 }

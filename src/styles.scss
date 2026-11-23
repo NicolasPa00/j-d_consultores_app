@@ -378,12 +378,13 @@ h4 {
   color: var(--accion);
 }
 
-/* Cerrar / Cancelar (1-oct-2026): rojo TENUE. Sale sin hacer nada, así que no
-   compite con el primario ni se confunde con una destructiva. */
+/* Cerrar / Cancelar. Era rojo tenue (1-oct-2026), pero en el pie del modal era lo
+   único saturado y se llevaba la vista que le toca al primario. Desde el 21-nov-2026
+   es un secundario neutro (contorno), como pide el DESIGN §7 Botón. */
 .btn--close {
-  background: var(--cerrar-fondo);
-  color: var(--error);
-  border-color: transparent;
+  background: var(--superficie);
+  color: var(--tinta);
+  border-color: var(--borde-control);
 }
 
 /* Destructivo sólido: solo dentro de una confirmación (Anular, Eliminar, Rechazar). */
@@ -439,7 +440,9 @@ h4 {
   }
 
   .btn--close:hover:not(:disabled) {
-    background: var(--error-fondo);
+    background: var(--papel);
+    border-color: var(--borde-control-hover);
+    color: var(--tinta);
   }
 
   .btn--danger:hover:not(:disabled) {
@@ -1936,9 +1939,12 @@ textarea.form-control {
 
 /* ============================================================
    MODAL ESTÁNDAR (DESIGN §7)
-   Siempre centrado; 480/640/880/1200/1600; radio 12. Cabecera blanca con
-   título 17/600; cuerpo con scroll propio; pie en #fbfcfd con lo que falta a
-   la izquierda y Cerrar (`--close`) + primario a la derecha.
+   Siempre centrado; 480/640/880/1200/1600; radio 12. Cabecera en franja
+   --cielo con título 20/600 (18 en el celular) y, en los medianos y grandes,
+   el disco del módulo a la izquierda; cuerpo con scroll propio; pie en #fbfcfd
+   con lo que falta a la izquierda y Cerrar (`--close`, contorno) + primario a
+   la derecha. Rediseño 21-nov-2026, opción D de
+   docs/3-planes/rediseno-21-nov/modales/ («los header no se notan»).
      .modal-backdrop + .modal
        .modal__head   (.modal__title, .modal__sub, .modal__head-actions, ✕)
        .modal__body
@@ -1980,15 +1986,20 @@ textarea.form-control {
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
-  padding: 18px var(--e-4) var(--e-4) var(--e-6);
-  background: var(--superficie);
-  border-bottom: 1px solid var(--borde);
+  padding: var(--e-5) var(--e-4) 18px var(--e-6);
+  /* La franja en cielo separa la cabecera del cuerpo blanco sin color nuevo
+     (es el plano del saludo del Inicio). La línea va en acción tenue: --borde
+     casi no se ve contra cielo. */
+  background: var(--cielo);
+  border-bottom: 1px solid var(--accion-tenue-hover);
 }
 
-.modal__head > div,
-.modal__head > .modal__title {
+/* El texto se centra en el alto de la cabecera (junto al disco de 44 px). Va
+   también sobre el h3 suelto: unas 20 cabeceras no lo envuelven en un div. */
+.modal__head > :is(div, .modal__title) {
   flex: 1;
   min-width: 0;
+  align-self: center;
 }
 
 .modal__title {
@@ -1999,15 +2010,81 @@ textarea.form-control {
   margin: 0;
   font-size: var(--fs-modal);
   font-weight: 600;
-  letter-spacing: -0.01em;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
   color: var(--tinta);
 }
 
 .modal__sub {
-  margin: 3px 0 0;
+  margin: var(--e-1) 0 0;
   font-size: var(--fs-celda);
-  color: var(--tinta-3);
+  line-height: 1.45;
+  max-width: 78ch;
+  text-wrap: pretty;
+  color: var(--tinta-2); /* 6,51 sobre cielo (tinta-3 se quedaba en 4,53) */
 }
+
+/* Subtítulos con clase propia de su hoja (.cp-sub, .cmp-sub, .af-sub, .ic-sub,
+   en tinta-3): con el encapsulado de Angular su regla pesa 0,2,0; esta pesa
+   0,2,1 y los iguala al .modal__sub. */
+.modal .modal__head > div > :is(small, p) {
+  color: var(--tinta-2);
+}
+
+.modal .modal__head .modal__sub-conf {
+  color: inherit;
+}
+
+/* Pastillas en la franja: info-fondo y hundida casi son cielo y la pastilla
+   perdía la forma. Dentro de la cabecera van sobre blanco con un anillo de su
+   tono (DESIGN §7 Pastilla); FINALIZADA conserva su relleno sólido. El .modal
+   delante gana a las .pill.doc-estado.pill--warning de las hojas (0,4,0). */
+.modal .modal__head .pill:not(.pill--finalizada) {
+  background: var(--superficie);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 28%, transparent);
+}
+
+/* Disco del módulo (como los accesos del Inicio): blanco —un disco cielo se
+   perdía en la franja— con la sombra plana cian. El dibujo lo pone el
+   componente que abre el modal (mapa de abajo). Un componente que no está en
+   el mapa no pinta disco: sin --disco-modal, `content` no vale y no hay
+   ::before (nada de círculos vacíos). Sin disco en las confirmaciones (--sm),
+   en lo que se abre encima de otro modal (--sobre: alta rápida, visor de PDF)
+   ni en el celular. `npm run verificar:iconos-modal` avisa si un componente con
+   modal falta en el mapa o si un dibujo ya no es el del Inicio. */
+@media (min-width: 641px) {
+  .modal:not(.modal--sm, .modal--sobre) > .modal__head::before {
+    content: var(--disco-modal);
+    flex: none;
+    align-self: center;
+    width: 44px;
+    height: 44px;
+    margin-left: calc(-1 * var(--e-1));
+    border-radius: 50%;
+    background: var(--superficie) var(--icono-modal) center / 30px no-repeat;
+    box-shadow: 2px 2px 0 var(--ico-tinte);
+  }
+}
+
+/* Componente → ícono de su módulo (--ico-modal-* en _tokens.scss). */
+app-nomina { --icono-modal: var(--ico-modal-nomina); --disco-modal: ''; }
+app-validation { --icono-modal: var(--ico-modal-ordenes); --disco-modal: ''; }
+app-import { --icono-modal: var(--ico-modal-importar); --disco-modal: ''; }
+app-professionals { --icono-modal: var(--ico-modal-profesionales); --disco-modal: ''; }
+app-companies { --icono-modal: var(--ico-modal-empresas); --disco-modal: ''; }
+app-billing { --icono-modal: var(--ico-modal-cuentas); --disco-modal: ''; }
+app-facturacion { --icono-modal: var(--ico-modal-factura); --disco-modal: ''; }
+app-documentos-soporte { --icono-modal: var(--ico-modal-pago-profesionales); --disco-modal: ''; }
+app-compras { --icono-modal: var(--ico-modal-compra); --disco-modal: ''; }
+app-cartera { --icono-modal: var(--ico-modal-cartera); --disco-modal: ''; }
+app-pagos { --icono-modal: var(--ico-modal-cartera); --disco-modal: ''; }
+app-terceros { --icono-modal: var(--ico-modal-tercero); --disco-modal: ''; }
+app-contabilidad { --icono-modal: var(--ico-modal-contabilidad); --disco-modal: ''; }
+app-activos { --icono-modal: var(--ico-modal-contabilidad); --disco-modal: ''; }
+app-comprobantes { --icono-modal: var(--ico-modal-contabilidad); --disco-modal: ''; }
+app-periodos { --icono-modal: var(--ico-modal-contabilidad); --disco-modal: ''; }
+app-informes-contables { --icono-modal: var(--ico-modal-informes-contables); --disco-modal: ''; }
+app-parametrizacion { --icono-modal: var(--ico-modal-parametrizacion); --disco-modal: ''; }
 
 .modal__head > .modal__head-actions {
   flex: 0 0 auto;
@@ -2025,16 +2102,29 @@ textarea.form-control {
   height: 15px;
 }
 
-/* La ✕ de la cabecera: 32 px y rojo tenue al pasar, igual que Cerrar. */
+/* La ✕ de la cabecera: 36 px con ícono de 20, en tinta-2 (6,51 sobre cielo).
+   Al pasar, acción tenue: «Cerrar» ya no es rojo, la ✕ tampoco. */
 .modal__head .icon-action[aria-label='Cerrar'] {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
+  margin: calc(-1 * var(--e-1)) -2px 0 0;
+  color: var(--tinta-2);
+}
+
+.modal__head .icon-action[aria-label='Cerrar'] svg {
+  width: 20px;
+  height: 20px;
+}
+
+.modal__head .icon-action[aria-label='Cerrar']:disabled {
+  color: var(--tinta-inactiva);
+  background: transparent;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .modal__head .icon-action[aria-label='Cerrar']:hover {
-    background: var(--cerrar-fondo);
-    color: var(--error);
+  .modal__head .icon-action[aria-label='Cerrar']:hover:not(:disabled) {
+    background: var(--accion-tenue-hover);
+    color: var(--tinta);
   }
 }
 
@@ -2520,6 +2610,50 @@ textarea.form-control {
   }
 }
 
+/* 22-nov-2026 · Celular (≤820 px): la columna de acciones también se fija a la
+   derecha cuando es ANGOSTA (hasta tres ranuras: el ojo de Cartera, las acciones de
+   Parametrización, Facturación…), con la misma sombra corta que dice «hay columnas debajo» y que se
+   apaga al llegar al final. Así el ojo siempre se ve y el usuario sabe que la tabla
+   se desliza (revisión en el navegador, defecto 11). Las de cuatro ranuras o más
+   (Órdenes, Cuentas de cobro) se siguen desplazando enteras: fijarlas se comería
+   media pantalla (DESIGN §7 Tabla y §11.3). Una sola regla para todas las vistas;
+   donde aplica, el desvanecido local de la tabla se apaga para no velar el ojo. */
+@media (max-width: 820px) {
+  .table-wrap > .table:not(:has(> tbody > tr > td.col-actions:last-child :is(.accion, .icon-action--hueco) ~ :is(.accion, .icon-action--hueco) ~ :is(.accion, .icon-action--hueco) ~ :is(.accion, .icon-action--hueco)))
+    > :is(thead, tbody, tfoot) > tr > :is(th, td).col-actions:last-child {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    background-color: inherit;
+  }
+
+  .table-wrap > .table:not(:has(> tbody > tr > td.col-actions:last-child :is(.accion, .icon-action--hueco) ~ :is(.accion, .icon-action--hueco) ~ :is(.accion, .icon-action--hueco) ~ :is(.accion, .icon-action--hueco)))
+    > :is(thead, tfoot) > tr > :is(th, td).col-actions:last-child {
+    z-index: 2;
+    background-color: var(--cabecera-tabla);
+  }
+
+  .table-wrap > .table:not(:has(> tbody > tr > td.col-actions:last-child :is(.accion, .icon-action--hueco) ~ :is(.accion, .icon-action--hueco) ~ :is(.accion, .icon-action--hueco) ~ :is(.accion, .icon-action--hueco)))
+    > :is(thead, tbody, tfoot) > tr > :is(th, td).col-actions:last-child::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -10px;
+    width: 10px;
+    pointer-events: none;
+    background: linear-gradient(to left, rgb(15 23 42 / 12%), rgb(15 23 42 / 0%));
+    opacity: 0;
+    animation: tabla-hay-mas linear both;
+    animation-timeline: scroll(nearest inline);
+  }
+
+  .table-wrap:has(> .table > tbody > tr > td.col-actions:last-child):not(:has(> .table > tbody > tr > td.col-actions:last-child :is(.accion, .icon-action--hueco) ~ :is(.accion, .icon-action--hueco) ~ :is(.accion, .icon-action--hueco) ~ :is(.accion, .icon-action--hueco))) {
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+  }
+}
+
 @keyframes tabla-hay-mas {
   0%,
   92% {
@@ -2581,6 +2715,16 @@ textarea.form-control {
   }
 }
 
+/* Celular con barra inferior (shell, ≤820 px): los toasts suben por encima de
+   ella; antes la tapaban y un toque en «Más» caía en el aviso. Solo dentro del
+   shell (`:has`), no en el login ni en las páginas públicas, que no tienen barra.
+   Va aquí y no en alert-host porque depende de la barra del shell. */
+@media (max-width: 820px) {
+  body:has(.bottom-nav) .toast-stack {
+    bottom: calc(64px + 12px + env(safe-area-inset-bottom));
+  }
+}
+
 /* ============================================================
    Movimiento reducido (DESIGN §5): transiciones a 1 ms y sin
    transformaciones. El spinner y la barra del toast siguen, porque
@@ -2603,7 +2747,7 @@ textarea.form-control {
 
   /* Los desvanecidos ligados al scroll no son movimiento: conservan su duración. */
   .tabs,
-  .table-wrap > .table > :is(thead, tbody) > tr > :is(th, td).col-actions:last-child::before {
+  .table-wrap > .table > :is(thead, tbody, tfoot) > tr > :is(th, td).col-actions:last-child::before {
     animation-duration: auto !important;
   }
 }

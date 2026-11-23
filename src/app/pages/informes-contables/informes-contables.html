@@ -122,7 +122,7 @@
     <span class="ic-sub">Filtrado por:</span>
     @for (f of filtrosActivos(); track f.clave) {
       <span class="ic-chip">{{ f.texto }}
-        <button type="button" (click)="quitarFiltro(f.clave)" [attr.aria-label]="'Quitar el filtro ' + f.texto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
+        <button type="button" (click)="quitarFiltro(f.clave)" [attr.aria-label]="'Quitar el filtro ' + f.texto"><svg appIcono="cerrar"></svg></button>
       </span>
     }
     <button type="button" class="ic-link" (click)="limpiarFiltros()">Quitar todos</button>
@@ -137,7 +137,7 @@
     <tr class="ic-cuenta-fila" [class.ic-cuenta-fila--anidada]="anidada">
       <td [attr.colspan]="(conBase ? 1 : 0) + (conTercero ? 4 : 3)">
         <button type="button" class="ic-plegar" (click)="plegar(clave)" [attr.aria-expanded]="!plegadas().has(clave)" [attr.aria-label]="(plegadas().has(clave) ? 'Desplegar ' : 'Plegar ') + c.codigo">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" [class.ic-plegar--cerrado]="plegadas().has(clave)"><path d="m6 9 6 6 6-6" /></svg>
+          <svg appIcono="bajar" [class.ic-plegar--cerrado]="plegadas().has(clave)"></svg>
         </button>
         {{ titulo }}
       </td>
@@ -214,7 +214,7 @@
             <td [attr.colspan]="6">
               <div class="ic-tercero">
                 <button type="button" class="ic-plegar" (click)="plegar(claveTercero(t))" [attr.aria-expanded]="!plegadas().has(claveTercero(t))" [attr.aria-label]="(plegadas().has(claveTercero(t)) ? 'Desplegar ' : 'Plegar ') + t.nombre">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" [class.ic-plegar--cerrado]="plegadas().has(claveTercero(t))"><path d="m6 9 6 6 6-6" /></svg>
+                  <svg appIcono="bajar" [class.ic-plegar--cerrado]="plegadas().has(claveTercero(t))"></svg>
                 </button>
                 <span class="ic-tercero__nombre">{{ t.nombre }}</span>
                 @if (t.documento) { <span class="mono ic-tercero__doc">{{ t.documento }}</span> }
@@ -338,7 +338,7 @@
   @if (auxiliar(); as a) {
     <div class="ic-estado">
       <span class="tag tag--info">{{ plural(a.cuentas.length, 'cuenta', 'cuentas') }} · {{ plural(a.n_movimientos, 'movimiento', 'movimientos') }}</span>
-      <small class="ic-nota">El saldo de cada línea es el saldo corrido de la cuenta. Use el ícono del comprobante para ver el asiento completo.</small>
+      <small class="ic-nota">El saldo de cada línea es el saldo corrido de la cuenta. Use el ojo junto al comprobante para ver el asiento completo.</small>
     </div>
     <div class="table-wrap">
       <table class="table ic-tabla ic-aux ic-mov">
@@ -528,7 +528,7 @@
             <tr class="ic-cuenta-fila">
               <td>
                 <button type="button" class="ic-plegar" (click)="plegar('v:' + c.tercero_id)" [attr.aria-expanded]="plegadas().has('v:' + c.tercero_id)" [attr.aria-label]="(plegadas().has('v:' + c.tercero_id) ? 'Ocultar las facturas de ' : 'Ver las facturas de ') + c.nombre">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" [class.ic-plegar--cerrado]="!plegadas().has('v:' + c.tercero_id)"><path d="m6 9 6 6 6-6" /></svg>
+                  <svg appIcono="bajar" [class.ic-plegar--cerrado]="!plegadas().has('v:' + c.tercero_id)"></svg>
                 </button>
                 {{ c.nombre }} @if (c.documento) { <small class="ic-sub mono">{{ c.documento }}</small> }
               </td>
@@ -589,7 +589,7 @@
         <small class="ic-sub">{{ c.tipo_nombre }} · {{ fecha(c.fecha) }}{{ c.creado_por_nombre ? ' · ' + c.creado_por_nombre : '' }}</small>
       </div>
       <button type="button" class="icon-action" (click)="detalle.set(null)" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
     <div class="modal__body">

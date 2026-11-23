@@ -15,19 +15,20 @@
     (input)="escribir($any($event.target).value)"
     (keydown)="tecla($event)"
   />
-  <svg class="sb__flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+  <svg appIcono="bajar" class="sb__flecha"></svg>
 
   @if (abierto()) {
     <ul class="sb__lista" role="listbox">
       @if (textoVacio(); as vacio) {
         <li role="option" class="sb__opcion sb__opcion--vacio" [class.sb__opcion--resaltada]="resaltado() === 0"
-            [attr.aria-selected]="!valor()" (mousedown)="$event.preventDefault(); elegir('')">{{ vacio }}</li>
+            [attr.aria-selected]="!valor()" (mousemove)="resaltar(0)" (mousedown)="$event.preventDefault(); elegir('')">{{ vacio }}</li>
       }
       @for (o of filtradas(); track o.valor; let i = $index) {
         <li role="option" class="sb__opcion"
             [class.sb__opcion--resaltada]="resaltado() === i + (textoVacio() ? 1 : 0)"
             [class.sb__opcion--elegida]="o.valor === valor()"
             [attr.aria-selected]="o.valor === valor()"
+            (mousemove)="resaltar(i + (textoVacio() ? 1 : 0))"
             (mousedown)="$event.preventDefault(); elegir(o.valor)">
           <span>@for (p of trozos(o.texto); track $index) {@if (p.coincide) {<mark>{{ p.t }}</mark>}@else{<span>{{ p.t }}</span>}}</span>
           @if (o.detalle) { <small>{{ o.detalle }}</small> }

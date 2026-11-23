@@ -6,8 +6,8 @@
     <button type="button" class="btn btn--ghost" (click)="exportarAntiguedad()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5" /><path d="m9.5 12.5 5 5M14.5 12.5l-5 5" /></svg> Exportar a Excel</button>
     @if (puedeOperar()) {
       <a routerLink="/documentos-soporte" class="btn btn--ghost">Documento soporte</a>
-      <button type="button" class="btn btn--ghost" (click)="nuevoAnticipo()">Registrar anticipo</button>
-      <button type="button" class="btn btn--primary" (click)="nuevoEgreso()">Registrar egreso</button>
+      <button type="button" class="btn btn--ghost" (click)="nuevoAnticipo()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg> Registrar anticipo</button>
+      <button type="button" class="btn btn--primary" (click)="nuevoEgreso()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg> Registrar egreso</button>
     }
   </div>
   <div class="card">
@@ -50,10 +50,10 @@
 <!-- ======================= EGRESOS Y ANTICIPOS ======================= -->
 @if (vista() === 'egresos') {
   @if (puedeOperar()) {
-    <div class="pg-filtros">
+    <div class="pg-filtros pg-filtros--acciones">
       <span class="pg-sep"></span>
-      <button type="button" class="btn btn--ghost" (click)="nuevoAnticipo()">Registrar anticipo</button>
-      <button type="button" class="btn btn--primary" (click)="nuevoEgreso()">Registrar egreso</button>
+      <button type="button" class="btn btn--ghost" (click)="nuevoAnticipo()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg> Registrar anticipo</button>
+      <button type="button" class="btn btn--primary" (click)="nuevoEgreso()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg> Registrar egreso</button>
     </div>
   }
   <div class="card">
@@ -117,6 +117,9 @@
         <h3 class="modal__title" id="pgEcTitle">Estado de cuenta · {{ e.tercero.nombre }}</h3>
         <p class="modal__sub">{{ e.tercero.numero_documento }} · se le debe {{ pesos(e.saldo) }}</p>
       </div>
+      <button type="button" class="icon-action" (click)="estado.set(null)" aria-label="Cerrar">
+        <svg appIcono="cerrar"></svg>
+      </button>
     </header>
     <div class="modal__body">
       <div class="table-wrap">
@@ -161,6 +164,9 @@
         </h3>
         <p class="modal__sub">{{ e.tercero_nombre }} · {{ e.fecha | fechaDmy }}{{ e.cuenta_banco_codigo ? ' · ' + e.cuenta_banco_codigo + ' ' + e.cuenta_banco_nombre : '' }}</p>
       </div>
+      <button type="button" class="icon-action" (click)="egreso.set(null)" [disabled]="trabajando()" aria-label="Cerrar">
+        <svg appIcono="cerrar"></svg>
+      </button>
     </header>
     <div class="modal__body">
       @if (e.motivo_anulacion) { <p class="pg-anulado">Anulado: {{ e.motivo_anulacion }}</p> }
@@ -208,6 +214,9 @@
         </h3>
         <p class="modal__sub">{{ a.tercero_nombre }} · {{ a.fecha | fechaDmy }}</p>
       </div>
+      <button type="button" class="icon-action" (click)="anticipo.set(null)" [disabled]="trabajando()" aria-label="Cerrar">
+        <svg appIcono="cerrar"></svg>
+      </button>
     </header>
     <div class="modal__body">
       <dl class="pg-dl">
@@ -244,7 +253,12 @@
 @if (anticipoOpen()) {
   <div class="modal-backdrop" (click)="anticipoOpen.set(false)"></div>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pgAnTitle">
-    <header class="modal__head"><h3 class="modal__title" id="pgAnTitle">Registrar anticipo a un proveedor</h3></header>
+    <header class="modal__head">
+      <h3 class="modal__title" id="pgAnTitle">Registrar anticipo a un proveedor</h3>
+      <button type="button" class="icon-action" (click)="anticipoOpen.set(false)" [disabled]="trabajando()" aria-label="Cerrar">
+        <svg appIcono="cerrar"></svg>
+      </button>
+    </header>
     <div class="modal__body">
       <div class="form-field">
         <label class="form-field__label" for="pgAnProv">Proveedor *</label>
@@ -291,7 +305,12 @@
 @if (egresoOpen()) {
   <div class="modal-backdrop" (click)="egresoOpen.set(false)"></div>
   <div class="modal modal--lg" role="dialog" aria-modal="true" aria-labelledby="pgEgNTitle">
-    <header class="modal__head"><h3 class="modal__title" id="pgEgNTitle">Registrar egreso</h3></header>
+    <header class="modal__head">
+      <h3 class="modal__title" id="pgEgNTitle">Registrar egreso</h3>
+      <button type="button" class="icon-action" (click)="egresoOpen.set(false)" [disabled]="trabajando()" aria-label="Cerrar">
+        <svg appIcono="cerrar"></svg>
+      </button>
+    </header>
     <div class="modal__body">
       <div class="pg-tres">
         <div class="form-field">

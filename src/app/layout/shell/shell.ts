@@ -1,17 +1,20 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, OnInit, PLATFORM_ID, computed, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, Injector, OnInit, PLATFORM_ID, afterNextRender, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { isPlatformBrowser, NgTemplateOutlet } from '@angular/common';
 import { NavigationEnd, RouterLink, RouterLinkActive, RouterOutlet, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { AuthService } from '../../core/auth.service';
+import { AlertService } from '../../core/alert.service';
 import { SistemaService } from '../../core/sistema.service';
 import { Rol, Vista } from '../../core/models';
 import { GRUPOS_MENU, PIE_MENU, SistemaId } from '../../core/sistemas';
 import { NotificationsComponent } from '../notifications/notifications';
+import { IconoComponent } from '../../shared/icono/icono';
 
 /** T0-14 · Preferencia de sidebar plegado, y el ancho ≤820 px bajo el que el
  * botón deja de alternar el ancho y pasa a abrir el menú encima, como un panel. */
-const SIDEBAR_KEY = 'sst_sidebar_colapsado';
+/** Clave de la preferencia vieja (antes del 22-nov se recordaba ancho/contraído); se borra al entrar. */
+const SIDEBAR_KEY_VIEJA = 'sst_sidebar_colapsado';
 const ANCHO_MOVIL = 820;
 
 /** Rutas comunes a Operación y Finanzas (ver `enRutaCompartida`). */
@@ -34,13 +37,25 @@ interface Rotulo {
 }
 
 /**
- * Los cuatro módulos fijos de la barra inferior del celular, por sistema (aprobados
- * por el usuario el 2-oct-2026). El resto va en «Más». Si el rol no ve alguno, se
- * completa con los siguientes del menú.
+ * Módulos fijos de la barra inferior del celular, por sistema y en orden de
+ * prioridad: entran los cuatro primeros que el rol puede ver, en ESTE orden. El
+ * resto va en «Más».
+ * Ronda 2 del 22-nov-2026 (docs/3-planes/rediseno-21-nov/movil/propuesta.md):
+ * cambio mínimo frente a producción. Lo único que obliga a tocar la barra es el
+ * Inicio de Finanzas (20-nov), que necesita un hueco.
+ * - Operación queda como en producción (aprobada el 2-oct-2026):
+ *   Inicio · Órdenes · Importar · Profesionales.
+ * - Finanzas: Inicio · Facturación · Cartera · Contabilidad. Informes contables va
+ *   quinto, así que quien no tenga Inicio ve la barra de producción tal cual:
+ *   Facturación · Cartera · Contabilidad · Informes.
+ * Compras en lugar de Contabilidad y el orden del menú lateral quedan como
+ * propuesta para el dueño, sin aplicar. Si el rol no llega a cuatro con esta
+ * lista, se completa con los siguientes del menú, en su orden (nunca con
+ * Configuración, que vive al pie de «Más» como al pie de la barra lateral).
  */
 const FIJOS_MOVIL: Record<string, Vista[]> = {
   operacion: ['dashboard', 'ordenes', 'importar', 'profesionales'],
-  finanzas: ['facturacion', 'cartera', 'contabilidad', 'informes_contables'],
+  finanzas: ['dashboard', 'facturacion', 'cartera', 'contabilidad', 'informes_contables'],
 };
 
 interface NavItem {
@@ -100,7 +115,7 @@ const ROL_ETIQUETA: Record<Rol, string> = {
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, NotificationsComponent, NgTemplateOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, NotificationsComponent, NgTemplateOutlet, IconoComponent],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -118,6 +133,25 @@ export class ShellComponent implements OnInit {
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.cancelarRotulo());
+    // Cambiar de sistema con el segmentado estando en el Inicio no dispara una
+    // navegación (misma URL), así que la regla de ancho también escucha el sistema.
+    effect(() => {
+      const id = this.sistemas.activo().id;
+      untracked(() => {
+        if (this.sistemaPrevio !== null && this.sistemaPrevio !== id) {
+          this.sistemaPrevio = id;
+          this.colapsado.set(true);
+          this.salirRotulo();
+        }
+      });
+    });
+    if (this.isBrowser) {
+      try {
+        localStorage.removeItem(SIDEBAR_KEY_VIEJA);
+      } catch {
+        // sin localStorage no hay nada que limpiar
+      }
+    }
     // Un enlace directo a una pantalla del otro sistema (campanita, correo,
     // enlace orden → factura) cambia el sistema activo sin preguntar.
     this.sistemas.sincronizarConUrl(this.router.url);
@@ -126,7 +160,20 @@ export class ShellComponent implements OnInit {
       .subscribe((e) => {
         this.sistemas.sincronizarConUrl(e.urlAfterRedirects);
         this.urlActual.set(e.urlAfterRedirects);
+        this.ajustarAnchoPorRuta(e.urlAfterRedirects);
+        this.alTerminarNavegacion();
       });
+    // La hoja «Más» solo existe a ≤820 px. Si la ventana se ensancha con ella
+    // abierta (girar una tableta), se cierra: si no, quedaría «abierta» pero
+    // oculta, y reaparecería al volver a estrechar.
+    if (this.isBrowser && typeof matchMedia === 'function') {
+      const movil = matchMedia(`(max-width: ${ANCHO_MOVIL}px)`);
+      const alCambiar = (ev: MediaQueryListEvent) => {
+        if (!ev.matches) this.cerrarMas();
+      };
+      movil.addEventListener('change', alCambiar);
+      inject(DestroyRef).onDestroy(() => movil.removeEventListener('change', alCambiar));
+    }
   }
 
   /**
@@ -237,24 +284,30 @@ export class ShellComponent implements OnInit {
   }
 
   /**
-   * T0-14 · Ancho ↔ colapsado, en cualquier ancho de pantalla (antes solo se
-   * estrechaba por media query, sin que nadie pudiera elegirlo). Se lee de
-   * `localStorage` en el CONSTRUCTOR —antes del primer render— para que en una
-   * carga normal del navegador (sin SSR previo) no haya parpadeo: si se leyera
-   * en `ngOnInit`, el sidebar se pintaría ancho un instante y luego saltaría a
-   * colapsado.
+   * Regla del dueño (22-nov-2026, DESIGN §7 «Barra lateral contraída»): la barra
+   * lateral NO recuerda una preferencia. Arranca contraída al entrar a un sistema
+   * (después del login, al elegir sistema o al cambiar con el segmentado) y en el
+   * Inicio; se abre sola al ir a cualquier otra opción del menú. El botón junto al
+   * logo la alterna a mano hasta la siguiente navegación.
    */
-  protected readonly colapsado = signal(this.leerPreferencia());
+  protected readonly colapsado = signal(true);
   /** En móvil el botón no encoge nada: abre el menú completo encima, como un panel. */
   protected readonly menuMovilAbierto = signal(false);
+  /** Ruta (sin query) y sistema de la última navegación, para decidir el ancho. */
+  private rutaPrevia: string | null = null;
+  private sistemaPrevio: string | null = null;
 
-  private leerPreferencia(): boolean {
-    if (!this.isBrowser) return false;
-    try {
-      return localStorage.getItem(SIDEBAR_KEY) === '1';
-    } catch {
-      return false;
-    }
+  /** Aplica la regla de ancho tras cada navegación que cambia de pantalla o de sistema. */
+  private ajustarAnchoPorRuta(url: string): void {
+    const ruta = url.split(/[?#]/)[0];
+    const sistema = this.sistemas.activo().id;
+    const entraASistema = this.sistemaPrevio !== sistema;
+    const cambiaPantalla = this.rutaPrevia !== ruta;
+    this.rutaPrevia = ruta;
+    this.sistemaPrevio = sistema;
+    if (!entraASistema && !cambiaPantalla) return; // solo cambió la query: se respeta lo que eligió a mano
+    this.colapsado.set(entraASistema || ruta === '/dashboard');
+    this.salirRotulo();
   }
 
   ngOnInit(): void {
@@ -274,18 +327,7 @@ export class ShellComponent implements OnInit {
       this.menuMovilAbierto.update((v) => !v);
       return;
     }
-    this.colapsado.update((v) => {
-      const nuevo = !v;
-      if (this.isBrowser) {
-        try {
-          localStorage.setItem(SIDEBAR_KEY, nuevo ? '1' : '0');
-        } catch {
-          // Sin localStorage (privado, cuota…) la preferencia no persiste, pero
-          // el botón sigue funcionando durante la sesión.
-        }
-      }
-      return nuevo;
-    });
+    this.colapsado.update((v) => !v);
     this.salirRotulo();
   }
 
@@ -308,31 +350,187 @@ export class ShellComponent implements OnInit {
   protected readonly masAbierto = signal(false);
   private readonly urlActual = signal(this.router.url);
 
+  /** Ítems del menú que pueden ir en la barra o en el cuerpo de «Más» (sin el pie). */
+  private readonly modulosMovil = computed<NavItem[]>(() => this.navItems().filter((i) => !PIE_MENU.includes(i.vista)));
+
   protected readonly fijosMovil = computed<NavItem[]>(() => {
-    const items = this.navItems();
+    const items = this.modulosMovil();
     const preferidos = FIJOS_MOVIL[this.sistemas.activo().id] ?? [];
-    const fijos = preferidos.map((v) => items.find((i) => i.vista === v)).filter((i): i is NavItem => !!i);
+    // Los preferidos, en su orden (el de producción); el relleno de un rol
+    // restringido entra detrás, en el orden del menú.
+    const fijos = preferidos
+      .map((v) => items.find((i) => i.vista === v))
+      .filter((i): i is NavItem => !!i)
+      .slice(0, 4);
     for (const i of items) {
       if (fijos.length >= 4) break;
       if (!fijos.includes(i)) fijos.push(i);
     }
-    return fijos.slice(0, 4);
+    return fijos;
   });
 
-  protected readonly restoMovil = computed<NavItem[]>(() => this.navItems().filter((i) => !this.fijosMovil().includes(i)));
+  /**
+   * Cuerpo de «Más»: lo que no cabe en la barra, con los mismos títulos de grupo de
+   * la barra lateral (GRUPOS_MENU) para que se lea igual en los dos sitios. Un
+   * grupo cuyos ítems están todos en la barra no aparece.
+   */
+  protected readonly seccionesMas = computed<SeccionMenu[]>(() => {
+    const fijos = this.fijosMovil();
+    return this.seccionesMenu()
+      .map((s) => ({ titulo: s.titulo, items: s.items.filter((i) => !fijos.includes(i)) }))
+      .filter((s) => s.items.length > 0);
+  });
 
-  /** «Más» se marca activo cuando la pantalla abierta es uno de sus módulos. */
+  /** «Más» se marca activo cuando la pantalla abierta es uno de sus módulos o del pie. */
   protected readonly enModuloDeMas = computed(() => {
     const ruta = '/' + (this.urlActual().split(/[?#]/)[0].split('/')[1] ?? '');
-    return this.restoMovil().some((i) => i.route === ruta);
+    const fijos = this.fijosMovil();
+    return this.navItems().some((i) => !fijos.includes(i) && i.route === ruta);
   });
 
+  private readonly botonMas = viewChild<ElementRef<HTMLButtonElement>>('botonMas');
+  private readonly hojaMas = viewChild<ElementRef<HTMLElement>>('hojaMas');
+  private readonly injector = inject(Injector);
+  private readonly alertas = inject(AlertService);
+
+  /**
+   * La hoja abierta tiene su propia entrada en el historial: así el botón Atrás
+   * del teléfono (el gesto natural para cerrar una hoja en Android) la cierra en
+   * vez de cambiar de pantalla con ella encima. Se empuja al abrir con la MISMA
+   * URL, y se consume al cerrar (`history.back()`) o se reemplaza al navegar
+   * desde la hoja (`replaceUrl`), para no dejar entradas repetidas.
+   */
+  private hojaEnHistorial = false;
+  /** Tras navegar desde la hoja, el foco va al contenido (si no, cae en `body`). */
+  private enfocarContenidoAlLlegar = false;
+
+  /** Abre o cierra «Más». Con la barra por encima del velo, tocar «Más» otra vez la cierra. */
   protected alternarMas(): void {
-    this.masAbierto.update((v) => !v);
+    if (this.masAbierto()) {
+      this.cerrarMas(true);
+      return;
+    }
+    this.masAbierto.set(true);
+    if (this.isBrowser) {
+      history.pushState({ ...(history.state ?? {}), hojaMas: true }, '');
+      this.hojaEnHistorial = true;
+    }
+    // Diálogo modal: el foco entra en la hoja (primer módulo).
+    afterNextRender(
+      () => this.hojaMas()?.nativeElement.querySelector<HTMLElement>('.hoja-mas__item, .hoja-mas__pie button')?.focus(),
+      { injector: this.injector },
+    );
   }
 
-  protected cerrarMas(): void {
-    if (this.masAbierto()) this.masAbierto.set(false);
+  /**
+   * Cierra «Más» sin navegar (Escape, ✕, velo, «Más» otra vez). Consume la
+   * entrada del historial que puso la apertura; `devolverFoco` lo lleva al
+   * botón que la abrió.
+   */
+  protected cerrarMas(devolverFoco = false): void {
+    if (!this.masAbierto()) return;
+    this.masAbierto.set(false);
+    if (this.hojaEnHistorial) {
+      this.hojaEnHistorial = false;
+      history.back();
+    }
+    if (devolverFoco) this.botonMas()?.nativeElement.focus();
+  }
+
+  /**
+   * Un enlace (de la hoja o de la barra) tocado con la hoja abierta. Si lleva a
+   * otra pantalla, la navegación REEMPLAZA la entrada de la hoja (`replaceUrl`
+   * en la plantilla) y el foco irá al contenido al llegar. Si es la pantalla en
+   * la que ya se está, no hay navegación: se cierra como con ✕.
+   */
+  protected alTocarEnlace(ruta: string): void {
+    if (!this.masAbierto()) return;
+    const actual = '/' + (this.urlActual().split(/[?#]/)[0].split('/')[1] ?? '');
+    if (actual === ruta) {
+      this.cerrarMas(true);
+      return;
+    }
+    this.masAbierto.set(false);
+    this.hojaEnHistorial = false;
+    this.enfocarContenidoAlLlegar = true;
+  }
+
+  /** «Cambiar de sistema» desde la hoja: navega reemplazando la entrada de la hoja. */
+  protected cambiarSistemaDesdeMas(): void {
+    const reemplazar = this.hojaEnHistorial;
+    this.masAbierto.set(false);
+    this.hojaEnHistorial = false;
+    this.sistemas.olvidarEleccion();
+    this.router.navigateByUrl('/sistemas', { replaceUrl: reemplazar });
+  }
+
+  /**
+   * «Cerrar sesión» desde la hoja pide confirmación: queda en la zona del pulgar
+   * y un toque de más sacaría a la persona con su trabajo a medias. (En la barra
+   * lateral de escritorio sigue directo, como siempre.)
+   */
+  protected async salirDesdeMas(): Promise<void> {
+    this.cerrarMas();
+    const ok = await this.alertas.confirm({
+      title: 'Cerrar sesión',
+      message: '¿Desea cerrar la sesión en este dispositivo?',
+      confirmText: 'Cerrar sesión',
+      cancelText: 'Seguir aquí',
+      tone: 'danger',
+    });
+    if (ok) this.logout();
+    else this.botonMas()?.nativeElement.focus();
+  }
+
+  /** Escape cierra la hoja, como cualquier modal de la plataforma. */
+  @HostListener('document:keydown.escape')
+  protected escaparMas(): void {
+    this.cerrarMas(true);
+  }
+
+  /** Atrás del teléfono con la hoja abierta: solo la cierra (la URL no cambia). */
+  @HostListener('window:popstate')
+  protected atrasConHoja(): void {
+    if (!this.masAbierto() || !this.hojaEnHistorial) return;
+    this.hojaEnHistorial = false;
+    this.masAbierto.set(false);
+    this.botonMas()?.nativeElement.focus();
+  }
+
+  /**
+   * Trampa de foco del diálogo: Tab da la vuelta dentro de la hoja. El resto de la
+   * página está `inert` mientras tanto (plantilla), salvo la barra inferior, que
+   * sigue operable para que «Más» cierre.
+   */
+  protected atraparFoco(ev: KeyboardEvent): void {
+    if (ev.key !== 'Tab') return;
+    const hoja = this.hojaMas()?.nativeElement;
+    if (!hoja) return;
+    const enfocables = [...hoja.querySelectorAll<HTMLElement>('a[href], button:not([disabled])')];
+    if (!enfocables.length) return;
+    const primero = enfocables[0];
+    const ultimo = enfocables[enfocables.length - 1];
+    const activo = document.activeElement;
+    if (ev.shiftKey && (activo === primero || !hoja.contains(activo))) {
+      ev.preventDefault();
+      ultimo.focus();
+    } else if (!ev.shiftKey && (activo === ultimo || !hoja.contains(activo))) {
+      ev.preventDefault();
+      primero.focus();
+    }
+  }
+
+  /** Tras una navegación lanzada desde la hoja, el foco va al contenido nuevo. */
+  private alTerminarNavegacion(): void {
+    // Cualquier otra navegación (un enlace de la campanita, Atrás a otra
+    // pantalla) cierra la hoja: nunca queda abierta sobre una pantalla nueva.
+    if (this.masAbierto()) {
+      this.masAbierto.set(false);
+      this.hojaEnHistorial = false;
+    }
+    if (!this.enfocarContenidoAlLlegar) return;
+    this.enfocarContenidoAlLlegar = false;
+    afterNextRender(() => this.contenido()?.nativeElement.focus({ preventScroll: true }), { injector: this.injector });
   }
 
   /**

@@ -1,0 +1,636 @@
+<!-- ===== Filtros: una sola fila, arriba de las pestañas y compartida por todas =====
+     Ronda 2: nada de esta fila cambia de tamaño al cambiar de periodo o de pestaña.
+     La Relación para Bolívar GUARDA SU SITIO (invisible e inerte) fuera de Cobro, y
+     la línea del periodo (con las fechas del rango) pasó a la fila de las pestañas:
+     elegir «Rango» ya no empuja el lienzo. Desde 1280 px esta fila sube a la de
+     «Estadísticas» (ver reports.scss): a 1366 × 768 el lienzo cabe entero. -->
+<div class="filtros">
+  <div class="filtros__fila">
+    <!-- En Cobro el periodo no aplica: el segmentado sigue a la vista, del mismo
+         tamaño, pero deshabilitado; la línea del periodo dice por qué (DESIGN §10). -->
+    <div
+      class="seg"
+      role="group"
+      aria-label="Periodo"
+      [class.seg--inactivo]="pestana() === 'cobro'"
+      [attr.aria-disabled]="pestana() === 'cobro' ? 'true' : null"
+    >
+      @for (p of periodos; track p.clave) {
+        <button
+          type="button"
+          [class.seg--on]="periodo() === p.clave"
+          [attr.aria-pressed]="periodo() === p.clave"
+          [attr.aria-disabled]="pestana() === 'cobro' ? 'true' : null"
+          (click)="elegirPeriodo(p.clave)"
+        >
+          {{ p.nombre }}
+        </button>
+      }
+    </div>
+
+  </div>
+
+  <div class="filtros__acciones">
+    <!-- T0-08 · Solo en Cobro. En las otras pestañas el botón guarda su sitio
+         (invisible e inerte): así la fila no cambia de alto al cambiar de pestaña. -->
+    <button
+      type="button"
+      class="btn btn--secondary btn--sm filtros__relacion"
+      [class.filtros__relacion--oculta]="pestana() !== 'cobro'"
+      [attr.aria-hidden]="pestana() !== 'cobro' ? 'true' : null"
+      [attr.inert]="pestana() !== 'cobro' ? '' : null"
+      [disabled]="exportandoRelacion()"
+      (click)="exportarRelacionBolivar()"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+        <path d="M14 3v5h5" />
+        <path d="M9 13h6M9 17h6" />
+      </svg>
+      {{ exportandoRelacion() ? 'Generando…' : 'Relación para Bolívar (Excel)' }}
+    </button>
+    <!-- Excel y PDF llevan su nombre en `aria-label`: por debajo de 1440 px (y en el
+         celular) se quedan en ícono para que la fila quepa siempre igual. -->
+    <button
+      type="button"
+      class="btn btn--ghost btn--sm filtros__exportar"
+      [attr.aria-label]="exportando() ? 'Generando el Excel' : 'Exportar a Excel'"
+      title="Exportar a Excel"
+      [disabled]="!hayDatosParaExportar() || exportando()"
+      (click)="exportarExcel()"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+        <path d="M14 3v5h5" />
+        <path d="m9.5 12.5 5 5M14.5 12.5l-5 5" />
+      </svg>
+      <span class="filtros__texto">{{ exportando() ? 'Generando…' : 'Excel' }}</span>
+    </button>
+    <button
+      type="button"
+      class="btn btn--ghost btn--sm filtros__exportar"
+      aria-label="Exportar a PDF"
+      title="Exportar a PDF"
+      [disabled]="!hayDatosParaExportar()"
+      (click)="exportarPdf()"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+        <path d="M14 3v5h5" />
+        <path d="M9 13h6M9 17h4" />
+      </svg>
+      <span class="filtros__texto">PDF</span>
+    </button>
+  </div>
+</div>
+
+<!-- ===== Pestañas, con la línea del periodo a la derecha ===== -->
+<div class="pestanas">
+  <div class="tabs" role="tablist" aria-label="Estadísticas de Operación" (keydown)="teclaPestana($event)">
+    @for (p of pestanas; track p.id) {
+      <button
+        type="button"
+        class="tab"
+        role="tab"
+        [id]="'tab-est-' + p.id"
+        [class.tab--active]="pestana() === p.id"
+        [attr.aria-selected]="pestana() === p.id"
+        aria-controls="panel-est"
+        [attr.tabindex]="pestana() === p.id ? 0 : -1"
+        (click)="elegirPestana(p.id)"
+      >
+        {{ p.nombre }}
+      </button>
+    }
+  </div>
+  <!-- La línea del periodo. Con «Rango», las dos fechas van DENTRO de la línea
+       («Por fecha de entrada · [desde] – [hasta]»): así elegir Rango no añade
+       ninguna fila y el lienzo no se mueve. -->
+  <div class="pestanas__linea" [class.pestanas__linea--aviso]="lineaPeriodo() === 'Rango no válido'">
+    @if (periodo() === 'rango') {
+      <!-- En Cobro el periodo no aplica: las fechas se apartan (en el celular guardan
+           su sitio, invisibles, para que las pestañas no salten al entrar en Cobro). -->
+      <span class="pestanas__base" [class.pestanas__base--entera]="pestana() === 'cobro'" aria-live="polite">{{
+        pestana() === 'cobro' ? lineaPeriodo() : recargando() ? 'Actualizando…' : baseFecha() + ' ·'
+      }}</span>
+      <span class="rango" [class.rango--oculto]="pestana() === 'cobro'" [attr.inert]="pestana() === 'cobro' ? '' : null" [attr.aria-hidden]="pestana() === 'cobro' ? 'true' : null">
+        <label class="rango__campo">
+          <span class="visualmente-oculto">Desde</span>
+          <input class="form-control form-control--sm" type="date" name="estDesde"
+                 [value]="desdeRango()" [max]="hastaRango()" (change)="cambiarFecha('desde', $event)" />
+        </label>
+        <span class="rango__guion" aria-hidden="true">–</span>
+        <label class="rango__campo">
+          <span class="visualmente-oculto">Hasta</span>
+          <input class="form-control form-control--sm" type="date" name="estHasta"
+                 [value]="hastaRango()" [min]="desdeRango()" (change)="cambiarFecha('hasta', $event)" />
+        </label>
+      </span>
+    } @else {
+      <span aria-live="polite">{{ recargando() ? 'Actualizando…' : lineaPeriodo() }}</span>
+    }
+  </div>
+</div>
+
+<!-- ===== Lienzo: alto fijo por plantilla (560 px en escritorio) ===== -->
+<section
+  id="panel-est"
+  class="lienzo"
+  role="tabpanel"
+  [attr.aria-labelledby]="'tab-est-' + pestana()"
+  [attr.aria-busy]="recargando() || vista() === 'esqueleto'"
+  [class.lienzo--sin-franja]="pestana() === 'arl'"
+  [class.lienzo--recargando]="recargando()"
+  [attr.data-pestana]="pestana()"
+>
+  @switch (vista()) {
+    <!-- ---------- Primera carga: la forma de la plantilla, sin animar ---------- -->
+    @case ('esqueleto') {
+      @if (pestana() !== 'arl') {
+        <div class="kpi-grid franja" aria-hidden="true" [style.--celdas]="pestana() === 'resumen' ? 4 : 3">
+          @for (e of esqueletoCifras(); track $index) {
+            <article class="kpi-card">
+              <div class="kpi-card__info">
+                <span class="kpi-card__label">{{ e }}</span>
+                <span class="hueso hueso--cifra"></span>
+                <span class="hueso hueso--pista"></span>
+              </div>
+            </article>
+          }
+        </div>
+      }
+      <div class="fila" [attr.data-plantilla]="pestana()" aria-hidden="true">
+        @for (t of esqueletoTarjetas(); track $index) {
+          <section class="card tarjeta">
+            <header class="tarjeta__cabeza"><div><h3 class="tarjeta__titulo">{{ t.titulo }}</h3><span class="hueso hueso--pista"></span></div></header>
+            @if (t.forma === 'columnas') {
+              <div class="graf graf--esqueleto">
+                <div class="graf__plot">
+                  <div class="cols" [style.--cols]="esqueletoEje().length">
+                    @for (h of esqueletoEje(); track $index) {
+                      <div class="cols__col"><div class="cols__barra cols__barra--hueso" [style.height.%]="h.alto"></div></div>
+                    }
+                  </div>
+                </div>
+                <div class="graf__eje-x cols cols--eje" [style.--cols]="esqueletoEje().length">
+                  @for (h of esqueletoEje(); track $index) { <span>{{ h.texto }}</span> }
+                </div>
+              </div>
+            } @else {
+              <ul class="barras">
+                @for (w of [86, 64, 48, 36, 24, 14]; track $index) {
+                  <li class="barras__fila"><span class="hueso hueso--nombre"></span><span class="barras__pista"><span class="barras__barra barras__barra--hueso" [style.width.%]="w"></span></span><span class="hueso hueso--valor"></span></li>
+                }
+              </ul>
+            }
+          </section>
+        }
+      </div>
+    }
+
+    <!-- ---------- Error: un vacío con una sola acción ---------- -->
+    @case ('error') {
+      <div class="card estado-vacio lienzo__unico">
+        <span class="estado-vacio__icono" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" /></svg>
+        </span>
+        <h3 class="estado-vacio__titulo">No se pudieron cargar las estadísticas</h3>
+        <p class="estado-vacio__texto">Revise su conexión e intente de nuevo.</p>
+        <div class="estado-vacio__accion"><button type="button" class="btn btn--secondary" (click)="reintentar()">Reintentar</button></div>
+      </div>
+    }
+
+    <!-- ---------- Datos ---------- -->
+    @default {
+      @switch (pestana()) {
+        <!-- ===== 1 · Resumen: ¿cuánto trabajo entró en el periodo y en qué va? ===== -->
+        @case ('resumen') {
+          <ng-container *ngTemplateOutlet="franja; context: { $implicit: cifrasResumen() }" />
+          @if (vacia()) {
+            <ng-container *ngTemplateOutlet="vacio" />
+          } @else {
+            <div class="fila" data-plantilla="resumen">
+              <section class="card tarjeta" aria-labelledby="est-tendencia">
+                <header class="tarjeta__cabeza">
+                  <div>
+                    <h3 class="tarjeta__titulo" id="est-tendencia">{{ tituloTendencia() }}</h3>
+                    <p class="tarjeta__sub">{{ totalTendencia() }}</p>
+                  </div>
+                  <div class="seg" role="group" aria-label="Qué se mide">
+                    <button type="button" [class.seg--on]="medida() === 'ordenes'" [attr.aria-pressed]="medida() === 'ordenes'" (click)="medida.set('ordenes'); foco.set(null)">Órdenes</button>
+                    <button type="button" [class.seg--on]="medida() === 'horas'" [attr.aria-pressed]="medida() === 'horas'" (click)="medida.set('horas'); foco.set(null)">Horas</button>
+                  </div>
+                </header>
+
+                @if (tendencia(); as t) {
+                  <!-- Por día: línea de 2 px con área tenue y cursor. El SVG se estira
+                       al alto de la tarjeta; los rótulos van en HTML para no deformarse. -->
+                  <div class="graf graf--con-eje" role="img" [attr.aria-label]="ariaTendencia()">
+                    <div class="graf__eje-y" aria-hidden="true">
+                      @for (m of t.marcasY; track m.alto) { <span [style.bottom.%]="m.alto">{{ n(m.valor) }}</span> }
+                    </div>
+                    <div class="graf__plot" (pointermove)="moverSobreLinea($event)" (pointerleave)="foco.set(null)">
+                      @for (m of t.marcasY; track m.alto) { <i class="graf__rejilla" [class.graf__rejilla--base]="!m.alto" [style.bottom.%]="m.alto"></i> }
+                      <svg class="graf__svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                        @if (t.area) {
+                          <path class="linea__area" [attr.d]="t.area" />
+                          <path class="linea__trazo" [attr.d]="t.trazo" vector-effect="non-scaling-stroke" />
+                        }
+                        @if (puntoEnFoco(); as f) {
+                          <path class="linea__cursor" [attr.d]="'M' + f.x + ',0 V100'" vector-effect="non-scaling-stroke" />
+                        }
+                        @if (t.conMarcadores) {
+                          @for (p of t.puntos; track p.i) {
+                            <!-- Un trazo de largo ~0 con punta redonda = un punto que no se deforma. -->
+                            <path class="linea__anillo" [attr.d]="'M' + p.x + ',' + p.y + ' l0.001,0'" vector-effect="non-scaling-stroke" />
+                            <path class="linea__punto" [attr.d]="'M' + p.x + ',' + p.y + ' l0.001,0'" vector-effect="non-scaling-stroke" />
+                          }
+                        }
+                        @if (puntoEnFoco(); as f) {
+                          <path class="linea__anillo linea__anillo--foco" [attr.d]="'M' + f.x + ',' + f.y + ' l0.001,0'" vector-effect="non-scaling-stroke" />
+                          <path class="linea__punto linea__punto--foco" [attr.d]="'M' + f.x + ',' + f.y + ' l0.001,0'" vector-effect="non-scaling-stroke" />
+                        }
+                      </svg>
+                      @if (puntoEnFoco(); as f) {
+                        <div class="tooltip" [class.tooltip--izq]="f.x > 70" [style.left.%]="f.x" [style.top.%]="f.y">
+                          <span class="tooltip__fecha">{{ rotuloDia(f.inicio) }}</span>
+                          <strong class="tooltip__valor">{{ n(f.valor) }}</strong>
+                          <span class="tooltip__unidad">{{ unidadMedida(f.valor) }}</span>
+                        </div>
+                      }
+                    </div>
+                    <div class="graf__eje-x" aria-hidden="true">
+                      @for (m of t.marcasX; track m.x) { <span [style.left.%]="m.x" [attr.data-ancla]="m.anclaje">{{ m.texto }}</span> }
+                    </div>
+                  </div>
+                } @else if (tendenciaMeses(); as c) {
+                  <ng-container *ngTemplateOutlet="cols; context: { $implicit: c, grafica: 'tendencia', aria: ariaColumnas(tituloTendencia(), c) }" />
+                }
+              </section>
+
+              <!-- Estado: partes de un todo → barra 100 % apilada con leyenda. -->
+              <section class="card tarjeta" aria-labelledby="est-estados">
+                <header class="tarjeta__cabeza">
+                  <div>
+                    <h3 class="tarjeta__titulo" id="est-estados">En qué estado están</h3>
+                    <p class="tarjeta__sub">Las órdenes del periodo, según su estado de hoy</p>
+                  </div>
+                </header>
+                <div class="pila" role="img" [attr.aria-label]="ariaEstados()">
+                  @for (e of estados(); track e.clave) {
+                    @if (e.ordenes) {
+                      <span class="pila__tramo" [style.flex-grow]="e.ordenes" [style.background]="e.color" [title]="e.nombre + ': ' + n(e.ordenes) + ' (' + e.pct + ')'"></span>
+                    }
+                  }
+                </div>
+                <ul class="leyenda">
+                  @for (e of estados(); track e.clave) {
+                    <li class="leyenda__fila">
+                      <span class="leyenda__muestra" [style.background]="e.color" aria-hidden="true"></span>
+                      <span class="leyenda__nombre">{{ e.nombre }}</span>
+                      <strong class="leyenda__valor">{{ n(e.ordenes) }}</strong>
+                      <span class="leyenda__parte">{{ e.pct }}</span>
+                      <span class="leyenda__parte">{{ n(e.horas) }} h</span>
+                    </li>
+                  }
+                  <li class="leyenda__fila leyenda__fila--total">
+                    <span aria-hidden="true"></span>
+                    <span class="leyenda__nombre">Total</span>
+                    <strong class="leyenda__valor">{{ n(est()?.data?.kpis?.ordenes) }}</strong>
+                    <span class="leyenda__parte">100%</span>
+                    <span class="leyenda__parte">{{ n(est()?.data?.kpis?.horas) }} h</span>
+                  </li>
+                </ul>
+              </section>
+            </div>
+          }
+        }
+
+        <!-- ===== 2 · ARL y servicios: ¿para quién trabajamos y qué nos piden? ===== -->
+        @case ('arl') {
+          @if (vacia()) {
+            <ng-container *ngTemplateOutlet="vacio" />
+          } @else {
+            <div class="fila" data-plantilla="arl">
+              <section class="card tarjeta" aria-labelledby="est-arl">
+                <header class="tarjeta__cabeza">
+                  <div>
+                    <h3 class="tarjeta__titulo" id="est-arl">Órdenes por ARL</h3>
+                    <p class="tarjeta__sub">Quién envió el trabajo del periodo</p>
+                  </div>
+                </header>
+                <!-- Dos tramos: la leyenda nombra los dos (la identidad nunca va solo en el color). -->
+                <ul class="leyenda-mini" aria-label="Leyenda">
+                  <li><span class="leyenda-mini__muestra" aria-hidden="true"></span>Finalizadas</li>
+                  <li><span class="leyenda-mini__muestra leyenda-mini__muestra--resto" aria-hidden="true"></span>Resto</li>
+                </ul>
+                <ng-container *ngTemplateOutlet="lista; context: { $implicit: porArl(), apilada: true, aria: ariaLista('Órdenes por ARL', porArl()) }" />
+              </section>
+              <section class="card tarjeta" aria-labelledby="est-tipo">
+                <header class="tarjeta__cabeza">
+                  <div>
+                    <h3 class="tarjeta__titulo" id="est-tipo">Tipo de actividad</h3>
+                    <p class="tarjeta__sub">Qué clase de trabajo se pidió</p>
+                  </div>
+                </header>
+                <ng-container *ngTemplateOutlet="lista; context: { $implicit: porTipo(), apilada: true, aria: ariaLista('Tipo de actividad', porTipo()) }" />
+              </section>
+              <section class="card tarjeta" aria-labelledby="est-ciudad">
+                <header class="tarjeta__cabeza">
+                  <div>
+                    <h3 class="tarjeta__titulo" id="est-ciudad">Dónde se ejecuta</h3>
+                    <p class="tarjeta__sub">Ciudades con más órdenes</p>
+                  </div>
+                </header>
+                <ng-container *ngTemplateOutlet="lista; context: { $implicit: porCiudad(), apilada: true, aria: ariaLista('Dónde se ejecuta', porCiudad()) }" />
+              </section>
+            </div>
+          }
+        }
+
+        <!-- ===== 3 · Horas: ¿cuánto trabajo se ejecutó y quién lo hizo? ===== -->
+        @case ('horas') {
+          <ng-container *ngTemplateOutlet="franja; context: { $implicit: cifrasHoras() }" />
+          @if (vacia()) {
+            <ng-container *ngTemplateOutlet="vacio" />
+          } @else {
+            <div class="fila" data-plantilla="horas">
+              <section class="card tarjeta" aria-labelledby="est-horas-serie">
+                <header class="tarjeta__cabeza">
+                  <div>
+                    <h3 class="tarjeta__titulo" id="est-horas-serie">{{ tituloHorasSerie() }}</h3>
+                    <p class="tarjeta__sub">{{ ritmoHoras() }}</p>
+                  </div>
+                </header>
+                @if (horasColumnas(); as c) {
+                  <ng-container *ngTemplateOutlet="cols; context: { $implicit: c, grafica: 'horas', aria: ariaColumnas(tituloHorasSerie(), c) }" />
+                }
+              </section>
+              <section class="card tarjeta" aria-labelledby="est-horas-prof">
+                <header class="tarjeta__cabeza">
+                  <div>
+                    <h3 class="tarjeta__titulo" id="est-horas-prof">{{ horasPor() === 'arl' ? 'Horas por ARL' : 'Horas por profesional' }}</h3>
+                    <p class="tarjeta__sub">{{ horasPor() === 'arl' ? 'Para quién se ejecutaron' : 'Quién ejecutó las horas del periodo' }}</p>
+                  </div>
+                  <div class="seg" role="group" aria-label="Repartir las horas por">
+                    <button type="button" [class.seg--on]="horasPor() === 'profesional'" [attr.aria-pressed]="horasPor() === 'profesional'" (click)="horasPor.set('profesional')">Profesional</button>
+                    <button type="button" [class.seg--on]="horasPor() === 'arl'" [attr.aria-pressed]="horasPor() === 'arl'" (click)="horasPor.set('arl')">ARL</button>
+                  </div>
+                </header>
+                @if (horasPor() === 'arl') {
+                  <ng-container *ngTemplateOutlet="lista; context: { $implicit: horasPorArl(), aria: ariaLista('Horas por ARL', horasPorArl()) }" />
+                } @else {
+                  <ng-container *ngTemplateOutlet="lista; context: { $implicit: horasPorProfesional(), aria: ariaLista('Horas por profesional', horasPorProfesional()) }" />
+                }
+              </section>
+            </div>
+          }
+        }
+
+        <!-- ===== 4 · Satisfacción: ¿qué dicen los clientes? ===== -->
+        @case ('satisfaccion') {
+          <ng-container *ngTemplateOutlet="franja; context: { $implicit: cifrasSatisfaccion() }" />
+          @if (vacia()) {
+            <ng-container *ngTemplateOutlet="vacio" />
+          } @else {
+            <div class="fila" data-plantilla="satisfaccion">
+              <section class="card tarjeta" aria-labelledby="est-dist">
+                <header class="tarjeta__cabeza">
+                  <div>
+                    <h3 class="tarjeta__titulo" id="est-dist">Cómo calificaron</h3>
+                    <p class="tarjeta__sub">Satisfacción con la actividad, de 1 a 5</p>
+                  </div>
+                </header>
+                <ul class="barras barras--notas" [attr.aria-label]="'Cómo calificaron: ' + distribucionTexto()">
+                  @for (d of distribucion(); track d.nota) {
+                    <li class="barras__fila" [title]="'Nota ' + d.nota + ': ' + d.total + (d.total === 1 ? ' respuesta' : ' respuestas')">
+                      <span class="barras__nombre">Nota {{ d.nota }}</span>
+                      <span class="barras__pista"><span class="barras__barra" [style.width.%]="d.ancho" [class.barras__barra--cero]="!d.total"></span></span>
+                      <span class="barras__cifras"><strong class="barras__valor">{{ n(d.total) }}</strong></span>
+                    </li>
+                  }
+                </ul>
+              </section>
+              <section class="card tarjeta" aria-labelledby="est-nota">
+                <header class="tarjeta__cabeza">
+                  <div>
+                    <h3 class="tarjeta__titulo" id="est-nota">Nota del profesional</h3>
+                    <p class="tarjeta__sub">Promedio de 1 a 5 y, entre paréntesis, cuántas respuestas</p>
+                  </div>
+                  <!-- Un promedio no se suma: no hay fila «Otros», se remite a Profesionales. -->
+                  @if (profesionalesFuera()) {
+                    <p class="tarjeta__mas">y {{ profesionalesFuera() }} más · <a class="ir-a" routerLink="/profesionales">Ver en Profesionales</a></p>
+                  }
+                </header>
+                <!-- Gráfica de puntos en escala 1–5: una barra desde 0 exageraría 4,3 contra 4,8. -->
+                <div class="puntos" role="img" [attr.aria-label]="ariaNotas()">
+                  <div class="puntos__escala" aria-hidden="true">
+                    <span></span>
+                    <span class="puntos__marcas">@for (k of [1, 2, 3, 4, 5]; track k) { <span [style.left.%]="(k - 1) * 25">{{ k }}</span> }</span>
+                    <span></span>
+                  </div>
+                  <ul class="puntos__lista">
+                    @for (p of notaProfesional(); track p.nombre) {
+                      <li class="puntos__fila" [class.puntos__fila--pocas]="p.pocas" [title]="p.nombre + ': ' + p.texto + ' de 5 en ' + p.respondidas + (p.respondidas === 1 ? ' respuesta' : ' respuestas')">
+                        <span class="puntos__nombre">{{ p.nombre }}</span>
+                        <span class="puntos__pista">
+                          @for (k of [0, 25, 50, 75, 100]; track k) { <i class="puntos__rejilla" [style.left.%]="k"></i> }
+                          <i class="puntos__punto" [style.left.%]="p.x"></i>
+                        </span>
+                        <span class="puntos__valor">
+                          <strong>{{ p.texto }}</strong> <span class="puntos__n">({{ p.respondidas }})</span>
+                          @if (p.pocas) { <span class="puntos__pocas">pocas respuestas</span> }
+                        </span>
+                      </li>
+                    }
+                  </ul>
+                </div>
+              </section>
+            </div>
+          }
+        }
+
+        <!-- ===== 5 · Cobro: de lo finalizado, ¿qué falta por facturar? ===== -->
+        @case ('cobro') {
+          <ng-container *ngTemplateOutlet="franja; context: { $implicit: cifrasCobro() }" />
+          @if (vacia()) {
+            <ng-container *ngTemplateOutlet="vacio; context: { ok: true }" />
+          } @else {
+            <div class="fila" data-plantilla="cobro">
+              <section class="card tarjeta" aria-labelledby="est-etapas">
+                <header class="tarjeta__cabeza">
+                  <div>
+                    <h3 class="tarjeta__titulo" id="est-etapas">Dónde está lo finalizado</h3>
+                    <p class="tarjeta__sub">Por etapa y en pesos: el total a cobrar de cada orden</p>
+                  </div>
+                </header>
+                <div class="pila" role="img" [attr.aria-label]="ariaEtapas()">
+                  @for (e of etapasCobro(); track e.clave) {
+                    @if (e.monto > 0) {
+                      <span class="pila__tramo" [style.flex-grow]="e.monto" [style.background]="e.color" [title]="e.nombre + ': ' + e.completo + ' (' + e.pct + ')'"></span>
+                    }
+                  }
+                </div>
+                <ul class="leyenda">
+                  @for (e of etapasCobro(); track e.clave) {
+                    <li class="leyenda__fila leyenda__fila--cobro">
+                      <span class="leyenda__muestra" [style.background]="e.color" aria-hidden="true"></span>
+                      <span class="leyenda__nombre">{{ e.nombre }}</span>
+                      <span class="leyenda__parte leyenda__ord">{{ n(e.ordenes) }} órd.</span>
+                      <strong class="leyenda__valor" [title]="e.completo">{{ e.texto }}</strong>
+                      <span class="leyenda__parte">{{ e.pct }}</span>
+                    </li>
+                  }
+                  <li class="leyenda__fila leyenda__fila--cobro leyenda__fila--total">
+                    <span aria-hidden="true"></span>
+                    <span class="leyenda__nombre">Total finalizado</span>
+                    <span class="leyenda__parte leyenda__ord">{{ n(totalFinalizadas()) }} órd.</span>
+                    <strong class="leyenda__valor" [title]="montoFinalizado().completo">{{ montoFinalizado().texto }}</strong>
+                    <span class="leyenda__parte">100%</span>
+                  </li>
+                </ul>
+              </section>
+              <section class="card tarjeta" aria-labelledby="est-cobro-arl">
+                <header class="tarjeta__cabeza">
+                  <div>
+                    <h3 class="tarjeta__titulo" id="est-cobro-arl">Por facturar por ARL</h3>
+                    <p class="tarjeta__sub">Sin visto bueno y con visto bueno sin facturar</p>
+                  </div>
+                </header>
+                @if (cobroPorArl().length) {
+                  <ng-container *ngTemplateOutlet="lista; context: { $implicit: cobroPorArl(), aria: ariaLista('Por facturar por ARL', cobroPorArl()) }" />
+                } @else {
+                  <p class="tarjeta__nada">Todo lo finalizado ya está facturado.</p>
+                }
+              </section>
+            </div>
+          }
+        }
+      }
+    }
+  }
+</section>
+
+<!-- ======================= Plantillas reutilizadas ======================= -->
+
+<!-- Franja de cifras: alto fijo de 112 px en escritorio. -->
+<ng-template #franja let-cifras>
+  <div class="kpi-grid franja" [style.--celdas]="cifras.length">
+    @for (c of cifras; track c.etiqueta) {
+      <article class="kpi-card">
+        <div class="kpi-card__info">
+          <span class="kpi-card__label">{{ c.etiqueta }}</span>
+          <span class="kpi-card__value" [style.--n]="largo(c)" [attr.title]="c.title || null">
+            @if (c.vacio) {
+              <span class="kpi-vacio">—</span>
+            } @else {
+              {{ c.valor }}@if (c.unidad) {<small>{{ c.unidad }}</small>}
+            }
+          </span>
+          <span class="kpi-card__hint franja__pista">
+            @if (c.aviso) {
+              <svg class="franja__aviso" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7.5v5M12 16.5h.01" /></svg>
+            }
+            <span>{{ c.pista }}</span>
+            @if (c.enlace) { <a class="franja__enlace" [routerLink]="c.enlace.ruta">{{ c.enlace.texto }}</a> }
+          </span>
+        </div>
+      </article>
+    }
+  </div>
+</ng-template>
+
+<!-- Lista de barras horizontales (8 filas como máximo). -->
+<ng-template #lista let-filas let-apilada="apilada" let-aria="aria">
+  <ul class="barras" [class.barras--apiladas]="apilada" [attr.aria-label]="aria">
+    @for (f of filas; track f.nombre) {
+      <li class="barras__fila" [class.barras__fila--otros]="f.otros" [class.barras__fila--apagada]="f.apagada" [title]="f.title">
+        <span class="barras__nombre">{{ f.nombre }}</span>
+        <span class="barras__pista">
+          @if (f.ancho > 0) { <span class="barras__barra" [style.width.%]="f.ancho"></span> }
+          @if (f.resto !== undefined && f.anchoResto > 0) { <span class="barras__barra barras__barra--resto" [style.width.%]="f.anchoResto"></span> }
+        </span>
+        <span class="barras__cifras">
+          <strong class="barras__valor">{{ f.texto }}</strong>
+          <span class="barras__extra">{{ f.extra }}</span>
+        </span>
+      </li>
+    }
+  </ul>
+</ng-template>
+
+<!-- Columnas: por mes con el valor dentro; por día finas, con eje y tooltip. -->
+<ng-template #cols let-c let-g="grafica" let-aria="aria">
+  <div class="graf" [class.graf--con-eje]="!c.conValores" [class.graf--meses]="c.conValores" role="img" [attr.aria-label]="aria">
+    @if (!c.conValores) {
+      <div class="graf__eje-y" aria-hidden="true">
+        @for (m of c.marcasY; track m.alto) { <span [style.bottom.%]="m.alto">{{ n(m.valor) }}</span> }
+      </div>
+    }
+    <div class="graf__plot" (pointerleave)="foco.set(null)">
+      @if (!c.conValores) {
+        @for (m of c.marcasY; track m.alto) { <i class="graf__rejilla" [class.graf__rejilla--base]="!m.alto" [style.bottom.%]="m.alto"></i> }
+      }
+      <div class="cols" [class.cols--finas]="!c.conValores" [style.--cols]="c.columnas.length">
+        @for (col of c.columnas; track col.clave; let i = $index) {
+          <div class="cols__col" [class.cols__col--actual]="col.actual" (pointerenter)="foco.set({ grafica: g, i: i })">
+            @if (col.valor > 0) {
+              <div class="cols__barra" [style.height.%]="col.alto">
+                @if (c.conValores) { <span [attr.title]="col.texto">{{ col.corto }}</span> }
+              </div>
+            } @else if (col.actual) {
+              <!-- El periodo en curso se marca aunque vaya en 0: si no, parecía una columna apagada. -->
+              <span class="cols__cero-valor">{{ col.corto }}</span>
+              <i class="cols__cero cols__cero--actual"></i>
+            } @else {
+              <i class="cols__cero"></i>
+            }
+          </div>
+        }
+      </div>
+      @if (columnaEnFoco(); as f) {
+        @if (f.grafica === g) {
+          <div class="tooltip tooltip--col" [class.tooltip--izq]="f.izq > 70" [style.left.%]="f.izq" [style.bottom.%]="f.alto">
+            <span class="tooltip__fecha">{{ f.largo }}</span>
+            <strong class="tooltip__valor tooltip__valor--detalle">{{ f.detalle }}</strong>
+          </div>
+        }
+      }
+    </div>
+    <div class="graf__eje-x cols cols--eje" [style.--cols]="c.columnas.length" aria-hidden="true">
+      @for (col of c.columnas; track col.clave) { <span [class.cols__mes--actual]="col.actual">{{ col.eje }}</span> }
+    </div>
+  </div>
+  <!-- Celular: por mes, los meses van en filas (una columna de 12 meses no cabe a 390 px). -->
+  @if (c.conValores) {
+    <ul class="barras barras--movil" aria-hidden="true">
+      @for (col of c.columnas; track col.clave) {
+        <li class="barras__fila" [class.barras__fila--actual]="col.actual">
+          <span class="barras__nombre">{{ col.largo }}</span>
+          <span class="barras__pista">@if (col.valor > 0) { <span class="barras__barra" [style.width.%]="col.alto"></span> }</span>
+          <span class="barras__cifras"><strong class="barras__valor">{{ col.texto }}</strong></span>
+        </li>
+      }
+    </ul>
+  }
+</ng-template>
+
+<!-- Vacío: ocupa la fila de las tarjetas (o el lienzo entero en ARL), con una sola acción. -->
+<ng-template #vacio let-ok="ok">
+  <div class="card estado-vacio lienzo__vacio" [class.estado-vacio--ok]="ok">
+    <span class="estado-vacio__icono" aria-hidden="true">
+      @if (ok) {
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+      } @else {
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M3 9h18M8 2v4M16 2v4" /></svg>
+      }
+    </span>
+    <h3 class="estado-vacio__titulo">{{ tituloVacio() }}</h3>
+    <p class="estado-vacio__texto">{{ textoVacio() }}</p>
+    @if (!ok && accionVacio(); as accion) {
+      <div class="estado-vacio__accion">
+        <button type="button" class="btn btn--secondary" (click)="ampliarPeriodo()">{{ accion }}</button>
+      </div>
+    }
+  </div>
+</ng-template>

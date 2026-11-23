@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { CeroVacioDirective } from '../../shared/cero-vacio';
 import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
@@ -11,6 +12,7 @@ import { CuentaContable,
 } from '../../core/models';
 import { separarNit } from '../../core/nit';
 import { AccionComponent } from '../../shared/icono/accion';
+import { IconoComponent } from '../../shared/icono/icono';
 
 type TabKey = 'emisor' | 'productos' | 'tarifas' | 'impuestos' | 'numeracion' | 'catalogos';
 
@@ -53,7 +55,7 @@ const PROVEEDOR_VISIBLE: boolean = true;
 
 @Component({
   selector: 'app-parametrizacion',
-  imports: [FormsModule, AccionComponent],
+  imports: [FormsModule, CeroVacioDirective, AccionComponent, IconoComponent],
   templateUrl: './parametrizacion.html',
   styleUrl: './parametrizacion.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

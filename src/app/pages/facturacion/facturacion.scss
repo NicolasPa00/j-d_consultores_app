@@ -115,13 +115,34 @@
 .fac-union__texto { margin-right: auto; }
 
 .fac-tabla .col-check { width: 36px; }
+
+/* 21-nov-2026 · Por facturar: cada tarjeta (ARL SURA, AXA, Bolívar…) es una tabla aparte y,
+   con el ancho automático, cada una repartía sus columnas a su manera («Actividad» empezaba
+   en sitios distintos) y Estado se quedaba con todo el sobrante (hueco a la derecha). Con
+   el MISMO reparto fijo las tarjetas se alinean entre sí y el aviso de Estado ocupa su
+   columna (se parte en dos líneas solo cuando no cabe). */
+/* 23-nov-2026 (ronda 2) · Con los porcentajes, a 125 % y en el celular la columna Orden
+   (12 %) quedaba más angosta que «DEMO-OS-2026-0363», que no se parte, y el código se
+   montaba sobre la Empresa. Ahora las columnas de datos cortos tienen ancho FIJO medido
+   (caben el código más largo y «Cronograma-secuencia») y Empresa, Actividad y Estado se
+   reparten el resto por igual: siguen alineadas entre tarjetas, el texto largo se parte
+   y nada queda encima de otra cosa. Por debajo de 60 rem la tabla se desplaza de lado. */
+.fac-tabla { table-layout: fixed; min-width: 60rem; }
+.fac-tabla .fac-c-orden { width: 11rem; }
+.fac-tabla .fac-c-horas { width: 4.5rem; }
+.fac-tabla .fac-c-valor { width: 7.5rem; }
+.fac-tabla td { overflow-wrap: anywhere; }
+.fac-tabla td.td-id { overflow-wrap: normal; }
 .num { text-align: right; white-space: nowrap; }
 .fac-sub { display: block; color: var(--tinta-3); font-size: var(--fs-meta); font-weight: 400; }
 .fac-fila--bloqueada td { color: var(--text-muted); }
 /* 7-oct-2026 · Por qué la orden no se puede facturar, en una píldora de aviso:
-   como texto gris pasaba desapercibido. Puede ocupar dos líneas. */
+   como texto gris pasaba desapercibido. Puede ocupar dos líneas.
+   21-nov-2026 · El tope era 300 px: en pantallas anchas el motivo se partía en dos
+   líneas con media tabla vacía a la derecha. Ahora llena su columna (de ancho fijo, ver
+   `.fac-tabla` arriba) y solo se parte cuando no cabe. */
 .fac-motivo {
-  display: inline-block; max-width: 300px; padding: 0.3rem 0.6rem;
+  display: inline-block; max-width: 100%; padding: 0.3rem 0.6rem;
   font-size: var(--fs-meta); font-weight: 600; line-height: 1.3; white-space: normal; text-align: left;
   border-radius: var(--radius-sm);
 }
@@ -168,7 +189,6 @@
 .fac-totales__ret b { color: var(--error); }
 .fac-totales__final { margin-top: var(--e-1); border-top: 1px solid var(--borde); padding-top: var(--e-2); font-size: var(--fs-tarjeta) !important; span { color: var(--tinta) !important; font-weight: 600; } }
 
-.fac-obs { margin: 0; font-size: var(--fs-celda); color: var(--tinta-2); b { color: var(--tinta); font-weight: 600; } }
 .fac-eventos { margin: 0; padding-left: 1.1rem; font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.25rem; }
 .fac-eventos__fecha { color: var(--text-muted); margin-right: 0.4rem; }
 .fac-errores { margin: 0.3rem 0; padding-left: 1.1rem; font-size: 0.85rem; }
@@ -613,7 +633,7 @@
 
 @media (max-width: 680px) {
   .fac-pagador .fac-tabla {
-    min-width: 40rem;
+    min-width: 48rem;
   }
 
   .fac-pagador .fac-tabla td.fac-empresa {
@@ -864,4 +884,103 @@
 /* No es movimiento: con movimiento reducido conserva su línea de tiempo. */
 @media (prefers-reduced-motion: reduce) {
   :is(.card, .fac-grupo) > .table-wrap { animation-duration: auto !important; }
+}
+
+/* ───────── Pasada del dueño (22-nov-2026) ───────── */
+
+/* Por facturar · «No perderse al hacer scroll». Cada sección lleva su línea bajo la
+   cabecera; la de la sección en la que está quien lee (`.fac-pagador--actual`, la de
+   la cabecera pegada o la primera si no se ha bajado; la marca el componente) va en el
+   color de la raya de la pestaña activa (`--cian-trazo`, 3,65:1 sobre blanco) y las
+   demás en gris. Ronda 2 (D6): con cuatro tarjetas a la vista eran cuatro rayas cian, y
+   el cian dice «aquí está usted» (DESIGN §1.3), así que va en UNA. 2 px (borde de 1 +
+   sombra plana de 1, sin mover nada al cambiar): un escalón bajo los 3 px de la pestaña.
+   Decisión del dueño, DESIGN §11.11. */
+.fac-pagador__head {
+  border-bottom: 1px solid var(--borde-control);
+  transition: border-color var(--t-media) ease, box-shadow var(--t-media) ease;
+}
+.fac-pagador--actual > .fac-pagador__head {
+  border-bottom-color: var(--cian-trazo);
+  box-shadow: 0 1px 0 var(--cian-trazo);
+}
+
+/* La cabecera de la ARL se queda arriba mientras se recorre SU sección (sticky dentro
+   de la tarjeta: al llegar a la siguiente ARL se va con su tarjeta y entra la otra).
+   `overflow: clip` en vez de `hidden`: recorta igual las esquinas, pero no crea un
+   contenedor de scroll, que es lo que anulaba el sticky. Solo desde 641 px: en el
+   celular la cabecera va en columna (~90 px con «Enlazar tercero») y taparía un
+   tercio de la pantalla; allí orienta el filtro por pagador. */
+.fac-pagador { overflow: clip; }
+@media (min-width: 641px) {
+  /* top negativo = el relleno superior de .content: si no, se pega 28 px por debajo
+     de la barra superior y las filas se ven pasar por encima de la cabecera. */
+  .fac-pagador__head { position: sticky; top: calc(-1 * var(--contenido-arriba)); z-index: 3; }
+}
+
+/* Filtro por pagador: pastillas `.chip--filtro` (DESIGN §7) con su conteo. Se separa
+   de la tabla igual que la fila de pestañas. */
+.fac-pagadores {
+  display: flex; align-items: flex-start; gap: var(--e-2) var(--e-3);
+  margin: calc(-1 * var(--e-1)) 0 var(--e-4);
+}
+/* Alineado con la PRIMERA fila de pastillas (32 px) cuando se parten en dos. */
+.fac-pagadores__rotulo { flex: none; line-height: 32px; font-size: var(--fs-celda); font-weight: 500; color: var(--tinta-3); }
+.fac-pagadores__lista { display: flex; flex-wrap: wrap; gap: var(--e-2); min-width: 0; }
+.fac-chip { gap: 6px; min-height: 32px; }
+.fac-chip__n { font-size: var(--fs-meta); font-weight: 600; color: var(--tinta-3); font-variant-numeric: tabular-nums; }
+.chip--on .fac-chip__n { color: var(--accion); }
+/* Sin nada en esta pestaña: atenuada pero pulsable (el filtro vale para las cuatro). */
+.fac-chip--cero:not(.chip--on) { color: var(--tinta-3); border-color: var(--borde); }
+/* Celular: una sola fila que se desliza de lado (con muchos clientes no ocupa media
+   pantalla), con el mismo desvanecido de borde que las pestañas y las tablas. */
+@media (max-width: 640px) {
+  .fac-pagadores__rotulo { display: none; }
+  .fac-pagadores__lista {
+    flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; scroll-padding-inline: 32px;
+    -webkit-mask-image: linear-gradient(to left, transparent, #000 var(--tabs-fade));
+    mask-image: linear-gradient(to left, transparent, #000 var(--tabs-fade));
+    animation: tabs-fade linear both;
+    animation-timeline: scroll(self inline);
+  }
+  .fac-pagadores__lista::-webkit-scrollbar { display: none; }
+  .fac-chip { flex: none; min-height: 36px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fac-pagadores__lista { animation-duration: auto !important; }
+}
+
+/* Modal del documento · cierre en dos columnas (opción A de la lámina): a la izquierda
+   lo que se revisa antes de emitir, a la derecha el botón de corregir y los totales
+   (donde ya estaban). El hueco de la izquierda deja de serlo. */
+.fac-cierre {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 22rem);
+  gap: var(--e-4) var(--e-6); align-items: start;
+}
+.fac-cierre__cifras { display: flex; flex-direction: column; min-width: 0; }
+.fac-cierre__cifras .fac-totales { align-self: stretch; min-width: 0; }
+.fac-cierre__cifras .fac-imp__abrir { margin: 0 0 var(--e-3); }
+.fac-resumen {
+  margin: 0; padding: var(--e-3) var(--e-4);
+  display: flex; flex-direction: column; gap: var(--e-3);
+  border: 1px solid var(--borde); border-radius: var(--r-tarjeta); background: var(--papel);
+  > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  dt { font-size: var(--fs-meta); color: var(--tinta-3); }
+  dd { margin: 0; font-size: var(--fs-celda); color: var(--tinta); overflow-wrap: anywhere; }
+}
+.fac-resumen__correo { font-weight: 500; }
+.fac-resumen__nada { color: var(--tinta-3); }
+/* Falta el correo: aviso en tinta-2 con el triángulo ámbar (DESIGN §10, sin texto ámbar). */
+.fac-resumen__falta { color: var(--tinta-2); font-weight: 500; }
+.fac-resumen__falta::before {
+  content: ''; display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px;
+  background: var(--ambar);
+  -webkit-mask: var(--icono-alerta) center / contain no-repeat;
+  mask: var(--icono-alerta) center / contain no-repeat;
+}
+/* Angosto (celular o modal partido): primero las cifras, debajo lo que se revisa. */
+@media (max-width: 700px) {
+  .fac-cierre { grid-template-columns: minmax(0, 1fr); }
+  .fac-cierre__cifras { order: -1; }
+  .fac-cierre__cifras .fac-imp__abrir { align-self: flex-end; }
 }

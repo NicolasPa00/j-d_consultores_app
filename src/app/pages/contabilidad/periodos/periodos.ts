@@ -5,6 +5,7 @@ import { PESOS } from '../../../core/dinero';
 import { mensajeError } from '../../../core/errores';
 import { AlertService } from '../../../core/alert.service';
 import { CuentaContable, PeriodoContable, VistaPreviaCierre } from '../../../core/models';
+import { IconoComponent } from '../../../shared/icono/icono';
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -15,7 +16,7 @@ const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', '
  */
 @Component({
   selector: 'app-periodos',
-  imports: [FormsModule],
+  imports: [FormsModule, IconoComponent],
   templateUrl: './periodos.html',
   styleUrl: './periodos.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

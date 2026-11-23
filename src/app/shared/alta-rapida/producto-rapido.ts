@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { CeroVacioDirective } from '../cero-vacio';
 import { ApiService } from '../../core/api.service';
 import { AlertService } from '../../core/alert.service';
 import { mensajeError } from '../../core/errores';
 import { ItemCatalogo, Producto, TratamientoIva } from '../../core/models';
+import { IconoComponent } from '../icono/icono';
 
 /**
  * Alta RÁPIDA de un producto (24-oct-2026): para crearlo desde la factura manual sin
@@ -12,7 +14,7 @@ import { ItemCatalogo, Producto, TratamientoIva } from '../../core/models';
  */
 @Component({
   selector: 'app-producto-rapido',
-  imports: [FormsModule],
+  imports: [FormsModule, CeroVacioDirective, IconoComponent],
   templateUrl: './producto-rapido.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

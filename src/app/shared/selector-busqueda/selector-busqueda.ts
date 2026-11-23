@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, input, model, signal } from '@angular/core';
+import { IconoComponent } from '../icono/icono';
 
 export interface OpcionBusqueda {
   valor: string;
@@ -21,6 +22,7 @@ const normalizar = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toL
  */
 @Component({
   selector: 'app-selector-busqueda',
+  imports: [IconoComponent],
   templateUrl: './selector-busqueda.html',
   styleUrl: './selector-busqueda.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -41,6 +43,16 @@ export class SelectorBusquedaComponent {
   protected readonly abierto = signal(false);
   protected readonly busqueda = signal('');
   protected readonly resaltado = signal(0);
+
+  /**
+   * El puntero mueve el MISMO resaltado que las flechas (antes no había hover: la primera
+   * opción seguía marcada con el ratón encima de otra). Va en `mousemove` y no en
+   * `mouseenter`: al bajar con el teclado la lista se desplaza bajo un puntero quieto y
+   * `mouseenter` le robaría el resaltado.
+   */
+  protected resaltar(i: number): void {
+    if (this.resaltado() !== i) this.resaltado.set(i);
+  }
 
   protected readonly seleccionada = computed(() => this.opciones().find((o) => o.valor === this.valor()) ?? null);
 

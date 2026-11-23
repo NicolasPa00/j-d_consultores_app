@@ -5,6 +5,110 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
+> 📨 **22-nov-2026 · PETICIONES DEL GRUPO 20-NOV — LOCAL, SIN COMMITEAR Y SIN DESPLEGAR (back `sst_ws`, rama `rediseno-visual`).**
+> **(1) Correo de formatos (OS-2026-0249, 4 sesiones: «llegó solo uno y los que aparecen como descargar es una fecha en calendario»).**
+> Causa: el AT-031 de Bolívar tenía `alcance: 'orden'` (T0-13, 27-sep: uno solo por orden) y una asistencia técnica/asesoría de
+> Bolívar no lleva AT-028, así que con 4 sesiones salía 1 `seguimiento.pdf` + el informe de ejemplo; los 4 `OS-…-1de4.ics` eran
+> las invitaciones de calendario (una por sesión) y se confundieron con formatos. Arreglo: `at031.alcance` es ahora función de la
+> entrega → **uno por sesión cuando NO va con AT-028** (A/T/respaldo); con capacitación presencial sigue 1 AT-031 + 1 AT-028 por sesión.
+> Nombres: `seguimiento - sesion 2 de 4 (25-11-2026).pdf`, `Calendario - sesion 2 de 4 - OS-….ics` (canceladas: «… CANCELADA …»);
+> el correo lista cada formato con la fecha de su sesión y un bloque aparte «Invitaciones de calendario (no son formatos)» con su
+> explicación. Siguen siendo un .ics por sesión (en un solo .ics Gmail pinta solo el primer evento). Archivos: `formatos-arl.service.js`,
+> `orders.service.js` (`_sesion`), `orders.routes.js` (correo), `calendar.service.js`. Prueba: `node --import tsx scripts/verificar-formatos-por-sesion.mjs`
+> (15/15). Reproducido en `jdd_dev` por el endpoint real (órdenes de prueba `OS-ZZ-2211-A` consola y `-B` SMTP redirigido; quedan en la base).
+> ⚠️ **Confirmar con Lorena** que en Bolívar A/T va un AT-031 por sesión (lo sugieren sus escaneos del 20-oct) y revisar en prod la OS-2026-0249 (no se miró).
+> ✅ (22-nov, 22:48) El backend de :4000 se reinició con `correo-pruebas.env`: todo correo va solo a escalappsystem@gmail.com. Antes corría con el SMTP real de JD&D sin redirección: un backend lanzado con `npm run dev` a secas vuelve a ese riesgo (usar `iniciar-local.bat` o `EMAIL_DRIVER=console`).
+> **(2) Firmas más grandes.** La firma se ajusta al ALTO de la caja; se agrandaron las cajas hasta donde da cada celda sin pisar texto:
+> AT-031 29→40 pt (cruza la raya, a la izquierda de «FIRMA ARL»), PSP-F-007 36→70, PSP-F-006 28→44 (a la derecha de «FIRMA»), SPM-F 38
+> 25→37, ficha AXA 58→66. **Sin cambio** asistencia AXA y asistencia SURA: la celda no tiene más alto. Antes/después y `comparativa.png`
+> en `2-pruebas/firmas-22-nov/` (`generar.mjs`, `recortes.mjs`, `escanear.mjs`). No visto por pantalla ni impreso.
+>
+> 🧪 **Pasada del dueño 22-nov · modal «Asignar profesional» — LOCAL, SIN COMMITEAR, SIN DESPLEGAR (front).**
+> (1) Horas en 12 h con `hora12`/`rango12` nuevos en `core/fechas.ts` (eje «8 a. m.», bloques y pastillas «7:00–11:00 a. m.»,
+> «8:00 p. m.–12:00 a. m.», avisos de choque/ocupado, Próximas a ejecutar). (2) La rejilla vuelve a ser una ventana con scroll
+> propio (`max-height: clamp(220px, 100vh − 500px, 480px)`, cabecera pegada) que se abre sola en la primera franja de la semana
+> (`enfocarAgenda`), y hay una fila «Día · Desde · Hasta · Agregar franja» (selects en 12 h, cada 30 min, «Hasta» limitado a lo
+> que falta) que pasa por `agregarFranjaVisita`; arrastrar sigue igual. El modal no crece (1440×900 y 1366×768 sin scroll del cuerpo).
+> (3) **Bug de las 32 h:** sin profesional, `reparto()` no contaba `franjasVisita`, así que `minutosProgramados` quedaba en 0 y el
+> tope dejaba pasar cada franja («Faltan 4 h» siempre). Ahora sin profesional la agenda y la fila quedan bloqueadas con aviso en
+> usted, y las franjas «huérfanas» cuentan contra el tope igualmente. El backend ya rechazaba >`horas_asignadas` (400, «Las franjas
+> suman 32 y la orden tiene 4 asignadas…»; le falta la «h», no se tocó). Probado en `jdd_dev` (órdenes ZZ creadas y BORRADAS) con
+> back propio en consola: 1 asesor, 2 asesores 4+4 con el disquete, reprogramación a la noche, tope y bloqueo. Capturas en
+> `docs/3-planes/rediseno-21-nov/pasada-22-nov/asignar/` (solo «después»).
+>
+> 🧪 **Pasada del dueño 22-nov · varios (Excel de Importar, refresco por avisos, ceros) — LOCAL, SIN COMMITEAR, SIN DESPLEGAR (front).**
+> (1) La hoja del modal de revisión de Importar ya no numera como Excel: la fila de títulos va sin número y con fondo de cabecera y
+> las órdenes cuentan desde 1 (`filasHoja`); el aviso de recorte dice qué se recortó («las primeras 40 columnas», `notaRecorte`).
+> (2) El listado de Órdenes y el Inicio se refrescan solos con los avisos: `NotificationsService.cambiosEnOrdenes$` se engancha al
+> MISMO sondeo de `/unread-count` (60 s); solo si el contador sube pide una vez las no leídas y emite si hay SOPORTE_CARGADO, RECHAZO,
+> ASIGNACION o REPROGRAMACION. Órdenes (antirrebote 1,5 s) pide cada fila con `GET /drafts/:id` (nuevo `api.getDraft`) o, si falta
+> alguna o son > 8, la bandeja en silencio; no toca la fila en edición ni la del modal de asignación. Inicio (2 s) repide en silencio
+> lo que tenía cargado. Probado: la fila pasó de PROGRAMADA a EJECUTADA en 45 s con 4 GET (contador, no leídas, borrador, próximas).
+> (3) `shared/cero-vacio.ts` (`CeroVacioDirective`, accessor de `ngModel` en `type=number`, `inputmode=decimal` y `[ceroVacio]`):
+> el cero se pinta vacío con «0» de marcador y al enfocar se selecciona todo; el modelo no cambia. Importado en 14 componentes
+> (cobro, facturación, documentos soporte, compras, nómina, cartera, pagos, parametrización, configuración, terceros, cuentas de cobro,
+> comprobantes, activos, producto rápido). Si el campo tiene un marcador propio que no es cero, el 0 se sigue viendo; `conCero` lo excluye.
+> Capturas en `docs/3-planes/rediseno-21-nov/pasada-22-nov/varios/`.
+>
+> 🧪 **Pasada del dueño 22-nov · Facturación (scroll de Por facturar + hueco del borrador) — LOCAL, SIN COMMITEAR, SIN DESPLEGAR (front).**
+> `pages/facturacion/*`: línea `--cian-trazo` de 2 px bajo la cabecera de cada pagador, cabecera sticky en su tarjeta desde 641 px
+> (`overflow: clip` en `.fac-pagador` y `top: -var(--contenido-arriba)`), filtro por pagador en pastillas con conteo (`filtroPagador`,
+> uno para las 4 pestañas, clave = tercero que recibe la factura) y cierre del modal del documento en dos columnas (correo de
+> facturación, nombre de las retenciones y observaciones a la izquierda; botón y totales donde estaban). DESIGN §11.11. Lámina,
+> `propuesta.md` y capturas antes/después en `docs/3-planes/rediseno-21-nov/pasada-22-nov/facturacion/`. `ng build` y verificadores en verde.
+> Pendiente: juez (umbral 8,5) y actualizar el tema de Facturación del centro de ayuda si se aprueba.
+> **Ronda 2 (23-nov, juez 7,9):**
+> - Pastillas fijas: una por ARL (`/arls`, con su tercero) más «Otros». «Todos» va sin número y en Por facturar cuentan las listas para facturar.
+> - La fila de pastillas siempre está en su sitio.
+> - Solo la sección actual lleva la línea cian (`seccionActual`, scroll pasivo con rAF).
+> - Las retenciones ya no se repiten en el resumen.
+> - `--contenido-arriba: 20px` en `.content` a ≤820 px (`shell.scss`): el sticky quedaba 8 px cortado.
+> - Tabla de Por facturar con columnas cortas de ancho fijo y `min-width: 60rem`: ningún texto queda encima de otro a 125 % ni en el celular.
+>
+> 🧪 **Pasada del dueño 22-nov · campanita con color — LOCAL, SIN COMMITEAR, SIN DESPLEGAR (front).** `layout/notifications/*`:
+> cabecera cielo con disco blanco (como los modales), disco de 32 px por aviso (`tono()`: fondo de color solo en ok/error; «vence» =
+> disco hundido + reloj ámbar; cartera con vencidas = error; dibujos nuevos para vencimientos, cartera y numeración), no leído = punto en
+> acción + título 600 (sin fondo, hora en tinta-3), un solo hover, vacío en disco cielo / ok. Ronda 2 tras el juez (7,3). Flujo intacto.
+> Confirmar con el dueño: círculos en la bandeja (§10). Detalle y contrastes:
+> `docs/3-planes/rediseno-21-nov/pasada-22-nov/notificaciones/propuesta.md`.
+>
+> 🧪 **Pasada del dueño 22-nov · correos con identidad ORBITA — LOCAL, SIN COMMITEAR, SIN DESPLEGAR (back `sst_ws`).** Una sola
+> plantilla (`email-layout.service.js`, misma interfaz): cabecera noche con logo ORBITA + «Un servicio de JD&D Consultores», tokens de
+> DESIGN §2, avisos ámbar, botón a prueba de Outlook, pie con firma JD&D. Logo en `cid:orbita-marca` que añade `sendEmail` solo
+> (`assets/correo/logo-orbita-correo.png`, **subirlo al desplegar**); la factura/NC ya no lleva el logo de JD&D; los 2 de contraseña
+> (`auth.service.js`) ganan HTML. Contenido, adjuntos y destinatarios iguales. Inventario, tuteo y capturas antes/después:
+> `docs/3-planes/rediseno-21-nov/pasada-22-nov/correos/propuesta.md`. Ronda 2: logo opaco sin lema (sobrevive a la inversión total
+> del modo oscuro), baja a 320 px, tabla fantasma y botón VML para Outlook, invitaciones de calendario en caja secundaria
+> (`orders.routes.js`), pie y enlace de la plantilla en usted. **Pregunta al dueño:** ¿factura/NC con ORBITA o con logo de JD&D?
+> Se mandó UN correo real de prueba (recuperar contraseña a `escalappsystem+auditor`) por :4000, sin mirarlo aún en Gmail/Outlook.
+>
+> 🧭 **21-nov-2026 · TANDA 2 DEL REDISEÑO (rama `rediseno-visual`, SIN DESPLEGAR) — tablero: `docs/3-planes/rediseno-21-nov/LEEME.md`.**
+> Inicio estilo «¿Qué desea hacer?» en Operación y Finanzas (aprobado 8,7) · Estadísticas de Operación rehechas (5 pestañas,
+> lienzo fijo, sin tablas; ronda 2 de correcciones interrumpida) · Estadísticas de Finanzas nuevas (aprobadas 8,7; endpoint
+> `GET /api/informes-contables/estadisticas`) · **íconos de botones de tabla: ronda 3 aprobada e INTEGRADOS en ~21 vistas** (`shared/icono/`,
+> `button[appAccion]`, `npm run verificar:acciones`; sin commitear) · datos de demostración: script probado en una copia local de
+> `jdd_dev` (Docker, PG17, :5435; corregidos el COMMIT con meses cerrados y el chequeo del borrado) y lanzado en `jdd_dev`.
+> Modales: cabecera cielo + disco del módulo (opción D, elegida por el dueño; `npm run verificar:iconos-modal`). Estadísticas: ronda 2
+> de Operación cerrada y gráficas de Finanzas corregidas con datos de volumen. `jdd_dev` ya tiene la migración del 13-nov.
+> 21-nov (noche): hover en `selector-busqueda`, «Vencida» solo en órdenes sin hacer, motivo de Por facturar en una línea.
+> **Commits locales SIN push:** front `b2702c6` (íconos), back `92bfd87` (scripts demo). Todo lo demás de la tanda 2 (Inicio,
+> Estadísticas, modales, arreglos del 21-nov y este HANDOFF) está SIN COMMITEAR. Nada desplegado.
+> Lo pendiente de cada frente está en ese LEEME.
+>
+> 📨 **Peticiones del grupo 20-nov (rama `rediseno-visual`, LOCAL, SIN COMMITEAR, SIN DESPLEGAR).**
+> - **Horario hasta las 12:00 a. m.** («Aún está pendiente ampliar el horario, mínimo debe quedar hasta las 12:00am»; no
+>   quedó rastro escrito de la primera vez en HANDOFF ni en `docs/`). Causa: la agenda del modal de asignación se dibujaba de
+>   6:00 a 20:00 (`AG_HASTA_MIN` en `validation.ts`) y nada se podía marcar después. Ahora llega a **24:00**; una franja
+>   termina como tarde a las 24:00 (= medianoche, fin de ESE día: Postgres guarda `time '24:00'`, lo resta bien —20:00–24:00
+>   = 4 h— y `fecha + hora_fin` da las 00:00 del día siguiente). Backend: `normalizarFranjas` (`orders.routes.js`) valida
+>   el rango (inicio 00:00–23:59, fin hasta 24:00) y **bloquea** la franja que cruza la medianoche con un mensaje en «usted»;
+>   `horaAmPm` (`utils/formato.js`) imprime `24:00` como «12:00 AM» en correo y formatos (antes daba «—»); `horaVisita` del
+>   front ya no dice «12:00 p. m.» para las 24:00. El `.ics` sale bien sin tocarlo (DTEND 05:00Z del día siguiente).
+>   Verificado: `node --import tsx scripts/verificar-horario-medianoche.mjs` contra una instancia :4010 con correo en consola
+>   (crea y borra una OS de 2099; 20:00–24:00 queda PROGRAMADA con 240 min) y `ng build` limpio. Sin ver por pantalla.
+>   Pendiente/decidir: el **inicio** de la agenda sigue en 6:00 (no se pidió cambiarlo); en los formatos a 24 h (Sura)
+>   la hora corta sale «24:00»; el alta de ocupaciones en `/profesionales` acepta 24:00 pero sin validar rango.
+>
 > ✨ **20-nov-2026 · REDISEÑO VISUAL COMPLETO («glamur» de la clienta) en la rama `rediseno-visual` de LOS DOS repos — SUBIDO, SIN DESPLEGAR.**
 > Tablero para retomar: **`docs/3-planes/plan-rediseno-visual-2026-11.md`** (cómo levantarlo, qué vistas mirar, decisiones pendientes).
 > Dirección de diseño: `docs/2-arquitectura/DESIGN.md` (paleta ORBITA con contrastes medidos, Inter autoalojada, componentes; **§11 = decisiones
@@ -12,6 +116,45 @@
 > «Requiere su atención» y pestaña Indicadores, y ya NO lista órdenes (`loadOrders()` eliminado). Backend: solo `GET /api/reports/inicio` (lectura,
 > sin migración, PG ≥ 16). Trampa: en `main`/`master` no está nada de esto; hacer `git checkout rediseno-visual` en `sst_ws` y en el frontend.
 > Desplegar back y front JUNTOS cuando se apruebe, y después rehacer las capturas del centro de ayuda.
+>
+> 💹 **20-nov-2026 · Estadísticas de Finanzas (`/informes` con el sistema Finanzas) en `rediseno-visual` (SIN commitear, sin desplegar).**
+> Componente `app-estadisticas-finanzas` en `pages/reports/finanzas/` (4 pestañas: Resumen, Ingresos, Cartera y pagos, Resultado;
+> lienzo de 560 px; SVG propio) con su propio servicio HTTP (`estadisticas-finanzas.service.ts`, no `core/api.service.ts`). Backend de
+> solo lectura `GET /api/informes-contables/estadisticas?periodo=mes|trimestre|anio&ref=AAAA-MM` (`informes-contables/estadisticas.service.js`,
+> roles admin/contador/auditor, sin migración). Verificación al centavo contra Ventas por cliente, Estado de resultados, Cartera y recibos:
+> `cd sst_ws && node scripts/verificar-estadisticas-finanzas.mjs` (V1–V13, solo lectura). **`/informes-contables` acepta ahora
+> `?pestana=ventas|estados&desde=AAAA-MM-DD&hasta=AAAA-MM-DD`**: los enlaces «Ver ventas por cliente» y «Ver estado de resultados» de
+> Estadísticas abren esa pestaña con el MISMO tramo (si faltan o no son válidas, sigue abriendo en el mes en curso).
+>
+> 📊 **20-nov-2026 · Estadísticas de Operación (`/informes`) rehecha en `rediseno-visual` (SIN commitear, sin desplegar).** Especificación:
+> el veredicto del debate (`op-veredicto.md`, en el scratchpad de la sesión; resumen aquí). Lo que pidió el dueño: fuera las tablas de detalle y la
+> tabla de órdenes, fuera las pestañas Profesionales y Vencidas, las cifras pasan a ser una pestaña y **el lienzo no cambia de alto** al cambiar de pestaña.
+> - **Anatomía.** `pages/reports/reports.{ts,html,scss}` es solo el shell: cabecera + **un único `@switch (sistema.activo().id)`** (Finanzas muestra por
+>   ahora un vacío «en construcción»; su equipo conecta `finanzas/`). Operación vive en `pages/reports/operacion/` (antes `estadisticas/`):
+>   `estadisticas-operacion.*` (`app-estadisticas-operacion`) + `graficas.ts` (funciones puras). Una fila de filtros arriba (Este mes · Mes anterior ·
+>   Este año · Rango; sin «Hoy» ni «7 días»), la **línea del periodo** que dice sobre qué fecha mide cada pestaña, 5 pestañas (Resumen · ARL y servicios ·
+>   Horas · Satisfacción · Cobro; `?pestana=` en la URL) y un **lienzo de 560 px fijo** en escritorio (franja de cifras de 112 px + tarjetas; listas de
+>   8 filas como máximo, 7 + «Otros (N)»). Carga por pestaña con caché `fuente|desde|hasta`; Resumen y ARL comparten `/estadisticas`. 0 `<table>`.
+> - **Definiciones únicas.** *Vencida* = la del Inicio (`/reports/inicio → ordenes.vencidas`, existencia de hoy; sin la vista Órdenes la celda no
+>   se pinta); se retiró `kpis.vencidas` de `/estadisticas`. *Por facturar* (no hay «pendiente de cobro»: PAGADA se retiró y «por cobrar» es Cartera):
+>   OS FINALIZADA en la bandeja (borrador VALIDADA no deshabilitado), monto `sqlTotalCobro` (el TOTAL del modal de Cobro), en tres etapas excluyentes
+>   `sin_visto_bueno` → `facturada` → `por_facturar`; «Por facturar» = 1 + 3. **Invariante probado en `jdd_dev` (20-nov):** «Sin visto bueno» de
+>   `/cobro-operacion` = `inicio.ordenes.sin_visto_bueno` y su monto (1 orden / $ 0; 0 OS con dos borradores en la bandeja, el único caso en que
+>   las dos formas de contar podrían diferir). Bases de fecha: entrada (Resumen, ARL), ejecución `vw_horas_ejecutadas` (Horas, la misma de Indicadores),
+>   mes de la encuesta (Satisfacción, redondeado a meses), hoy (Cobro).
+> - **Backend (`reports.routes.js`, solo lectura, sin migración):** `/estadisticas` sin `kpis.vencidas`, sin `por_profesional` y ciudades sin `LIMIT 8`;
+>   `/horas` **aditivo** (`grano` + `serie[{inicio,horas,ordenes}]`; `totales/por_profesional/por_arl/por_mes` intactos para el Inicio); nuevo
+>   `GET /reports/cobro-operacion[?detalle=1]` → `{hoy, etapas[3], por_arl, detalle?}`.
+> - **Divergencias con el FRS (decididas por el dueño):** RPT-03 (listado de vencidas a más de 60 días) sale de la pantalla: lo sustituye la cifra
+>   de vencidas de hoy del Inicio. RPT-04 pedía «barras + tabla»: queda la gráfica de puntos 1–5 con las cifras escritas, más el Excel de respuestas (ENC-07).
+> - **Sin entrada en la interfaz:** el resumen ejecutivo IA de una OS (`POST /reports/summary/:id`) solo se abría desde la tabla de Órdenes de esta
+>   pantalla; el endpoint sigue, falta llevarlo al detalle de Órdenes (pendiente del dueño). **Endpoints sin llamador en el front de Operación (no se
+>   borraron):** `GET /reports/vencidas`, `GET /reports/cobro` (y `api.reporteCobro`, que se dejó por si lo usa Finanzas), `POST /reports/summary/:id`,
+>   `POST /reports/search`. Se quitaron `api.summary/search/reporteVencidas` y `ReporteVencidas`.
+> - **Trampa:** el menú lateral marca la vista con `routerLinkActiveOptions: { exact: true }`, que exige la misma query: con `?pestana=` (y en
+>   `/ordenes?os=`) «Estadísticas» deja de verse activa. Arreglo de una línea en `layout/shell/shell.html` (`queryParams: 'ignored'`), del equipo del shell.
+> - **Fuera de esta entrega:** filtro por ARL, tiempo de ciclo, comparación con el periodo anterior, antigüedad por tramos, resumen IA en Órdenes,
+>   enlaces «Ver en Órdenes» con filtro (esperan a que Órdenes lea filtros por URL).
 >
 > 📎 **19-nov-2026 · Paquete de Bolívar: el anexo «3.ACTIVIDADES REALIZADAS» no cuadraba con la factura** (FE1027: anexo 8.238.575 frente a 16.129.617). Cada actividad tomaba `cobro_aprobado_total` (lo de operación, sin gastos o vacío); ahora toma el `valor_a_facturar` de su fila de prefactura, que es lo que suma la línea única. **DESPLEGADO el 19-nov** (back `5d4e80c`, sin migración) y verificado en prod: FE1027 anexo = 16.129.617 en 32 actividades. La oficina debe volver a descargar el paquete.
 >

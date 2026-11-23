@@ -831,6 +831,14 @@
   text-overflow: ellipsis;
 }
 
+/* 22-nov-2026 · Fila de títulos del Excel: sin número y con el fondo de cabecera, para
+   que no se lea como una orden más. */
+.sheet__row--head .sheet__cell {
+  background: var(--cabecera-tabla);
+  color: var(--tinta-2);
+  font-weight: 600;
+}
+
 /* Fila de la que salió la orden abierta: es el ancla de la comparación. */
 .sheet__row--source .sheet__cell {
   background: var(--accion-tenue);

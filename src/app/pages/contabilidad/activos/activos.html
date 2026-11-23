@@ -142,7 +142,7 @@
         <small class="af-sub">Comprado el {{ fecha(a.fecha_compra) }}{{ a.proveedor_nombre ? ' a ' + a.proveedor_nombre : '' }}</small>
       </div>
       <button type="button" class="icon-action" (click)="cerrarFicha()" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
     <div class="modal__body">
@@ -217,7 +217,7 @@
     <header class="modal__head">
       <h3 class="modal__title" id="afFormTitle">{{ editandoId() ? 'Editar activo fijo' : 'Nuevo activo fijo' }}</h3>
       <button type="button" class="icon-action" (click)="cerrarForm()" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
     <div class="modal__body">

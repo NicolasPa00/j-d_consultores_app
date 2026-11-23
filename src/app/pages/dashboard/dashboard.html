@@ -101,110 +101,89 @@
 }
 
 <!-- ============ INICIO POR ROL ============ -->
-<!-- Primero lo que toca hacer (DESIGN §1.6): un acceso principal, lo pendiente
-     con su conteo y las próximas visitas. Sin tabla de órdenes. -->
+<!-- Primero lo que toca hacer (DESIGN §1.6): la tarjeta de bienvenida con la
+     cuadrícula de accesos del sistema activo, y debajo lo pendiente con su
+     conteo y las próximas visitas. Sin tabla de órdenes. -->
 @if (!esProfesional()) {
-<div class="inicio">
-  <!-- Franja del saludo: una línea (saludo, lo pendiente y la fecha), sin órbitas. -->
-  <section class="saludo" aria-labelledby="inicio-saludo">
-    <div class="saludo__texto">
-      <h2 class="saludo__titulo" id="inicio-saludo">{{ saludo() }}</h2>
-      @if (mensaje(); as m) {
-        <p class="saludo__mensaje">
-          <span class="saludo__linea">
-            <b>{{ m.fuerte }}</b>
-            @if (m.resto) {
-              <span class="saludo__sep" aria-hidden="true">·</span><span>{{ m.resto }}</span>
+<!-- `lang`: el documento dice "en" y aquí todo es español (lectores de pantalla). -->
+<div class="inicio" lang="es">
+  <!-- Cabecera: saludo, línea de lo pendiente, fecha y pestañas. Es idéntica en
+       los dos sistemas (la línea siempre existe o reserva su alto), así las
+       pestañas no saltan al cambiar con el segmentado. Con Accesos abierto, la
+       cuadrícula sigue en `.bienvenida__cuerpo` y las dos se leen como una sola
+       tarjeta; así el tabpanel puede envolver TODO lo de Accesos. -->
+  <section class="card bienvenida" aria-labelledby="inicio-saludo"
+           [class.bienvenida--abierta]="pestanaVista() === 'accesos' && hayAccesos()">
+    <header class="bienvenida__cabeza">
+      <div class="bienvenida__texto">
+        <h2 class="bienvenida__titulo" id="inicio-saludo">{{ saludo() }}. ¿Qué desea hacer?</h2>
+        <p class="bienvenida__mensaje">
+          @if (!mensajeCargando() && mensaje(); as m) {
+            <span><b>{{ m.fuerte }}</b>@if (m.resto) {<span class="bienvenida__sep" aria-hidden="true"> · </span>{{ m.resto }}}</span>
+            @if (m.enlace; as e) {
+              <a class="bienvenida__enlace" routerLink="/ordenes" [queryParams]="{ os: e.os }">{{ e.texto }} <span aria-hidden="true">→</span></a>
             }
-          </span>
-          @if (m.enlace; as e) {
-            <a class="saludo__enlace" routerLink="/ordenes" [queryParams]="{ os: e.os }">{{ e.texto }} <span aria-hidden="true">→</span></a>
+          } @else if (mensajeCargando()) {
+            <span class="hueso" aria-hidden="true"></span>
           }
         </p>
-      } @else if (cargandoResumen()) {
-        <p class="saludo__mensaje saludo__mensaje--cargando" aria-hidden="true"><span class="hueso"></span></p>
-      }
-    </div>
-    <p class="saludo__fecha"><b>{{ fechaLarga }}</b>{{ semana }}</p>
+      </div>
+      <p class="bienvenida__fecha"><b>{{ fechaLarga }}</b> {{ semana }}</p>
+    </header>
+
+    @if (conPestanas()) {
+      <!-- `aria-controls` solo en la pestaña cuyo panel existe: el otro no se pinta. -->
+      <div class="tabs bienvenida__tabs" role="tablist" aria-label="Inicio" (keydown)="teclaPestana($event)">
+        <button type="button" class="tab" role="tab" id="tab-accesos"
+                [attr.aria-controls]="pestanaVista() === 'accesos' ? 'panel-accesos' : null"
+                [class.tab--active]="pestanaVista() === 'accesos'" [attr.aria-selected]="pestanaVista() === 'accesos'"
+                [attr.tabindex]="pestanaVista() === 'accesos' ? 0 : -1" (click)="elegirPestana('accesos')">Accesos directos</button>
+        <button type="button" class="tab" role="tab" id="tab-indicadores"
+                [attr.aria-controls]="pestanaVista() === 'indicadores' ? 'panel-indicadores' : null"
+                [class.tab--active]="pestanaVista() === 'indicadores'" [attr.aria-selected]="pestanaVista() === 'indicadores'"
+                [attr.tabindex]="pestanaVista() === 'indicadores' ? 0 : -1" (click)="elegirPestana('indicadores')">Indicadores</button>
+      </div>
+    }
   </section>
 
-  @if (!resumenVacio()) {
-    <div class="tabs inicio__tabs" role="tablist" aria-label="Inicio" (keydown)="teclaPestana($event)">
-      <button type="button" class="tab" role="tab" id="tab-resumen" aria-controls="panel-resumen"
-              [class.tab--active]="pestana() === 'resumen'" [attr.aria-selected]="pestana() === 'resumen'"
-              [attr.tabindex]="pestana() === 'resumen' ? 0 : -1" (click)="elegirPestana('resumen')">Resumen</button>
-      <button type="button" class="tab" role="tab" id="tab-indicadores" aria-controls="panel-indicadores"
-              [class.tab--active]="pestana() === 'indicadores'" [attr.aria-selected]="pestana() === 'indicadores'"
-              [attr.tabindex]="pestana() === 'indicadores' ? 0 : -1" (click)="elegirPestana('indicadores')">Indicadores</button>
-    </div>
-  }
-
-  @if (pestana() === 'resumen') {
-    <div id="panel-resumen" role="tabpanel" aria-labelledby="tab-resumen">
-      <!-- ---------- Accesos directos (filtrados por permisos y rol) ---------- -->
+  @if (pestanaVista() === 'accesos') {
+    <div id="panel-accesos" class="panel-accesos" [attr.role]="conPestanas() ? 'tabpanel' : null"
+         [attr.aria-labelledby]="conPestanas() ? 'tab-accesos' : null">
+      <!-- ---------- Accesos directos del sistema activo (filtrados por permisos y rol) ----------
+           Celdas de ancho fijo y filas parejas: `--cols` (escritorio, tope 5),
+           `--cols-ancho` (≥ 1600 px, tope 8). En el celular, lista de dos columnas. -->
       @if (hayAccesos()) {
-        <section class="card accesos" aria-labelledby="inicio-accesos">
-          <h3 class="visualmente-oculto" id="inicio-accesos">Accesos directos</h3>
-          @if (principales().length) {
-            <div class="principales" [attr.data-n]="principales().length">
-              @for (p of principales(); track p.id) {
-                <a class="princ" [class.princ--relleno]="p.relleno" [class.princ--cifra]="p.conteo !== undefined"
-                   [routerLink]="p.ruta" [queryParams]="p.queryParams">
-                  <span class="princ__titulo">
-                    <ng-container *ngTemplateOutlet="icono; context: { $implicit: p.icono }" />
-                    {{ p.etiqueta }}
+        <div class="card bienvenida__cuerpo">
+          <ul class="accesos" [style.--cols]="columnas()" [style.--cols-ancho]="columnasAncho()">
+            @for (a of accesos(); track a.id) {
+              <li>
+                <a class="acceso" [routerLink]="a.ruta" [queryParams]="a.queryParams">
+                  <span class="acceso__circulo">
+                    <svg class="acceso__ico" viewBox="0 0 40 40" aria-hidden="true">
+                      <path class="acceso__tinte" [attr.d]="a.icono.forma" transform="translate(3.5 3.5)" />
+                      <path class="acceso__forma" [attr.d]="a.icono.forma" />
+                      @if (a.icono.tapa) { <path class="acceso__forma" [attr.d]="a.icono.tapa" /> }
+                      @if (a.icono.trazos) { <path class="acceso__trazo" [attr.d]="a.icono.trazos" /> }
+                      @if (a.icono.acento) { <path class="acceso__acento" [attr.d]="a.icono.acento" /> }
+                    </svg>
+                    @if (a.conteo; as c) {
+                      <span class="acceso__insignia" aria-hidden="true">{{ cifra(c.cifra) }}</span>
+                    }
                   </span>
-                  <!-- El separador va DENTRO del tramo que no se parte: si la fecha baja
-                       de línea, baja con ella y no queda colgando al final de la primera. -->
-                  <span class="princ__pista"><span>{{ p.pista }}</span>@if (p.pistaFija) {<span class="princ__fija"><span class="princ__sep" aria-hidden="true">· </span>{{ p.pistaFija }}</span>}</span>
-                  @if (p.conteo === undefined) {
-                    <svg class="princ__ir" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
-                  } @else if (p.conteo !== null) {
-                    <span class="princ__conteo">{{ cifra(p.conteo) }}</span>
-                  } @else if (cargandoResumen()) {
-                    <span class="princ__conteo princ__conteo--cargando" aria-label="Cargando"></span>
-                  } @else {
-                    <span class="princ__conteo princ__conteo--sin" role="img" aria-label="Sin dato">—</span>
+                  <span class="acceso__etiqueta">{{ a.etiqueta }}</span>
+                  @if (a.conteo; as c) {
+                    <span class="visualmente-oculto">, {{ cifra(c.cifra) }} {{ c.texto }}</span>
                   }
                 </a>
-              }
-            </div>
-          }
-          @if (grupos().length) {
-            <div class="grupos">
-              @for (g of grupos(); track g.id) {
-                <div class="grupo" role="group" [attr.aria-label]="g.titulo">
-                  <p class="grupo__titulo" aria-hidden="true">{{ g.titulo }}@if (g.enOtro) {<small> · {{ g.enOtro }}</small>}</p>
-                  @for (a of g.accesos; track a.id) {
-                    <a class="grupo__acceso" [routerLink]="a.ruta" [queryParams]="a.queryParams">
-                      <ng-container *ngTemplateOutlet="icono; context: { $implicit: a.icono }" />
-                      <span>{{ a.etiqueta }}</span>
-                      <svg class="grupo__ir" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
-                    </a>
-                  }
-                </div>
-              }
-            </div>
-          }
-        </section>
+              </li>
+            }
+          </ul>
+        </div>
       }
 
-      <!-- ---------- Tira de KPI (cierre del rediseño): los cuatro números de
-           Indicadores, compactos, encima de lo pendiente. Sin enlaces nuevos. ---------- -->
-      @if (veKpisResumen() && kpis().length) {
-        <section class="kpi-tira" aria-label="Indicadores de órdenes">
-          @for (kpi of kpis(); track kpi.label) {
-            <div class="kpi-tira__item">
-              <span class="kpi-tira__label">{{ kpi.label }}</span>
-              <strong class="kpi-tira__valor">{{ kpi.value }}</strong>
-              @if (kpi.hint) { <span class="kpi-tira__pista">{{ kpi.hint }}</span> }
-            </div>
-          }
-        </section>
-      }
-
-      @if (veAtencion() || veProximas()) {
-        <div class="rejilla" [class.rejilla--sola]="!(veAtencion() && veProximas())">
+    <div class="resumen">
+      @if (veAtencion() || veProximas() || veCarteraInicio()) {
+        <div class="rejilla" [class.rejilla--sola]="!(veAtencion() && (veProximas() || veCarteraInicio()))">
           <!-- ---------- Requiere su atención ---------- -->
           @if (veAtencion()) {
             <section class="card atencion" aria-labelledby="inicio-atencion">
@@ -236,7 +215,7 @@
                         </span>
                         <span class="ir-a pend__ir">
                           {{ p.accion }}
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+                          <svg appIcono="siguiente"></svg>
                         </span>
                       </a>
                     </li>
@@ -299,17 +278,218 @@
               <div class="agenda__pie">
                 <a class="ir-a" routerLink="/ordenes">
                   @if (proximasOcultas(); as n) { {{ n }} más en Órdenes } @else { Ir a Órdenes }
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+                  <svg appIcono="siguiente"></svg>
+                </a>
+              </div>
+            </section>
+          }
+
+          <!-- ---------- Finanzas · Cartera por cobrar (GET /cartera/antiguedad): lo que
+               «Próximas a ejecutar» es en Operación, los clientes que más deben. ---------- -->
+          @if (veCarteraInicio()) {
+            <section class="card agenda" aria-labelledby="inicio-cartera">
+              <div class="card__head">
+                <h3 class="card__title" id="inicio-cartera">Cartera por cobrar</h3>
+                @if (estadoCxc() === 'ok' && carteraTotal()) { <span class="card__hint">{{ pesos(carteraTotal()) }} en total</span> }
+              </div>
+              @switch (estadoCxc()) {
+                @case ('cargando') {
+                  <div class="cargando-lista" aria-label="Cargando la cartera">
+                    @for (i of [1, 2, 3]; track i) { <span class="hueso hueso--fila"></span> }
+                  </div>
+                }
+                @case ('error') {
+                  <p class="ind__error cartera__error">No se pudo cargar la cartera. <button type="button" class="reintentar" (click)="reintentar('cxc')">Reintentar</button></p>
+                }
+                @default {
+                  @if (carteraTop().length) {
+                    <ul class="cartera">
+                      @for (c of carteraTop(); track c.id) {
+                        <li class="cartera__fila">
+                          <span class="cartera__quien">
+                            <span class="cartera__nombre" [title]="c.nombre">{{ c.nombre }}</span>
+                            <span class="cartera__detalle"><span>{{ c.documentos }} {{ c.documentos === 1 ? 'documento' : 'documentos' }}</span>@if (c.todoVencido) {<span class="pend__sep" aria-hidden="true"> · </span><span class="pend__vencida">todo vencido</span>} @else if (c.vencida > 0) {<span class="pend__sep" aria-hidden="true"> · </span><span class="pend__vencida">{{ pesos(c.vencida) }} vencidos</span>}</span>
+                          </span>
+                          <span class="cartera__saldo">{{ pesos(c.total) }}</span>
+                        </li>
+                      }
+                    </ul>
+                  } @else {
+                    <div class="estado-vacio estado-vacio--ok">
+                      <span class="estado-vacio__icono" aria-hidden="true">
+                        <ng-container *ngTemplateOutlet="icono; context: { $implicit: 'check' }" />
+                      </span>
+                      <h4 class="estado-vacio__titulo">Sin cartera por cobrar</h4>
+                      <p class="estado-vacio__texto">Ningún cliente tiene facturas con saldo.</p>
+                    </div>
+                  }
+                }
+              }
+              <div class="agenda__pie">
+                <a class="ir-a" routerLink="/cartera" [queryParams]="{ vista: 'por-cobrar' }">
+                  @if (carteraOcultos(); as n) { {{ n }} {{ n === 1 ? 'cliente más' : 'clientes más' }} en Cartera } @else { Ir a Cartera }
+                  <svg appIcono="siguiente"></svg>
                 </a>
               </div>
             </section>
           }
         </div>
       }
+
+      <!-- ---------- Tira de KPI: los cuatro números de Indicadores, compactos,
+           debajo de lo pendiente (primero lo que toca hacer). Solo en Operación. ---------- -->
+      @if (veKpisResumen() && kpis().length) {
+        <section class="kpi-tira" aria-label="Indicadores de órdenes">
+          @for (kpi of kpis(); track kpi.label) {
+            <div class="kpi-tira__item">
+              <span class="kpi-tira__label">{{ kpi.label }}</span>
+              <strong class="kpi-tira__valor">{{ kpi.value }}</strong>
+              @if (kpi.hint) { <span class="kpi-tira__pista">{{ kpi.hint }}</span> }
+            </div>
+          }
+        </section>
+      }
+    </div>
     </div>
   } @else {
     <!-- ============ INDICADORES ============ -->
-    <div id="panel-indicadores" [attr.role]="resumenVacio() ? null : 'tabpanel'" [attr.aria-labelledby]="resumenVacio() ? null : 'tab-indicadores'">
+    <div id="panel-indicadores" [attr.role]="conPestanas() ? 'tabpanel' : null" [attr.aria-labelledby]="conPestanas() ? 'tab-indicadores' : null">
+      @if (enFinanzas()) {
+        <!-- ---------- Finanzas: lo facturado, la cartera y los documentos electrónicos ---------- -->
+        <section class="kpi-grid" [attr.aria-busy]="cargandoFinanzas()">
+          @for (kpi of kpisFin(); track kpi.label) {
+            <article class="kpi-card">
+              <div class="kpi-card__info">
+                <span class="kpi-card__label">{{ kpi.label }}</span>
+                <strong class="kpi-card__value">{{ kpi.value }}</strong>
+                @if (kpi.hint) { <span class="kpi-card__hint">{{ kpi.hint }}@if (kpi.reintentar; as b) { · <button type="button" class="reintentar" (click)="reintentar(b)">Reintentar</button>}</span> } @else { <span class="kpi-card__hint">&nbsp;</span> }
+              </div>
+            </article>
+          }
+        </section>
+
+        <div class="ind">
+          <section class="card ind__principal" aria-labelledby="inicio-facturado" [attr.aria-busy]="estadoVentas() === 'cargando'">
+            <h3 class="ind__etiqueta" id="inicio-facturado">Facturado en {{ mesNombre }} (mes en curso, antes de IVA)</h3>
+            @switch (estadoVentas()) {
+              @case ('cargando') {
+                <div class="ind__cargando" aria-label="Cargando lo facturado">
+                  <span class="hueso hueso--cifra"></span>
+                  <span class="hueso hueso--pista"></span>
+                  <div class="graf graf--cargando" aria-hidden="true">
+                    <div class="graf__barras">
+                      @for (h of huesosGraf; track $index) {
+                        <div class="graf__col"><div class="graf__barra graf__barra--hueso" [style.height.%]="h"></div></div>
+                      }
+                    </div>
+                    <div class="graf__meses">
+                      @for (m of mesesEje; track $index) { <span>{{ m }}</span> }
+                    </div>
+                  </div>
+                </div>
+              }
+              @case ('error') {
+                <p class="ind__error">No se pudo cargar lo facturado. <button type="button" class="reintentar" (click)="reintentar('ventas')">Reintentar</button></p>
+              }
+              @default {
+                <p class="ind__grande ind__grande--pesos">{{ facturadoMesTexto() }}</p>
+                <p class="ind__pista">
+                  @if (facturadoMes() === 0 && ultimoMesConDato()) { Aún sin facturas este mes · {{ ultimoMesConDato() }} } @else { Neto de notas crédito · los cinco meses anteriores, en gris }
+                </p>
+                <div class="graf" role="img" [attr.aria-label]="resumenGraficaFin()">
+                  <div class="graf__barras">
+                    @for (b of barrasFin(); track b.mes) {
+                      <div class="graf__col" [class.graf__col--actual]="b.actual">
+                        @if (b.valor > 0) {
+                          <div class="graf__barra" [style.height.%]="b.alto"><span>{{ b.rotulo }}</span></div>
+                        } @else {
+                          <i class="graf__cero"></i>
+                        }
+                      </div>
+                    }
+                  </div>
+                  <div class="graf__meses" aria-hidden="true">
+                    @for (b of barrasFin(); track b.mes) {
+                      <span [class.graf__mes--actual]="b.actual">{{ b.etiqueta }}</span>
+                    }
+                  </div>
+                </div>
+              }
+            }
+          </section>
+
+          <div class="ind__lado">
+            @if (veCarteraInicio()) {
+              <section class="card" aria-labelledby="inicio-edades">
+                <div class="card__head">
+                  <h3 class="card__title" id="inicio-edades">Antigüedad de la cartera</h3>
+                  @if (estadoCxc() === 'ok') { <span class="card__hint">{{ pesos(carteraTotal()) }} por cobrar</span> }
+                </div>
+                @if (estadoCxc() === 'error') {
+                  <p class="ind__error cartera__error">No se pudo cargar la cartera. <button type="button" class="reintentar" (click)="reintentar('cxc')">Reintentar</button></p>
+                } @else if (estadoCxc() === 'cargando') {
+                  <div class="cargando-lista" aria-label="Cargando la cartera">
+                    @for (i of [1, 2, 3]; track i) { <span class="hueso hueso--fila"></span> }
+                  </div>
+                } @else if (carteraTotal() > 0) {
+                  <div class="dist">
+                    <div class="dist__apilada" aria-hidden="true">
+                      @for (e of edadesCxc(); track e.key) {
+                        @if (e.valor > 0) { <i [class]="'tono--' + e.tono" [style.flex-grow]="e.valor"></i> }
+                      }
+                    </div>
+                    <ul class="dist__ley dist__ley--pesos">
+                      @for (e of edadesCxc(); track e.key) {
+                        <li>
+                          <i [class]="'tono--' + e.tono" aria-hidden="true"></i>
+                          <span>{{ e.label }}</span>
+                          <b>{{ e.texto }}</b>
+                          <em>{{ e.pct }}%</em>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                } @else {
+                  <div class="estado-vacio">
+                    <span class="estado-vacio__icono" aria-hidden="true">
+                      <ng-container *ngTemplateOutlet="icono; context: { $implicit: 'check' }" />
+                    </span>
+                    <h4 class="estado-vacio__titulo">Sin cartera por cobrar</h4>
+                  </div>
+                }
+              </section>
+            }
+
+            @if (veCupos()) {
+              <!-- «Va en X de Y»: los mismos cupos que muestran Facturación y Nómina. -->
+              <section class="card" aria-labelledby="inicio-cupos">
+                <div class="card__head">
+                  <h3 class="card__title" id="inicio-cupos">Documentos electrónicos</h3>
+                  <span class="card__hint">Usados del plan</span>
+                </div>
+                @if (estadoCupos() === 'error') {
+                  <p class="ind__error cartera__error">No se pudo cargar el plan de documentos. <button type="button" class="reintentar" (click)="reintentar('cupos')">Reintentar</button></p>
+                } @else if (estadoCupos() === 'cargando') {
+                  <div class="cargando-lista" aria-label="Cargando el plan de documentos">
+                    @for (i of [1, 2]; track i) { <span class="hueso hueso--fila"></span> }
+                  </div>
+                } @else if (!cuposLista().length) {
+                  <p class="ind__error cartera__error">Aún no hay un plan de documentos registrado.</p>
+                }
+                <ul class="arl" [hidden]="estadoCupos() !== 'ok' || !cuposLista().length">
+                  @for (c of cuposLista(); track c.nombre) {
+                    <li class="arl__fila">
+                      <span class="arl__nombre">{{ c.nombre }}</span>
+                      <span class="arl__carril" aria-hidden="true"><i [style.width.%]="c.pct"></i></span>
+                      <span class="arl__valor"><span><b>{{ cifra(c.usados) }}</b> / {{ cifra(c.total) }}</span><small>hasta el {{ c.hasta }}</small></span>
+                    </li>
+                  }
+                </ul>
+              </section>
+            }
+          </div>
+        </div>
+      } @else {
       @if (cargandoIndicadores() && !kpis().length) {
         <div class="spinner" aria-label="Cargando los indicadores"></div>
       } @else {
@@ -349,7 +529,7 @@
                 </div>
               }
               @case ('error') {
-                <p class="ind__error">No se pudieron cargar las horas.</p>
+                <p class="ind__error">No se pudieron cargar las horas. <button type="button" class="reintentar" (click)="reintentar('horas')">Reintentar</button></p>
               }
               @default {
                 @if (horasMes(); as hm) {
@@ -452,29 +632,20 @@
           </div>
         </div>
       }
+      }
     </div>
   }
 </div>
 }
 
 <!-- ============ ÍCONOS ============ -->
-<!-- Un solo juego, trazo de 1,8 en caja 24×24, como la barra lateral: cada
-     destino lleva el mismo ícono que su ítem del menú. -->
+<!-- Íconos pequeños de los estados vacíos: trazo de 1,8 en caja 24×24, como la
+     barra lateral. Los de los accesos son otro juego (`ICONOS` en dashboard.ts). -->
 <ng-template #icono let-n>
   <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     @switch (n) {
-      @case ('import') { <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" /><path d="M12 11v6" /><path d="m9 14 3 3 3-3" /> }
       @case ('orders') { <rect x="8" y="2" width="8" height="4" rx="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01" /> }
-      @case ('plus') { <path d="M12 5v14M5 12h14" /> }
-      @case ('receipt') { <path d="M6 2h12v20l-3-2-3 2-3-2-3 2Z" /><path d="M9 7h6M9 11h6M9 15h4" /> }
-      @case ('file') { <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5Z" /><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" /> }
-      @case ('wallet') { <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /> }
-      @case ('cart') { <circle cx="9" cy="20" r="1.5" /><circle cx="18" cy="20" r="1.5" /><path d="M2 3h3l2.6 12.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L21 7H6" /> }
-      @case ('banknote') { <rect x="2.5" y="6" width="19" height="12" rx="2" /><circle cx="12" cy="12" r="2.5" /><path d="M6 10v4M18 10v4" /> }
-      @case ('contacts') { <path d="M7 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" /><circle cx="13" cy="10" r="2.5" /><path d="M9 17a4 4 0 0 1 8 0" /><path d="M4 7h4M4 12h4M4 17h4" /> }
-      @case ('id-card') { <rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="2" /><path d="M15 8h2M15 12h2M7 16h4" /> }
       @case ('calendar') { <rect x="3" y="4.5" width="18" height="17" rx="2" /><path d="M16 2.5v4M8 2.5v4M3 10h18" /> }
-      @case ('clock') { <circle cx="12" cy="12" r="9" /><path d="M12 7.5V12l3 2" /> }
       @case ('check') { <circle cx="12" cy="12" r="9" /><path d="m8.5 12.3 2.4 2.4 4.6-4.9" /> }
     }
   </svg>

@@ -15,6 +15,7 @@ import { OpcionCampo, esAxa, esBolivar, esSura, etiquetaTipoActividadArl, pistaT
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 import { AccionComponent } from '../../shared/icono/accion';
+import { IconoComponent } from '../../shared/icono/icono';
 
 /** Un campo extraído editable (etiqueta + valor + confianza). */
 interface PreviewField {
@@ -148,7 +149,7 @@ type DocKind = 'pdf' | 'sheet' | 'none';
 
 @Component({
   selector: 'app-import',
-  imports: [FormsModule, RouterLink, PaginadorComponent, AccionComponent],
+  imports: [FormsModule, RouterLink, PaginadorComponent, AccionComponent, IconoComponent],
   templateUrl: './import.html',
   styleUrl: './import.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -858,6 +859,44 @@ export class ImportComponent implements OnInit, OnDestroy {
     this.docKind.set('none');
     this.docError.set(mensaje);
   }
+
+  /**
+   * 22-nov-2026 · Filas de la hoja tal como se pintan (pasada del dueño). Antes se
+   * numeraban como en Excel y un SIPAB de UNA orden salía con «1» en los títulos y
+   * «2» en la orden, como si hubiera dos. Ahora la primera fila con contenido es la de
+   * títulos y no lleva número (ni las que haya encima); las órdenes se cuentan desde 1.
+   * `fila.n` sigue siendo la fila real de Excel: con ella se marca la de origen.
+   */
+  protected readonly filasHoja = computed(() => {
+    const hoja = this.sheet();
+    if (!hoja) return [];
+    const conDatos = (f: { celdas: string[] }) => f.celdas.some((c) => c !== '');
+    const titulos = hoja.filas.find(conDatos)?.n ?? null;
+    let orden = 0;
+    return hoja.filas.map((f) => {
+      const esTitulos = f.n === titulos;
+      const despues = titulos !== null && f.n > titulos;
+      // Las filas vacías intermedias se pintan (dan la forma real de la hoja) pero no cuentan.
+      const num = despues && conDatos(f) ? ++orden : null;
+      return { ...f, num, esTitulos };
+    });
+  });
+
+  /**
+   * Aviso de recorte de la vista previa. El servidor solo dice «truncado»; se deduce
+   * de los topes (300 filas, 40 columnas) qué se recortó, para no decir «primeras
+   * filas» de una hoja con una sola orden a la que solo le sobran columnas.
+   */
+  protected readonly notaRecorte = computed(() => {
+    const hoja = this.sheet();
+    if (!hoja?.truncado) return null;
+    const filas = hoja.filas.length >= 300;
+    const columnas = hoja.columnas >= 40;
+    const nombre = hoja.hoja ? ` de la hoja «${hoja.hoja}»` : '';
+    if (filas && columnas) return `Se muestran las primeras ${hoja.filas.length} filas y ${hoja.columnas} columnas${nombre}.`;
+    if (filas) return `Se muestran las primeras ${hoja.filas.length} filas${nombre}.`;
+    return `Se muestran las primeras ${hoja.columnas} columnas${nombre}.`;
+  });
 
   /** ¿Esta fila de la hoja es la que originó la orden abierta? */
   protected isSourceRow(n: number): boolean {

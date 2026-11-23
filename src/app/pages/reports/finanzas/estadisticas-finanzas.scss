@@ -1,0 +1,659 @@
+/*
+ * 20-nov-2026 · Estadísticas de Finanzas (veredicto fin-veredicto.md §3).
+ *
+ * - Lienzo de 560 px de alto fijo en escritorio (≥ 1024 px), el mismo valor que
+ *   Operación: al cambiar de pestaña, de periodo, o entre carga, error y vacío,
+ *   nada salta. Por debajo de 1024 px, alto natural.
+ * - Pestañas 2 a 4: una sola rejilla, una gráfica principal arriba (a lo ancho) y
+ *   dos tarjetas abajo. Resumen: 6 KPI en 3 × 2 y la franja de cobertura.
+ * - El par de series validado (`validate_palette.js`, superficie #fff: banda L,
+ *   croma, CVD ΔE 18,3, contraste ≥ 3:1) vive aquí, no en los tokens globales:
+ *   `--accion` falla como color categórico (L 0,398, croma 0,099).
+ * - Clases globales reutilizadas sin redefinir: .tabs, .seg, .kpi-grid,
+ *   .kpi-card, .estado-vacio, .alert, .ir-a y .pill.
+ */
+:host {
+  display: block;
+  --fin-serie-a: #2f6fa8;
+  --fin-serie-b: #c2703d;
+  --fin-alto: 560px;
+}
+
+/* Desde 1280 px el selector de periodo sube a la fila del título «Estadísticas»,
+   como los filtros de Operación: el host se aplana (`display: contents`) y sus
+   bloques se colocan en la rejilla de `reports.scss` (título | periodo; debajo,
+   pestañas y lienzo a todo el ancho). Con el selector en su propia fila, a
+   1366 × 768 el lienzo terminaba 28 px bajo el borde de la pantalla y la 2.ª
+   línea del eje de «Utilidad por mes» (el año bajo «ene.») quedaba cortada. Las
+   variables de `:host` se siguen heredando: `display: contents` no corta la
+   herencia. */
+@media (min-width: 1280px) {
+  :host {
+    display: contents;
+  }
+
+  /* Con `:host` delante: esta regla va antes que la base de `.fin-periodo` y tiene que ganarle el margen. */
+  :host .fin-periodo {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+  }
+
+  :host .tabs {
+    margin-bottom: var(--e-3);
+  }
+
+  .tabs,
+  .fin-lienzo,
+  .estado-vacio {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---- Selector de periodo ---- */
+.fin-periodo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2) var(--e-4);
+  margin-bottom: var(--e-4);
+}
+
+.fin-periodo__nav {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-1);
+}
+
+.fin-periodo__etiqueta {
+  /* UN solo ancho para los tres modos: con un ancho por modo la flecha › y la
+     línea «comparado con…» saltaban al pasar de Mes a Trimestre o a Año. El texto
+     es corto («septiembre 2026» es el más largo; «4.º trim. 2026»; «2026») y el
+     tramo en curso va en la línea de comparación: con 18rem y el tramo dentro,
+     «noviembre 2026» dejaba un hueco grande ante ›. Centrado entre las flechas. */
+  inline-size: 9rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  padding: 0 var(--e-1);
+  text-align: center;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.fin-periodo__comparacion {
+  margin: 0;
+  font-size: var(--fs-celda);
+  color: var(--tinta-3);
+}
+
+.fin-flecha {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--borde-control);
+  border-radius: var(--r-control);
+  background: var(--superficie);
+  color: var(--tinta-2);
+  box-shadow: var(--sombra-1);
+  cursor: pointer;
+  transition: background-color var(--t-rapida) ease, transform var(--t-rapida) var(--ease-out);
+
+  svg { width: 16px; height: 16px; }
+
+  &:active:not(:disabled) { transform: scale(0.94); }
+
+  &:disabled {
+    background: var(--hundida);
+    color: var(--tinta-3);
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fin-flecha:hover:not(:disabled) { background: var(--accion-tenue); color: var(--accion); }
+}
+
+/* ---- Lienzo ---- */
+.fin-lienzo {
+  position: relative;
+  min-width: 0;
+}
+
+.fin-lienzo > * {
+  transition: opacity var(--t-media) ease;
+}
+
+/* Al cambiar de periodo, lo anterior queda al 60 % mientras llega lo nuevo. */
+.fin-lienzo--recargando > * {
+  opacity: 0.6;
+}
+
+@media (min-width: 1024px) {
+  .fin-lienzo {
+    block-size: var(--fin-alto);
+    /* Nada desborda (rejilla con minmax(0, …) y tablas con desplazamiento
+       interno), así que no hace falta reservar canal de barra. */
+    overflow: hidden;
+  }
+
+  .fin-lienzo > * {
+    height: 100%;
+  }
+}
+
+/* ---- Rejilla de las pestañas 2 a 4 ---- */
+.fin-rejilla {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--e-4) var(--e-6);
+}
+
+@media (min-width: 1024px) {
+  .fin-rejilla {
+    grid-template-rows: minmax(0, 1.25fr) minmax(0, 1fr);
+  }
+
+  .fin-rejilla--con-alerta,
+  .fin-rejilla--resultado {
+    grid-template-rows: auto minmax(0, 1.25fr) minmax(0, 1fr);
+  }
+
+  .fin-rejilla--resultado.fin-rejilla--con-alerta {
+    grid-template-rows: auto auto minmax(0, 1.25fr) minmax(0, 1fr);
+  }
+}
+
+.fin-rejilla > .fin-franja,
+.fin-cabeza-panel,
+.fin-tarjeta--principal {
+  grid-column: 1 / -1;
+}
+
+.fin-cabeza-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-1) var(--e-3);
+}
+
+/* ---- Tarjeta ---- */
+.fin-tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+  min-width: 0;
+  min-height: 0;
+  padding: var(--e-4) var(--e-5);
+  overflow: hidden;
+}
+
+.fin-tarjeta__cabeza {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--e-3);
+  flex: none;
+}
+
+/* El bloque del título puede encoger: sin esto, la leyenda de una línea
+   (white-space: nowrap) empujaba «Ver datos» fuera de la tarjeta a 390 px. */
+.fin-tarjeta__cabeza > div {
+  min-width: 0;
+}
+
+.fin-tarjeta__titulo {
+  margin: 0;
+  font-size: var(--fs-tarjeta);
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.fin-tarjeta__sub {
+  margin: 2px 0 0;
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
+}
+
+.fin-leyenda-sub {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--e-2);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.fin-leyenda-sub__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fin-leyenda-sub__muestra {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.fin-leyenda-sub__sep {
+  color: var(--tinta-3);
+}
+
+.fin-cifra {
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.fin-ver-datos {
+  flex: none;
+}
+
+.fin-tarjeta__cuerpo {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.fin-tarjeta__cuerpo > orb-fin-columnas,
+.fin-tarjeta__cuerpo > orb-fin-cascada {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.fin-tarjeta__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-1) var(--e-3);
+  flex: none;
+}
+
+.fin-tarjeta__pie .ir-a {
+  margin-left: auto;
+}
+
+.fin-nota {
+  margin: 0;
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
+}
+
+/* ---- Resumen ---- */
+.fin-resumen {
+  display: grid;
+  /* Los KPI miden lo que su contenido; el resto del lienzo es de la cobertura. */
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--e-4);
+}
+
+.fin-kpis {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+}
+
+/* ---- Cobertura contable (pie de Resumen) ---- */
+.fin-cobertura {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+  min-height: 0;
+  padding: var(--e-3);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
+  background: var(--superficie);
+  overflow: hidden;
+}
+
+.fin-cobertura__cuerpo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: center;
+  gap: var(--e-4) var(--e-8, 32px);
+  flex: 1 1 auto;
+  padding: 0 var(--e-2);
+}
+
+.fin-cobertura__pie {
+  grid-column: 1 / -1;
+}
+
+.fin-medidor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'etiqueta valor' 'carril carril';
+  align-items: center;
+  gap: 6px var(--e-3);
+  font-size: var(--fs-celda);
+}
+
+.fin-medidor__etiqueta { grid-area: etiqueta; color: var(--tinta-2); }
+.fin-medidor__valor { grid-area: valor; font-weight: 600; color: var(--tinta); font-variant-numeric: tabular-nums; }
+
+.fin-medidor__carril {
+  grid-area: carril;
+  display: block;
+  height: 8px;
+  border-radius: var(--r-completo);
+  background: var(--hundida);
+  overflow: hidden;
+}
+
+.fin-medidor__relleno {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-completo);
+  background: var(--accion);
+}
+
+.fin-medidor__relleno--completo { background: var(--ok); }
+
+@media (max-width: 600px) {
+  .fin-cobertura__cuerpo { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* La tarjeta entera abre su pestaña: es un botón con la anatomía del KPI. */
+.fin-kpi {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color var(--t-rapida) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fin-kpi:hover { background: var(--papel); }
+}
+
+/* Más aire que el KPI global (6 px): aquí cada celda lleva cuatro líneas bajo la
+   etiqueta (cifra, pista, variación, fuente) y a 6 px se leían como un bloque. */
+.fin-kpi .kpi-card__info {
+  height: 100%;
+  gap: var(--e-2);
+}
+
+/* La cifra del KPI va proporcional (las tabulares, en ejes y listas), y se separa
+   un poco más de su pista que la pista de la variación. */
+.fin-kpi__cifra {
+  margin-bottom: 2px;
+  font-variant-numeric: proportional-nums;
+}
+
+/* Cifra vacía («—») a 24 px en tinta-3: a 32 px en tinta se leía como un tachón. */
+.fin-kpi__cifra--vacia {
+  font-size: 24px;
+  color: var(--tinta-3);
+}
+
+.fin-kpi__pista {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.fin-variacion {
+  font-size: var(--fs-celda);
+  font-weight: 500;
+  color: var(--tinta-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.fin-variacion--ok { color: var(--ok); }
+.fin-variacion--error { color: var(--error); }
+
+.fin-kpi__fuente {
+  /* La fuente es lo único que baja al pie; la variación queda bajo su cifra. */
+  margin-top: auto;
+  padding-top: var(--e-2);
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
+}
+
+/* ---- Franja de cobertura (56 px) y alerta de una línea ---- */
+.fin-franja {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: var(--e-2) var(--e-4);
+  border-radius: var(--r-alerta);
+  font-size: var(--fs-celda);
+  color: var(--tinta);
+}
+
+.fin-franja--compacta {
+  min-height: 40px;
+}
+
+.fin-franja--neutro { background: var(--hundida); }
+.fin-franja--aviso { background: var(--aviso-fondo); }
+.fin-franja--ok { background: var(--ok-fondo); }
+
+.fin-franja__icono {
+  display: inline-flex;
+  flex: none;
+  color: var(--tinta-2);
+
+  svg { width: 18px; height: 18px; }
+}
+
+.fin-franja--aviso .fin-franja__icono { color: var(--aviso); }
+.fin-franja--ok .fin-franja__icono { color: var(--ok); }
+
+.fin-franja__texto {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.fin-franja__detalle {
+  color: var(--tinta-2);
+}
+
+/* ---- Vacíos y error dentro del lienzo ---- */
+.fin-vacio {
+  flex: 1 1 auto;
+  justify-content: center;
+  padding: var(--e-4);
+}
+
+.fin-lienzo__unico {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.fin-error .estado-vacio__icono {
+  background: var(--error-fondo);
+  color: var(--error);
+}
+
+/* ---- «Ver datos» ---- */
+.fin-tabla {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--borde);
+  border-radius: var(--r-control);
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--fs-celda);
+  }
+
+  th, td {
+    padding: 6px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--borde);
+    white-space: nowrap;
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    background: var(--hundida);
+    font-size: var(--fs-meta);
+    font-weight: 600;
+    color: var(--tinta-2);
+  }
+
+  tbody th {
+    font-weight: 500;
+    color: var(--tinta);
+    white-space: normal;
+  }
+
+  tbody tr:last-child > * { border-bottom: 0; }
+}
+
+.fin-num {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.fin-tabla__vacia {
+  color: var(--tinta-3);
+  text-align: center !important;
+}
+
+/* ---- Esqueleto (sin animar, DESIGN §5) ---- */
+.fin-hueso {
+  display: block;
+  border-radius: 4px;
+  background: var(--hundida);
+}
+
+.fin-hueso--cifra { width: 62%; height: 30px; }
+.fin-hueso--pista { width: 44%; height: 12px; margin-top: 6px; }
+.fin-hueso--titulo { width: 12rem; height: 16px; }
+.fin-hueso--nombre { width: 6rem; height: 12px; flex: none; }
+.fin-hueso--linea { width: 60%; height: 12px; }
+
+.fin-esq-cols {
+  flex-direction: row;
+  align-items: stretch;
+  gap: var(--e-4);
+  padding-left: 58px;
+}
+
+.fin-esq-cols__col {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+
+.fin-esq-cols__barra {
+  display: block;
+  width: min(56px, 56%);
+  border-radius: 4px 4px 0 0;
+  background: var(--hundida);
+}
+
+.fin-esq-cols__mes {
+  font-size: 12px;
+  color: var(--tinta-3);
+}
+
+.fin-esq-barras {
+  gap: var(--e-3);
+}
+
+.fin-esq-barras__fila {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+}
+
+.fin-esq-barras__barra {
+  display: block;
+  height: 10px;
+  border-radius: var(--r-completo);
+  background: var(--hundida);
+}
+
+/* ---- Menos de 1024 px: alto natural ---- */
+@media (max-width: 1023px) {
+  .fin-tarjeta--principal .fin-tarjeta__cuerpo,
+  .fin-rejilla > .fin-tarjeta:not(.fin-tarjeta--principal) .fin-tarjeta__cuerpo:has(orb-fin-columnas) {
+    min-height: 240px;
+  }
+
+  .fin-tarjeta__cuerpo:has(.fin-tabla) {
+    max-height: 360px;
+  }
+
+  .fin-resumen .fin-kpi {
+    min-height: 168px;
+  }
+
+  .fin-lienzo__unico {
+    min-height: 320px;
+  }
+}
+
+/* ---- Celular ---- */
+@media (max-width: 600px) {
+  .fin-periodo {
+    gap: var(--e-2);
+  }
+
+  .fin-periodo__nav {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .fin-periodo__etiqueta {
+    flex: 1 1 auto;
+    inline-size: auto;
+    min-width: 0;
+    white-space: normal;
+  }
+
+  .fin-rejilla {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* KPI en 2 × 3. */
+  .fin-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
+  }
+
+  .fin-resumen .fin-kpi {
+    min-height: 150px;
+  }
+
+  .fin-tarjeta {
+    padding: var(--e-4);
+  }
+
+  .fin-franja {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  /* En el celular la leyenda sí puede partir: en una línea no cabe junto a «Ver datos». */
+  .fin-leyenda-sub {
+    flex-wrap: wrap;
+    column-gap: var(--e-3);
+    white-space: normal;
+  }
+
+  .fin-leyenda-sub__sep {
+    display: none;
+  }
+}

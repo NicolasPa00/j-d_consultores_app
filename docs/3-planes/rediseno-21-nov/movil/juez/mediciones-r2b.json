@@ -1,0 +1,122 @@
+{
+ "nuevaEmpresa-390": {
+  "modal": 832,
+  "pie": [
+   771,
+   832
+  ],
+  "barTop": 780,
+  "botones": [
+   "Cancelar: visible y tocable",
+   "Guardar: visible y tocable"
+  ],
+  "puntoEnZonaBarra": [
+   "modal-backdrop",
+   "btn",
+   "modal-backdrop"
+  ]
+ },
+ "detalleOrden-390": {
+  "modal": 832,
+  "pie": [
+   720,
+   832
+  ],
+  "barTop": 780,
+  "botones": [
+   "Cerrar: visible y tocable"
+  ],
+  "puntoEnZonaBarra": [
+   "modal-backdrop",
+   "modal__footer-actions",
+   "modal-backdrop"
+  ]
+ },
+ "hoja-390": {
+  "zNav": "55",
+  "puntoMas": "Más (tocable)",
+  "cerrar": "44x44",
+  "glifo": "20x20 hijos=1 stroke=none color=rgb(68, 87, 108)",
+  "centrado": "12/12 · 12/12"
+ },
+ "hojaCierraConMas-390": {
+  "abierta": false,
+  "url": "/dashboard",
+  "zNav": "30",
+  "hl": 4,
+  "hl0": 4
+ },
+ "dobleToque-390": {
+  "abierta": false,
+  "url": "/dashboard"
+ },
+ "cerrarX-390": {
+  "abierta": false,
+  "url": "/dashboard",
+  "foco": "Más módulos y opciones"
+ },
+ "atras-390": {
+  "abierta": false,
+  "url": "/dashboard"
+ },
+ "nuevaEmpresa-360": {
+  "modal": 728,
+  "pie": [
+   667,
+   728
+  ],
+  "barTop": 676,
+  "botones": [
+   "Cancelar: visible y tocable",
+   "Guardar: visible y tocable"
+  ],
+  "puntoEnZonaBarra": [
+   "modal-backdrop",
+   "btn",
+   "modal-backdrop"
+  ]
+ },
+ "detalleOrden-360": {
+  "modal": 728,
+  "pie": [
+   616,
+   728
+  ],
+  "barTop": 676,
+  "botones": [
+   "Cerrar: visible y tocable"
+  ],
+  "puntoEnZonaBarra": [
+   "modal-backdrop",
+   "modal__footer-actions",
+   "modal-backdrop"
+  ]
+ },
+ "hoja-360": {
+  "zNav": "55",
+  "puntoMas": "Más (tocable)",
+  "cerrar": "44x44",
+  "glifo": "20x20 hijos=1 stroke=none color=rgb(68, 87, 108)",
+  "centrado": "12/12 · 12/12"
+ },
+ "hojaCierraConMas-360": {
+  "abierta": false,
+  "url": "/dashboard",
+  "zNav": "30",
+  "hl": 4,
+  "hl0": 4
+ },
+ "dobleToque-360": {
+  "abierta": false,
+  "url": "/dashboard"
+ },
+ "cerrarX-360": {
+  "abierta": false,
+  "url": "/dashboard",
+  "foco": "Más módulos y opciones"
+ },
+ "atras-360": {
+  "abierta": false,
+  "url": "/dashboard"
+ }
+}

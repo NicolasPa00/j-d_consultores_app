@@ -99,7 +99,7 @@
       <div class="modal__head-actions">
         <span class="pill" [class]="tonoEstado(c.estado)">{{ etiquetaEstado[c.estado] }}</span>
         <button type="button" class="icon-action" (click)="cerrarDetalle()" aria-label="Cerrar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          <svg appIcono="cerrar"></svg>
         </button>
       </div>
     </header>
@@ -187,7 +187,7 @@
     <header class="modal__head">
       <h3 class="modal__title" id="cmpEdTitle">{{ editandoId() ? 'Editar borrador' : 'Nueva nota interna' }}</h3>
       <button type="button" class="icon-action" (click)="cerrarEditor()" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
     <div class="modal__body">
@@ -202,59 +202,69 @@
         </div>
       </div>
 
-      <div class="table-wrap">
-        <table class="table cmp-editor">
-          <thead>
-            <tr><th>Cuenta</th><th>Tercero</th>@if (centros().length) { <th>Centro de costo</th> }<th>Detalle</th><th class="col-num">Débito</th><th class="col-num">Crédito</th><th></th></tr>
-          </thead>
-          <tbody>
-            @for (l of lineas(); track $index; let i = $index) {
-              <tr>
-                <td>
-                  <select class="form-control" [ngModel]="l.cuenta_id" (ngModelChange)="cambiar(i, 'cuenta_id', $event)" [attr.aria-label]="'Cuenta de la línea ' + (i + 1)">
-                    <option value="">Elija…</option>
-                    @for (cu of cuentasMovimiento(); track cu.id) { <option [value]="cu.id">{{ cu.codigo }} · {{ cu.nombre }}</option> }
-                  </select>
-                </td>
-                <td>
-                  <select class="form-control" [class.form-control--error]="exigeTercero(l) && !l.tercero_id"
-                          [ngModel]="l.tercero_id" (ngModelChange)="cambiar(i, 'tercero_id', $event)" [attr.aria-label]="'Tercero de la línea ' + (i + 1)">
-                    <option value="">{{ exigeTercero(l) ? 'Obligatorio…' : '—' }}</option>
-                    @for (t of terceros(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
-                  </select>
-                </td>
-                @if (centros().length) {
-                  <td>
-                    <select class="form-control" [class.form-control--error]="exigeCentro(l) && !l.centro_costo_id"
-                            [ngModel]="l.centro_costo_id" (ngModelChange)="cambiar(i, 'centro_costo_id', $event)" [attr.aria-label]="'Centro de costo de la línea ' + (i + 1)">
-                      <option value="">{{ exigeCentro(l) ? 'Obligatorio…' : '—' }}</option>
-                      @for (c of centros(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
-                    </select>
-                  </td>
-                }
-                <td><input type="text" class="form-control" [ngModel]="l.descripcion" (ngModelChange)="cambiar(i, 'descripcion', $event)" [attr.aria-label]="'Detalle de la línea ' + (i + 1)" /></td>
-                <td><input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="l.debito" (ngModelChange)="cambiar(i, 'debito', $event)" [attr.aria-label]="'Débito de la línea ' + (i + 1)" /></td>
-                <td><input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="l.credito" (ngModelChange)="cambiar(i, 'credito', $event)" [attr.aria-label]="'Crédito de la línea ' + (i + 1)" /></td>
-                <td class="cmp-acc">
-                  @if (cuadre().diferencia) {
-                    <button type="button" appAccion="cuadrar" (click)="cuadrarCon(i)" [etiqueta]="'Cuadrar con la línea ' + (i + 1)"></button>
-                  }
-                  <button type="button" appAccion="quitar" (click)="quitarLinea(i)" [disabled]="lineas().length <= 2" [etiqueta]="'Quitar la línea ' + (i + 1)"></button>
-                </td>
-              </tr>
+      <!-- 22-nov-2026 · Las líneas van en rejilla, con el mismo patrón que la factura manual
+           (`fac-man-linea`): en escritorio se leen como una tabla con su cabecera; en el
+           celular cada línea se apila como tarjeta, con el rótulo sobre cada campo y las
+           acciones a la vista (en tabla, Débito, Crédito y quitar quedaban fuera). -->
+      <div class="cmp-lineas" [class.cmp-lineas--centro]="centros().length">
+        <div class="cmp-linea cmp-linea--cab" aria-hidden="true">
+          <span>Cuenta</span><span>Tercero</span>@if (centros().length) { <span>Centro de costo</span> }<span>Detalle</span><span class="col-num">Débito</span><span class="col-num">Crédito</span><span></span>
+        </div>
+        @for (l of lineas(); track $index; let i = $index) {
+          <div class="cmp-linea">
+            <div class="cmp-linea__campo">
+              <span class="cmp-linea__rotulo">Cuenta</span>
+              <select class="form-control" [ngModel]="l.cuenta_id" (ngModelChange)="cambiar(i, 'cuenta_id', $event)" [attr.aria-label]="'Cuenta de la línea ' + (i + 1)">
+                <option value="">Elija…</option>
+                @for (cu of cuentasMovimiento(); track cu.id) { <option [value]="cu.id">{{ cu.codigo }} · {{ cu.nombre }}</option> }
+              </select>
+            </div>
+            <div class="cmp-linea__campo">
+              <span class="cmp-linea__rotulo">Tercero</span>
+              <select class="form-control" [class.form-control--error]="exigeTercero(l) && !l.tercero_id"
+                      [ngModel]="l.tercero_id" (ngModelChange)="cambiar(i, 'tercero_id', $event)" [attr.aria-label]="'Tercero de la línea ' + (i + 1)">
+                <option value="">{{ exigeTercero(l) ? 'Obligatorio…' : '—' }}</option>
+                @for (t of terceros(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
+              </select>
+            </div>
+            @if (centros().length) {
+              <div class="cmp-linea__campo">
+                <span class="cmp-linea__rotulo">Centro de costo</span>
+                <select class="form-control" [class.form-control--error]="exigeCentro(l) && !l.centro_costo_id"
+                        [ngModel]="l.centro_costo_id" (ngModelChange)="cambiar(i, 'centro_costo_id', $event)" [attr.aria-label]="'Centro de costo de la línea ' + (i + 1)">
+                  <option value="">{{ exigeCentro(l) ? 'Obligatorio…' : '—' }}</option>
+                  @for (c of centros(); track c.id) { <option [value]="c.id">{{ c.codigo }} · {{ c.nombre }}</option> }
+                </select>
+              </div>
             }
-          </tbody>
-          <tfoot>
-            <tr>
-              <td [attr.colspan]="centros().length ? 4 : 3">
-                <button type="button" class="btn btn--ghost btn--sm" (click)="agregarLinea()">+ Agregar línea</button>
-              </td>
-              <td class="col-num mono cmp-total">{{ pesosCentavos(cuadre().debito) }}</td>
-              <td class="col-num mono cmp-total">{{ pesosCentavos(cuadre().credito) }}</td>
-              <td></td>
-            </tr>
-          </tfoot>
-        </table>
+            <div class="cmp-linea__campo cmp-linea__detalle">
+              <span class="cmp-linea__rotulo">Detalle</span>
+              <input type="text" class="form-control" [ngModel]="l.descripcion" (ngModelChange)="cambiar(i, 'descripcion', $event)" [attr.aria-label]="'Detalle de la línea ' + (i + 1)" />
+            </div>
+            <div class="cmp-linea__campo">
+              <span class="cmp-linea__rotulo">Débito</span>
+              <input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="l.debito" (ngModelChange)="cambiar(i, 'debito', $event)" [attr.aria-label]="'Débito de la línea ' + (i + 1)" />
+            </div>
+            <div class="cmp-linea__campo">
+              <span class="cmp-linea__rotulo">Crédito</span>
+              <input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="l.credito" (ngModelChange)="cambiar(i, 'credito', $event)" [attr.aria-label]="'Crédito de la línea ' + (i + 1)" />
+            </div>
+            <div class="cmp-acc">
+              @if (cuadre().diferencia) {
+                <button type="button" appAccion="cuadrar" (click)="cuadrarCon(i)" [etiqueta]="'Cuadrar con la línea ' + (i + 1)"></button>
+              }
+              <button type="button" appAccion="quitar" (click)="quitarLinea(i)" [disabled]="lineas().length <= 2" [etiqueta]="'Quitar la línea ' + (i + 1)"></button>
+            </div>
+          </div>
+        }
+        <div class="cmp-linea cmp-linea--pie">
+          <div class="cmp-linea__agregar">
+            <button type="button" class="btn btn--ghost btn--sm" (click)="agregarLinea()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg> Agregar línea</button>
+          </div>
+          <div class="col-num mono cmp-total"><span class="cmp-linea__rotulo">Total débito</span>{{ pesosCentavos(cuadre().debito) }}</div>
+          <div class="col-num mono cmp-total"><span class="cmp-linea__rotulo">Total crédito</span>{{ pesosCentavos(cuadre().credito) }}</div>
+          <span></span>
+        </div>
       </div>
 
       <p class="cmp-cuadre" [class.cmp-cuadre--ok]="!cuadre().diferencia && cuadre().debito > 0">

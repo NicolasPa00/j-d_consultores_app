@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Borrador de factura · opciones</title>
+<style>
+  @font-face { font-family: Inter; src: local('Inter'); }
+  :root { --tinta:#0f1f2e; --tinta-2:#44566a; --tinta-3:#647689; --borde:#dde4ec; --papel:#f6f8fa; --accion:#13497a; --error:#b42318; --cielo:#e6f0f8; --cian-trazo:#1890bb; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 32px; font: 14px/1.5 Inter, system-ui, sans-serif; color: var(--tinta); background: #eef2f6; }
+  h1 { font-size: 22px; margin: 0 0 4px; font-weight: 600; }
+  .sub { color: var(--tinta-2); margin: 0 0 24px; }
+  .opciones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; align-items: start; }
+  .op { background: #fff; border: 1px solid var(--borde); border-radius: 10px; padding: 16px; }
+  .op h2 { font-size: 16px; margin: 0 0 2px; font-weight: 600; }
+  .op .nota { font-size: 12.5px; color: var(--tinta-2); margin: 0 0 12px; min-height: 58px; }
+  .op.elegida { outline: 3px solid var(--cian-trazo); outline-offset: 2px; }
+  .sello { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 6px; background: var(--cielo); color: var(--accion); margin-left: 6px; }
+  .modal { border: 1px solid var(--borde); border-radius: 8px; overflow: hidden; font-size: 11px; }
+  .mh { background: var(--cielo); padding: 8px 10px; font-weight: 600; font-size: 12.5px; }
+  .mb { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .tabla { border: 1px solid var(--borde); border-radius: 6px; }
+  .tabla div { display: flex; justify-content: space-between; padding: 5px 8px; border-top: 1px solid var(--borde); }
+  .tabla div:first-child { border-top: 0; background: #f3f6f9; color: var(--tinta-2); font-weight: 600; }
+  .btnc { align-self: flex-end; border: 1px solid #c9d3de; border-radius: 6px; padding: 2px 8px; font-size: 10.5px; }
+  .tot { display: flex; flex-direction: column; gap: 2px; }
+  .tot div { display: flex; justify-content: space-between; gap: 12px; }
+  .tot span { color: var(--tinta-2); }
+  .tot .r b { color: var(--error); }
+  .tot .f { border-top: 1px solid var(--borde); padding-top: 3px; font-weight: 600; font-size: 12px; }
+  .tot .f span { color: var(--tinta); }
+  .hueco { background: repeating-linear-gradient(45deg, #fff, #fff 6px, #fbecec 6px, #fbecec 12px); border-radius: 6px; color: var(--error); display: grid; place-items: center; font-size: 10.5px; }
+  .res { background: var(--papel); border: 1px solid var(--borde); border-radius: 6px; padding: 6px 8px; display: flex; flex-direction: column; gap: 5px; }
+  .res dt { color: var(--tinta-3); font-size: 10px; } .res dd { margin: 0; }
+  .pie { border-top: 1px solid var(--borde); padding: 7px 10px; display: flex; gap: 5px; background: #fafbfc; font-size: 10px; }
+  .pie i { font-style: normal; border: 1px solid #c9d3de; border-radius: 5px; padding: 1px 6px; } .pie .esp { flex: 1; } .pie .p { background: var(--accion); color: #fff; border-color: var(--accion); }
+  .franja { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--borde); border-radius: 6px; }
+  .franja div { padding: 6px 8px; border-left: 1px solid var(--borde); } .franja div:first-child { border-left: 0; }
+  .franja span { display: block; color: var(--tinta-3); font-size: 10px; } .franja b { font-size: 12px; }
+  .franja .t { background: var(--cielo); }
+  ul.pc { margin: 6px 0 0; padding-left: 16px; font-size: 12.5px; color: var(--tinta-2); }
+  .veredicto { margin-top: 24px; background: #fff; border: 1px solid var(--borde); border-radius: 10px; padding: 16px 20px; font-size: 13.5px; }
+</style>
+</head>
+<body>
+<h1>Borrador de factura · qué hacer con el hueco bajo la tabla</h1>
+<p class="sub">Pedido del dueño (22-nov): «queda mucho espacio vacío a la izquierda bajo la tabla, junto a “Corregir IVA y retenciones” y los totales». Los botones del pie no se mueven en ninguna opción. Solo datos que el documento ya trae.</p>
+
+<div class="opciones">
+  <!-- A -->
+  <section class="op elegida">
+    <h2>A · Resumen para revisar a la izquierda <span class="sello">Elegida</span></h2>
+    <p class="nota">Dos columnas: a la izquierda lo que se revisa antes de emitir (correo de facturación, nombre de cada retención, observaciones); a la derecha el botón y los totales, donde ya estaban.</p>
+    <div class="modal">
+      <div class="mh">Borrador de factura</div>
+      <div class="mb">
+        <div class="tabla"><div><span>Descripción</span><span>Total</span></div><div><span>Asesoría en SST</span><span>$ 306.848</span></div><div><span>Capacitación</span><span>$ 153.424</span></div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start">
+          <dl class="res" style="margin:0">
+            <div><dt>Correo de facturación</dt><dd>facturacion@cliente.com</dd></div>
+            <div><dt>Retenciones aplicadas</dt><dd><b>RF-HON</b> Retefuente honorarios<br><b>ICA-BOL</b> ReteICA Bolívar (al pagar)</dd></div>
+            <div><dt>Observaciones</dt><dd>Sin observaciones</dd></div>
+          </dl>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <span class="btnc">Corregir IVA y retenciones</span>
+            <div class="tot"><div><span>Subtotal</span><b>$ 460.272</b></div><div><span>IVA</span><b>$ 0</b></div><div class="r"><span>RF-HON (11 %)</span><b>− $ 50.629</b></div><div class="r"><span>ICA-BOL · al pagar</span><b>$ 2.301</b></div><div class="f"><span>Total a pagar</span><b>$ 409.642</b></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="pie"><i>Ver contabilización</i><i>Ver factura</i><span class="esp"></span><i>Eliminar</i><i class="p">Emitir</i><i>Cerrar</i></div>
+    </div>
+    <ul class="pc">
+      <li>El hueco se llena con lo que la contadora revisa antes de emitir, y avisa si al cliente le falta el correo de facturación.</li>
+      <li>Da nombre a los códigos de retención (RF-HON, ICA-BOL) sin repetir sus valores.</li>
+      <li>Los totales siguen en la misma lectura de arriba abajo, como en Siigo.</li>
+      <li>En contra: un bloque más que leer (se resuelve con fondo papel y texto de 13).</li>
+    </ul>
+  </section>
+
+  <!-- B -->
+  <section class="op">
+    <h2>B · Totales en una franja a lo ancho</h2>
+    <p class="nota">El bloque de totales se vuelve una franja horizontal bajo la tabla (Subtotal · IVA · Retenciones · Total a pagar). El botón queda encima, a la derecha.</p>
+    <div class="modal">
+      <div class="mh">Borrador de factura</div>
+      <div class="mb">
+        <div class="tabla"><div><span>Descripción</span><span>Total</span></div><div><span>Asesoría en SST</span><span>$ 306.848</span></div><div><span>Capacitación</span><span>$ 153.424</span></div></div>
+        <span class="btnc">Corregir IVA y retenciones</span>
+        <div class="franja"><div><span>Subtotal</span><b>$ 460.272</b></div><div><span>IVA</span><b>$ 0</b></div><div><span>Retenciones</span><b>− $ 50.629</b></div><div class="t"><span>Total a pagar</span><b>$ 409.642</b></div></div>
+        <p style="margin:0;color:var(--tinta-2)">Observaciones: …</p>
+      </div>
+      <div class="pie"><i>Ver contabilización</i><i>Ver factura</i><span class="esp"></span><i>Eliminar</i><i class="p">Emitir</i><i>Cerrar</i></div>
+    </div>
+    <ul class="pc">
+      <li>Sin hueco y más bajo.</li>
+      <li>En contra: las retenciones se suman en una sola cifra (hoy van una por una, y la ReteICA «se aplica al pagar» no se resta: no cabe en una suma).</li>
+      <li>En contra: rompe la lectura vertical del total que la contadora conoce del PDF de Siigo.</li>
+      <li>En el celular la franja vuelve a ser una columna.</li>
+    </ul>
+  </section>
+
+  <!-- C -->
+  <section class="op">
+    <h2>C · Centrar el bloque de totales</h2>
+    <p class="nota">Botón y totales centrados bajo la tabla, en una columna de 360 px. No se añade nada.</p>
+    <div class="modal">
+      <div class="mh">Borrador de factura</div>
+      <div class="mb">
+        <div class="tabla"><div><span>Descripción</span><span>Total</span></div><div><span>Asesoría en SST</span><span>$ 306.848</span></div><div><span>Capacitación</span><span>$ 153.424</span></div></div>
+        <div style="display:grid;grid-template-columns:1fr 1.6fr 1fr;gap:6px">
+          <div class="hueco">hueco</div>
+          <div style="display:flex;flex-direction:column;gap:6px"><span class="btnc">Corregir IVA y retenciones</span>
+          <div class="tot"><div><span>Subtotal</span><b>$ 460.272</b></div><div><span>IVA</span><b>$ 0</b></div><div class="r"><span>RF-HON (11 %)</span><b>− $ 50.629</b></div><div class="f"><span>Total a pagar</span><b>$ 409.642</b></div></div></div>
+          <div class="hueco">hueco</div>
+        </div>
+      </div>
+      <div class="pie"><i>Ver contabilización</i><i>Ver factura</i><span class="esp"></span><i>Eliminar</i><i class="p">Emitir</i><i>Cerrar</i></div>
+    </div>
+    <ul class="pc">
+      <li>El cambio más pequeño.</li>
+      <li>En contra: no quita el hueco, lo parte en dos; y los totales dejan de alinearse con la columna «Total» de la tabla, que es lo que se lee de arriba abajo.</li>
+    </ul>
+  </section>
+</div>
+
+<div class="veredicto">
+  <b>Elegida: A.</b> Es la única que convierte el espacio en algo útil sin tocar la cifra que manda (el total sigue a la derecha, alineado con la columna «Total», como en Siigo) y sin datos nuevos: el correo, los nombres de las retenciones y las observaciones ya venían en el documento; las observaciones se mueven de su párrafo suelto bajo los totales a este bloque. B pierde información (la ReteICA al pagar no se puede sumar) y C solo reparte el hueco.
+</div>
+</body>
+</html>

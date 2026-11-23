@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_
 import { isPlatformBrowser, NgTemplateOutlet } from '@angular/common';
 import { OpcionBusqueda, SelectorBusquedaComponent } from '../../shared/selector-busqueda/selector-busqueda';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { AlertService } from '../../core/alert.service';
@@ -13,6 +14,7 @@ import {
   TotalesInformeContable, VentasPorCliente, EstadoSituacionFinanciera, EstadoResultados, SeccionEstado,
 } from '../../core/models';
 import { AccionComponent } from '../../shared/icono/accion';
+import { IconoComponent } from '../../shared/icono/icono';
 
 type Pestana = 'balance' | 'auxiliar' | 'terceros' | 'libros' | 'ventas' | 'estados';
 
@@ -70,7 +72,7 @@ const iso = (d: Date) => `${d.getFullYear()}-${dosDigitos(d.getMonth() + 1)}-${d
  */
 @Component({
   selector: 'app-informes-contables',
-  imports: [FormsModule, NgTemplateOutlet, SelectorBusquedaComponent, AccionComponent],
+  imports: [FormsModule, NgTemplateOutlet, SelectorBusquedaComponent, AccionComponent, IconoComponent],
   templateUrl: './informes-contables.html',
   styleUrl: './informes-contables.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -79,6 +81,7 @@ export class InformesContablesComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly alerts = inject(AlertService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  private readonly ruta = inject(ActivatedRoute);
 
   protected readonly niveles = NIVELES;
   protected readonly libros = LIBROS;
@@ -121,7 +124,22 @@ export class InformesContablesComponent implements OnInit {
   protected readonly plegadas = signal<Set<string>>(new Set());
 
   ngOnInit(): void {
-    this.periodo('mes');
+    // Estadísticas de Finanzas enlaza aquí con «?pestana=ventas|estados» («Ver ventas
+    // por cliente», «Ver estado de resultados»): se abre directo en esa pestaña.
+    const pedida = this.ruta.snapshot.queryParamMap.get('pestana') as Pestana | null;
+    if (pedida && pedida in SUBTITULO) this.pestana.set(pedida);
+    if (pedida === 'estados') this.estado = 'resultados';
+    // …y con el periodo que se estaba mirando allí («?desde=&hasta=», AAAA-MM-DD): sin
+    // eso, desde el 4.º trimestre se llegaba al mes en curso y las cifras no cuadraban.
+    const desde = this.ruta.snapshot.queryParamMap.get('desde');
+    const hasta = this.ruta.snapshot.queryParamMap.get('hasta');
+    const fecha = /^\d{4}-\d{2}-\d{2}$/;
+    if (desde && hasta && fecha.test(desde) && fecha.test(hasta) && desde <= hasta) {
+      this.desde = desde;
+      this.hasta = hasta;
+    } else {
+      this.periodo('mes');
+    }
     this.api.listTerceros().subscribe({
       next: (r) => this.terceros.set([...r.data].sort((a, b) => a.nombre.localeCompare(b.nombre))),
       error: () => this.terceros.set([]),

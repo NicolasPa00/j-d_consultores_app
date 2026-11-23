@@ -146,9 +146,7 @@
                 @if (c.n_hijas && !query() && !soloMovimiento()) {
                   <button type="button" class="cnt-caret" [class.cnt-caret--plegada]="estaPlegada(c)" (click)="alternarPlegado(c)"
                           [attr.aria-label]="(estaPlegada(c) ? 'Expandir ' : 'Contraer ') + c.codigo">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
+                    <svg appIcono="bajar"></svg>
                   </button>
                 } @else {
                   <span class="cnt-caret cnt-caret--vacio"></span>
@@ -208,9 +206,7 @@
     <header class="modal__head">
       <h3 class="modal__title" id="cntFormTitle">{{ editando() ? 'Editar cuenta ' + editando()!.codigo : 'Nueva cuenta' }}</h3>
       <button type="button" class="icon-action" (click)="closeForm()" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 6 6 18M6 6l12 12" />
-        </svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
 
@@ -318,9 +314,7 @@
     <header class="modal__head">
       <h3 class="modal__title" id="cntImpTitle">Importar plan de cuentas</h3>
       <button type="button" class="icon-action" (click)="closeImportar()" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 6 6 18M6 6l12 12" />
-        </svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
     <div class="modal__body">

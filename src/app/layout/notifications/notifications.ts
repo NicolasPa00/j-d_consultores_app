@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { NotificationsService } from '../../core/notifications.service';
 import { FiltroNotificaciones, Notificacion } from '../../core/models';
+import { IconoComponent } from '../../shared/icono/icono';
 
 /**
  * NOT-04 · Campanita del navbar: badge de no leídas + bandeja desplegable.
@@ -19,7 +20,7 @@ import { FiltroNotificaciones, Notificacion } from '../../core/models';
  */
 @Component({
   selector: 'app-notifications',
-  imports: [],
+  imports: [IconoComponent],
   templateUrl: './notifications.html',
   styleUrl: './notifications.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -204,7 +205,7 @@ export class NotificationsComponent implements OnInit, OnDestroy {
   }
 
   /** Icono por tipo de evento; los tipos nuevos caen en el genérico. */
-  protected icono(tipo: string): 'asignacion' | 'rechazo' | 'soporte' | 'encuesta' | 'precuenta' | 'aviso' {
+  protected icono(tipo: string): 'asignacion' | 'rechazo' | 'soporte' | 'encuesta' | 'precuenta' | 'vence' | 'cartera' | 'factura' | 'aviso' {
     switch (tipo) {
       case 'ASIGNACION':
       case 'REPROGRAMACION': return 'asignacion';
@@ -214,7 +215,46 @@ export class NotificationsComponent implements OnInit, OnDestroy {
       case 'PRECUENTA_ACEPTADA':
       case 'PRECUENTA_RECHAZADA':
       case 'CORTE_COBRO': return 'precuenta';
+      // 22-nov-2026 · Los avisos de vencimiento ya no caen en el genérico «i»: el
+      // dibujo dice de qué va (la orden o el registro, la cartera, la numeración).
+      case 'ORDEN_VENCE':
+      case 'REGISTRO_ARL_VENCE': return 'vence';
+      case 'CARTERA_VENCE': return 'cartera';
+      case 'RESOLUCION_VENCE':
+      case 'RESOLUCION_AGOTA':
+      case 'PAQUETE_FE_VENCE': return 'factura';
       default: return 'aviso';
+    }
+  }
+
+  /**
+   * 22-nov-2026 · Tono del disco del aviso (DESIGN §7, Bandeja). El dibujo dice
+   * DE QUÉ va el aviso; el tono, QUÉ pide. Son cuatro y reusan los estados de
+   * la app, para que la bandeja no sea un arcoíris:
+   *  - `ok`      algo llegó bien (soportes recibidos, cuenta aceptada);
+   *  - `vence`   hay un plazo encima (por vencer, día de corte, numeración);
+   *  - `error`   algo se devolvió o ya venció (umbral 0);
+   *  - `marca`   lo demás (asignaciones, encuestas…), en el azul de la marca.
+   */
+  protected tono(n: Notificacion): 'ok' | 'vence' | 'error' | 'marca' {
+    switch (n.tipo) {
+      case 'RECHAZO':
+      case 'PRECUENTA_RECHAZADA': return 'error';
+      case 'SOPORTE_CARGADO':
+      case 'PRECUENTA_ACEPTADA': return 'ok';
+      case 'ORDEN_VENCE':
+      case 'REGISTRO_ARL_VENCE':
+      case 'RESOLUCION_VENCE':
+      case 'PAQUETE_FE_VENCE':
+        // El servidor manda `umbral: 0` cuando el plazo ya pasó («… vencida»).
+        return (n.datos as { umbral?: number } | null)?.umbral === 0 ? 'error' : 'vence';
+      case 'CARTERA_VENCE':
+        // El resumen semanal de cartera trae `vencidas` (alertas.service.js): con
+        // alguna ya vencida el aviso dice «N vencidas» y no puede ir como «por vencer».
+        return ((n.datos as { vencidas?: number } | null)?.vencidas ?? 0) > 0 ? 'error' : 'vence';
+      case 'RESOLUCION_AGOTA':
+      case 'CORTE_COBRO': return 'vence';
+      default: return 'marca';
     }
   }
 

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { Paginacion, TAMANOS_PAGINA } from '../paginacion';
+import { IconoComponent } from '../icono/icono';
 
 /**
  * Pie de paginación de una tabla. Se monta debajo de cualquier `.table-wrap` y
@@ -11,7 +12,7 @@ import { Paginacion, TAMANOS_PAGINA } from '../paginacion';
  */
 @Component({
   selector: 'app-paginador',
-  imports: [],
+  imports: [IconoComponent],
   templateUrl: './paginador.html',
   styleUrl: './paginador.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

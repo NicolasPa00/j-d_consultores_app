@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_
 import { isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { CeroVacioDirective } from '../../shared/cero-vacio';
 import { ApiService } from '../../core/api.service';
 import { PESOS } from '../../core/dinero';
 import { mensajeError } from '../../core/errores';
@@ -15,6 +16,7 @@ import { OpcionBusqueda, SelectorBusquedaComponent } from '../../shared/selector
 import { TerceroRapidoComponent } from '../../shared/alta-rapida/tercero-rapido';
 import { FechaDmyPipe } from '../../shared/fecha-dmy.pipe';
 import { AccionComponent } from '../../shared/icono/accion';
+import { IconoComponent } from '../../shared/icono/icono';
 
 
 export const ETIQUETA_TIPO_COMPRA: Record<TipoCompra, string> = {
@@ -38,7 +40,7 @@ const ITEM_VACIO = () => ({ cuenta_id: '', descripcion: '', valor: '', iva_pct: 
  */
 @Component({
   selector: 'app-compras',
-  imports: [FormsModule, PaginadorComponent, SelectorBusquedaComponent, TerceroRapidoComponent, FechaDmyPipe, AccionComponent],
+  imports: [FormsModule, CeroVacioDirective, PaginadorComponent, SelectorBusquedaComponent, TerceroRapidoComponent, FechaDmyPipe, AccionComponent, IconoComponent],
   templateUrl: './compras.html',
   styleUrl: './compras.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -109,9 +109,7 @@
                 [attr.aria-label]="'Quitar ' + n + ' de la tanda'"
                 title="Quitar de la tanda"
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-                  <path d="M18 6 6 18M6 6l12 12" />
-                </svg>
+                <svg appIcono="cerrar"></svg>
               </button>
             </li>
           }
@@ -194,9 +192,7 @@
 @if (duplicadas().length && dupCerrado() !== claveDup()) {
   <div class="alert alert--error dup-alert" role="alert">
     <button type="button" class="dup-alert__cerrar" (click)="cerrarAvisoDup()" aria-label="Cerrar el aviso" title="Cerrar">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
-        <path d="M18 6 6 18M6 6l12 12" />
-      </svg>
+      <svg appIcono="cerrar"></svg>
     </button>
     <!-- La barra es el temporizador: al terminar su animación el aviso se cierra.
          Con el cursor encima se detiene, para poder leer o pulsar con calma. El
@@ -271,7 +267,7 @@
         <span class="panel__count">{{ previewRows().length }}</span>
       </h3>
       <span class="panel__hint">
-        Revisa y corrige antes de guardar. Nada llega a Órdenes hasta que confirmes
+        Revise y corrija antes de guardar. Nada llega a Órdenes hasta que confirme
       </span>
     </div>
 
@@ -432,9 +428,7 @@
         </p>
       </div>
       <button type="button" class="icon-action" (click)="closeDetail()" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 6 6 18M6 6l12 12" />
-        </svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
 
@@ -466,7 +460,7 @@
             <div class="alert alert--warning alert--sm" role="alert">
               <div class="alert__body">
                 <p class="alert__title">{{ msg }}</p>
-                <p class="alert__detail">Puedes seguir revisando los campos extraídos a la derecha.</p>
+                <p class="alert__detail">Puede seguir revisando los campos extraídos a la derecha.</p>
               </div>
             </div>
           } @else if (docKind() === 'pdf' && docUrl(); as src) {
@@ -475,9 +469,9 @@
             <div class="sheet">
               <table class="sheet__table">
                 <tbody>
-                  @for (fila of hoja.filas; track fila.n) {
-                    <tr [class.sheet__row--source]="isSourceRow(fila.n)">
-                      <th class="sheet__num" scope="row">{{ fila.n }}</th>
+                  @for (fila of filasHoja(); track fila.n) {
+                    <tr [class.sheet__row--source]="isSourceRow(fila.n)" [class.sheet__row--head]="fila.esTitulos">
+                      <th class="sheet__num" scope="row" [attr.aria-label]="fila.esTitulos ? 'Títulos' : null">{{ fila.num ?? '' }}</th>
                       @for (celda of fila.celdas; track $index) {
                         <td class="sheet__cell" [title]="celda">{{ celda }}</td>
                       }
@@ -486,8 +480,8 @@
                 </tbody>
               </table>
             </div>
-            @if (hoja.truncado) {
-              <p class="doc-pane__note">Se muestran las primeras filas y columnas de la hoja “{{ hoja.hoja }}”.</p>
+            @if (notaRecorte(); as nota) {
+              <p class="doc-pane__note">{{ nota }}</p>
             }
           } @else {
             <p class="doc-pane__state">Sin vista previa disponible para este archivo.</p>
@@ -513,7 +507,7 @@
                 </svg>
               </span>
               <div class="alert__body">
-                <p class="alert__title">Baja confianza general. Revisa con cuidado los campos resaltados contra el documento original.</p>
+                <p class="alert__title">Baja confianza general. Revise con cuidado los campos resaltados contra el documento original.</p>
               </div>
             </div>
           }
@@ -645,7 +639,7 @@
                 } @else if (problema(item); as motivo) {
                   <p class="field__alert">{{ motivo }}</p>
                 } @else if (marcado(item)) {
-                  <p class="field__alert">⚠ Baja confianza — verifica contra el documento original.</p>
+                  <p class="field__alert">⚠ Baja confianza — verifique contra el documento original.</p>
                 }
                 @if (item.hint && !item.value) {
                   <p class="field__hint">{{ item.hint }}</p>

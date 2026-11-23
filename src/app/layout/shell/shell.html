@@ -138,7 +138,7 @@
   [routerLink]="item.route"
   routerLinkActive="nav-link--active"
   ariaCurrentWhenActive="page"
-  [routerLinkActiveOptions]="{ exact: true }"
+  [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'ignored', matrixParams: 'ignored', fragment: 'ignored' }"
   [attr.aria-label]="item.label"
   [attr.title]="colapsado() ? null : item.hint"
   (click)="cerrarMenuMovil()"
@@ -157,7 +157,7 @@
 <div class="layout">
   <!-- Primer enfocable de la página: sin él, con Tab hay que recorrer los 11 a 15
        ítems del menú antes de llegar al contenido. Invisible hasta recibir foco. -->
-  <a class="saltar" href="#contenido" (click)="saltarAlContenido($event)">Saltar al contenido</a>
+  <a class="saltar" href="#contenido" (click)="saltarAlContenido($event)" [attr.inert]="masAbierto() ? '' : null">Saltar al contenido</a>
 
   <!-- T0-14 · Fondo oscuro del menú móvil: solo existe mientras el panel está
        abierto, y cerrarlo (tocar fuera) es la forma obvia de descartarlo. -->
@@ -168,16 +168,40 @@
   <!-- ============ BARRA LATERAL (rediseño 20-nov-2026, DESIGN §7) ============
        Noche, ítems de una línea agrupados SIN reordenar (GRUPOS_MENU en
        sistemas.ts); el subtítulo de cada ítem pasó a su `title`. Al pie, con
-       divisor: Configuración, Cerrar sesión y «Contraer menú», que es el mismo
-       alternarSidebar() de la hamburguesa de antes, ahora con su nombre escrito. -->
+       divisor: solo Configuración y Cerrar sesión. Contraer/expandir va junto al
+       logo (22-nov-2026); el ancho lo decide la ruta (shell.ts, ajustarAnchoPorRuta). -->
   <aside class="sidebar" [class.sidebar--colapsado]="colapsado()" [class.sidebar--movil-abierto]="menuMovilAbierto()">
     <!-- Marca: isotipo + la palabra ORBITA (sin el lema, que a este tamaño no se
          lee). La palabra es su propio archivo (`logo-orbita-palabra-claro.webp`,
          sacado del lockup claro), no texto en Inter, para que conserve el dibujo
          del logo. Colapsada, queda solo el isotipo. -->
-    <div class="sidebar__brand" role="img" aria-label="ORBITA">
-      <img class="sidebar__isotipo" src="logo-orbita-isotipo.webp" alt="" />
-      <img class="sidebar__wordmark" src="logo-orbita-palabra-claro.webp" alt="" width="460" height="83" />
+    <div class="sidebar__cabeza">
+      <div class="sidebar__brand" role="img" aria-label="ORBITA">
+        <img class="sidebar__isotipo" src="logo-orbita-isotipo.webp" alt="" />
+        <img class="sidebar__wordmark" src="logo-orbita-palabra-claro.webp" alt="" width="460" height="83" />
+      </div>
+      <!-- Contraer/expandir, junto al logo (22-nov-2026). Contraída, va bajo el isotipo. -->
+      <button
+        type="button"
+        class="sidebar__contraer"
+        (click)="alternarSidebar()"
+        [attr.aria-expanded]="!colapsado()"
+        [attr.aria-label]="colapsado() ? 'Expandir menú' : 'Contraer menú'"
+        (mouseenter)="colapsado() && entrarRotulo($event, 'Expandir menú')"
+        (mouseleave)="salirRotulo()"
+        (focus)="colapsado() && enfocarRotulo($event, 'Expandir menú')"
+        (blur)="salirRotulo()"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <path d="M9 4v16" />
+          @if (colapsado()) {
+            <path d="m13 10 2 2-2 2" />
+          } @else {
+            <path d="m16 10-2 2 2 2" />
+          }
+        </svg>
+      </button>
     </div>
 
     <nav class="sidebar__nav" aria-label="Menú principal" (scroll)="salirRotulo()">
@@ -222,30 +246,6 @@
         </span>
         <span class="nav-link__text">Cerrar sesión</span>
       </button>
-      <!-- T0-14 · Alterna el sidebar ancho ↔ colapsado (preferencia en localStorage). -->
-      <button
-        type="button"
-        class="nav-link nav-link--contraer"
-        (click)="alternarSidebar()"
-        [attr.aria-expanded]="!colapsado()"
-        (mouseenter)="entrarRotulo($event, 'Expandir menú')"
-        (mouseleave)="salirRotulo()"
-        (focus)="enfocarRotulo($event, 'Expandir menú')"
-        (blur)="salirRotulo()"
-      >
-        <span class="nav-link__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="4" width="18" height="16" rx="2" />
-            <path d="M9 4v16" />
-            @if (colapsado()) {
-              <path d="m13 10 2 2-2 2" />
-            } @else {
-              <path d="m16 10-2 2 2 2" />
-            }
-          </svg>
-        </span>
-        <span class="nav-link__text">{{ colapsado() ? 'Expandir menú' : 'Contraer menú' }}</span>
-      </button>
     </div>
   </aside>
 
@@ -261,7 +261,9 @@
   }
 
   <!-- ============ ÁREA PRINCIPAL ============ -->
-  <div class="main">
+  <!-- Con la hoja «Más» abierta, todo lo que queda bajo el velo es `inert`: ni Tab
+       ni el lector de pantalla llegan ahí. La barra inferior no: «Más» la cierra. -->
+  <div class="main" [attr.inert]="masAbierto() ? '' : null">
     <!-- ---- BARRA SUPERIOR (60 px, blanca) ---- -->
     <header class="navbar">
       <!-- Celular: el isotipo hace de marca, porque la barra lateral no se ve. -->
@@ -319,48 +321,74 @@
     </main>
   </div>
 
-  <!-- ============ CELULAR · BARRA INFERIOR (2-oct-2026, aprobada por el usuario) ============
-       Cuatro módulos fijos del sistema activo + «Más» con el resto. Reemplaza al riel
-       lateral de iconos, que se comía ~80 px del ancho. -->
-  <nav class="bottom-nav" aria-label="Módulos">
+  <!-- ============ CELULAR · BARRA INFERIOR (2-oct-2026; revisada el 22-nov-2026) ============
+       Hasta cuatro módulos fijos del sistema activo + «Más» con el resto. Reemplaza al
+       riel lateral de iconos, que se comía ~80 px del ancho. Qué va fijo y por qué:
+       FIJOS_MOVIL en shell.ts y docs/3-planes/rediseno-21-nov/movil/propuesta.md.
+       `--fijos` reparte las columnas: con menos módulos no queda hueco y «Más» va
+       siempre a la derecha. Con la hoja abierta la barra queda POR ENCIMA del velo
+       y sigue operable: tocar «Más» otra vez la cierra. Sus enlaces, con la hoja
+       abierta, reemplazan la entrada de historial de la hoja (ver alTocarEnlace). -->
+  <nav class="bottom-nav" aria-label="Módulos" [style.--fijos]="fijosMovil().length" [class.bottom-nav--hoja]="masAbierto()">
     @for (item of fijosMovil(); track item.vista) {
-      <a class="bottom-nav__item" [routerLink]="item.route" routerLinkActive="bottom-nav__item--activo" ariaCurrentWhenActive="page" (click)="cerrarMas()">
+      <a class="bottom-nav__item" [routerLink]="item.route" [replaceUrl]="masAbierto()" routerLinkActive="bottom-nav__item--activo" ariaCurrentWhenActive="page" (click)="alTocarEnlace(item.route)">
         <span class="bottom-nav__icono" aria-hidden="true"><ng-container [ngTemplateOutlet]="icono" [ngTemplateOutletContext]="{ $implicit: item.icon }" /></span>
         <span class="bottom-nav__texto">{{ item.corto }}</span>
       </a>
     }
-    <button type="button" class="bottom-nav__item" [class.bottom-nav__item--activo]="masAbierto() || enModuloDeMas()" (click)="alternarMas()" [attr.aria-expanded]="masAbierto()" aria-haspopup="dialog">
+    <button #botonMas type="button" class="bottom-nav__item bottom-nav__item--mas" [class.bottom-nav__item--activo]="masAbierto() || enModuloDeMas()" (click)="alternarMas()" [attr.aria-expanded]="masAbierto()" aria-controls="hoja-mas" aria-haspopup="dialog" aria-label="Más módulos y opciones">
       <span class="bottom-nav__icono" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" /></svg>
       </span>
-      <span class="bottom-nav__texto">Más</span>
+      <span class="bottom-nav__texto" aria-hidden="true">Más</span>
     </button>
   </nav>
 
   @if (masAbierto()) {
-    <div class="hoja-mas__fondo" (click)="cerrarMas()"></div>
-    <div class="hoja-mas" role="dialog" aria-modal="true" aria-label="Más módulos">
-      <span class="hoja-mas__asa" aria-hidden="true"></span>
-      <p class="hoja-mas__titulo">{{ sistemas.activo().nombre }}</p>
-      <div class="hoja-mas__grid">
-        @for (item of restoMovil(); track item.vista) {
-          <a class="hoja-mas__item" [routerLink]="item.route" routerLinkActive="hoja-mas__item--activo" ariaCurrentWhenActive="page" (click)="cerrarMas()">
-            <span class="hoja-mas__icono" aria-hidden="true"><ng-container [ngTemplateOutlet]="icono" [ngTemplateOutletContext]="{ $implicit: item.icon }" /></span>
-            <span>{{ item.label }}</span>
-          </a>
-        }
+    <div class="hoja-mas__fondo" (click)="cerrarMas(true)"></div>
+    <!-- La hoja se apoya SOBRE la barra inferior (no la tapa). -->
+    <div #hojaMas id="hoja-mas" class="hoja-mas" role="dialog" aria-modal="true" aria-labelledby="hoja-mas-titulo" (keydown)="atraparFoco($event)">
+      <div class="hoja-mas__cabeza">
+        <p class="hoja-mas__titulo" id="hoja-mas-titulo">{{ sistemas.activo().nombre }}</p>
+        <button type="button" class="hoja-mas__cerrar" aria-label="Cerrar" (click)="cerrarMas(true)">
+          <svg appIcono="cerrar"></svg>
+        </button>
       </div>
+      <!-- Lo que no va en la barra, con los títulos de grupo de la barra lateral.
+           Configuración no va aquí: va al pie, como en la barra lateral. -->
+      @for (seccion of seccionesMas(); track $index) {
+        <div class="hoja-mas__seccion" role="group" [attr.aria-label]="seccion.titulo">
+          @if (seccion.titulo) {
+            <p class="hoja-mas__grupo" aria-hidden="true">{{ seccion.titulo }}</p>
+          }
+          @for (item of seccion.items; track item.vista) {
+            <a class="hoja-mas__item" [routerLink]="item.route" [replaceUrl]="true" routerLinkActive="hoja-mas__item--activo" ariaCurrentWhenActive="page" (click)="alTocarEnlace(item.route)">
+              <span class="hoja-mas__icono" aria-hidden="true"><ng-container [ngTemplateOutlet]="icono" [ngTemplateOutletContext]="{ $implicit: item.icon }" /></span>
+              <span>{{ item.label }}</span>
+            </a>
+          }
+        </div>
+      }
+      <!-- Pie en una fila de botones (ícono arriba, rótulo abajo): ocupa una sola
+           altura de toque. «Cerrar sesión» va a la IZQUIERDA, lejos de «Más» y del
+           pulgar derecho, y además pide confirmación. -->
       <div class="hoja-mas__pie">
+        <button type="button" class="hoja-mas__accion hoja-mas__accion--salir" (click)="salirDesdeMas()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /></svg>
+          Cerrar sesión
+        </button>
         @if (sistemas.variosSistemas()) {
-          <button type="button" class="hoja-mas__accion" (click)="cerrarMas(); cambiarSistema()">
+          <button type="button" class="hoja-mas__accion" (click)="cambiarSistemaDesdeMas()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3" /></svg>
             Cambiar de sistema
           </button>
         }
-        <button type="button" class="hoja-mas__accion hoja-mas__accion--salir" (click)="cerrarMas(); logout()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /></svg>
-          Cerrar sesión
-        </button>
+        @for (item of pieMenu(); track item.vista) {
+          <a class="hoja-mas__accion" [routerLink]="item.route" [replaceUrl]="true" routerLinkActive="hoja-mas__accion--activo" ariaCurrentWhenActive="page" (click)="alTocarEnlace(item.route)">
+            <span class="hoja-mas__icono" aria-hidden="true"><ng-container [ngTemplateOutlet]="icono" [ngTemplateOutletContext]="{ $implicit: item.icon }" /></span>
+            {{ item.label }}
+          </a>
+        }
       </div>
     </div>
   }

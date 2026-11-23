@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { CeroVacioDirective } from '../../shared/cero-vacio';
 import { forkJoin, Observable } from 'rxjs';
 import { AuthService } from '../../core/auth.service';
 import { mensajeError } from '../../core/errores';
@@ -59,7 +60,7 @@ function claveDocumento(v: string): string {
 
 @Component({
   selector: 'app-settings',
-  imports: [FormsModule, PaginadorComponent, AccionComponent],
+  imports: [FormsModule, CeroVacioDirective, PaginadorComponent, AccionComponent],
   templateUrl: './settings.html',
   styleUrl: './settings.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

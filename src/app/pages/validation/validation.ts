@@ -1,17 +1,19 @@
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnDestroy, OnInit, PLATFORM_ID, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, ElementRef, inject, OnDestroy, OnInit, PLATFORM_ID, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { isPlatformBrowser } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { firstValueFrom, map, Observable, Subscription } from 'rxjs';
+import { CeroVacioDirective } from '../../shared/cero-vacio';
+import { debounceTime, firstValueFrom, forkJoin, map, Observable, Subscription, tap } from 'rxjs';
 import { ExtractedField, ServiceOrder } from '../../data/service-orders';
 import { ApiService } from '../../core/api.service';
 import { mensajeError, revisarArchivo } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
+import { NotificationsService } from '../../core/notifications.service';
 import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, ClaveGasto, DetalleCobroOrden, GASTOS_COBRO, EstadoArl, ESTADOS_ARL, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, TipoViatico, CasillaEditable, FilaPrefactura, FormatoPrevio, FranjaVisita, HistorialCobro, HistorialEstado, HistorialEstadoArl, Ocupacion, Orden, OrdenManualForm, Plantilla, PrevisualizacionPrefactura, Profesional, RadicadoOrden, RegistroArl, ResultadoCrucePrefactura, Tercero, VisitaProxima } from '../../core/models';
-import { aIsoFecha, fechaLocal } from '../../core/fechas';
+import { aIsoFecha, fechaLocal, hora12, rango12 } from '../../core/fechas';
 import {
   ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, opcionesDeCampo,
   problemaCampo, tecleoCampo,
@@ -20,6 +22,7 @@ import { OpcionCampo, esAxa, esBolivar, etiquetaEmpresa, etiquetaTipoActividadAr
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 import { AccionComponent } from '../../shared/icono/accion';
+import { IconoComponent } from '../../shared/icono/icono';
 
 interface FormFieldDescriptor {
   label: string;
@@ -136,12 +139,17 @@ interface Vencimiento {
 type FranjaVista = Ocupacion;
 
 /* ===== Rejilla de la agenda (ASG-02) =====
-   La agenda se dibuja como una semana laboral de 6:00 a 20:00 en celdas de media
+   La agenda se dibuja como una semana laboral de 6:00 a 24:00 en celdas de media
    hora. La franja mínima que se puede pintar arrastrando es una celda; para
    minutos sueltos (10:15) sigue estando el formulario manual, que es además el
-   camino accesible por teclado. */
+   camino accesible por teclado.
+   22-nov-2026 · El cierre pasó de 20:00 a 24:00 a pedido del cliente («mínimo
+   debe quedar hasta las 12:00am»): hay capacitaciones de turnos nocturnos. Una
+   franja termina como mucho a las 24:00 (= 12:00 a. m., fin de ESE día; Postgres
+   guarda `time '24:00'` y lo resta bien). Lo que pase de la medianoche se parte en
+   dos franjas: una hasta las 24:00 y otra desde las 00:00 del día siguiente. */
 const AG_DESDE_MIN = 6 * 60;
-const AG_HASTA_MIN = 20 * 60;
+const AG_HASTA_MIN = 24 * 60;
 const AG_PASO_MIN = 30;
 /** Alto en píxeles de media hora: es lo que traduce minutos a geometría. */
 const AG_PASO_PX = 22;
@@ -213,7 +221,7 @@ interface BloqueAgenda {
 
 @Component({
   selector: 'app-validation',
-  imports: [FormsModule, PaginadorComponent, AccionComponent],
+  imports: [FormsModule, CeroVacioDirective, PaginadorComponent, AccionComponent, IconoComponent],
   templateUrl: './validation.html',
   styleUrls: ['./validation.scss', './validation-cobro.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -227,6 +235,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  private readonly notificaciones = inject(NotificationsService);
 
   /** NOT-04 · OS que hay que abrir apenas cargue el listado (?os=<id>). */
   private osSolicitada: string | null = null;
@@ -614,7 +623,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
   /** Etiquetas de la regla horaria, ya posicionadas. */
   protected readonly agendaHoras = Array.from(
     { length: (AG_HASTA_MIN - AG_DESDE_MIN) / 60 + 1 },
-    (_, i) => ({ label: aHoraTexto(AG_DESDE_MIN + i * 60), top: (i * 60 * AG_PASO_PX) / AG_PASO_MIN }),
+    (_, i) => ({ label: hora12(AG_DESDE_MIN + i * 60, { corta: true }), top: (i * 60 * AG_PASO_PX) / AG_PASO_MIN }),
   );
   /**
    * Horas que la ARL asignó a la orden, en minutos. NO limita lo que se puede
@@ -626,11 +635,19 @@ export class ValidationComponent implements OnInit, OnDestroy {
   );
   /** Minutos ya repartidos entre TODOS los asesores de la orden. */
   protected readonly minutosProgramados = computed(() =>
-    this.reparto().reduce((t, m) => t + minutosDe(m.franjas), 0),
+    this.reparto().reduce((t, m) => t + minutosDe(m.franjas), 0) + minutosDe(this.franjasHuerfanas()),
   );
+  /**
+   * 22-nov-2026 · Franjas marcadas SIN profesional elegido. `reparto()` solo
+   * cuenta las de un asesor, así que antes quedaban fuera del contador y del tope:
+   * cada clic veía «faltan 4 h» y se llegaron a marcar 32 h en una orden de 4 h.
+   * Ya no se puede marcar sin profesional, pero si algo las deja ahí (una
+   * reprogramación antigua sin asesor) siguen contando contra el tope.
+   */
+  private readonly franjasHuerfanas = computed(() => (this.selectedProfId() ? [] : this.franjasVisita()));
   /** Cuántas franjas suma el reparto entero. */
   protected readonly totalFranjas = computed(() =>
-    this.reparto().reduce((t, m) => t + m.franjas.length, 0),
+    this.reparto().reduce((t, m) => t + m.franjas.length, 0) + this.franjasHuerfanas().length,
   );
   /** Minutos que faltan por repartir. Nunca negativo: el tope es duro. */
   protected readonly minutosPorRepartir = computed(() =>
@@ -884,6 +901,86 @@ export class ValidationComponent implements OnInit, OnDestroy {
       // archivos que sí estaban ahí.
       if (!this.loading()) this.load();
     });
+    this.escucharAvisos();
+  }
+
+  /*
+   * 22-nov-2026 · REFRESCO POR NOTIFICACIONES (pasada del dueño: llegaba «Soportes
+   * recibidos · … quedó EJECUTADA» y la fila seguía en PROGRAMADA hasta recargar).
+   *
+   * Mecanismo: no hay sondeo propio. `NotificationsService.cambiosEnOrdenes$` emite
+   * cuando el sondeo de la campanita (el de siempre, cada 60 s) ve subir el contador y
+   * entre los avisos nuevos hay alguno que cambia órdenes (soportes, rechazo,
+   * asignación, reprogramación). Aquí:
+   *  1. se acumulan los ids de OS de los avisos y se espera 1,5 s sin avisos nuevos
+   *     (antirrebote: diez avisos seguidos = una tanda);
+   *  2. cada OS se vuelve a pedir SUELTA (`GET /drafts/:id`) y se reemplaza su fila en
+   *     su sitio. Si alguna no está en la bandeja o son muchas (> 8), se pide la
+   *     bandeja una vez, en silencio: sin `loading`, así que la tabla no parpadea y el
+   *     scroll, la pestaña, los filtros, la página y los modales siguen como estaban
+   *     (los modales se abren por id, no por la fila);
+   *  3. las pestañas cuentan sobre `orders()`, así que sus contadores se actualizan solos.
+   * Lo que NO se toca: la fila que se está EDITANDO (perdería lo escrito) y la del
+   * modal de asignación (su programación vive en ese modal). Esas se actualizan con
+   * la próxima recarga normal.
+   */
+  private readonly osPorRefrescar = new Set<string>();
+  private refrescoCompleto = false;
+
+  private escucharAvisos(): void {
+    this.notificaciones.cambiosEnOrdenes$
+      .pipe(
+        tap((c) => {
+          if (!c.ordenIds.length) this.refrescoCompleto = true;
+          for (const id of c.ordenIds) this.osPorRefrescar.add(id);
+        }),
+        debounceTime(1500),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => this.refrescarPorAvisos());
+  }
+
+  private refrescarPorAvisos(): void {
+    const osIds = [...this.osPorRefrescar];
+    const completo = this.refrescoCompleto;
+    this.osPorRefrescar.clear();
+    this.refrescoCompleto = false;
+    // Con la carga inicial en vuelo, lo que llegue ya trae el cambio.
+    if (this.loading()) return;
+    const filas = osIds.map((id) => this.orders().find((o) => o.osId === id));
+    const intocable = (id: string) => (this.editMode() && this.detailId() === id) || this.assignId() === id;
+
+    if (completo || filas.some((f) => !f) || filas.length > 8) {
+      this.api.listDrafts('PENDIENTE_VALIDACION,VALIDADA', 'all').subscribe({
+        next: (r) => {
+          const actuales = new Map(this.orders().map((o) => [o.id, o]));
+          this.orders.set(r.data.map(toServiceOrder).map((o) => (intocable(o.id) ? actuales.get(o.id) ?? o : o)));
+          this.reponerCamposDelDetalle();
+        },
+        error: () => {},
+      });
+    } else {
+      const ids = filas.map((f) => f!.id).filter((id) => !intocable(id));
+      if (!ids.length) return;
+      forkJoin(ids.map((id) => this.api.getDraft(id))).subscribe({
+        next: (rs) => {
+          for (const r of rs) this.replaceOrder(r.data);
+          if (ids.includes(this.detailId() ?? '')) this.reponerCamposDelDetalle();
+        },
+        error: () => {},
+      });
+    }
+    // «Próximas a ejecutar» depende de la programación.
+    this.cargarProximas();
+  }
+
+  /**
+   * La fila recién traída lleva los campos del borrador; si su ficha está abierta (en
+   * lectura) se le vuelven a poner los de la OS, como al abrirla.
+   */
+  private reponerCamposDelDetalle(): void {
+    const o = this.detailOrder();
+    if (o?.osId && !this.editMode()) this.cargarCamposDeLaOS(o.id, o.osId);
   }
 
   /**
@@ -1716,9 +1813,14 @@ export class ValidationComponent implements OnInit, OnDestroy {
     return new Date(y, m - 1, d).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' });
   }
 
+  /** «14:00» → «2:00 p. m.»; las 24:00 son medianoche («12:00 a. m.»). */
   protected horaVisita(hhmm: string): string {
-    const [h, m] = hhmm.split(':').map(Number);
-    return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'a. m.' : 'p. m.'}`;
+    return hora12(hhmm);
+  }
+
+  /** Rango en 12 h para la plantilla («7:00–11:00 a. m.»). */
+  protected rangoHoras(ini: string, fin: string): string {
+    return rango12(ini, fin);
   }
 
   // ================= Radicados ante Bolívar (1-oct / 7-oct-2026) =================
@@ -1966,6 +2068,14 @@ export class ValidationComponent implements OnInit, OnDestroy {
     hoy.setHours(0, 0, 0, 0);
     const dias = Math.round((venc.getTime() - hoy.getTime()) / 86_400_000);
     const fecha = `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+
+    // El vencimiento es un plazo para HACER la visita: una orden ya ejecutada o
+    // finalizada lo cumplió (o ya no tiene remedio), y una deshabilitada salió de la
+    // bandeja. Ahí la fecha queda como dato, sin «Vencida» ni cuenta atrás: marcarlas
+    // en rojo hacía ruido sobre lo que sí está pendiente (petición del dueño, 21-nov).
+    // Sin programar y programadas conservan la alerta: la visita aún no se hizo.
+    const cerrada = o.disabled || o.osEstado === 'EJECUTADA' || o.osEstado === 'FINALIZADA';
+    if (cerrada) return { fecha, detalle: dias < 0 ? 'Vencía el ' + fecha : 'Vence el ' + fecha, tone: 'normal' };
 
     if (dias < 0) return { fecha, detalle: 'Vencida', tone: 'danger' };
     if (dias === 0) return { fecha, detalle: 'Vence hoy', tone: 'warn' };
@@ -2428,14 +2538,17 @@ export class ValidationComponent implements OnInit, OnDestroy {
                 id: `tmp-${++this.tmpSeq}`,
                 fecha: isoFecha(programada),
                 hora_inicio: ini,
-                hora_fin: aHoraTexto(Math.min(aMinutos(ini) + this.duracionVisita(), 24 * 60 - 1)),
+                // Tope en 24:00 (medianoche como fin del día), no 23:59: ya es un fin válido.
+                hora_fin: aHoraTexto(Math.min(aMinutos(ini) + this.duracionVisita(), 24 * 60)),
               },
             ]);
           }
+          this.enfocarAgenda();
         },
         error: () => this.alerts.error('No se pudo cargar la programación', 'No fue posible consultar las franjas ya guardadas de la visita.'),
       });
     }
+    this.enfocarAgenda();
 
     // CFG-03 · Se piden una sola vez; sirven para el aviso de "esta ARL no tiene
     // formatos". Si la consulta falla no se avisa nada: preferible callar a
@@ -2669,8 +2782,8 @@ export class ValidationComponent implements OnInit, OnDestroy {
     if (slot) {
       return {
         motivo: slot.motivo || 'Tiene ocupado',
-        desde: slot.hora_inicio,
-        hasta: slot.hora_fin,
+        desde: hora12(slot.hora_inicio),
+        hasta: hora12(slot.hora_fin),
         iniMin: aMinutos(slot.hora_inicio),
       };
     }
@@ -2682,8 +2795,8 @@ export class ValidationComponent implements OnInit, OnDestroy {
       if (otraIni < fin && ini < otraFin) {
         return {
           motivo: `Tiene otra orden (${o.empresa_nombre || o.codigo})`,
-          desde: aHoraTexto(otraIni),
-          hasta: aHoraTexto(otraFin),
+          desde: hora12(otraIni),
+          hasta: hora12(otraFin),
           iniMin: otraIni,
         };
       }
@@ -2733,6 +2846,10 @@ export class ValidationComponent implements OnInit, OnDestroy {
    * rato), a diferencia del cruce con su agenda, que solo avisa.
    */
   protected agregarFranjaVisita(fecha: string, inicioMin: number, finMin: number): boolean {
+    if (!this.selectedProfId()) {
+      this.avisarSinProfesional();
+      return false;
+    }
     const ini = Math.max(inicioMin, 0);
     const fin = Math.min(finMin, 24 * 60);
     if (fin <= ini) return false;
@@ -2742,7 +2859,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
     if (choque) {
       this.alerts.warning(
         'Esa franja se cruza con otra de la visita',
-        `Ya hay una franja el ${choque.fecha} de ${choque.hora_inicio} a ${choque.hora_fin}. Quítela primero o elija otro hueco.`,
+        `Ya hay una franja el ${this.rotuloFranja(choque)}. Quítela primero o elija otro hueco.`,
       );
       return false;
     }
@@ -2790,11 +2907,47 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.franjasVisita.update((list) => list.filter((f) => f.id !== id));
   }
 
+  /** Por qué no se deja marcar: falta elegir al profesional. */
+  private avisarSinProfesional(): void {
+    this.alerts.warning(
+      'Primero elija el profesional',
+      'Seleccione en la lista de la izquierda quién ejecuta la visita. Después podrá marcar el horario en la agenda.',
+    );
+  }
+
+  // ---- Ventana visible de la agenda (22-nov-2026) ----
+  /** Contenedor con scroll de la rejilla: muestra unas horas y se desplaza solo. */
+  private readonly agendaScroll = viewChild<ElementRef<HTMLElement>>('agendaScroll');
+
+  /** Lleva la ventana de la agenda a esa hora (con un poco de aire arriba). */
+  private desplazarAgendaA(min: number): void {
+    setTimeout(() => {
+      const el = this.agendaScroll()?.nativeElement;
+      if (!el) return;
+      const top = ((Math.max(min, AG_DESDE_MIN) - AG_DESDE_MIN) * AG_PASO_PX) / AG_PASO_MIN;
+      el.scrollTo({ top: Math.max(0, top - AG_PASO_PX), behavior: 'smooth' });
+    });
+  }
+
+  /**
+   * Abre la ventana en lo que importa: la primera franja de la orden en la
+   * semana visible; si no hay ninguna, el comienzo de la jornada (6:00 a. m.).
+   */
+  protected enfocarAgenda(): void {
+    const dias = new Set(this.semana().map((d) => d.iso));
+    const inicios = this.reparto()
+      .flatMap((m) => m.franjas)
+      .concat(this.franjasVisita())
+      .filter((f) => dias.has(f.fecha))
+      .map((f) => aMinutos(f.hora_inicio));
+    this.desplazarAgendaA(inicios.length ? Math.min(...inicios) : AG_DESDE_MIN);
+  }
+
   /** Etiqueta corta de una franja: "jue 14 ago · 08:00–12:00". */
   protected rotuloFranja(f: FranjaVisita): string {
     const d = fechaLocal(f.fecha);
     const dia = d ? `${AG_DIAS[(d.getDay() + 6) % 7]} ${d.getDate()} ${AG_MESES[d.getMonth()]}` : f.fecha;
-    return `${dia} · ${f.hora_inicio}–${f.hora_fin}`;
+    return `${dia} · ${rango12(f.hora_inicio, f.hora_fin)}`;
   }
 
   protected async closeAssign(): Promise<void> {
@@ -3018,6 +3171,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
       this.usarSuplente.set(false);
     }
     this.loadSlots(id);
+    this.enfocarAgenda();
   }
 
   private loadSlots(profId: string): void {
@@ -3052,10 +3206,12 @@ export class ValidationComponent implements OnInit, OnDestroy {
   /** Semana anterior / siguiente (delta en semanas). */
   protected agendaSemana(delta: number): void {
     this.agendaAncla.update((iso) => sumarDias(iso, delta * 7));
+    this.enfocarAgenda();
   }
 
   protected agendaHoy(): void {
     this.agendaAncla.set(lunesDe(isoFecha(new Date())));
+    this.enfocarAgenda();
   }
 
   protected rotuloSemana(): string {
@@ -3084,7 +3240,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
         id: f.id,
         tipo: 'ocupado',
         ...geo,
-        rango: `${f.hora_inicio}–${f.hora_fin}`,
+        rango: rango12(f.hora_inicio, f.hora_fin),
         texto: f.motivo || 'Ocupado',
         slot: f,
       });
@@ -3102,7 +3258,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
         id: `os-${o.id}`,
         tipo: 'otra',
         ...geo,
-        rango: `${aHoraTexto(ini)}–${aHoraTexto(fin)}`,
+        rango: rango12(ini, fin),
         texto: o.empresa_nombre || o.codigo,
         slot: null,
       });
@@ -3148,7 +3304,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
         id: v.id,
         tipo: 'visita',
         ...geo,
-        rango: `${v.hora_inicio}–${v.hora_fin}`,
+        rango: rango12(v.hora_inicio, v.hora_fin),
         texto: order?.company || 'Esta orden',
         slot: null,
         franjaId: v.id,
@@ -3167,7 +3323,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
         id: `eq-${x.de}-${x.f.id}`,
         tipo: 'equipo',
         ...geo,
-        rango: `${x.f.hora_inicio}–${x.f.hora_fin}`,
+        rango: rango12(x.f.hora_inicio, x.f.hora_fin),
         texto: personas.length > 1 ? `${personas.length} asesores` : nombreDe(x.de),
         slot: null,
         personas,
@@ -3186,17 +3342,17 @@ export class ValidationComponent implements OnInit, OnDestroy {
     if (sel && sel.fecha === iso) {
       const rango = this.rangoDeSeleccion(sel);
       const geo = this.geometria(rango.desde, rango.hasta);
-      return geo && { ...geo, rango: `${aHoraTexto(rango.desde)}–${aHoraTexto(rango.hasta)}` };
+      return geo && { ...geo, rango: rango12(rango.desde, rango.hasta) };
     }
     const hover = this.agendaHover();
-    if (!hover || hover.fecha !== iso || sel) return null;
+    if (!hover || hover.fecha !== iso || sel || !this.selectedProfId()) return null;
     // Sobre un hueco ocupado no se previsualiza nada: no se puede marcar ahí, y
     // pintar un fantasma encima invitaba a intentarlo.
     if (!this.celdaLibre(iso, hover.min)) return null;
     if (this.duracionVisita() > 0 && !this.minutosPorRepartir()) return null;
     const hasta = this.recortar(iso, hover.min, hover.min + this.duracionSugerida());
     const geo = this.geometria(hover.min, hasta);
-    return geo && { ...geo, rango: `${aHoraTexto(hover.min)}–${aHoraTexto(hasta)}` };
+    return geo && { ...geo, rango: rango12(hover.min, hasta) };
   }
 
   /**
@@ -3255,6 +3411,12 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected agendaPresionar(ev: PointerEvent, iso: string): void {
     if (ev.button !== 0) return;
     if (ev.pointerType !== 'touch') ev.preventDefault();
+    // 22-nov-2026 · Primero el profesional, después el horario: sin él no hay
+    // disponibilidad que respetar ni dueño para las horas (la causa de las 32 h).
+    if (!this.selectedProfId()) {
+      this.avisarSinProfesional();
+      return;
+    }
     const min = this.minutoEnColumna(ev);
 
     // Un hueco ocupado no se puede ni empezar a marcar. Antes se dejaba trazar y
@@ -3326,7 +3488,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected async removeBusySlot(slot: FranjaVista): Promise<void> {
     const profId = this.selectedProfId();
     if (!profId) return;
-    const rango = `${slot.fecha} · ${slot.hora_inicio}–${slot.hora_fin}`;
+    const rango = this.rotuloFranja(slot);
     const ok = await this.alerts.confirm({
       title: 'Liberar franja ocupada',
       message: `Se eliminará la franja ${rango} de la agenda del profesional. Esta acción no se puede deshacer.`,
@@ -4230,7 +4392,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected async disableOrder(order: ServiceOrder): Promise<void> {
     const ok = await this.alerts.confirm({
       title: 'Deshabilitar orden',
-      message: `¿Deseas deshabilitar la orden de "${order.company}"? Podrás verla y restaurarla desde "Deshabilitadas".`,
+      message: `¿Desea deshabilitar la orden de "${order.company}"? Podrá verla y restaurarla desde "Deshabilitadas".`,
       confirmText: 'Sí, deshabilitar',
       cancelText: 'Cancelar',
       tone: 'danger',
@@ -4248,7 +4410,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected async restoreOrder(order: ServiceOrder): Promise<void> {
     const ok = await this.alerts.confirm({
       title: 'Restaurar orden',
-      message: `¿Deseas restaurar la orden de "${order.company}"? Volverá al listado de órdenes activas.`,
+      message: `¿Desea restaurar la orden de "${order.company}"? Volverá al listado de órdenes activas.`,
       confirmText: 'Sí, restaurar',
       cancelText: 'Cancelar',
     });
@@ -4272,7 +4434,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected async deleteOrderPermanently(order: ServiceOrder): Promise<void> {
     const ok = await this.alerts.confirm({
       title: 'Eliminar definitivamente',
-      message: `¿Deseas eliminar PARA SIEMPRE la orden de "${order.company}"? No podrás restaurarla y, si vuelves a importar el mismo archivo, se tratará como una orden nueva. Esta acción no se puede deshacer.`,
+      message: `¿Desea eliminar PARA SIEMPRE la orden de "${order.company}"? No podrá restaurarla y, si vuelve a importar el mismo archivo, se tratará como una orden nueva. Esta acción no se puede deshacer.`,
       confirmText: 'Sí, eliminar definitivamente',
       cancelText: 'Cancelar',
       tone: 'danger',

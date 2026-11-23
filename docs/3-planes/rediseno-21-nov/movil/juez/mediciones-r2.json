@@ -1,0 +1,729 @@
+{
+ "r2-operacion-admin-390": {
+  "barra": [
+   "Inicio [0..81] 29/29",
+   "Órdenes [81..163] 45/45",
+   "Importar [163..244] 45/45",
+   "Profesionales [244..325] 71/71",
+   "Más [325..390] 22/22"
+  ],
+  "hoja": {
+   "top": 469,
+   "bottom": 780,
+   "barTop": 780,
+   "scroll": false,
+   "items": [
+    "Cerrar 44x44",
+    "## Cobro y clientes",
+    "Cuentas de cobro 358x44",
+    "Empresas 358x44",
+    "Estadísticas 358x44",
+    "Cerrar sesión 117x66",
+    "Cambiar de sistema 117x66",
+    "Configuración 117x66"
+   ]
+  }
+ },
+ "r2-operacion-admin-360": {
+  "barra": [
+   "Inicio [0..75] 29/29",
+   "Órdenes [75..150] 45/45",
+   "Importar [150..225] 45/45",
+   "Profesionales [225..300] 71/71",
+   "Más [300..360] 22/22"
+  ],
+  "hoja": {
+   "top": 365,
+   "bottom": 676,
+   "barTop": 676,
+   "scroll": false,
+   "items": [
+    "Cerrar 44x44",
+    "## Cobro y clientes",
+    "Cuentas de cobro 328x44",
+    "Empresas 328x44",
+    "Estadísticas 328x44",
+    "Cerrar sesión 107x66",
+    "Cambiar de sistema 107x66",
+    "Configuración 107x66"
+   ]
+  }
+ },
+ "r2-finanzas-admin-390": {
+  "barra": [
+   "Inicio [0..81] 29/29",
+   "Facturación [81..163] 62/62",
+   "Cartera [163..244] 39/39",
+   "Contabilidad [244..325] 66/66",
+   "Más [325..390] 22/22"
+  ],
+  "hoja": {
+   "top": 180,
+   "bottom": 780,
+   "barTop": 780,
+   "scroll": false,
+   "items": [
+    "Cerrar 44x44",
+    "## Documentos",
+    "Pago a profesionales 358x44",
+    "Nómina 358x44",
+    "Compras y gastos 358x44",
+    "## Contabilidad",
+    "Informes contables 358x44",
+    "Terceros 358x44",
+    "Parametrización 358x44",
+    "## Compartido con Operación",
+    "Cuentas de cobro 358x44",
+    "Estadísticas 358x44",
+    "Cerrar sesión 117x66",
+    "Cambiar de sistema 117x66",
+    "Configuración 117x66"
+   ]
+  }
+ },
+ "r2-finanzas-admin-360": {
+  "barra": [
+   "Inicio [0..75] 29/29",
+   "Facturación [75..150] 62/62",
+   "Cartera [150..225] 39/39",
+   "Contabilidad [225..300] 66/66",
+   "Más [300..360] 22/22"
+  ],
+  "hoja": {
+   "top": 76,
+   "bottom": 676,
+   "barTop": 676,
+   "scroll": false,
+   "items": [
+    "Cerrar 44x44",
+    "## Documentos",
+    "Pago a profesionales 328x44",
+    "Nómina 328x44",
+    "Compras y gastos 328x44",
+    "## Contabilidad",
+    "Informes contables 328x44",
+    "Terceros 328x44",
+    "Parametrización 328x44",
+    "## Compartido con Operación",
+    "Cuentas de cobro 328x44",
+    "Estadísticas 328x44",
+    "Cerrar sesión 107x66",
+    "Cambiar de sistema 107x66",
+    "Configuración 107x66"
+   ]
+  }
+ },
+ "r2-operacion-coordinadora-390": {
+  "barra": [
+   "Inicio [0..81] 29/29",
+   "Órdenes [81..163] 45/45",
+   "Importar [163..244] 45/45",
+   "Profesionales [244..325] 71/71",
+   "Más [325..390] 22/22"
+  ],
+  "hoja": {
+   "top": 479,
+   "bottom": 780,
+   "barTop": 780,
+   "scroll": false,
+   "items": [
+    "Cerrar 44x44",
+    "## Cobro y clientes",
+    "Cuentas de cobro 358x44",
+    "Empresas 358x44",
+    "Estadísticas 358x44",
+    "Cerrar sesión 177x56",
+    "Configuración 177x56"
+   ]
+  }
+ },
+ "r2-operacion-coordinadora-360": {
+  "barra": [
+   "Inicio [0..75] 29/29",
+   "Órdenes [75..150] 45/45",
+   "Importar [150..225] 45/45",
+   "Profesionales [225..300] 71/71",
+   "Más [300..360] 22/22"
+  ],
+  "hoja": {
+   "top": 375,
+   "bottom": 676,
+   "barTop": 676,
+   "scroll": false,
+   "items": [
+    "Cerrar 44x44",
+    "## Cobro y clientes",
+    "Cuentas de cobro 328x44",
+    "Empresas 328x44",
+    "Estadísticas 328x44",
+    "Cerrar sesión 162x56",
+    "Configuración 162x56"
+   ]
+  }
+ },
+ "r2-finanzas-contador-390": {
+  "barra": [
+   "Inicio [0..81] 29/29",
+   "Facturación [81..163] 62/62",
+   "Cartera [163..244] 39/39",
+   "Contabilidad [244..325] 66/66",
+   "Más [325..390] 22/22"
+  ],
+  "hoja": {
+   "top": 190,
+   "bottom": 780,
+   "barTop": 780,
+   "scroll": false,
+   "items": [
+    "Cerrar 44x44",
+    "## Documentos",
+    "Pago a profesionales 358x44",
+    "Nómina 358x44",
+    "Compras y gastos 358x44",
+    "## Contabilidad",
+    "Informes contables 358x44",
+    "Terceros 358x44",
+    "Parametrización 358x44",
+    "## Compartido con Operación",
+    "Cuentas de cobro 358x44",
+    "Estadísticas 358x44",
+    "Cerrar sesión 177x56",
+    "Configuración 177x56"
+   ]
+  }
+ },
+ "r2-finanzas-contador-360": {
+  "barra": [
+   "Inicio [0..75] 29/29",
+   "Facturación [75..150] 62/62",
+   "Cartera [150..225] 39/39",
+   "Contabilidad [225..300] 66/66",
+   "Más [300..360] 22/22"
+  ],
+  "hoja": {
+   "top": 86,
+   "bottom": 676,
+   "barTop": 676,
+   "scroll": false,
+   "items": [
+    "Cerrar 44x44",
+    "## Documentos",
+    "Pago a profesionales 328x44",
+    "Nómina 328x44",
+    "Compras y gastos 328x44",
+    "## Contabilidad",
+    "Informes contables 328x44",
+    "Terceros 328x44",
+    "Parametrización 328x44",
+    "## Compartido con Operación",
+    "Cuentas de cobro 328x44",
+    "Estadísticas 328x44",
+    "Cerrar sesión 162x56",
+    "Configuración 162x56"
+   ]
+  }
+ },
+ "r2-finanzas-contadorSinInicio-390": {
+  "barra": [
+   "Facturación [0..81] 63/63",
+   "Cartera [81..163] 39/39",
+   "Contabilidad [163..244] 66/66",
+   "Informes [244..325] 47/47",
+   "Más [325..390] 22/22"
+  ],
+  "hoja": {
+   "top": 358,
+   "bottom": 780,
+   "barTop": 780,
+   "scroll": false,
+   "items": [
+    "Cerrar 44x44",
+    "## Documentos",
+    "Pago a profesionales 358x44",
+    "Nómina 358x44",
+    "Compras y gastos 358x44",
+    "## Contabilidad",
+    "Terceros 358x44",
+    "Parametrización 358x44",
+    "Cerrar sesión 177x56",
+    "Configuración 177x56"
+   ]
+  }
+ },
+ "r2-finanzas-contadorSinInicio-360": {
+  "barra": [
+   "Facturación [0..75] 63/63",
+   "Cartera [75..150] 39/39",
+   "Contabilidad [150..225] 66/66",
+   "Informes [225..300] 47/47",
+   "Más [300..360] 22/22"
+  ],
+  "hoja": {
+   "top": 254,
+   "bottom": 676,
+   "barTop": 676,
+   "scroll": false,
+   "items": [
+    "Cerrar 44x44",
+    "## Documentos",
+    "Pago a profesionales 328x44",
+    "Nómina 328x44",
+    "Compras y gastos 328x44",
+    "## Contabilidad",
+    "Terceros 328x44",
+    "Parametrización 328x44",
+    "Cerrar sesión 162x56",
+    "Configuración 162x56"
+   ]
+  }
+ },
+ "r2-operacion-administrativo-390": {
+  "barra": [
+   "Inicio [0..103] 29/29",
+   "Cobros [103..205] 38/38",
+   "Estadísticas [205..308] 63/63",
+   "Más [308..390] 22/22"
+  ],
+  "hoja": {
+   "top": 652,
+   "bottom": 780,
+   "barTop": 780,
+   "scroll": false,
+   "items": [
+    "Cerrar 44x44",
+    "Cerrar sesión 177x56",
+    "Configuración 177x56"
+   ]
+  }
+ },
+ "r2-operacion-administrativo-360": {
+  "barra": [
+   "Inicio [0..95] 29/29",
+   "Cobros [95..189] 38/38",
+   "Estadísticas [189..284] 63/63",
+   "Más [284..360] 22/22"
+  ],
+  "hoja": {
+   "top": 548,
+   "bottom": 676,
+   "barTop": 676,
+   "scroll": false,
+   "items": [
+    "Cerrar 44x44",
+    "Cerrar sesión 162x56",
+    "Configuración 162x56"
+   ]
+  }
+ },
+ "r2-operacion-minimo-390": {
+  "barra": [
+   "Inicio [0..139] 29/29",
+   "Estadísticas [139..279] 63/63",
+   "Más [279..390] 22/22"
+  ],
+  "hoja": {
+   "top": 652,
+   "bottom": 780,
+   "barTop": 780,
+   "scroll": false,
+   "items": [
+    "Cerrar 44x44",
+    "Cerrar sesión 177x56",
+    "Configuración 177x56"
+   ]
+  }
+ },
+ "r2-operacion-minimo-360": {
+  "barra": [
+   "Inicio [0..129] 29/29",
+   "Estadísticas [129..257] 63/63",
+   "Más [257..360] 22/22"
+  ],
+  "hoja": {
+   "top": 548,
+   "bottom": 676,
+   "barTop": 676,
+   "scroll": false,
+   "items": [
+    "Cerrar 44x44",
+    "Cerrar sesión 162x56",
+    "Configuración 162x56"
+   ]
+  }
+ },
+ "r2-operacion-auditor-390": {
+  "barra": [
+   "Inicio [0..81] 29/29",
+   "Órdenes [81..163] 45/45",
+   "Cobros [163..244] 38/38",
+   "Empresas [244..325] 52/52",
+   "Más [325..390] 22/22"
+  ],
+  "hoja": {
+   "top": 561,
+   "bottom": 780,
+   "barTop": 780,
+   "scroll": false,
+   "items": [
+    "Cerrar 44x44",
+    "## Cobro y clientes",
+    "Estadísticas 358x44",
+    "Cerrar sesión 117x66",
+    "Cambiar de sistema 117x66",
+    "Configuración 117x66"
+   ]
+  }
+ },
+ "r2-operacion-auditor-360": {
+  "barra": [
+   "Inicio [0..75] 29/29",
+   "Órdenes [75..150] 45/45",
+   "Cobros [150..225] 38/38",
+   "Empresas [225..300] 52/52",
+   "Más [300..360] 22/22"
+  ],
+  "hoja": {
+   "top": 457,
+   "bottom": 676,
+   "barTop": 676,
+   "scroll": false,
+   "items": [
+    "Cerrar 44x44",
+    "## Cobro y clientes",
+    "Estadísticas 328x44",
+    "Cerrar sesión 107x66",
+    "Cambiar de sistema 107x66",
+    "Configuración 107x66"
+   ]
+  }
+ },
+ "dobleToque": {
+  "antes": {
+   "url": "/dashboard",
+   "hl": 3,
+   "hoja": false,
+   "inertMain": false,
+   "foco": "BODY",
+   "login": false
+  },
+  "despues": {
+   "url": "/dashboard",
+   "hl": 4,
+   "hoja": false,
+   "inertMain": false,
+   "foco": "Más módulos y opciones",
+   "login": false
+  }
+ },
+ "tripleToque": {
+  "url": "/dashboard",
+  "hl": 4,
+  "hoja": true,
+  "inertMain": true,
+  "foco": "hoja-mas__item",
+  "login": false
+ },
+ "cerrarX": {
+  "url": "/dashboard",
+  "hl": 4,
+  "hoja": false,
+  "inertMain": false,
+  "foco": "Más módulos y opciones",
+  "login": false
+ },
+ "salir": {
+  "url": "/dashboard",
+  "hl": 4,
+  "hoja": false,
+  "inertMain": false,
+  "foco": "BODY",
+  "login": false
+ },
+ "salirDialogo": "Cerrar sesión ¿Desea cerrar la sesión en este dispositivo? Seguir aquí Cerrar sesión",
+ "salirPuntoMas": "al-backdrop",
+ "salirCancelado": {
+  "url": "/dashboard",
+  "hl": 4,
+  "hoja": false,
+  "inertMain": false,
+  "foco": "Más módulos y opciones",
+  "login": false
+ },
+ "tab": [
+  "IN:Nómina",
+  "IN:Compras y gastos",
+  "IN:Informes contables",
+  "IN:Terceros",
+  "IN:Parametrización",
+  "IN:Cuentas de cobro",
+  "IN:Estadísticas",
+  "IN:Cerrar sesión",
+  "IN:Cambiar de sistema",
+  "IN:Configuración",
+  "IN:Cerrar",
+  "IN:Pago a profesionales",
+  "IN:Nómina",
+  "IN:Compras y gastos",
+  "IN:Informes contables",
+  "IN:Terceros"
+ ],
+ "shiftTab": [
+  "IN:Informes contables",
+  "IN:Compras y gastos",
+  "IN:Nómina"
+ ],
+ "inert": {
+  "url": "/dashboard",
+  "hl": 4,
+  "hoja": true,
+  "inertMain": true,
+  "foco": "hoja-mas__item",
+  "login": false
+ },
+ "inertNodos": [
+  "saltar",
+  "main"
+ ],
+ "trasEscape": {
+  "url": "/dashboard",
+  "hl": 4,
+  "hoja": false,
+  "inertMain": false,
+  "foco": "Más módulos y opciones",
+  "login": false
+ },
+ "atras": {
+  "enInicio": {
+   "url": "/dashboard",
+   "hl": 4,
+   "hoja": false,
+   "inertMain": false,
+   "foco": "bottom-nav__item bottom-nav__item--activ",
+   "login": false
+  },
+  "hojaAbierta": {
+   "url": "/dashboard",
+   "hl": 5,
+   "hoja": true,
+   "inertMain": true,
+   "foco": "hoja-mas__item",
+   "login": false
+  },
+  "trasAtras1": {
+   "url": "/dashboard",
+   "hl": 5,
+   "hoja": false,
+   "inertMain": false,
+   "foco": "Más módulos y opciones",
+   "login": false
+  },
+  "trasAtras2": {
+   "url": "/ordenes",
+   "hl": 5,
+   "hoja": false,
+   "inertMain": false,
+   "foco": "Más módulos y opciones",
+   "login": false
+  }
+ },
+ "navDesdeHoja": {
+  "antes": {
+   "url": "/dashboard",
+   "hl": 4,
+   "hoja": false,
+   "inertMain": false,
+   "foco": "BODY",
+   "login": false
+  },
+  "trasNavegar": {
+   "url": "/precuentas",
+   "hl": 5,
+   "hoja": false,
+   "inertMain": false,
+   "foco": "content",
+   "login": false
+  },
+  "atras": {
+   "url": "/dashboard",
+   "hl": 5,
+   "hoja": false,
+   "inertMain": false,
+   "foco": "content",
+   "login": false
+  },
+  "adelante": {
+   "url": "/precuentas",
+   "hl": 5,
+   "hoja": false,
+   "inertMain": false,
+   "foco": "content",
+   "login": false
+  }
+ },
+ "barraConHoja": {
+  "trasTocarOrdenes": {
+   "url": "/ordenes",
+   "hl": 6,
+   "hoja": false,
+   "inertMain": false,
+   "foco": "content",
+   "login": false
+  },
+  "atras": {
+   "url": "/precuentas",
+   "hl": 6,
+   "hoja": false,
+   "inertMain": false,
+   "foco": "content",
+   "login": false
+  }
+ },
+ "carreraCerrarYNavegar": {
+  "url": "/importar",
+  "hl": 7,
+  "hoja": false,
+  "inertMain": false,
+  "foco": "bottom-nav__item bottom-nav__item--activ",
+  "login": false
+ },
+ "carreraEscapeYNavegar": {
+  "url": "/ordenes",
+  "hl": 9,
+  "hoja": false,
+  "inertMain": false,
+  "foco": "bottom-nav__item bottom-nav__item--activ",
+  "login": false
+ },
+ "mismaRuta": {
+  "antes": {
+   "url": "/precuentas",
+   "hl": 10,
+   "hoja": false,
+   "inertMain": false,
+   "foco": "BODY",
+   "login": false
+  },
+  "despues": {
+   "url": "/precuentas",
+   "hl": 11,
+   "hoja": false,
+   "inertMain": false,
+   "foco": "Más módulos y opciones",
+   "login": false
+  }
+ },
+ "ciclos": {
+  "antes": {
+   "url": "/precuentas",
+   "hl": 11,
+   "hoja": false,
+   "inertMain": false,
+   "foco": "Más módulos y opciones",
+   "login": false
+  },
+  "despues": {
+   "url": "/precuentas",
+   "hl": 11,
+   "hoja": false,
+   "inertMain": false,
+   "foco": "Más módulos y opciones",
+   "login": false
+  }
+ },
+ "ciclosLuegoAtras": {
+  "url": "/ordenes",
+  "hl": 11,
+  "hoja": false,
+  "inertMain": false,
+  "foco": "bottom-nav__item bottom-nav__item--activ",
+  "login": false
+ },
+ "cambiarSistema": {
+  "tras": {
+   "url": "/sistemas",
+   "hl": 11,
+   "hoja": false,
+   "foco": "BODY",
+   "login": false
+  },
+  "atras": {
+   "url": "/dashboard",
+   "hl": 11,
+   "hoja": false,
+   "inertMain": false,
+   "foco": "BODY",
+   "login": false
+  }
+ },
+ "ensanchar": {
+  "antes": {
+   "url": "/dashboard",
+   "hl": 11,
+   "hoja": false,
+   "inertMain": false,
+   "foco": "BODY",
+   "login": false
+  },
+  "a900": {
+   "url": "/dashboard",
+   "hl": 11,
+   "hoja": false,
+   "inertMain": false,
+   "foco": "BODY",
+   "login": false
+  },
+  "vuelta": {
+   "url": "/dashboard",
+   "hl": 11,
+   "hoja": false,
+   "inertMain": false,
+   "foco": "BODY",
+   "login": false
+  }
+ },
+ "modalBoton": "Nueva empresa",
+ "modal": {
+  "modal": {
+   "top": 12,
+   "bottom": 832
+  },
+  "barTop": 780,
+  "encimaEnLaBarra": "BARRA (sobre el modal)"
+ },
+ "ordenVer": true,
+ "modalOrden": {
+  "modal": {
+   "top": 12,
+   "bottom": 832
+  },
+  "barTop": 780,
+  "puntoBarra": "BARRA (sobre el modal)"
+ },
+ "barra320": [
+  "Inicio 26/26",
+  "Órdenes 41/41",
+  "Importar 41/41",
+  "Profesionales 66/66",
+  "Más 20/20"
+ ],
+ "hoja320": {
+  "top": 265,
+  "scroll": false,
+  "pie": [
+   "Cerrar sesión 93x66",
+   "Cambiar de sistema 93x66",
+   "Configuración 93x66"
+  ]
+ },
+ "toast": {
+  "stackBottom": 768,
+  "barTop": 780,
+  "hijos": 1,
+  "cssBottom": "76px"
+ },
+ "toastConHoja": {
+  "toastTop": 702,
+  "hojaTop": 469,
+  "hijos": 1
+ }
+}

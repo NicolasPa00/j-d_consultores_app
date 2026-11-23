@@ -142,7 +142,7 @@
         <p class="modal__sub">{{ e.tercero.numero_documento }}{{ e.tercero.dv != null ? '-' + e.tercero.dv : '' }} · saldo {{ pesos(e.saldo) }}</p>
       </div>
       <button type="button" class="icon-action" (click)="estado.set(null)" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
     <div class="modal__body">
@@ -194,6 +194,9 @@
         </h3>
         <p class="modal__sub">{{ r.tercero_nombre }} · {{ r.fecha | fechaDmy }} · {{ r.cuenta_banco_codigo }} {{ r.cuenta_banco_nombre }}</p>
       </div>
+      <button type="button" class="icon-action" (click)="recibo.set(null)" aria-label="Cerrar">
+        <svg appIcono="cerrar"></svg>
+      </button>
     </header>
     <div class="modal__body">
       @if (r.motivo_anulacion) { <p class="car-anulado">Anulado: {{ r.motivo_anulacion }}</p> }
@@ -248,7 +251,7 @@
     <header class="modal__head">
       <h3 class="modal__title" id="carNuevoTitle">{{ editando() ? 'Modificar recibo ' + editando()!.numero : 'Registrar recibo de caja' }}</h3>
       <button type="button" class="icon-action" (click)="cerrarForm()" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
     <div class="modal__body">
@@ -308,7 +311,7 @@
                         </div>
                       </details>
                     </td>
-                    <td class="col-num mono car-bloqueado" title="Se calcula con la tarifa sobre la base; no se digita">{{ f.marcada ? pesosC(retenidoDe(f)) : '' }}</td>
+                    <td class="col-num mono" [class.car-bloqueado]="f.marcada" [class.car-sin-valor]="!f.marcada" title="Se calcula con la tarifa sobre la base; no se digita">{{ f.marcada ? pesosC(retenidoDe(f)) : '—' }}</td>
                     <td><input type="text" inputmode="decimal" class="form-control mono col-num" [ngModel]="f.pagado" (ngModelChange)="cambiarFila(i, 'pagado', $event)" [disabled]="!f.marcada" [attr.aria-label]="'Pagado de ' + f.numero" /></td>
                   </tr>
                 }

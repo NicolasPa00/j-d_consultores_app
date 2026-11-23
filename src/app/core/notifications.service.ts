@@ -1,10 +1,26 @@
 import { Injectable, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { Observable, Subject } from 'rxjs';
 import { ApiService } from './api.service';
 import { ConteosNotificaciones, FiltroNotificaciones, Notificacion } from './models';
 
 /** Cada cuánto se refresca el contador del badge mientras la app está abierta. */
 const POLL_MS = 60_000;
+
+/**
+ * 22-nov-2026 · Avisos que cambian una orden a la vista (estado, soportes, programación).
+ * ENCUESTA_RESPONDIDA y ORDEN_VENCE traen `orden_id` pero no tocan ninguna columna del
+ * listado, así que no disparan refresco.
+ */
+const TIPOS_QUE_CAMBIAN_ORDENES = new Set(['SOPORTE_CARGADO', 'RECHAZO', 'ASIGNACION', 'REPROGRAMACION']);
+
+/**
+ * Lote de cambios en órdenes detectado por el sondeo de la campanita. `ordenIds` son
+ * ids de OS (`datos.orden_id`), no de borrador; puede venir vacío si el aviso no la nombra.
+ */
+export interface CambiosEnOrdenes {
+  ordenIds: string[];
+}
 
 /**
  * NOT-04 · Estado de la bandeja interna (campanita).
@@ -48,6 +64,30 @@ export class NotificationsService {
 
   private timer: ReturnType<typeof setInterval> | null = null;
 
+  /*
+   * 22-nov-2026 · REFRESCO DE PANTALLAS POR NOTIFICACIONES (pasada del dueño: «llega
+   * "Soportes recibidos · … quedó EJECUTADA" y el listado sigue en PROGRAMADA»).
+   *
+   * No hay SSE ni sondeo propio de las pantallas: se aprovecha el MISMO sondeo del
+   * badge (`/unread-count` cada POLL_MS). Solo cuando el contador SUBE se pide una vez
+   * la lista de no leídas, se apartan las que no se habían visto y, si alguna es de un
+   * tipo que cambia órdenes, se emite `cambiosEnOrdenes$` con los ids de OS. Quien
+   * tenga una vista abierta (Órdenes, Inicio) se suscribe y decide qué volver a pedir,
+   * con su propio antirrebote. Coste en reposo: cero peticiones extra; con avisos
+   * nuevos, una por subida del contador.
+   */
+  private readonly _cambiosEnOrdenes = new Subject<CambiosEnOrdenes>();
+  readonly cambiosEnOrdenes$: Observable<CambiosEnOrdenes> = this._cambiosEnOrdenes.asObservable();
+  /** El primer conteo de la sesión solo sirve de referencia: no hay con qué compararlo. */
+  private primerConteo = true;
+  /** Avisos ya revisados, para no emitir dos veces el mismo. */
+  private readonly idsRevisados = new Set<string>();
+  /**
+   * Lo creado antes de abrir la app no es «nuevo». Margen de 2 min por si el reloj del
+   * equipo va adelantado respecto al servidor (un aviso repetido solo cuesta un refresco).
+   */
+  private readonly desde = Date.now() - 2 * 60_000;
+
   /** Arranca el sondeo del contador (idempotente: no acumula temporizadores). */
   startPolling(): void {
     if (!this.isBrowser || this.timer) return;
@@ -68,7 +108,34 @@ export class NotificationsService {
   refreshUnread(): void {
     if (!this.isBrowser) return;
     this.api.unreadNotifications().subscribe({
-      next: (r) => this._unread.set(Number(r.data?.count) || 0),
+      next: (r) => {
+        const n = Number(r.data?.count) || 0;
+        // Se compara con el badge vigente (que ya baja al marcar leídas o eliminar),
+        // no con la lectura anterior del sondeo.
+        const subio = !this.primerConteo && n > this._unread();
+        this.primerConteo = false;
+        this._unread.set(n);
+        if (subio) this.revisarNuevas();
+      },
+      error: () => {},
+    });
+  }
+
+  /**
+   * Trae las no leídas (una petición) y emite los cambios en órdenes de las que no
+   * se habían visto. No toca `_items`: el panel tiene su propio recorte y búsqueda.
+   */
+  private revisarNuevas(): void {
+    this.api.listNotifications('no-leidas').subscribe({
+      next: (r) => {
+        const nuevas = (r.data ?? []).filter((x) =>
+          !this.idsRevisados.has(x.id) && new Date(x.creado_en).getTime() >= this.desde);
+        for (const x of nuevas) this.idsRevisados.add(x.id);
+        const deOrdenes = nuevas.filter((x) => TIPOS_QUE_CAMBIAN_ORDENES.has(x.tipo));
+        if (!deOrdenes.length) return;
+        const ids = [...new Set(deOrdenes.map((x) => x.datos?.orden_id).filter((id): id is string => !!id))];
+        this._cambiosEnOrdenes.next({ ordenIds: ids });
+      },
       error: () => {},
     });
   }
@@ -103,8 +170,12 @@ export class NotificationsService {
         // El badge sale de los conteos y no de la lista: mirando "Leídas" la
         // lista no tiene ninguna sin leer, y contarlas ahí lo dejaría en cero.
         if (r.conteos) {
+          // Abrir el panel también puede ser lo primero que «ve» un aviso nuevo; si no
+          // se revisara aquí, el sondeo siguiente ya no notaría la subida.
+          const subio = !this.primerConteo && r.conteos.no_leidas > this._unread();
           this._conteos.set(r.conteos);
           this._unread.set(r.conteos.no_leidas);
+          if (subio) this.revisarNuevas();
         }
         this._loading.set(false);
       },

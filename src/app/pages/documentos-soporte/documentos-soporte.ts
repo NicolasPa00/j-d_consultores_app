@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, PLATFORM_ID, computed, inje
 import { isPlatformBrowser } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
+import { CeroVacioDirective } from '../../shared/cero-vacio';
 import { RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../core/api.service';
@@ -17,6 +18,7 @@ import { PaginadorComponent } from '../../shared/paginador/paginador';
 import { FechaDmyPipe } from '../../shared/fecha-dmy.pipe';
 import { CupoDocumentosComponent } from '../../shared/cupo-documentos/cupo-documentos';
 import { AccionComponent } from '../../shared/icono/accion';
+import { IconoComponent } from '../../shared/icono/icono';
 
 type Pestana = 'por-generar' | 'pendientes' | 'emitidos' | 'notas' | 'facturas';
 type VistaDocumento = 'ver' | 'pdf' | 'historial' | 'contab';
@@ -47,7 +49,7 @@ interface PasoDocumento {
  */
 @Component({
   selector: 'app-documentos-soporte',
-  imports: [FormsModule, RouterLink, PaginadorComponent, SelectorBusquedaComponent, CupoDocumentosComponent, FechaDmyPipe, AccionComponent],
+  imports: [FormsModule, CeroVacioDirective, RouterLink, PaginadorComponent, SelectorBusquedaComponent, CupoDocumentosComponent, FechaDmyPipe, AccionComponent, IconoComponent],
   templateUrl: './documentos-soporte.html',
   styleUrls: ['../facturacion/facturacion.scss', './documentos-soporte.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

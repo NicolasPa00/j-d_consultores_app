@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE } from './config';
-import { EstadisticasPeriodo, ActivoFijo, ActivoFijoForm, CorridaDepreciacion, FichaActivoFijo, VistaPreviaDepreciacion, AuxiliarPorCuenta, BalanceComprobacion, FiltrosInformeContable, InformePorTercero, LibroAuxiliar, VentasPorCliente, EstadoSituacionFinanciera, EstadoResultados, ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, Banco, CuentaBancaria, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, Coasesor, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, ResumenInicio, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteVencidas, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, LineaManualCobro, CupoDocumentos, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, InfoPaqueteArl, DetalleSoporte, DocumentoFactura, DocumentoSoporte, RadicadoOrden, ResumenImportSoportes, ResumenImportTerceros, SoportePorGenerar, VisitaProxima, Especialidad, PagadorPorFacturar, OrdenManualForm, FacturaManualForm, DetalleCobroOrden, ValoresCobroForm, CatalogosNomina, EmpleadoForm, EmpleadoNomina, LiquidacionNomina, LiquidacionNominaForm, NovedadesNomina, ResultadoLiquidacion } from './models';
+import { EstadisticasPeriodo, ActivoFijo, ActivoFijoForm, CorridaDepreciacion, FichaActivoFijo, VistaPreviaDepreciacion, AuxiliarPorCuenta, BalanceComprobacion, FiltrosInformeContable, InformePorTercero, LibroAuxiliar, VentasPorCliente, EstadoSituacionFinanciera, EstadoResultados, ResumenImportCompras, CentroCosto, VistaPreviaCierre, AnticipoProveedor, Compra, CompraForm, Egreso, PropuestaEgreso, AntiguedadCartera, AplicacionReciboForm, ConciliacionCartera, DocumentoCartera, EstadoCuentaCliente, PropuestaRecibo, ReciboCaja, AsientoDocumento, ConceptoContable, DocumentoPendienteContabilizar, ReglaContable, Comprobante, LineaComprobanteForm, PeriodoContable, TipoComprobante, CuentaContable, CuentaForm, ResumenImportCuentas, Banco, CuentaBancaria, CondicionPagador, Emisor, EmisorForm, EstadoProveedor, FilaUvt, ItemCatalogo, Producto, Retencion, ResolucionNumeracion, SincronizacionResoluciones, SugerenciaTerceroProfesional, TarifaVenta, Tercero, TerceroForm, ArchivoSoporte, Arl, Borrador, CasillaSoporte, CategoriaSoporte, Coasesor, ConteosNotificaciones, FiltroNotificaciones, CuentaDelMes, DashboardData, ResumenInicio, Empresa, Encuesta, EncuestaPublica, EncuestaStats, EstadoCobro, EstadoOrden, EstadoPrecuenta, FiltroEncuestas, FranjaVisita, HistorialCobro, HistorialEstado, HojaImportada, LoteImportacion, MatrizPermisos, MisOrdenesResponse, Notificacion, Ocupacion, Orden, OrdenDeEmpresa, PeriodoEjecutado, Plantilla, Precuenta, PrecuentaPublica, PreguntasEncuesta, Profesional, RegistroArl, ReporteCobro, ReporteHoras, ReporteCobroOperacion, Rol, Tarifa, TipoOrden, TipoViatico, Usuario, Vista, EstadoArl, HistorialEstadoArl, PrevisualizacionPrefactura, LineaManualCobro, CupoDocumentos, VistaPreviaAsignacion, CausalNotaCredito, DetalleFactura, InfoPaqueteArl, DetalleSoporte, DocumentoFactura, DocumentoSoporte, RadicadoOrden, ResumenImportSoportes, ResumenImportTerceros, SoportePorGenerar, VisitaProxima, Especialidad, PagadorPorFacturar, OrdenManualForm, FacturaManualForm, DetalleCobroOrden, ValoresCobroForm, CatalogosNomina, EmpleadoForm, EmpleadoNomina, LiquidacionNomina, LiquidacionNominaForm, NovedadesNomina, ResultadoLiquidacion } from './models';
 
 interface Wrap<T> { data: T; }
 
@@ -136,16 +136,6 @@ export class ApiService {
   resumenInicio(): Observable<Wrap<ResumenInicio>> {
     return this.http.get<Wrap<ResumenInicio>>(`${this.base}/reports/inicio`);
   }
-  summary(orderId: string): Observable<Wrap<{ order_id: string; summary: string }>> {
-    return this.http.post<Wrap<{ order_id: string; summary: string }>>(`${this.base}/reports/summary/${orderId}`, {});
-  }
-  search(query: string): Observable<Wrap<{ filters: unknown; results: Orden[] }>> {
-    return this.http.post<Wrap<{ filters: unknown; results: Orden[] }>>(`${this.base}/reports/search`, { query });
-  }
-  /** RPT-03 · Órdenes con más de `dias` sin ejecutarse (60 por defecto). */
-  reporteVencidas(dias = 60, arlId?: string): Observable<Wrap<ReporteVencidas>> {
-    return this.http.get<Wrap<ReporteVencidas>>(`${this.base}/reports/vencidas${queryString({ dias, arl_id: arlId })}`);
-  }
   /** RPT-05 · Horas ejecutadas por profesional y ARL en un rango. */
   reporteHoras(desde: string, hasta: string): Observable<Wrap<ReporteHoras>> {
     return this.http.get<Wrap<ReporteHoras>>(`${this.base}/reports/horas?desde=${desde}&hasta=${hasta}`);
@@ -168,6 +158,14 @@ export class ApiService {
    */
   relacionBolivar(desde?: string, hasta?: string): Observable<Blob> {
     return this.http.get(`${this.base}/reports/relacion-bolivar${queryString({ desde, hasta })}`, { responseType: 'blob' });
+  }
+  /**
+   * 20-nov-2026 · Estadísticas → Cobro: lo finalizado por etapa (sin visto bueno,
+   * por facturar, facturada) y lo por facturar por ARL. Con `detalle` trae además
+   * una fila por orden, para el Excel de la pestaña.
+   */
+  cobroOperacion(detalle = false): Observable<Wrap<ReporteCobroOperacion>> {
+    return this.http.get<Wrap<ReporteCobroOperacion>>(`${this.base}/reports/cobro-operacion${queryString({ detalle: detalle ? 1 : undefined })}`);
   }
 
   // ---- Órdenes (M3) ----
@@ -991,6 +989,13 @@ export class ApiService {
   // ---- Borradores / Órdenes (M2/M3) ----
   listDrafts(estado = 'PENDIENTE_VALIDACION', deshabilitado: 'false' | 'true' | 'all' = 'false'): Observable<Wrap<Borrador[]>> {
     return this.http.get<Wrap<Borrador[]>>(`${this.base}/drafts?estado=${estado}&deshabilitado=${deshabilitado}`);
+  }
+  /**
+   * 22-nov-2026 · Una sola fila del listado de Órdenes, con la misma forma que `listDrafts`.
+   * La usa el refresco por notificaciones para no volver a pedir la bandeja entera.
+   */
+  getDraft(id: string): Observable<Wrap<Borrador>> {
+    return this.http.get<Wrap<Borrador>>(`${this.base}/drafts/${id}`);
   }
   updateDraft(
     id: string,

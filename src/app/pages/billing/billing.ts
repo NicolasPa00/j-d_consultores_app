@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, PLATFORM_ID, co
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { CeroVacioDirective } from '../../shared/cero-vacio';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
@@ -10,6 +11,7 @@ import { AuthService } from '../../core/auth.service';
 import { CuentaDelMes, EstadoPrecuenta, OrdenExcluidaCobro, Precuenta, PrecuentaItem, Profesional, Tarifa, TipoOrden } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
 import { AccionComponent } from '../../shared/icono/accion';
+import { IconoComponent } from '../../shared/icono/icono';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 
 /**
@@ -37,7 +39,7 @@ const MESES = [
  */
 @Component({
   selector: 'app-billing',
-  imports: [FormsModule, PaginadorComponent, RouterLink, AccionComponent],
+  imports: [FormsModule, CeroVacioDirective, PaginadorComponent, RouterLink, AccionComponent, IconoComponent],
   templateUrl: './billing.html',
   styleUrl: './billing.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

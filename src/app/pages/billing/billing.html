@@ -350,9 +350,7 @@
         </p>
       </div>
       <button type="button" class="icon-action" (click)="cerrarDetalle()" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 6 6 18M6 6l12 12" />
-        </svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
 
@@ -437,7 +435,7 @@
                   </td>
                   <td class="mono num">
                     @if (editandoValores()) {
-                      <input class="form-control mono bl-input" type="text" inputmode="numeric" [(ngModel)]="ajustes[i.id].valor_hora" [attr.aria-label]="'Valor hora de ' + (i.orden_referencia || i.orden_codigo || i.actividad)" />
+                      <input class="form-control mono bl-input" type="text" inputmode="numeric" ceroVacio [(ngModel)]="ajustes[i.id].valor_hora" [attr.aria-label]="'Valor hora de ' + (i.orden_referencia || i.orden_codigo || i.actividad)" />
                     } @else {
                       {{ pesos(i.valor_hora_snapshot) }}
                       @if (i.ajuste_manual && i.valor_hora_original != null) {
@@ -449,7 +447,7 @@
                   </td>
                   <td class="mono num">
                     @if (editandoValores()) {
-                      <input class="form-control mono bl-input" type="text" inputmode="numeric" [(ngModel)]="ajustes[i.id].viaticos" [attr.aria-label]="'Viáticos de ' + (i.orden_referencia || i.orden_codigo || i.actividad)" />
+                      <input class="form-control mono bl-input" type="text" inputmode="numeric" ceroVacio [(ngModel)]="ajustes[i.id].viaticos" [attr.aria-label]="'Viáticos de ' + (i.orden_referencia || i.orden_codigo || i.actividad)" />
                     } @else {
                       {{ +(i.viaticos ?? 0) ? pesos(i.viaticos) : '—' }}
                     }
@@ -545,11 +543,11 @@
               </label>
               <label class="form-field">
                 <span>Valor hora *</span>
-                <input class="form-control mono" type="text" inputmode="numeric" [(ngModel)]="l.valor_hora" />
+                <input class="form-control mono" type="text" inputmode="numeric" ceroVacio [(ngModel)]="l.valor_hora" />
               </label>
               <label class="form-field">
                 <span>Viáticos</span>
-                <input class="form-control mono" type="text" inputmode="numeric" [(ngModel)]="l.viaticos" placeholder="0" />
+                <input class="form-control mono" type="text" inputmode="numeric" ceroVacio [(ngModel)]="l.viaticos" placeholder="0" />
               </label>
             </div>
             <div class="bl-manual__pie">

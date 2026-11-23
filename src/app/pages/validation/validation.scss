@@ -952,6 +952,57 @@
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
   background: var(--surface);
+  /* 22-nov-2026 · Con la jornada hasta las 12:00 a. m. la rejilla mide ~800 px y
+     el modal obligaba a bajar mucho. Vuelve a ser una VENTANA de alto acotado
+     (unas 8-10 h a la vista), con la cabecera de días pegada arriba, que se abre
+     sola en la primera franja de la orden (`enfocarAgenda`). Para llegar a la
+     noche sin desplazarse está la fila «Día · Desde · Hasta». El alto sale del
+     viewport para que el modal no crezca: a 768 px de alto cabe sin scroll. */
+  overflow-y: auto;
+  max-height: clamp(220px, calc(100vh - 500px), 480px);
+  overscroll-behavior: contain;
+}
+
+/* Marco de la rejilla: aquí se monta el aviso de «elija el profesional». */
+.agenda__marco {
+  position: relative;
+}
+
+/* Sin profesional la rejilla no se puede marcar: se apaga y no recibe el puntero. */
+.agenda__scroll--bloqueada {
+  pointer-events: none;
+  opacity: 0.45;
+}
+
+.agenda__bloqueo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(360px, calc(100% - 2rem));
+  padding: 1rem 1.25rem;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
+}
+
+.agenda__bloqueo .ico {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 0.35rem;
+}
+
+.agenda__bloqueo-titulo {
+  margin: 0 0 0.25rem;
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.agenda__bloqueo-texto {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--tinta-2);
 }
 
 /* Ancho mínimo: por debajo de esto los días se vuelven ilegibles, así que la
@@ -1025,6 +1076,7 @@
 .agenda__hora {
   position: absolute;
   right: 0.5rem;
+  white-space: nowrap;
   transform: translateY(-50%);
   font-size: var(--fs-pastilla);
   font-variant-numeric: tabular-nums;

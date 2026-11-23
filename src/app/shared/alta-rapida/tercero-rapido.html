@@ -6,7 +6,7 @@
       <p class="modal__sub">Solo lo necesario para {{ rol() === 'cliente' ? 'facturarle' : 'registrarle compras y pagos' }}. El resto se completa después en Terceros.</p>
     </div>
     <button type="button" class="icon-action" (click)="cerrar.emit()" aria-label="Cerrar" [disabled]="guardando()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      <svg appIcono="cerrar"></svg>
     </button>
   </header>
   <div class="modal__body">

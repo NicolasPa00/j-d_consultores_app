@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { AlertService } from '../../core/alert.service';
+import { IconoComponent } from '../icono/icono';
 
 /**
  * Render global de toasts y del diálogo de confirmación.
@@ -8,7 +9,7 @@ import { AlertService } from '../../core/alert.service';
  */
 @Component({
   selector: 'app-alert-host',
-  imports: [],
+  imports: [IconoComponent],
   templateUrl: './alert-host.html',
   styleUrl: './alert-host.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

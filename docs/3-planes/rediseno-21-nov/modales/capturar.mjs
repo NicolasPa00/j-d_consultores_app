@@ -1,0 +1,20 @@
+// Captura la lámina: página completa y cada escena. Uso: node capturar.mjs
+import { createRequire } from 'node:module';
+import path from 'node:path';
+import fs from 'node:fs';
+const req = createRequire('C:/Program Files/nodejs/node_modules/@playwright/cli/node_modules/playwright-core/package.json');
+const { chromium } = req('playwright-core');
+const AQUI = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1'));
+const SALIDA = path.join(AQUI, 'capturas');
+fs.mkdirSync(SALIDA, { recursive: true });
+const url = 'file:///' + path.join(AQUI, 'lamina.html').split(path.sep).join('/');
+const browser = await chromium.launch({ channel: 'chrome' });
+const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+const page = await ctx.newPage();
+await page.goto(url);
+await page.evaluate(() => document.fonts.ready);
+await page.screenshot({ path: path.join(SALIDA, 'lamina-completa.png'), fullPage: true });
+const ids = await page.$$eval('.escena, .velo-plano, #comparar, #contraste', (els) => els.map((e) => e.id).filter(Boolean));
+for (const id of ids) await (await page.$('#' + id)).screenshot({ path: path.join(SALIDA, `${id}.png`) });
+await browser.close();
+console.log(ids.length, 'capturas en', SALIDA);

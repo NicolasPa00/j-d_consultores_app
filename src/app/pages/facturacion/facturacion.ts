@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, OnInit, PLATFORM_ID, computed, inject, signal } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, DestroyRef, ElementRef, OnInit, PLATFORM_ID, computed, effect, inject, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
+import { CeroVacioDirective } from '../../shared/cero-vacio';
 import { RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../core/api.service';
@@ -21,6 +22,7 @@ import { TerceroRapidoComponent } from '../../shared/alta-rapida/tercero-rapido'
 import { ProductoRapidoComponent } from '../../shared/alta-rapida/producto-rapido';
 import { CupoDocumentosComponent } from '../../shared/cupo-documentos/cupo-documentos';
 import { AccionComponent } from '../../shared/icono/accion';
+import { IconoComponent } from '../../shared/icono/icono';
 
 type Pestana = 'por-facturar' | 'borradores' | 'emitidas' | 'notas';
 
@@ -67,12 +69,12 @@ const aNumero = (v: string): number => {
 
 @Component({
   selector: 'app-facturacion',
-  imports: [FormsModule, RouterLink, PaginadorComponent, SelectorBusquedaComponent, SelectorMultipleComponent, TerceroRapidoComponent, ProductoRapidoComponent, CupoDocumentosComponent, AccionComponent],
+  imports: [FormsModule, CeroVacioDirective, RouterLink, PaginadorComponent, SelectorBusquedaComponent, SelectorMultipleComponent, TerceroRapidoComponent, ProductoRapidoComponent, CupoDocumentosComponent, AccionComponent, IconoComponent],
   templateUrl: './facturacion.html',
   styleUrl: './facturacion.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class FacturacionComponent implements OnInit {
+export class FacturacionComponent implements OnInit, AfterViewInit {
   private readonly api = inject(ApiService);
   private readonly alerts = inject(AlertService);
   private readonly auth = inject(AuthService);
@@ -126,9 +128,136 @@ export class FacturacionComponent implements OnInit {
     return f ? this.emitidas().filter((d) => d.estado === f) : this.emitidas();
   });
   protected readonly notas = signal<DocumentoFactura[]>([]);
-  protected readonly pagBorradores = paginar(this.borradores);
-  protected readonly pagEmitidas = paginar(this.emitidasFiltradas);
-  protected readonly pagNotas = paginar(this.notas);
+
+  // ---------------- 22-nov-2026 · Filtro por pagador (las cuatro pestañas) ----------------
+  /**
+   * Pedido del dueño: «solo Bolívar, solo SURA u otros». Con un scroll rápido por «Por
+   * facturar» se perdía en qué ARL estaba. Las pastillas son FIJAS: una por ARL del
+   * catálogo y una sola «Otros» para los clientes particulares (sin ARL), en el mismo
+   * orden en las cuatro pestañas (ronda 2, D3/D4: ni razones sociales sueltas, ni una
+   * fila que crece con cada cliente o aparece y desaparece al cambiar de pestaña). El
+   * filtro es UNO para toda la vista y se conserva al cambiar de pestaña: quien trabaja
+   * Bolívar pasa de «Por facturar» a «Pendientes» y a «Emitidas» sin volver a elegirlo.
+   * Clave: `arl:<id>` u `otros`.
+   */
+  protected readonly filtroPagador = signal<{ clave: string; nombre: string } | null>(null);
+  private readonly catalogoArls = signal<{ id: string; nombre: string; tercero_id?: string | null }[]>([]);
+  /** ARL del catálogo (y, si no cargó, las que trae la relación), por nombre. */
+  private readonly arls = computed(() => {
+    const m = new Map<string, { clave: string; nombre: string; tercero_id: string | null }>();
+    for (const a of this.catalogoArls()) m.set(a.id, { clave: `arl:${a.id}`, nombre: a.nombre, tercero_id: a.tercero_id ?? null });
+    for (const p of this.pagadores()) {
+      if (!p.particular && p.arl_id && !m.has(p.arl_id)) {
+        m.set(p.arl_id, { clave: `arl:${p.arl_id}`, nombre: p.arl_nombre ?? '—', tercero_id: p.tercero_id });
+      }
+    }
+    return [...m.values()].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  });
+  /** Tercero que recibe la factura → pastilla de su ARL; el que no es de ninguna ARL va a «Otros». */
+  private readonly arlPorTercero = computed(() => {
+    const m = new Map<string, string>();
+    for (const a of this.arls()) if (a.tercero_id) m.set(a.tercero_id, a.clave);
+    return m;
+  });
+  private claveDe(p: PagadorPorFacturar): string { return p.particular || !p.arl_id ? 'otros' : `arl:${p.arl_id}`; }
+  private claveDoc(d: { tercero_id: string }): string { return this.arlPorTercero().get(d.tercero_id) ?? 'otros'; }
+  /**
+   * Pastillas con su conteo en la pestaña abierta. «Todos» NO lleva número (D2): el total
+   * ya lo da la pestaña. En «Por facturar» cada pastilla cuenta lo mismo que la pestaña y
+   * la cabecera de la sección (órdenes listas para facturar); en las demás, documentos.
+   */
+  protected readonly opcionesPagador = computed<{ clave: string; nombre: string; n: number }[]>(() => {
+    const opciones = [...this.arls().map((a) => ({ clave: a.clave, nombre: a.nombre, n: 0 })), { clave: 'otros', nombre: 'Otros', n: 0 }];
+    const porClave = new Map(opciones.map((o) => [o.clave, o]));
+    const pestana = this.pestana();
+    if (pestana === 'por-facturar') {
+      for (const p of this.pagadoresConLineas()) {
+        const o = porClave.get(this.claveDe(p));
+        if (o) o.n += this.facturablesDe(p);
+      }
+    } else {
+      const docs = pestana === 'borradores' ? this.borradores() : pestana === 'emitidas' ? this.emitidasFiltradas() : this.notas();
+      for (const d of docs) {
+        const o = porClave.get(this.claveDoc(d));
+        if (o) o.n += 1;
+      }
+    }
+    return opciones;
+  });
+  /** Qué cuenta la pastilla en cada pestaña (va en su `title`). */
+  protected readonly unidadFiltro = computed(() => ({
+    'por-facturar': 'lista(s) para facturar', borradores: 'pendiente(s) de emitir', emitidas: 'factura(s)', notas: 'nota(s) crédito',
+  })[this.pestana()]);
+  /** Principio del estado vacío con un pagador elegido («Bolívar no tiene…», «Los clientes particulares no tienen…»). */
+  protected readonly sinNada = computed(() => {
+    const f = this.filtroPagador();
+    return f?.clave === 'otros' ? 'Los clientes particulares no tienen' : `${f?.nombre ?? ''} no tiene`;
+  });
+  protected elegirPagador(o: { clave: string; nombre: string } | null): void {
+    this.filtroPagador.set(o ? { clave: o.clave, nombre: o.nombre } : null);
+    this.pagBorradores.reiniciar();
+    this.pagEmitidas.reiniciar();
+    this.pagNotas.reiniciar();
+  }
+  private delPagador<T extends { tercero_id: string }>(lista: T[]): T[] {
+    const f = this.filtroPagador();
+    return f ? lista.filter((d) => this.claveDoc(d) === f.clave) : lista;
+  }
+  protected readonly pagadoresVisibles = computed(() => {
+    const f = this.filtroPagador();
+    return f ? this.pagadoresConLineas().filter((p) => this.claveDe(p) === f.clave) : this.pagadoresConLineas();
+  });
+  protected readonly borradoresVisibles = computed(() => this.delPagador(this.borradores()));
+  protected readonly emitidasVisibles = computed(() => this.delPagador(this.emitidasFiltradas()));
+  protected readonly notasVisibles = computed(() => this.delPagador(this.notas()));
+
+  /**
+   * Ronda 2 (D6) · Sección en la que está quien lee: la primera tarjeta de pagador cuyo
+   * final sigue por debajo del borde superior del área con scroll (la de la cabecera
+   * pegada, o la primera si no se ha bajado). Solo ella lleva la línea cian (DESIGN §1.3:
+   * el cian es «aquí está usted»); las demás, gris. Se mide con un `scroll` pasivo
+   * agrupado por `requestAnimationFrame`: pocas tarjetas, un `getBoundingClientRect` por
+   * tarjeta y por cuadro, y la señal solo cambia al pasar de una sección a otra.
+   */
+  protected readonly seccionActual = signal<string | null>(null);
+  private readonly host = inject(ElementRef);
+  private readonly destroyRef = inject(DestroyRef);
+  private medidaPendiente = false;
+  private readonly medirAlCambiar = effect(() => {
+    this.pagadoresVisibles(); this.pestana(); this.cargandoRelacion();
+    if (this.isBrowser) requestAnimationFrame(() => this.medirSeccion());
+  });
+  private readonly alScroll = (): void => {
+    if (this.medidaPendiente) return;
+    this.medidaPendiente = true;
+    requestAnimationFrame(() => { this.medidaPendiente = false; this.medirSeccion(); });
+  };
+  private medirSeccion(): void {
+    const host = this.host.nativeElement as HTMLElement;
+    const desplazable = host.closest('.content') as HTMLElement | null;
+    const arriba = desplazable ? desplazable.getBoundingClientRect().top : 0;
+    let actual: string | null = null;
+    for (const s of Array.from(host.querySelectorAll<HTMLElement>('.fac-pagador'))) {
+      // 72 px ≈ la cabecera pegada: cuando solo queda ella a la vista, ya se está en la siguiente.
+      if (s.getBoundingClientRect().bottom > arriba + 72) { actual = s.dataset['clave'] ?? null; break; }
+    }
+    if (actual !== this.seccionActual()) this.seccionActual.set(actual);
+  }
+  ngAfterViewInit(): void {
+    if (!this.isBrowser) return;
+    const desplazable = (this.host.nativeElement as HTMLElement).closest('.content');
+    const blanco: EventTarget = desplazable ?? window;
+    blanco.addEventListener('scroll', this.alScroll, { passive: true });
+    window.addEventListener('resize', this.alScroll, { passive: true });
+    this.destroyRef.onDestroy(() => {
+      blanco.removeEventListener('scroll', this.alScroll);
+      window.removeEventListener('resize', this.alScroll);
+    });
+  }
+
+  protected readonly pagBorradores = paginar(this.borradoresVisibles);
+  protected readonly pagEmitidas = paginar(this.emitidasVisibles);
+  protected readonly pagNotas = paginar(this.notasVisibles);
 
   // ---------------- A2-01 · Nota crédito ----------------
   protected readonly causales = signal<CausalNotaCredito[]>([]);
@@ -237,6 +366,8 @@ export class FacturacionComponent implements OnInit {
     this.cargarRelacion();
     this.cargarListas();
     this.api.causalesNotaCredito().subscribe({ next: (r) => this.causales.set(r.data), error: () => {} });
+    // Pastillas del filtro por pagador: una por ARL del catálogo (`/arls` trae su tercero).
+    this.api.listArls().subscribe({ next: (r) => this.catalogoArls.set(r.data as { id: string; nombre: string; tercero_id?: string | null }[]), error: () => {} });
     // Los selectores de forma y medio de pago del borrador y de la factura manual.
     this.api.listCatalogo('formas-pago').subscribe({ next: (r) => this.formasPago.set(r.data.filter((f) => f.activo)), error: () => {} });
     this.api.listCatalogo('medios-pago').subscribe({ next: (r) => this.mediosPago.set(r.data.filter((m) => m.activo)), error: () => {} });

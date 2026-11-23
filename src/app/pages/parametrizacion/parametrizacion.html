@@ -377,7 +377,12 @@
 @if (formProductoOpen()) {
   <div class="modal-backdrop" (click)="closeFormProducto()"></div>
   <div class="modal" role="dialog" aria-modal="true">
-    <header class="modal__head"><h3 class="modal__title">{{ editandoProducto() ? 'Editar producto' : 'Nuevo producto' }}</h3></header>
+    <header class="modal__head">
+      <h3 class="modal__title">{{ editandoProducto() ? 'Editar producto' : 'Nuevo producto' }}</h3>
+      <button type="button" class="icon-action" (click)="closeFormProducto()" aria-label="Cerrar">
+        <svg appIcono="cerrar"></svg>
+      </button>
+    </header>
     <div class="modal__body">
       <div class="form-field"><label class="form-field__label">Código *</label><input class="form-control" type="text" [(ngModel)]="productoDraft.codigo" name="pCodigo" /></div>
       <div class="form-field"><label class="form-field__label">Nombre *</label><input class="form-control" type="text" [(ngModel)]="productoDraft.nombre" name="pNombre" /></div>
@@ -418,7 +423,12 @@
 @if (formTarifaOpen()) {
   <div class="modal-backdrop" (click)="closeFormTarifa()"></div>
   <div class="modal" role="dialog" aria-modal="true">
-    <header class="modal__head"><h3 class="modal__title">Nueva tarifa de venta</h3></header>
+    <header class="modal__head">
+      <h3 class="modal__title">Nueva tarifa de venta</h3>
+      <button type="button" class="icon-action" (click)="closeFormTarifa()" aria-label="Cerrar">
+        <svg appIcono="cerrar"></svg>
+      </button>
+    </header>
     <div class="modal__body">
       <div class="form-field">
         <label class="form-field__label">Pagador *</label>
@@ -457,7 +467,12 @@
 @if (formRetencionOpen()) {
   <div class="modal-backdrop" (click)="closeFormRetencion()"></div>
   <div class="modal" role="dialog" aria-modal="true">
-    <header class="modal__head"><h3 class="modal__title">{{ editRetencionId() ? 'Editar retención' : 'Nueva retención' }}</h3></header>
+    <header class="modal__head">
+      <h3 class="modal__title">{{ editRetencionId() ? 'Editar retención' : 'Nueva retención' }}</h3>
+      <button type="button" class="icon-action" (click)="closeFormRetencion()" aria-label="Cerrar">
+        <svg appIcono="cerrar"></svg>
+      </button>
+    </header>
     <div class="modal__body">
       <div class="form-field">
         <label class="form-field__label">Código *</label>

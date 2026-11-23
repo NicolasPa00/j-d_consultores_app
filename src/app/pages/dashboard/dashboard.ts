@@ -1,67 +1,202 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_ID, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, PLATFORM_ID, signal, untracked, WritableSignal } from '@angular/core';
 import { isPlatformBrowser, NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { debounceTime } from 'rxjs';
+import { NotificationsService } from '../../core/notifications.service';
 import { ApiService } from '../../core/api.service';
 import { mensajeError } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
 import { SistemaService } from '../../core/sistema.service';
 import { PESOS } from '../../core/dinero';
+import { SistemaId } from '../../core/sistemas';
+import { AntiguedadCartera, CupoDocumentos, EdadCartera, VentasPorCliente } from '../../core/models';
 import { DashboardData, Orden, ReporteHoras, ResumenInicio, Rol, SoporteEnviado, VisitaProxima, Vista } from '../../core/models';
 import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
+import { IconoComponent } from '../../shared/icono/icono';
 
 /**
- * Ícono de línea del Inicio. Es una CLAVE, no un emoji: los pinta la plantilla
- * con el mismo trazo de 1,8 que la barra lateral, y los destinos llevan el MISMO
- * ícono que su ítem del menú (DESIGN §7 «Barra lateral»), para que «Crear
- * factura» y Facturación se reconozcan como el mismo sitio.
+ * Ícono pequeño de línea (18 px) de los estados vacíos: el mismo trazo de 1,8
+ * que la barra lateral.
  */
-type Icono =
-  | 'import' | 'orders' | 'plus' | 'receipt' | 'file' | 'wallet'
-  | 'cart' | 'banknote' | 'contacts' | 'id-card' | 'calendar' | 'clock' | 'check';
+type Icono = 'orders' | 'calendar' | 'check';
 
 interface Kpi {
   label: string;
   value: string;
   /** Línea de contexto bajo la cifra, con datos que ya trae la misma respuesta. */
   hint?: string;
+  /** El bloque no cargó: la pista dice «No se pudo cargar» con su «Reintentar». */
+  reintentar?: 'cxc' | 'cxp' | 'ventas' | 'cupos';
 }
 
 /**
- * Un acceso directo del Inicio (DESIGN §7 «Accesos directos»). Cada `ruta` se
- * comprobó en el código de esa vista, y los `queryParams` solo se usan donde la
- * vista ya los lee.
+ * Ícono grande de los accesos directos (rediseño del Inicio, 20-nov-2026).
+ * Dibujado a mano en una retícula de 40 × 40 y en dos tintas, con la marca de
+ * ORBITA:
  *
- * La etiqueta dice lo que el clic HACE, no más: «Nuevo profesional» llevaba a la
- * lista y había que buscar el botón. Mientras esas vistas no lean un parámetro
- * que abra su formulario de alta, el acceso lleva el nombre de la vista (el mismo
- * del menú). Solo Compras lo lee hoy (`?nueva=COMPRA` abre su formulario).
+ * - `forma`: la silueta del objeto, rellena de blanco con trazo en acción. La
+ *   misma silueta se repite detrás, corrida 3 px abajo y a la derecha, en cian
+ *   claro: esa «sombra plana» es lo que hace bicolor al juego entero.
+ * - `tapa`: una pieza que va ENCIMA de la forma (el gancho del portapapeles, el
+ *   broche de la billetera), también rellena de blanco.
+ * - `trazos`: detalles en acción, sin relleno.
+ * - `acento`: el detalle que dice qué hace el acceso, en cian (nunca texto).
  *
- * `roles` repite la condición con la que la vista enseña ese botón (p. ej.
- * `puedeOperar()` = admin y contador en Facturación): el permiso de VER la vista
- * no basta, porque un auditor ve Facturación pero no puede crear una factura, y
- * un acceso que lleva a un botón que no aparece es peor que no tenerlo.
+ * Todos comparten trazo de 2 en la retícula, esquinas de radio 2 y extremos
+ * redondos: así se leen como una familia y no como una mezcla de librerías.
+ */
+interface IconoAcceso {
+  forma: string;
+  tapa?: string;
+  trazos?: string;
+  acento?: string;
+}
+
+const ICONOS = {
+  importar: {
+    forma: 'M5 11a2 2 0 0 1 2-2h7l3 3h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2Z',
+    trazos: 'M5 15.5h26',
+    acento: 'M18 18.5v8M14.5 23 18 26.5l3.5-3.5',
+  },
+  ordenes: {
+    forma: 'M8 9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v21a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2Z',
+    tapa: 'M14 4.5h8a1 1 0 0 1 1 1V9a1 1 0 0 1-1 1h-8a1 1 0 0 1-1-1V5.5a1 1 0 0 1 1-1Z',
+    trazos: 'M18.5 16h5.5M18.5 22h5.5M18.5 28h3.5',
+    acento: 'M12 15.8l1.4 1.4 2.4-2.6M12 21.8l1.4 1.4 2.4-2.6',
+  },
+  profesionales: {
+    forma: 'M18 8.5a5 5 0 1 1 0 10a5 5 0 0 1 0-10Z M7 32v-2a8 8 0 0 1 8-8h6a8 8 0 0 1 8 8v2Z',
+    // El casco: son profesionales de seguridad y salud en el trabajo.
+    acento: 'M12.6 12.2a5.4 5.4 0 0 1 10.8 0M11 12.4h14',
+  },
+  cuentas: {
+    forma: 'M9 5h18v27l-3-2-3 2-3-2-3 2-3-2-3 2Z',
+    trazos: 'M13 10.5h10M13 15h10',
+    acento: 'M21 20.2c-.5-.8-1.5-1.3-2.8-1.3-1.6 0-2.7.8-2.7 1.9 0 2.6 5.6 1.3 5.6 3.9 0 1.1-1.2 1.9-2.8 1.9-1.4 0-2.4-.6-2.9-1.5M18.1 17.2v1.6M18.1 26.5v1.6',
+  },
+  empresas: {
+    forma: 'M7 31V9a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v22Z M22 15h7a2 2 0 0 1 2 2v14h-9Z',
+    trazos: 'M4.5 31h29',
+    acento: 'M11.5 12h2M16 12h2M11.5 17h2M16 17h2M11.5 22h2M16 22h2M25.5 20h2M25.5 25h2',
+  },
+  estadisticas: {
+    forma: 'M7 20h5.5v11H7Z M15.5 13H21v18h-5.5Z M24 8h5.5v23H24Z',
+    trazos: 'M4.5 31h29',
+    // La tapa cian de la barra del periodo en curso, la misma de las gráficas.
+    acento: 'M24.8 8h3.9',
+  },
+  configuracion: {
+    // Ocho dientes en la propia silueta (raíz r 9,6, punta r 12,2): con los
+    // dientes como rayas sueltas se leía como un sol.
+    forma: 'M15.68 8.69L16.09 5.95A12.2 12.2 0 0 1 19.91 5.95L20.32 8.69A9.6 9.6 0 0 1 22.94 9.77L25.17 8.13A12.2 12.2 0 0 1 27.87 10.83L26.23 13.06A9.6 9.6 0 0 1 27.31 15.68L30.05 16.09A12.2 12.2 0 0 1 30.05 19.91L27.31 20.32A9.6 9.6 0 0 1 26.23 22.94L27.87 25.17A12.2 12.2 0 0 1 25.17 27.87L22.94 26.23A9.6 9.6 0 0 1 20.32 27.31L19.91 30.05A12.2 12.2 0 0 1 16.09 30.05L15.68 27.31A9.6 9.6 0 0 1 13.06 26.23L10.83 27.87A12.2 12.2 0 0 1 8.13 25.17L9.77 22.94A9.6 9.6 0 0 1 8.69 20.32L5.95 19.91A12.2 12.2 0 0 1 5.95 16.09L8.69 15.68A9.6 9.6 0 0 1 9.77 13.06L8.13 10.83A12.2 12.2 0 0 1 10.83 8.13L13.06 9.77A9.6 9.6 0 0 1 15.68 8.69Z',
+    acento: 'M18 14a4 4 0 1 1 0 8a4 4 0 0 1 0-8Z',
+  },
+  // 22-nov-2026 · Parametrización: los reguladores del menú (tres rieles con su
+  // perilla). Hoy solo lo usa el disco de sus modales (`--ico-modal-parametrizacion`);
+  // antes llevaban el engranaje de Configuración y se confundían los dos módulos.
+  parametrizacion: {
+    forma: 'M5 18.5a1.5 1.5 0 0 1 1.5-1.5h5a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-5a1.5 1.5 0 0 1-1.5-1.5Z M14 10.5a1.5 1.5 0 0 1 1.5-1.5h5a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-5a1.5 1.5 0 0 1-1.5-1.5Z M23 22.5a1.5 1.5 0 0 1 1.5-1.5h5a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-5a1.5 1.5 0 0 1-1.5-1.5Z',
+    trazos: 'M9 6v11M9 23v7M18 6v3M18 15v15M27 6v15M27 27v3',
+    acento: 'M7.5 20h3M16.5 12h3M25.5 24h3',
+  },
+  ayuda: {
+    forma: 'M6 9a3 3 0 0 1 3-3h18a3 3 0 0 1 3 3v13a3 3 0 0 1-3 3H15l-6 5v-5a3 3 0 0 1-3-3Z',
+    acento: 'M14.6 12.6a3.5 3.5 0 1 1 4.6 3.3c-.7.3-1.2.9-1.2 1.6v.7M18 21.3v.3',
+  },
+  factura: {
+    forma: 'M9 5h13l7 7v18a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z',
+    trazos: 'M22 5v7h7M11.5 22h13M11.5 27h8',
+    // El sello de validada: la factura electrónica vale cuando la DIAN la acepta.
+    acento: 'M11.5 15.5l2.2 2.2 4.3-4.7',
+  },
+  compra: {
+    forma: 'M9.5 10H32l-3 12.5H12Z',
+    trazos: 'M3.5 6H8l4.5 20.5h17',
+    acento: 'M15 29a2 2 0 1 1 0 4a2 2 0 0 1 0-4Z M27 29a2 2 0 1 1 0 4a2 2 0 0 1 0-4Z',
+  },
+  cartera: {
+    forma: 'M6 11a3 3 0 0 1 3-3h19a2 2 0 0 1 2 2v20a2 2 0 0 1-2 2H9a3 3 0 0 1-3-3Z',
+    tapa: 'M23 15.5h9v9h-9a4.5 4.5 0 0 1 0-9Z',
+    trazos: 'M6 11a3 3 0 0 0 3 3h7',
+    acento: 'M24 18.5a1.5 1.5 0 1 1 0 3a1.5 1.5 0 0 1 0-3Z',
+  },
+  porPagar: {
+    forma: 'M7 9a2 2 0 0 1 2-2h18a2 2 0 0 1 2 2v20a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2Z',
+    trazos: 'M7 14h22M13 4.5v5M23 4.5v5',
+    // El reloj: lo que vence.
+    acento: 'M18 16.5a5.5 5.5 0 1 1 0 11a5.5 5.5 0 0 1 0-11Z M18 19v3l2 1.4',
+  },
+  pagoProfesionales: {
+    forma: 'M4.5 14a2 2 0 0 1 2-2h23a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-23a2 2 0 0 1-2-2Z',
+    trazos: 'M9 16.5v8M27 16.5v8',
+    acento: 'M18 16.5a4 4 0 1 1 0 8a4 4 0 0 1 0-8Z',
+  },
+  tercero: {
+    forma: 'M5 9a2 2 0 0 1 2-2h22a2 2 0 0 1 2 2v19a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2Z',
+    trazos: 'M20.5 14h6.5M20.5 19h6.5M20.5 24h4',
+    acento: 'M13 12a3 3 0 1 1 0 6a3 3 0 0 1 0-6Z M8.5 25.5a4.5 4.5 0 0 1 9 0',
+  },
+  nomina: {
+    forma: 'M9 5h18a2 2 0 0 1 2 2v24a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z',
+    trazos: 'M12 25h12M12 29h7',
+    acento: 'M18 9a3.5 3.5 0 1 1 0 7a3.5 3.5 0 0 1 0-7Z M12.5 22a5.5 5.5 0 0 1 11 0',
+  },
+  contabilidad: {
+    forma: 'M7 7a2 2 0 0 1 2-2h19v27H9a2 2 0 0 1-2-2Z',
+    trazos: 'M7 29a3 3 0 0 1 3-3h18M12 5v21',
+    acento: 'M16 11h7.5M16 16h7.5',
+  },
+  informesContables: {
+    forma: 'M16 7.5v12h12A12 12 0 1 1 16 7.5Z',
+    // La porción separada del pastel: el saldo que se está mirando.
+    tapa: 'M19.5 4a12 12 0 0 1 12 12h-12Z',
+    acento: 'M19.5 4a12 12 0 0 1 12 12h-12Z',
+  },
+} satisfies Record<string, IconoAcceso>;
+
+type IconoAccesoId = keyof typeof ICONOS;
+
+/**
+ * Un acceso directo del Inicio. Cada `ruta` y cada `queryParams` se comprobó en
+ * el código de esa vista: solo se pasa el parámetro que la vista ya lee
+ * (`?nueva=COMPRA` en Compras, `?vista=` en Cartera, `?periodo=` en Cuentas de
+ * cobro). No se inventan rutas.
+ *
+ * La etiqueta dice lo que el clic HACE. «Crear…», «Registrar…» o «Liquidar…»
+ * solo cuando se llega al formulario o a la pantalla donde está ese botón. Por
+ * eso `opera` repite la condición con la que la vista enseña el botón (p. ej.
+ * `puedeOperar()` = admin y contador en Facturación): el permiso de VER no
+ * basta, porque un auditor ve Facturación pero no puede crear una factura. Quien
+ * ve la vista pero no opera recibe `consulta`, la misma pantalla dicha como lo
+ * que es para él; sin `consulta`, el acceso no le aparece.
  */
 interface Acceso {
+  id: string;
+  /** Configuración y el Centro de ayuda están en los dos. */
+  sistemas: SistemaId[];
+  etiqueta: string;
+  ruta: string;
+  queryParams?: Record<string, string>;
+  /** Vista de la matriz de permisos; sin ella, el acceso lo ve todo el que entra al Inicio. */
+  vista?: Vista;
+  opera?: Rol[];
+  consulta?: { etiqueta: string; queryParams?: Record<string, string> };
+  icono: IconoAccesoId;
+}
+
+/** Un acceso ya resuelto para el rol, con su insignia si cuenta algo. */
+interface AccesoVisible {
   id: string;
   etiqueta: string;
   ruta: string;
   queryParams?: Record<string, string>;
-  vista: Vista;
-  roles?: Rol[];
-  icono: Icono;
-  grupo: GrupoId;
+  icono: IconoAcceso;
+  /** Insignia del círculo; solo se pinta con una cifra mayor que cero. */
+  conteo?: { cifra: number; texto: string };
 }
-
-type GrupoId = 'operacion' | 'facturacion' | 'pagos';
-
-/** Tres grupos de hasta cuatro accesos: así las columnas quedan parejas en vez de una larga y tres cortas. */
-const GRUPOS: { id: GrupoId; titulo: string }[] = [
-  { id: 'operacion', titulo: 'Órdenes y clientes' },
-  { id: 'facturacion', titulo: 'Facturación y terceros' },
-  { id: 'pagos', titulo: 'Pagos y nómina' },
-];
 
 const OPERAN_FINANZAS: Rol[] = ['admin', 'contador'];
 
@@ -72,52 +207,73 @@ function periodoActual(): string {
 
 function catalogoAccesos(): Acceso[] {
   return [
+    // ----- Operación: el ciclo de las órdenes, en el orden en que se trabaja -----
     // Importar exige admin en el servidor (`POST /imports`).
-    { id: 'importar', etiqueta: 'Importar órdenes', ruta: '/importar', vista: 'importar', roles: ['admin'], icono: 'import', grupo: 'operacion' },
-    // «Nueva orden manual» se retiró: llevaba a la misma lista que «Ver órdenes»
-    // sin abrir el formulario, y el principal de al lado ya lleva ahí.
-    // Profesionales, Empresas y Estadísticas también salieron (ronda 3): repetían
-    // la barra lateral palabra por palabra y el Inicio parecía un segundo menú.
-    // Los accesos a tareas de la maqueta («Programar visitas», «Verificar
-    // soportes») esperan a que Órdenes lea un filtro por URL.
-    // `?periodo=AAAA-MM` ya lo lee Cuentas de cobro (lo usa la campanita).
-    // Las generan y envían admin; la contadora las paga. El auditor solo consulta,
-    // y para él esto no es un acceso «para hacer».
-    { id: 'cuentas', etiqueta: 'Cuentas de cobro del mes', ruta: '/precuentas', queryParams: { periodo: periodoActual() }, vista: 'precuentas', roles: OPERAN_FINANZAS, icono: 'receipt', grupo: 'operacion' },
+    { id: 'importar', sistemas: ['operacion'], etiqueta: 'Importar órdenes de la ARL', ruta: '/importar', vista: 'importar', opera: ['admin'], icono: 'importar' },
+    // Órdenes no lee un filtro por URL: el acceso lleva a la bandeja y la
+    // insignia dice cuántas esperan programación.
+    { id: 'ordenes', sistemas: ['operacion'], etiqueta: 'Programar y revisar órdenes', ruta: '/ordenes', vista: 'ordenes', icono: 'ordenes' },
+    { id: 'profesionales', sistemas: ['operacion'], etiqueta: 'Profesionales', ruta: '/profesionales', vista: 'profesionales', icono: 'profesionales' },
+    // `?periodo=AAAA-MM` ya lo lee Cuentas de cobro (lo usa la campanita). Las
+    // generan y envían admin y contador; el auditor solo consulta.
+    {
+      id: 'cuentas', sistemas: ['operacion'], etiqueta: 'Cuentas de cobro del mes', ruta: '/precuentas', queryParams: { periodo: periodoActual() },
+      vista: 'precuentas', opera: OPERAN_FINANZAS, consulta: { etiqueta: 'Cuentas de cobro' }, icono: 'cuentas',
+    },
+    { id: 'empresas', sistemas: ['operacion'], etiqueta: 'Empresas clientes', ruta: '/empresas', vista: 'empresas', icono: 'empresas' },
+    { id: 'estadisticas', sistemas: ['operacion'], etiqueta: 'Estadísticas', ruta: '/informes', vista: 'informes', icono: 'estadisticas' },
+
+    // ----- Finanzas: lo de cada día primero, la parametrización al final -----
     // Facturación abre en «Por facturar», junto a «Nueva factura manual».
-    { id: 'factura', etiqueta: 'Crear factura', ruta: '/facturacion', vista: 'facturacion', roles: OPERAN_FINANZAS, icono: 'file', grupo: 'facturacion' },
-    // `?vista=por-cobrar` ya lo lee Cartera; en su cabecera está «Registrar
-    // recibo de caja». La etiqueta nombra la pestaña a la que se llega: Cartera
-    // no lee un parámetro que abra el formulario del recibo.
-    { id: 'recibo', etiqueta: 'Cartera por cobrar', ruta: '/cartera', queryParams: { vista: 'por-cobrar' }, vista: 'cartera', roles: OPERAN_FINANZAS, icono: 'wallet', grupo: 'facturacion' },
-    // Quien ve Cartera pero no registra recibos (auditor): la misma pestaña,
-    // dicha como lo que es para él, una consulta.
-    { id: 'cartera', etiqueta: 'Cartera por cobrar', ruta: '/cartera', queryParams: { vista: 'por-cobrar' }, vista: 'cartera', roles: ['auditor', 'administrativo'], icono: 'wallet', grupo: 'facturacion' },
-    { id: 'tercero', etiqueta: 'Terceros', ruta: '/terceros', vista: 'terceros', icono: 'contacts', grupo: 'facturacion' },
+    {
+      id: 'factura', sistemas: ['finanzas'], etiqueta: 'Crear factura electrónica', ruta: '/facturacion', vista: 'facturacion',
+      opera: OPERAN_FINANZAS, consulta: { etiqueta: 'Facturas electrónicas' }, icono: 'factura',
+    },
     // `?nueva=COMPRA` lo lee Compras y abre el formulario (el tipo se cambia ahí).
-    { id: 'compra', etiqueta: 'Registrar compra o gasto', ruta: '/compras', queryParams: { nueva: 'COMPRA' }, vista: 'compras', roles: OPERAN_FINANZAS, icono: 'cart', grupo: 'pagos' },
-    { id: 'soporte', etiqueta: 'Pago a profesionales', ruta: '/documentos-soporte', vista: 'documentos_soporte', icono: 'banknote', grupo: 'pagos' },
-    { id: 'nomina', etiqueta: 'Nómina', ruta: '/nomina', vista: 'nomina', icono: 'id-card', grupo: 'pagos' },
+    {
+      id: 'compra', sistemas: ['finanzas'], etiqueta: 'Registrar compra o gasto', ruta: '/compras', queryParams: { nueva: 'COMPRA' }, vista: 'compras',
+      opera: OPERAN_FINANZAS, consulta: { etiqueta: 'Compras y gastos', queryParams: {} }, icono: 'compra',
+    },
+    // `?vista=por-cobrar` y `?vista=por-pagar` ya los lee Cartera (la campanita).
+    // En su cabecera está «Registrar recibo de caja», pero Cartera no lee un
+    // parámetro que abra ese formulario: la etiqueta nombra a dónde se llega.
+    { id: 'cartera', sistemas: ['finanzas'], etiqueta: 'Cartera y recibos de caja', ruta: '/cartera', queryParams: { vista: 'por-cobrar' }, vista: 'cartera', icono: 'cartera' },
+    { id: 'por-pagar', sistemas: ['finanzas'], etiqueta: 'Cuentas por pagar', ruta: '/cartera', queryParams: { vista: 'por-pagar' }, vista: 'cartera', icono: 'porPagar' },
+    { id: 'pago-profesionales', sistemas: ['finanzas'], etiqueta: 'Pago a profesionales', ruta: '/documentos-soporte', vista: 'documentos_soporte', icono: 'pagoProfesionales' },
+    { id: 'terceros', sistemas: ['finanzas'], etiqueta: 'Clientes y proveedores', ruta: '/terceros', vista: 'terceros', icono: 'tercero' },
+    // Nómina abre en «Liquidaciones», donde se liquida el mes.
+    {
+      id: 'nomina', sistemas: ['finanzas'], etiqueta: 'Liquidar nómina', ruta: '/nomina', vista: 'nomina',
+      opera: OPERAN_FINANZAS, consulta: { etiqueta: 'Nómina' }, icono: 'nomina',
+    },
+    { id: 'contabilidad', sistemas: ['finanzas'], etiqueta: 'Plan de cuentas y comprobantes', ruta: '/contabilidad', vista: 'contabilidad', icono: 'contabilidad' },
+    { id: 'informes-contables', sistemas: ['finanzas'], etiqueta: 'Informes contables', ruta: '/informes-contables', vista: 'informes_contables', icono: 'informesContables' },
+    // Parametrización no va: se usa al montar el sistema, no a diario, y está en
+    // el menú. Con ella, doce accesos en tres filas empujaban «Requiere su
+    // atención» bajo el pliegue a 1366 × 768. Son diez: 5 + 5.
+
+    // ----- En los dos sistemas, al final -----
+    // Configuración solo para el administrador y solo en Operación: ahí viven
+    // los catálogos de la operación (tipos de orden y su valor hora, viáticos,
+    // usuarios). Para los demás roles es su perfil, que ya está al pie de la
+    // barra lateral: el acceso repetía la barra. En Finanzas, su equivalente es
+    // Parametrización, también en el menú.
+    { id: 'configuracion', sistemas: ['operacion'], etiqueta: 'Configuración', ruta: '/configuracion', vista: 'configuracion', opera: ['admin'], icono: 'configuracion' },
+    // El centro de ayuda lo ven todos los roles (no tiene vista en la matriz).
+    { id: 'ayuda', sistemas: ['operacion', 'finanzas'], etiqueta: 'Centro de ayuda', ruta: '/ayuda', icono: 'ayuda' },
   ];
 }
 
-/** Un acceso de la franja de principales: el relleno o uno con su conteo. */
-interface Principal {
-  id: string;
-  etiqueta: string;
-  pista: string;
-  /** Parte de la pista que no se parte entre líneas (la fecha del último archivo). */
-  pistaFija?: string;
-  ruta: string;
-  queryParams?: Record<string, string>;
-  icono: Icono;
-  /**
-   * `undefined`: el acceso no cuenta nada (lleva chevron). `null`: debería
-   * contar y la cifra no llegó (se escribe «—», «Sin dato»).
-   */
-  conteo?: number | null;
-  relleno: boolean;
+/**
+ * Columnas de la cuadrícula: filas parejas con `tope` columnas como máximo. Con
+ * ocho accesos y tope 5, 4 + 4 y no 5 + 3; con doce, 4 + 4 + 4. Una última fila
+ * de dos debajo de una de cinco se lee como algo que se cayó.
+ */
+function columnasPara(n: number, tope = 5): number {
+  if (n <= tope) return Math.max(n, 1);
+  return Math.ceil(n / Math.ceil(n / tope));
 }
+
 
 /** Una fila de «Requiere su atención». */
 interface Pendiente {
@@ -153,6 +309,32 @@ interface BarraMes {
   alto: number;
   actual: boolean;
 }
+
+/** Una barra de la gráfica de Finanzas: lo facturado (neto de notas crédito) en un mes. */
+interface BarraFacturado {
+  mes: string;
+  etiqueta: string;
+  valor: number;
+  /** El rótulo dentro de la barra, corto: «4,2 MM», «850 mil». */
+  rotulo: string;
+  alto: number;
+  actual: boolean;
+}
+
+/** Edades de la cartera, de la más sana a la más vieja, con su color. */
+const EDADES: { key: EdadCartera; label: string; tono: string }[] = [
+  { key: 'POR_VENCER', label: 'Por vencer', tono: 'ok' },
+  { key: 'D1_30', label: '1 a 30 días', tono: 'ambar' },
+  { key: 'D31_60', label: '31 a 60 días', tono: 'naranja' },
+  { key: 'D61_90', label: '61 a 90 días', tono: 'error' },
+  { key: 'MAS_90', label: 'Más de 90 días', tono: 'tinta' },
+];
+
+/** Los datos de Finanzas solo los sirve el servidor a estos roles (`requireRole` de cartera, facturación e informes contables). */
+const LEEN_FINANZAS: Rol[] = ['admin', 'contador', 'auditor'];
+
+/** Clientes que caben en la tarjeta «Cartera por cobrar» del Inicio de Finanzas. */
+const CARTERA_VISIBLES = 5;
 
 /** Estados de OS del backend, en orden de ciclo de vida, con el color de su pastilla. */
 const ESTADOS: { key: keyof DashboardData['kpis']; label: string; tono: EstadoStat['tono'] }[] = [
@@ -196,12 +378,12 @@ const ESTADOS_PENDIENTES = ['PROGRAMADA'];
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, NgTemplateOutlet, PaginadorComponent],
+  imports: [RouterLink, NgTemplateOutlet, PaginadorComponent, IconoComponent],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent {
   private readonly api = inject(ApiService);
   private readonly alerts = inject(AlertService);
   private readonly auth = inject(AuthService);
@@ -265,7 +447,17 @@ export class DashboardComponent implements OnInit {
   /** «Semana 47» (ISO 8601, la que usan los calendarios de Colombia). */
   protected readonly semana = `Semana ${this.ahora.semana}`;
 
-  protected readonly pestana = signal<'resumen' | 'indicadores'>('resumen');
+  protected readonly pestana = signal<'accesos' | 'indicadores'>('accesos');
+
+  /**
+   * Sistema activo del segmentado de la barra superior. El Inicio es el mismo
+   * en Operación y en Finanzas; cambia lo que enseña: sus accesos, lo que
+   * «Requiere su atención» y la línea bajo el saludo. Al pulsar el segmentado el
+   * componente no se reconstruye (la ruta sigue siendo `/dashboard`): todo lo de
+   * abajo cuelga de esta señal y se repinta solo.
+   */
+  protected readonly sistema = computed(() => this.sistemas.activo().id);
+  protected readonly enFinanzas = computed(() => this.sistema() === 'finanzas');
 
   protected readonly resumen = signal<ResumenInicio | null>(null);
   protected readonly cargandoResumen = signal(true);
@@ -283,7 +475,23 @@ export class DashboardComponent implements OnInit {
    * verse igual que «sin gráfica».
    */
   protected readonly estadoHoras = signal<'cargando' | 'error' | 'ok'>('cargando');
-  private indicadoresPedidos = false;
+
+  // Finanzas: cartera (`GET /cartera/antiguedad`, por cobrar y por pagar), lo
+  // facturado (`GET /informes-contables/ventas`) y los cupos de documentos
+  // (`GET /facturacion/cupos`). Endpoints que ya usan Cartera, Informes
+  // contables y Facturación: el Inicio no pide nada que no exista.
+  private readonly cxc = signal<AntiguedadCartera | null>(null);
+  protected readonly estadoCxc = signal<'cargando' | 'error' | 'ok'>('cargando');
+  private readonly cxp = signal<AntiguedadCartera | null>(null);
+  protected readonly estadoCxp = signal<'cargando' | 'error' | 'ok'>('cargando');
+  protected readonly estadoCupos = signal<'cargando' | 'error' | 'ok'>('cargando');
+  private readonly ventas = signal<VentasPorCliente | null>(null);
+  protected readonly estadoVentas = signal<'cargando' | 'error' | 'ok'>('cargando');
+  private readonly cupos = signal<{ facturacion?: CupoDocumentos; nomina?: CupoDocumentos } | null>(null);
+  protected readonly cargandoFinanzas = signal(true);
+
+  /** Peticiones ya hechas: cada una sale una sola vez por visita, la pida quien la pida. */
+  private readonly pedidas = new Set<string>();
 
   /** Bloques del resumen que el rol puede ver (el servidor ya los recorta; esto los repite en la vista). */
   protected readonly datosOrdenes = computed(() => (this.auth.puedeVer('ordenes') ? this.resumen()?.ordenes ?? null : null));
@@ -291,96 +499,55 @@ export class DashboardComponent implements OnInit {
     this.auth.puedeVer('facturacion') ? this.resumen()?.facturacion ?? null : null,
   );
 
-  /** Los accesos que este rol puede usar de verdad (vista permitida + rol que ve el botón). */
-  private readonly accesosPermitidos = computed(() => {
-    const rol = this.auth.usuario()?.rol;
-    return catalogoAccesos().filter((a) => this.auth.puedeVer(a.vista) && (!a.roles || (!!rol && a.roles.includes(rol))));
-  });
-
   /**
-   * El acceso relleno: «Importar órdenes» para Operación (es el trabajo de cada
-   * mañana) y «Crear factura» para quien factura sin importar (la contadora).
-   * Quien no puede crear nada —el auditor— no tiene relleno: un principal que
-   * lleva a una pantalla sin su botón sería mentira.
+   * Los accesos del sistema activo que este rol puede usar: vista permitida y,
+   * si el acceso promete crear algo, rol que ve ese botón (si no, su versión de
+   * consulta). Con la insignia de lo que espera, cuando el resumen lo cuenta.
    */
-  protected readonly principales = computed<Principal[]>(() => {
-    const permitidos = this.accesosPermitidos();
-    const tiene = (id: string) => permitidos.find((a) => a.id === id);
+  protected readonly accesos = computed<AccesoVisible[]>(() => {
+    const rol = this.auth.usuario()?.rol;
+    const sistema = this.sistema();
     const r = this.resumen();
-    const lista: Principal[] = [];
-
-    const importar = tiene('importar');
-    const factura = tiene('factura');
-    if (importar) {
-      const ultimo = r?.importar?.ultimo_lote_en;
-      lista.push({
-        id: importar.id, etiqueta: importar.etiqueta, ruta: importar.ruta, icono: importar.icono, relleno: true,
-        pista: 'Excel SIPAB o PDF',
-        pistaFija: ultimo ? `el último, ${cuandoFue(ultimo)}` : undefined,
-      });
-      // Los otros dos principales de Operación llevan su conteo.
-      if (this.auth.puedeVer('ordenes')) {
-        lista.push({
-          id: 'ver-ordenes', etiqueta: 'Ver órdenes', pista: 'En la bandeja', ruta: '/ordenes', icono: 'orders',
-          relleno: false, conteo: r?.ordenes?.bandeja ?? null,
-        });
+    const o = this.datosOrdenes();
+    const f = this.datosFacturacion();
+    const lista: AccesoVisible[] = [];
+    for (const a of catalogoAccesos()) {
+      if (!a.sistemas.includes(sistema) || (a.vista && !this.auth.puedeVer(a.vista))) continue;
+      const opera = !a.opera || (!!rol && a.opera.includes(rol));
+      if (!opera && !a.consulta) continue;
+      const etiqueta = opera ? a.etiqueta : a.consulta!.etiqueta;
+      const queryParams = opera ? a.queryParams : a.consulta!.queryParams ?? a.queryParams;
+      // Las mismas cifras que «Requiere su atención» y que la vista de destino:
+      // la insignia nunca cuenta algo que no se ve al llegar.
+      let conteo: AccesoVisible['conteo'];
+      if (a.id === 'ordenes' && o?.sin_programar) {
+        conteo = { cifra: o.sin_programar, texto: o.sin_programar === 1 ? 'orden sin programar' : 'órdenes sin programar' };
+      } else if (a.id === 'cuentas' && opera && r?.precuentas?.por_cobrar_mes) {
+        const n = r.precuentas.por_cobrar_mes;
+        conteo = { cifra: n, texto: 'por cobrar este mes' };
+      } else if (a.id === 'factura' && f?.borradores) {
+        conteo = { cifra: f.borradores, texto: f.borradores === 1 ? 'borrador sin emitir' : 'borradores sin emitir' };
       }
-      const cuentas = tiene('cuentas');
-      if (cuentas) {
-        // El conteo es el de la pestaña «Por cobrar» de ese mes (mismo cálculo
-        // que la vista), así la cifra coincide con lo que se ve al llegar.
-        lista.push({
-          id: cuentas.id, etiqueta: 'Cuentas de cobro', pista: `Por cobrar en ${this.ahora.mesNombre}`, ruta: cuentas.ruta,
-          queryParams: cuentas.queryParams, icono: cuentas.icono, relleno: false,
-          conteo: r?.precuentas?.por_cobrar_mes ?? null,
-        });
-      }
-    } else if (factura) {
-      lista.push({
-        id: factura.id, etiqueta: factura.etiqueta, ruta: factura.ruta, icono: factura.icono, relleno: true,
-        pista: 'Desde las órdenes listas para facturar',
-      });
-      const recibo = tiene('recibo');
-      if (recibo) {
-        lista.push({
-          id: recibo.id, etiqueta: recibo.etiqueta, pista: 'Lo que pagan las ARL y los clientes', ruta: recibo.ruta,
-          queryParams: recibo.queryParams, icono: recibo.icono, relleno: false,
-        });
-      }
-      const compra = tiene('compra');
-      if (compra) {
-        lista.push({
-          id: compra.id, etiqueta: 'Compras y gastos', pista: 'Registrar una compra o un gasto', ruta: compra.ruta,
-          queryParams: compra.queryParams, icono: compra.icono, relleno: false,
-        });
-      }
+      lista.push({ id: a.id, etiqueta, ruta: a.ruta, queryParams, icono: ICONOS[a.icono], conteo });
     }
     return lista;
   });
 
-  /** El resto de accesos, en listas compactas por grupo (sin repetir los principales). */
-  protected readonly grupos = computed(() => {
-    const usados = new Set(this.principales().map((p) => p.id));
-    const accesos = this.accesosPermitidos().filter((a) => !usados.has(a.id));
-    // Si el grupo vive en el otro sistema, lo dice su título y no cada acceso.
-    // Se mira el menú del sistema activo y no el grupo a ciegas: Cuentas de cobro
-    // está en los dos menús («Compartido con Operación») y no vive «en» ninguno.
-    const activo = this.sistemas.activo();
-    return GRUPOS.map((g) => {
-      const suyos = accesos.filter((a) => a.grupo === g.id);
-      const fuera = suyos.length > 0 && suyos.every((a) => !activo.menu.includes(a.vista));
-      return { ...g, enOtro: fuera ? (activo.id === 'operacion' ? 'en Finanzas' : 'en Operación') : null, accesos: suyos };
-    }).filter((g) => g.accesos.length);
-  });
+  protected readonly columnas = computed(() => columnasPara(this.accesos().length));
+  /** A partir de 1600 px caben hasta ocho por fila. */
+  protected readonly columnasAncho = computed(() => columnasPara(this.accesos().length, 8));
 
-  protected readonly hayAccesos = computed(() => this.principales().length > 0 || this.grupos().length > 0);
+  protected readonly hayAccesos = computed(() => this.accesos().length > 0);
 
   /** «Requiere su atención»: las filas en cero se ocultan (DESIGN §7). */
   protected readonly pendientes = computed<Pendiente[]>(() => {
     const o = this.datosOrdenes();
     const f = this.datosFacturacion();
     const filas: Pendiente[] = [];
-    if (o && o.sin_programar > 0) {
+    // Operación cuenta el ciclo de las órdenes; Finanzas, lo que la detiene a
+    // ella: el visto bueno de cobro (sin él no se puede facturar) y los borradores.
+    const fin = this.enFinanzas();
+    if (o && !fin && o.sin_programar > 0) {
       const pista: Pendiente['pista'] = [];
       if (o.vencidas) pista.push({ texto: `${o.vencidas} ${o.vencidas === 1 ? 'vencida' : 'vencidas'}`, clase: 'vencida' });
       if (o.vencen_semana) pista.push({ texto: `${o.vencen_semana} ${o.vencen_semana === 1 ? 'vence' : 'vencen'} esta semana`, clase: 'pronto' });
@@ -390,7 +557,7 @@ export class DashboardComponent implements OnInit {
         accion: 'Ver la cola', ruta: '/ordenes',
       });
     }
-    if (o && o.por_revisar > 0) {
+    if (o && !fin && o.por_revisar > 0) {
       filas.push({
         id: 'soportes', cifra: o.por_revisar, etiqueta: 'Soportes por revisar', tono: 'info',
         pista: o.por_revisar_de.length ? [{ texto: `De ${listaNombres(o.por_revisar_de)}` }] : [],
@@ -410,7 +577,7 @@ export class DashboardComponent implements OnInit {
       const pista: Pendiente['pista'] = [];
       if (f.pagadores.length) pista.push({ texto: listaNombres(f.pagadores) });
       if (f.monto > 0) pista.push({ texto: PESOS.format(f.monto), clase: 'num' });
-      if (this.sistemas.activo().id === 'operacion') pista.push({ texto: 'en Finanzas' });
+      if (!fin) pista.push({ texto: 'en Finanzas' });
       filas.push({
         id: 'borradores', cifra: f.borradores, etiqueta: 'Borradores de factura sin emitir', tono: 'neutro', pista,
         accion: 'Facturación', ruta: '/facturacion',
@@ -440,20 +607,78 @@ export class DashboardComponent implements OnInit {
 
   /** ¿El rol ve algo de lo que «Requiere su atención» cuenta? Si no, la tarjeta no se pinta. */
   protected readonly veAtencion = computed(() => this.auth.puedeVer('ordenes') || this.auth.puedeVer('facturacion'));
-  /** «Próximas a ejecutar» sale de Órdenes: sin esa vista no hay a dónde llevarla. */
-  protected readonly veProximas = computed(() => this.auth.puedeVer('ordenes'));
-  /** Sin nada que hacer en el Resumen (p. ej. administrativo con solo Estadísticas), se abre Indicadores sin pestañas. */
+  /** «Próximas a ejecutar» sale de Órdenes: sin esa vista no hay a dónde llevarla. Solo en Operación. */
+  protected readonly veProximas = computed(() => this.auth.puedeVer('ordenes') && !this.enFinanzas());
   /**
-   * Cierre del rediseño · La tira de los cuatro KPI también va en Resumen (antes
-   * solo estaban en Indicadores y el administrador los consultaba a diario al
-   * entrar). Son de órdenes: solo los ve quien ve Órdenes. Misma petición
+   * La tira de los cuatro KPI de órdenes va también en Accesos (el
+   * administrador los consulta a diario al entrar). Son de órdenes: solo en
+   * Operación, para quien ve Órdenes y para quien no tiene nada más debajo de
+   * los accesos (el administrativo, que ya veía estas cifras en Indicadores:
+   * sin ellas su Inicio era la cuadrícula sola). Misma petición
    * (`GET /reports/dashboard`) que Indicadores, pedida una sola vez.
    */
-  protected readonly veKpisResumen = computed(() => this.auth.puedeVer('ordenes'));
-  protected readonly resumenVacio = computed(() => !this.hayAccesos() && !this.veAtencion() && !this.veProximas());
+  protected readonly veKpisResumen = computed(
+    () => !this.enFinanzas() && (this.auth.puedeVer('ordenes') || (!this.veAtencion() && !this.veProximas())),
+  );
 
-  /** La línea bajo el saludo: una sola, sin razón social (el detalle va en la tarjeta). */
-  protected readonly mensaje = computed(() => {
+  /** ¿El servidor le sirve a este rol los datos de Finanzas? */
+  private readonly leeFinanzas = computed(() => LEEN_FINANZAS.includes(this.auth.usuario()?.rol as Rol));
+  /** «Cartera por cobrar», la segunda tarjeta del Inicio de Finanzas (lo que «Próximas» es en Operación). */
+  protected readonly veCarteraInicio = computed(() => this.enFinanzas() && this.leeFinanzas() && this.auth.puedeVer('cartera'));
+
+  /**
+   * ¿Hay Indicadores en el sistema activo? En Operación, los de siempre. En
+   * Finanzas, los de Finanzas, para quien puede leerlos; si no, la pestaña no
+   * se ofrece (nunca se enseñan los de Operación en Finanzas).
+   */
+  protected readonly hayIndicadores = computed(() =>
+    !this.enFinanzas() || (this.leeFinanzas() && (this.auth.puedeVer('facturacion') || this.auth.puedeVer('cartera'))),
+  );
+
+  /** Sin nada que hacer en Accesos del sistema activo (p. ej. un rol que solo ve Estadísticas), se abre Indicadores sin pestañas. */
+  protected readonly resumenVacio = computed(
+    () => !this.hayAccesos() && !this.veAtencion() && !this.veProximas() && !this.veCarteraInicio(),
+  );
+
+  /**
+   * La pestaña que se ve: la elegida, salvo que el sistema activo no tenga una de
+   * las dos. Es computada porque el segmentado cambia de sistema sin recargar.
+   */
+  protected readonly pestanaVista = computed<'accesos' | 'indicadores'>(() => {
+    if (this.resumenVacio() && this.hayIndicadores()) return 'indicadores';
+    if (!this.hayIndicadores()) return 'accesos';
+    return this.pestana();
+  });
+  protected readonly conPestanas = computed(() => !this.resumenVacio() && this.hayIndicadores());
+
+  /**
+   * La línea bajo el saludo: una sola, sin razón social (el detalle va en las
+   * tarjetas). Siempre hay una, en los dos sistemas: si la línea apareciera y
+   * desapareciera, las pestañas saltarían al cambiar de sistema.
+   */
+  protected readonly mensaje = computed<{ fuerte: string; resto: string; enlace: { texto: string; os: string } | null } | null>(() => {
+    if (this.enFinanzas()) {
+      const f = this.datosFacturacion();
+      if (f?.borradores) {
+        return {
+          fuerte: `${f.borradores} ${f.borradores === 1 ? 'borrador de factura sin emitir' : 'borradores de factura sin emitir'}`,
+          resto: f.monto ? PESOS.format(f.monto) : '',
+          enlace: null,
+        };
+      }
+      // Mientras llega la cartera, hueso (`mensajeCargando`): la línea no cambia
+      // de texto a los dos segundos de abrir.
+      if (this.veCarteraInicio() && this.estadoCxc() === 'cargando') return null;
+      if (this.estadoCxc() === 'ok') {
+        const total = this.carteraTotal();
+        const vencida = this.carteraVencida();
+        return total
+          ? { fuerte: `${pesosEnteros(total)} por cobrar`, resto: textoVencido(total, vencida), enlace: null }
+          : { fuerte: 'Sin cartera por cobrar', resto: '', enlace: null };
+      }
+      if (f) return { fuerte: 'No hay borradores de factura por emitir', resto: '', enlace: null };
+      return null;
+    }
     const o = this.datosOrdenes();
     if (o) {
       const venc = o.vencida_mas_antigua;
@@ -471,17 +696,159 @@ export class DashboardComponent implements OnInit {
         enlace: venc ? { texto: o.vencidas === 1 ? 'Programar la vencida' : 'Programar la más antigua', os: venc.os_id } : null,
       };
     }
-    // Quien solo factura: la línea aparece cuando hay algo que emitir. «Todo al
-    // día» ya lo dice la tarjeta; repetirlo en el saludo sería decirlo dos veces.
-    const f = this.datosFacturacion();
-    if (f?.borradores) {
+    // Quien no ve Órdenes (el administrativo) no recibe ese bloque del resumen,
+    // pero sí los KPI de la tira: la línea sale de ahí, con las mismas cifras.
+    const k = this.dashData()?.kpis;
+    if (k) {
+      const sp = num(k.sin_programar);
+      const pr = num(k.programadas);
       return {
-        fuerte: `${f.borradores} ${f.borradores === 1 ? 'borrador de factura sin emitir' : 'borradores de factura sin emitir'}`,
-        resto: f.monto ? PESOS.format(f.monto) : '',
+        fuerte: sp ? `${cifraEntera(sp)} ${sp === 1 ? 'orden sin programar' : 'órdenes sin programar'}` : 'No hay órdenes sin programar',
+        resto: `${cifraEntera(pr)} ${pr === 1 ? 'programada' : 'programadas'}`,
         enlace: null,
       };
     }
     return null;
+  });
+
+  /** ¿Hueso en la línea del saludo? Mientras llega lo que la escribe. */
+  protected readonly mensajeCargando = computed(() => {
+    if (this.cargandoResumen()) return true;
+    // Operación sin el bloque de órdenes: la línea espera a los KPI de la tira.
+    if (!this.enFinanzas() && !this.datosOrdenes() && this.veKpisResumen() && !this.dashData() && this.cargandoIndicadores()) return true;
+    return this.enFinanzas() && !this.datosFacturacion()?.borradores && this.veCarteraInicio() && this.estadoCxc() === 'cargando';
+  });
+
+  // ----- Finanzas: «Cartera por cobrar» e Indicadores -----
+
+  /**
+   * Clientes con saldo, en pesos enteros. Se redondea UNA vez, cada celda
+   * cliente × edad, y todo lo demás se suma de ahí: el total de un cliente, el de
+   * cada edad y el general. Así ninguna cifra del Inicio deja de cuadrar con las
+   * que tiene al lado (antes, $ 2.182.191 en la antigüedad y $ 2.182.190 en la
+   * suma de los clientes).
+   */
+  private readonly carteraClientes = computed(() =>
+    (this.cxc()?.clientes ?? [])
+      .map((c) => {
+        const total = EDADES.reduce((s, e) => s + Math.round(num(c[e.key])), 0);
+        const vencida = total - Math.round(num(c.POR_VENCER));
+        return { id: c.tercero_id, nombre: c.tercero_nombre, documentos: c.documentos, total, vencida, todoVencido: total > 0 && vencida === total };
+      })
+      .filter((c) => c.total > 0)
+      .sort((a, b) => b.total - a.total),
+  );
+  /** Los clientes que más deben, con lo vencido aparte. */
+  protected readonly carteraTop = computed(() => this.carteraClientes().slice(0, CARTERA_VISIBLES));
+  protected readonly carteraOcultos = computed(() => Math.max(0, this.carteraClientes().length - CARTERA_VISIBLES));
+  protected readonly carteraTotal = computed(() => this.carteraClientes().reduce((s, c) => s + c.total, 0));
+  private readonly carteraVencida = computed(() => this.carteraClientes().reduce((s, c) => s + c.vencida, 0));
+
+  protected readonly kpisFin = computed<Kpi[]>(() => {
+    const lista: Kpi[] = [];
+    const sinCargar = (estado: string) => (estado === 'error' ? 'No se pudo cargar' : undefined);
+    if (this.auth.puedeVer('facturacion') || this.auth.puedeVer('informes_contables')) {
+      const mes = this.ahora.iso.slice(0, 7);
+      const v = this.ventas();
+      const docs = (v?.clientes ?? []).flatMap((c) => c.documentos).filter((d) => d.fecha.slice(0, 7) === mes);
+      const facturas = docs.filter((d) => d.tipo === 'FACTURA').length;
+      const notas = docs.length - facturas;
+      const ultimo = this.ultimoMesConDato();
+      lista.push({
+        label: `Facturado en ${this.ahora.mesNombre}`,
+        value: v ? pesosEnteros(this.facturadoMes()) : '—',
+        hint: v
+          ? `${facturas} ${facturas === 1 ? 'factura' : 'facturas'}${notas ? ` · ${notas} ${notas === 1 ? 'nota crédito' : 'notas crédito'}` : ''}` +
+            (this.facturadoMes() === 0 && ultimo ? ` · ${ultimo}` : '')
+          : sinCargar(this.estadoVentas()),
+        reintentar: this.estadoVentas() === 'error' ? 'ventas' : undefined,
+      });
+    }
+    if (this.auth.puedeVer('cartera')) {
+      const cxc = this.estadoCxc() === 'ok';
+      lista.push({
+        label: 'Cartera por cobrar',
+        value: cxc ? pesosEnteros(this.carteraTotal()) : '—',
+        hint: cxc ? mayuscula(textoVencido(this.carteraTotal(), this.carteraVencida()) || 'sin saldo') : sinCargar(this.estadoCxc()),
+        reintentar: this.estadoCxc() === 'error' ? 'cxc' : undefined,
+      });
+      const p = this.cxp();
+      const totalCxp = Math.round(num(p?.total.TOTAL));
+      const vencidaCxp = Math.max(0, totalCxp - Math.round(num(p?.total.POR_VENCER)));
+      lista.push({
+        label: 'Cuentas por pagar',
+        value: p ? pesosEnteros(totalCxp) : '—',
+        hint: p ? mayuscula(textoVencido(totalCxp, vencidaCxp) || 'sin saldo') : sinCargar(this.estadoCxp()),
+        reintentar: this.estadoCxp() === 'error' ? 'cxp' : undefined,
+      });
+    }
+    if (this.auth.puedeVer('facturacion')) {
+      // Solo el plan de facturación (facturas, notas, documentos soporte); la
+      // nómina tiene su propio cupo en la tarjeta de al lado.
+      const f = this.cupos()?.facturacion;
+      lista.push({
+        label: 'Documentos de facturación',
+        value: f ? cifraEntera(f.usados) : '—',
+        hint: f ? `de ${cifraEntera(f.total)} · quedan ${cifraEntera(f.disponibles)}` : this.estadoCupos() === 'ok' ? 'Sin plan registrado' : sinCargar(this.estadoCupos()),
+        reintentar: this.estadoCupos() === 'error' ? 'cupos' : undefined,
+      });
+    }
+    return lista;
+  });
+
+  /** «octubre: $ 2.451.900»: el último mes de la gráfica con algo facturado, si el en curso va en cero. */
+  protected readonly ultimoMesConDato = computed(() => {
+    const b = [...this.barrasFin()].reverse().find((x) => !x.actual && x.valor > 0);
+    if (!b) return '';
+    const nombre = new Date(`${b.mes}-15T12:00:00`).toLocaleDateString('es-CO', { month: 'long' });
+    return `${nombre}: ${pesosEnteros(b.valor)}`;
+  });
+
+  /** Lo facturado por mes (neto de notas crédito, antes de IVA), el mes en curso y los cinco anteriores. */
+  protected readonly barrasFin = computed<BarraFacturado[]>(() => {
+    const v = this.ventas();
+    if (!v) return [];
+    const porMes = new Map<string, number>();
+    for (const d of v.clientes.flatMap((c) => c.documentos)) {
+      const m = d.fecha.slice(0, 7);
+      porMes.set(m, (porMes.get(m) ?? 0) + num(d.subtotal));
+    }
+    const meses = ultimosMeses(this.ahora.iso, MESES_GRAFICA);
+    const valores = meses.map((m) => Math.max(0, porMes.get(m) ?? 0));
+    const conDatos = valores.filter((x) => x > 0).length;
+    const max = Math.max(...valores, 1) / (conDatos <= 2 ? 0.6 : 1);
+    return meses.map((m, i) => ({
+      mes: m, etiqueta: mesCorto(m), valor: valores[i], rotulo: montoCorto(valores[i]),
+      alto: Math.round((valores[i] / max) * 100), actual: i === meses.length - 1,
+    }));
+  });
+  protected readonly facturadoMes = computed(() => Math.round(this.barrasFin().at(-1)?.valor ?? 0));
+  protected readonly facturadoMesTexto = computed(() => pesosEnteros(this.facturadoMes()));
+  protected readonly resumenGraficaFin = computed(
+    () => 'Facturado por mes: ' + this.barrasFin().map((b) => `${b.etiqueta} ${pesosEnteros(b.valor)}`).join(', '),
+  );
+
+  /** Antigüedad de la cartera por cobrar, en pesos y en porcentaje del total. */
+  protected readonly edadesCxc = computed(() => {
+    const c = this.cxc();
+    if (!c) return [];
+    const total = this.carteraTotal();
+    return EDADES.map((e) => {
+      const valor = c.clientes.reduce((s, x) => s + Math.round(num(x[e.key])), 0);
+      return { ...e, valor, texto: pesosEnteros(valor), pct: total ? Math.round((valor / total) * 100) : 0 };
+    });
+  });
+
+  protected readonly veCupos = computed(() => this.leeFinanzas() && (this.auth.puedeVer('facturacion') || this.auth.puedeVer('nomina')));
+
+  /** «Va en X de Y»: facturación y nómina, como en Facturación y en Nómina. */
+  protected readonly cuposLista = computed(() => {
+    const c = this.cupos();
+    if (!c) return [];
+    const filas: { nombre: string; usados: number; total: number; pct: number; hasta: string }[] = [];
+    if (c.facturacion && this.auth.puedeVer('facturacion')) filas.push({ nombre: 'Facturación', ...cupo(c.facturacion) });
+    if (c.nomina && this.auth.puedeVer('nomina')) filas.push({ nombre: 'Nómina', ...cupo(c.nomina) });
+    return filas;
   });
 
   // ----- Indicadores -----
@@ -594,39 +961,104 @@ export class DashboardComponent implements OnInit {
   );
   protected readonly proximasOcultas = computed(() => Math.max(0, this.proximas().length - PROXIMAS_VISIBLES));
 
-  ngOnInit(): void {
-    if (!this.isBrowser) return;
-    // El profesional no carga los conteos globales: no los ve y el backend le
-    // rechazaría o le sobrarían las peticiones.
-    if (this.esProfesional()) {
-      this.loadMisOrdenes();
-      return;
-    }
-    if (this.resumenVacio()) {
-      this.pestana.set('indicadores');
-      this.cargarIndicadores();
-      this.cargandoResumen.set(false);
-      return;
-    }
-    this.cargarResumen();
-    if (this.veKpisResumen()) this.cargarIndicadores();
-    if (this.veProximas()) this.cargarProximas();
-    else this.cargandoProximas.set(false);
+  constructor() {
+    // Qué se pide y cuándo: al arrancar, solo lo que enseña Accesos del sistema
+    // activo; lo de Indicadores, la primera vez que se abre su pestaña. Como el
+    // segmentado cambia de sistema sin recargar la página, esto escucha el
+    // sistema y la pestaña visibles y pide lo que falte (cada cosa una sola vez).
+    effect(() => {
+      if (!this.isBrowser) return;
+      const profesional = this.esProfesional();
+      const fin = this.enFinanzas();
+      const pestana = this.pestanaVista();
+      untracked(() => (profesional ? this.pedir('mias', () => this.loadMisOrdenes()) : this.asegurarDatos(fin, pestana)));
+    });
+
+    // 22-nov-2026 · Refresco por notificaciones (ver `NotificationsService.cambiosEnOrdenes$`):
+    // sin sondeo propio. Cuando el sondeo de la campanita detecta avisos que cambian
+    // órdenes, el Inicio abierto vuelve a pedir SOLO los bloques de Operación que ya
+    // había cargado, en silencio (sin esqueleto). El antirrebote de 2 s junta una
+    // ráfaga de avisos en una sola tanda de peticiones.
+    inject(NotificationsService).cambiosEnOrdenes$
+      .pipe(debounceTime(2000), takeUntilDestroyed())
+      .subscribe(() => this.refrescarPorAvisos());
   }
 
-  protected elegirPestana(p: 'resumen' | 'indicadores'): void {
+  /** Vuelve a pedir lo de Operación ya cargado, sin tocar los indicadores de carga. */
+  private refrescarPorAvisos(): void {
+    if (this.pedidas.has('mias')) {
+      this.api.misOrdenes().subscribe({ next: (r) => this.misOrdenes.set(r.data.map(toMiOrden)), error: () => {} });
+      return;
+    }
+    if (this.pedidas.has('resumen')) {
+      this.api.resumenInicio().subscribe({ next: (r) => this.resumen.set(r.data), error: () => {} });
+    }
+    if (this.pedidas.has('dashboard')) {
+      this.api.dashboard().subscribe({ next: (r) => this.dashData.set(r.data), error: () => {} });
+    }
+    if (this.pedidas.has('proximas')) {
+      this.api.ordenesProximas(PROXIMAS_DIAS).subscribe({ next: (r) => this.proximas.set(r.data), error: () => {} });
+    }
+  }
+
+  private asegurarDatos(fin: boolean, pestana: 'accesos' | 'indicadores'): void {
+    // El resumen da las insignias, la línea del saludo y «Requiere su atención» de los dos sistemas.
+    if (this.veAtencion() || this.hayAccesos()) this.pedir('resumen', () => this.cargarResumen());
+    else this.cargandoResumen.set(false);
+
+    if (!fin) {
+      if (pestana === 'accesos') {
+        if (this.veKpisResumen()) this.pedir('dashboard', () => this.cargarDashboard());
+        if (this.veProximas()) this.pedir('proximas', () => this.cargarProximas());
+      } else {
+        this.pedir('dashboard', () => this.cargarDashboard());
+        this.pedir('horas', () => this.cargarHoras());
+      }
+      return;
+    }
+    if (!this.leeFinanzas()) return;
+    const cartera = this.auth.puedeVer('cartera');
+    if (cartera) this.pedir('cxc', () => this.cargarCartera());
+    if (pestana === 'indicadores') {
+      if (cartera) this.pedir('cxp', () => this.cargarCxp());
+      if (this.auth.puedeVer('facturacion') || this.auth.puedeVer('informes_contables')) this.pedir('ventas', () => this.cargarVentas());
+      this.pedir('cupos', () => this.cargarCupos());
+    }
+  }
+
+  /** «Reintentar» de un bloque que no cargó: lo vuelve a pedir ya, sin esperar a cambiar de pestaña. */
+  protected reintentar(bloque: 'cxc' | 'cxp' | 'ventas' | 'cupos' | 'horas'): void {
+    this.pedidas.delete(bloque);
+    const cargar = { cxc: () => this.cargarCartera(), cxp: () => this.cargarCxp(), ventas: () => this.cargarVentas(), cupos: () => this.cargarCupos(), horas: () => this.cargarHoras() }[bloque];
+    this.pedir(bloque, cargar);
+  }
+
+  private pedir(clave: string, pedirlo: () => void): void {
+    if (this.pedidas.has(clave)) return;
+    this.pedidas.add(clave);
+    pedirlo();
+  }
+
+  protected elegirPestana(p: 'accesos' | 'indicadores'): void {
     this.pestana.set(p);
-    if (p === 'indicadores') this.cargarIndicadores();
   }
 
-  /** Flechas izquierda/derecha entre pestañas (patrón ARIA de `tablist`). */
+  /**
+   * Teclado del `tablist` (patrón ARIA): flechas para ir a la otra pestaña,
+   * Inicio y Fin para la primera y la última. Con dos pestañas, las flechas
+   * alternan.
+   */
   protected teclaPestana(ev: KeyboardEvent): void {
-    if (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft') return;
+    const actual = this.pestanaVista();
+    const destino =
+      ev.key === 'Home' ? 'accesos'
+      : ev.key === 'End' ? 'indicadores'
+      : ev.key === 'ArrowRight' || ev.key === 'ArrowLeft' ? (actual === 'accesos' ? 'indicadores' : 'accesos')
+      : null;
+    if (!destino) return;
     ev.preventDefault();
-    const siguiente = this.pestana() === 'resumen' ? 'indicadores' : 'resumen';
-    this.elegirPestana(siguiente);
-    const boton = (ev.currentTarget as HTMLElement).querySelector<HTMLElement>(`#tab-${siguiente}`);
-    boton?.focus();
+    this.elegirPestana(destino);
+    (ev.currentTarget as HTMLElement).querySelector<HTMLElement>(`#tab-${destino}`)?.focus();
   }
 
   private cargarResumen(): void {
@@ -657,10 +1089,11 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  /** Indicadores se piden la primera vez que se abre su pestaña: el Resumen no los necesita. */
-  private cargarIndicadores(): void {
-    if (this.indicadoresPedidos) return;
-    this.indicadoresPedidos = true;
+  /**
+   * `GET /reports/dashboard`: los cuatro KPI de órdenes (la tira de Accesos y la
+   * fila de Indicadores), la distribución y el avance por ARL.
+   */
+  private cargarDashboard(): void {
     this.cargandoIndicadores.set(true);
     this.api.dashboard().subscribe({
       next: (r) => {
@@ -669,10 +1102,15 @@ export class DashboardComponent implements OnInit {
       },
       error: (err) => {
         this.cargandoIndicadores.set(false);
-        this.indicadoresPedidos = false;
+        // Se puede volver a pedir al volver a la pestaña.
+        this.pedidas.delete('dashboard');
         this.alerts.error('No se pudieron cargar los indicadores', mensajeError(err, 'El servidor no respondió.'));
       },
     });
+  }
+
+  /** `GET /reports/horas`: solo la gráfica de Indicadores la usa, así que se pide al abrir esa pestaña. */
+  private cargarHoras(): void {
     const desde = ultimosMeses(this.ahora.iso, MESES_GRAFICA)[0] + '-01';
     this.estadoHoras.set('cargando');
     this.api.reporteHoras(desde, this.ahora.iso).subscribe({
@@ -682,8 +1120,70 @@ export class DashboardComponent implements OnInit {
       },
       error: () => {
         this.horas.set(null);
-        this.estadoHoras.set('error');
+        this.fallo('horas', this.estadoHoras);
       },
+    });
+  }
+
+  /** Cartera por cobrar (`GET /cartera/antiguedad`): la tarjeta de Accesos y la distribución de Indicadores. */
+  private cargarCartera(): void {
+    this.estadoCxc.set('cargando');
+    this.api.antiguedadCartera(this.ahora.iso).subscribe({
+      next: (r) => {
+        this.cxc.set(r.data);
+        this.estadoCxc.set('ok');
+      },
+      error: () => this.fallo('cxc', this.estadoCxc),
+    });
+  }
+
+  /**
+   * Un bloque que no cargó dice «No se pudo cargar» en su propia celda (la
+   * tarjeta y la fila de KPI no cambian de forma) y su clave sale de `pedidas`:
+   * se vuelve a pedir al volver a la pestaña o al cambiar de sistema.
+   */
+  private fallo(clave: string, estado: WritableSignal<'cargando' | 'error' | 'ok'>): void {
+    estado.set('error');
+    this.pedidas.delete(clave);
+  }
+
+  private cargarCxp(): void {
+    this.estadoCxp.set('cargando');
+    this.api.antiguedadCartera(this.ahora.iso, 'CXP').subscribe({
+      next: (r) => {
+        this.cxp.set(r.data);
+        this.estadoCxp.set('ok');
+      },
+      error: () => this.fallo('cxp', this.estadoCxp),
+    });
+  }
+
+  /** Lo facturado en los seis meses de la gráfica (`GET /informes-contables/ventas`, el informe de ventas por cliente). */
+  private cargarVentas(): void {
+    const desde = ultimosMeses(this.ahora.iso, MESES_GRAFICA)[0] + '-01';
+    this.estadoVentas.set('cargando');
+    this.cargandoFinanzas.set(true);
+    this.api.ventasPorCliente({ desde, hasta: this.ahora.iso }).subscribe({
+      next: (r) => {
+        this.ventas.set(r.data);
+        this.estadoVentas.set('ok');
+        this.cargandoFinanzas.set(false);
+      },
+      error: () => {
+        this.fallo('ventas', this.estadoVentas);
+        this.cargandoFinanzas.set(false);
+      },
+    });
+  }
+
+  private cargarCupos(): void {
+    this.estadoCupos.set('cargando');
+    this.api.cuposDocumentos().subscribe({
+      next: (r) => {
+        this.cupos.set(r.data);
+        this.estadoCupos.set('ok');
+      },
+      error: () => this.fallo('cupos', this.estadoCupos),
     });
   }
 
@@ -705,6 +1205,10 @@ export class DashboardComponent implements OnInit {
 
   protected cifra(n: number): string {
     return cifraEntera(n);
+  }
+
+  protected pesos(v: number): string {
+    return pesosEnteros(v);
   }
 
   // Mismos colores de estado que Órdenes (`validation.ts`): SIN PROGRAMAR ámbar,
@@ -783,17 +1287,37 @@ function haceDias(dias: number): string {
   return `hace ${dias} días`;
 }
 
-/** «hoy, 4:12 p. m.», «ayer, 4:12 p. m.» o «el 27 de octubre», en hora de Colombia. */
-function cuandoFue(iso: string): string {
-  const d = new Date(iso);
-  const dia = partesCO(d).iso;
-  const hoy = partesCO(new Date()).iso;
-  const ayer = partesCO(new Date(Date.now() - 86_400_000)).iso;
-  // Espacios duros: «p. m.» no se parte entre dos líneas.
-  const hora = d.toLocaleTimeString('es-CO', { timeZone: 'America/Bogota', hour: 'numeric', minute: '2-digit' }).replace(/\s/g, NBSP);
-  if (dia === hoy) return `hoy, ${hora}`;
-  if (dia === ayer) return `ayer, ${hora}`;
-  return 'el ' + d.toLocaleDateString('es-CO', { timeZone: 'America/Bogota', day: 'numeric', month: 'long' });
+/**
+ * Pesos enteros: en el Inicio los centavos no dicen nada y alargan la cifra
+ * hasta pisar su vecina («$ 2.182.190,63» → «$ 2.182.191»). El detalle exacto
+ * está en Cartera y en Informes contables.
+ */
+function pesosEnteros(v: number): string {
+  return PESOS.format(Math.round(v));
+}
+
+/**
+ * Lo vencido sin repetir la cifra del total: «todo vencido» si es todo,
+ * «$ X vencidos» si es una parte y «nada vencido» si no hay nada.
+ */
+function textoVencido(total: number, vencida: number): string {
+  if (!total) return '';
+  if (vencida <= 0) return 'nada vencido';
+  if (vencida >= total) return 'todo vencido';
+  return `${pesosEnteros(vencida)} vencidos`;
+}
+
+/** «4,2 MM», «850 mil», «0»: el rótulo dentro de una barra (los millones son «MM», nunca «M»). */
+function montoCorto(v: number): string {
+  if (v >= 1_000_000) return `${(v / 1_000_000).toLocaleString('es-CO', { maximumFractionDigits: 1 })} MM`;
+  if (v >= 1_000) return `${Math.round(v / 1_000).toLocaleString('es-CO')} mil`;
+  return v.toLocaleString('es-CO');
+}
+
+/** Un cupo de documentos como fila del Inicio: «15 / 1.000», 2 %, vigente hasta… */
+function cupo(c: CupoDocumentos) {
+  const hasta = new Date(`${c.hasta}T12:00:00`).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+  return { usados: c.usados, total: c.total, pct: c.total ? Math.min(100, Math.round((c.usados / c.total) * 100)) : 0, hasta };
 }
 
 /** Los `n` meses que terminan en el de `hoyIso`, como AAAA-MM. */

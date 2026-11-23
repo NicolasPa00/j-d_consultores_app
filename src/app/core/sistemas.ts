@@ -44,7 +44,11 @@ export const SISTEMAS: Sistema[] = [
     nombre: 'Finanzas',
     descripcion: 'Facturación electrónica ante la DIAN, cartera, compras, contabilidad, terceros y parametrización.',
     llaves: ['facturacion', 'documentos_soporte', 'nomina', 'contabilidad', 'cartera', 'compras', 'terceros', 'parametrizacion'],
-    menu: ['facturacion', 'documentos_soporte', 'nomina', 'cartera', 'compras', 'contabilidad', 'informes_contables', 'terceros', 'parametrizacion', 'precuentas', 'informes', 'configuracion'],
+    // 20-nov-2026 · Finanzas también tiene su Inicio, primero como en Operación:
+    // la misma pantalla, con los accesos de Finanzas. A quien no tenga
+    // `dashboard`, `inicioDe` le salta a la primera vista que sí tenga
+    // (Facturación para la contadora sin Inicio), como antes.
+    menu: ['dashboard', 'facturacion', 'documentos_soporte', 'nomina', 'cartera', 'compras', 'contabilidad', 'informes_contables', 'terceros', 'parametrizacion', 'precuentas', 'informes', 'configuracion'],
   },
 ];
 
@@ -68,6 +72,7 @@ export const GRUPOS_MENU: Record<SistemaId, GrupoMenu[]> = {
     { titulo: 'Cobro y clientes', vistas: ['precuentas', 'empresas', 'informes'] },
   ],
   finanzas: [
+    { titulo: null, vistas: ['dashboard'] },
     { titulo: 'Documentos', vistas: ['facturacion', 'documentos_soporte', 'nomina', 'cartera', 'compras'] },
     { titulo: 'Contabilidad', vistas: ['contabilidad', 'informes_contables', 'terceros', 'parametrizacion'] },
     { titulo: 'Compartido con Operación', vistas: ['precuentas', 'informes'] },

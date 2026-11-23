@@ -127,13 +127,51 @@
   gap: var(--e-4);
 }
 
-.cmp-editor td {
-  vertical-align: middle;
+/* ===== Líneas de la nota interna (22-nov-2026) =====
+   Rejilla con el patrón de la factura manual (`fac-man-linea`, facturacion.scss):
+   cabecera como la de tabla (12/600 tinta-2 sobre --cabecera-tabla), una fila por
+   línea y, en el celular, cada línea apilada como tarjeta con su rótulo. */
+.cmp-lineas {
+  --cmp-cols: minmax(0, 1.5fr) minmax(0, 1.1fr) minmax(0, 1fr) 8.5rem 8.5rem 4.75rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
+  background: var(--superficie);
 }
+.cmp-lineas--centro {
+  --cmp-cols: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 8.5rem 8.5rem 4.75rem;
+}
+.cmp-linea {
+  display: grid;
+  grid-template-columns: var(--cmp-cols);
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--borde);
 
-/* Campos de línea un poco más bajos que los de formulario: la tabla es densa.
+  &:last-child { border-bottom: 0; }
+  .col-num { text-align: right; }
+}
+.cmp-linea--cab {
+  padding: 0.7rem 0.75rem;
+  background: var(--cabecera-tabla);
+  color: var(--tinta-2);
+  border-radius: var(--r-tarjeta) var(--r-tarjeta) 0 0;
+  font-size: var(--fs-meta);
+  font-weight: 600;
+}
+.cmp-linea--pie {
+  background: var(--papel);
+  border-radius: 0 0 var(--r-tarjeta) var(--r-tarjeta);
+}
+/* El botón de agregar ocupa todas las columnas de texto (cuenta… detalle). */
+.cmp-linea__agregar { grid-column: 1 / -4; }
+.cmp-linea__agregar .btn svg { width: 16px; height: 16px; }
+.cmp-linea__rotulo { display: none; }
+.cmp-linea__campo { min-width: 0; }
+
+/* Campos de línea un poco más bajos que los de formulario: la lista es densa.
    El select conserva su hueco a la derecha para el chevron. */
-.cmp-editor .form-control {
+.cmp-linea .form-control {
   min-width: 0;
   min-height: 36px;
   padding-top: 6px;
@@ -141,24 +179,42 @@
   font-size: var(--fs-celda);
 }
 
-.cmp-editor input.form-control {
+.cmp-linea input.form-control {
   padding-left: 10px;
   padding-right: 10px;
 }
 
-.cmp-editor input.col-num {
+.cmp-linea input.col-num {
   text-align: right;
 }
 
-.cmp-editor td:nth-child(1) { min-width: 240px; }
-.cmp-editor td:nth-child(2) { min-width: 180px; }
-.cmp-editor td:nth-child(3) { min-width: 160px; }
-.cmp-editor td:nth-child(4),
-.cmp-editor td:nth-child(5) { width: 130px; }
-
 .cmp-acc {
-  width: 1%;
-  white-space: nowrap;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--e-1);
+}
+
+@media (max-width: 760px) {
+  .cmp-linea--cab { display: none; }
+  .cmp-linea {
+    grid-template-columns: 1fr 1fr auto;
+    align-items: end;
+    gap: 0.6rem 0.75rem;
+  }
+  /* Como la factura manual: cuenta, tercero, centro y detalle a todo el ancho;
+     Débito y Crédito lado a lado con las acciones (cuadrar, quitar) a su derecha. */
+  .cmp-linea__campo:not(:has(input.col-num)) { grid-column: 1 / -1; }
+  .cmp-linea__agregar { grid-column: 1 / -1; }
+  .cmp-linea__rotulo {
+    /* Como la etiqueta de campo del resto del formulario (13/500, tinta-2). */
+    display: block;
+    margin-bottom: 6px;
+    font-size: var(--fs-celda);
+    font-weight: 500;
+    color: var(--tinta-2);
+  }
+  .cmp-total .cmp-linea__rotulo { text-align: right; font-family: var(--fuente); }
 }
 
 .cmp-cuadre {

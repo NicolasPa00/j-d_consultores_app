@@ -8,7 +8,8 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "verificar:acciones": "node scripts/verificar-acciones.mjs",
-    "serve:ssr:jdd_consultores_app": "node dist/jdd_consultores_app/server/server.mjs"
+    "serve:ssr:jdd_consultores_app": "node dist/jdd_consultores_app/server/server.mjs",
+    "verificar:iconos-modal": "node scripts/verificar-iconos-modal.mjs"
   },
   "private": true,
   "packageManager": "npm@10.9.4",

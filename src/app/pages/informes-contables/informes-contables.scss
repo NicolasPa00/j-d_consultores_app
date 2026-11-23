@@ -194,7 +194,7 @@
 /* Lo justo para «$ 1.170.081,64» y «FV-1 + ojo»; el detalle se queda con el resto.
    Con la columna Base (libros de impuestos) el tercero se angosta para que quepa a 1366 px. */
 .ic-mov th.ic-c-fecha { width: 6.5rem; }
-.ic-mov th.ic-c-cmp { width: 7.75rem; }
+.ic-mov th.ic-c-cmp { width: 9rem; }
 .ic-mov th.ic-c-ter { width: 13rem; }
 .ic-mov th.ic-c-num { width: 8.5rem; }
 .ic-mov--base th.ic-c-ter { width: 9.5rem; }
@@ -230,6 +230,17 @@
 }
 .ic-celda-cuenta { display: flex; flex-direction: column; gap: 0.1rem; }
 .ic-cmp { display: inline-flex; align-items: center; gap: 0.25rem; }
+/* 22-nov-2026 · El número del comprobante no se parte en el guion («RC-» / «900044»):
+   va entero y la columna mide 9 rem (número + ojo). */
+.ic-cmp > .mono { white-space: nowrap; }
+.ic-mov td:has(> .ic-cmp) { overflow-wrap: normal; }
+
+/* Celular: con `table-layout: fixed` la tabla de movimientos se repartía los 358 px y
+   cada celda partía palabra por palabra (filas de ~220 px). Ahora mide lo que
+   necesita y se desliza dentro de su marco, como el resto de tablas. */
+@media (max-width: 640px) {
+  .ic-mov { min-width: 66rem; }
+}
 
 .ic-plegar {
   display: inline-flex;

@@ -151,9 +151,7 @@
           {{ t.activo ? 'Activo' : 'Inactivo' }}
         </span>
         <button type="button" class="icon-action" (click)="closeDetalle()" aria-label="Cerrar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M18 6 6 18M6 6l12 12" />
-          </svg>
+          <svg appIcono="cerrar"></svg>
         </button>
       </div>
     </header>
@@ -372,9 +370,7 @@
     <header class="modal__head">
       <h3 class="modal__title" id="profTitle">Crear tercero desde un profesional</h3>
       <button type="button" class="icon-action" (click)="closeElegirProfesional()" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 6 6 18M6 6l12 12" />
-        </svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
     <div class="modal__body">
@@ -414,9 +410,7 @@
         {{ editingId() ? 'Editar tercero' : profesionalId() ? 'Nuevo tercero · profesional' : 'Nuevo tercero' }}
       </h3>
       <button type="button" class="icon-action" (click)="closeForm()" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 6 6 18M6 6l12 12" />
-        </svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
 
@@ -592,7 +586,7 @@
         <p class="modal__sub">Sirve la plantilla de ORBITA o la exportación «Búsqueda de terceros» del software contable, tal como sale.</p>
       </div>
       <button type="button" class="icon-action" (click)="importOpen.set(false)" aria-label="Cerrar" [disabled]="importando()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        <svg appIcono="cerrar"></svg>
       </button>
     </header>
     <div class="modal__body">

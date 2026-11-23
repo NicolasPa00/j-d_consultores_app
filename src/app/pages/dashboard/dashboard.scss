@@ -10,73 +10,94 @@
 }
 
 /* =====================================================================
-   Inicio por rol (DESIGN §7 «Franja del saludo», «Accesos directos»,
-   «Requiere su atención», «Próximas a ejecutar» y «Gráficas»).
-   Máximo 1128 px (§4): a más ancho, las listas se leen mal.
+   Inicio por rol (rediseño del 20-nov-2026, segunda vuelta).
+   Una tarjeta de bienvenida con la cuadrícula de accesos del sistema activo
+   y, debajo, «Requiere su atención», «Próximas a ejecutar» y la tira de KPI.
+   Ancho: hasta 1480 px, centrado en lo que deja la barra lateral. A 1366 y
+   1440 llena el área útil; a 1900 queda una franja pareja a cada lado en vez
+   de un hueco a la derecha, y las listas no se estiran hasta leerse mal.
    ===================================================================== */
 .inicio {
-  max-width: 1128px;
+  max-width: 1480px;
+  margin-inline: auto;
+  /* Relleno de la sombra plana de los íconos: cian del logo al 58 % sobre
+     blanco (≈ #7ec8e2), corrida 3,5 px. Es la firma del juego: a 1x tiene que
+     leerse como un segundo color y no como un borrón. Nunca lleva texto encima. */
+  --ico-tinte: color-mix(in srgb, var(--cian) 58%, var(--superficie));
 }
 
-/* ---------- Franja del saludo (cierre del rediseño) ----------
-   Una sola línea de ~56 px: saludo, lo pendiente y la fecha en la misma fila.
-   Sin órbitas: no daban información y empujaban los números y lo pendiente
-   por debajo del pliegue. La marca vive en la barra lateral. */
-.saludo {
+/* ---------- Tarjeta de bienvenida ---------- */
+.bienvenida {
+  overflow: hidden;
+}
+
+/* Con Accesos abierto, la cabecera y el cuerpo son UNA tarjeta partida en dos
+   elementos (el tabpanel tiene que envolver la cuadrícula y lo de debajo). */
+.bienvenida--abierta {
+  border-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.bienvenida__cuerpo {
+  border-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+/* En Indicadores la tarjeta termina en las pestañas: aire bajo la raya, para
+   que no parezca cortada. */
+.bienvenida:not(.bienvenida--abierta) {
+  padding-bottom: var(--e-4);
+}
+
+.bienvenida__cabeza {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 4px var(--e-6);
-  min-height: 56px;
-  padding: 14px var(--e-5);
-  background: var(--cielo);
-  border-radius: var(--r-tarjeta);
+  gap: var(--e-2) var(--e-6);
+  padding: var(--e-6) 28px 0;
 }
 
-.saludo__texto {
+.bienvenida__texto {
+  min-width: 0;
+}
+
+/* Lo que domina el Inicio (DESIGN §1.4): el saludo con la pregunta. */
+.bienvenida__titulo {
+  margin: 0;
+  font-size: var(--fs-pagina);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  color: var(--tinta);
+}
+
+.bienvenida__mensaje {
+  /* Reserva una línea aunque aún no haya texto: la cabecera mide lo mismo en
+     los dos sistemas y las pestañas no saltan. */
+  min-height: 21px;
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 2px var(--e-4);
-  min-width: 0;
-}
-
-.saludo__titulo {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.3;
-  letter-spacing: -0.01em;
-  color: var(--tinta);
-}
-
-.saludo__mensaje {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: var(--e-3);
-  row-gap: 2px;
-  margin: 0;
+  margin: 6px 0 0;
   font-size: var(--fs-base);
   color: var(--tinta-2);
 }
 
-.saludo__mensaje b {
+.bienvenida__mensaje b {
   font-weight: 600;
   color: var(--tinta);
 }
 
-.saludo__sep {
-  margin: 0 6px;
+.bienvenida__sep {
   color: var(--tinta-3);
 }
 
-.saludo__linea {
-  min-width: 0;
-}
-
-.saludo__enlace {
+.bienvenida__enlace {
   font-weight: 600;
   white-space: nowrap;
   color: var(--accion);
@@ -84,23 +105,36 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .saludo__enlace:hover {
+  .bienvenida__enlace:hover {
     text-decoration: underline;
     text-underline-offset: 3px;
   }
 }
 
-.saludo__fecha {
+.bienvenida__fecha {
   margin: 0;
   font-size: var(--fs-celda);
   color: var(--tinta-2);
   white-space: nowrap;
 }
 
-.saludo__fecha b {
-  margin-right: 6px;
+.bienvenida__fecha b {
   font-weight: 600;
   color: var(--tinta);
+}
+
+.bienvenida__tabs {
+  margin: var(--e-4) 28px 0;
+}
+
+/* Sin accesos (rol que solo tiene Estadísticas), la tarjeta termina en las
+   pestañas o en el saludo: un pie de aire para que no quede pegada. */
+.bienvenida__cabeza:last-child {
+  padding-bottom: var(--e-6);
+}
+
+.bienvenida__tabs:last-child {
+  margin-bottom: 0;
 }
 
 /* Hueso de carga: reserva el alto del texto que viene, sin animar (DESIGN §5). */
@@ -113,257 +147,166 @@
   background: var(--hundida);
 }
 
-.saludo .hueso {
-  background: var(--superficie);
-  opacity: 0.7;
-}
-
-.inicio__tabs {
-  margin: var(--e-6) 0 var(--e-5);
-}
-
-/* Sin pestañas (rol sin nada en el Resumen), Indicadores va directo bajo el saludo. */
-.saludo + #panel-indicadores {
-  margin-top: var(--e-6);
-}
-
-/* ---------- Accesos directos ----------
-   Un acceso principal relleno, dos con su conteo y el resto en listas
-   compactas por grupo. Sin tarjetas iguales ni íconos en recuadro. */
+/* ---------- Cuadrícula de accesos ----------
+   Cada acceso es un círculo de 76 px con su ícono y la etiqueta debajo, en una
+   o dos líneas. El acceso ENTERO es el enlace (objetivo de ~170 × 150 px). Las
+   columnas las fija `--cols` (filas parejas, máximo cinco) y cada celda mide
+   como mucho 200 px (cinco caben en 1366 px): con tres accesos no quedan tres columnas de 480 px, quedan
+   tres celdas juntas y centradas. */
 .accesos {
-  overflow: hidden;
-}
-
-.principales {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) repeat(2, minmax(0, 1fr));
-  border-bottom: 1px solid var(--borde);
+  grid-template-columns: repeat(var(--cols, 5), minmax(0, 200px));
+  justify-content: center;
+  gap: var(--e-2);
+  margin: 0;
+  padding: var(--e-5) var(--e-5) var(--e-6);
+  list-style: none;
 }
 
-.principales[data-n='2'] {
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-}
-
-.principales[data-n='1'] {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.principales:last-child {
-  border-bottom: 0;
-}
-
-.princ {
-  position: relative;
-  container: princ / inline-size;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: var(--e-1) var(--e-4);
-  min-height: 112px;
-  padding: var(--e-5) var(--e-6) 18px;
-  color: var(--tinta);
-  text-decoration: none;
-  transition: background-color var(--t-media) ease;
-}
-
-.princ + .princ {
-  border-left: 1px solid var(--borde);
-}
-
-.princ__titulo {
-  grid-column: 1 / -1;
-  align-self: start;
+.acceso {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
-  font-size: var(--fs-tarjeta);
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  gap: 14px;
+  height: 100%;
+  padding: 18px var(--e-3) var(--e-4);
+  border-radius: var(--r-tarjeta);
+  color: var(--tinta);
+  text-align: center;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.princ__titulo .ico {
-  width: 20px;
-  height: 20px;
-  color: var(--accion);
+.acceso__circulo {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  /* En reposo, disco en cielo y sin borde (el gris #c3ceda era 1,6:1 y no
+     sumaba nada); el borde en acción aparece al pasar el ratón y con el foco. */
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: var(--cielo);
+  transition:
+    border-color var(--t-media) ease,
+    background-color var(--t-media) ease,
+    transform 200ms var(--ease-out);
 }
 
-/* La pista se parte por tramos: «Excel SIPAB o PDF» y «· el último, …». El
-   separador vive dentro del segundo tramo, así nunca queda colgando al final de
-   la primera línea. */
-.princ__pista {
-  display: flex;
-  flex-wrap: wrap;
-  column-gap: 0.3em;
-  min-width: 0;
-  font-size: var(--fs-celda);
-  color: var(--tinta-3);
+.acceso__ico {
+  width: 44px;
+  height: 44px;
+  overflow: visible;
 }
 
-.princ__fija {
-  white-space: nowrap;
+.acceso__tinte {
+  fill: var(--ico-tinte);
 }
 
-/* Cuando el tramo de la fecha ya no cabe en la línea, va solo y sin el punto. */
-@container princ (max-width: 340px) {
-  .princ__fija {
-    flex-basis: 100%;
-  }
-
-  .princ__sep {
-    display: none;
-  }
+.acceso__forma,
+.acceso__trazo,
+.acceso__acento {
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.princ__conteo {
-  font-size: 28px;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+.acceso__forma {
+  fill: var(--superficie);
+  stroke: var(--accion);
 }
 
-/* La cifra que no llegó: «—» en el sitio de la cifra (no un chevron suelto). */
-.princ__conteo--sin {
-  font-size: 22px;
+.acceso__trazo {
+  fill: none;
+  stroke: var(--accion);
+}
+
+.acceso__acento {
+  fill: none;
+  stroke: var(--cian-trazo);
+  stroke-width: 2.1;
+}
+
+.acceso__etiqueta {
+  max-width: 19ch;
+  font-size: var(--fs-base);
   font-weight: 500;
-  color: var(--tinta-3);
+  line-height: 1.35;
+  text-wrap: balance;
+  transition: color var(--t-media) ease;
 }
 
-.princ__conteo--cargando {
-  display: block;
-  width: 2ch;
-  height: 0.8em;
-  border-radius: var(--r-control);
-  background: var(--hundida);
+/* Insignia: lo que espera en ese destino. Va en el ámbar de `--contador`, el
+   mismo de los pendientes del menú: un solo color para «hay algo por hacer». */
+.acceso__insignia {
+  position: absolute;
+  top: -3px;
+  right: -7px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  border-radius: var(--r-completo);
+  background: var(--contador);
+  box-shadow: 0 0 0 2px var(--superficie);
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  line-height: 24px;
+  font-variant-numeric: tabular-nums;
+  color: var(--contador-tinta);
 }
 
-.princ__ir {
-  width: 18px;
-  height: 18px;
-  color: var(--tinta-3);
-  transition: transform var(--t-media) var(--ease-out);
-}
-
-.princ:active {
-  background: var(--hundida);
-}
-
-/* El principal: campo de acción. Blanco 9,28:1; secundario 6,57:1 (§2). */
-.princ--relleno {
-  background: var(--accion);
-  color: var(--superficie);
-}
-
-.princ--relleno .princ__titulo .ico,
-.princ--relleno .princ__ir {
-  color: var(--superficie);
-}
-
-.princ--relleno .princ__pista {
-  color: var(--texto-sobre-accion);
-}
-
-.princ--relleno:active {
-  background: var(--accion-hover);
-}
-
-/* Foco dentro de la rejilla: un anillo de 2 px por DENTRO, con esquinas de 7 px
-   (concéntricas con la tarjeta de 10). Sin halo exterior, que la tarjeta
-   recortaba en su esquina redonda. Sobre acción, el anillo va en cian (§6). */
-.princ:focus-visible {
+/* El anillo de foco rodea el círculo, no la celda: es lo que el ojo sigue. */
+.acceso:focus-visible {
   outline: none;
   box-shadow: none;
 }
 
-.princ:focus-visible::after {
-  content: '';
-  position: absolute;
-  inset: 3px;
-  border: 2px solid var(--accion);
-  border-radius: calc(var(--r-tarjeta) - 3px);
-  pointer-events: none;
+.acceso:focus-visible .acceso__circulo {
+  border-color: var(--accion);
+  outline: var(--anillo);
+  outline-offset: 3px;
 }
 
-.princ--relleno:focus-visible::after {
-  border-color: var(--cian);
+.acceso:focus-visible .acceso__etiqueta {
+  color: var(--accion);
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .princ:hover {
-    background: var(--papel);
-  }
-
-  .princ--relleno:hover {
-    background: var(--accion-hover);
-  }
-
-  .princ:hover .princ__ir {
-    transform: translateX(2px);
-  }
-}
-
-.grupos {
-  display: grid;
-  /* Hasta cuatro grupos por fila; con menos, cada uno toma su parte. */
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--e-2) var(--e-5);
-  padding: var(--e-4) 14px;
-}
-
-.grupo__titulo {
-  margin: 0;
-  padding: 0 10px 6px;
-  font-size: var(--fs-meta);
-  font-weight: 600;
-  color: var(--tinta-3);
-}
-
-.grupo__titulo small {
-  font-size: var(--fs-meta);
-  font-weight: 400;
-}
-
-.grupo__acceso {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 38px;
-  padding: 0 10px;
-  border-radius: var(--r-item);
-  font-size: var(--fs-base);
-  font-weight: 500;
-  color: var(--tinta);
-  text-decoration: none;
-  transition: background-color var(--t-rapida) ease;
-}
-
-.grupo__acceso .ico {
-  color: var(--tinta-3);
-  transition: color var(--t-rapida) ease;
-}
-
-/* En escritorio la etiqueta basta; el chevron es para la lista del celular. */
-.grupo__ir {
-  display: none;
-  width: 16px;
-  height: 16px;
-  margin-left: auto;
-  color: var(--tinta-3);
-}
-
-.grupo__acceso:active {
-  background: var(--accion-tenue);
+.acceso:active .acceso__circulo {
+  transform: scale(0.96);
+  transition-duration: var(--t-rapida);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .grupo__acceso:hover {
-    background: var(--hundida);
+  .acceso:hover .acceso__circulo {
+    border-color: var(--accion);
+    background: var(--accion-tenue);
+    transform: translateY(-2px);
   }
 
-  .grupo__acceso:hover .ico {
+  .acceso:hover .acceso__etiqueta {
     color: var(--accion);
   }
+
+  .acceso:hover:active .acceso__circulo {
+    transform: translateY(-2px) scale(0.96);
+  }
+}
+
+/* ---------- Debajo de la tarjeta ---------- */
+.resumen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-6);
+  margin-top: var(--e-6);
+}
+
+.resumen:empty {
+  display: none;
+}
+
+.bienvenida + #panel-indicadores {
+  margin-top: var(--e-6);
 }
 
 /* ---------- Tira de KPI (cierre del rediseño) ----------
@@ -373,7 +316,6 @@
 .kpi-tira {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin-top: var(--e-6);
   background: var(--superficie);
   border: 1px solid var(--borde);
   border-radius: var(--r-tarjeta);
@@ -414,14 +356,6 @@
   color: var(--tinta-3);
 }
 
-#panel-resumen > .kpi-tira:first-child {
-  margin-top: 0;
-}
-
-.kpi-tira + .rejilla {
-  margin-top: var(--e-6);
-}
-
 @media (max-width: 1100px) {
   .kpi-tira {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -436,31 +370,7 @@
   }
 }
 
-/* Celular: primero lo accionable. Orden de lectura: saludo → «Requiere su
-   atención» → números → accesos → próximas. La rejilla se disuelve
-   (`display: contents`, nunca en una celda) para que atención y próximas
-   tomen su lugar en la columna del panel. */
 @media (max-width: 640px) {
-  #panel-resumen {
-    display: flex;
-    flex-direction: column;
-    gap: var(--e-4);
-  }
-
-  #panel-resumen > .rejilla {
-    display: contents;
-  }
-
-  #panel-resumen > * ,
-  #panel-resumen > .rejilla > * {
-    margin-top: 0;
-  }
-
-  #panel-resumen .atencion { order: 1; }
-  #panel-resumen > .kpi-tira { order: 2; }
-  #panel-resumen > .accesos { order: 3; }
-  #panel-resumen .agenda { order: 4; }
-
   .kpi-tira__item {
     padding: 10px var(--e-4);
   }
@@ -472,19 +382,28 @@
   grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
   gap: var(--e-6);
   align-items: stretch;
-  margin-top: var(--e-6);
-}
-
-.accesos + .rejilla {
-  margin-top: var(--e-6);
-}
-
-#panel-resumen > .rejilla:first-child {
-  margin-top: 0;
 }
 
 .rejilla--sola {
   grid-template-columns: minmax(0, 1fr);
+}
+
+/* Sola (Finanzas, o un rol sin Órdenes): la tarjeta va a todo el ancho y sus
+   filas se reparten en columnas, en vez de estirarse a 1400 px con la cifra en
+   un extremo y la acción en el otro. */
+@media (min-width: 1101px) {
+  .rejilla--sola .pendientes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  }
+
+  .rejilla--sola .pendientes li + li .pend {
+    border-top: 0;
+  }
+
+  .rejilla--sola .pendientes li + li {
+    border-left: 1px solid var(--borde);
+  }
 }
 
 .atencion,
@@ -790,7 +709,9 @@
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
   gap: var(--e-6);
-  align-items: start;
+  /* Las dos columnas terminan a la misma altura (DESIGN §7 «Gráficas»): la
+     gráfica toma el alto que deja la columna derecha, con 220 px de mínimo. */
+  align-items: stretch;
   margin-top: var(--e-6);
 }
 
@@ -856,6 +777,25 @@
   background: var(--hundida);
 }
 
+/* «Reintentar»: un enlace de acción dentro de la frase del error, no un botón
+   que cambie el alto de la celda. */
+.reintentar {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accion);
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .reintentar:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
 .ind__error {
   margin: var(--e-3) 0 0;
   font-size: var(--fs-celda);
@@ -863,10 +803,10 @@
 }
 
 .graf {
-  flex: none;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  height: 220px;
+  min-height: 220px;
   margin-top: 28px;
 }
 
@@ -966,6 +906,79 @@
 .tono--info { background: var(--info); }
 .tono--ejecutada { background: color-mix(in srgb, var(--ok) 58%, var(--superficie)); }
 .tono--ok { background: var(--ok); }
+.tono--naranja { background: var(--naranja); }
+.tono--error { background: var(--error); }
+.tono--tinta { background: var(--tinta); }
+
+/* Montos en pesos de Finanzas: la cifra se ajusta al ancho de su celda
+   (la tarjeta es contenedor), así «$ 125.400.000» no se sale a 1366 px. */
+#panel-indicadores .kpi-card__value {
+  font-size: min(var(--fs-kpi), 11cqi);
+}
+
+.ind__grande--pesos {
+  font-size: min(40px, 9cqi);
+}
+
+.ind__principal {
+  container-type: inline-size;
+}
+
+/* ---------- Finanzas · Cartera por cobrar (la segunda tarjeta de Accesos) ---------- */
+.cartera {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cartera__fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--e-4);
+  min-height: 62px;
+  padding: 10px var(--e-5);
+}
+
+.cartera__fila + .cartera__fila {
+  border-top: 1px solid var(--borde);
+}
+
+.cartera__quien {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cartera__nombre {
+  overflow: hidden;
+  font-size: var(--fs-base);
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--tinta);
+}
+
+/* Mismo patrón que `.pend__pista`: el «·» va pegado (sin espacio antes) y en
+   `white-space: pre`, así nunca abre línea en el celular. */
+.cartera__detalle {
+  font-size: var(--fs-celda);
+  line-height: 1.45;
+  color: var(--tinta-3);
+}
+
+.cartera__saldo {
+  font-size: var(--fs-base);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--tinta);
+}
+
+.cartera__error {
+  padding: 0 var(--e-5) var(--e-5);
+}
 
 .dist {
   padding: var(--e-4) var(--e-5) 14px;
@@ -999,6 +1012,11 @@
   padding: 8px 0;
   font-size: var(--fs-celda);
   color: var(--tinta);
+}
+
+/* Finanzas: la cifra es un monto, no un conteo; su columna crece con él. */
+.dist__ley--pesos li {
+  grid-template-columns: 10px minmax(0, 1fr) auto 40px;
 }
 
 .dist__ley li + li {
@@ -1143,6 +1161,13 @@
    Anchos intermedios y celular
    ===================================================================== */
 
+/* Pantallas anchas (≥ 1600 px): hasta ocho por fila (8 en una, 12 en 6 + 6). */
+@media (min-width: 1600px) {
+  .accesos {
+    grid-template-columns: repeat(var(--cols-ancho, 8), minmax(0, 200px));
+  }
+}
+
 @media (max-width: 1100px) {
   .rejilla,
   .ind {
@@ -1166,103 +1191,65 @@
 }
 
 @media (max-width: 820px) {
-  .saludo {
-    padding: 12px var(--e-4);
-  }
-
-  .inicio__tabs {
-    margin: var(--e-4) 0 14px;
-  }
-
   .ind__lado {
     grid-template-columns: minmax(0, 1fr);
   }
 }
 
 @media (max-width: 640px) {
-  /* Celular: los principales en franja de dos, con el ícono arriba y la
-     etiqueta entera en hasta dos líneas; el relleno ocupa toda la fila si
-     son tres. El resto, lista de una columna a 44 px con chevron. */
-  .principales {
+  .bienvenida__cabeza {
+    padding: 18px var(--e-4) 0;
+  }
+
+  .bienvenida__titulo {
+    font-size: 20px;
+  }
+
+  .bienvenida__tabs {
+    margin: var(--e-3) var(--e-4) 0;
+  }
+
+  /* Celular: SIEMPRE lista de dos columnas, en los dos sistemas: círculo de
+     44 px a la izquierda y la etiqueta al lado. Así la tarjeta no cambia de
+     forma al pulsar el segmentado (antes, cuatro por fila en Operación y dos en
+     Finanzas) y ninguna etiqueta se parte a media palabra. */
+  .accesos {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 var(--e-2);
+    padding: var(--e-2) var(--e-3) var(--e-3);
   }
 
-  .princ {
-    min-height: 104px;
-    padding: 14px var(--e-4);
-  }
-
-  .princ + .princ {
-    border-left: 0;
-  }
-
-  .principales .princ:nth-child(n + 2) {
-    border-top: 1px solid var(--borde);
-  }
-
-  .principales .princ:nth-child(3) {
-    border-left: 1px solid var(--borde);
-  }
-
-  .principales:has(> .princ:nth-child(3)) .princ--relleno {
-    grid-column: 1 / -1;
-    min-height: 0;
-  }
-
-  .principales:not(:has(> .princ:nth-child(3))) .princ:nth-child(2) {
-    border-top: 0;
-    border-left: 1px solid var(--borde);
-  }
-
-  .princ__titulo {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-    font-size: 15px;
-    line-height: 1.25;
-  }
-
-  .princ--relleno .princ__titulo {
+  .acceso {
     flex-direction: row;
     align-items: center;
+    gap: var(--e-3);
+    padding: var(--e-2) var(--e-1);
+    text-align: left;
   }
 
-  .princ__conteo {
-    font-size: 22px;
+  .acceso__circulo {
+    flex: none;
+    width: 44px;
+    height: 44px;
   }
 
-  /* Con cifra: la cifra (o su «—») bajo el título y la pista al pie. Sin cifra,
-     el chevron sigue en la fila de la pista, como en el relleno. */
-  .princ--cifra {
-    grid-template-columns: minmax(0, 1fr);
-    align-content: space-between;
+  .acceso__ico {
+    width: 28px;
+    height: 28px;
   }
 
-  .princ--cifra .princ__conteo {
-    grid-row: 2;
+  .acceso__etiqueta {
+    font-size: var(--fs-celda);
+    line-height: 1.3;
   }
 
-  .princ--cifra .princ__pista {
-    grid-row: 3;
+  .acceso__insignia {
+    top: -6px;
+    right: -8px;
   }
 
-  .grupos {
-    grid-template-columns: minmax(0, 1fr);
-    padding: 6px;
-    row-gap: 0;
-  }
-
-  .grupo__titulo {
-    padding: 10px 10px var(--e-1);
-  }
-
-  .grupo__acceso {
-    min-height: 44px;
-    font-size: 15px;
-  }
-
-  .grupo__ir {
-    display: block;
+  .cartera__fila {
+    padding: 10px var(--e-4);
   }
 
   /* Celular: la cifra va ENCIMA del título, con el mismo borde izquierdo en
@@ -1353,15 +1340,15 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .princ,
-  .princ__ir,
-  .grupo__acceso,
-  .grupo__acceso .ico,
+  .acceso__circulo,
+  .acceso__etiqueta,
   .pend {
     transition-duration: 1ms;
   }
 
-  .princ:hover .princ__ir {
+  .acceso:hover .acceso__circulo,
+  .acceso:active .acceso__circulo,
+  .acceso:hover:active .acceso__circulo {
     transform: none;
   }
 }
