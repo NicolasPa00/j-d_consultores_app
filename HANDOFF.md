@@ -5,7 +5,16 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> 📨 **22-nov-2026 · PETICIONES DEL GRUPO 20-NOV — LOCAL, SIN COMMITEAR Y SIN DESPLEGAR (back `sst_ws`, rama `rediseno-visual`).**
+> 🚀 **23-nov-2026 (00:18) · DESPLEGADO EN PRODUCCIÓN: rediseño visual completo + pasada del dueño del 22-nov + peticiones del grupo 20-nov.**
+> back `eedff70` (master) / front `37bcf95` (main), sin migración; respaldo `~/respaldos/orbita-antes-rediseno23nov-20261123-0017.dump`;
+> script `docs/4-despliegue/despliegue-rediseno-23-nov.sh`. Health 200, sin errores al arrancar. Los bloques de abajo que dicen
+> «LOCAL / SIN COMMITEAR / SIN DESPLEGAR» de esta tanda YA ESTÁN DESPLEGADOS. Decisiones del dueño (23-nov): el AT-031 por sesión sale
+> (confirmar con Lorena el martes 24-nov; si no, revertir); correos con mezcla tú/usted se dejan así; lo que va a CLIENTES (factura, NC,
+> encuesta, comprobante de nómina) lleva la marca JD&D (`correoHtml({ marca: 'jdd' })`, `assets/correo/logo-jdd-correo.png`), el resto ORBITA.
+> Pendiente: actualizar pantallazos del centro de ayuda (todo el aspecto cambió); ver en prod un correo real en Gmail móvil oscuro y Outlook;
+> menores de los jueces (Facturación D7/D8, campanita: decisiones de círculos y disco de cabecera).
+>
+> 📨 **22-nov-2026 · PETICIONES DEL GRUPO 20-NOV — (YA DESPLEGADO el 23-nov, ver arriba) (back `sst_ws`, rama `rediseno-visual`).**
 > **(1) Correo de formatos (OS-2026-0249, 4 sesiones: «llegó solo uno y los que aparecen como descargar es una fecha en calendario»).**
 > Causa: el AT-031 de Bolívar tenía `alcance: 'orden'` (T0-13, 27-sep: uno solo por orden) y una asistencia técnica/asesoría de
 > Bolívar no lleva AT-028, así que con 4 sesiones salía 1 `seguimiento.pdf` + el informe de ejemplo; los 4 `OS-…-1de4.ics` eran
