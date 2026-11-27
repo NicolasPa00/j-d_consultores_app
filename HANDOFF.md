@@ -5,15 +5,17 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> 🧩 **26-nov-2026 (noche) · PETICIONES DE JD&D DEL 26-NOV — rama `peticiones-26-nov` en los dos repos, SIN desplegar. Tablero: `docs/3-planes/plan-peticiones-26-nov-2026.md`.**
+> 🧩 **26/27-nov-2026 · PETICIONES DE JD&D DEL 26-NOV — rama `peticiones-26-nov` en los dos repos, SIN desplegar. Tablero: `docs/3-planes/plan-peticiones-26-nov-2026.md`.**
 > (1) Ruta de la cuenta de cobro: solo pregunta, respondida (aviso por campanita a admin/contador, sin correo). (2) **Envío por partes sin
 > reenviar lo ya enviado** (OS-2026-0324): backend HECHO y commiteado en `sst_ws` — franjas con `enviada_en`/`enviada_a`/`ics_uid`
 > (migración `2026-11-26-franjas-enviadas.sql`, aplicada en `jdd_dev`, **falta en producción antes de reiniciar**), cada envío manda solo
 > sesiones nuevas, cancela las movidas por su UID, no escribe a quien no tiene cambios, `reenviar_todo` de emergencia; pruebas
-> `verificar-formatos-por-sesion.mjs` y `verificar-envio-por-partes.mjs` (13/13). Frontend del modal de formatos hecho, SIN commitear.
+> `verificar-formatos-por-sesion.mjs` y `verificar-envio-por-partes.mjs` (13/13). Frontend del modal de formatos commiteado (`e0fce6f`).
 > (3) **Agenda sin arrastre**: elegida la propuesta A («el formulario primero», prototipo en `docs/3-planes/peticiones-26-nov/diseno-agenda/`);
-> **la implementación quedó EN CURSO** (sin commitear): revisar `git status` del front al retomar. Ojo: la fila «Día · Desde · Hasta» que
-> el bloque 🧪 del 22-nov da por hecha nunca llegó a git.
+> **27-nov: CONSTRUIDA y commiteada** (front `0e1e9e2`, `12c1624`, `b2d7cf6`, ayuda `9a2dc1c`; sin push): `validation/agenda-visita/`
+> (componente + `franjas.ts` puras con 29 pruebas `ng test`), arrastre retirado, `validation.scss` de 46,6 a 31,2 kB. **NO vista por pantalla**
+> (el front local no respondía). Decisiones a confirmar (sin «Deshacer», no se agenda en el pasado, sin festivos, flujo de varios asesores
+> igual que antes) y pendientes en el §3 del tablero. La fila «Día · Desde · Hasta» del 22-nov nunca llegó a git; el compositor la reemplaza.
 >
 > 🚀 **23-nov-2026 (00:18) · DESPLEGADO EN PRODUCCIÓN: rediseño visual completo + pasada del dueño del 22-nov + peticiones del grupo 20-nov.**
 > back `eedff70` (master) / front `37bcf95` (main), sin migración; respaldo `~/respaldos/orbita-antes-rediseno23nov-20261123-0017.dump`;

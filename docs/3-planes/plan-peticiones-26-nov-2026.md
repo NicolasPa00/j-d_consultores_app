@@ -39,20 +39,41 @@ Huecos detectados (no pedidos, para proponer): sin correo al aceptar; el filtro 
 - Soportes por orden, no por sesión: si el asesor sube soportes tras la 1.ª sesión, la orden pasa a EJECUTADA y ya no se puede reprogramar (decidir con JD&D).
 - El servidor no rechaza todavía editar una franja enviada y ya pasada (lo protege solo la UI nueva).
 
-## 3. Agenda — diseño A, implementación en curso
+## 3. Agenda — diseño A, CONSTRUIDA y commiteada (27-nov), SIN ver por pantalla
 
 Dos agentes de diseño hicieron propuestas con prototipo; están en `docs/3-planes/peticiones-26-nov/diseno-agenda/`:
-- `propuesta-A/` — **ELEGIDA**: compositor de franja (chips de día con horas libres, «Otra fecha…», Desde/Hasta en 12 h con −/+, duraciones 1/2/4/8 h/«Lo que falta», validación en vivo con ajuste sugerido, autollenado del siguiente hueco, sugerencia de reparto 8–12 y 2–6), lista editable, rejilla solo como mapa (tocar = llenar el formulario), franjas enviadas con candado, vista Día en celular. Abrir `prototipo.html` en el navegador.
-- `propuesta-B/` — descartada (rejilla con dos toques). Su captura de 390 px se desborda.
+- `propuesta-A/` — **ELEGIDA** e implementada. Abrir `prototipo.html` en el navegador para comparar.
+- `propuesta-B/` — descartada (rejilla con dos toques).
 
-Hallazgo: la fila «Día · Desde · Hasta · Agregar franja» que el HANDOFF del 22-nov da por hecha **no existe en ningún commit** (se perdió); la propuesta A la reemplaza.
+Hallazgo: la fila «Día · Desde · Hasta · Agregar franja» que el HANDOFF del 22-nov da por hecha **no existe en ningún commit**; el compositor la reemplaza.
 
-**Al cerrar el 26-nov un agente estaba implementando la propuesta A** en `jdd_consultores_app` (rama `peticiones-26-nov`, sin commitear): extraer la agenda a `src/app/pages/validation/agenda-visita/` con funciones puras (`franjas.ts`), compositor, lista editable, rejilla-mapa, protección de franjas enviadas (pasadas bloqueadas; futuras con confirmación), resumen con barra, y actualizar el tema de ayuda `asignar-orden`. **Al retomar:** `git -C jdd_consultores_app status` y `git diff --stat` para ver hasta dónde llegó; compilar (`npx ng build --configuration development` y `npx ng build` por el presupuesto `anyComponentStyle` 28/32 kB) y revisar contra el prototipo. Si quedó a medias, retomarlo con el mismo encargo (resumen arriba y en `propuesta-A/propuesta.md`).
+**Commits (front, rama `peticiones-26-nov`, sin push):** `0e1e9e2` paso 1 (reglas puras), `12c1624` paso 2 (componente), `b2d7cf6` paso 3 (fuera el arrastre), `9a2dc1c` tema de ayuda.
+
+**Qué hay:**
+- `src/app/pages/validation/agenda-visita/franjas.ts` — funciones PURAS: `validarFranja` → `{ok, problema, detalle, ajuste}`, `ocupacionEn`, `recortar`, `adelantar`, `huecosDelDia`, `estadoDelDia`, `proponerSiguiente`, `proponerEnDia`, `sugerirReparto` (8–12 y 2–6, lunes a sábado, máx. 21 días) y los conversores de fecha/hora que antes vivían sueltos en `validation.ts`. Pruebas: `franjas.spec.ts` (25) y `agenda-visita.spec.ts` (4, humo del componente). Correr: `npx ng test --watch=false --include "src/app/pages/validation/agenda-visita/*.spec.ts"`.
+- `agenda-visita.ts/.html/.scss` — `app-agenda-visita`, standalone + OnPush + signals. Contrato: `profesionalId`, `nombre`, `equipo`, `[(franjas)]` (las del asesor activo), `otrasFranjasEquipo`, `ocupaciones`, `otrasVisitas`, `minutosOrden`, `minutosOtros`, `cargando`; salidas `cambiarAsesor`, `quitarAsesor`, `liberarOcupacion`, `irAProfesionales`. Los avisos del padre (ARL sin formatos, cruces heredados) entran por `<ng-content>`.
+- Resumen con barra «enviadas · nuevas · por programar»; compositor (chips de 14 días con «Libre / N h libres / Sin huecos», «Otra fecha…» con `min` = hoy, huecos del día como botones, Desde/Hasta en 12 h con −/+, duraciones 1/2/4/8 h/«Lo que falta», validación `aria-live` con botón de ajuste, «Agregar franja» secundario, `Enter` agrega, autollenado del siguiente hueco, sugerencia plegable con «Agregar estas N franjas» / «Revisar una por una»); lista con Editar en el sitio (`Esc` cancela), Quitar; franjas enviadas: pasada = candado sin botones, futura = «Cambiar…» → confirmación → edición y marca «Cambiada · se avisará al asesor»; rejilla Semana sin scroll (10 px por media hora, 6 a. m.–12 a. m.; tocar = llenar el compositor; tocar un bloque de esta visita = editarlo) y vista Día (por defecto ≤720 px) con «Liberar» de 36 px.
+- `agregarFranjaVisita` sigue siendo la puerta única, ahora dentro del componente (valida con `validarFranja` y escribe); nueva `editarFranjaVisita`. Se conservan las reglas: sin profesional bloquea, cruce con la misma visita, ocupaciones/otras órdenes, tope de la orden sumando a todos los asesores y las franjas huérfanas (`minutosOtros`).
+- Del padre salió todo el arrastre y la rejilla vieja; `validation.scss` bajó de 46,6 kB a 31,2 kB en bruto. Builds de desarrollo y producción sin avisos de presupuesto.
+
+**Decisiones tomadas sin consultar (confirmar con el dueño):**
+1. Sin «Deshacer» al quitar: `AlertService` no tiene toasts con acción. Se anuncia por `aria-live` y se ve en el resumen.
+2. El compositor no deja agendar en el pasado («Esa hora ya pasó»), como en el prototipo (§11.6). Franjas pasadas sin enviar se pueden quitar, no mover al pasado.
+3. Festivos: no hay calendario; ningún chip dice «Festivo» y la sugerencia puede caer en uno.
+4. Varios asesores: se mantuvo el flujo actual (el botón de guardar de la fila mete al asesor en el equipo; el `.seg` del compositor y los chips del resumen cambian de asesor). No se implementó «Agregar a la orden» con un solo toque ni el bloqueo de quitar a un asesor que ya recibió franjas.
+5. Nombre en frases: primera palabra en tipo título («Daniela»), título del compositor con el nombre tal cual está guardado (MAYÚSCULAS).
+6. Una franja enviada que se edita conserva `enviada_en` y se marca `cambiada`; el servidor no la reconoce por su firma, la manda como nueva y cancela la vieja (comportamiento del envío por partes).
+
+**Pendiente / no verificado:**
+- **No se vio por pantalla**: el front de :4001 no respondía en esta sesión (backend :4000 sí). Revisar en 1280×720, 1366×768 y 390 px contra el prototipo.
+- El servidor sigue sin rechazar borrar/cambiar una franja enviada y pasada (solo la UI la protege).
+- Captura `public/ayuda/asignar-orden/2.webp` del centro de ayuda muestra la agenda vieja.
+- Teclado: falta la navegación con flechas probada en navegador real; el foco tras quitar/guardar usa `setTimeout` (sin probar).
 
 ## 4. Para cerrar la tanda
 
-1. Terminar/revisar la agenda y verla por pantalla en 1280×720, 1366×768 y 390 px (agregar, editar, quitar, choque, completo, parcial con franja enviada pasada y futura, dos asesores).
-2. Commitear el frontend; push de los dos repos (desde el portátil el push lo corre el usuario con `!`).
+1. Ver la agenda (ya construida, §3) por pantalla en 1280×720, 1366×768 y 390 px (agregar, editar, quitar, choque, completo, parcial con franja enviada pasada y futura, dos asesores).
+2. Push de los dos repos (desde el portátil el push lo corre el usuario con `!`).
 3. Despliegue: **aplicar la migración `2026-11-26-franjas-enviadas.sql` en producción ANTES de reiniciar el backend** (el código nuevo lee y escribe `enviada_en`/`ics_uid`), con respaldo previo como en los scripts de `docs/4-despliegue/`.
 4. Probar en producción con la OS-2026-0324 (sesiones del 25-nov ya enviadas: el relleno las marca como enviadas).
 5. Enviar a JD&D la respuesta de la cuenta de cobro (§1).
