@@ -1,0 +1,396 @@
+/* ASG · Quién ejecuta la visita (27-nov-2026, ajuste para pantallas pequeñas).
+   Dos formas: la lista completa mientras se elige (ocupa el cuerpo del modal) y
+   una fila compacta cuando ya hay asesor. Tokens de DESIGN.md, ningún hex. */
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+  min-width: 0;
+}
+
+.sr {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accion-tenue);
+  color: var(--accion);
+  font-size: var(--fs-celda);
+  font-weight: 600;
+}
+
+.avatar--sm {
+  width: 24px;
+  height: 24px;
+  font-size: var(--fs-pastilla);
+}
+
+/* ===== Lista para elegir ===== */
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-4);
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.lista__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-3) var(--e-4);
+}
+
+.lista__txt {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.lista__titulo {
+  margin: 0;
+  font-size: var(--fs-tarjeta);
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.lista__sub {
+  margin: var(--e-1) 0 0;
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
+}
+
+.buscar {
+  position: relative;
+  flex: 0 1 340px;
+  min-width: 220px;
+
+  svg {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    width: 16px;
+    height: 16px;
+    color: var(--tinta-3);
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+
+  input {
+    width: 100%;
+    padding-left: 34px;
+  }
+}
+
+/* Rejilla de tarjetas: tantas columnas como quepan; el nombre nunca se corta. */
+.tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  align-content: start;
+  gap: var(--e-2);
+  min-height: 0;
+  margin: 0;
+  padding: 2px;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.tarjeta {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--e-3);
+  width: 100%;
+  height: 100%;
+  padding: var(--e-3);
+  font: inherit;
+  text-align: left;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
+  cursor: pointer;
+  transition: border-color var(--t-media) ease, background-color var(--t-media) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tarjeta:hover {
+    border-color: var(--borde-control-hover);
+    background: var(--fila-hover);
+  }
+}
+
+.tarjeta:active {
+  transform: scale(0.99);
+}
+
+.tarjeta--on {
+  border-color: var(--accion);
+  background: var(--accion-tenue);
+}
+
+.tarjeta__txt {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tarjeta__nombre {
+  font-size: var(--fs-base);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--tinta);
+  overflow-wrap: anywhere;
+}
+
+.tarjeta__meta {
+  font-size: var(--fs-meta);
+  color: var(--tinta-2);
+}
+
+.tarjeta__reg,
+.formatos__ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-meta);
+  color: var(--tinta-2);
+
+  svg {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    color: var(--ok);
+  }
+}
+
+.tarjeta__horas {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: var(--r-completo);
+  background: var(--accion);
+  color: var(--superficie);
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.lista__vacia {
+  margin: 0;
+  padding: var(--e-6) var(--e-4);
+  border: 1px dashed var(--borde-control);
+  border-radius: var(--r-tarjeta);
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
+  text-align: center;
+}
+
+/* ===== Fila compacta ===== */
+.fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2) var(--e-3);
+  min-height: 44px;
+}
+
+.elegido {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  min-width: 0;
+}
+
+.elegido__txt {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.elegido__nombre {
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.elegido__meta {
+  font-size: var(--fs-meta);
+  color: var(--tinta-2);
+}
+
+.fila__otro svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* El suplente se va al extremo derecho: es una decisión secundaria. */
+.formatos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-1) var(--e-2);
+  margin-left: auto;
+}
+
+.formatos__txt {
+  font-size: var(--fs-meta);
+  color: var(--tinta-2);
+}
+
+.formatos__sel {
+  width: auto;
+  max-width: 260px;
+}
+
+.formatos__aviso {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: var(--r-alerta);
+  background: var(--aviso-fondo);
+  font-size: var(--fs-meta);
+  color: var(--tinta);
+}
+
+/* Equipo: un chip por asesor con sus horas; la ✕ con 36 px de zona táctil. */
+.equipo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.eq {
+  display: inline-flex;
+  align-items: center;
+  background: var(--superficie);
+  border: 1px solid var(--borde-control);
+  border-radius: var(--r-completo);
+}
+
+.eq--on {
+  background: var(--accion-tenue);
+  border-color: var(--accion);
+}
+
+.eq__nombre {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 4px 0 6px;
+  border: 0;
+  border-radius: var(--r-completo);
+  background: none;
+  font: inherit;
+  font-size: var(--fs-celda);
+  color: var(--tinta);
+  cursor: pointer;
+
+  strong {
+    color: var(--accion);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.eq--on .avatar {
+  background: var(--accion);
+  color: var(--superficie);
+}
+
+.eq__rol {
+  font-size: var(--fs-pastilla);
+  color: var(--tinta-2);
+}
+
+.eq__quitar {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--tinta-2);
+  cursor: pointer;
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .eq__quitar:hover {
+    background: var(--error-fondo);
+    color: var(--error);
+  }
+}
+
+/* ===== Celular ===== */
+@media (max-width: 720px) {
+  .buscar {
+    flex: 1 1 100%;
+  }
+
+  .lista__head .btn {
+    width: 100%;
+  }
+
+  .tarjetas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tarjeta {
+    min-height: 56px;
+  }
+
+  .elegido {
+    flex: 1 1 auto;
+  }
+
+  .formatos {
+    margin-left: 0;
+    gap: 0 var(--e-2);
+  }
+
+  .formatos__btn {
+    padding-inline: 0;
+  }
+
+  .formatos__sel {
+    max-width: 100%;
+    flex: 1 1 200px;
+  }
+
+  .btn,
+  .eq__nombre {
+    min-height: 44px;
+  }
+
+  .eq__quitar {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tarjeta:active {
+    transform: none;
+  }
+}

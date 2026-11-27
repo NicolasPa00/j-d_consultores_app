@@ -510,11 +510,11 @@ export function validarFranja(ctx: ContextoAgenda, r: RangoFranja, excluirId?: s
   if (choque) {
     let problema: string;
     if (choque.tipo === 'propia') {
-      problema = `Se cruza con su franja del ${fechaCorta(r.fecha)}, ${rango12(choque.ini, choque.fin)}.`;
+      problema = conPunto(`Se cruza con su franja del ${fechaCorta(r.fecha)}, ${rango12(choque.ini, choque.fin)}`);
     } else if (choque.tipo === 'otra') {
       problema = `A esa hora ${ctx.nombre} tiene la orden ${choque.motivo} en ${choque.empresa} (${rango12(choque.ini, choque.fin)}).`;
     } else {
-      problema = `${ctx.nombre} tiene «${choque.motivo}» de ${hora12(choque.ini)} a ${hora12(choque.fin)}.`;
+      problema = conPunto(`${ctx.nombre} tiene «${choque.motivo}» de ${hora12(choque.ini)} a ${hora12(choque.fin)}`);
     }
     let ajuste: Ajuste | undefined;
     if (choque.ini > r.ini) {
@@ -541,6 +541,11 @@ export function validarFranja(ctx: ContextoAgenda, r: RangoFranja, excluirId?: s
     };
   }
   return { ok: true, texto: `Libre · ${duracionTexto(r.fin - r.ini)}. Termina a las ${hora12(r.fin)}` };
+}
+
+/** Cierra la frase con punto, salvo que ya acabe en uno («… 10:00 a. m.»): nada de «m..». */
+function conPunto(frase: string): string {
+  return frase.endsWith('.') ? frase : `${frase}.`;
 }
 
 /** ¿La franja ya ocurrió? (su fin es anterior a ahora). */

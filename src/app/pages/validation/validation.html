@@ -1016,7 +1016,7 @@
 <!-- ============ MODAL: ASIGNAR PROFESIONAL ============ -->
 @if (assignOrder(); as order) {
   <div class="modal-backdrop" (click)="closeAssign()"></div>
-  <div class="modal modal--full" role="dialog" aria-modal="true" aria-labelledby="assignTitle">
+  <div class="modal modal--full modal--asignar" role="dialog" aria-modal="true" aria-labelledby="assignTitle">
     <header class="modal__head">
       <div>
         <h3 class="modal__title" id="assignTitle">
@@ -1212,143 +1212,41 @@
         </section>
       </div>
     } @else {
-    <div class="modal__body assign">
-      <!-- ---- Lista de profesionales ----
-           La lista se estira al alto de la agenda (columna posicionada + lista
-           absoluta): si midiera por su contenido, al cargar la agenda el modal
-           crecería y la lista se quedaría corta. -->
-      <div class="assign__col">
-       <div class="assign__col-inner">
-        <p class="assign__section-title">Profesionales</p>
-        <!-- 24-oct-2026 · Buscar en la base de asesores por nombre, especialidad o ARL. -->
-        <div class="assign__buscar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-          <input #buscadorAsesor type="search" class="form-control" placeholder="Buscar asesor…" [ngModel]="profBusqueda()" (ngModelChange)="profBusqueda.set($event)" aria-label="Buscar asesor" />
-        </div>
-        <div class="assign__list">
-        @for (prof of professionalsFiltrados(); track prof.id) {
-          <!-- 7-oct-2026 · La fila lleva dos botones hermanos (uno dentro de otro
-               no es HTML válido): elegir al profesional y, en el elegido, GUARDAR
-               las horas que se le acaban de marcar en la agenda. -->
-          <div class="prof-fila">
-            <button
-              type="button"
-              class="prof-pick"
-              [class.prof-pick--active]="prof.id === selectedProfId()"
-              (click)="selectProf(prof.id)"
-            >
-              <span class="prof-pick__avatar" aria-hidden="true">{{ prof.nombre.charAt(0) }}</span>
-              <span class="prof-pick__text">
-                <span class="prof-pick__name">{{ prof.nombre }}</span>
-                <span class="prof-pick__spec">{{ prof.especialidad || 'Sin especialidad' }}</span>
-              </span>
-              @if (minutosDelProfesional(prof.id); as min) {
-                <span class="prof-pick__horas" title="Horas de esta orden">{{ duracionTexto(min) }}</span>
-              }
-            </button>
-            @if (prof.id === selectedProfId() && order.osId) {
-              <button
-                type="button"
-                appAccion="guardar"
-                class="prof-guardar"
-                [class.prof-guardar--pendiente]="pendienteDeGuardar()"
-                [disabled]="!pendienteDeGuardar()"
-                (click)="guardarProgreso()"
-                [etiqueta]="'Guardar las horas de ' + prof.nombre"
-                [ayuda]="ayudaGuardar()"
-              ></button>
-            }
-          </div>
-        } @empty {
-          <p class="assign__empty">{{ profBusqueda().trim() ? 'Ningún asesor coincide con «' + profBusqueda() + '».' : 'No hay profesionales activos disponibles.' }}</p>
-        }
-        </div>
-
-        <!-- ASG · El suplente: los formatos salen a nombre de OTRO.
-             Bolívar solo acepta radicados a nombre de profesionales que ella
-             tiene registrados, y no todo el equipo lo está. Cuando el que puede
-             ir no lo está, la visita la ejecuta él y el formato lleva el nombre
-             de un registrado. Todo lo demás —correo, enlace de soportes, agenda,
-             cuenta de cobro y encuesta— sigue siendo del que ejecuta.
-             A3-01 · Una orden particular no lleva formatos: no hay suplente. -->
-        @if (selectedProfId() && !order.particular) {
-          <div class="suplente">
-            @if (ejecutorRegistrado()) {
-              <p class="suplente__ok">
-                Registrado ante {{ order.arl }}: los formatos salen a su nombre.
-              </p>
-            } @else {
-              <label class="check suplente__toggle">
-                <input
-                  type="checkbox"
-                  [checked]="usarSuplente()"
-                  (change)="alternarSuplente($any($event.target).checked)"
-                />
-                <span>Los formatos salen a nombre de otro profesional</span>
-              </label>
-
-              @if (usarSuplente()) {
-                <!-- Solo los registrados ante ESTA ARL: poner a un registrado de
-                     otra deja el mismo formato que la ARL va a devolver, y encima
-                     con apariencia de estar bien. -->
-                <select
-                  class="form-control form-control--sm"
-                  [ngModel]="formatosProfId()"
-                  (ngModelChange)="formatosProfId.set($event)"
-                  name="formatosProf"
-                >
-                  <option [ngValue]="null">— Elija un profesional registrado —</option>
-                  @for (reg of registradosDeLaArl(); track reg.id) {
-                    <option [ngValue]="reg.id">{{ reg.nombre }}</option>
-                  }
-                </select>
-
-                @if (!registradosDeLaArl().length) {
-                  <p class="suplente__aviso">
-                    Ningún otro profesional figura registrado ante {{ order.arl }}. Márquelo en
-                    Profesionales → Registro ante las ARL.
-                  </p>
-                } @else if (registroDelSuplente(); as reg) {
-                  @if (reg.vencido) {
-                    <!-- Vencido no bloquea: la fecha la teclea un administrador y
-                         puede estar sin actualizar. Pero si de verdad venció, la
-                         ARL devolverá el radicado. -->
-                    <p class="suplente__aviso">
-                      Su registro figura vencido el {{ reg.vigente_hasta }}. Confirme la vigencia
-                      con la ARL antes de radicar.
-                    </p>
-                  } @else if (reg.codigo_registro) {
-                    <p class="suplente__ok">Registro {{ reg.codigo_registro }}.</p>
-                  }
-                }
-              }
-            }
-          </div>
-        }
-
-        <!-- 7-oct-2026 · Varios asesores: ya no hay interruptor ni horas tecleadas.
-             Se marca en la agenda lo de uno, se guarda con el botón de su fila y
-             se elige al siguiente. El resumen de quién lleva qué está arriba de
-             la agenda, en «Visita de esta orden». -->
-        @if (order.osId && duracionVisita() > 0) {
-          <p class="assign__ayuda">
-            ¿La orden la ejecutan varios? Agende las horas de un profesional, guárdelas con
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-              <path d="M17 21v-8H7v8M7 3v5h8" />
-            </svg>
-            y elija al siguiente para repartirle el resto.
-          </p>
-        }
-       </div>
-      </div>
+    <!-- 27-nov-2026 · Ajuste para pantallas pequeñas (dueño, portátil de 640 px
+         útiles): el cuerpo ya no es «lista de asesores | agenda» lado a lado.
+         Primero se elige quién va (la lista ocupa el cuerpo); elegido, queda en
+         una fila con «Cambiar» y la agenda toma todo el alto, sin scroll. -->
+    <div class="modal__body assign" [class.assign--eligiendo]="eligiendoAsesor() || !selectedProfId()">
+      <app-asesor-visita
+        [todos]="professionals()"
+        [filtrados]="professionalsFiltrados()"
+        [busqueda]="profBusqueda()"
+        (busquedaChange)="profBusqueda.set($event)"
+        [seleccionadoId]="selectedProfId()"
+        [equipo]="equipoVista()"
+        [minutosDe]="minutosDeFn"
+        [(abierto)]="eligiendoAsesor"
+        [minutosOrden]="duracionVisita()"
+        [varios]="!!order.osId && duracionVisita() > 0"
+        [arl]="order.arl"
+        [particular]="!!order.particular"
+        [registrado]="registradoFn"
+        [usarSuplente]="usarSuplente()"
+        [formatosProfId]="formatosProfId()"
+        [registroSuplente]="registroDelSuplente()"
+        (elegir)="selectProf($event)"
+        (quitar)="quitarDelEquipo($event)"
+        (otroAsesor)="guardarProgreso()"
+        (suplente)="alternarSuplente($event)"
+        (formatosProf)="formatosProfId.set($event)"
+      />
 
       <!-- ---- Agenda ----
            ASG-02 · La visita se reparte en franjas (mañana y tarde, o varios
            días). 27-nov-2026 · Propuesta A «El formulario primero»: se agenda
            con un compositor (fecha, desde, hasta) que propone el siguiente hueco
-           y valida en vivo; la rejilla es solo un mapa. Sin profesional queda
-           bloqueada: primero se elige quién va y después el horario. -->
+           y valida en vivo; el mapa de la semana va en su propia pestaña. -->
+      @if (selectedProfId() && !eligiendoAsesor()) {
       <app-agenda-visita
         class="assign__calendar"
         [profesionalId]="selectedProfId()"
@@ -1361,10 +1259,7 @@
         [minutosOrden]="duracionVisita()"
         [minutosOtros]="minutosOtros()"
         [cargando]="cargandoAgenda()"
-        (cambiarAsesor)="selectProf($event)"
-        (quitarAsesor)="quitarDelEquipo($event)"
         (liberarOcupacion)="removeBusySlot($event)"
-        (irAProfesionales)="buscadorAsesor.focus(); buscadorAsesor.scrollIntoView({ block: 'center' })"
       >
         <!-- CFG-03 · Sin plantillas activas para esta ARL el correo saldría
              sin un solo documento que diligenciar. Se avisa ANTES de enviarlo. -->
@@ -1403,6 +1298,7 @@
           </div>
         }
       </app-agenda-visita>
+      }
     </div>
     }
 
@@ -1422,14 +1318,18 @@
           <!-- ASG · El interruptor está puesto pero no se eligió a nadie. Guardar
                así dejaría los formatos a nombre del ejecutor sin decirlo, que es
                justo lo contrario de lo que se pidió. -->
-          Elija a nombre de qué profesional registrado salen los formatos, o quite la marca.
+          Elija a nombre de qué profesional registrado salen los formatos, o pulse «Quitar».
         } @else if (!visitaCompleta()) {
           <!-- ASG-02 · No es un bloqueo: se puede guardar el avance (o solo el
                cambio de profesional) y volver luego a repartir el resto.
                P3 · Y, si la empresa lo permite, enviar lo ya programado. -->
-          Faltan {{ duracionTexto(minutosPorRepartir()) }} por repartir de
-          {{ duracionTexto(duracionVisita()) }}. Se guarda el avance, pero la orden no pasa a
-          PROGRAMADA ni sale el correo hasta cubrirlas todas@if (order.osId && puedeEnviarParcial()) {<span>, salvo que use «Enviar lo programado» para mandar ya lo agendado y dejar el resto para después</span>}.
+          <!-- 27-nov-2026 · Más corta: «Faltan 9 h» ya está arriba, en el resumen, y en
+               un portátil la frase larga ocupaba tres renglones del pie. -->
+          @if (order.osId && puedeEnviarParcial()) {
+            La orden se programa y sale el correo al cubrir las {{ duracionTexto(duracionVisita()) }}, o antes con «Enviar lo programado».
+          } @else {
+            Se guarda el avance; la orden se programa y sale el correo al cubrir las {{ duracionTexto(duracionVisita()) }}.
+          }
         } @else if (!order.osId) {
           <!-- El borrador solo guarda un instante: las franjas se pactan al
                validar la OS, que es cuando existe la orden a la que cuelgan. -->
@@ -1474,9 +1374,13 @@
               @if (previsualizando()) { <span class="spinner" aria-hidden="true"></span> Preparando formatos… } @else { Continuar }
             </button>
           } @else {
+            <!-- 27-nov-2026 · Un solo primario por vista (DESIGN §7): si también se
+                 ofrece «Enviar lo programado», «Guardar avance» baja a secundario. -->
             <button
               type="button"
-              class="btn btn--primary"
+              class="btn"
+              [class.btn--primary]="!(order.osId && !visitaCompleta() && puedeEnviarParcial())"
+              [class.btn--secondary]="order.osId && !visitaCompleta() && puedeEnviarParcial()"
               [disabled]="!principalId() || assigning() || (usarSuplente() && !formatosProfId())"
               (click)="confirmAssign()"
             >

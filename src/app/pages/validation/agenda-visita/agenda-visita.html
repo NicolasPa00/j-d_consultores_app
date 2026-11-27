@@ -1,441 +1,432 @@
-<!-- ===== Resumen: cuánto lleva la visita y quién va =====
-     Siempre se sabe cuánto falta: la barra separa lo enviado, lo nuevo y lo que
-     falta, y la línea de abajo lo dice con palabras (no solo con color). -->
-<div class="resumen">
-  <div class="resumen__cifras">
-    <div class="resumen__linea">
-      <span class="resumen__label">Visita de esta orden</span>
-      @if (completa()) {
-        <span class="resumen__completa">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m8 12.5 2.8 2.7L16 9.8" /></svg>
-          {{ resumen().completa }}
-        </span>
-      } @else {
-        <span class="resumen__valor">{{ resumen().cifra }}</span>
-        @if (resumen().programados && resumen().falta) {
-          <span class="resumen__falta">Faltan {{ duracion(resumen().falta) }}</span>
-        }
+<!-- ===== Cabecera: dos pestañas y, a su derecha, cuánto lleva la visita =====
+     27-nov-2026 · El compositor y el mapa ya no se ven a la vez (en un portátil
+     de 640 px el compositor quedaba bajo el pie). «Elegir horario» es la que se
+     usa; «Ver agenda», la consulta. El resumen va en la misma fila para no
+     gastar otra: siempre se sabe cuánto falta, con palabras y con la barra. -->
+<div class="cab">
+  <div class="tabs pest" role="tablist" aria-label="Programar la visita" (keydown)="teclaPestanas($event)">
+    <button type="button" role="tab" class="tab" id="agv-tab-horario" aria-controls="agv-panel" [attr.aria-selected]="pestana() === 'horario'" [attr.tabindex]="pestana() === 'horario' ? 0 : -1" (click)="irA('horario')">
+      Elegir horario
+    </button>
+    <button type="button" role="tab" class="tab" id="agv-tab-agenda" aria-controls="agv-panel" [attr.aria-selected]="pestana() === 'agenda'" [attr.tabindex]="pestana() === 'agenda' ? 0 : -1" (click)="irA('agenda')">
+      Ver agenda
+    </button>
+  </div>
+
+  <div class="resumen">
+    @if (completa()) {
+      <span class="resumen__completa">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m8 12.5 2.8 2.7L16 9.8" /></svg>
+        {{ resumen().completa }}
+      </span>
+    } @else {
+      <span class="resumen__valor">{{ resumen().cifra }}</span>
+      @if (resumen().programados && resumen().falta) {
+        <span class="resumen__falta">Faltan {{ duracion(resumen().falta) }}</span>
       }
-    </div>
-    <div class="barra" role="img" [attr.aria-label]="resumen().detalle || 'Sin horas programadas'">
+    }
+    <span class="barra" role="img" [attr.aria-label]="resumen().detalle || 'Sin horas programadas'">
       <span class="barra__enviadas" [style.width.%]="resumen().pctEnviadas"></span>
       <span class="barra__nuevas" [style.width.%]="resumen().pctNuevas"></span>
-    </div>
-    @if (resumen().detalle) {
+    </span>
+    <!-- Lo enviado se dice con palabras cuando lo hay (la barra no basta). -->
+    @if (resumen().enviadas) {
       <span class="resumen__detalle">{{ resumen().detalle }}</span>
     }
   </div>
-
-  <!-- 7-oct-2026 · El equipo: un chip por asesor con las horas que ya tiene
-       guardadas. Pulsarlo lo selecciona; la ✕ (36 px) lo saca y libera sus horas. -->
-  @if (equipo().length) {
-    <ul class="equipo" aria-label="Asesores de esta orden">
-      @for (m of equipo(); track m.id) {
-        <li class="equipo-chip" [class.equipo-chip--activo]="m.id === profesionalId()">
-          <button type="button" class="equipo-chip__nombre" (click)="cambiarAsesor.emit(m.id)" [attr.aria-pressed]="m.id === profesionalId()">
-            <span class="equipo-chip__avatar" aria-hidden="true">{{ m.nombre.charAt(0) }}</span>
-            <span>{{ m.nombre }}</span>
-            <strong>{{ duracion(m.minutos) }}</strong>
-            @if (m.principal && equipo().length > 1) {
-              <span class="equipo-chip__rol">Principal</span>
-            }
-          </button>
-          <button type="button" class="equipo-chip__quitar" (click)="quitarAsesor.emit(m.id)" [attr.aria-label]="'Quitar a ' + m.nombre + ' de esta orden'">
-            <svg appIcono="cerrar"></svg>
-          </button>
-        </li>
-      }
-    </ul>
-  }
 </div>
 
 <!-- Avisos del padre (ARL sin formatos, cruces heredados de la agenda). -->
 <ng-content />
 
-<div class="trabajo">
-  <div class="trabajo__izq">
-    <!-- ===== A · Compositor de franja ===== -->
-    @if (!profesionalId()) {
-      <section class="tarjeta vacio" role="status">
-        <span class="vacio__disco" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" /></svg>
-        </span>
-        <p class="vacio__titulo">Primero elija el profesional</p>
-        <p class="vacio__texto">Seleccione en la lista quién ejecuta la visita. Así verá su disponibilidad y podrá agendar.</p>
-        <button type="button" class="btn btn--secondary vacio__ir" (click)="irAProfesionales.emit()">Elegir profesional</button>
-      </section>
-    } @else if (completa() && !edicion()) {
-      <section class="tarjeta comp" aria-labelledby="agv-comp-t">
-        <div class="comp__head">
-          <h4 class="comp__titulo" id="agv-comp-t">Franjas de {{ nombre() }}</h4>
-          <ng-container *ngTemplateOutlet="selectorAsesor" />
-        </div>
-        <p class="comp__lleno">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m8 12.5 2.8 2.7L16 9.8" /></svg>
-          <span>Ya están todas las horas. Para mover una franja, use Editar en la lista.</span>
-        </p>
-        <div class="comp__acc">
-          <button type="button" class="btn btn--secondary btn--agregar" id="agv-agregar" disabled>Agregar otra franja</button>
-        </div>
-      </section>
-    } @else if (comp(); as c) {
-      <section class="tarjeta comp" id="agv-comp" aria-labelledby="agv-comp-t" (keydown)="teclaCompositor($event)">
-        <div class="comp__head">
-          <h4 class="comp__titulo" id="agv-comp-t">Nueva franja de {{ nombre() }}</h4>
-          <ng-container *ngTemplateOutlet="selectorAsesor" />
-        </div>
-
-        @if (cargando()) {
-          <p class="comp__cargando" role="status"><span class="spinner" aria-hidden="true"></span> Cargando la agenda de {{ nombreCorto() }}…</p>
-        }
-
-        <fieldset class="comp__campos" [disabled]="cargando()">
-          <!-- 1 · Fecha: chips de dos semanas con cómo está el día para el asesor. -->
-          <div>
-            <span class="lbl" id="agv-lbl-fecha">Fecha</span>
-            <div class="dias" role="radiogroup" aria-labelledby="agv-lbl-fecha" (keydown)="teclaDias($event)">
-              @for (d of dias(); track d.iso) {
-                <button
-                  type="button"
-                  role="radio"
-                  class="chip--filtro dia"
-                  [class.chip--on]="d.on"
-                  [class.dia--hoy]="d.hoy"
-                  [class.dia--domingo]="d.domingo"
-                  [id]="'agv-dia-' + d.iso"
-                  [attr.aria-checked]="d.on"
-                  [attr.tabindex]="d.on ? 0 : -1"
-                  [attr.aria-label]="d.lectura"
-                  [disabled]="d.sinHuecos"
-                  (click)="elegirDia(d.iso)"
-                >
-                  <b>{{ d.nombre }}</b>
-                  <small>{{ d.texto }}</small>
-                </button>
-              }
-            </div>
-            <div class="dias__pie">
-              <span class="fecha-larga">{{ fechaLarga(c.fecha) }}</span>
-              <button type="button" class="btn btn--texto btn--sm" id="agv-otra" [attr.aria-expanded]="otraFechaAbierta()" (click)="alternarOtraFecha()">Otra fecha…</button>
-            </div>
-            @if (otraFechaAbierta()) {
-              <label class="sr" for="agv-c-fecha">Elegir otra fecha</label>
-              <input type="date" class="form-control otra-fecha" id="agv-c-fecha" [min]="hoy()" [value]="c.fecha" (change)="elegirOtraFecha($any($event.target).value)" />
-            }
-          </div>
-
-          <!-- 2 · Huecos del día: el equivalente accesible de la rejilla. -->
-          <div class="huecos">
-            @if (huecos().length) {
-              <span class="lbl">Libre ese día:</span>
-              @for (h of huecos(); track h[0]) {
-                <button type="button" class="chip--filtro hueco" (click)="usarHueco(h[0], h[1])" [attr.aria-label]="'Libre de ' + rango(h[0], h[1]) + ', usar este hueco'">
-                  {{ rango(h[0], h[1]) }}
-                </button>
-              }
+<div class="panel" role="tabpanel" id="agv-panel" [attr.aria-labelledby]="'agv-tab-' + pestana()">
+  @if (pestana() === 'horario') {
+    <div class="horario">
+      <!-- ===== A · Formulario: agregar una franja o cambiar una de la lista ===== -->
+      @if (!profesionalId()) {
+        <section class="vacio" role="status">
+          <p class="vacio__titulo">Primero elija el profesional</p>
+          <p class="vacio__texto">Así verá su disponibilidad y podrá agendar.</p>
+        </section>
+      } @else if (completa() && !edicion()) {
+        <section class="form form--lleno" aria-labelledby="agv-comp-t">
+          <h4 class="sr" id="agv-comp-t">Horario de la visita</h4>
+          <p class="lleno">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m8 12.5 2.8 2.7L16 9.8" /></svg>
+            <span><b>Ya están todas las horas.</b> Para mover una franja, use «Editar» en la lista.</span>
+          </p>
+        </section>
+      } @else if (form(); as c) {
+        <section class="form" id="agv-comp" [class.form--edit]="edicion()" aria-labelledby="agv-comp-t" (keydown)="teclaCompositor($event)">
+          <div class="form__head">
+            <!-- Nueva: el título solo para lectores de pantalla (la pestaña ya lo
+                 dice y en 640 px cada renglón cuenta). En edición sí se ve: hay
+                 que saber que no se está agregando otra. -->
+            @if (editada(); as f) {
+              <h4 class="form__titulo" id="agv-comp-t">Cambiar la franja del {{ fechaCorta(f.fecha) }}</h4>
             } @else {
-              <span class="sin-huecos">{{ nombreCorto() }} no tiene huecos ese día. Elija otra fecha.</span>
+              <h4 class="sr" id="agv-comp-t">Nueva franja de {{ nombreCorto() }}</h4>
+            }
+            @if (cargando()) {
+              <span class="form__cargando" role="status"><span class="spinner" aria-hidden="true"></span>Cargando su agenda…</span>
             }
           </div>
 
-          <!-- 3 · Desde / Hasta -->
-          <ng-container *ngTemplateOutlet="horas; context: { $implicit: c, ambito: 'c' }" />
-
-          <!-- 4 · Duración rápida -->
-          @if (duraciones().length) {
-            <div>
-              <span class="lbl" id="agv-lbl-dur">Duración</span>
-              <div class="dur" role="group" aria-labelledby="agv-lbl-dur">
-                @for (d of duraciones(); track d.min) {
-                  <button type="button" class="chip--filtro" [class.chip--on]="d.on" [attr.aria-pressed]="d.on" (click)="elegirDuracion(d.min)">{{ d.texto }}</button>
+          <fieldset class="form__campos" [disabled]="cargando()">
+            <!-- 1 · Fecha: hoy y cinco días más; lo demás, con el calendario del sistema. -->
+            <div class="campo">
+              <div class="campo__lbl">
+                <span class="lbl" id="agv-lbl-fecha">Fecha</span>
+                @if (otraFechaAbierta()) {
+                  <input type="date" class="form-control otra-fecha" id="agv-fecha" aria-label="Elegir otra fecha" [min]="hoy()" [value]="c.fecha" (change)="elegirOtraFecha($any($event.target).value)" (keydown.escape)="$event.stopPropagation(); otraFechaAbierta.set(false)" />
+                } @else {
+                  <span class="fecha-larga">{{ fechaLarga(c.fecha) }}</span>
+                }
+              </div>
+              <div class="dias" role="radiogroup" aria-labelledby="agv-lbl-fecha" (keydown)="teclaDias($event)">
+                @for (d of dias(); track d.iso) {
+                  <button
+                    type="button"
+                    role="radio"
+                    class="chip--filtro dia"
+                    [class.chip--on]="d.on"
+                    [class.dia--hoy]="d.hoy"
+                    [class.dia--domingo]="d.domingo"
+                    [id]="'agv-dia-' + d.iso"
+                    [attr.aria-checked]="d.on"
+                    [attr.tabindex]="d.on || ($first && !hayDiaElegido()) ? 0 : -1"
+                    [attr.aria-label]="d.lectura"
+                    [disabled]="d.sinHuecos"
+                    (click)="elegirDia(d.iso)"
+                  >
+                    <b>{{ d.nombre }}</b>
+                    <small>{{ d.texto }}</small>
+                  </button>
+                }
+                @if (fechaFuera(); as x) {
+                  <button type="button" class="chip--filtro dia chip--on" [attr.aria-expanded]="otraFechaAbierta()" [attr.aria-label]="x.lectura + '. Cambiar la fecha'" (click)="alternarOtraFecha()">
+                    <b>{{ x.nombre }}</b>
+                    <small>{{ x.texto }}</small>
+                  </button>
+                } @else {
+                  <button type="button" class="chip--filtro dia dia--otra" id="agv-otra" [attr.aria-expanded]="otraFechaAbierta()" (click)="alternarOtraFecha()">
+                    <b>Otra fecha</b>
+                    <small>Calendario</small>
+                  </button>
                 }
               </div>
             </div>
-          }
 
-          <!-- 5 · Validación en vivo -->
-          <ng-container *ngTemplateOutlet="lineaValidacion; context: { $implicit: validacion(), ambito: 'c' }" />
-
-          <!-- 6 · Agregar: secundario, el primario del modal es el del pie. -->
-          <div class="comp__acc">
-            <button type="button" class="btn btn--secondary btn--agregar" id="agv-agregar" [disabled]="!validacion()?.ok || cargando()" (click)="agregar()">
-              <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 4v10M4 9h10" /></svg>
-              Agregar franja
-            </button>
-          </div>
-        </fieldset>
-      </section>
-
-      <!-- 8 · Sugerencia de reparto (plegable) -->
-      @if (sugerencia(); as s) {
-        <details class="sug" open>
-          <summary class="sug__titulo">Quedan {{ duracion(faltan()) }}. Le sugerimos, en jornada de 8 a 12 y de 2 a 6:</summary>
-          <ul>
-            @for (l of s.lineas; track l) {
-              <li>{{ l }}</li>
-            }
-          </ul>
-          <div class="sug__acc">
-            <button type="button" class="btn btn--secondary btn--sm" (click)="agregarSugerencia()">Agregar estas {{ s.franjas.length }} franjas</button>
-            <button type="button" class="btn btn--texto btn--sm" (click)="revisarUnaPorUna()">Revisar una por una</button>
-          </div>
-        </details>
-      }
-    }
-
-    <!-- ===== B · Lista de franjas (editable) ===== -->
-    @if (profesionalId()) {
-      <section aria-labelledby="agv-lista-t">
-        <div class="lista__head">
-          <h4 class="lista__titulo" id="agv-lista-t">Franjas de {{ nombreCorto() }}</h4>
-          @if (filas().length) {
-            <span class="lista__cuenta">{{ filas().length }} franja{{ filas().length === 1 ? '' : 's' }} · {{ duracion(resumenPropio()) }}</span>
-          }
-        </div>
-        @if (filas().length) {
-          <ul class="franjas">
-            @for (r of filas(); track r.f.id) {
-              @switch (r.estado) {
-                @case ('edicion') {
-                  @if (edicion(); as e) {
-                    <li class="fr fr--edit" [id]="'agv-fila-' + r.f.id">
-                      <div class="edit" (keydown)="teclaEdicion($event)">
-                        <p class="edit__titulo">Editando la franja del {{ fechaLectura(r.f.fecha) }}</p>
-                        <div>
-                          <label class="lbl" for="agv-e-fecha">Fecha</label>
-                          <input type="date" class="form-control fecha-in" id="agv-e-fecha" [min]="hoy()" [value]="e.fecha" (change)="cambiarFechaEdicion($any($event.target).value)" />
-                        </div>
-                        <ng-container *ngTemplateOutlet="horas; context: { $implicit: e, ambito: 'e' }" />
-                        <ng-container *ngTemplateOutlet="lineaValidacion; context: { $implicit: validacionEdicion(), ambito: 'e' }" />
-                        <div class="comp__acc">
-                          <button type="button" class="btn btn--secondary btn--agregar" id="agv-e-guardar" [disabled]="!validacionEdicion()?.ok" (click)="guardarEdicion()">Guardar cambios</button>
-                          <button type="button" class="btn btn--texto" (click)="cancelarEdicion()">Cancelar</button>
-                        </div>
-                      </div>
-                    </li>
-                  }
+            <!-- 2 · El día de un vistazo: lo ocupado y lo que va a agregar. Es un
+                 mapa (aria-hidden): la línea de validación dice lo mismo con
+                 palabras. Tocarla lleva esa hora a «Desde». -->
+            <div class="linea-dia" aria-hidden="true">
+              <div class="linea-dia__pista" (click)="tocarLinea($event)">
+                @for (b of lineaDia(); track b.clave) {
+                  <span class="ld ld--{{ b.tipo }}" [style.left.%]="b.pos" [style.width.%]="b.largo"></span>
                 }
-                @case ('pasada') {
-                  <li class="fr fr--env" [id]="'agv-fila-' + r.f.id">
-                    <span class="fr__txt">
-                      <ng-container *ngTemplateOutlet="lineaFila; context: { $implicit: r }" />
-                      <span class="fr__estado">
-                        <ng-container *ngTemplateOutlet="candado" />
-                        Enviada el {{ r.enviadaEl }} · Ya ocurrió · no se puede cambiar
-                      </span>
-                    </span>
-                  </li>
-                }
-                @case ('confirmar') {
-                  <li class="fr fr--env fr--confirmar" [id]="'agv-fila-' + r.f.id">
-                    <span class="fr__txt"><ng-container *ngTemplateOutlet="lineaFila; context: { $implicit: r }" /></span>
-                    <div class="confirmar" role="group" aria-label="Confirmar el cambio de una franja enviada">
-                      <span>{{ nombreCorto() }} ya recibió esta franja en el correo del {{ r.enviadaEl }}. Si la cambia o la quita, al enviar le llegará un correo con el cambio.</span>
-                      <div class="confirmar__acc">
-                        <button type="button" class="btn btn--secondary btn--sm" id="agv-conf-cambiar" (click)="editar(r.f)">Cambiar la franja</button>
-                        <button type="button" class="btn btn--secondary btn--sm" (click)="quitar(r.f)">Quitar la franja</button>
-                        <button type="button" class="btn btn--texto btn--sm" (click)="dejarComoEsta(r.f)">Dejarla así</button>
-                      </div>
-                    </div>
-                  </li>
-                }
-                @case ('enviada') {
-                  <li class="fr fr--env" [id]="'agv-fila-' + r.f.id">
-                    <span class="fr__txt">
-                      <ng-container *ngTemplateOutlet="lineaFila; context: { $implicit: r }" />
-                      <span class="fr__estado"><ng-container *ngTemplateOutlet="candado" /> Enviada el {{ r.enviadaEl }}</span>
-                    </span>
-                    <span class="fr__acc">
-                      <button type="button" class="btn btn--secondary btn--sm" [id]="'agv-cambiar-' + r.f.id" (click)="pedirCambio(r.f)" [attr.aria-label]="'Cambiar la franja enviada del ' + r.lectura">Cambiar…</button>
-                    </span>
-                  </li>
-                }
-                @default {
-                  <li class="fr" [class.fr--flash]="resaltada() === r.f.id" [id]="'agv-fila-' + r.f.id">
-                    <span class="fr__txt">
-                      <ng-container *ngTemplateOutlet="lineaFila; context: { $implicit: r }" />
-                      <span class="fr__estado fr__estado--nueva">{{ r.f.cambiada ? 'Cambiada · se avisará al asesor' : 'Nueva · sin enviar' }}</span>
-                    </span>
-                    <span class="fr__acc">
-                      <button type="button" class="btn btn--secondary btn--sm" [id]="'agv-editar-' + r.f.id" (click)="editar(r.f)" [attr.aria-label]="'Editar la franja del ' + r.lectura">Editar</button>
-                      <button type="button" class="btn btn--secondary btn--sm" (click)="quitar(r.f)" [attr.aria-label]="'Quitar la franja del ' + r.lectura">Quitar</button>
-                    </span>
-                  </li>
-                }
-              }
-            }
-          </ul>
-        } @else {
-          <p class="lista-vacia">Todavía no hay franjas para {{ nombreCorto() }}. Use el formulario de arriba o toque un rato libre en la agenda.</p>
-        }
-        @for (o of otrosDelEquipo(); track o.id) {
-          <p class="otros">En esta orden, {{ o.nombre }} tiene: {{ o.texto }}. Para cambiarlas, elíjalo arriba.</p>
-        }
-      </section>
-    }
-  </div>
-
-  <!-- ===== C · Disponibilidad (apoyo visual) ===== -->
-  <section class="trabajo__der" aria-labelledby="agv-disp-t">
-    <h4 class="sr" id="agv-disp-t">Disponibilidad{{ profesionalId() ? ' de ' + nombreCorto() : '' }}</h4>
-    <div class="disp__bar">
-      @if (vista() === 'semana') {
-        <div class="disp__nav">
-          <button type="button" class="icon-action" (click)="moverSemana(-1)" aria-label="Semana anterior"><svg appIcono="anterior"></svg></button>
-          <button type="button" class="icon-action" (click)="moverSemana(1)" aria-label="Semana siguiente"><svg appIcono="siguiente"></svg></button>
-          <button type="button" class="btn btn--secondary btn--sm" (click)="semanaDeHoy()">Hoy</button>
-          <p class="disp__rango">{{ rotuloSemana() }}</p>
-        </div>
-      } @else {
-        <p class="disp__rango">{{ profesionalId() ? 'Día de ' + nombreCorto() : 'Día' }}</p>
-      }
-      <div class="seg" role="group" aria-label="Vista de la disponibilidad">
-        <button type="button" [attr.aria-pressed]="vista() === 'semana'" (click)="vista.set('semana')">Semana</button>
-        <button type="button" [attr.aria-pressed]="vista() === 'dia'" (click)="vista.set('dia')">Día</button>
-      </div>
-    </div>
-
-    @if (vista() === 'semana') {
-      <!-- La rejilla es un mapa: aria-hidden; su equivalente accesible son los
-           huecos del compositor y la vista Día. -->
-      <div class="rej" [class.rej--sinprof]="!profesionalId()" aria-hidden="true">
-        <span class="rej__h"></span>
-        @for (d of diasSemana(); track d.iso) {
-          <span class="rej__h" [class.rej__h--hoy]="d.hoy" [class.rej__h--sel]="d.sel">{{ d.nombre }}<b>{{ d.num }}</b></span>
-        }
-        <div class="rej__eje" [style.height.px]="altoRejilla">
-          @for (h of horasEje; track h.top) {
-            <span class="rej__hora" [style.top.px]="h.top">{{ h.texto }}</span>
-          }
-        </div>
-        @for (d of diasSemana(); track d.iso) {
-          <div
-            class="rej__col"
-            [class.rej__col--domingo]="d.domingo"
-            [class.rej__col--bloq]="d.bloqueada"
-            [style.height.px]="altoRejilla"
-            (click)="tocarRejilla($event, d.iso, d.bloqueada)"
-          >
-            @for (b of d.bloques; track b.clave) {
-              <div
-                class="blq blq--{{ b.tipo }}"
-                [class.blq--edit]="b.enEdicion"
-                [style.top.px]="b.top"
-                [style.height.px]="b.alto"
-                (click)="b.franja ? tocarBloque($event, b) : null"
-              >
-                @if (b.alto >= 20) { <span class="blq__t">{{ b.rango }}</span> }
-                @if (b.alto >= 34) { <span class="blq__t">{{ b.texto }}</span> }
               </div>
-            }
-          </div>
-        }
-      </div>
-      <ul class="leyenda">
-        <li><span class="pt pt--ocupado"></span>Ocupado</li>
-        <li><span class="pt pt--otra"></span>Otra orden suya</li>
-        <li><span class="pt pt--visita"></span>Esta visita</li>
-        <li><span class="pt pt--enviada"></span>Enviada</li>
-        @if (equipo().length > 1) {
-          <li><span class="pt pt--equipo"></span>Otro asesor de esta orden</li>
-        }
-        <li><span class="pt pt--previa"></span>Lo que va a agregar</li>
-      </ul>
-      <p class="disp__pista">
-        @if (profesionalId()) {
-          Disponibilidad de {{ nombreCorto() }}. Toque un rato libre para llevarlo al formulario; nada se agrega hasta que pulse «Agregar franja».
-        } @else {
-          Elija un profesional para ver su disponibilidad.
-        }
-      </p>
-    } @else {
-      @if (profesionalId()) {
-        <p class="disp__pista disp__pista--dia">{{ fechaLarga(fechaDia()) }}</p>
-        <ul class="linea">
-          @for (t of tramosDia(); track t.clave) {
-            <li>
-              @if (t.tipo === 'libre') {
-                <button type="button" class="seg-dia seg-dia--libre" (click)="usarHueco(t.ini, t.fin, true)">
-                  <span class="seg-dia__rango">{{ rangoTramo(t) }}</span>
-                  <span class="seg-dia__que">Libre</span>
-                  <span class="seg-dia__ir">Usar</span>
-                </button>
-              } @else {
-                <div class="seg-dia">
-                  <span class="pt pt--{{ t.tipo }}" aria-hidden="true"></span>
-                  <span class="seg-dia__rango">{{ rangoTramo(t) }}</span>
-                  <span class="seg-dia__que">{{ t.texto }}</span>
-                  @if (t.ocupacion; as oc) {
-                    <!-- La ✕ de 16 px de la rejilla vive aquí como botón de 36 px. -->
-                    <button type="button" class="btn btn--secondary btn--sm seg-dia__liberar" (click)="liberarOcupacion.emit(oc)" [attr.aria-label]="'Liberar «' + t.texto + '», ' + rangoTramo(t)">Liberar</button>
+              <div class="linea-dia__marcas">
+                @for (m of marcas(); track m.pos) {
+                  <span [style.left.%]="m.pos">{{ m.texto }}</span>
+                }
+              </div>
+            </div>
+
+            <!-- 3 · Desde / Hasta, con − / + de media hora -->
+            <div class="horas">
+              <div>
+                <label class="lbl" for="agv-ini">Desde</label>
+                <div class="stepper">
+                  <button type="button" class="btn btn--secondary stepper__b" (click)="pasoDesde(-30)" [disabled]="c.ini <= 360" aria-label="Media hora antes">−</button>
+                  <select class="form-control" id="agv-ini" (change)="cambiarDesde($any($event.target).value)">
+                    @for (o of opcionesDesde(c.ini); track o.min) {
+                      <option [value]="o.min" [selected]="o.min === c.ini">{{ o.texto }}</option>
+                    }
+                  </select>
+                  <button type="button" class="btn btn--secondary stepper__b" (click)="pasoDesde(30)" [disabled]="c.ini >= 1410" aria-label="Media hora después">+</button>
+                </div>
+              </div>
+              <div>
+                <label class="lbl" for="agv-fin">Hasta</label>
+                <div class="stepper">
+                  <button type="button" class="btn btn--secondary stepper__b" (click)="pasoHasta(-30)" [disabled]="c.fin <= c.ini + 30" aria-label="Terminar media hora antes">−</button>
+                  <select class="form-control" id="agv-fin" (change)="cambiarHasta($any($event.target).value)">
+                    @for (o of opcionesHasta(c.ini, c.fin); track o.min) {
+                      <option [value]="o.min" [selected]="o.min === c.fin">{{ o.texto }}</option>
+                    }
+                  </select>
+                  <button type="button" class="btn btn--secondary stepper__b" (click)="pasoHasta(30)" [disabled]="c.fin >= 1440" aria-label="Terminar media hora después">+</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4 · Duración rápida, en la misma línea que su etiqueta -->
+            @if (duraciones().length) {
+              <div class="dur">
+                <span class="lbl" id="agv-lbl-dur">Duración</span>
+                <div class="dur__chips" role="group" aria-labelledby="agv-lbl-dur">
+                  @for (d of duraciones(); track d.min) {
+                    <button type="button" class="chip--filtro" [class.chip--on]="d.on" [attr.aria-pressed]="d.on" (click)="elegirDuracion(d.min)">{{ d.texto }}</button>
                   }
                 </div>
+              </div>
+            }
+
+            <!-- 5 · Validación en vivo + la acción del formulario, en una fila:
+                 el botón queda siempre a la vista y la razón, justo al lado. -->
+            <div class="form__acc">
+              <div class="valid" role="status" aria-live="polite">
+                @if (validacion(); as v) {
+                  @if (v.ok) {
+                    <span class="valid__ok">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m8 12.5 2.8 2.7L16 9.8" /></svg>
+                      {{ v.texto }}
+                    </span>
+                  } @else {
+                    <div class="valid__mal" [class.valid__mal--error]="v.tipo === 'error'">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>
+                      <p>
+                        <b>{{ v.problema }}</b>
+                        @if (v.detalle) { {{ v.detalle }} }
+                        @if (v.ajuste; as a) {
+                          <button type="button" class="btn btn--texto valid__ajuste" (click)="aplicarAjuste(a)">{{ a.texto }}</button>
+                        }
+                      </p>
+                    </div>
+                  }
+                }
+              </div>
+              @if (edicion()) {
+                <div class="form__btns">
+                  <button type="button" class="btn btn--texto" (click)="cancelarEdicion()">Cancelar</button>
+                  <button type="button" class="btn btn--secondary btn--agregar" id="agv-guardar" [disabled]="!validacion()?.ok" (click)="guardarEdicion()">Guardar cambios</button>
+                </div>
+              } @else {
+                <!-- Secundario con texto en acción: el primario del modal es el del pie. -->
+                <button type="button" class="btn btn--secondary btn--agregar" id="agv-agregar" [disabled]="!validacion()?.ok || cargando()" (click)="agregar()">
+                  <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 4v10M4 9h10" /></svg>
+                  Agregar franja
+                </button>
               }
-            </li>
-          } @empty {
-            <li><p class="lista-vacia">Ese día no tiene huecos entre las 6:00 a. m. y las 12:00 a. m.</p></li>
-          }
-        </ul>
-      } @else {
-        <p class="lista-vacia">Elija un profesional para ver su día.</p>
+            </div>
+          </fieldset>
+        </section>
       }
-    }
-  </section>
+
+      <!-- ===== B · Franjas del asesor (la columna hace scroll sola) ===== -->
+      @if (profesionalId()) {
+        <section class="lista" aria-labelledby="agv-lista-t">
+          <div class="lista__head">
+            <h4 class="lista__titulo" id="agv-lista-t">Franjas de {{ nombreCorto() }}</h4>
+            @if (filas().length) {
+              <span class="lista__cuenta">{{ filas().length }} franja{{ filas().length === 1 ? '' : 's' }} · {{ duracion(resumenPropio()) }}</span>
+            }
+          </div>
+          <div class="lista__cuerpo">
+            @if (filas().length) {
+              <ul class="franjas">
+                @for (r of filas(); track r.f.id) {
+                  @switch (r.estado) {
+                    @case ('edicion') {
+                      <li class="fr fr--edit" [id]="'agv-fila-' + r.f.id">
+                        <span class="fr__txt">
+                          <ng-container *ngTemplateOutlet="lineaFila; context: { $implicit: r }" />
+                          <span class="fr__estado fr__estado--nueva">Cambiándola en el formulario</span>
+                        </span>
+                      </li>
+                    }
+                    @case ('pasada') {
+                      <li class="fr fr--env" [id]="'agv-fila-' + r.f.id">
+                        <span class="fr__txt">
+                          <ng-container *ngTemplateOutlet="lineaFila; context: { $implicit: r }" />
+                          <span class="fr__estado"><ng-container *ngTemplateOutlet="candado" />Enviada el {{ r.enviadaEl }} · Ya ocurrió · no se puede cambiar</span>
+                        </span>
+                      </li>
+                    }
+                    @case ('confirmar') {
+                      <li class="fr fr--env fr--confirmar" [id]="'agv-fila-' + r.f.id">
+                        <span class="fr__txt"><ng-container *ngTemplateOutlet="lineaFila; context: { $implicit: r }" /></span>
+                        <div class="confirmar" role="group" aria-label="Confirmar el cambio de una franja enviada">
+                          <span>{{ nombreCorto() }} ya recibió esta franja en el correo del {{ r.enviadaEl }}. Si la cambia o la quita, al enviar le llegará un correo con el cambio.</span>
+                          <div class="confirmar__acc">
+                            <button type="button" class="btn btn--secondary btn--sm" id="agv-conf-cambiar" (click)="editar(r.f)">Cambiar la franja</button>
+                            <button type="button" class="btn btn--secondary btn--sm" (click)="quitar(r.f)">Quitar la franja</button>
+                            <button type="button" class="btn btn--texto btn--sm" (click)="dejarComoEsta(r.f)">Dejarla así</button>
+                          </div>
+                        </div>
+                      </li>
+                    }
+                    @case ('enviada') {
+                      <li class="fr fr--env" [id]="'agv-fila-' + r.f.id">
+                        <span class="fr__txt">
+                          <ng-container *ngTemplateOutlet="lineaFila; context: { $implicit: r }" />
+                          <span class="fr__estado"><ng-container *ngTemplateOutlet="candado" />Enviada el {{ r.enviadaEl }}</span>
+                        </span>
+                        <span class="fr__acc">
+                          <button type="button" class="btn btn--secondary btn--sm" [id]="'agv-cambiar-' + r.f.id" (click)="pedirCambio(r.f)" [attr.aria-label]="'Cambiar la franja enviada del ' + r.lectura">Cambiar…</button>
+                        </span>
+                      </li>
+                    }
+                    @default {
+                      <li class="fr" [class.fr--flash]="resaltada() === r.f.id" [id]="'agv-fila-' + r.f.id">
+                        <span class="fr__txt">
+                          <ng-container *ngTemplateOutlet="lineaFila; context: { $implicit: r }" />
+                          <span class="fr__estado fr__estado--nueva">{{ r.f.cambiada ? 'Cambiada · se avisará al asesor' : 'Nueva · sin enviar' }}</span>
+                        </span>
+                        <span class="fr__acc">
+                          <button type="button" class="btn btn--secondary btn--sm" [id]="'agv-editar-' + r.f.id" (click)="editar(r.f)" [attr.aria-label]="'Editar la franja del ' + r.lectura">Editar</button>
+                          <button type="button" class="btn btn--secondary btn--sm" (click)="quitar(r.f)" [attr.aria-label]="'Quitar la franja del ' + r.lectura">Quitar</button>
+                        </span>
+                      </li>
+                    }
+                  }
+                }
+              </ul>
+            } @else {
+              <div class="lista-vacia">
+                <p class="lista-vacia__t">Todavía no hay franjas para {{ nombreCorto() }}</p>
+                <p class="lista-vacia__d">Revise la fecha y las horas del formulario y pulse «Agregar franja». También puede tocar un rato libre en «Ver agenda».</p>
+              </div>
+            }
+
+            @for (o of otrosDelEquipo(); track o.id) {
+              <p class="otros"><b>{{ o.nombre }}</b> en esta orden (para cambiarlas, elíjalo arriba):<br />{{ o.texto }}</p>
+            }
+
+            <!-- Sugerencia de reparto: plegada, es una ayuda y no el camino. -->
+            @if (sugerencia(); as s) {
+              <details class="sug">
+                <summary class="sug__titulo">Sugerencia para repartir {{ duracion(faltan()) }} en {{ s.franjas.length }} franjas</summary>
+                <p class="sug__nota">En jornada de 8 a 12 y de 2 a 6, sin choques:</p>
+                <ul>
+                  @for (l of s.lineas; track l) {
+                    <li>{{ l }}</li>
+                  }
+                </ul>
+                <div class="sug__acc">
+                  <button type="button" class="btn btn--secondary btn--sm" (click)="agregarSugerencia()">Agregar estas {{ s.franjas.length }} franjas</button>
+                  <button type="button" class="btn btn--texto btn--sm" (click)="revisarUnaPorUna()">Revisar una por una</button>
+                </div>
+              </details>
+            }
+          </div>
+        </section>
+      }
+    </div>
+  } @else {
+    <!-- ===== C · Ver agenda: el mapa, de consulta ===== -->
+    <section class="agenda" aria-labelledby="agv-disp-t">
+      <h4 class="sr" id="agv-disp-t">Disponibilidad{{ profesionalId() ? ' de ' + nombreCorto() : '' }}</h4>
+      <div class="disp__bar">
+        @if (vista() === 'semana') {
+          <div class="disp__nav">
+            <button type="button" class="icon-action" (click)="moverSemana(-1)" aria-label="Semana anterior"><svg appIcono="anterior"></svg></button>
+            <button type="button" class="icon-action" (click)="moverSemana(1)" aria-label="Semana siguiente"><svg appIcono="siguiente"></svg></button>
+            <button type="button" class="btn btn--secondary btn--sm" (click)="semanaDeHoy()">Hoy</button>
+            <p class="disp__rango">{{ rotuloSemana() }}</p>
+          </div>
+        } @else {
+          <div class="disp__nav">
+            <button type="button" class="icon-action" (click)="moverDia(-1)" [disabled]="fechaDia() <= hoy()" aria-label="Día anterior"><svg appIcono="anterior"></svg></button>
+            <button type="button" class="icon-action" (click)="moverDia(1)" aria-label="Día siguiente"><svg appIcono="siguiente"></svg></button>
+            <p class="disp__rango disp__rango--dia">{{ fechaLarga(fechaDia()) }}</p>
+          </div>
+        }
+        <p class="disp__pista">{{ vista() === 'semana' ? 'Toque un rato libre para llevarlo a «Elegir horario».' : '«Usar este rato» lo lleva a «Elegir horario».' }}</p>
+        <!-- La leyenda se pliega: hace falta una vez, no cada vez. -->
+        <details class="ley">
+          <summary class="btn btn--texto btn--sm">Colores</summary>
+          <ul class="leyenda">
+            <li><span class="pt pt--ocupado"></span>Ocupado</li>
+            <li><span class="pt pt--otra"></span>Otra orden suya</li>
+            <li><span class="pt pt--visita"></span>Esta visita</li>
+            <li><span class="pt pt--enviada"></span>Enviada</li>
+            @if (equipo().length > 1 || otrasFranjasEquipo().length) {
+              <li><span class="pt pt--equipo"></span>Otro asesor de esta orden</li>
+            }
+            <li><span class="pt pt--previa"></span>Lo que va a agregar</li>
+          </ul>
+        </details>
+        <div class="seg" role="group" aria-label="Vista de la disponibilidad">
+          <button type="button" [attr.aria-pressed]="vista() === 'semana'" (click)="vista.set('semana')">Semana</button>
+          <button type="button" [attr.aria-pressed]="vista() === 'dia'" (click)="vista.set('dia')">Día</button>
+        </div>
+      </div>
+
+      @if (vista() === 'semana') {
+        <!-- La rejilla es un mapa: aria-hidden; su equivalente accesible es la
+             vista Día (con botones) y la línea de validación del formulario. -->
+        <div class="rej" [class.rej--sinprof]="!profesionalId()" [style.--tramos]="tramos2h()" aria-hidden="true">
+          <div class="rej__fila rej__fila--cab">
+            <span class="rej__h"></span>
+            @for (d of diasSemana(); track d.iso) {
+              <span class="rej__h" [class.rej__h--hoy]="d.hoy" [class.rej__h--sel]="d.sel">{{ d.nombre }}<b>{{ d.num }}</b></span>
+            }
+          </div>
+          <div class="rej__fila rej__fila--cuerpo">
+            <div class="rej__eje">
+              @for (m of marcas(); track m.pos) {
+                <span class="rej__hora" [style.top.%]="m.pos">{{ m.texto }}</span>
+              }
+            </div>
+            @for (d of diasSemana(); track d.iso) {
+              <div class="rej__col" [class.rej__col--domingo]="d.domingo" [class.rej__col--bloq]="d.bloqueada" (click)="tocarRejilla($event, d.iso, d.bloqueada)">
+                @for (b of d.bloques; track b.clave) {
+                  <div
+                    class="blq blq--{{ b.tipo }}"
+                    [class.blq--edit]="b.enEdicion"
+                    [style.top.%]="b.pos"
+                    [style.height.%]="b.largo"
+                    (click)="b.franja ? tocarBloque($event, b) : null"
+                  >
+                    @if (b.fin - b.ini >= 60) { <span class="blq__t">{{ b.rango }}</span> }
+                    @if (b.fin - b.ini >= 120) { <span class="blq__t blq__t--2">{{ b.texto }}</span> }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      } @else {
+        @if (profesionalId()) {
+          <ul class="linea">
+            @for (t of tramosDia(); track t.clave) {
+              <li>
+                @if (t.tipo === 'libre') {
+                  <button type="button" class="seg-dia seg-dia--libre" (click)="usarHueco(t.ini, t.fin)" [attr.aria-label]="'Libre de ' + rangoTramo(t) + '. Llevar al formulario'">
+                    <span class="pt pt--libre" aria-hidden="true"></span>
+                    <span class="seg-dia__rango">{{ rangoTramo(t) }}</span>
+                    <span class="seg-dia__que">Libre</span>
+                    <span class="seg-dia__ir">Usar este rato</span>
+                  </button>
+                } @else {
+                  <div class="seg-dia">
+                    <span class="pt pt--{{ t.tipo }}" aria-hidden="true"></span>
+                    <span class="seg-dia__rango">{{ rangoTramo(t) }}</span>
+                    <span class="seg-dia__que">{{ t.texto }}</span>
+                    @if (t.ocupacion; as oc) {
+                      <!-- La ✕ de 16 px de la rejilla vive aquí como botón de 36 px. -->
+                      <button type="button" class="btn btn--secondary btn--sm seg-dia__liberar" (click)="liberarOcupacion.emit(oc)" [attr.aria-label]="'Liberar «' + t.texto + '», ' + rangoTramo(t)">Liberar</button>
+                    }
+                  </div>
+                }
+              </li>
+            } @empty {
+              <li><p class="lista-vacia__d linea__vacia">Ese día no tiene huecos entre las 6:00 a. m. y las 12:00 a. m.</p></li>
+            }
+          </ul>
+        } @else {
+          <p class="lista-vacia__d">Elija un profesional para ver su día.</p>
+        }
+      }
+    </section>
+  }
 </div>
 
 <p class="sr" aria-live="polite">{{ anuncio() }}</p>
 
-<!-- ===== Piezas reutilizadas por el compositor y la fila en edición ===== -->
-<ng-template #horas let-r let-ambito="ambito">
-  <div class="horas">
-    <div>
-      <label class="lbl" [for]="'agv-' + ambito + '-ini'">Desde</label>
-      <div class="stepper">
-        <button type="button" class="btn btn--secondary stepper__b" (click)="pasoDesde(ambito, -30)" [disabled]="r.ini <= 360" aria-label="Media hora antes">−</button>
-        <select class="form-control" [id]="'agv-' + ambito + '-ini'" (change)="cambiarDesde(ambito, $any($event.target).value)">
-          @for (o of opcionesDesde(r.ini); track o.min) {
-            <option [value]="o.min" [selected]="o.min === r.ini">{{ o.texto }}</option>
-          }
-        </select>
-        <button type="button" class="btn btn--secondary stepper__b" (click)="pasoDesde(ambito, 30)" [disabled]="r.ini >= 1410" aria-label="Media hora después">+</button>
-      </div>
-    </div>
-    <div>
-      <label class="lbl" [for]="'agv-' + ambito + '-fin'">Hasta</label>
-      <div class="stepper">
-        <button type="button" class="btn btn--secondary stepper__b" (click)="pasoHasta(ambito, -30)" [disabled]="r.fin <= r.ini + 30" aria-label="Terminar media hora antes">−</button>
-        <select class="form-control" [id]="'agv-' + ambito + '-fin'" (change)="cambiarHasta(ambito, $any($event.target).value)">
-          @for (o of opcionesHasta(r.ini, r.fin); track o.min) {
-            <option [value]="o.min" [selected]="o.min === r.fin">{{ o.texto }}</option>
-          }
-        </select>
-        <button type="button" class="btn btn--secondary stepper__b" (click)="pasoHasta(ambito, 30)" [disabled]="r.fin >= 1440" aria-label="Terminar media hora después">+</button>
-      </div>
-    </div>
-  </div>
-</ng-template>
-
-<ng-template #lineaValidacion let-v let-ambito="ambito">
-  <div class="valid" role="status" aria-live="polite">
-    @if (v?.ok) {
-      <span class="valid--ok">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m8 12.5 2.8 2.7L16 9.8" /></svg>
-        {{ v.texto }}
-      </span>
-    } @else if (v) {
-      <div class="alert alert--sm" [class.alert--warning]="v.tipo === 'aviso'" [class.alert--error]="v.tipo === 'error'">
-        <div class="alert__body">
-          <p class="alert__title">{{ v.problema }}</p>
-          @if (v.detalle) { <p class="alert__detail">{{ v.detalle }}</p> }
-          @if (v.ajuste; as a) {
-            <button type="button" class="btn btn--secondary btn--sm valid__ajuste" (click)="aplicarAjuste(ambito, a)">{{ a.texto }}</button>
-          }
-        </div>
-      </div>
-    }
-  </div>
-</ng-template>
-
+<!-- ===== Piezas reutilizadas ===== -->
 <ng-template #lineaFila let-r>
   <span class="fr__l1">
     <span class="fr__fecha">{{ r.fecha }}</span>
@@ -446,14 +437,4 @@
 
 <ng-template #candado>
   <svg class="fr__candado" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
-</ng-template>
-
-<ng-template #selectorAsesor>
-  @if (equipo().length > 1) {
-    <div class="seg" role="group" aria-label="Asesor al que le agrega franjas">
-      @for (m of equipo(); track m.id) {
-        <button type="button" [attr.aria-pressed]="m.id === profesionalId()" (click)="cambiarAsesor.emit(m.id)">{{ nombreDe(m.nombre) }} · {{ duracion(m.minutos) }}</button>
-      }
-    </div>
-  }
 </ng-template>

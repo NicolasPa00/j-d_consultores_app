@@ -21,7 +21,7 @@ export interface MiembroAgenda {
   detalle?: string;
 }
 
-/** Lo que hay en el compositor (o en la fila en edición), en minutos. */
+/** Lo que hay en el compositor, en minutos. */
 interface Borrador extends RangoFranja {
   /** De qué asesor es: al cambiar de asesor, el compositor vuelve a proponer. */
   prof: string;
@@ -31,16 +31,24 @@ interface Edicion extends RangoFranja {
   id: string;
 }
 
-/** Bloque de la rejilla de disponibilidad, ya en píxeles. */
-interface BloqueRejilla {
+type TipoBloque = 'ocupado' | 'otra' | 'visita' | 'enviada' | 'equipo' | 'previa';
+
+/** Algo que se pinta en la rejilla o en la línea del día, en minutos. */
+interface BloqueCrudo {
   clave: string;
-  tipo: 'ocupado' | 'otra' | 'visita' | 'enviada' | 'equipo' | 'previa';
-  top: number;
-  alto: number;
+  tipo: TipoBloque;
+  ini: number;
+  fin: number;
   rango: string;
   texto: string;
   franja?: FranjaVisita;
   enEdicion?: boolean;
+}
+
+/** El mismo bloque ya ubicado: inicio y largo en % del rango visible. */
+interface Bloque extends BloqueCrudo {
+  pos: number;
+  largo: number;
 }
 
 /** Tramo de la vista Día. */
@@ -57,17 +65,18 @@ interface TramoDia {
 type EstadoFila = 'normal' | 'edicion' | 'pasada' | 'enviada' | 'confirmar';
 
 /**
- * Alto de media hora en la rejilla. Tiene que cuadrar con `--ag-media` de
- * agenda-visita.scss (HANDOFF punto 16: las dos a la par). A 10 px el día entero
- * de 6 a. m. a 12 a. m. mide 360 px y cabe sin scroll en 1280×720: la rejilla
- * ya no se pulsa con precisión, así que no necesita los 22 px del arrastre.
+ * El mapa arranca a las 6 a. m. y llega, como poco, a las 8 p. m.; si algo de la
+ * semana (o lo que hay en el formulario) va más tarde, se alarga de 2 en 2 h
+ * hasta las 12 a. m. Recortar las noches vacías da a cada media hora casi un 30 %
+ * más de alto en un portátil de 640 px útiles.
  */
-const MEDIA_PX = 10;
-const CELDAS = (AG_HASTA_MIN - AG_DESDE_MIN) / AG_PASO_MIN;
+const VISTA_FIN_MIN = 20 * 60;
 const DIAS_CABECERA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 /** Duraciones rápidas del compositor; la última es siempre «Lo que falta». */
 const DURACIONES = [60, 120, 240, 480];
+/** Chips de fecha: hoy y los cinco días siguientes; el resto, «Otra fecha…». */
+const DIAS_CHIP = 6;
 
 let secuencia = 0;
 
@@ -76,9 +85,14 @@ let secuencia = 0;
  *
  * 27-nov-2026 · Propuesta A «El formulario primero»: la franja se escribe en un
  * compositor (fecha, desde, hasta) que propone el siguiente hueco libre y valida
- * en vivo; la rejilla pasa a ser un MAPA de la semana sin scroll, y tocar un rato
- * solo llena el compositor. El arrastre se retiró: en táctil no funcionaba y en
- * portátiles pequeños obligaba a arrastrar más allá de lo visible.
+ * en vivo; la rejilla es un MAPA y tocar un rato solo llena el compositor.
+ *
+ * 27-nov-2026 (tarde) · Ajuste para pantallas pequeñas, pedido por el dueño al
+ * verlo en su portátil: compositor y mapa ya no se ven a la vez. Van en dos
+ * pestañas, «Elegir horario» (formulario + lista de franjas, la que se usa) y
+ * «Ver agenda» (la semana o el día, de consulta). Así todo cabe sin scroll en
+ * 1260×640 y el botón «Agregar franja» nunca queda bajo el pie. Editar una franja
+ * ya no abre un formulario dentro de la fila: la carga en el mismo compositor.
  *
  * El padre sigue siendo dueño de los datos y del envío: este componente recibe
  * las franjas del asesor activo (`franjas`, two-way) y lo necesario para
@@ -115,11 +129,7 @@ export class AgendaVisitaComponent {
   readonly cargando = input(false);
 
   // ---- Salidas ----
-  readonly cambiarAsesor = output<string>();
-  readonly quitarAsesor = output<string>();
   readonly liberarOcupacion = output<Ocupacion>();
-  /** En el celular, «Elegir profesional» sube a la lista de asesores. */
-  readonly irAProfesionales = output<void>();
 
   // ---- Estado propio ----
   /** Se fija al abrir: de ella salen «hoy», lo que ya pasó y el `min` de las fechas. */
@@ -129,10 +139,10 @@ export class AgendaVisitaComponent {
   /** Franja enviada cuya confirmación de cambio está abierta. */
   protected readonly confirmando = signal<string | null>(null);
   protected readonly otraFechaAbierta = signal(false);
+  /** «Elegir horario» es la protagonista; «Ver agenda», la consulta. */
+  protected readonly pestana = signal<'horario' | 'agenda'>('horario');
   /** Escritorio: Semana. Celular: Día (a 390 px la semana no se lee). */
-  protected readonly vista = signal<'semana' | 'dia'>(
-    this.isBrowser && typeof matchMedia === 'function' && matchMedia('(max-width: 720px)').matches ? 'dia' : 'semana',
-  );
+  protected readonly vista = signal<'semana' | 'dia'>(this.esCelular() ? 'dia' : 'semana');
   /** Semana elegida con ‹ ›; sin ella, la rejilla sigue al compositor. */
   private readonly semanaManual = signal<string | null>(null);
   protected readonly anuncio = signal('');
@@ -176,49 +186,50 @@ export class AgendaVisitaComponent {
       ?? { fecha: this.manana(), ini: 8 * 60, fin: 12 * 60 };
   });
 
+  /** El formulario sirve para las dos cosas: agregar (compositor) y cambiar (edición). */
+  protected readonly form = computed<RangoFranja | null>(() => {
+    const e = this.edicion();
+    return e ? { fecha: e.fecha, ini: e.ini, fin: e.fin } : this.comp();
+  });
+
+  protected readonly ambito = computed<'c' | 'e'>(() => (this.edicion() ? 'e' : 'c'));
+
   protected readonly validacion = computed<Validacion | null>(() => {
+    const e = this.edicion();
+    if (e) return validarFranja(this.ctx(), e, e.id);
     const c = this.comp();
     return c ? validarFranja(this.ctx(), c) : null;
   });
 
-  protected readonly validacionEdicion = computed<Validacion | null>(() => {
+  /** La franja que se está cambiando, tal como estaba (para el título). */
+  protected readonly editada = computed(() => {
     const e = this.edicion();
-    return e ? validarFranja(this.ctx(), e, e.id) : null;
+    return e ? this.franjas().find((f) => f.id === e.id) ?? null : null;
   });
 
-  /** Chips de fecha: dos semanas desde hoy, más la fecha elegida si cae fuera. */
+  /** Chips de fecha: hoy y los cinco días siguientes, en una fila que cabe sin scroll. */
   protected readonly dias = computed(() => {
     if (!this.profesionalId()) return [];
-    const ctx = this.ctx();
     const hoy = this.hoy();
-    const elegida = this.comp()?.fecha;
-    const lista = Array.from({ length: 14 }, (_, i) => sumarDias(hoy, i));
-    if (elegida && !lista.includes(elegida)) lista.push(elegida);
-    return lista.map((iso) => {
-      const estado = estadoDelDia(ctx, iso);
-      return {
-        iso,
-        nombre: nombreChipDia(iso, hoy),
-        texto: estado.texto,
-        sinHuecos: estado.sinHuecos,
-        hoy: iso === hoy,
-        domingo: diaSemana(iso) === 0,
-        on: iso === elegida,
-        lectura: `${fechaLectura(iso)}, ${estado.texto}`,
-      };
-    });
+    const elegida = this.form()?.fecha;
+    return Array.from({ length: DIAS_CHIP }, (_, i) => this.chipDe(sumarDias(hoy, i), elegida));
   });
 
-  protected readonly huecos = computed(() => {
-    const c = this.comp();
-    return c ? huecosDelDia(this.ctx(), c.fecha) : [];
+  /** Si ningún chip está elegido, el primero recibe el Tab (patrón radiogroup). */
+  protected readonly hayDiaElegido = computed(() => this.dias().some((d) => d.on));
+
+  /** La fecha elegida si cae fuera de los chips: ocupa el sitio de «Otra fecha…». */
+  protected readonly fechaFuera = computed(() => {
+    const elegida = this.form()?.fecha;
+    if (!elegida || this.dias().some((d) => d.iso === elegida)) return null;
+    return this.chipDe(elegida, elegida);
   });
 
   /** Duraciones rápidas: las que caben y «Lo que falta». */
   protected readonly duraciones = computed(() => {
-    const c = this.comp();
+    const c = this.form();
     if (!c) return [];
-    const disp = disponible(this.ctx());
+    const disp = disponible(this.ctx(), this.edicion()?.id);
     const lista = Number.isFinite(disp)
       ? [...DURACIONES.filter((d) => d < disp).map((d) => ({ min: d, texto: duracionTexto(d) })), { min: disp, texto: `Lo que falta (${duracionTexto(disp)})` }]
       : DURACIONES.map((d) => ({ min: d, texto: duracionTexto(d) }));
@@ -236,7 +247,7 @@ export class AgendaVisitaComponent {
     for (const x of s) porDia.set(x.fecha, [...(porDia.get(x.fecha) ?? []), rango12(x.ini, x.fin)]);
     return {
       franjas: s,
-      lineas: [...porDia.entries()].map(([fecha, rangos]) => `${fechaCorta(fecha)}: ${rangos.join(' y ')}`),
+      lineas: [...porDia.entries()].map(([fecha, rangos]) => `${fechaFila(fecha)}: ${rangos.join(' y ')}`),
     };
   });
 
@@ -301,13 +312,14 @@ export class AgendaVisitaComponent {
       nuevas ? `${duracionTexto(nuevas)} nuevas` : '',
       falta ? `${duracionTexto(falta)} por programar` : '',
     ].filter(Boolean);
-    const asesores = this.equipo().length;
+    const asesores = new Set([...otras.map((f) => f.profesional_id), propias.length ? 'activo' : null].filter(Boolean)).size;
     return {
       programados,
       falta,
+      enviadas,
       cifra: programados
-        ? orden > 0 ? `${duracionTexto(programados)} de ${duracionTexto(orden)} programadas` : `${duracionTexto(programados)} programadas`
-        : orden > 0 ? `Sin programar · ${duracionTexto(orden)} por repartir` : 'Sin programar',
+        ? orden > 0 ? `${duracionTexto(programados)} de ${duracionTexto(orden)}` : `${duracionTexto(programados)} programadas`
+        : orden > 0 ? `${duracionTexto(orden)} por repartir` : 'Sin programar',
       completa: `Visita completa · ${duracionTexto(programados)} en ${n} franja${n === 1 ? '' : 's'}${asesores > 1 ? ` entre ${asesores} asesores` : ''}`,
       pctEnviadas: (100 * enviadas) / base,
       pctNuevas: (100 * nuevas) / base,
@@ -315,30 +327,63 @@ export class AgendaVisitaComponent {
     };
   });
 
-  // ---- Rejilla ----
+  // ---- Mapa (rejilla de la semana y línea del día) ----
   protected readonly semana = computed(() =>
-    this.semanaManual() ?? lunesDe(this.edicion()?.fecha ?? this.comp()?.fecha ?? this.hoy()),
+    this.semanaManual() ?? lunesDe(this.form()?.fecha ?? this.hoy()),
   );
 
-  protected readonly diasSemana = computed(() => {
+  private readonly semanaCruda = computed(() => {
     const lunes = this.semana();
     const hoy = this.hoy();
-    const sel = this.edicion()?.fecha ?? this.comp()?.fecha;
+    const sel = this.form()?.fecha;
     return Array.from({ length: 7 }, (_, i) => {
       const iso = sumarDias(lunes, i);
-      const d = Number(iso.slice(8, 10));
       return {
         iso,
         nombre: DIAS_CABECERA[diaSemana(iso)],
-        num: String(d),
+        num: String(Number(iso.slice(8, 10))),
         hoy: iso === hoy,
         sel: iso === sel,
         domingo: i === 6,
         bloqueada: !this.profesionalId() || iso < hoy,
-        bloques: this.bloquesDe(iso),
+        crudos: this.bloquesDe(iso),
       };
     });
   });
+
+  /** Lo que pinta la línea del día del formulario (misma fuente que la rejilla). */
+  private readonly diaCrudo = computed(() => {
+    const f = this.form()?.fecha;
+    return f && this.profesionalId() ? this.bloquesDe(f) : [];
+  });
+
+  /** Rango visible [desde, hasta] en minutos, común a la rejilla y a la línea. */
+  protected readonly rangoVista = computed<[number, number]>(() => {
+    let fin = VISTA_FIN_MIN;
+    for (const d of this.semanaCruda()) for (const b of d.crudos) fin = Math.max(fin, b.fin);
+    for (const b of this.diaCrudo()) fin = Math.max(fin, b.fin);
+    // De 2 en 2 h desde las 6 a. m.: así las rayas de la rejilla caen en hora par.
+    const pasos = Math.ceil((Math.min(fin, AG_HASTA_MIN) - AG_DESDE_MIN) / 120);
+    return [AG_DESDE_MIN, AG_DESDE_MIN + pasos * 120];
+  });
+
+  protected readonly diasSemana = computed(() =>
+    this.semanaCruda().map((d) => ({ ...d, bloques: this.ubicar(d.crudos) })),
+  );
+
+  /** En la línea no se pinta la franja que se está cambiando: solo su «Cambio». */
+  protected readonly lineaDia = computed(() => this.ubicar(this.diaCrudo().filter((b) => !b.enEdicion)));
+
+  /** Marcas cada 2 h, en % del rango (rejilla en vertical, línea en horizontal). */
+  protected readonly marcas = computed(() => {
+    const [a, z] = this.rangoVista();
+    const out: { pos: number; texto: string }[] = [];
+    for (let m = a; m < z; m += 120) out.push({ pos: (100 * (m - a)) / (z - a), texto: hora12(m, { corta: true }) });
+    return out;
+  });
+
+  /** Cuántos tramos de 2 h tiene el rango: la rejilla dibuja una raya por tramo. */
+  protected readonly tramos2h = computed(() => (this.rangoVista()[1] - this.rangoVista()[0]) / 120);
 
   protected readonly rotuloSemana = computed(() => {
     const a = this.semana();
@@ -350,15 +395,8 @@ export class AgendaVisitaComponent {
     return ma === mb ? `${da} – ${db} ${MESES[mb]}` : `${da} ${MESES[ma]} – ${db} ${MESES[mb]}`;
   });
 
-  protected readonly altoRejilla = CELDAS * MEDIA_PX;
-  /** Eje cada 2 h: con 10 px por media hora no cabe una etiqueta por hora. */
-  protected readonly horasEje = Array.from({ length: (AG_HASTA_MIN - AG_DESDE_MIN) / 120 }, (_, i) => {
-    const min = AG_DESDE_MIN + i * 120;
-    return { top: ((min - AG_DESDE_MIN) / AG_PASO_MIN) * MEDIA_PX, texto: hora12(min, { corta: true }) };
-  });
-
   /** Vista Día: la línea del día elegido, con huecos que se pueden usar. */
-  protected readonly fechaDia = computed(() => this.edicion()?.fecha ?? this.comp()?.fecha ?? this.hoy());
+  protected readonly fechaDia = computed(() => this.form()?.fecha ?? this.hoy());
   protected readonly tramosDia = computed<TramoDia[]>(() => {
     if (!this.profesionalId()) return [];
     const fecha = this.fechaDia();
@@ -392,7 +430,38 @@ export class AgendaVisitaComponent {
     });
   }
 
+  // ===================== Pestañas =====================
+
+  protected irA(p: 'horario' | 'agenda'): void {
+    this.pestana.set(p);
+  }
+
+  /** Flechas, Inicio y Fin entre las dos pestañas (patrón tablist). */
+  protected teclaPestanas(ev: KeyboardEvent): void {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(ev.key)) return;
+    ev.preventDefault();
+    const destino = ev.key === 'Home' ? 'horario' : ev.key === 'End' ? 'agenda' : this.pestana() === 'horario' ? 'agenda' : 'horario';
+    this.pestana.set(destino);
+    this.enfocar(`agv-tab-${destino}`);
+  }
+
   // ===================== Compositor =====================
+
+  private chipDe(iso: string, elegida: string | undefined) {
+    const estado = estadoDelDia(this.ctx(), iso);
+    return {
+      iso,
+      nombre: nombreChipDia(iso, this.hoy()),
+      // «6 h 30 min libres» no cabe en un chip de 70 px: «6½ h libres» dice lo mismo.
+      texto: estado.texto.replace(/(\d+) h 30 min/, '$1½ h'),
+      // En edición la franja no choca contra sí misma: ningún día se bloquea.
+      sinHuecos: estado.sinHuecos && !this.edicion(),
+      hoy: iso === this.hoy(),
+      domingo: diaSemana(iso) === 0,
+      on: iso === elegida,
+      lectura: `${fechaLectura(iso)}, ${estado.texto}`,
+    };
+  }
 
   /** Pone un rango en el compositor; la rejilla vuelve a seguirlo. */
   private ponerEnCompositor(r: RangoFranja): void {
@@ -402,11 +471,12 @@ export class AgendaVisitaComponent {
     this.semanaManual.set(null);
   }
 
-  /** Aplica un cambio al compositor (`c`) o a la fila en edición (`e`). */
-  private modificar(ambito: 'c' | 'e', cambio: (r: RangoFranja) => RangoFranja): void {
-    if (ambito === 'e') {
-      const e = this.edicion();
-      if (e) this.edicion.set({ ...e, ...cambio(e) });
+  /** Aplica un cambio a lo que haya en el formulario (compositor o edición). */
+  private modificar(cambio: (r: RangoFranja) => RangoFranja): void {
+    const e = this.edicion();
+    if (e) {
+      this.edicion.set({ ...e, ...cambio(e) });
+      this.semanaManual.set(null);
       return;
     }
     const c = this.comp();
@@ -431,60 +501,85 @@ export class AgendaVisitaComponent {
     return opciones(ini + AG_PASO_MIN, AG_HASTA_MIN, actual);
   }
 
-  protected cambiarDesde(ambito: 'c' | 'e', valor: string): void {
-    this.modificar(ambito, (r) => AgendaVisitaComponent.conInicio(r, Number(valor)));
+  protected cambiarDesde(valor: string): void {
+    this.modificar((r) => AgendaVisitaComponent.conInicio(r, Number(valor)));
   }
 
-  protected cambiarHasta(ambito: 'c' | 'e', valor: string): void {
+  protected cambiarHasta(valor: string): void {
     const fin = Number(valor);
-    this.modificar(ambito, (r) => ({ ...r, fin: Math.max(r.ini + AG_PASO_MIN, Math.min(fin, AG_HASTA_MIN)) }));
+    this.modificar((r) => ({ ...r, fin: Math.max(r.ini + AG_PASO_MIN, Math.min(fin, AG_HASTA_MIN)) }));
   }
 
-  protected pasoDesde(ambito: 'c' | 'e', delta: number): void {
-    this.modificar(ambito, (r) => AgendaVisitaComponent.conInicio(r, r.ini + delta));
+  protected pasoDesde(delta: number): void {
+    this.modificar((r) => AgendaVisitaComponent.conInicio(r, r.ini + delta));
   }
 
-  protected pasoHasta(ambito: 'c' | 'e', delta: number): void {
-    this.modificar(ambito, (r) => ({ ...r, fin: Math.max(r.ini + AG_PASO_MIN, Math.min(AG_HASTA_MIN, r.fin + delta)) }));
+  protected pasoHasta(delta: number): void {
+    this.modificar((r) => ({ ...r, fin: Math.max(r.ini + AG_PASO_MIN, Math.min(AG_HASTA_MIN, r.fin + delta)) }));
   }
 
+  /** Otro día: el compositor propone en él; en edición solo cambia la fecha. */
   protected elegirDia(iso: string): void {
-    this.ponerEnCompositor(proponerEnDia(this.ctx(), iso, this.comp()));
+    this.otraFechaAbierta.set(false);
+    if (this.edicion()) this.modificar((r) => ({ ...r, fecha: iso }));
+    else this.ponerEnCompositor(proponerEnDia(this.ctx(), iso, this.comp()));
   }
 
+  /** Día anterior o siguiente (vista Día): mueve la fecha del formulario. */
+  protected moverDia(delta: number): void {
+    const f = this.form()?.fecha;
+    if (!f) return;
+    const destino = sumarDias(f, delta);
+    if (destino >= this.hoy()) this.elegirDia(destino);
+  }
+
+  /**
+   * «Otra fecha…» abre el calendario del sistema directamente (showPicker); si el
+   * navegador no lo permite, el campo queda a la vista con el foco.
+   */
   protected alternarOtraFecha(): void {
     const abrir = !this.otraFechaAbierta();
     this.otraFechaAbierta.set(abrir);
-    if (abrir) this.enfocar('agv-c-fecha');
+    if (!abrir || !this.isBrowser) return;
+    setTimeout(() => {
+      const el = this.host.nativeElement.querySelector<HTMLInputElement>('#agv-fecha');
+      if (!el) return;
+      el.focus();
+      try {
+        el.showPicker?.();
+      } catch {
+        /* Sin permiso para abrirlo solo: el campo ya tiene el foco. */
+      }
+    });
   }
 
   protected elegirOtraFecha(valor: string): void {
     if (!valor) return;
-    this.ponerEnCompositor(proponerEnDia(this.ctx(), valor < this.hoy() ? this.hoy() : valor, this.comp()));
+    this.elegirDia(valor < this.hoy() ? this.hoy() : valor);
+    this.enfocar('agv-ini');
   }
 
-  /** Un hueco del día: su inicio va a «Desde» y la duración es la que falta. */
-  protected usarHueco(ini: number, fin: number, desdeLaVistaDia = false): void {
+  /** Un hueco de la vista Día: su inicio va a «Desde» y la duración es la que falta. */
+  protected usarHueco(ini: number, fin: number): void {
     const e = this.edicion();
     if (e) {
       const disp = disponible(this.ctx(), e.id);
       this.edicion.set({ ...e, ini, fin: Math.min(fin, ini + (Number.isFinite(disp) ? Math.max(disp, AG_PASO_MIN) : fin - ini)) });
-      return;
+    } else {
+      const c = this.comp();
+      if (!c) return;
+      this.ponerEnCompositor({ fecha: c.fecha, ini, fin: Math.min(fin, ini + this.duracionPorDefecto()) });
     }
-    const c = this.comp();
-    if (!c) return;
-    const dur = this.duracionPorDefecto();
-    this.ponerEnCompositor({ fecha: c.fecha, ini, fin: Math.min(fin, ini + dur) });
-    if (desdeLaVistaDia) this.irAlCompositor();
+    this.alFormulario(`Formulario listo: ${rango12(ini, this.form()?.fin ?? fin)}.`);
   }
 
   protected elegirDuracion(min: number): void {
-    this.modificar('c', (r) => ({ ...r, fin: Math.min(AG_HASTA_MIN, r.ini + min) }));
+    this.modificar((r) => ({ ...r, fin: Math.min(AG_HASTA_MIN, r.ini + min) }));
   }
 
-  protected aplicarAjuste(ambito: 'c' | 'e', a: Ajuste): void {
-    this.modificar(ambito, (r) => ({ ...r, ini: a.ini, fin: a.fin }));
-    this.enfocar(ambito === 'e' ? 'agv-e-guardar' : 'agv-agregar');
+  protected aplicarAjuste(a: Ajuste): void {
+    this.modificar((r) => ({ ...r, ini: a.ini, fin: a.fin }));
+    this.enfocar(this.edicion() ? 'agv-guardar' : 'agv-agregar');
   }
 
   /** Lo que se propone de una vez: lo que falta, con tope de una jornada. */
@@ -541,12 +636,19 @@ export class AgendaVisitaComponent {
     );
   }
 
-  /** `Enter` en un campo del compositor equivale a «Agregar franja». */
+  /** `Enter` en un campo agrega (o guarda el cambio); `Esc` cancela la edición. */
   protected teclaCompositor(ev: KeyboardEvent): void {
     const t = ev.target as HTMLElement;
+    if (ev.key === 'Escape' && this.edicion()) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      this.cancelarEdicion();
+      return;
+    }
     if (ev.key !== 'Enter' || t.tagName === 'BUTTON') return;
     ev.preventDefault();
-    this.agregar();
+    if (this.edicion()) this.guardarEdicion();
+    else this.agregar();
   }
 
   /** Flechas, Inicio y Fin entre los chips de día (radiogroup). */
@@ -583,16 +685,15 @@ export class AgendaVisitaComponent {
 
   // ===================== Lista =====================
 
+  /** «Editar» carga la franja en el formulario de la izquierda (o de arriba en el celular). */
   protected editar(f: FranjaVisita): void {
     this.confirmando.set(null);
+    this.otraFechaAbierta.set(false);
     this.edicion.set({ id: f.id, fecha: f.fecha, ini: aMinutos(f.hora_inicio), fin: aMinutos(f.hora_fin) });
     this.semanaManual.set(null);
-    this.enfocar('agv-e-ini');
-  }
-
-  protected cambiarFechaEdicion(valor: string): void {
-    if (!valor) return;
-    this.modificar('e', (r) => ({ ...r, fecha: valor }));
+    this.pestana.set('horario');
+    this.enfocar('agv-ini');
+    if (this.esCelular()) this.desplazarA('agv-comp');
   }
 
   protected guardarEdicion(): void {
@@ -610,18 +711,6 @@ export class AgendaVisitaComponent {
     if (!e) return;
     const f = this.franjas().find((x) => x.id === e.id);
     this.enfocar(f && estaEnviada(f) ? `agv-cambiar-${e.id}` : `agv-editar-${e.id}`);
-  }
-
-  /** `Esc` cancela la fila en edición; `Enter` en un campo guarda. */
-  protected teclaEdicion(ev: KeyboardEvent): void {
-    if (ev.key === 'Escape') {
-      ev.preventDefault();
-      ev.stopPropagation();
-      this.cancelarEdicion();
-    } else if (ev.key === 'Enter' && (ev.target as HTMLElement).tagName !== 'BUTTON') {
-      ev.preventDefault();
-      this.guardarEdicion();
-    }
   }
 
   /**
@@ -643,6 +732,7 @@ export class AgendaVisitaComponent {
 
   protected pedirCambio(f: FranjaVisita): void {
     this.confirmando.set(f.id);
+    this.pestana.set('horario');
     this.enfocar('agv-conf-cambiar');
   }
 
@@ -661,19 +751,38 @@ export class AgendaVisitaComponent {
     this.semanaManual.set(lunesDe(this.hoy()));
   }
 
+  /** Minuto (en media hora) que corresponde a una fracción 0..1 del rango visible. */
+  private minutoEn(fraccion: number): number {
+    const [a, z] = this.rangoVista();
+    const celdas = (z - a) / AG_PASO_MIN;
+    return a + Math.min(celdas - 1, Math.max(0, Math.floor(fraccion * celdas))) * AG_PASO_MIN;
+  }
+
   /**
-   * Tocar un rato de la rejilla llena el compositor (o mueve la fila en edición)
-   * con esa fecha y esa media hora. NUNCA crea la franja: eso solo lo hace
-   * «Agregar franja».
+   * Tocar un rato de la rejilla lleva esa fecha y esa media hora a «Elegir
+   * horario» (o mueve la franja en edición). NUNCA crea la franja: eso solo lo
+   * hace «Agregar franja».
    */
   protected tocarRejilla(ev: MouseEvent, iso: string, bloqueada: boolean): void {
     if (bloqueada || !this.profesionalId()) return;
     const caja = (ev.currentTarget as HTMLElement).getBoundingClientRect();
-    const px = caja.height / CELDAS || MEDIA_PX;
-    const ini = AG_DESDE_MIN + Math.min(CELDAS - 1, Math.max(0, Math.floor((ev.clientY - caja.top) / px))) * AG_PASO_MIN;
+    this.llevarAlFormulario(iso, this.minutoEn((ev.clientY - caja.top) / (caja.height || 1)));
+  }
+
+  /** La línea del día del formulario hace lo mismo, en horizontal. */
+  protected tocarLinea(ev: MouseEvent): void {
+    const f = this.form();
+    if (!f) return;
+    const caja = (ev.currentTarget as HTMLElement).getBoundingClientRect();
+    const ini = this.minutoEn((ev.clientX - caja.left) / (caja.width || 1));
+    this.modificar((r) => this.edicion() ? AgendaVisitaComponent.conInicio(r, ini) : { ...r, ini, fin: recortar(this.ctx(), r.fecha, ini, ini + this.duracionPorDefecto()) });
+    this.enfocar('agv-ini');
+  }
+
+  private llevarAlFormulario(iso: string, ini: number): void {
     if (this.edicion()) {
-      this.modificar('e', (r) => AgendaVisitaComponent.conInicio({ ...r, fecha: iso }, ini));
-      this.enfocar('agv-e-ini');
+      this.modificar((r) => AgendaVisitaComponent.conInicio({ ...r, fecha: iso }, ini));
+      this.alFormulario(`Cambio listo: ${fechaLectura(iso)}, ${hora12(ini)}.`);
       return;
     }
     if (this.completa()) {
@@ -682,36 +791,38 @@ export class AgendaVisitaComponent {
     }
     const fin = recortar(this.ctx(), iso, ini, ini + this.duracionPorDefecto());
     this.ponerEnCompositor({ fecha: iso, ini, fin });
-    this.anunciar(`Formulario listo: ${fechaLectura(iso)}, ${rango12(ini, fin)}.`);
-    this.enfocar('agv-c-ini');
-    if (this.esCelular()) this.irAlCompositor();
+    this.alFormulario(`Formulario listo: ${fechaLectura(iso)}, ${rango12(ini, fin)}.`);
   }
 
-  /** Un bloque de esta visita abre su fila: en edición, o en la confirmación si ya se envió. */
-  protected tocarBloque(ev: MouseEvent, b: BloqueRejilla): void {
+  /** Vuelve a «Elegir horario» con el formulario lleno y el foco en «Desde». */
+  private alFormulario(texto: string): void {
+    this.pestana.set('horario');
+    this.otraFechaAbierta.set(false);
+    this.anunciar(texto);
+    this.enfocar('agv-ini');
+    if (this.esCelular()) this.desplazarA('agv-comp');
+  }
+
+  /** Un bloque de esta visita abre su franja: en edición, o en la confirmación si ya se envió. */
+  protected tocarBloque(ev: MouseEvent, b: Bloque): void {
     ev.stopPropagation();
     const f = b.franja;
     if (!f) return;
     if (!estaEnviada(f)) this.editar(f);
     else if (!yaPaso(this.ctx(), f)) this.pedirCambio(f);
+    else this.pestana.set('horario');
     this.resaltar(f.id);
     this.desplazarA(`agv-fila-${f.id}`);
   }
 
-  private bloquesDe(iso: string): BloqueRejilla[] {
-    const out: BloqueRejilla[] = [];
-    const geo = (ini: number, fin: number) => {
-      const a = Math.max(ini, AG_DESDE_MIN);
-      const z = Math.min(fin, AG_HASTA_MIN);
-      if (z <= a) return null;
-      return { top: ((a - AG_DESDE_MIN) / AG_PASO_MIN) * MEDIA_PX, alto: Math.max(6, ((z - a) / AG_PASO_MIN) * MEDIA_PX) };
-    };
+  /** Todo lo que ocupa (o va a ocupar) un día, en minutos. */
+  private bloquesDe(iso: string): BloqueCrudo[] {
+    const out: BloqueCrudo[] = [];
     const ctx = this.ctx();
     if (this.profesionalId()) {
       for (const o of obstaculos(ctx, iso)) {
         if (o.tipo === 'propia') continue;
-        const g = geo(o.ini, o.fin);
-        if (g) out.push({ clave: `${o.tipo}-${o.id}`, tipo: o.tipo, ...g, rango: rango12(o.ini, o.fin), texto: o.tipo === 'otra' ? `${o.motivo} · ${o.empresa}` : o.motivo });
+        out.push({ clave: `${o.tipo}-${o.id}`, tipo: o.tipo, ini: o.ini, fin: o.fin, rango: rango12(o.ini, o.fin), texto: o.tipo === 'otra' ? `${o.motivo} · ${o.empresa}` : o.motivo });
       }
     }
     const edit = this.edicion();
@@ -719,21 +830,33 @@ export class AgendaVisitaComponent {
       if (f.fecha !== iso) continue;
       const ini = aMinutos(f.hora_inicio);
       const fin = aMinutos(f.hora_fin);
-      const g = geo(ini, fin);
       const env = estaEnviada(f);
-      if (g) out.push({ clave: `f-${f.id}`, tipo: env ? 'enviada' : 'visita', ...g, rango: rango12(ini, fin), texto: env ? 'Enviada' : 'Esta visita', franja: f, enEdicion: edit?.id === f.id });
+      out.push({ clave: `f-${f.id}`, tipo: env ? 'enviada' : 'visita', ini, fin, rango: rango12(ini, fin), texto: env ? 'Enviada' : 'Esta visita', franja: f, enEdicion: edit?.id === f.id });
     }
     for (const f of this.otrasFranjasEquipo()) {
       if (f.fecha !== iso) continue;
-      const g = geo(aMinutos(f.hora_inicio), aMinutos(f.hora_fin));
       const nombre = corto(this.equipo().find((m) => m.id === f.profesional_id)?.nombre ?? '') || 'Otro asesor';
-      if (g) out.push({ clave: `e-${f.profesional_id}-${f.id}`, tipo: 'equipo', ...g, rango: rango12(f.hora_inicio, f.hora_fin), texto: `${nombre} · esta orden` });
+      const ini = aMinutos(f.hora_inicio);
+      const fin = aMinutos(f.hora_fin);
+      out.push({ clave: `e-${f.profesional_id}-${f.id}`, tipo: 'equipo', ini, fin, rango: rango12(ini, fin), texto: `${nombre} · esta orden` });
     }
-    // La vista previa de lo que hay en el compositor (o del cambio en edición).
+    // La vista previa de lo que hay en el formulario (nuevo o cambio en edición).
     const previa = edit ?? (this.completa() ? null : this.comp());
     if (this.profesionalId() && previa && previa.fecha === iso && previa.fin > previa.ini) {
-      const g = geo(previa.ini, previa.fin);
-      if (g) out.push({ clave: 'previa', tipo: 'previa', ...g, rango: rango12(previa.ini, previa.fin), texto: edit ? 'Cambio' : 'Va a agregar' });
+      out.push({ clave: 'previa', tipo: 'previa', ini: previa.ini, fin: previa.fin, rango: rango12(previa.ini, previa.fin), texto: edit ? 'Cambio' : 'Va a agregar' });
+    }
+    return out;
+  }
+
+  /** Bloques → % del rango visible; lo que queda fuera se recorta al borde. */
+  private ubicar(crudos: BloqueCrudo[]): Bloque[] {
+    const [a, z] = this.rangoVista();
+    const out: Bloque[] = [];
+    for (const b of crudos) {
+      const i = Math.max(b.ini, a);
+      const f = Math.min(b.fin, z);
+      if (f <= i) continue;
+      out.push({ ...b, pos: (100 * (i - a)) / (z - a), largo: (100 * (f - i)) / (z - a) });
     }
     return out;
   }
@@ -743,10 +866,6 @@ export class AgendaVisitaComponent {
   }
 
   // ===================== Utilidades de plantilla =====================
-
-  protected nombreDe(nombre: string): string {
-    return corto(nombre);
-  }
 
   protected rango(ini: number, fin: number): string {
     return rango12(ini, fin);
@@ -760,8 +879,8 @@ export class AgendaVisitaComponent {
     return fechaLarga(iso);
   }
 
-  protected fechaLectura(iso: string): string {
-    return fechaLectura(iso);
+  protected fechaCorta(iso: string): string {
+    return fechaCorta(iso);
   }
 
   private temporizador: ReturnType<typeof setTimeout> | null = null;
@@ -787,17 +906,14 @@ export class AgendaVisitaComponent {
     if (!this.isBrowser) return;
     setTimeout(() => {
       const el = this.host.nativeElement.querySelector<HTMLElement>(`[id="${id}"]`);
-      if (el && !(el as HTMLButtonElement).disabled) el.focus();
+      if (el && !(el as HTMLButtonElement).disabled) el.focus({ preventScroll: true });
     });
   }
 
   private desplazarA(id: string): void {
     if (!this.isBrowser) return;
-    setTimeout(() => this.host.nativeElement.querySelector(`[id="${id}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
-  }
-
-  private irAlCompositor(): void {
-    this.desplazarA('agv-comp');
+    const suave = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    setTimeout(() => this.host.nativeElement.querySelector(`[id="${id}"]`)?.scrollIntoView({ block: 'nearest', behavior: suave ? 'smooth' : 'auto' }));
   }
 
   private esCelular(): boolean {
@@ -807,8 +923,11 @@ export class AgendaVisitaComponent {
 
 /** «DANIELA ROSALES» → «Daniela»: los nombres se guardan en mayúsculas y en una frase gritan. */
 function corto(nombre: string): string {
-  const primero = (nombre ?? '').trim().split(/\s+/)[0] ?? '';
-  return primero ? primero.charAt(0).toLocaleUpperCase('es-CO') + primero.slice(1).toLocaleLowerCase('es-CO') : '';
+  const palabras = (nombre ?? '').trim().split(/\s+/).filter(Boolean);
+  // Un primer «nombre» de una o dos letras (el prefijo «ZZ» de las fichas de
+  // prueba, una inicial) no identifica a nadie: entonces va el nombre entero.
+  const tomar = palabras[0] && palabras[0].length <= 2 ? palabras : palabras.slice(0, 1);
+  return tomar.map((p) => p.charAt(0).toLocaleUpperCase('es-CO') + p.slice(1).toLocaleLowerCase('es-CO')).join(' ');
 }
 
 /** Medias horas entre dos límites, en 12 h; si el valor actual no cae en la media hora (10:15), se añade. */

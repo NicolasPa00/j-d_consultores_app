@@ -25,6 +25,7 @@ import { PaginadorComponent } from '../../shared/paginador/paginador';
 import { AccionComponent } from '../../shared/icono/accion';
 import { IconoComponent } from '../../shared/icono/icono';
 import { AgendaVisitaComponent } from './agenda-visita/agenda-visita';
+import { AsesorVisitaComponent } from './agenda-visita/asesor-visita';
 
 interface FormFieldDescriptor {
   label: string;
@@ -166,7 +167,7 @@ function firmaDe(franjas: FranjaVisita[]): string {
 
 @Component({
   selector: 'app-validation',
-  imports: [FormsModule, CeroVacioDirective, PaginadorComponent, AccionComponent, IconoComponent, AgendaVisitaComponent],
+  imports: [FormsModule, CeroVacioDirective, PaginadorComponent, AccionComponent, IconoComponent, AgendaVisitaComponent, AsesorVisitaComponent],
   templateUrl: './validation.html',
   styleUrls: ['./validation.scss', './validation-cobro.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -419,6 +420,15 @@ export class ValidationComponent implements OnInit, OnDestroy {
       p.nombre, p.especialidad ?? '', p.correo, p.telefono ?? '', ...(p.registros_arl ?? []).map((r) => r.arl_nombre ?? ''),
     ].join(' ')).includes(q));
   });
+  /**
+   * 27-nov-2026 · La lista de asesores abierta con «Cambiar» u «Otro asesor».
+   * Sin asesor elegido siempre se ve; con él, se reduce a una fila y la agenda
+   * gana el alto del modal (portátiles de 640 px útiles).
+   */
+  protected readonly eligiendoAsesor = signal(false);
+  /** Para el selector de asesores: cuánto lleva cada uno y si firma ante esta ARL. */
+  protected readonly minutosDeFn = (id: string): number => this.minutosDelProfesional(id);
+  protected readonly registradoFn = (p: Profesional): boolean => this.registradoEn(p, this.assignOrder()?.arl);
   protected readonly selectedProfSlots = signal<FranjaVista[]>([]);
   /** Se está consultando la agenda del asesor elegido (el compositor espera). */
   protected readonly cargandoAgenda = signal(false);
@@ -2436,6 +2446,8 @@ export class ValidationComponent implements OnInit, OnDestroy {
   protected openAssign(id: string): void {
     const order = this.orders().find((o) => o.id === id) ?? null;
     this.assignId.set(id);
+    this.eligiendoAsesor.set(false);
+    this.profBusqueda.set('');
     this.selectedProfSlots.set([]);
     this.otrasVisitas.set([]);
     this.franjasVisita.set([]);

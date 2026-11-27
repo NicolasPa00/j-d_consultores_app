@@ -30,7 +30,7 @@ describe('AgendaVisitaComponent', () => {
   it('propone, agrega y vuelve a proponer', () => {
     const fixture = montar();
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('Nueva franja de DANIELA ROSALES');
+    expect(el.textContent).toContain('Nueva franja de Daniela');
     const boton = el.querySelector<HTMLButtonElement>('#agv-agregar')!;
     expect(boton.disabled).toBe(false);
     boton.click();
@@ -65,6 +65,41 @@ describe('AgendaVisitaComponent', () => {
     expect(el.textContent).toContain('ya recibió esta franja');
     el.querySelector<HTMLButtonElement>('#agv-conf-cambiar')!.click();
     fixture.detectChanges();
-    expect(el.querySelector('#agv-e-ini')).not.toBeNull();
+    // 27-nov · La franja se cambia en el mismo formulario, que pasa a «Cambiar la franja del …».
+    expect(el.querySelector('#agv-ini')).not.toBeNull();
+    expect(el.textContent).toContain('Cambiar la franja del');
+    expect(el.querySelector('#agv-guardar')).not.toBeNull();
+  });
+
+  it('«Ver agenda» es de consulta: tocar un rato libre vuelve a «Elegir horario» con el formulario lleno', () => {
+    const fixture = montar();
+    const el = fixture.nativeElement as HTMLElement;
+    el.querySelector<HTMLButtonElement>('#agv-tab-agenda')!.click();
+    fixture.detectChanges();
+    expect(el.querySelector('#agv-agregar')).toBeNull();
+    // Una columna de un día futuro (la última de la semana): se simula el toque arriba del todo.
+    const cols = el.querySelectorAll<HTMLElement>('.rej__col:not(.rej__col--bloq)');
+    const col = cols[cols.length - 1];
+    col.getBoundingClientRect = () => ({ top: 0, left: 0, height: 280, width: 100, bottom: 280, right: 100, x: 0, y: 0, toJSON: () => ({}) });
+    col.dispatchEvent(new MouseEvent('click', { clientY: 1, bubbles: true }));
+    fixture.detectChanges();
+    expect(el.querySelector('#agv-agregar')).not.toBeNull();
+    const ini = el.querySelector<HTMLSelectElement>('#agv-ini')!;
+    // 6:00 a. m. es el primer rato del mapa.
+    expect(ini.value).toBe('360');
+    expect(fixture.componentInstance.franjas().length).toBe(0);
+  });
+
+  it('en edición, «Esc» cancela y la franja no cambia', () => {
+    const fixture = montar([{ id: 'f1', fecha: sumarDias(isoFecha(new Date()), 3), hora_inicio: '08:00', hora_fin: '12:00' }]);
+    const el = fixture.nativeElement as HTMLElement;
+    el.querySelector<HTMLButtonElement>('#agv-editar-f1')!.click();
+    fixture.detectChanges();
+    el.querySelector<HTMLButtonElement>('#agv-ini + button')!.click();
+    fixture.detectChanges();
+    el.querySelector('#agv-comp')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+    expect(el.textContent).not.toContain('Cambiar la franja del');
+    expect(fixture.componentInstance.franjas()[0].hora_inicio).toBe('08:00');
   });
 });

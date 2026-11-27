@@ -1,0 +1,125 @@
+@if (eligiendo()) {
+  <!-- ===== Paso «¿Quién va?»: la lista completa, solo mientras se elige ===== -->
+  <section class="lista" aria-labelledby="asv-t" (keydown)="tecla($event)">
+    <div class="lista__head">
+      <div class="lista__txt">
+        <h4 class="lista__titulo" id="asv-t">{{ sumando() ? '¿Quién más va a esta visita?' : '¿Quién ejecuta la visita?' }}</h4>
+        <p class="lista__sub">
+          @if (sumando()) {
+            Las horas que ya marcó quedan guardadas. Elija al siguiente para repartirle el resto.
+          } @else {
+            Elija al asesor; después programa sus horas{{ minutosOrden() ? ' (' + duracion(minutosOrden()) + ' en esta orden)' : '' }}.
+          }
+        </p>
+      </div>
+      <div class="buscar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+        <input id="asv-buscar" type="search" class="form-control" placeholder="Buscar por nombre, especialidad o ARL…" aria-label="Buscar asesor" [value]="busqueda()" (input)="busqueda.set($any($event.target).value)" />
+      </div>
+      @if (seleccionadoId()) {
+        <button type="button" class="btn btn--secondary" (click)="volver()">Volver a la agenda</button>
+      }
+    </div>
+
+    @if (filtrados().length) {
+      <ul class="tarjetas">
+        @for (p of filtrados(); track p.id) {
+          <li>
+            <button type="button" class="tarjeta" [class.tarjeta--on]="p.id === seleccionadoId()" [attr.aria-current]="p.id === seleccionadoId() ? 'true' : null" (click)="escoger(p.id)">
+              <span class="avatar" aria-hidden="true">{{ inicial(p.nombre) }}</span>
+              <span class="tarjeta__txt">
+                <span class="tarjeta__nombre">{{ p.nombre }}</span>
+                <span class="tarjeta__meta">{{ p.especialidad || 'Sin especialidad' }}</span>
+                @if (!particular() && arl() && registrado()(p)) {
+                  <span class="tarjeta__reg">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+                    Registrado ante {{ arl() }}
+                  </span>
+                }
+              </span>
+              @if (minutosDe()(p.id); as min) {
+                <span class="tarjeta__horas">{{ duracion(min) }}<span class="sr"> en esta orden</span></span>
+              }
+            </button>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="lista__vacia">
+        {{ busqueda().trim() ? 'Ningún asesor coincide con «' + busqueda().trim() + '». Pruebe con otra parte del nombre.' : 'No hay profesionales activos. Créelos en Profesionales.' }}
+      </p>
+    }
+  </section>
+} @else {
+  <!-- ===== Con asesor elegido: una sola fila ===== -->
+  <div class="fila">
+    @if (chips().length) {
+      <ul class="equipo" aria-label="Asesores de esta orden">
+        @for (c of chips(); track c.id) {
+          <li class="eq" [class.eq--on]="c.activo">
+            <button type="button" class="eq__nombre" [attr.aria-pressed]="c.activo" (click)="elegir.emit(c.id)">
+              <span class="avatar avatar--sm" aria-hidden="true">{{ inicial(c.nombre) }}</span>
+              <span>{{ c.nombre }}</span>
+              <strong>{{ duracion(c.minutos) }}</strong>
+              @if (c.principal) { <span class="eq__rol">Principal</span> }
+            </button>
+            <button type="button" class="eq__quitar" (click)="quitar.emit(c.id)" [attr.aria-label]="'Quitar a ' + c.nombre + ' de esta orden'">
+              <svg appIcono="cerrar"></svg>
+            </button>
+          </li>
+        }
+      </ul>
+    } @else if (seleccionado(); as p) {
+      <div class="elegido">
+        <span class="avatar" aria-hidden="true">{{ inicial(p.nombre) }}</span>
+        <span class="elegido__txt">
+          <span class="elegido__nombre">{{ p.nombre }}</span>
+          <span class="elegido__meta">{{ p.especialidad || 'Sin especialidad' }}</span>
+        </span>
+      </div>
+      <button type="button" class="btn btn--secondary" id="asv-cambiar" (click)="abrir()" [attr.aria-label]="'Cambiar de asesor (ahora ' + p.nombre + ')'">Cambiar</button>
+    }
+    @if (varios()) {
+      <button type="button" class="btn btn--texto fila__otro" (click)="sumarOtro()">
+        <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 4v10M4 9h10" /></svg>
+        Otro asesor
+      </button>
+    }
+
+    <!-- ASG · El suplente: los formatos salen a nombre de OTRO registrado ante
+         la ARL (Bolívar solo acepta radicados de los que tiene registrados).
+         Antes era una casilla con un párrafo en la columna; ahora es un control
+         en línea que solo se despliega si hace falta. -->
+    @if (!particular() && seleccionado()) {
+      <div class="formatos">
+        @if (ejecutorRegistrado()) {
+          <span class="formatos__ok">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+            Registrado ante {{ arl() }}: los formatos salen a su nombre
+          </span>
+        } @else if (!usarSuplente()) {
+          <span class="formatos__txt">Sin registro ante {{ arl() }}.</span>
+          <button type="button" class="btn btn--texto formatos__btn" (click)="activarSuplente()">Formatos a nombre de otro…</button>
+        } @else {
+          <label class="formatos__txt" for="asv-suplente">Formatos a nombre de</label>
+          <select class="form-control formatos__sel" id="asv-suplente" (change)="formatosProf.emit($any($event.target).value || null)">
+            <option value="" [selected]="!formatosProfId()">Elija un registrado…</option>
+            @for (r of registrados(); track r.id) {
+              <option [value]="r.id" [selected]="r.id === formatosProfId()">{{ r.nombre }}</option>
+            }
+          </select>
+          <button type="button" class="btn btn--texto formatos__btn" (click)="suplente.emit(false)" aria-label="Quitar: los formatos salen a nombre de quien ejecuta">Quitar</button>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Avisos del suplente: no bloquean, pero la ARL devolvería el radicado. -->
+  @if (!particular() && usarSuplente() && !ejecutorRegistrado()) {
+    @if (!registrados().length) {
+      <p class="formatos__aviso">Ningún otro profesional figura registrado ante {{ arl() }}. Márquelo en Profesionales → Registro ante las ARL.</p>
+    } @else if (registroSuplente()?.vencido) {
+      <p class="formatos__aviso">Su registro figura vencido el {{ registroSuplente()?.vigente_hasta }}. Confirme la vigencia con la ARL antes de radicar.</p>
+    }
+  }
+}
