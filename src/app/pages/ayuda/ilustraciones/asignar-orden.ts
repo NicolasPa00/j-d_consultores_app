@@ -40,8 +40,8 @@ export const ILUSTRACIONES: Ilustracion[] = [
     ]
   },
   {
-    "titulo": "Elija el asesor y marque la visita en la agenda",
-    "texto": "Elija el asesor a la izquierda: la agenda muestra lo que ya tiene ocupado. Arrastre sobre la rejilla para marcar las horas (un clic crea una franja con las horas que faltan); puede partir la visita en varias franjas o días. Cuando las franjas cubren las horas de la orden, pulse «Continuar».",
+    "titulo": "Elija el asesor y agende la visita",
+    "texto": "Elija el asesor a la izquierda: la agenda muestra lo que ya tiene ocupado. En «Nueva franja» elija el día y las horas y pulse «Agregar franja»: el formulario propone el siguiente hueco libre y avisa si algo choca; tocar la agenda solo llena el formulario. Puede partir la visita en varias franjas o días. Cuando las franjas cubren las horas de la orden, pulse «Continuar».",
     "img": "ayuda/asignar-orden/2.webp",
     "marcas": [
       {
