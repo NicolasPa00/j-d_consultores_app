@@ -498,7 +498,9 @@
 /* ===== Asignar profesional ===== */
 .assign {
   display: grid;
-  grid-template-columns: minmax(200px, 28%) 1fr;
+  /* 27-nov-2026 · La agenda nueva (compositor + rejilla) necesita el ancho: la
+     lista de asesores se queda en 240 px, como en la propuesta A. */
+  grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
   gap: 1.5rem;
   /* stretch (por defecto) y no `start`: la lista de profesionales tiene que
      medir lo mismo que la agenda, que es la que manda el alto del modal. */

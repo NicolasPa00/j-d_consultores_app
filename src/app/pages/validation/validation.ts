@@ -27,6 +27,7 @@ import { paginar } from '../../shared/paginacion';
 import { PaginadorComponent } from '../../shared/paginador/paginador';
 import { AccionComponent } from '../../shared/icono/accion';
 import { IconoComponent } from '../../shared/icono/icono';
+import { AgendaVisitaComponent } from './agenda-visita/agenda-visita';
 
 interface FormFieldDescriptor {
   label: string;
@@ -208,7 +209,7 @@ interface BloqueAgenda {
 
 @Component({
   selector: 'app-validation',
-  imports: [FormsModule, CeroVacioDirective, PaginadorComponent, AccionComponent, IconoComponent],
+  imports: [FormsModule, CeroVacioDirective, PaginadorComponent, AccionComponent, IconoComponent, AgendaVisitaComponent],
   templateUrl: './validation.html',
   styleUrls: ['./validation.scss', './validation-cobro.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -462,6 +463,8 @@ export class ValidationComponent implements OnInit, OnDestroy {
     ].join(' ')).includes(q));
   });
   protected readonly selectedProfSlots = signal<FranjaVista[]>([]);
+  /** Se está consultando la agenda del asesor elegido (el compositor espera). */
+  protected readonly cargandoAgenda = signal(false);
   protected readonly assigning = signal(false);
   /**
    * P3 (26-oct-2026) · ¿La empresa permite enviar formatos con la programación
@@ -656,6 +659,24 @@ export class ValidationComponent implements OnInit, OnDestroy {
       ? this.minutosProgramados() === this.duracionVisita()
       : this.totalFranjas() > 0,
   );
+  /** Nombre del asesor elegido, para el compositor de la agenda. */
+  protected readonly nombreSeleccionado = computed(() =>
+    this.professionals().find((p) => p.id === this.selectedProfId())?.nombre ?? '',
+  );
+  /**
+   * Lo que suman los DEMÁS asesores de la orden (y las franjas huérfanas): con
+   * esto la agenda calcula el tope, que es de la orden y no de cada uno.
+   */
+  protected readonly minutosOtros = computed(() =>
+    this.minutosProgramados() - minutosDe(this.franjasVisita()),
+  );
+  /** Franjas de los demás asesores, con su dueño: la agenda las pinta y no chocan. */
+  protected readonly otrasFranjasEquipo = computed<FranjaVisita[]>(() => {
+    const sel = this.selectedProfId();
+    return this.reparto()
+      .filter((m) => m.profesional_id !== sel)
+      .flatMap((m) => m.franjas.map((f) => ({ ...f, profesional_id: m.profesional_id })));
+  });
   /** Otras OS del asesor elegido, ya como obstáculos de la agenda. */
   private readonly visitasAjenas = computed(() =>
     this.otrasVisitas().map(visitaAjena).filter((v): v is VisitaAjena => !!v),
@@ -2721,7 +2742,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
     if (this.pendienteDeGuardar()) return 'Guardar las horas marcadas para este profesional';
     return this.franjasVisita().length
       ? 'Horas guardadas para este profesional'
-      : 'Marque sus horas en la agenda para poder guardarlas';
+      : 'Agende sus horas para poder guardarlas';
   }
 
   /** Todas las franjas del reparto, ordenadas y con su dueño: así se mandan. */
@@ -2981,7 +3002,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
     if (!order?.osId || !profId || this.previsualizando()) return;
     const fechaProgramada = this.fechaProgramadaIso();
     if (!fechaProgramada) {
-      this.alerts.warning('Falta programar la visita', 'Marque en la agenda al menos una franja con el día y las horas en que se ejecuta la visita.');
+      this.alerts.warning('Falta programar la visita', 'Agregue al menos una franja con el día y las horas en que se ejecuta la visita.');
       return;
     }
     const primeraVez = this.pasoAsignacion() === 'agenda';
@@ -3155,9 +3176,16 @@ export class ValidationComponent implements OnInit, OnDestroy {
   }
 
   private loadSlots(profId: string): void {
+    this.cargandoAgenda.set(true);
     this.api.listOcupaciones(profId).subscribe({
-      next: (r) => this.selectedProfSlots.set(r.data),
-      error: () => this.alerts.error('No se pudo cargar la disponibilidad', 'No fue posible consultar las franjas ocupadas del profesional seleccionado.'),
+      next: (r) => {
+        this.selectedProfSlots.set(r.data);
+        this.cargandoAgenda.set(false);
+      },
+      error: () => {
+        this.cargandoAgenda.set(false);
+        this.alerts.error('No se pudo cargar la disponibilidad', 'No fue posible consultar las franjas ocupadas del profesional seleccionado.');
+      },
     });
 
     // Las visitas ya pactadas se pintan junto a las ocupaciones. Es información
@@ -3570,7 +3598,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
     // tocar la agenda— es válido con la visita a medias.
     const fechaProgramada = this.fechaProgramadaIso();
     if (!fechaProgramada && this.visitaCompleta()) {
-      this.alerts.warning('Falta programar la visita', 'Marque en la agenda al menos una franja con el día y las horas en que se ejecuta la visita.');
+      this.alerts.warning('Falta programar la visita', 'Agregue al menos una franja con el día y las horas en que se ejecuta la visita.');
       return;
     }
 

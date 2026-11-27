@@ -1,0 +1,1121 @@
+/* ASG-02 · Agenda de la visita (propuesta A «El formulario primero», 27-nov-2026).
+   Sale de validation.scss: ahí rozaba el presupuesto anyComponentStyle (28 kB).
+   Piel de ORBITA: .btn, .form-control, .chip--filtro, .seg y .alert de
+   styles.scss, tokens tal cual y ningún hex nuevo; objetivos táctiles de 36 px
+   (44 en el celular). */
+
+:host {
+  /* Alto de media hora de la rejilla → MEDIA_PX en agenda-visita.ts (a la par). */
+  --ag-media: 10px;
+  /* Alto de los campos del compositor (44 en el celular). */
+  --ctl: 40px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.sr {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ===== Resumen ===== */
+.resumen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  padding: 10px 14px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
+}
+
+.resumen__cifras {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 300px;
+  min-width: 0;
+}
+
+.resumen__linea {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.resumen__label {
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
+}
+
+.resumen__valor {
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+/* DESIGN §10: el ámbar va en el ícono, nunca en el texto. */
+.resumen__falta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-celda);
+  font-weight: 600;
+  color: var(--tinta-2);
+
+  &::before {
+    content: '';
+    width: 14px;
+    height: 14px;
+    background: var(--ambar);
+    mask: var(--icono-reloj) center / contain no-repeat;
+  }
+}
+
+.resumen__completa {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-celda);
+  font-weight: 600;
+  color: var(--ok);
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* Tramo rayado = enviadas; liso = nuevas; el resto = por programar. */
+.barra {
+  display: flex;
+  height: 6px;
+  max-width: 520px;
+  border-radius: 3px;
+  background: var(--hundida);
+  overflow: hidden;
+}
+
+.barra__enviadas {
+  background: repeating-linear-gradient(135deg, var(--accion) 0 4px, color-mix(in srgb, var(--accion) 65%, var(--superficie)) 4px 7px);
+}
+
+.barra__nuevas {
+  background: var(--accion);
+}
+
+.resumen__detalle {
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
+}
+
+/* 7-oct-2026 · El equipo: un chip por asesor con sus horas. */
+.equipo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.equipo-chip {
+  display: inline-flex;
+  align-items: center;
+  background: var(--superficie);
+  border: 1px solid var(--borde-control);
+  border-radius: var(--r-completo);
+}
+
+.equipo-chip--activo {
+  background: var(--accion-tenue);
+  border-color: var(--accion);
+}
+
+.equipo-chip__nombre {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 4px 0 6px;
+  border: 0;
+  border-radius: var(--r-completo);
+  background: none;
+  font: inherit;
+  font-size: var(--fs-celda);
+  color: var(--tinta);
+  cursor: pointer;
+
+  strong {
+    color: var(--accion);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.equipo-chip__avatar {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accion-tenue);
+  color: var(--accion);
+  font-size: var(--fs-pastilla);
+  font-weight: 600;
+}
+
+.equipo-chip--activo .equipo-chip__avatar {
+  background: var(--accion);
+  color: var(--superficie);
+}
+
+.equipo-chip__rol {
+  font-size: var(--fs-pastilla);
+  color: var(--tinta-3);
+}
+
+/* La ✕ sube a 36 px de zona táctil (antes 18). */
+.equipo-chip__quitar {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--tinta-2);
+  cursor: pointer;
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .equipo-chip__quitar:hover {
+    background: var(--error-fondo);
+    color: var(--error);
+  }
+}
+
+/* ===== Dos columnas: compositor + lista | disponibilidad ===== */
+.trabajo {
+  display: grid;
+  grid-template-columns: minmax(340px, 430px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.trabajo__izq {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.trabajo__der {
+  min-width: 0;
+}
+
+.tarjeta {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
+}
+
+/* ===== A · Compositor ===== */
+.comp {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px 16px;
+}
+
+.comp__campos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.comp__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.comp__titulo {
+  margin: 0;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.comp__cargando {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
+}
+
+.lbl {
+  display: block;
+  margin-bottom: 6px;
+  font-size: var(--fs-celda);
+  font-weight: 500;
+  color: var(--tinta-2);
+}
+
+.dias {
+  display: flex;
+  gap: 6px;
+  padding: 2px 2px 6px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+.dia {
+  flex: none;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-width: 72px;
+  min-height: 48px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  line-height: 1.2;
+  scroll-snap-align: start;
+
+  b {
+    font-size: var(--fs-celda);
+    font-weight: 600;
+    color: var(--tinta);
+  }
+
+  small {
+    font-size: var(--fs-pastilla);
+    color: var(--tinta-3);
+  }
+
+  &.chip--on b,
+  &.chip--on small {
+    color: var(--accion);
+  }
+
+  &:disabled {
+    background: var(--hundida);
+    border-color: transparent;
+    cursor: not-allowed;
+
+    b {
+      color: var(--tinta-3);
+    }
+  }
+}
+
+/* Hoy: la raya cian («aquí está usted ahora», DESIGN §1.3). */
+.dia--hoy b {
+  box-shadow: inset 0 -2px 0 var(--cian-trazo);
+}
+
+/* Los domingos se ven atenuados pero se pueden elegir. */
+.dia--domingo:not(.chip--on):not(:disabled) {
+  background: var(--papel);
+}
+
+.dias__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.fecha-larga {
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
+
+  &::first-letter {
+    text-transform: uppercase;
+  }
+}
+
+.otra-fecha,
+.fecha-in {
+  max-width: 220px;
+  margin-top: 8px;
+}
+
+.fecha-in {
+  margin-top: 0;
+}
+
+.huecos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+
+  .lbl {
+    margin: 0 4px 0 0;
+    font-size: var(--fs-meta);
+  }
+}
+
+.hueco {
+  min-height: 36px;
+  font-size: var(--fs-meta);
+}
+
+.sin-huecos {
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
+}
+
+.horas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.stepper {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+
+  .form-control {
+    flex: 1;
+    min-width: 0;
+    min-height: var(--ctl);
+    padding-left: 0.5rem;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.stepper__b {
+  width: 36px;
+  min-height: var(--ctl);
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.dur {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  .chip--filtro {
+    min-height: 32px;
+  }
+}
+
+.valid {
+  min-height: 22px;
+  font-size: var(--fs-celda);
+
+  .alert {
+    margin: 0;
+  }
+}
+
+.valid--ok {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--tinta-2);
+
+  svg {
+    width: 16px;
+    height: 16px;
+    color: var(--ok);
+  }
+}
+
+.valid__ajuste {
+  margin-top: 6px;
+}
+
+.comp__acc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Secundario con el texto en acción: el primario del modal es el del pie. */
+.btn--agregar {
+  min-height: var(--ctl);
+  padding: 0 18px;
+  color: var(--accion);
+  font-weight: 600;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.comp__lleno {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
+
+  svg {
+    width: 18px;
+    height: 18px;
+    color: var(--ok);
+  }
+}
+
+/* Sin profesional */
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 28px 16px;
+  text-align: center;
+}
+
+.vacio__disco {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accion-tenue);
+  color: var(--accion);
+
+  svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+.vacio__titulo {
+  margin: 4px 0 0;
+  font-size: var(--fs-base);
+  font-weight: 600;
+}
+
+.vacio__texto {
+  max-width: 340px;
+  margin: 0;
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
+}
+
+/* «Elegir profesional» solo hace falta en el celular, donde la lista queda arriba. */
+.vacio__ir {
+  display: none;
+}
+
+/* Sugerencia */
+.sug {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--papel);
+  border: 1px dashed var(--borde-control);
+  border-radius: var(--r-tarjeta);
+
+  ul {
+    margin: 8px 0 0;
+    padding-left: 18px;
+    font-size: var(--fs-celda);
+    color: var(--tinta-2);
+  }
+}
+
+.sug__titulo {
+  font-size: var(--fs-celda);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sug__acc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+/* ===== B · Lista de franjas ===== */
+.lista__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.lista__titulo {
+  margin: 0;
+  font-size: var(--fs-base);
+  font-weight: 600;
+}
+
+.lista__cuenta {
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
+}
+
+.franjas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
+  overflow: hidden;
+
+  > li + li {
+    border-top: 1px solid var(--borde);
+  }
+}
+
+.fr {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 6px 10px;
+  min-height: 52px;
+  padding: 8px 8px 8px 12px;
+  background: var(--superficie);
+}
+
+.fr--flash {
+  animation: agv-destello 900ms ease;
+}
+
+@keyframes agv-destello {
+  from { background: var(--accion-tenue-hover); }
+  to { background: var(--superficie); }
+}
+
+.fr__txt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fr__l1 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+
+.fr__fecha {
+  font-size: var(--fs-celda);
+  font-weight: 600;
+}
+
+.fr__rango {
+  font-size: var(--fs-celda);
+  color: var(--tinta);
+}
+
+.fr__dur {
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.fr__estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-meta);
+  color: var(--tinta-2);
+}
+
+.fr__estado--nueva {
+  color: var(--accion);
+  font-weight: 500;
+}
+
+.fr__candado {
+  width: 14px;
+  height: 14px;
+  color: var(--tinta-2);
+}
+
+.fr__acc {
+  display: flex;
+  gap: 4px;
+
+  .btn {
+    min-height: 36px;
+  }
+}
+
+.fr--env {
+  background: var(--hundida);
+}
+
+.fr--confirmar {
+  grid-template-columns: 1fr;
+}
+
+.confirmar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--r-alerta);
+  background: var(--info-fondo);
+  font-size: var(--fs-celda);
+  color: var(--tinta);
+}
+
+.confirmar__acc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fr--edit {
+  display: block;
+  padding: 12px;
+}
+
+.edit {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.edit__titulo {
+  margin: 0;
+  font-size: var(--fs-celda);
+  font-weight: 600;
+}
+
+.lista-vacia {
+  margin: 0;
+  padding: 14px;
+  border: 1px dashed var(--borde-control);
+  border-radius: var(--r-tarjeta);
+  font-size: var(--fs-celda);
+  color: var(--tinta-2);
+}
+
+.otros {
+  margin: 10px 0 0;
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
+}
+
+/* ===== C · Disponibilidad ===== */
+.disp__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  .seg {
+    margin-left: auto;
+  }
+}
+
+.disp__nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.disp__rango {
+  margin: 0 0 0 6px;
+  font-size: var(--fs-celda);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.disp__pista {
+  margin: 8px 0 0;
+  font-size: var(--fs-meta);
+  color: var(--tinta-3);
+}
+
+.disp__pista--dia {
+  margin: 0 0 8px;
+
+  &::first-letter {
+    text-transform: uppercase;
+  }
+}
+
+/* Rejilla: 7 días × 6 a. m.–12 a. m. a 10 px la media hora, sin scroll. */
+.rej {
+  display: grid;
+  grid-template-columns: 44px repeat(7, minmax(0, 1fr));
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
+  overflow: hidden;
+}
+
+.rej__h {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  border-bottom: 1px solid var(--borde);
+  font-size: var(--fs-meta);
+  line-height: 1.15;
+  color: var(--tinta-3);
+
+  b {
+    padding: 0 3px;
+    font-size: var(--fs-celda);
+    font-weight: 600;
+    color: var(--tinta);
+  }
+}
+
+.rej__h--hoy b {
+  box-shadow: inset 0 -2px 0 var(--cian-trazo);
+}
+
+.rej__h--sel {
+  background: var(--accion-tenue);
+  color: var(--accion);
+
+  b {
+    color: var(--accion);
+  }
+}
+
+.rej__eje {
+  position: relative;
+  border-right: 1px solid var(--borde);
+}
+
+.rej__hora {
+  position: absolute;
+  right: 6px;
+  font-size: 10.5px;
+  color: var(--tinta-3);
+  white-space: nowrap;
+  transform: translateY(-50%);
+
+  &:first-child {
+    transform: none;
+  }
+}
+
+/* Una raya cada 2 h (4 medias horas). */
+.rej__col {
+  position: relative;
+  border-left: 1px solid var(--borde);
+  cursor: pointer;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 calc(4 * var(--ag-media) - 1px),
+    var(--borde) calc(4 * var(--ag-media) - 1px) calc(4 * var(--ag-media))
+  );
+}
+
+.rej__col--domingo {
+  background-color: var(--papel);
+}
+
+.rej__col--bloq {
+  cursor: default;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .rej__col:not(.rej__col--bloq):hover {
+    background-color: color-mix(in srgb, var(--accion) 4%, transparent);
+  }
+}
+
+.rej--sinprof .rej__col {
+  background-color: var(--papel);
+}
+
+.blq {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  padding: 1px 4px;
+  overflow: hidden;
+  border-left: 3px solid transparent;
+  border-radius: 4px;
+  font-size: 10.5px;
+  line-height: 1.2;
+  pointer-events: none;
+}
+
+.blq__t {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.blq--ocupado {
+  background: var(--aviso-fondo);
+  border-left-color: var(--ambar);
+  color: var(--tinta-2);
+}
+
+.blq--otra {
+  background: var(--hundida);
+  border-left-color: var(--borde-campo);
+  color: var(--tinta-2);
+}
+
+/* Solo los bloques de esta visita se pulsan: abren su fila. */
+.blq--visita {
+  background: var(--accion);
+  border-left-color: var(--cian);
+  color: var(--superficie);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.blq--enviada {
+  background: repeating-linear-gradient(135deg, var(--accion) 0 5px, color-mix(in srgb, var(--accion) 82%, var(--superficie)) 5px 9px);
+  border-left-color: var(--accion-hover);
+  color: var(--superficie);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.blq--equipo {
+  background: var(--accion-tenue);
+  border: 1px dashed var(--accion);
+  border-left: 3px solid var(--accion);
+  color: var(--accion);
+}
+
+/* Lo que hay en el compositor: sin verde ni rojo, el problema se lee allá. */
+.blq--previa {
+  z-index: 1;
+  background: var(--seleccion);
+  border: 2px dashed var(--accion);
+  color: var(--accion);
+  font-weight: 600;
+}
+
+.blq--edit {
+  outline: 2px solid var(--cian);
+  outline-offset: 1px;
+}
+
+.leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-meta);
+  color: var(--tinta-2);
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+.pt {
+  display: inline-block;
+  flex: none;
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.pt--ocupado { background: var(--aviso-fondo); box-shadow: inset 3px 0 0 var(--ambar); }
+.pt--otra { background: var(--hundida); box-shadow: inset 3px 0 0 var(--borde-campo); }
+.pt--visita { background: var(--accion); }
+.pt--enviada { background: repeating-linear-gradient(135deg, var(--accion) 0 3px, color-mix(in srgb, var(--accion) 82%, var(--superficie)) 3px 5px); }
+.pt--equipo { background: var(--accion-tenue); border: 1px dashed var(--accion); }
+.pt--previa { background: var(--seleccion); border: 1.5px dashed var(--accion); }
+
+/* Vista Día: filas de 44 px; tocar una libre llena el compositor. */
+.linea {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--borde);
+  border-radius: var(--r-tarjeta);
+  overflow: hidden;
+
+  li + li {
+    border-top: 1px solid var(--borde);
+  }
+}
+
+.seg-dia {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 0;
+  background: var(--superficie);
+  font: inherit;
+  font-size: var(--fs-celda);
+  text-align: left;
+}
+
+button.seg-dia {
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  button.seg-dia:hover {
+    background: var(--fila-hover);
+  }
+}
+
+.seg-dia__rango {
+  min-width: 150px;
+  color: var(--tinta);
+  font-variant-numeric: tabular-nums;
+}
+
+.seg-dia__que {
+  flex: 1;
+  min-width: 0;
+  color: var(--tinta-2);
+}
+
+.seg-dia--libre .seg-dia__que {
+  color: var(--ok);
+  font-weight: 500;
+}
+
+.seg-dia__ir {
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  color: var(--accion);
+}
+
+.seg-dia__liberar {
+  min-height: 36px;
+}
+
+/* ===== Columna estrecha (el modal entre 720 y 1100 px, o el panel apilado) ===== */
+@container (max-width: 760px) {
+  .trabajo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ===== Celular ===== */
+@media (max-width: 720px) {
+  :host {
+    --ctl: 44px;
+  }
+
+  /* El resumen queda pegado arriba al hacer scroll. */
+  .resumen {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    box-shadow: 0 1px 0 var(--borde);
+  }
+
+  .horas {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .stepper__b {
+    width: 44px;
+  }
+
+  /* 16 px en los campos: con menos, iOS hace zoom al enfocarlos. */
+  .stepper .form-control,
+  .otra-fecha,
+  .fecha-in {
+    font-size: 16px;
+  }
+
+  .chip--filtro,
+  .hueco,
+  .dur .chip--filtro {
+    min-height: 44px;
+  }
+
+  .dia {
+    min-height: 52px;
+  }
+
+  .btn--agregar {
+    width: 100%;
+  }
+
+  .vacio__ir {
+    display: inline-flex;
+  }
+
+  .fr {
+    grid-template-columns: 1fr;
+  }
+
+  .fr__acc {
+    justify-content: flex-end;
+
+    .btn {
+      flex: 1;
+      min-height: 44px;
+    }
+  }
+
+  .rej {
+    grid-template-columns: 36px repeat(7, minmax(0, 1fr));
+  }
+
+  .rej__h {
+    font-size: 10.5px;
+  }
+
+  .seg > button {
+    min-height: 38px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fr--flash {
+    animation: none;
+  }
+}

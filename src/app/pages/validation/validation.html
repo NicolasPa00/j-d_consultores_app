@@ -1223,7 +1223,7 @@
         <!-- 24-oct-2026 · Buscar en la base de asesores por nombre, especialidad o ARL. -->
         <div class="assign__buscar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-          <input type="search" class="form-control" placeholder="Buscar asesor…" [ngModel]="profBusqueda()" (ngModelChange)="profBusqueda.set($event)" aria-label="Buscar asesor" />
+          <input #buscadorAsesor type="search" class="form-control" placeholder="Buscar asesor…" [ngModel]="profBusqueda()" (ngModelChange)="profBusqueda.set($event)" aria-label="Buscar asesor" />
         </div>
         <div class="assign__list">
         @for (prof of professionalsFiltrados(); track prof.id) {
@@ -1332,7 +1332,7 @@
              la agenda, en «Visita de esta orden». -->
         @if (order.osId && duracionVisita() > 0) {
           <p class="assign__ayuda">
-            ¿La orden la ejecutan varios? Marque las horas de un profesional, guárdelas con
+            ¿La orden la ejecutan varios? Agende las horas de un profesional, guárdelas con
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
               <path d="M17 21v-8H7v8M7 3v5h8" />
@@ -1345,274 +1345,64 @@
 
       <!-- ---- Agenda ----
            ASG-02 · La visita se reparte en franjas (mañana y tarde, o varios
-           días) sobre la misma rejilla donde se ven las ocupaciones del
-           profesional y sus otras órdenes, para que el choque se vea antes de
-           enviar nada. La agenda se muestra SIEMPRE, con o sin profesional
-           elegido, para que el modal no cambie de tamaño a mitad de camino;
-           22-nov-2026 · pero sin profesional queda BLOQUEADA: primero se elige
-           quién va y después el horario (las horas son de un asesor). -->
-      <div class="assign__calendar">
-          <!-- Resumen de lo programado. Cada franja se puede quitar desde aquí
-               o desde su bloque en la rejilla. -->
-          <div class="cita-bar">
-            <div class="cita-bar__chip" [class.cita-bar__chip--vacia]="!totalFranjas()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <path d="M16 2v4M8 2v4M3 10h18" />
-              </svg>
-              <span class="cita-bar__texto">
-                <span class="cita-bar__label">Visita de esta orden</span>
-                <strong class="cita-bar__valor">
-                  @if (totalFranjas()) {
-                    {{ duracionTexto(minutosProgramados()) }} en
-                    {{ totalFranjas() }} franja{{ totalFranjas() === 1 ? '' : 's' }}
-                    · de {{ duracionTexto(duracionVisita()) }} asignadas
-                  } @else {
-                    Sin programar · marque las horas en la agenda
-                  }
-                </strong>
-                <!-- Mientras falten horas la orden NO pasa a PROGRAMADA: es lo
-                     que decide el estado, así que se dice aquí y no en un aviso
-                     que aparezca solo al intentar guardar. -->
-                @if (!visitaCompleta() && duracionVisita() > 0) {
-                  <span class="cita-bar__falta">
-                    Faltan {{ duracionTexto(minutosPorRepartir()) }} por repartir
-                  </span>
-                }
-              </span>
-            </div>
-
-            <!-- 7-oct-2026 · El equipo: un chip por asesor con las horas que ya
-                 tiene guardadas. Pulsarlo lo selecciona (para ver o cambiar su
-                 horario); la X lo saca y libera sus horas. -->
-            @if (equipoVista().length) {
-              <ul class="equipo">
-                @for (m of equipoVista(); track m.id) {
-                  <li class="equipo-chip" [class.equipo-chip--activo]="m.id === selectedProfId()">
-                    <button type="button" class="equipo-chip__nombre" (click)="selectProf(m.id)" [title]="m.detalle">
-                      <span class="equipo-chip__avatar" aria-hidden="true">{{ m.nombre.charAt(0) }}</span>
-                      <span>{{ m.nombre }}</span>
-                      <strong>{{ duracionTexto(m.minutos) }}</strong>
-                      @if (m.principal && equipoVista().length > 1) {
-                        <span class="equipo-chip__rol" title="Recibe el enlace para subir los soportes">Principal</span>
-                      }
-                    </button>
-                    <button
-                      type="button"
-                      class="equipo-chip__quitar"
-                      (click)="quitarDelEquipo(m.id)"
-                      [attr.aria-label]="'Quitar a ' + m.nombre + ' de esta orden'"
-                      title="Quitar de esta orden"
-                    >
-                      <svg appIcono="cerrar"></svg>
-                    </button>
-                  </li>
-                }
-              </ul>
-            }
-
-            <!-- Las franjas del seleccionado, mientras no estén guardadas. -->
-            @if (franjasOrdenadas().length && (pendienteDeGuardar() || !equipoVista().length)) {
-              <ul class="franjas">
-                @for (f of franjasOrdenadas(); track f.id) {
-                  <li class="franja-chip">
-                    <span class="franja-chip__texto">{{ rotuloFranja(f) }}</span>
-                    <button
-                      type="button"
-                      class="franja-chip__quitar"
-                      (click)="quitarFranjaVisita(f.id)"
-                      [attr.aria-label]="'Quitar la franja ' + rotuloFranja(f)"
-                      title="Quitar franja"
-                    >
-                      <svg appIcono="cerrar"></svg>
-                    </button>
-                  </li>
-                }
-              </ul>
-            }
-          </div>
-
-          <!-- CFG-03 · Sin plantillas activas para esta ARL el correo saldría
-               sin un solo documento que diligenciar. Se avisa ANTES de enviarlo. -->
-          @if (arlSinFormatos()) {
-            <div class="alert alert--warning alert--sm cita__aviso" role="alert">
-              <div class="alert__body">
-                <p class="alert__title">La ARL {{ order.arl }} no tiene formatos configurados.</p>
-                <p class="alert__detail">
-                  El correo al profesional saldrá sin documentos para diligenciar. Créelos en
-                  Configuración → Formatos y encuesta (una plantilla sin ARL sirve para todas).
-                </p>
-              </div>
-            </div>
-          }
-
-          @if (cruceDeLaCita(); as cruce) {
-            <div class="alert alert--warning alert--sm cita__aviso" role="alert">
-              <div class="alert__body">
-                <p class="alert__title">
-                  El profesional ya está ocupado el {{ rotuloFranja(cruce) }}.
-                </p>
-                <p class="alert__detail">Puede continuar si la agenda cambió, pero revise antes de enviar el correo.</p>
-              </div>
-            </div>
-          } @else if (cruceConOtraOs(); as otra) {
-            <div class="alert alert--warning alert--sm cita__aviso" role="alert">
-              <div class="alert__body">
-                <p class="alert__title">
-                  A esa hora ya tiene la orden {{ otra.codigo }} en {{ otra.empresa_nombre }}.
-                </p>
-                <p class="alert__detail">Dos visitas a la misma hora obligan a reprogramar una; revise antes de continuar.</p>
-              </div>
-            </div>
-          }
-
-          <!-- Barra: semana visible + qué se marca al pulsar en la rejilla -->
-          <div class="agenda__bar">
-            <div class="agenda__nav">
-              <button type="button" class="icon-action" (click)="agendaSemana(-1)" aria-label="Semana anterior" title="Semana anterior">
-                <svg appIcono="anterior"></svg>
-              </button>
-              <button type="button" class="icon-action" (click)="agendaSemana(1)" aria-label="Semana siguiente" title="Semana siguiente">
-                <svg appIcono="siguiente"></svg>
-              </button>
-              <button type="button" class="btn btn--ghost btn--sm" (click)="agendaHoy()">Hoy</button>
-              <p class="agenda__rango">{{ rotuloSemana() }}</p>
-            </div>
-
-            <span class="agenda__duracion">
-              Horas de la orden: <strong>{{ duracionTexto(duracionVisita()) }}</strong>
-            </span>
-          </div>
-
-          <p class="agenda__hint">
-            @if (selectedProfId()) {
-              <strong>Arrastre</strong> sobre la rejilla para marcar las horas de la visita; puede partirla en varias franjas (mañana y tarde, o en días distintos). Un clic simple crea una franja con las horas que falten por repartir.
-            } @else {
-              Primero elija el profesional; después marque el horario de la visita.
-            }
-          </p>
-
-          <!-- Rejilla semanal. Cabecera y días comparten el mismo contenedor con
-               scroll para que no se desalineen al desplazar en horizontal. -->
-          <div class="agenda__marco">
-          <div class="agenda__scroll" #agendaScroll [class.agenda__scroll--bloqueada]="!selectedProfId()" (pointerleave)="agendaSalir()">
-            <div class="agenda__inner">
-              <div class="agenda__head">
-                <span class="agenda__gutter-head" aria-hidden="true"></span>
-                @for (dia of semana(); track dia.iso) {
-                  <span class="agenda__dia" [class.agenda__dia--hoy]="dia.hoy" [class.agenda__dia--finde]="dia.finde">
-                    <span class="agenda__dia-nombre">{{ dia.nombre }}</span>
-                    <span class="agenda__dia-num">{{ dia.num }}</span>
-                  </span>
-                }
-              </div>
-
-              <div class="agenda__body">
-                <div class="agenda__gutter" [style.height.px]="agendaAlto" aria-hidden="true">
-                  @for (h of agendaHoras; track h.top) {
-                    <span class="agenda__hora" [style.top.px]="h.top">{{ h.label }}</span>
-                  }
-                </div>
-
-                @for (dia of semana(); track dia.iso) {
-                  <div
-                    class="agenda__col"
-                    [class.agenda__col--hoy]="dia.hoy"
-                    [class.agenda__col--finde]="dia.finde"
-                    [style.height.px]="agendaAlto"
-                    (pointerdown)="agendaPresionar($event, dia.iso)"
-                    (pointermove)="agendaMover($event, dia.iso)"
-                    (pointerup)="agendaSoltar()"
-                    (pointercancel)="agendaCancelar()"
-                  >
-                    @for (b of bloquesDelDia(dia.iso); track b.id) {
-                      <div
-                        class="ag-block ag-block--{{ b.tipo }}"
-                        [style.top.px]="b.top"
-                        [style.height.px]="b.alto"
-                      >
-                        <span class="ag-block__hora">{{ b.rango }}</span>
-                        <span class="ag-block__texto">{{ b.texto }}</span>
-                        <!-- 7-oct-2026 · Quiénes van en esta franja: un icono por
-                             asesor, relleno el seleccionado. El tooltip de cada uno
-                             dice su nombre y sus horas aquí. -->
-                        @if (b.personas; as personas) {
-                          <span class="ag-personas">
-                            @for (p of personas; track p.id) {
-                              <span
-                                class="ag-persona"
-                                [class.ag-persona--activa]="p.activa"
-                                [title]="p.nombre + ' · ' + duracionTexto(p.minutos) + ' en esta franja'"
-                                [attr.aria-label]="p.nombre + ', ' + duracionTexto(p.minutos) + ' en esta franja'"
-                                (pointerdown)="$event.stopPropagation()"
-                              >
-                                <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                  <circle cx="12" cy="8" r="4" />
-                                  <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z" />
-                                </svg>
-                              </span>
-                            }
-                          </span>
-                        }
-                        @if (b.slot; as slot) {
-                          <button
-                            type="button"
-                            class="ag-block__quitar"
-                            (pointerdown)="$event.stopPropagation()"
-                            (click)="removeBusySlot(slot)"
-                            aria-label="Quitar franja ocupada"
-                            title="Quitar franja"
-                          >
-                            <svg appIcono="cerrar"></svg>
-                          </button>
-                        } @else if (b.franjaId; as franjaId) {
-                          <button
-                            type="button"
-                            class="ag-block__quitar"
-                            (pointerdown)="$event.stopPropagation()"
-                            (click)="quitarFranjaVisita(franjaId)"
-                            aria-label="Quitar esta franja de la visita"
-                            title="Quitar franja"
-                          >
-                            <svg appIcono="cerrar"></svg>
-                          </button>
-                        }
-                      </div>
-                    }
-
-                    @if (fantasma(dia.iso); as f) {
-                      <div class="ag-ghost" [style.top.px]="f.top" [style.height.px]="f.alto">
-                        <span>{{ f.rango }}</span>
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            </div>
-          </div>
-
-          @if (!selectedProfId()) {
-            <div class="agenda__bloqueo" role="status">
-              <svg appIcono="asignar"></svg>
-              <p class="agenda__bloqueo-titulo">Primero elija el profesional</p>
-              <p class="agenda__bloqueo-texto">
-                Seleccione en la lista de la izquierda quién ejecuta la visita. Así verá su
-                disponibilidad y podrá marcar el horario.
+           días). 27-nov-2026 · Propuesta A «El formulario primero»: se agenda
+           con un compositor (fecha, desde, hasta) que propone el siguiente hueco
+           y valida en vivo; la rejilla es solo un mapa. Sin profesional queda
+           bloqueada: primero se elige quién va y después el horario. -->
+      <app-agenda-visita
+        class="assign__calendar"
+        [profesionalId]="selectedProfId()"
+        [nombre]="nombreSeleccionado()"
+        [equipo]="equipoVista()"
+        [(franjas)]="franjasVisita"
+        [otrasFranjasEquipo]="otrasFranjasEquipo()"
+        [ocupaciones]="selectedProfSlots()"
+        [otrasVisitas]="otrasVisitas()"
+        [minutosOrden]="duracionVisita()"
+        [minutosOtros]="minutosOtros()"
+        [cargando]="cargandoAgenda()"
+        (cambiarAsesor)="selectProf($event)"
+        (quitarAsesor)="quitarDelEquipo($event)"
+        (liberarOcupacion)="removeBusySlot($event)"
+        (irAProfesionales)="buscadorAsesor.focus(); buscadorAsesor.scrollIntoView({ block: 'center' })"
+      >
+        <!-- CFG-03 · Sin plantillas activas para esta ARL el correo saldría
+             sin un solo documento que diligenciar. Se avisa ANTES de enviarlo. -->
+        @if (arlSinFormatos()) {
+          <div class="alert alert--warning alert--sm" role="alert">
+            <div class="alert__body">
+              <p class="alert__title">La ARL {{ order.arl }} no tiene formatos configurados.</p>
+              <p class="alert__detail">
+                El correo al profesional saldrá sin documentos para diligenciar. Créelos en
+                Configuración → Formatos y encuesta (una plantilla sin ARL sirve para todas).
               </p>
             </div>
-          }
           </div>
+        }
 
-          <ul class="agenda__leyenda">
-            <li><span class="agenda__punto agenda__punto--visita"></span>Visita de esta orden</li>
-            @if (equipoVista().length) {
-              <li><span class="agenda__punto agenda__punto--equipo"></span>Otros asesores de esta orden</li>
-            }
-            <li><span class="agenda__punto agenda__punto--otra"></span>Otras órdenes suyas</li>
-            <li><span class="agenda__punto agenda__punto--ocupado"></span>Ocupado</li>
-          </ul>
-
-      </div>
+        <!-- Franjas que ya venían guardadas y hoy pisan la agenda del asesor
+             (la agenda cambió después). El compositor ya no deja crear choques,
+             pero lo heredado se avisa. -->
+        @if (cruceDeLaCita(); as cruce) {
+          <div class="alert alert--warning alert--sm" role="alert">
+            <div class="alert__body">
+              <p class="alert__title">
+                El profesional ya está ocupado el {{ rotuloFranja(cruce) }}.
+              </p>
+              <p class="alert__detail">Puede continuar si la agenda cambió, pero revise antes de enviar el correo.</p>
+            </div>
+          </div>
+        } @else if (cruceConOtraOs(); as otra) {
+          <div class="alert alert--warning alert--sm" role="alert">
+            <div class="alert__body">
+              <p class="alert__title">
+                A esa hora ya tiene la orden {{ otra.codigo }} en {{ otra.empresa_nombre }}.
+              </p>
+              <p class="alert__detail">Dos visitas a la misma hora obligan a reprogramar una; revise antes de continuar.</p>
+            </div>
+          </div>
+        }
+      </app-agenda-visita>
     </div>
     }
 
@@ -1627,7 +1417,7 @@
         } @else if (pasoAsignacion() === 'formatos') {
           Revise cada documento. Al confirmar, la orden se guarda y el correo sale con estos formatos.
         } @else if (!principalId()) {
-          Marque las franjas en la agenda y elija un profesional para poder asignar.
+          Elija un profesional para poder asignar.
         } @else if (usarSuplente() && !formatosProfId()) {
           <!-- ASG · El interruptor está puesto pero no se eligió a nadie. Guardar
                así dejaría los formatos a nombre del ejecutor sin decirlo, que es
@@ -1639,7 +1429,7 @@
                P3 · Y, si la empresa lo permite, enviar lo ya programado. -->
           Faltan {{ duracionTexto(minutosPorRepartir()) }} por repartir de
           {{ duracionTexto(duracionVisita()) }}. Se guarda el avance, pero la orden no pasa a
-          PROGRAMADA ni sale el correo hasta cubrirlas todas@if (order.osId && puedeEnviarParcial()) {<span>, salvo que use «Enviar lo programado» para mandar ya lo marcado y dejar el resto para después</span>}.
+          PROGRAMADA ni sale el correo hasta cubrirlas todas@if (order.osId && puedeEnviarParcial()) {<span>, salvo que use «Enviar lo programado» para mandar ya lo agendado y dejar el resto para después</span>}.
         } @else if (!order.osId) {
           <!-- El borrador solo guarda un instante: las franjas se pactan al
                validar la OS, que es cuando existe la orden a la que cuelgan. -->
