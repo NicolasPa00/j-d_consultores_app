@@ -5,7 +5,16 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
-> 🧩 **26/27-nov-2026 · PETICIONES DE JD&D DEL 26-NOV — rama `peticiones-26-nov` en los dos repos, SIN desplegar. Tablero: `docs/3-planes/plan-peticiones-26-nov-2026.md`.**
+> 🚀 **27-nov-2026 (12:35) · DESPLEGADO EN PRODUCCIÓN: peticiones del 26-nov** (envío por partes + agenda sin arrastre con pestañas
+> «Elegir horario | Ver agenda»). back `ad3b546` (master) / front `252baa7` (main), script `docs/4-despliegue/despliegue-peticiones-26-nov.sh`.
+> Migración `2026-11-26-franjas-enviadas.sql` aplicada ANTES del reinicio: 304/306 franjas marcadas como enviadas (las 2 restantes son de
+> órdenes SIN PROGRAMAR), OS-2026-0324 con sus 3 sesiones (11-nov, 25-nov ×2) enviadas. Respaldo `~/respaldos/orbita-antes-peticiones26nov-20261127-1235.dump`.
+> Health 200, login 200, API 401 sin token, sin errores al arrancar. **Falta:** probar en producción la vista previa de la OS-2026-0324 por
+> pantalla; captura de ayuda `asignar-orden/2.webp`; enviar a JD&D la respuesta de la cuenta de cobro (§1 del tablero). En `jdd_dev` quedan
+> los datos de prueba ZZ (OS-2026-0025 / ZZ-AGENDA-2711, asesores ZZ AGENDA, usuario doc 9999002711) hasta que el dueño termine de probar.
+> Reversa: `git reset --hard eedff70` / `37bcf95` + build + reinicio; las columnas nuevas son aditivas y el código viejo las ignora.
+>
+> 🧩 **26/27-nov-2026 · PETICIONES DE JD&D DEL 26-NOV — rama `peticiones-26-nov` en los dos repos, YA DESPLEGADAS el 27-nov (ver arriba). Tablero: `docs/3-planes/plan-peticiones-26-nov-2026.md`.**
 > (1) Ruta de la cuenta de cobro: solo pregunta, respondida (aviso por campanita a admin/contador, sin correo). (2) **Envío por partes sin
 > reenviar lo ya enviado** (OS-2026-0324): backend HECHO y commiteado en `sst_ws` — franjas con `enviada_en`/`enviada_a`/`ics_uid`
 > (migración `2026-11-26-franjas-enviadas.sql`, aplicada en `jdd_dev`, **falta en producción antes de reiniciar**), cada envío manda solo
