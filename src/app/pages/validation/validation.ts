@@ -15,6 +15,10 @@ import { NotificationsService } from '../../core/notifications.service';
 import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, ClaveGasto, DetalleCobroOrden, GASTOS_COBRO, EstadoArl, ESTADOS_ARL, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, TipoViatico, CasillaEditable, FilaPrefactura, FormatoPrevio, FranjaVisita, HistorialCobro, HistorialEstado, HistorialEstadoArl, Ocupacion, Orden, OrdenManualForm, Plantilla, PrevisualizacionPrefactura, Profesional, RadicadoOrden, RegistroArl, ResultadoCrucePrefactura, SesionPrevia, Tercero, VisitaProxima } from '../../core/models';
 import { aIsoFecha, fechaLocal, hora12, rango12 } from '../../core/fechas';
 import {
+  AG_DESDE_MIN, AG_HASTA_MIN, AG_PASO_MIN, aHoraTexto, aMinutos, ContextoAgenda, duracionDeOrden, duracionEnLaRejilla,
+  isoFecha, isoHora, lunesDe, minutosDe, ocupacionEn as ocupacionEnFranjas, recortar as recortarFranja, sumarDias, validarFranja, visitaAjena, VisitaAjena,
+} from './agenda-visita/franjas';
+import {
   ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, opcionesDeCampo,
   problemaCampo, tecleoCampo,
 } from '../../shared/campos-orden';
@@ -150,22 +154,8 @@ type FranjaVista = Ocupacion;
    franja termina como mucho a las 24:00 (= 12:00 a. m., fin de ESE día; Postgres
    guarda `time '24:00'` y lo resta bien). Lo que pase de la medianoche se parte en
    dos franjas: una hasta las 24:00 y otra desde las 00:00 del día siguiente. */
-const AG_DESDE_MIN = 6 * 60;
-const AG_HASTA_MIN = 24 * 60;
-const AG_PASO_MIN = 30;
 /** Alto en píxeles de media hora: es lo que traduce minutos a geometría. */
 const AG_PASO_PX = 22;
-/**
- * Duración de una visita cuando la OS no trae horas.
- *
- * Lo que ocupa una visita en la agenda NO es libre: son las **horas asignadas**
- * de la orden, las mismas que el backend usa para el `DTEND` de la invitación
- * .ics que recibe el profesional (`calendar.service.js`). Por eso el bloque se
- * dibuja con esas horas y arrastrar mueve la visita, pero no la estira: estirar
- * el bloque significaría cambiar las horas contratadas con la ARL, que además
- * son las que valora la pre-cuenta (M9).
- */
-const AG_VISITA_MIN = 60;
 const AG_DIAS = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
 const AG_MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
@@ -190,11 +180,6 @@ interface DiaAgenda {
 interface MiembroEquipo {
   profesional_id: string;
   franjas: FranjaVisita[];
-}
-
-/** Minutos que suman unas franjas. */
-function minutosDe(franjas: FranjaVisita[]): number {
-  return franjas.reduce((t, f) => t + (aMinutos(f.hora_fin) - aMinutos(f.hora_inicio)), 0);
 }
 
 /** Huella de unas franjas, para saber si lo marcado difiere de lo guardado. */
@@ -671,6 +656,31 @@ export class ValidationComponent implements OnInit, OnDestroy {
       ? this.minutosProgramados() === this.duracionVisita()
       : this.totalFranjas() > 0,
   );
+  /** Otras OS del asesor elegido, ya como obstáculos de la agenda. */
+  private readonly visitasAjenas = computed(() =>
+    this.otrasVisitas().map(visitaAjena).filter((v): v is VisitaAjena => !!v),
+  );
+  /**
+   * 27-nov-2026 · Todo lo que las reglas puras de franjas.ts necesitan saber del
+   * modal. El tope cuenta lo de los DEMÁS asesores (y las franjas huérfanas):
+   * es lo programado menos lo del asesor activo.
+   */
+  protected readonly contextoAgenda = computed<ContextoAgenda>(() => {
+    const id = this.selectedProfId();
+    const nombre = this.professionals().find((p) => p.id === id)?.nombre ?? 'El profesional';
+    return {
+      conProfesional: !!id,
+      nombre,
+      ocupaciones: this.selectedProfSlots(),
+      otrasVisitas: this.visitasAjenas(),
+      propias: this.franjasVisita(),
+      minutosOrden: this.duracionVisita(),
+      minutosOtros: this.minutosProgramados() - minutosDe(this.franjasVisita()),
+      // Paso 1: la rejilla de arrastre todavía deja marcar en el pasado.
+      hoy: '0000-00-00',
+      ahoraMin: 0,
+    };
+  });
   /** Minutos → "4 h", "1 h 30 min". */
   protected duracionTexto(min: number): string {
     if (min <= 0) return '0 h';
@@ -2788,32 +2798,14 @@ export class ValidationComponent implements OnInit, OnDestroy {
   private ocupacionEn(
     fecha: string, ini: number, fin: number,
   ): { motivo: string; desde: string; hasta: string; iniMin: number } | null {
-    const slot = this.selectedProfSlots().find(
-      (f) => f.fecha === fecha && aMinutos(f.hora_inicio) < fin && ini < aMinutos(f.hora_fin),
-    );
-    if (slot) {
-      return {
-        motivo: slot.motivo || 'Tiene ocupado',
-        desde: hora12(slot.hora_inicio),
-        hasta: hora12(slot.hora_fin),
-        iniMin: aMinutos(slot.hora_inicio),
-      };
-    }
-    for (const o of this.otrasVisitas()) {
-      const cita = o.fecha_programada ? new Date(o.fecha_programada) : null;
-      if (!cita || isoFecha(cita) !== fecha) continue;
-      const otraIni = cita.getHours() * 60 + cita.getMinutes();
-      const otraFin = otraIni + duracionEnLaRejilla(o.horas_asignadas);
-      if (otraIni < fin && ini < otraFin) {
-        return {
-          motivo: `Tiene otra orden (${o.empresa_nombre || o.codigo})`,
-          desde: hora12(otraIni),
-          hasta: hora12(otraFin),
-          iniMin: otraIni,
-        };
-      }
-    }
-    return null;
+    const o = ocupacionEnFranjas(this.contextoAgenda(), fecha, ini, fin);
+    if (!o) return null;
+    return {
+      motivo: o.tipo === 'otra' ? `Tiene otra orden (${o.empresa})` : o.motivo,
+      desde: hora12(o.ini),
+      hasta: hora12(o.fin),
+      iniMin: o.ini,
+    };
   }
 
   /**
@@ -2822,28 +2814,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
    * orden. Así arrastrar de más no "rebota" con un aviso, simplemente se para.
    */
   private recortar(fecha: string, desde: number, hasta: number): number {
-    let tope = hasta;
-
-    const objetivo = this.duracionVisita();
-    if (objetivo > 0) {
-      tope = Math.min(tope, desde + Math.max(AG_PASO_MIN, this.minutosPorRepartir()));
-    }
-    // Lo que empiece después del trazo y se cruce con él marca el final.
-    const inicios = [
-      ...this.selectedProfSlots()
-        .filter((f) => f.fecha === fecha)
-        .map((f) => aMinutos(f.hora_inicio)),
-      ...this.franjasVisita()
-        .filter((f) => f.fecha === fecha)
-        .map((f) => aMinutos(f.hora_inicio)),
-      ...this.otrasVisitas()
-        .map((o) => (o.fecha_programada ? new Date(o.fecha_programada) : null))
-        .filter((d): d is Date => !!d && isoFecha(d) === fecha)
-        .map((d) => d.getHours() * 60 + d.getMinutes()),
-    ].filter((min) => min > desde);
-
-    for (const min of inicios) tope = Math.min(tope, min);
-    return Math.max(desde + AG_PASO_MIN, tope);
+    return recortarFranja(this.contextoAgenda(), fecha, desde, hasta);
   }
 
   /** ¿Se puede empezar a marcar en esta celda? */
@@ -2864,39 +2835,11 @@ export class ValidationComponent implements OnInit, OnDestroy {
     }
     const ini = Math.max(inicioMin, 0);
     const fin = Math.min(finMin, 24 * 60);
-    if (fin <= ini) return false;
-    const choque = this.franjasVisita().find(
-      (f) => f.fecha === fecha && aMinutos(f.hora_inicio) < fin && ini < aMinutos(f.hora_fin),
-    );
-    if (choque) {
-      this.alerts.warning(
-        'Esa franja se cruza con otra de la visita',
-        `Ya hay una franja el ${this.rotuloFranja(choque)}. Quítela primero o elija otro hueco.`,
-      );
-      return false;
-    }
-
-    // La agenda del profesional NO se pisa. Antes se avisaba y se dejaba pasar,
-    // y se acababa citando a alguien a dos sitios a la vez; ahora el hueco
-    // ocupado sencillamente no se puede marcar.
-    const ocupado = this.ocupacionEn(fecha, ini, fin);
-    if (ocupado) {
-      this.alerts.warning(
-        'Ese horario ya está ocupado',
-        `${ocupado.motivo} el ${fecha} de ${ocupado.desde} a ${ocupado.hasta}. Elija un hueco libre.`,
-      );
-      return false;
-    }
-
-    // Tope duro: la pre-cuenta (M9) valora las horas contratadas con la ARL, así
-    // que programar de más es trabajo que nadie factura.
-    const objetivo = this.duracionVisita();
-    if (objetivo > 0 && this.minutosProgramados() + (fin - ini) > objetivo) {
-      this.alerts.warning(
-        'Se pasa de las horas de la orden',
-        `La orden tiene ${this.duracionTexto(objetivo)} y quedan ` +
-        `${this.duracionTexto(this.minutosPorRepartir())} por repartir.`,
-      );
+    // 27-nov-2026 · Las reglas (cruce con la misma visita, agenda del asesor,
+    // tope de la orden sumando a todos) viven en franjas.ts, puras.
+    const v = validarFranja(this.contextoAgenda(), { fecha, ini, fin });
+    if (!v.ok) {
+      this.alerts.warning(v.problema, v.detalle);
       return false;
     }
     this.franjasVisita.update((list) => [
@@ -4493,90 +4436,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
     });
   }
 
-}
-
-/** Fecha local en el formato que espera <input type="date"> (YYYY-MM-DD). */
-function isoFecha(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-/** Hora local en el formato que espera <input type="time"> (HH:MM). */
-function isoHora(d: Date): string {
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
-
-/** 'HH:MM' → minutos desde medianoche (la unidad con la que trabaja la agenda). */
-function aMinutos(hhmm: string): number {
-  const [h, m] = hhmm.split(':');
-  return Number(h) * 60 + Number(m || 0);
-}
-
-/** Minutos desde medianoche → 'HH:MM'. */
-function aHoraTexto(min: number): string {
-  return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
-}
-
-/**
- * Lunes de la semana a la que pertenece la fecha. La agenda es de lunes a
- * domingo (así se lee una semana laboral en Colombia), y `getDay()` devuelve 0
- * para el domingo, de ahí el corrimiento.
- */
-function lunesDe(iso: string): string {
-  const d = fechaLocal(iso);
-  if (!d) return iso;
-  const corrimiento = (d.getDay() + 6) % 7;
-  return isoFecha(new Date(d.getFullYear(), d.getMonth(), d.getDate() - corrimiento));
-}
-
-/**
- * Número a la colombiana ("4", "4,5", "1.234,5") → número.
- *
- * El punto solo es separador de miles **cuando hay coma**. Sin coma es el
- * decimal, que es como llega `horas_asignadas` desde la BD (NUMERIC → "8.00"):
- * borrarlo convertía 8 horas en 800 y el bloque de esa OS se comía el día
- * entero en la agenda.
- */
-function aNumeroCO(v: string | number | null | undefined): number {
-  if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
-  let s = (v ?? '').toString().trim();
-  if (!s) return 0;
-  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
-  const n = Number(s);
-  return Number.isFinite(n) ? n : 0;
-}
-
-/**
- * Minutos que ocupa una OS en la agenda: sus horas, o una hora si no trae.
- *
- * El tope de 24 h no es decorativo: un valor mal parseado pinta un bloque que
- * tapa la columna entera y deja la agenda inservible sin decir por qué.
- */
-function duracionDeOrden(horas: string | number | null | undefined): number {
-  const h = aNumeroCO(horas);
-  return h > 0 ? Math.round(h * 60) : AG_VISITA_MIN;
-}
-
-/**
- * Lo mismo, pero acotado a un día, para PINTAR el bloque de otra visita en la
- * agenda: una orden de 50 h ocupa varios días y su bloque no puede desbordar la
- * columna del día en que empieza.
- *
- * Son dos funciones y no una porque el tope estaba antes dentro de
- * `duracionDeOrden`, y de ahí lo heredaba también el total de la orden que se
- * está programando: una OS de 50 h se creía de 24 h, así que la agenda daba la
- * visita por completa a las 24 h, el botón decía "Asignar profesional" y el
- * servidor —que sí sabía que eran 50— guardaba un avance. El aviso resultante
- * era "faltan 0 h por repartir", que no hay forma de entender.
- */
-function duracionEnLaRejilla(horas: string | number | null | undefined): number {
-  return Math.min(duracionDeOrden(horas), 24 * 60);
-}
-
-/** Suma días respetando el calendario local (meses y años incluidos). */
-function sumarDias(iso: string, dias: number): string {
-  const d = fechaLocal(iso);
-  if (!d) return iso;
-  return isoFecha(new Date(d.getFullYear(), d.getMonth(), d.getDate() + dias));
 }
 
 /**

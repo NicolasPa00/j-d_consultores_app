@@ -1015,6 +1015,12 @@ export interface FranjaVisita {
   enviada_en?: string | null;
   /** A qué asesor se le envió. */
   enviada_a?: string | null;
+  /**
+   * 27-nov-2026 · Solo en pantalla: una franja ya enviada que se cambió en el
+   * modal («Cambiada · se avisará al asesor»). El servidor no la reconoce por su
+   * firma (fecha + horas) y la trata como nueva, cancelando la vieja.
+   */
+  cambiada?: boolean;
 }
 
 /** Franja de ocupación (agenda) de un profesional. */
