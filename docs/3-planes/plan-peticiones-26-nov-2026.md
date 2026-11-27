@@ -6,7 +6,7 @@ Rama `peticiones-26-nov` en **los dos repos** (sin push, sin desplegar).
 |---|---|---|
 | 1 | «¿Cómo es la ruta de la cuenta de cobro? ¿le llega la notificación a Mireya?» | ✅ Respondida (solo pregunta; no se cambió código) |
 | 2 | Órdenes por partes: no reenviar los formatos de sesiones ya enviadas (OS-2026-0324, SURA, 15 h: el 25-nov se reenvió la asistencia del 11-nov) | ✅ Backend hecho, probado y **commiteado** en `sst_ws`; frontend del modal de formatos hecho (sin commitear, ver §4) |
-| 3 | «Es muy difícil seleccionar el horario arrastrándolo, al menos en pantallas pequeñas» | 🟡 Diseño elegido (propuesta A, «el formulario primero»); **implementación EN CURSO** al cerrar el 26-nov (ver §3) |
+| 3 | «Es muy difícil seleccionar el horario arrastrándolo, al menos en pantallas pequeñas» | ✅ Propuesta A construida (27-nov) y **ajustada para pantallas pequeñas** tras verla el dueño (27-nov tarde, §3.1): pestañas «Elegir horario | Ver agenda», vista por pantalla en 5 tamaños. Sin push ni despliegue |
 
 ## 1. Cuenta de cobro — respuesta (decisión del dueño: solo responder)
 
@@ -70,9 +70,29 @@ Hallazgo: la fila «Día · Desde · Hasta · Agregar franja» que el HANDOFF de
 - Captura `public/ayuda/asignar-orden/2.webp` del centro de ayuda muestra la agenda vieja.
 - Teclado: falta la navegación con flechas probada en navegador real; el foco tras quitar/guardar usa `setTimeout` (sin probar).
 
+### 3.1 Ajuste para pantallas pequeñas (27-nov, tarde) — HECHO, visto por pantalla
+
+El dueño la vio en su portátil (~1260×640): el cuerpo del modal hacía scroll y «Agregar franja» quedaba bajo el pie. Diseño y capturas: .
+
+**Commits (front, sin push):**  (pestañas + asesor en una fila),  (arreglos del juez, ayuda, capturas).
+
+- **Pestañas «Elegir horario | Ver agenda»** (no dos pasos: el horario se arma de ida y vuelta y el modal ya tiene el paso de formatos). «Elegir horario» = formulario + lista de franjas; «Ver agenda» = semana/día de consulta; tocar un rato libre vuelve al formulario lleno. Editar carga la franja en el mismo formulario.
+- **Nuevo ** (): sin asesor, la lista ocupa el cuerpo; elegido, fila «Nombre · Cambiar · Otro asesor» + suplente en línea. «Otro asesor» llama a  y abre la lista. La columna de 240 px desaparece (el dueño la había confirmado; este rediseño la reemplaza).
+- Salidas retiradas de : , ,  (ahora en el selector).
+- Sin scroll del cuerpo en 1260×640, 1280×720, 1366×768 y 1536×864 en los 11 estados (métricas en ); 390 px en una columna sin scroll de lado. Holgura en 1260×640: formulario 304/342 px; solo «editar + choque de 3 renglones» podría pasarse ~10 px.
+- Un juez de diseño puntuó 8 (1260/1280), 7,5 (1366), 7 (1536), 6 (390) antes de sus arreglos, que se aplicaron (primario según el paso, acción sticky en el celular, topes de alto/ancho, textos).
+- Pruebas: 33 ( 25,  6,  2). Builds dev y prod sin avisos de presupuesto.
+- La OS-2026-0025 quedó sin franjas (nunca se guardó nada).
+
+**Decisiones del dueño (27-nov):** (1) no se agenda en el pasado («Esa hora ya pasó»); (2) lista de asesores a 240 px — sustituida por este rediseño; (3) editar una franja enviada la cancela y la vuelve a crear para el asesor.
+
+**Decisiones menores tomadas con juez (anotadas):** pestañas y no pasos; título «Nueva franja de …» solo para lectores de pantalla (visible en edición); un solo primario según el paso («Agregar franja» sin franjas; «Guardar avance» secundario si hay «Enviar lo programado»); leyenda plegada tras «Colores»; rejilla de 6 a. m. a 8 p. m. salvo que algo vaya más tarde.
+
+**Pendiente menor:** carriles lado a lado cuando bloques se solapan en la rejilla; fila del asesor más compacta en el celular (menú «⋯»); captura  del centro de ayuda sigue mostrando la agenda vieja.
+
 ## 4. Para cerrar la tanda
 
-1. Ver la agenda (ya construida, §3) por pantalla en 1280×720, 1366×768 y 390 px (agregar, editar, quitar, choque, completo, parcial con franja enviada pasada y futura, dos asesores).
+1. ~~Ver la agenda por pantalla~~ hecho el 27-nov (§3.1). Falta que el dueño la pruebe con la OS-2026-0025 y un caso con franja **enviada** (pasada y futura), que no hay en los datos de prueba.
 2. Push de los dos repos (desde el portátil el push lo corre el usuario con `!`).
 3. Despliegue: **aplicar la migración `2026-11-26-franjas-enviadas.sql` en producción ANTES de reiniciar el backend** (el código nuevo lee y escribe `enviada_en`/`ics_uid`), con respaldo previo como en los scripts de `docs/4-despliegue/`.
 4. Probar en producción con la OS-2026-0324 (sesiones del 25-nov ya enviadas: el relleno las marca como enviadas).

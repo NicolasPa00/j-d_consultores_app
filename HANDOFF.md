@@ -16,6 +16,12 @@
 > (componente + `franjas.ts` puras con 29 pruebas `ng test`), arrastre retirado, `validation.scss` de 46,6 a 31,2 kB. **NO vista por pantalla**
 > (el front local no respondía). Decisiones a confirmar (sin «Deshacer», no se agenda en el pasado, sin festivos, flujo de varios asesores
 > igual que antes) y pendientes en el §3 del tablero. La fila «Día · Desde · Hasta» del 22-nov nunca llegó a git; el compositor la reemplaza.
+> **27-nov (tarde) · AJUSTE PARA PANTALLAS PEQUEÑAS, visto por pantalla** (front , ; sin push): el dueño la vio en su
+> portátil (1260×640) con scroll y «Agregar franja» bajo el pie. Ahora pestañas «Elegir horario | Ver agenda», asesor en una fila
+> (nuevo ; la lista ocupa el cuerpo solo al elegir), editar en el mismo formulario, un solo primario
+> según el paso. Sin scroll del cuerpo en 1260×640/1280×720/1366×768/1536×864; capturas y métricas en
+> . Dueño confirmó: no agendar en el pasado, editar una
+> enviada la cancela y recrea; la columna de 240 px la reemplaza este rediseño. Detalle y pendientes en §3.1 del tablero.
 >
 > 🚀 **23-nov-2026 (00:18) · DESPLEGADO EN PRODUCCIÓN: rediseño visual completo + pasada del dueño del 22-nov + peticiones del grupo 20-nov.**
 > back `eedff70` (master) / front `37bcf95` (main), sin migración; respaldo `~/respaldos/orbita-antes-rediseno23nov-20261123-0017.dump`;
