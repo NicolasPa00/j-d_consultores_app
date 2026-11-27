@@ -53,10 +53,10 @@ describe('ocupación y huecos', () => {
     expect(ocupacionEn(c, '2026-11-27', H(14), H(15))).toBeNull();
   });
 
-  it('huecos del día descuentan lo ocupado y lo pasado de hoy', () => {
+  it('huecos del día descuentan lo ocupado; hoy y los días pasados van completos', () => {
     expect(huecosDelDia(ctx(), '2026-11-27')).toEqual([[H(6), H(8)], [H(10), H(24)]]);
-    expect(huecosDelDia(ctx(), '2026-11-26')).toEqual([[H(15), H(24)]]);
-    expect(huecosDelDia(ctx(), '2026-11-25')).toEqual([]);
+    expect(huecosDelDia(ctx(), '2026-11-26')).toEqual([[H(6), H(24)]]);
+    expect(huecosDelDia(ctx(), '2026-11-25')).toEqual([[H(6), H(24)]]);
     expect(huecosDelDia(ctx(), '2026-12-02')).toEqual([]);
   });
 
@@ -112,9 +112,10 @@ describe('validarFranja', () => {
     expect(v.ok === false && v.problema).toBe('La hora final debe ser después de la inicial.');
   });
 
-  it('lo pasado no se agenda', () => {
-    expect(validarFranja(ctx(), { fecha: '2026-11-26', ini: H(9), fin: H(10) }).ok).toBe(false);
+  it('lo pasado también se agenda (27-nov: meses anteriores)', () => {
+    expect(validarFranja(ctx(), { fecha: '2026-11-26', ini: H(9), fin: H(10) }).ok).toBe(true);
     expect(validarFranja(ctx(), { fecha: '2026-11-26', ini: H(16), fin: H(17) }).ok).toBe(true);
+    expect(validarFranja(ctx(), { fecha: '2026-10-05', ini: H(8), fin: H(12) }).ok).toBe(true);
   });
 
   it('choque con ocupación: propone empezar después', () => {

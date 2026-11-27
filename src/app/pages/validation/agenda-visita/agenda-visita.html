@@ -78,7 +78,7 @@
               <div class="campo__lbl">
                 <span class="lbl" id="agv-lbl-fecha">Fecha</span>
                 @if (otraFechaAbierta()) {
-                  <input type="date" class="form-control otra-fecha" id="agv-fecha" aria-label="Elegir otra fecha" [min]="hoy()" [value]="c.fecha" (change)="elegirOtraFecha($any($event.target).value)" (keydown.escape)="$event.stopPropagation(); otraFechaAbierta.set(false)" />
+                  <input type="date" class="form-control otra-fecha" id="agv-fecha" aria-label="Elegir otra fecha" [value]="c.fecha" (change)="elegirOtraFecha($any($event.target).value)" (keydown.escape)="$event.stopPropagation(); otraFechaAbierta.set(false)" />
                 } @else {
                   <span class="fecha-larga">{{ fechaLarga(c.fecha) }}</span>
                 }
@@ -330,7 +330,7 @@
           </div>
         } @else {
           <div class="disp__nav">
-            <button type="button" class="icon-action" (click)="moverDia(-1)" [disabled]="fechaDia() <= hoy()" aria-label="Día anterior"><svg appIcono="anterior"></svg></button>
+            <button type="button" class="icon-action" (click)="moverDia(-1)" aria-label="Día anterior"><svg appIcono="anterior"></svg></button>
             <button type="button" class="icon-action" (click)="moverDia(1)" aria-label="Día siguiente"><svg appIcono="siguiente"></svg></button>
             <p class="disp__rango disp__rango--dia">{{ fechaLarga(fechaDia()) }}</p>
           </div>

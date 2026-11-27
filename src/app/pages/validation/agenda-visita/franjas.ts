@@ -224,7 +224,7 @@ export interface ContextoAgenda {
    * 32 h en una orden de 4 h porque esas no contaban).
    */
   minutosOtros: number;
-  /** Hoy (ISO local) y la hora actual en minutos: lo pasado no se agenda. */
+  /** Hoy (ISO local) y la hora actual en minutos: marcan las franjas enviadas que ya ocurrieron. */
   hoy: string;
   ahoraMin: number;
 }
@@ -367,10 +367,12 @@ export function adelantar(ctx: ContextoAgenda, fecha: string, desde: number, exc
   return cur < AG_HASTA_MIN ? cur : null;
 }
 
-/** Primer minuto agendable de un día: lo pasado de hoy no cuenta. Null si el día ya pasó. */
-function inicioDelDia(ctx: ContextoAgenda, fecha: string): number | null {
-  if (fecha < ctx.hoy) return null;
-  if (fecha === ctx.hoy) return Math.max(AG_DESDE_MIN, Math.ceil(ctx.ahoraMin / AG_PASO_MIN) * AG_PASO_MIN);
+/**
+ * Primer minuto agendable de un día. 27-nov: también se agendan días y horas que
+ * ya pasaron (JD&D programa visitas de meses anteriores), así que el día entero
+ * cuenta siempre.
+ */
+function inicioDelDia(_ctx: ContextoAgenda, _fecha: string): number | null {
   return AG_DESDE_MIN;
 }
 
@@ -500,11 +502,7 @@ export function validarFranja(ctx: ContextoAgenda, r: RangoFranja, excluirId?: s
   if (r.ini < 0 || r.fin > AG_HASTA_MIN) {
     return { ok: false, tipo: 'error', problema: 'La franja debe terminar como mucho a las 12:00 a. m.' };
   }
-  // Lo pasado no se agenda desde aquí: el compositor no ofrece fechas anteriores
-  // a hoy (§11.6). Una visita ya hecha se registra de otra forma.
-  if (r.fecha < ctx.hoy || (r.fecha === ctx.hoy && r.ini < ctx.ahoraMin)) {
-    return { ok: false, tipo: 'error', problema: 'Esa hora ya pasó. Elija una fecha u hora posterior.' };
-  }
+  // 27-nov (JD&D): lo pasado SÍ se agenda; antes se rechazaba con «Esa hora ya pasó».
 
   const choque = obstaculos(ctx, r.fecha, excluirId).find((o) => o.ini < r.fin && r.ini < o.fin);
   if (choque) {

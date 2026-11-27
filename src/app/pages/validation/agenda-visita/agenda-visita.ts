@@ -132,7 +132,7 @@ export class AgendaVisitaComponent {
   readonly liberarOcupacion = output<Ocupacion>();
 
   // ---- Estado propio ----
-  /** Se fija al abrir: de ella salen «hoy», lo que ya pasó y el `min` de las fechas. */
+  /** Se fija al abrir: de ella salen «hoy» y qué franjas enviadas ya ocurrieron. */
   private readonly ahora = signal(new Date());
   private readonly borrador = signal<Borrador | null>(null);
   protected readonly edicion = signal<Edicion | null>(null);
@@ -345,7 +345,7 @@ export class AgendaVisitaComponent {
         hoy: iso === hoy,
         sel: iso === sel,
         domingo: i === 6,
-        bloqueada: !this.profesionalId() || iso < hoy,
+        bloqueada: !this.profesionalId(),
         crudos: this.bloquesDe(iso),
       };
     });
@@ -530,7 +530,7 @@ export class AgendaVisitaComponent {
     const f = this.form()?.fecha;
     if (!f) return;
     const destino = sumarDias(f, delta);
-    if (destino >= this.hoy()) this.elegirDia(destino);
+    this.elegirDia(destino);
   }
 
   /**
@@ -555,7 +555,7 @@ export class AgendaVisitaComponent {
 
   protected elegirOtraFecha(valor: string): void {
     if (!valor) return;
-    this.elegirDia(valor < this.hoy() ? this.hoy() : valor);
+    this.elegirDia(valor);
     this.enfocar('agv-ini');
   }
 
