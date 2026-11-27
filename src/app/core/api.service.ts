@@ -72,6 +72,12 @@ type RespuestaAsignacion = Wrap<Orden & { coasesores?: Coasesor[] }> & {
    * orden quedó PROGRAMADA, pero faltan horas por programar y enviar después.
    */
   parcial?: boolean;
+  /**
+   * 26-nov-2026 · Envío por partes: las sesiones ya se habían enviado y no
+   * cambiaron, así que se guardó sin escribirle a nadie.
+   */
+  sin_cambios?: boolean;
+  message?: string;
   correo_enviado?: boolean;
   correo_error?: string | null;
   formatos_generados?: number;
@@ -240,6 +246,12 @@ export class ApiService {
        * queda PROGRAMADA con las horas que falten.
        */
       enviar_parcial?: boolean;
+      /**
+       * 26-nov-2026 · En una orden enviada por partes cada envío manda solo las
+       * sesiones nuevas; esto vuelve a mandar TODO a todos (correo perdido,
+       * formatos corregidos).
+       */
+      reenviar_todo?: boolean;
     },
   ): Observable<RespuestaAsignacion> {
     return this.http.post<RespuestaAsignacion>(`${this.base}/orders/${id}/assign`, body);

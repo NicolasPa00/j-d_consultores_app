@@ -12,7 +12,7 @@ import { mensajeError, revisarArchivo } from '../../core/errores';
 import { AlertService } from '../../core/alert.service';
 import { AuthService } from '../../core/auth.service';
 import { NotificationsService } from '../../core/notifications.service';
-import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, ClaveGasto, DetalleCobroOrden, GASTOS_COBRO, EstadoArl, ESTADOS_ARL, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, TipoViatico, CasillaEditable, FilaPrefactura, FormatoPrevio, FranjaVisita, HistorialCobro, HistorialEstado, HistorialEstadoArl, Ocupacion, Orden, OrdenManualForm, Plantilla, PrevisualizacionPrefactura, Profesional, RadicadoOrden, RegistroArl, ResultadoCrucePrefactura, Tercero, VisitaProxima } from '../../core/models';
+import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, ClaveGasto, DetalleCobroOrden, GASTOS_COBRO, EstadoArl, ESTADOS_ARL, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, TipoViatico, CasillaEditable, FilaPrefactura, FormatoPrevio, FranjaVisita, HistorialCobro, HistorialEstado, HistorialEstadoArl, Ocupacion, Orden, OrdenManualForm, Plantilla, PrevisualizacionPrefactura, Profesional, RadicadoOrden, RegistroArl, ResultadoCrucePrefactura, SesionPrevia, Tercero, VisitaProxima } from '../../core/models';
 import { aIsoFecha, fechaLocal, hora12, rango12 } from '../../core/fechas';
 import {
   ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, opcionesDeCampo,
@@ -118,6 +118,8 @@ interface ResultadoAsignacion {
   faltan: number | null;
   /** Minutos que tiene la orden según el servidor. */
   horasOrden: number | null;
+  /** 26-nov-2026 · Envío por partes sin nada nuevo: se guardó y no salió correo. */
+  sinCambios?: boolean;
 }
 
 /** Cómo se pinta la fecha de vencimiento de una orden en la tabla. */
@@ -489,6 +491,16 @@ export class ValidationComponent implements OnInit, OnDestroy {
   // ellos. Solo "Confirmar y enviar" guarda y manda el correo.
   protected readonly pasoAsignacion = signal<'agenda' | 'formatos'>('agenda');
   protected readonly formatosPrevios = signal<FormatoPrevio[]>([]);
+  /**
+   * 26-nov-2026 · Envío por partes (OS-2026-0324): lo que el asesor ya tiene no
+   * se le reenvía. La vista previa dice qué sesiones ya salieron, cuáles
+   * enviadas se le van a cancelar y si no hay nada nuevo que mandar.
+   * `reenviarTodo` es la salida de emergencia (correo perdido, datos corregidos).
+   */
+  protected readonly sesionesYaEnviadas = signal<SesionPrevia[]>([]);
+  protected readonly sesionesCanceladas = signal<SesionPrevia[]>([]);
+  protected readonly envioSinCambios = signal(false);
+  protected readonly reenviarTodo = signal(false);
   protected readonly formatoVisto = signal(0);
   protected readonly urlFormatoVisto = signal<SafeResourceUrl | null>(null);
   private urlFormatoObjeto: string | null = null;
@@ -2982,6 +2994,8 @@ export class ValidationComponent implements OnInit, OnDestroy {
       // P3 · Solo viaja cuando se pulsa «Enviar lo programado»: el servidor manda
       // correo y formatos aunque falten horas (si el ajuste global lo permite).
       enviar_parcial: enviarParcial || undefined,
+      // 26-nov-2026 · Solo con la casilla «Reenviar también lo ya enviado».
+      reenviar_todo: this.reenviarTodo() || undefined,
       // ASG-02 · La visita entera, franja a franja. El servidor las
       // reemplaza en bloque y deriva `fecha_programada` de la primera.
       // 7-oct-2026 · Cada una dice de qué asesor es.
@@ -3033,6 +3047,9 @@ export class ValidationComponent implements OnInit, OnDestroy {
       next: (r) => {
         this.previsualizando.set(false);
         this.formatosPrevios.set(r.data.formatos);
+        this.sesionesYaEnviadas.set(r.data.ya_enviadas ?? []);
+        this.sesionesCanceladas.set(r.data.canceladas ?? []);
+        this.envioSinCambios.set(r.data.sin_cambios === true);
         // Al entrar se parte de lo que la orden ya tenía guardado (una
         // reprogramación conserva sus notas); al actualizar, manda lo escrito.
         if (primeraVez) {
@@ -3131,6 +3148,22 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.observacionesSinAplicar.set(true);
   }
 
+  /**
+   * 26-nov-2026 · Una sesión de la vista previa en texto: «jue 14 ago · 8:00–12:00 m.»
+   * y, con varios asesores, de quién es.
+   */
+  protected rotuloSesionPrevia(s: SesionPrevia): string {
+    const conAsesor = this.reparto().length > 1 && s.profesional_id;
+    const asesor = conAsesor ? ` · ${this.professionals().find((p) => p.id === s.profesional_id)?.nombre ?? ''}` : '';
+    return this.rotuloFranja({ id: '', fecha: s.fecha, hora_inicio: s.hora_inicio, hora_fin: s.hora_fin }) + asesor;
+  }
+
+  /** La casilla «Reenviar también lo ya enviado» cambia lo que sale: se vuelve a pedir la vista previa. */
+  protected alternarReenviarTodo(valor: boolean): void {
+    this.reenviarTodo.set(valor);
+    this.previsualizarFormatos();
+  }
+
   /** Vuelve a la agenda sin perder lo marcado ni las observaciones escritas. */
   protected volverAAgenda(): void {
     this.pasoAsignacion.set('agenda');
@@ -3141,6 +3174,10 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.urlFormatoObjeto = null;
     this.urlFormatoVisto.set(null);
     this.formatosPrevios.set([]);
+    this.sesionesYaEnviadas.set([]);
+    this.sesionesCanceladas.set([]);
+    this.envioSinCambios.set(false);
+    this.reenviarTodo.set(false);
     this.formatoVisto.set(0);
     this.observacionesFormatos.set({});
     this.camposFormatos.set({});
@@ -3619,6 +3656,7 @@ export class ValidationComponent implements OnInit, OnDestroy {
               coasesores: (r.data.coasesores ?? []).map((c) => ({ profesional_id: c.profesional_id, nombre: c.nombre, horas: Number(c.horas) })),
               completa: r.completa !== false,
               parcial: r.parcial === true,
+              sinCambios: r.sin_cambios === true,
               faltan: r.faltan_minutos ?? null,
               horasOrden: r.minutos_orden ?? null,
             })),
@@ -3682,7 +3720,13 @@ export class ValidationComponent implements OnInit, OnDestroy {
         const franjas = res.os && visita > 1
           ? ` La visita quedó repartida en ${visita} franjas.`
           : '';
-        if (res.os && res.parcial) {
+        if (res.os && res.sinCambios) {
+          // 26-nov-2026 · Las sesiones ya estaban enviadas y no cambiaron.
+          this.alerts.info(
+            'Guardado, sin correo',
+            'No había sesiones nuevas ni cambios en las ya enviadas, así que no se le escribió a nadie.',
+          );
+        } else if (res.os && res.parcial) {
           // P3 · Envío parcial: la OS quedó PROGRAMADA, el correo y los formatos
           // de lo repartido salieron, pero faltan horas por programar y enviar
           // después. Se dice como aviso (no éxito a secas) para que quien asigna

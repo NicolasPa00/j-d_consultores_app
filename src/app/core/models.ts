@@ -1008,6 +1008,13 @@ export interface FranjaVisita {
   fecha: string;
   hora_inicio: string;
   hora_fin: string;
+  /**
+   * 26-nov-2026 · Cuándo salió el correo con su formato y su invitación (envío
+   * por partes). Vacío = el asesor todavía no la tiene.
+   */
+  enviada_en?: string | null;
+  /** A qué asesor se le envió. */
+  enviada_a?: string | null;
 }
 
 /** Franja de ocupación (agenda) de un profesional. */
@@ -1598,6 +1605,17 @@ export interface FormatoPrevio {
    * escribir dentro del visor no volvería nunca al servidor).
    */
   editables: CasillaEditable[];
+  /** De qué sesión es, en los formatos que salen uno por sesión de varias. */
+  sesion?: { numero: number; total: number; fecha: string } | null;
+}
+
+/** 26-nov-2026 · Una sesión de la visita, en la vista previa de un envío por partes. */
+export interface SesionPrevia {
+  fecha: string;
+  hora_inicio: string;
+  hora_fin: string;
+  /** El asesor (el principal si la franja es suya). */
+  profesional_id: string | null;
 }
 
 /** Una casilla de un formato, con su rótulo impreso y lo que lleva ahora. */
@@ -1617,6 +1635,14 @@ export interface CasillaEditable {
 /** Lo que devuelve `POST /orders/:id/assign/preview` (no guarda nada). */
 export interface VistaPreviaAsignacion {
   formatos: FormatoPrevio[];
+  /**
+   * 26-nov-2026 · Envío por partes: sesiones que el asesor ya tiene (no se
+   * reenvían) y sesiones enviadas que se movieron o quitaron (se le cancelan).
+   */
+  ya_enviadas?: SesionPrevia[];
+  canceladas?: SesionPrevia[];
+  /** No hay nada nuevo que mandar: al confirmar no sale ningún correo. */
+  sin_cambios?: boolean;
   /** Observaciones vigentes por clave de formato (las guardadas + las enviadas). */
   observaciones_formatos: Record<string, string>;
   /** Casillas abiertas ya llenadas, por formato y por campo del PDF. */

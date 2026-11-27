@@ -1783,6 +1783,50 @@
   min-height: 0;
 }
 
+// 26-nov-2026 · Envío por partes: sesiones ya enviadas y canceladas.
+.partes {
+  flex: none;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--hundida);
+  font-size: var(--fs-meta);
+}
+.partes__titulo {
+  margin: 0 0 2px;
+  font-weight: 600;
+  // DESIGN §10: el aviso fuera de la pastilla va en tinta-2 con el ícono en ámbar.
+  &--aviso {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--tinta-2);
+    &::before {
+      content: '';
+      flex: none;
+      width: 14px;
+      height: 14px;
+      background: var(--ambar);
+      mask: var(--icono-alerta) center / contain no-repeat;
+    }
+  }
+}
+.partes__texto { margin: 0 0 6px; }
+.partes__lista {
+  margin: 0 0 6px;
+  padding-left: 1.1rem;
+  color: var(--tinta-2);
+}
+.partes__reenviar {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  min-height: 36px;
+  padding-top: 4px;
+  cursor: pointer;
+}
+
 .vista-formatos__lista {
   display: flex;
   flex-direction: column;

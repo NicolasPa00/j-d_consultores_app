@@ -1041,6 +1041,41 @@
            Nada se guarda hasta "Confirmar y enviar". -->
       <div class="modal__body vista-formatos">
         <aside class="vista-formatos__panel">
+          <!-- 26-nov-2026 · Envío por partes: lo que el asesor ya tiene no se le
+               reenvía, y se dice aquí antes de confirmar. -->
+          @if (sesionesYaEnviadas().length || sesionesCanceladas().length || reenviarTodo()) {
+            <div class="partes">
+              @if (envioSinCambios()) {
+                <p class="partes__titulo">No hay sesiones nuevas que enviar</p>
+                <p class="partes__texto">Al confirmar se guarda la orden, pero no sale ningún correo.</p>
+              }
+              @if (sesionesYaEnviadas().length) {
+                <p class="partes__titulo">Ya enviadas · no se repiten</p>
+                <ul class="partes__lista">
+                  @for (s of sesionesYaEnviadas(); track $index) {
+                    <li>{{ rotuloSesionPrevia(s) }}</li>
+                  }
+                </ul>
+              }
+              @if (sesionesCanceladas().length) {
+                <p class="partes__titulo partes__titulo--aviso">Se cancelarán en el calendario del asesor</p>
+                <ul class="partes__lista">
+                  @for (s of sesionesCanceladas(); track $index) {
+                    <li>{{ rotuloSesionPrevia(s) }}</li>
+                  }
+                </ul>
+              }
+              <label class="partes__reenviar">
+                <input
+                  type="checkbox"
+                  [checked]="reenviarTodo()"
+                  [disabled]="previsualizando() || assigning()"
+                  (change)="alternarReenviarTodo($any($event.target).checked)"
+                />
+                Reenviar también lo ya enviado (todas las sesiones, a todos los asesores)
+              </label>
+            </div>
+          }
           <p class="assign__section-title">Se enviarán {{ formatosPrevios().length }} documento(s)</p>
           <div class="vista-formatos__lista">
             @for (f of formatosPrevios(); track $index) {
@@ -1583,7 +1618,9 @@
 
     <footer class="modal__footer">
       <span class="modal__status">
-        @if (pasoAsignacion() === 'formatos' && envioParcialEnCurso()) {
+        @if (pasoAsignacion() === 'formatos' && envioSinCambios()) {
+          No hay sesiones nuevas: al confirmar se guarda la orden sin escribirle a nadie.
+        } @else if (pasoAsignacion() === 'formatos' && envioParcialEnCurso()) {
           Programación parcial: {{ duracionTexto(minutosProgramados()) }} de {{ duracionTexto(duracionVisita()) }}.
           Revise cada documento; al confirmar salen estos formatos y faltarán
           {{ duracionTexto(minutosPorRepartir()) }} por programar y enviar después.
