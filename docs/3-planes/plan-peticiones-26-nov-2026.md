@@ -6,7 +6,7 @@ Rama `peticiones-26-nov` en **los dos repos** (sin push, sin desplegar).
 |---|---|---|
 | 1 | «¿Cómo es la ruta de la cuenta de cobro? ¿le llega la notificación a Mireya?» | ✅ Respondida (solo pregunta; no se cambió código) |
 | 2 | Órdenes por partes: no reenviar los formatos de sesiones ya enviadas (OS-2026-0324, SURA, 15 h: el 25-nov se reenvió la asistencia del 11-nov) | ✅ Backend hecho, probado y **commiteado** en `sst_ws`; frontend del modal de formatos hecho (sin commitear, ver §4) |
-| 3 | «Es muy difícil seleccionar el horario arrastrándolo, al menos en pantallas pequeñas» | ✅ Propuesta A construida (27-nov) y **ajustada para pantallas pequeñas** tras verla el dueño (27-nov tarde, §3.1): pestañas «Elegir horario | Ver agenda», vista por pantalla en 5 tamaños. Sin push ni despliegue |
+| 3 | «Es muy difícil seleccionar el horario arrastrándolo, al menos en pantallas pequeñas» | ✅ Propuesta A construida (27-nov) y **ajustada para pantallas pequeñas** tras verla el dueño (27-nov tarde, §3.1): pestañas «Elegir horario» y «Ver agenda», vista por pantalla en 5 tamaños. Sin push ni despliegue |
 
 ## 1. Cuenta de cobro — respuesta (decisión del dueño: solo responder)
 
@@ -72,23 +72,23 @@ Hallazgo: la fila «Día · Desde · Hasta · Agregar franja» que el HANDOFF de
 
 ### 3.1 Ajuste para pantallas pequeñas (27-nov, tarde) — HECHO, visto por pantalla
 
-El dueño la vio en su portátil (~1260×640): el cuerpo del modal hacía scroll y «Agregar franja» quedaba bajo el pie. Diseño y capturas: .
+El dueño la vio en su portátil (~1260×640): el cuerpo del modal hacía scroll y «Agregar franja» quedaba bajo el pie. Diseño y capturas: `docs/3-planes/peticiones-26-nov/diseno-agenda/ajuste-pantallas-pequenas/propuesta.md`.
 
-**Commits (front, sin push):**  (pestañas + asesor en una fila),  (arreglos del juez, ayuda, capturas).
+**Commits (front, sin push):** `c7004cb` (pestañas + asesor en una fila), `bbaabc4` (arreglos del juez, ayuda, capturas), `404399f` (este tablero y HANDOFF).
 
 - **Pestañas «Elegir horario | Ver agenda»** (no dos pasos: el horario se arma de ida y vuelta y el modal ya tiene el paso de formatos). «Elegir horario» = formulario + lista de franjas; «Ver agenda» = semana/día de consulta; tocar un rato libre vuelve al formulario lleno. Editar carga la franja en el mismo formulario.
-- **Nuevo ** (): sin asesor, la lista ocupa el cuerpo; elegido, fila «Nombre · Cambiar · Otro asesor» + suplente en línea. «Otro asesor» llama a  y abre la lista. La columna de 240 px desaparece (el dueño la había confirmado; este rediseño la reemplaza).
-- Salidas retiradas de : , ,  (ahora en el selector).
-- Sin scroll del cuerpo en 1260×640, 1280×720, 1366×768 y 1536×864 en los 11 estados (métricas en ); 390 px en una columna sin scroll de lado. Holgura en 1260×640: formulario 304/342 px; solo «editar + choque de 3 renglones» podría pasarse ~10 px.
+- **Nuevo `app-asesor-visita`** (`agenda-visita/asesor-visita.*`): sin asesor, la lista ocupa el cuerpo; elegido, fila «Nombre · Cambiar · Otro asesor» + suplente en línea. «Otro asesor» llama a `guardarProgreso()` y abre la lista. La columna de 240 px desaparece (el dueño la había confirmado; este rediseño la reemplaza).
+- Salidas retiradas de `app-agenda-visita`: `cambiarAsesor`, `quitarAsesor`, `irAProfesionales` (ahora en el selector).
+- Sin scroll del cuerpo en 1260×640, 1280×720, 1366×768 y 1536×864 en los 11 estados (métricas en `…/despues/metricas.txt`); 390 px en una columna sin scroll de lado. Holgura en 1260×640: formulario 304/342 px; solo «editar + choque de 3 renglones» podría pasarse ~10 px.
 - Un juez de diseño puntuó 8 (1260/1280), 7,5 (1366), 7 (1536), 6 (390) antes de sus arreglos, que se aplicaron (primario según el paso, acción sticky en el celular, topes de alto/ancho, textos).
-- Pruebas: 33 ( 25,  6,  2). Builds dev y prod sin avisos de presupuesto.
+- Pruebas: 33 (`franjas.spec` 25, `agenda-visita.spec` 6, `asesor-visita.spec` 2). Builds dev y prod sin avisos de presupuesto.
 - La OS-2026-0025 quedó sin franjas (nunca se guardó nada).
 
 **Decisiones del dueño (27-nov):** (1) no se agenda en el pasado («Esa hora ya pasó»); (2) lista de asesores a 240 px — sustituida por este rediseño; (3) editar una franja enviada la cancela y la vuelve a crear para el asesor.
 
 **Decisiones menores tomadas con juez (anotadas):** pestañas y no pasos; título «Nueva franja de …» solo para lectores de pantalla (visible en edición); un solo primario según el paso («Agregar franja» sin franjas; «Guardar avance» secundario si hay «Enviar lo programado»); leyenda plegada tras «Colores»; rejilla de 6 a. m. a 8 p. m. salvo que algo vaya más tarde.
 
-**Pendiente menor:** carriles lado a lado cuando bloques se solapan en la rejilla; fila del asesor más compacta en el celular (menú «⋯»); captura  del centro de ayuda sigue mostrando la agenda vieja.
+**Pendiente menor:** carriles lado a lado cuando bloques se solapan en la rejilla; fila del asesor más compacta en el celular (menú «⋯»); captura `public/ayuda/asignar-orden/2.webp` del centro de ayuda sigue mostrando la agenda vieja.
 
 ## 4. Para cerrar la tanda
 
