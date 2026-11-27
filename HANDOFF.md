@@ -5,6 +5,14 @@
 > `docs/` y `.claude/skills/`: la carpeta raíz del monorepo **no** es un repo, así
 > que todo lo que debe viajar se guarda aquí dentro.
 >
+> 🚀 **27-nov-2026 (17:27) · DESPLEGADO: la agenda deja programar en fechas pasadas** (WhatsApp JD&D 27-nov, 16:10: «solo me está
+> permitiendo tomar fechas de hoy en adelante… que se habilite todos los meses, así ya haya pasado el mes»). Front `e133a8e` (main y
+> `peticiones-26-nov`), solo frontend, sin migración; respaldo `~/respaldos/orbita-antes-agenda-pasado-20261127-1727.dump`. Revierte la
+> decisión «no agendar en el pasado»: `validation/agenda-visita/franjas.ts` (`inicioDelDia` da el día entero; `validarFranja` ya no
+> rechaza lo pasado) y `agenda-visita.ts/.html` (rejilla sin días bloqueados, «Otra fecha» sin `min`, ‹ de día sin tope). Las franjas
+> ENVIADAS que ya ocurrieron siguen con candado (estado «pasada»). `ng test` 35/35; probado por pantalla en local contra `jdd_dev`
+> (franja del 15-oct guardada y luego quitada en OS-2026-0025; quedó ZZ AGENDA DANIELA anotada sin franjas). El backend nunca lo bloqueó.
+>
 > 🚀 **27-nov-2026 (12:35) · DESPLEGADO EN PRODUCCIÓN: peticiones del 26-nov** (envío por partes + agenda sin arrastre con pestañas
 > «Elegir horario | Ver agenda»). back `ad3b546` (master) / front `252baa7` (main), script `docs/4-despliegue/despliegue-peticiones-26-nov.sh`.
 > Migración `2026-11-26-franjas-enviadas.sql` aplicada ANTES del reinicio: 304/306 franjas marcadas como enviadas (las 2 restantes son de
