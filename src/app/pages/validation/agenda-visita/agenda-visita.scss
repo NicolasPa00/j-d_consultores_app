@@ -164,10 +164,16 @@
 /* En edición el formulario se tiñe: se ve que no es una franja nueva. */
 .form--edit {
   margin: 0 calc(-1 * var(--e-3));
-  padding: 10px var(--e-3) var(--e-3);
+  padding: var(--e-2) var(--e-3) 10px;
   border-radius: var(--r-tarjeta);
   background: var(--accion-tenue);
   box-shadow: inset 0 0 0 1px var(--accion-tenue-hover);
+
+  /* El título suma un renglón: se compensa ciñendo el resto. */
+  &,
+  .form__campos {
+    gap: 10px;
+  }
 }
 
 .form__cargando {
@@ -475,8 +481,11 @@
   flex: none;
   min-height: var(--ctl);
   padding: 0 18px;
-  color: var(--accion);
   font-weight: 600;
+
+  &.btn--secondary {
+    color: var(--accion);
+  }
 
   svg {
     width: 16px;
@@ -1162,6 +1171,11 @@ button.seg-dia {
     min-height: 52px;
   }
 
+  /* A 330 px las marcas de cada 2 h se pisan: queda una cada 4 h. */
+  .linea-dia__marcas span:nth-child(even) {
+    display: none;
+  }
+
   .horas {
     grid-template-columns: 1fr;
     gap: 10px;
@@ -1187,9 +1201,22 @@ button.seg-dia {
     min-height: 44px;
   }
 
+  /* La validación y el botón quedan pegados al pie del cuerpo mientras se
+     desplaza: el choque y «Agregar franja» nunca quedan bajo el pliegue. */
   .form__acc {
+    position: sticky;
+    bottom: calc(-1 * var(--e-4));
+    z-index: 3;
     flex-direction: column;
     align-items: stretch;
+    margin-inline: calc(-1 * var(--e-4));
+    padding: var(--e-2) var(--e-4) var(--e-3);
+    background: var(--superficie);
+    box-shadow: 0 -1px 0 var(--borde);
+  }
+
+  .form--edit .form__acc {
+    background: var(--accion-tenue);
   }
 
   .btn--agregar,

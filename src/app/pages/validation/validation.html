@@ -1374,13 +1374,14 @@
               @if (previsualizando()) { <span class="spinner" aria-hidden="true"></span> Preparando formatos… } @else { Continuar }
             </button>
           } @else {
-            <!-- 27-nov-2026 · Un solo primario por vista (DESIGN §7): si también se
-                 ofrece «Enviar lo programado», «Guardar avance» baja a secundario. -->
+            <!-- 27-nov-2026 · Un solo primario por vista (DESIGN §7): sin franjas el
+                 primario es «Agregar franja» de la agenda, y si también se ofrece
+                 «Enviar lo programado», «Guardar avance» baja a secundario. -->
             <button
               type="button"
               class="btn"
-              [class.btn--primary]="!(order.osId && !visitaCompleta() && puedeEnviarParcial())"
-              [class.btn--secondary]="order.osId && !visitaCompleta() && puedeEnviarParcial()"
+              [class.btn--primary]="minutosProgramados() > 0 && !(order.osId && !visitaCompleta() && puedeEnviarParcial())"
+              [class.btn--secondary]="!minutosProgramados() || (order.osId && !visitaCompleta() && puedeEnviarParcial())"
               [disabled]="!principalId() || assigning() || (usarSuplente() && !formatosProfId())"
               (click)="confirmAssign()"
             >

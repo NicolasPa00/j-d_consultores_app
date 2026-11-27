@@ -199,12 +199,14 @@
               </div>
               @if (edicion()) {
                 <div class="form__btns">
-                  <button type="button" class="btn btn--texto" (click)="cancelarEdicion()">Cancelar</button>
+                  <button type="button" class="btn btn--texto" (click)="cancelarEdicion()">Descartar cambios</button>
                   <button type="button" class="btn btn--secondary btn--agregar" id="agv-guardar" [disabled]="!validacion()?.ok" (click)="guardarEdicion()">Guardar cambios</button>
                 </div>
               } @else {
-                <!-- Secundario con texto en acción: el primario del modal es el del pie. -->
-                <button type="button" class="btn btn--secondary btn--agregar" id="agv-agregar" [disabled]="!validacion()?.ok || cargando()" (click)="agregar()">
+                <!-- Un solo primario por vista: mientras la visita no tiene ninguna
+                     franja, el paso es agregar y este botón es el primario (el del
+                     pie baja a secundario); con la primera, el primario vuelve al pie. -->
+                <button type="button" class="btn btn--agregar" [class.btn--primary]="!resumen().programados" [class.btn--secondary]="!!resumen().programados" id="agv-agregar" [disabled]="!validacion()?.ok || cargando()" (click)="agregar()">
                   <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 4v10M4 9h10" /></svg>
                   Agregar franja
                 </button>

@@ -37,7 +37,7 @@ describe('AsesorVisitaComponent', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('.tarjeta')).toBeNull();
     expect(el.textContent).toContain('Daniela Rosales');
-    expect(el.textContent).toContain('Sin registro ante ARL SURA');
+    expect(el.textContent).toContain('No está registrado ante ARL SURA');
     el.querySelector<HTMLButtonElement>('#asv-cambiar')!.click();
     fixture.detectChanges();
     expect(el.querySelectorAll('.tarjeta').length).toBe(2);

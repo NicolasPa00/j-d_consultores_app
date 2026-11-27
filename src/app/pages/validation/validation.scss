@@ -501,7 +501,8 @@
    cuerpo no hace scroll en 1260×640. Mientras se elige asesor, su lista ocupa
    el cuerpo y es ella la que se desplaza. */
 .modal--asignar {
-  height: min(calc(100dvh - 2rem), 960px);
+  width: min(1320px, calc(100vw - 2rem));
+  height: min(calc(100dvh - 2rem), 780px);
 }
 
 .assign {
