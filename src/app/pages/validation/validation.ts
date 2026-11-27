@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, ElementRef, inject, OnDestroy, OnInit, PLATFORM_ID, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnDestroy, OnInit, PLATFORM_ID, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { isPlatformBrowser } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -14,10 +14,7 @@ import { AuthService } from '../../core/auth.service';
 import { NotificationsService } from '../../core/notifications.service';
 import { ArchivoSoporte, Borrador, CasillaSoporte, CategoriaSoporte, ClaveGasto, DetalleCobroOrden, GASTOS_COBRO, EstadoArl, ESTADOS_ARL, EstadoCobro, ESTADOS_COBRO, EstadoOrden, TipoOrden, TipoViatico, CasillaEditable, FilaPrefactura, FormatoPrevio, FranjaVisita, HistorialCobro, HistorialEstado, HistorialEstadoArl, Ocupacion, Orden, OrdenManualForm, Plantilla, PrevisualizacionPrefactura, Profesional, RadicadoOrden, RegistroArl, ResultadoCrucePrefactura, SesionPrevia, Tercero, VisitaProxima } from '../../core/models';
 import { aIsoFecha, fechaLocal, hora12, rango12 } from '../../core/fechas';
-import {
-  AG_DESDE_MIN, AG_HASTA_MIN, AG_PASO_MIN, aHoraTexto, aMinutos, ContextoAgenda, duracionDeOrden, duracionEnLaRejilla,
-  isoFecha, isoHora, lunesDe, minutosDe, ocupacionEn as ocupacionEnFranjas, recortar as recortarFranja, sumarDias, validarFranja, visitaAjena, VisitaAjena,
-} from './agenda-visita/franjas';
+import { aHoraTexto, aMinutos, duracionDeOrden, duracionEnLaRejilla, isoFecha, isoHora, minutosDe } from './agenda-visita/franjas';
 import {
   ModoCampo, bajaConfianza, confianzaMostrada, inputModeDe, modoDeCampo, opcionesDeCampo,
   problemaCampo, tecleoCampo,
@@ -145,35 +142,13 @@ interface Vencimiento {
  */
 type FranjaVista = Ocupacion;
 
-/* ===== Rejilla de la agenda (ASG-02) =====
-   La agenda se dibuja como una semana laboral de 6:00 a 24:00 en celdas de media
-   hora. La franja mínima que se puede pintar arrastrando es una celda; para
-   minutos sueltos (10:15) sigue estando el formulario manual, que es además el
-   camino accesible por teclado.
-   22-nov-2026 · El cierre pasó de 20:00 a 24:00 a pedido del cliente («mínimo
-   debe quedar hasta las 12:00am»): hay capacitaciones de turnos nocturnos. Una
-   franja termina como mucho a las 24:00 (= 12:00 a. m., fin de ESE día; Postgres
-   guarda `time '24:00'` y lo resta bien). Lo que pase de la medianoche se parte en
-   dos franjas: una hasta las 24:00 y otra desde las 00:00 del día siguiente. */
-/** Alto en píxeles de media hora: es lo que traduce minutos a geometría. */
-const AG_PASO_PX = 22;
+/* ===== Agenda de la visita (ASG-02) =====
+   27-nov-2026 · La rejilla, el compositor y sus reglas viven en
+   ./agenda-visita/ (componente + franjas.ts). Aquí solo queda el rótulo corto
+   de una franja, que usan el resumen del equipo y la vista previa de formatos. */
 const AG_DIAS = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
 const AG_MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
-/** Día pintado en la cabecera de la agenda. */
-interface DiaAgenda {
-  iso: string;
-  nombre: string;
-  num: string;
-  hoy: boolean;
-  finde: boolean;
-}
-
-/**
- * Bloque dibujado sobre la rejilla. Se puede quitar desde la agenda lo que se
- * está decidiendo aquí —las franjas de la visita (`franjaId`) y las ocupaciones
- * del profesional (`slot`)—; las otras OS son contexto de solo lectura.
- */
 /**
  * 7-oct-2026 · Un asesor de la orden con SU horario. El primero de la lista es
  * el principal: de él son el enlace de soportes, la encuesta y los viáticos.
@@ -188,24 +163,6 @@ function firmaDe(franjas: FranjaVisita[]): string {
   return franjas.map((f) => `${f.fecha}|${f.hora_inicio}|${f.hora_fin}`).sort().join(';');
 }
 
-interface BloqueAgenda {
-  id: string;
-  tipo: 'ocupado' | 'otra' | 'visita' | 'equipo';
-  top: number;
-  alto: number;
-  rango: string;
-  texto: string;
-  /** Ocupación que representa el bloque; null en las visitas. */
-  slot: FranjaVista | null;
-  /** Franja de la visita que representa el bloque; ausente en el resto. */
-  franjaId?: string;
-  /**
-   * 7-oct-2026 · Quiénes coinciden en esa franja cuando la orden la ejecutan
-   * varios: un icono por asesor, relleno el seleccionado. `minutos` es lo que
-   * cada uno tiene asignado dentro de la franja.
-   */
-  personas?: { id: string; nombre: string; minutos: number; activa: boolean }[];
-}
 
 @Component({
   selector: 'app-validation',
@@ -589,17 +546,9 @@ export class ValidationComponent implements OnInit, OnDestroy {
         .join(' · '),
     })),
   );
-  /** Formulario manual para agregar una franja de visita (camino de teclado). */
   /** Contador para los id temporales de las franjas aún no persistidas. */
   private tmpSeq = 0;
 
-  // ---- Agenda visual del profesional ----
-  /** Lunes (ISO) de la semana visible. */
-  protected readonly agendaAncla = signal(lunesDe(isoFecha(new Date())));
-  /** Trazo en curso mientras el puntero sigue pulsado (a = inicio, b = actual). */
-  protected readonly agendaSel = signal<{ fecha: string; a: number; b: number } | null>(null);
-  /** Celda bajo el puntero: previsualiza dónde caería la visita antes de pulsar. */
-  protected readonly agendaHover = signal<{ fecha: string; min: number } | null>(null);
   /**
    * Otras OS ya programadas al profesional. Son contexto de solo lectura: sin
    * ellas la "agenda" solo mostraría los bloqueos manuales y se podría citar al
@@ -618,13 +567,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
    * falta ninguna plantilla genérica.
    */
   protected readonly arlsConFormatoPropio = signal<string[]>([]);
-  /** Alto total de la rejilla; se comparte entre la regla de horas y los días. */
-  protected readonly agendaAlto = ((AG_HASTA_MIN - AG_DESDE_MIN) / AG_PASO_MIN) * AG_PASO_PX;
-  /** Etiquetas de la regla horaria, ya posicionadas. */
-  protected readonly agendaHoras = Array.from(
-    { length: (AG_HASTA_MIN - AG_DESDE_MIN) / 60 + 1 },
-    (_, i) => ({ label: hora12(AG_DESDE_MIN + i * 60, { corta: true }), top: (i * 60 * AG_PASO_PX) / AG_PASO_MIN }),
-  );
   /**
    * Horas que la ARL asignó a la orden, en minutos. NO limita lo que se puede
    * programar —el administrador reparte la visita como haga falta— pero sirve
@@ -677,31 +619,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
       .filter((m) => m.profesional_id !== sel)
       .flatMap((m) => m.franjas.map((f) => ({ ...f, profesional_id: m.profesional_id })));
   });
-  /** Otras OS del asesor elegido, ya como obstáculos de la agenda. */
-  private readonly visitasAjenas = computed(() =>
-    this.otrasVisitas().map(visitaAjena).filter((v): v is VisitaAjena => !!v),
-  );
-  /**
-   * 27-nov-2026 · Todo lo que las reglas puras de franjas.ts necesitan saber del
-   * modal. El tope cuenta lo de los DEMÁS asesores (y las franjas huérfanas):
-   * es lo programado menos lo del asesor activo.
-   */
-  protected readonly contextoAgenda = computed<ContextoAgenda>(() => {
-    const id = this.selectedProfId();
-    const nombre = this.professionals().find((p) => p.id === id)?.nombre ?? 'El profesional';
-    return {
-      conProfesional: !!id,
-      nombre,
-      ocupaciones: this.selectedProfSlots(),
-      otrasVisitas: this.visitasAjenas(),
-      propias: this.franjasVisita(),
-      minutosOrden: this.duracionVisita(),
-      minutosOtros: this.minutosProgramados() - minutosDe(this.franjasVisita()),
-      // Paso 1: la rejilla de arrastre todavía deja marcar en el pasado.
-      hoy: '0000-00-00',
-      ahoraMin: 0,
-    };
-  });
   /** Minutos → "4 h", "1 h 30 min". */
   protected duracionTexto(min: number): string {
     if (min <= 0) return '0 h';
@@ -709,17 +626,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
     const m = min % 60;
     return [h ? `${h} h` : '', m ? `${m} min` : ''].filter(Boolean).join(' ');
   }
-  /** Los siete días de la semana visible (solo depende del ancla). */
-  protected readonly semana = computed<DiaAgenda[]>(() => {
-    const lunes = fechaLocal(this.agendaAncla());
-    if (!lunes) return [];
-    const hoy = isoFecha(new Date());
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + i);
-      const iso = isoFecha(d);
-      return { iso, nombre: AG_DIAS[i], num: String(d.getDate()), hoy: iso === hoy, finde: i >= 5 };
-    });
-  });
 
   protected readonly filtered = computed(() => {
     const q = this.query().trim().toLowerCase();
@@ -2533,8 +2439,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
     this.selectedProfSlots.set([]);
     this.otrasVisitas.set([]);
     this.franjasVisita.set([]);
-    this.agendaSel.set(null);
-    this.agendaHover.set(null);
 
     // Al reprogramar se parte de lo que ya está pactado, no de un formulario en
     // blanco: normalmente solo cambia la fecha o el profesional.
@@ -2547,8 +2451,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
     // El equipo se arma abajo, con las franjas guardadas de cada asesor.
     this.equipo.set([]);
     const programada = order?.scheduledAt ? new Date(order.scheduledAt) : null;
-    // La agenda abre en la semana de la visita; si aún no hay, en la de hoy.
-    this.agendaAncla.set(lunesDe(programada ? isoFecha(programada) : isoFecha(new Date())));
 
     // Franjas ya guardadas de la OS. Si la orden es anterior a esta pantalla
     // solo tiene `fecha_programada`: se sintetiza una franja con las horas de la
@@ -2586,12 +2488,10 @@ export class ValidationComponent implements OnInit, OnDestroy {
               },
             ]);
           }
-          this.enfocarAgenda();
         },
         error: () => this.alerts.error('No se pudo cargar la programación', 'No fue posible consultar las franjas ya guardadas de la visita.'),
       });
     }
-    this.enfocarAgenda();
 
     // CFG-03 · Se piden una sola vez; sirven para el aviso de "esta ARL no tiene
     // formatos". Si la consulta falla no se avisa nada: preferible callar a
@@ -2752,13 +2652,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
       .sort((a, b) => (a.fecha + a.hora_inicio).localeCompare(b.fecha + b.hora_inicio));
   }
 
-  /** Franjas ordenadas por fecha y hora: así se leen y así se mandan. */
-  protected readonly franjasOrdenadas = computed(() =>
-    [...this.franjasVisita()].sort((a, b) =>
-      (a.fecha + a.hora_inicio).localeCompare(b.fecha + b.hora_inicio),
-    ),
-  );
-
   /**
    * ASG-02 · Inicio de la visita en ISO: la primera franja.
    *
@@ -2806,117 +2699,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
       if (choque) return choque;
     }
     return undefined;
-  }
-
-  /**
-   * Lo que ocupa al profesional en ese hueco: una franja bloqueada de su agenda
-   * o la visita de otra OS suya. Devuelve null si está libre.
-   *
-   * Es la fuente única para las tres cosas que dependen de la ocupación: no
-   * dejar empezar un trazo encima, recortarlo si llega hasta ahí y rechazar la
-   * franja si aun así se cuela.
-   */
-  private ocupacionEn(
-    fecha: string, ini: number, fin: number,
-  ): { motivo: string; desde: string; hasta: string; iniMin: number } | null {
-    const o = ocupacionEnFranjas(this.contextoAgenda(), fecha, ini, fin);
-    if (!o) return null;
-    return {
-      motivo: o.tipo === 'otra' ? `Tiene otra orden (${o.empresa})` : o.motivo,
-      desde: hora12(o.ini),
-      hasta: hora12(o.fin),
-      iniMin: o.ini,
-    };
-  }
-
-  /**
-   * Recorta el trazo para que muera justo antes de lo primero que estorbe: una
-   * franja ocupada, otra franja de esta misma visita o el tope de horas de la
-   * orden. Así arrastrar de más no "rebota" con un aviso, simplemente se para.
-   */
-  private recortar(fecha: string, desde: number, hasta: number): number {
-    return recortarFranja(this.contextoAgenda(), fecha, desde, hasta);
-  }
-
-  /** ¿Se puede empezar a marcar en esta celda? */
-  protected celdaLibre(fecha: string, min: number): boolean {
-    return !this.ocupacionEn(fecha, min, min + AG_PASO_MIN);
-  }
-
-  // ---- Franjas de la visita ----
-  /**
-   * Agrega una franja a la visita. Devuelve false si se cruza con otra de la
-   * MISMA visita: eso sí se rechaza (sería pedirle estar dos veces en el mismo
-   * rato), a diferencia del cruce con su agenda, que solo avisa.
-   */
-  protected agregarFranjaVisita(fecha: string, inicioMin: number, finMin: number): boolean {
-    if (!this.selectedProfId()) {
-      this.avisarSinProfesional();
-      return false;
-    }
-    const ini = Math.max(inicioMin, 0);
-    const fin = Math.min(finMin, 24 * 60);
-    // 27-nov-2026 · Las reglas (cruce con la misma visita, agenda del asesor,
-    // tope de la orden sumando a todos) viven en franjas.ts, puras.
-    const v = validarFranja(this.contextoAgenda(), { fecha, ini, fin });
-    if (!v.ok) {
-      this.alerts.warning(v.problema, v.detalle);
-      return false;
-    }
-    this.franjasVisita.update((list) => [
-      ...list,
-      {
-        id: `tmp-${++this.tmpSeq}`,
-        fecha,
-        hora_inicio: aHoraTexto(ini),
-        hora_fin: aHoraTexto(fin),
-      },
-    ]);
-    return true;
-  }
-
-  /**
-   * Quita una franja. No pregunta: mientras no se asigne, nada de esto ha
-   * llegado a la BD y volver a pintarla es un clic.
-   */
-  protected quitarFranjaVisita(id: string): void {
-    this.franjasVisita.update((list) => list.filter((f) => f.id !== id));
-  }
-
-  /** Por qué no se deja marcar: falta elegir al profesional. */
-  private avisarSinProfesional(): void {
-    this.alerts.warning(
-      'Primero elija el profesional',
-      'Seleccione en la lista de la izquierda quién ejecuta la visita. Después podrá marcar el horario en la agenda.',
-    );
-  }
-
-  // ---- Ventana visible de la agenda (22-nov-2026) ----
-  /** Contenedor con scroll de la rejilla: muestra unas horas y se desplaza solo. */
-  private readonly agendaScroll = viewChild<ElementRef<HTMLElement>>('agendaScroll');
-
-  /** Lleva la ventana de la agenda a esa hora (con un poco de aire arriba). */
-  private desplazarAgendaA(min: number): void {
-    setTimeout(() => {
-      const el = this.agendaScroll()?.nativeElement;
-      if (!el) return;
-      const top = ((Math.max(min, AG_DESDE_MIN) - AG_DESDE_MIN) * AG_PASO_PX) / AG_PASO_MIN;
-      el.scrollTo({ top: Math.max(0, top - AG_PASO_PX), behavior: 'smooth' });
-    });
-  }
-
-  /**
-   * Abre la ventana en lo que importa: la primera franja de la orden en la
-   * semana visible; si no hay ninguna, el comienzo de la jornada (6:00 a. m.).
-   */
-  protected enfocarAgenda(): void {
-    const dias = new Set(this.semana().map((d) => d.iso));
-    const inicios = this.reparto()
-      .flatMap((m) => m.franjas)
-      .concat(this.franjasVisita())
-      .filter((f) => dias.has(f.fecha))
-      .map((f) => aMinutos(f.hora_inicio));
-    this.desplazarAgendaA(inicios.length ? Math.min(...inicios) : AG_DESDE_MIN);
   }
 
   /** Etiqueta corta de una franja: "jue 14 ago · 08:00–12:00". */
@@ -3172,7 +2954,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
       this.usarSuplente.set(false);
     }
     this.loadSlots(id);
-    this.enfocarAgenda();
   }
 
   private loadSlots(profId: string): void {
@@ -3210,281 +2991,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ================= Agenda visual =================
-  /** Semana anterior / siguiente (delta en semanas). */
-  protected agendaSemana(delta: number): void {
-    this.agendaAncla.update((iso) => sumarDias(iso, delta * 7));
-    this.enfocarAgenda();
-  }
-
-  protected agendaHoy(): void {
-    this.agendaAncla.set(lunesDe(isoFecha(new Date())));
-    this.enfocarAgenda();
-  }
-
-  protected rotuloSemana(): string {
-    const dias = this.semana();
-    const ini = dias.length ? fechaLocal(dias[0].iso) : null;
-    const fin = dias.length ? fechaLocal(dias[6].iso) : null;
-    if (!ini || !fin) return '';
-    const izq = `${ini.getDate()} ${AG_MESES[ini.getMonth()]}`;
-    const der = `${fin.getDate()} ${AG_MESES[fin.getMonth()]}`;
-    return `${izq} – ${der} ${fin.getFullYear()}`;
-  }
-
-  /**
-   * Bloques de un día: ocupaciones, otras OS y la cita en curso, ya traducidos
-   * a píxeles. Las tres capas comparten rejilla a propósito: el cruce se ve, no
-   * hay que deducirlo de una lista.
-   */
-  protected bloquesDelDia(iso: string): BloqueAgenda[] {
-    const bloques: BloqueAgenda[] = [];
-
-    for (const f of this.selectedProfSlots()) {
-      if (f.fecha !== iso) continue;
-      const geo = this.geometria(aMinutos(f.hora_inicio), aMinutos(f.hora_fin));
-      if (!geo) continue;
-      bloques.push({
-        id: f.id,
-        tipo: 'ocupado',
-        ...geo,
-        rango: rango12(f.hora_inicio, f.hora_fin),
-        texto: f.motivo || 'Ocupado',
-        slot: f,
-      });
-    }
-
-    for (const o of this.otrasVisitas()) {
-      const cita = o.fecha_programada ? new Date(o.fecha_programada) : null;
-      if (!cita || isoFecha(cita) !== iso) continue;
-      const ini = cita.getHours() * 60 + cita.getMinutes();
-      // Cada OS dura sus propias horas, igual que la de este modal.
-      const fin = ini + duracionEnLaRejilla(o.horas_asignadas);
-      const geo = this.geometria(ini, fin);
-      if (!geo) continue;
-      bloques.push({
-        id: `os-${o.id}`,
-        tipo: 'otra',
-        ...geo,
-        rango: rango12(ini, fin),
-        texto: o.empresa_nombre || o.codigo,
-        slot: null,
-      });
-    }
-
-    // 7-oct-2026 · Las franjas de ESTA orden, de todos sus asesores. Cuando dos o
-    // más coinciden en el mismo rato quedaban montadas y no se veía quién iba:
-    // ahora cada bloque dice con iconos cuántos son, el seleccionado va relleno y
-    // el tooltip de cada icono da el nombre y las horas que tiene en esa franja.
-    const order = this.assignOrder();
-    const seleccionado = this.selectedProfId();
-    const nombreDe = (id: string) => this.professionals().find((p) => p.id === id)?.nombre ?? 'Profesional';
-    const delDia = this.reparto().flatMap((m) =>
-      m.franjas
-        .filter((f) => f.fecha === iso)
-        .map((f) => ({ de: m.profesional_id, f, ini: aMinutos(f.hora_inicio), fin: aMinutos(f.hora_fin) })),
-    );
-    /** Los asesores que pisan ese rango, con los minutos que tienen dentro de él. */
-    const personasEn = (ini: number, fin: number) => {
-      const porAsesor = new Map<string, number>();
-      for (const x of delDia) {
-        const solape = Math.min(fin, x.fin) - Math.max(ini, x.ini);
-        if (solape > 0) porAsesor.set(x.de, (porAsesor.get(x.de) ?? 0) + solape);
-      }
-      return [...porAsesor.entries()]
-        .map(([id, minutos]) => ({ id, nombre: nombreDe(id), minutos, activa: id === seleccionado }))
-        // El seleccionado primero: su icono relleno abre la fila.
-        .sort((p, q) => Number(q.activa) - Number(p.activa) || p.nombre.localeCompare(q.nombre));
-    };
-    /** Rangos ya pintados: dos asesores con la MISMA franja comparten un bloque. */
-    const pintados = new Set<string>();
-
-    // Primero las del seleccionado, que son las que se están decidiendo.
-    for (const v of this.franjasVisita()) {
-      if (v.fecha !== iso) continue;
-      const ini = aMinutos(v.hora_inicio);
-      const fin = aMinutos(v.hora_fin);
-      const geo = this.geometria(ini, fin);
-      if (!geo) continue;
-      const personas = personasEn(ini, fin);
-      pintados.add(`${ini}-${fin}`);
-      bloques.push({
-        id: v.id,
-        tipo: 'visita',
-        ...geo,
-        rango: rango12(v.hora_inicio, v.hora_fin),
-        texto: order?.company || 'Esta orden',
-        slot: null,
-        franjaId: v.id,
-        personas: personas.length > 1 ? personas : undefined,
-      });
-    }
-
-    // Después las de los demás. Son contexto y no bloquean: se puede marcar encima.
-    for (const x of delDia) {
-      if (x.de === seleccionado || pintados.has(`${x.ini}-${x.fin}`)) continue;
-      const geo = this.geometria(x.ini, x.fin);
-      if (!geo) continue;
-      const personas = personasEn(x.ini, x.fin);
-      pintados.add(`${x.ini}-${x.fin}`);
-      bloques.push({
-        id: `eq-${x.de}-${x.f.id}`,
-        tipo: 'equipo',
-        ...geo,
-        rango: rango12(x.f.hora_inicio, x.f.hora_fin),
-        texto: personas.length > 1 ? `${personas.length} asesores` : nombreDe(x.de),
-        slot: null,
-        personas,
-      });
-    }
-
-    return bloques;
-  }
-
-  /**
-   * Franja que se está trazando (o la que dejaría un clic simple). Se dibuja
-   * con las horas exactas que va a tener, así lo que se ve es lo que queda.
-   */
-  protected fantasma(iso: string): { top: number; alto: number; rango: string } | null {
-    const sel = this.agendaSel();
-    if (sel && sel.fecha === iso) {
-      const rango = this.rangoDeSeleccion(sel);
-      const geo = this.geometria(rango.desde, rango.hasta);
-      return geo && { ...geo, rango: rango12(rango.desde, rango.hasta) };
-    }
-    const hover = this.agendaHover();
-    if (!hover || hover.fecha !== iso || sel || !this.selectedProfId()) return null;
-    // Sobre un hueco ocupado no se previsualiza nada: no se puede marcar ahí, y
-    // pintar un fantasma encima invitaba a intentarlo.
-    if (!this.celdaLibre(iso, hover.min)) return null;
-    if (this.duracionVisita() > 0 && !this.minutosPorRepartir()) return null;
-    const hasta = this.recortar(iso, hover.min, hover.min + this.duracionSugerida());
-    const geo = this.geometria(hover.min, hasta);
-    return geo && { ...geo, rango: rango12(hover.min, hasta) };
-  }
-
-  /**
-   * Cuánto dura la franja que crea un clic sin arrastrar: las horas de la orden
-   * que todavía no se han repartido. Así el caso normal —una visita de 4 h en
-   * un solo bloque— se resuelve con un clic, y para partirla se arrastra.
-   */
-  private duracionSugerida(): number {
-    const falta = this.minutosPorRepartir();
-    return Math.max(AG_PASO_MIN, Math.round(falta / AG_PASO_MIN) * AG_PASO_MIN);
-  }
-
-  /**
-   * Rango de la selección, ya recortado. Si el puntero no se movió (clic simple)
-   * se usa la duración sugerida; si se arrastró, manda el trazo, celda a celda.
-   * En los dos casos el recorte impide pasar por encima de lo ocupado o de las
-   * horas contratadas.
-   */
-  private rangoDeSeleccion(sel: { fecha: string; a: number; b: number }): { desde: number; hasta: number } {
-    const desde = sel.a === sel.b ? sel.a : Math.min(sel.a, sel.b);
-    const bruto = sel.a === sel.b
-      ? sel.a + this.duracionSugerida()
-      : Math.max(sel.a, sel.b) + AG_PASO_MIN;
-    return { desde, hasta: this.recortar(sel.fecha, desde, bruto) };
-  }
-
-  /** Minutos → posición en la rejilla, recortado a las horas visibles. */
-  private geometria(iniMin: number, finMin: number): { top: number; alto: number } | null {
-    const ini = Math.max(iniMin, AG_DESDE_MIN);
-    const fin = Math.min(finMin, AG_HASTA_MIN);
-    if (fin <= ini) return null;
-    return {
-      top: ((ini - AG_DESDE_MIN) * AG_PASO_PX) / AG_PASO_MIN,
-      // Suelo de 18 px: una franja de 15 minutos seguiría siendo pulsable.
-      alto: Math.max(18, ((fin - ini) * AG_PASO_PX) / AG_PASO_MIN),
-    };
-  }
-
-  /**
-   * Celda bajo el puntero. Se mide contra la caja de la columna (y no con
-   * `offsetY`) porque el puntero puede estar encima de un bloque hijo, y
-   * entonces `offsetY` sería relativo al bloque, no a la columna.
-   */
-  private minutoEnColumna(ev: PointerEvent): number {
-    const caja = (ev.currentTarget as HTMLElement).getBoundingClientRect();
-    const celdas = (AG_HASTA_MIN - AG_DESDE_MIN) / AG_PASO_MIN;
-    const idx = Math.floor((ev.clientY - caja.top) / AG_PASO_PX);
-    return AG_DESDE_MIN + Math.min(Math.max(idx, 0), celdas - 1) * AG_PASO_MIN;
-  }
-
-  /**
-   * Empieza el trazo. `preventDefault()` solo con ratón: en táctil cancelaría
-   * el desplazamiento de la rejilla, y sin poder desplazarla no se llega al
-   * resto del día.
-   */
-  protected agendaPresionar(ev: PointerEvent, iso: string): void {
-    if (ev.button !== 0) return;
-    if (ev.pointerType !== 'touch') ev.preventDefault();
-    // 22-nov-2026 · Primero el profesional, después el horario: sin él no hay
-    // disponibilidad que respetar ni dueño para las horas (la causa de las 32 h).
-    if (!this.selectedProfId()) {
-      this.avisarSinProfesional();
-      return;
-    }
-    const min = this.minutoEnColumna(ev);
-
-    // Un hueco ocupado no se puede ni empezar a marcar. Antes se dejaba trazar y
-    // se avisaba después; el aviso llegaba cuando el usuario ya creía haberlo
-    // programado, que es el peor momento para enterarse.
-    const ocupado = this.ocupacionEn(iso, min, min + AG_PASO_MIN);
-    if (ocupado) {
-      this.alerts.warning(
-        'Ese horario ya está ocupado',
-        `${ocupado.motivo}, de ${ocupado.desde} a ${ocupado.hasta}.`,
-      );
-      return;
-    }
-    // Sin horas por repartir no hay nada más que marcar.
-    if (this.duracionVisita() > 0 && !this.minutosPorRepartir()) {
-      this.alerts.warning(
-        'La visita ya está completa',
-        `Las ${this.duracionTexto(this.duracionVisita())} de la orden ya están repartidas. ` +
-        'Quite una franja si quiere moverla.',
-      );
-      return;
-    }
-    this.agendaSel.set({ fecha: iso, a: min, b: min });
-  }
-
-  /** Arrastrar estira la franja. El trazo no cambia de día: una franja es de una fecha. */
-  protected agendaMover(ev: PointerEvent, iso: string): void {
-    const min = this.minutoEnColumna(ev);
-    const hover = this.agendaHover();
-    if (hover?.fecha !== iso || hover?.min !== min) this.agendaHover.set({ fecha: iso, min });
-    const sel = this.agendaSel();
-    if (!sel || sel.fecha !== iso || sel.b === min) return;
-    this.agendaSel.set({ ...sel, b: min });
-  }
-
-  /** Fin del gesto: la franja trazada entra en la visita. */
-  protected agendaSoltar(): void {
-    const sel = this.agendaSel();
-    if (!sel) return;
-    this.agendaSel.set(null);
-    // La previsualización ya cumplió: lo que queda es el bloque real. Con ratón
-    // el siguiente movimiento la vuelve a pintar.
-    this.agendaHover.set(null);
-    const { desde, hasta } = this.rangoDeSeleccion(sel);
-    this.agregarFranjaVisita(sel.fecha, desde, Math.min(hasta, AG_HASTA_MIN));
-  }
-
-  /** El navegador se quedó con el gesto (scroll táctil, por ejemplo). */
-  protected agendaCancelar(): void {
-    this.agendaSel.set(null);
-    this.agendaHover.set(null);
-  }
-
-  protected agendaSalir(): void {
-    this.agendaHover.set(null);
-    // Soltar fuera de la rejilla confirma lo seleccionado: perder el arrastre
-    // por salirse un píxel obligaría a repetir el gesto.
-    this.agendaSoltar();
-  }
-
   /**
    * Quita una franja ocupada de la agenda del profesional.
    *
@@ -3512,12 +3018,6 @@ export class ValidationComponent implements OnInit, OnDestroy {
       },
       error: (err) => this.alerts.error('No se pudo quitar la franja', mensajeError(err, 'El servidor rechazó la eliminación de la ocupación.')),
     });
-  }
-
-  private ordenarFranjas(list: FranjaVista[]): FranjaVista[] {
-    return [...list].sort((a, b) =>
-      (a.fecha + a.hora_inicio).localeCompare(b.fecha + b.hora_inicio),
-    );
   }
 
   /**
