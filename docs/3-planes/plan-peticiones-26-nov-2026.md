@@ -94,7 +94,7 @@ El dueño la vio en su portátil (~1260×640): el cuerpo del modal hacía scroll
 
 1. ~~Ver la agenda por pantalla~~ hecho el 27-nov (§3.1). Falta que el dueño la pruebe con la OS-2026-0025 y un caso con franja **enviada** (pasada y futura), que no hay en los datos de prueba.
 2. Push de los dos repos (desde el portátil el push lo corre el usuario con `!`).
-3. Despliegue: **aplicar la migración `2026-11-26-franjas-enviadas.sql` en producción ANTES de reiniciar el backend** (el código nuevo lee y escribe `enviada_en`/`ics_uid`), con respaldo previo como en los scripts de `docs/4-despliegue/`.
+3. Despliegue: **aplicar la migración `2026-11-26-franjas-enviadas.sql` en producción ANTES de reiniciar el backend** (el código nuevo lee y escribe `enviada_en`/`ics_uid`), con respaldo previo como en los scripts de `docs/4-despliegue/`. **Script listo (27-nov): `docs/4-despliegue/despliegue-peticiones-26-nov.sh`** (respaldo → pull → migración + conteo de franjas marcadas y las de la OS-2026-0324 → build → reinicio → health). Antes, subir las ramas a `master`/`main` (líneas en la cabecera del script).
 4. Probar en producción con la OS-2026-0324 (sesiones del 25-nov ya enviadas: el relleno las marca como enviadas).
 5. Enviar a JD&D la respuesta de la cuenta de cobro (§1).
 
